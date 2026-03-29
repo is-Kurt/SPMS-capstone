@@ -1,0 +1,15 @@
+{
+  "scripts": {
+    "watch:main": "npx @tailwindcss/cli -i ./public/assets/main/css/input.css -o ./public/assets/main/css/style.css --watch",
+    "watch:editor": "npx @tailwindcss/cli -i ./public/assets/editor/css/editor-input.css -o ./public/assets/editor/css/editor.css --watch",
+    "dev": "concurrently \"npm run watch:main\" \"npm run watch:editor\""
+  },
+  "dependencies": {
+    "@tailwindcss/cli": "^4.1.18",
+    "tailwindcss": "^4.1.18",
+    "tinymce": "^8.3.2"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

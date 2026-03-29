@@ -1,0 +1,54 @@
+@import "tailwindcss";
+@import "./fonts.css";
+
+@theme {
+  --font-sans: "Roboto", ui-sans-serif, system-ui, sans-serif;
+
+  --color-page-bg: var(--color-neutral-200);
+  --color-card-bg: var(--color-neutral-100);
+
+  --color-main-border: var(--color-neutral-300);
+  
+  --color-main-text: var(--color-neutral-800);
+  --color-sub-text: var(--color-neutral-700);
+
+  --color-highlight: var(--color-emerald-600);
+  --color-highlight-hover: var(--color-emerald-700);
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+.dark {
+  --color-page-bg: var(--color-neutral-900);
+  --color-card-bg: var(--color-neutral-800);
+
+  --color-main-border: var(--color-neutral-700);
+  
+  --color-main-text: var(--color-neutral-100);
+  --color-sub-text: var(--color-neutral-200);
+}
+
+a {
+  @apply focus-visible:outline-2 focus-visible:outline-offset-2 
+           focus-visible:outline-highlight focus-visible:rounded-md;
+}
+
+.input-field {
+  @apply block w-full rounded-md px-3 py-1.5 text-base 
+         outline-1 -outline-offset-1 outline-main-border 
+         placeholder:text-sub-text focus:outline-2 
+         focus:-outline-offset-2 focus:outline-highlight sm:text-sm/6;
+}
+
+.checkbox {
+  @apply h-4 w-4 rounded-full outline-1 outline-main-border 
+         appearance-none checked:bg-highlight cursor-pointer
+         hover:bg-highlight-hover focus-visible:outline-2 
+         focus-visible:-outline-offset-2 focus-visible:outline-highlight;
+}
+
+.button {
+    @apply flex justify-center rounded-md bg-highlight
+           px-3 py-1.5 text-sm/6 font-semibold text-white hover:bg-highlight-hover
+           focus-visible:outline-2 focus-visible:outline-offset-2 
+           focus-visible:outline-highlight;
+}

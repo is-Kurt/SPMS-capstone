@@ -1,0 +1,264 @@
+function initEditor() {
+    tinymce.remove('#editable-doc');
+    const isDark = document.documentElement.classList.contains('dark');
+
+    tinymce.init({
+        selector: '#editable-doc',
+        license_key: 'gpl',
+        promotion: false,
+        branding: false,
+        menubar: false,
+        statusbar: false,
+        height: '100%',
+        
+        font_family_formats: 'Roboto=Roboto, Helvetica, Arial, sans-serif; Sans Serif=sans-serif; Andale Mono=andale mono,times; Arial=arial,helvetica,sans-serif; Arial Black=arial black,avant garde; Book Antiqua=book antiqua,palatino; Comic Sans MS=comic sans ms,sans-serif; Courier New=courier new,courier; Georgia=georgia,palatino; Helvetica=helvetica; Impact=impact,chicago; Symbol=symbol; Tahoma=tahoma,arial,helvetica,sans-serif; Terminal=terminal,monaco; Times New Roman=times new roman,times; Trebuchet MS=trebuchet ms,geneva; Verdana=verdana,geneva;',
+        
+        plugins: 'table lists advlist',
+        toolbar_mode: 'wrap',
+        toolbar: [
+            'undo redo | fontfamily fontsize blocks | bold italic underline strikethrough | forecolor backcolor tablecellbackgroundcolor',
+            'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent',
+            'table tableinsertrowbefore tableinsertrowafter tabledeleterow | tablemergecells tablesplitcells | clearMarks toggleRating toggleRowAvg toggleTotal toggleFinalRating | toggleId toggleCellWeight | toggleScoreRange toggleWeight'
+        ],
+        
+        skin: isDark ? 'oxide-dark' : 'oxide',
+        content_css: [(isDark ? 'dark' : 'default'), AppConfig.editorCss],
+        
+        setup: function(editor) {
+            if (typeof AppConfig.ciDebug !== 'undefined' && AppConfig.ciDebug) {
+                cellInspector(editor);
+                console.log("TinyMCE: Cell Inspector Loaded (Debug Mode)");
+            }
+            
+            const tableTools = new TableTools(editor);
+            const DEFAULT_SCORE_RANGE = 5;
+            const DEFAULT_WEIGHT = 100;
+
+            editor.ui.registry.addButton('toggleRating', {
+                text: '🎯 Rating',
+                tooltip: 'Select cells for input',
+                onAction: () => tableTools.modifyCell('calc-rating', '#d4edda')
+            });
+
+            editor.ui.registry.addButton('toggleRowAvg', {
+                text: '🟦 Row Avg',
+                tooltip: 'Displays the average of the Q, E, T ratings in this row',
+                onAction: () => tableTools.modifyCell('calc-row-avg', '#cce5ff')
+            });
+
+            editor.ui.registry.addButton('toggleTotal', {
+                text: '🧮 Mark as Total',
+                tooltip: 'Display the weighted total for this table',
+                onAction: () => tableTools.modifyCell('calc-total', '#fff3cd')
+            });
+
+            editor.ui.registry.addButton('toggleFinalRating', {
+                text: '🧮 Mark as Final Rating',
+                tooltip: 'Display the final rating for this table',
+                onAction: () => tableTools.modifyCell('calc-final-total', '#dbcfa7')
+            });
+
+            editor.ui.registry.addButton('clearMarks', {
+                text: '🧹 Clear Marks',
+                tooltip: 'Removes all markers from the selected area',
+                onAction: () => tableTools.modifyCell()
+            });
+
+            editor.ui.registry.addButton('toggleId', {
+                text: '🏷️ Group ID (____)',
+                tooltip: 'Link specific ratings to a specific total cell',
+                onAction: () => tableTools.cellPanelInput(
+                    'Set Cell Group ID',
+                    '.calc-total, .calc-row-avg',
+                    'data-group-id',
+                    1, 100
+                ),
+                onSetup: (api) => tableTools.bindCellState(
+                    api,
+                    '.calc-total, .calc-row-avg',
+                    'data-group-id',
+                    (val) => `🏷️ Group ID (${val})`
+                )
+            });
+
+            editor.ui.registry.addButton('toggleCellWeight', {
+                text: '⚖️ Cell Weight ____%',
+                tooltip: 'Assign a weight specifically to this Total cell',
+                onAction: () => tableTools.cellPanelInput(
+                    'Set Cell Weight',
+                    '.calc-total',
+                    'data-cell-weight',
+                    1, 100
+                ),
+                onSetup: (api) => tableTools.bindCellState(
+                    api,
+                    '.calc-total',
+                    'data-cell-weight',
+                    (val) => `⚖️ Cell Weight ${val}%`,
+                    100
+                )
+            });
+
+            editor.ui.registry.addButton('toggleScoreRange', {
+                text: '💯 Score Range (____)',
+                tooltip: 'Set the maximum score range for this entire table',
+                
+                onAction: () => tableTools.tablePanelInput(
+                    'data-score-range',
+                    'Set Table Score Range',
+                    1, 100
+                ),
+
+                onSetup: (api) => tableTools.bindTableState(
+                    api, 
+                    'data-score-range', 
+                    DEFAULT_SCORE_RANGE, 
+                    (val) => `💯 Score Range (${val})`
+                )
+            });
+            
+            editor.ui.registry.addButton('toggleWeight', {
+                text: '⚖️ Weight ____%',
+                tooltip: 'Set the percentage weight for this entire table',
+                onAction: () => tableTools.tablePanelInput(
+                    'data-weight',
+                    'Set Table Weight',
+                    0,
+                    100
+                ),
+
+                onSetup: (api) => tableTools.bindTableState(
+                    api, 
+                    'data-weight', 
+                    DEFAULT_WEIGHT, 
+                    (val) => `⚖️ Weight ${val}%`
+                )
+            });
+
+            // Custom ctrl/meta cell selection
+            editor.on('click', function(e) {
+                if (e.ctrlKey || e.metaKey) {
+                    const targetCell = editor.dom.getParent(e.target, 'td, th');
+                    if (targetCell) {
+                        e.preventDefault(); 
+                        const isSelected = editor.dom.hasClass(targetCell, 'custom-selected');
+                        
+                        if (isSelected) {
+                            editor.dom.removeClass(targetCell, 'custom-selected');
+                        } else {
+                            editor.dom.addClass(targetCell, 'custom-selected');
+                        }
+                    }
+                } else {
+                    const selectedCells = editor.dom.select('.custom-selected');
+                    selectedCells.forEach(cell => {
+                        editor.dom.removeClass(cell, 'custom-selected');
+                    });
+                }
+            });
+
+        editor.on('input ExecCommand', function (e) {
+            // console.warn("Event fired!", e.type, e.command || "N/A");
+            if (e.type === 'execcommand') {
+                const ignoredCommands = ['mceFocus', 'mceAutoResize'];
+
+                if (ignoredCommands.includes(e.command)) {
+                    return;
+                }
+            }
+
+            if (editor.initialized && !AppState.isDirty) {
+                AppState.setDirty(true);
+            }
+        });
+
+            // Save document on ctrl/meta + s
+        editor.addShortcut('meta+s', 'Custom Save Document', () => {
+                console.log("Shortcut Ctrl+S triggered!");
+                saveDocument(); 
+            });
+        }
+    });
+}
+
+function initPlainEditor(evaluated) {
+    console.log(evaluated);
+    tinymce.remove('#editable-doc');
+    const isDark = document.documentElement.classList.contains('dark');
+
+    tinymce.init({
+        selector: '#editable-doc',
+        license_key: 'gpl',
+        promotion: false,
+        branding: false,
+        menubar: false,
+        statusbar: false,
+        toolbar: false,
+        
+        skin: isDark ? 'oxide-dark' : 'oxide',
+        content_css: [(isDark ? 'dark' : 'default'), AppConfig.editorCss],
+
+        setup: function(editor) {
+            
+            editor.on('init', function () {
+                const body = editor.getBody();
+                
+                body.setAttribute('contenteditable', 'false');
+                clearMarks(body);
+                if (evaluated) {
+                    return;
+                };
+
+                // Find all the rating cells and make ONLY them editable
+                const ratingCells = body.querySelectorAll('.calc-rating');
+                ratingCells.forEach(cell => {
+                    cell.setAttribute('contenteditable', 'true');
+                    cell.style.border = '2px solid #10b981'; 
+                    cell.style.minWidth = '50px'; // Ensure empty cells don't collapse
+                });
+            });
+
+            editor.on('input ExecCommand', function (e) {
+                if (e.type === 'execcommand') {
+                    const ignoredCommands = ['mceFocus', 'mceAutoResize'];
+                    if (ignoredCommands.includes(e.command)) return;
+                }
+
+                if (editor.initialized && !AppState.isDirty) {
+                    AppState.setDirty(true);
+                }
+            });
+
+            // 3. THE CLEANUP: Prevent these temporary lock states from saving to your database
+            editor.on('PreProcess', function (e) {
+                // e.node represents the HTML right before it is extracted for saving
+                e.node.removeAttribute('contenteditable');
+                
+                const ratingCells = e.node.querySelectorAll('.calc-rating');
+                ratingCells.forEach(cell => {
+                    cell.removeAttribute('contenteditable');
+                    
+                    // Strip the temporary visual highlights so they don't get saved
+                    cell.style.backgroundColor = '';
+                    cell.style.border = '';
+                    cell.style.cursor = '';
+                    cell.style.minWidth = '';
+                });
+            });
+
+            // 4. Save document shortcut
+            editor.addShortcut('meta+s', 'Custom Save Document', () => {
+                saveDocument(); 
+            });
+        }
+    });
+}
+
+function clearMarks(body) {
+    const allClasses = ['.calc-rating', '.calc-row-avg', '.calc-total', '.calc-final-total'];
+
+    const markedCells = body.querySelectorAll(allClasses);
+    markedCells.forEach(cell => {
+        cell.removeAttribute('style');
+    });
+}
