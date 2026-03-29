@@ -9,6 +9,11 @@ class Index extends BaseController
 {
     public function index() {
         $userId = session()->get('user_id');
+
+        if (!$userId) {
+            return redirect()->to('/login');
+        }
+        
         $documentModel = new \App\Models\DocumentModel();
         $filter = $this->request->getGet('docs');
 
