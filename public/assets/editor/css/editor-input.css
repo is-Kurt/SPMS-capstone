@@ -33,9 +33,3 @@ td.custom-selected, th.custom-selected {
     /* Mathematically dialed to hit #cae3ff on white and #a8d3da on green */
     background-image: linear-gradient(rgba(0, 119, 255, 0.208), rgba(0, 119, 255, 0.208)) !important; 
 }
-
-.datetime-tight::-webkit-calendar-picker-indicator {
-        margin-left: 10px; /* Pulls the calendar icon closer to the time */
-        cursor: pointer;
-        filter: invert(0.5); /* Makes it subtle in dark mode */
-    }

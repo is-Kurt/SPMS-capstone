@@ -1,23 +1,16 @@
 class TableTools {
-    static attrNames = [];
-
     constructor(editor) {
         this.editor = editor;
         this.activeSelectionQuery = 'td[data-mce-selected="1"], th[data-mce-selected="1"], .custom-selected';
+        this.attrNames = ['.calc-rating', '.calc-row-avg', '.calc-total', '.calc-final-total'];
     }
 
     clearMathClasses(cell) {
-        if (TableTools.attrNames.length > 0) {
-            this.editor.dom.removeClass(cell, TableTools.attrNames.join(' '));
-        }
+        this.editor.dom.removeClass(cell, this.attrNames.join(' '));
         this.editor.dom.setAttrib(cell, 'style', null); 
     }
 
     modifyCell(markType, markColor) {
-        if (markType && !TableTools.attrNames.includes(markType)) {
-            TableTools.attrNames.push(markType);
-        }
-
         AppState.setDirty(true);
         
         let selectedCells = this.editor.dom.select(this.activeSelectionQuery);

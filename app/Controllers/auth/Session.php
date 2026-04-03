@@ -33,6 +33,7 @@ class Session extends BaseController
             session()->set([
                 'user_id' => $user['id'],
                 'email' => $user['email'],
+                'username' => $user['username'] ?? explode('@', $user['email'])[0],
                 'isLoggedIn' => true
             ]);
 

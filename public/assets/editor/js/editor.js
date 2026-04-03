@@ -10,10 +10,11 @@ function initEditor() {
         menubar: false,
         statusbar: false,
         height: '100%',
+        highlight_on_focus: false,
         
         font_family_formats: 'Roboto=Roboto, Helvetica, Arial, sans-serif; Sans Serif=sans-serif; Andale Mono=andale mono,times; Arial=arial,helvetica,sans-serif; Arial Black=arial black,avant garde; Book Antiqua=book antiqua,palatino; Comic Sans MS=comic sans ms,sans-serif; Courier New=courier new,courier; Georgia=georgia,palatino; Helvetica=helvetica; Impact=impact,chicago; Symbol=symbol; Tahoma=tahoma,arial,helvetica,sans-serif; Terminal=terminal,monaco; Times New Roman=times new roman,times; Trebuchet MS=trebuchet ms,geneva; Verdana=verdana,geneva;',
         
-        plugins: 'table lists advlist',
+        plugins: 'table lists advlist saveShortcut setDirty cellSelect',
         toolbar_mode: 'wrap',
         toolbar: [
             'undo redo | fontfamily fontsize blocks | bold italic underline strikethrough | forecolor backcolor tablecellbackgroundcolor',
@@ -133,56 +134,12 @@ function initEditor() {
                     DEFAULT_WEIGHT, 
                     (val) => `⚖️ Weight ${val}%`
                 )
-            });
-
-            // Custom ctrl/meta cell selection
-            editor.on('click', function(e) {
-                if (e.ctrlKey || e.metaKey) {
-                    const targetCell = editor.dom.getParent(e.target, 'td, th');
-                    if (targetCell) {
-                        e.preventDefault(); 
-                        const isSelected = editor.dom.hasClass(targetCell, 'custom-selected');
-                        
-                        if (isSelected) {
-                            editor.dom.removeClass(targetCell, 'custom-selected');
-                        } else {
-                            editor.dom.addClass(targetCell, 'custom-selected');
-                        }
-                    }
-                } else {
-                    const selectedCells = editor.dom.select('.custom-selected');
-                    selectedCells.forEach(cell => {
-                        editor.dom.removeClass(cell, 'custom-selected');
-                    });
-                }
-            });
-
-        editor.on('input ExecCommand', function (e) {
-            // console.warn("Event fired!", e.type, e.command || "N/A");
-            if (e.type === 'execcommand') {
-                const ignoredCommands = ['mceFocus', 'mceAutoResize'];
-
-                if (ignoredCommands.includes(e.command)) {
-                    return;
-                }
-            }
-
-            if (editor.initialized && !AppState.isDirty) {
-                AppState.setDirty(true);
-            }
-        });
-
-            // Save document on ctrl/meta + s
-        editor.addShortcut('meta+s', 'Custom Save Document', () => {
-                console.log("Shortcut Ctrl+S triggered!");
-                saveDocument(); 
-            });
+            });        
         }
     });
 }
 
 function initPlainEditor(evaluated) {
-    console.log(evaluated);
     tinymce.remove('#editable-doc');
     const isDark = document.documentElement.classList.contains('dark');
 
@@ -194,6 +151,8 @@ function initPlainEditor(evaluated) {
         menubar: false,
         statusbar: false,
         toolbar: false,
+
+        plugins: 'saveShortcut',
         
         skin: isDark ? 'oxide-dark' : 'oxide',
         content_css: [(isDark ? 'dark' : 'default'), AppConfig.editorCss],
@@ -204,7 +163,8 @@ function initPlainEditor(evaluated) {
                 const body = editor.getBody();
                 
                 body.setAttribute('contenteditable', 'false');
-                clearMarks(body);
+                clearMarks(editor, body);
+
                 if (evaluated) {
                     return;
                 };
@@ -214,7 +174,6 @@ function initPlainEditor(evaluated) {
                 ratingCells.forEach(cell => {
                     cell.setAttribute('contenteditable', 'true');
                     cell.style.border = '2px solid #10b981'; 
-                    cell.style.minWidth = '50px'; // Ensure empty cells don't collapse
                 });
             });
 
@@ -237,28 +196,9 @@ function initPlainEditor(evaluated) {
                 const ratingCells = e.node.querySelectorAll('.calc-rating');
                 ratingCells.forEach(cell => {
                     cell.removeAttribute('contenteditable');
-                    
-                    // Strip the temporary visual highlights so they don't get saved
-                    cell.style.backgroundColor = '';
                     cell.style.border = '';
-                    cell.style.cursor = '';
-                    cell.style.minWidth = '';
                 });
             });
-
-            // 4. Save document shortcut
-            editor.addShortcut('meta+s', 'Custom Save Document', () => {
-                saveDocument(); 
-            });
         }
-    });
-}
-
-function clearMarks(body) {
-    const allClasses = ['.calc-rating', '.calc-row-avg', '.calc-total', '.calc-final-total'];
-
-    const markedCells = body.querySelectorAll(allClasses);
-    markedCells.forEach(cell => {
-        cell.removeAttribute('style');
     });
 }

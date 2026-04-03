@@ -8,7 +8,7 @@ function saveDocument() {
 
     savePromise = (async () => {
         const content = tinymce.get('editable-doc').getContent();
-        const title = document.getElementById('doc-title')?.value?.trim() || 'Untitled IPCR';
+        const title = document.getElementById('doc-title')?.value?.trim() || 'Untitled1 Document';
 
         const saveStatus = document.getElementById('save-status');
         if (saveStatus) {
@@ -23,21 +23,20 @@ function saveDocument() {
         formData.append('_method', 'PATCH');
         formData.append(AppConfig.csrfToken, AppConfig.csrfHash);
         
-        // From ducuments
+        // From documents
         const dateStart = document.getElementById('doc-date-start');
         const dateEnd = document.getElementById('doc-date-end');
 
         if (dateStart && dateEnd) {
-            console.log('afafdfdas');
             formData.append('doc_date_start', dateStart.value);
             formData.append('doc_date_end', dateEnd.value);
         }
 
-        try {
+        try {            
             const response = await axios.post(AppConfig.saveUrl, formData, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
-
+            
             const data = response.data;
 
             if (data.status === 'success') {
@@ -48,13 +47,16 @@ function saveDocument() {
                     saveStatus.innerText = '✓ Saved';
                     saveStatus.className = 'ml-3 text-[10px] uppercase tracking-widest font-bold transition-all text-emerald-500';
                 }
-                console.log('Saved successfully');
+            } else {
+                console.warn(data.message, data.errors);
             }
-            return data; 
+
+            return data;
 
         } catch (error) {
-            console.error('Save failed:', error.response?.data || error.message);
-            throw error; 
+            console.error('Failed at:', error);
+            console.error('Response:', error.response?.status, error.response?.data);
+            throw error;
         }
     })();
 
@@ -65,24 +67,75 @@ function saveDocument() {
     return savePromise;
 }
 
-async function prepareAndSubmit() {
-    const form = document.getElementById('submit-form');
+function saveOnExit() {
+    if (!AppState.isDirty) return;
 
+    const content = tinymce.get('editable-doc').getContent();
+    const title = document.getElementById('doc-title')?.value?.trim() || 'Untitled1 Document';
+
+    const formData = new FormData();
+    formData.append('id', AppConfig.docId);
+    formData.append('content', content);
+    formData.append('title', title);
+    formData.append('_method', 'PATCH');
+    formData.append(AppConfig.csrfToken, AppConfig.csrfHash);
+    
+    const dateStart = document.getElementById('doc-date-start');
+    const dateEnd = document.getElementById('doc-date-end');
+    if (dateStart && dateEnd) {
+        formData.append('doc_date_start', dateStart.value);
+        formData.append('doc_date_end', dateEnd.value);
+    }
+
+    fetch(AppConfig.saveUrl, {
+        method: 'POST',
+        body: formData,
+        keepalive: true,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    });
+
+    AppState.setDirty(false);
+}
+
+async function prepareAndSubmit() {
     try {
         if (AppState.isDirty || savePromise !== null) {
             console.log("Ensuring document is saved before submitting...");
             await saveDocument();
+            console.log("Document is fully saved. Submitting form...");
         }
-
-        console.log("Document is fully saved. Submitting form...");
-        form.submit();
+        await submit();
     } catch (error) {
         console.warn("Submission halted: Could not save the latest changes.");
     }
 }
 
+async function submit() {
+    const formData = new FormData();
+    formData.append('doc_id', AppConfig.docId);
+    formData.append(AppConfig.csrfToken, AppConfig.csrfHash);
+
+    try  {
+        const response = await axios.post(AppConfig.submitUrl, formData, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+
+        if (response.data.status === 'success') {
+            AppConfig.csrfHash = response.data.csrfHash;
+            console.log(response.data.message);
+            if (AppConfig.redirectUrl) window.location.href = AppConfig.redirectUrl;
+        } else {
+            console.log(response.data.message);
+        }
+    } catch (error) {
+        console.error('Submission failed:', error);
+    }
+}
+
 function autoSave() {
-    const autoSaveInterval = 10000; 
+    const autoSaveInterval = 2000; 
 
     setInterval(async () => {
         if (AppState.isDirty && !savePromise) {

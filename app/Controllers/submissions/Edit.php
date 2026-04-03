@@ -18,50 +18,80 @@ class Edit extends BaseController
 
     public function store() {
         $userId = session()->get('user_id');
-        $docId = $this->request->getPost('doc_id');
+        $docId  = $this->request->getPost('doc_id');
 
         $submissionModel = new \App\Models\SubmissionModel();
-        $documentModel = new \App\Models\DocumentModel();
+        $documentModel   = new \App\Models\DocumentModel();
 
         $sourceDoc = $documentModel->find($docId);
 
-        while (true) {
+        if (!$sourceDoc) {
+            return $this->response->setJSON([
+                'status'   => 'error',
+                'message'  => 'Document not found',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        $maxAttempts = 5;
+
+        for ($i = 0; $i < $maxAttempts; $i++) {
             $id = generate_short_id();
 
             if ($submissionModel->find($id) === null) {
-                $submissionModel->save([
-                    'id' => $id,
-                    'user_id' => $userId,
-                    'title' => $sourceDoc['title'],
-                    'content' => $sourceDoc['content'],
+                $saved = $submissionModel->save([
+                    'id'              => $id,
+                    'user_id'         => $userId,
+                    'title'           => $sourceDoc['title'],
+                    'content'         => $sourceDoc['content'],
                     'eval_date_start' => $sourceDoc['eval_date_start'],
-                    'eval_date_end' => $sourceDoc['eval_date_end']
+                    'eval_date_end'   => $sourceDoc['eval_date_end']
                 ]);
                 break;
             }
-        };
+        }
 
-        return redirect()->to(site_url('submissions?docs=all'));
+        if (!$saved) {
+            return $this->response->setJSON([
+                'status'   => 'error',
+                'message'  => 'Failed to create submission',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status'   => 'success',
+            'csrfHash' => csrf_hash()
+        ]);
     }
 
     public function patch() {
         $content = $this->request->getPost('content');
         $title   = $this->request->getPost('title');
         $id      = $this->request->getPost('id');
-        $message = 'Document updated successfully';
         $documentModel = new \App\Models\SubmissionModel();
+    
+            $saved = $documentModel->save([
+                'id'      => $id,
+                'title'   => $title,
+                'content' => $content,
+            ]);
 
-        $documentModel->save([
-            'id'      => $id,
-            'title'   => $title,
-            'content' => $content,
-        ]);
+            if (!$saved) {
+                return $this->response->setJSON([
+                    'status'   => 'error',
+                    'message'  => 'Validation failed',
+                    'errors'   => $documentModel->errors(),
+                    'csrfHash' => csrf_hash()
+                ]);
+            }
 
-        return $this->response->setJSON([
-            'status'  => 'success',
-            'message' => $message,
-            'csrfHash' => csrf_hash()
-        ]);
+            return $this->response->setJSON([
+                'status'   => 'success',
+                'message'  => 'Document updated successfully',
+                'csrfHash' => csrf_hash()
+            ]);
+
     }
 
     public function rated() {
@@ -69,11 +99,31 @@ class Edit extends BaseController
 
         $documentModel = new \App\Models\SubmissionModel();
 
-        $documentModel->save([
+        $saved = $documentModel->save([
             'id'       => $id,
             'is_rated' => true,
         ]);
 
-        return redirect()->to(site_url('submissions?docs=evaluated'));
+        try {
+            if (!$saved) {
+                return $this->response->setJSON([
+                    'status'  => 'error',
+                    'message' => 'Failed to save document',
+                    'errors'  => $documentModel->errors()
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'status'   => 'success',
+                'message'  => 'Document updated successfully',
+                'csrfHash' => csrf_hash()
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'status'   => 'error',
+                'message'  => $e->getMessage(),
+                'csrfHash' => csrf_hash()
+            ]);
+        }
     }
 }

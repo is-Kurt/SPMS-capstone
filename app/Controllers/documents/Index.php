@@ -9,30 +9,38 @@ class Index extends BaseController
 {
     public function index() {
         $userId = session()->get('user_id');
-
-        if (!$userId) {
-            return redirect()->to('/login');
-        }
-        
         $documentModel = new \App\Models\DocumentModel();
-        $filter = $this->request->getGet('docs');
+        $filter = $this->request->getGet('docs') ?? 'all';
 
-        $builder = $documentModel->db->table('documents d')
-            ->select('d.*, sd.collaborator_id')
+        $baseQuery = $documentModel->db->table('documents d')
+            ->select('d.*, sd.collaborator_id, u.email, u.username')
             ->join('shared_documents sd', 'sd.document_id = d.id AND sd.collaborator_id = ' . $userId, 'left')
-            ->where('(d.user_id = ' . $userId . ' OR sd.collaborator_id = ' . $userId . ')')
+            ->join('users u', 'u.id = d.user_id', 'left')
+            ->groupStart()
+                ->where('d.user_id', $userId)
+                ->orWhere('sd.collaborator_id', $userId)
+            ->groupEnd()
             ->orderBy('d.updated_at', 'DESC');
 
+        $allDocs = $baseQuery->get()->getResultArray();
+
+        $data['counts'] = [
+            'all'    => count($allDocs),
+            'owned'  => count(array_filter($allDocs, fn($d) => $d['user_id'] == $userId)),
+            'shared' => count(array_filter($allDocs, fn($d) => $d['collaborator_id'] == $userId)),
+        ];
+
         if ($filter === 'shared') {
-            $builder->where('sd.collaborator_id', $userId);
+            $data['docs'] = array_values(array_filter($allDocs, fn($d) => $d['collaborator_id'] == $userId));
         } elseif ($filter === 'owned') {
-            $builder->where('d.user_id', $userId);
-        } elseif ($filter !== 'all') {
+            $data['docs'] = array_values(array_filter($allDocs, fn($d) => $d['user_id'] == $userId));
+        } elseif ($filter === 'all') {
+            $data['docs'] = $allDocs;
+        } else {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
         $data['filter'] = $filter;
-        $data['docs'] = $builder->get()->getResultArray();
 
         return view('documents/index', $data);
     }

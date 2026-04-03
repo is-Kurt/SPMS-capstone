@@ -1,27 +1,72 @@
-async function deleteDocument(documentId) {
-    if (!confirm('Delete this document?')) return;
+function pagination() {
+    // .doc-row
+    document.addEventListener('DOMContentLoaded', () => {
+        let currentPage = 1;
+        const rowsPerPage = 10;
+        const prevBtn = document.getElementById('prev-page');
+        const nextBtn = document.getElementById('next-page');
+        const pageInfo = document.getElementById('page-info');
+        const scrollContainer = document.querySelector('.custom-scrollbar');
 
-    const formData = new FormData();
-    formData.append('id', documentId);
-    formData.append('_method', 'DELETE');
-    formData.append(AppConfig.csrfToken, AppConfig.csrfHash);
-
-    try {
-        const response = await axios.post(AppConfig.deleteUrl, formData);
-        if (response.data.status === 'success') {
-            AppConfig.csrfHash = response.data.csrfHash;
-            document.querySelector(`[data-doc-id="${documentId}"]`).remove();
-
-            const remaining = document.querySelectorAll('[data-doc-id]');
-            if (remaining.length === 0) {
-                document.getElementById('table-body-container').innerHTML = `
-                    <div class="p-20 text-center text-sub-text italic">
-                        No documents found in your account.
-                    </div>
-                `;
+        function updatePagination() {
+            const rows = document.querySelectorAll('.doc-row'); 
+            
+            if (rows.length === 0) {
+                window.location.reload();
+                return;
             }
+
+            const totalPages = Math.ceil(rows.length / rowsPerPage);
+
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
+            }
+
+            const start = (currentPage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+
+            rows.forEach((row, index) => {
+                if (index >= start && index < end) {
+                    row.style.display = ''; 
+                } else {
+                    row.style.display = 'none'; 
+                }
+            });
+
+            const currentEnd = Math.min(end, rows.length);
+            if (pageInfo) {
+                pageInfo.innerHTML = `Showing <span class="text-text">${start + 1} to ${currentEnd}</span> of <span class="text-text">${rows.length}</span>`;
+            }
+
+            if (prevBtn) prevBtn.disabled = currentPage === 1;
+            if (nextBtn) nextBtn.disabled = currentPage === totalPages;
         }
-    } catch (error) {
-        console.error('Delete failed:', error);
-    }
+
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    updatePagination();
+                    if (scrollContainer) scrollContainer.scrollTop = 0;
+                }
+            });
+        }
+
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                const rows = document.querySelectorAll('.doc-row');
+                if (currentPage < Math.ceil(rows.length / rowsPerPage)) {
+                    currentPage++;
+                    updatePagination();
+                    if (scrollContainer) scrollContainer.scrollTop = 0;
+                }
+            });
+        }
+
+        document.addEventListener('item-deleted', () => {
+            updatePagination();
+        });
+        
+        updatePagination();
+    });
 }

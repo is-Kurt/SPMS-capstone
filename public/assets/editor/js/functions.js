@@ -118,6 +118,7 @@ function calculateAllTables() {
     }
 
     console.log(`Calculated ${groupsCalculated} groups. Final Rating: ${grandTotalScore.toFixed(2)}%`);
+    tinymce.get('editable-doc').save();
 }
 
 function autoResize(el) {
@@ -130,6 +131,16 @@ function restoreTitle(el, defaultTitle) {
     el.value = defaultTitle;
     }
     autoResize(el);
+}
+
+function clearMarks(editor, body) {
+    const tableTools = new TableTools(editor);
+    const allAttribs = tableTools.attrNames;
+
+    const markedCells = body.querySelectorAll(allAttribs);
+    markedCells.forEach(cell => {
+        cell.removeAttribute('style');
+    });
 }
 
 function cellInspector(editor) {
@@ -158,4 +169,33 @@ function cellInspector(editor) {
             console.groupEnd();
         }
     });
+}
+
+function updateDisplayDate(input, spanId) {
+    if (!input.value) return;
+    
+    const date = new Date(input.value);
+
+    let formatted = new Intl.DateTimeFormat('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    }).format(date);
+    
+    formatted = formatted.replace(' at ', ' ').toLowerCase();
+    formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+
+    document.getElementById(spanId).innerText = formatted;
+
+    if (input.id === 'doc-date-start') {
+        const endInput = document.getElementById('doc-date-end');
+        endInput.min = input.value;
+        if (endInput.value < input.value) {
+            endInput.value = input.value;
+            updateDisplayDate(endInput, 'display-date-end');
+        }
+    }
 }
