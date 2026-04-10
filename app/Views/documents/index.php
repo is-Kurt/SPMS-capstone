@@ -107,7 +107,10 @@
         csrfHash: '<?= csrf_hash() ?>',
     };
 
-    pagination();
+    document.addEventListener('DOMContentLoaded', () => {
+        pagination();
+    });
+    
 </script>
 
 <?= $this->endSection() ?>

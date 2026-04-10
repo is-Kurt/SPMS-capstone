@@ -2,11 +2,16 @@ class TableTools {
     constructor(editor) {
         this.editor = editor;
         this.activeSelectionQuery = 'td[data-mce-selected="1"], th[data-mce-selected="1"], .custom-selected';
-        this.attrNames = ['.calc-rating', '.calc-row-avg', '.calc-total', '.calc-final-total'];
+        this.classNames = ['calc-rating', 'calc-row-avg', 'calc-total', 'calc-final-total'];
+        this.attrNames = ['data-group-id', 'data-cell-weight'];
     }
 
     clearMathClasses(cell) {
-        this.editor.dom.removeClass(cell, this.attrNames.join(' '));
+        this.editor.dom.removeClass(cell, this.classNames.join(' '));
+        this.attrNames.forEach(attr => {
+            this.editor.dom.setAttrib(cell, attr, null);
+        });
+        
         this.editor.dom.setAttrib(cell, 'style', null); 
     }
 
@@ -28,8 +33,9 @@ class TableTools {
                     this.editor.dom.setAttrib(cell, 'data-mce-selected', null);
                     this.editor.dom.removeClass(cell, 'custom-selected');
                 } else {
+                    console.log('dsasad');
                     this.editor.dom.addClass(cell, markType);
-                    this.editor.dom.setStyle(cell, 'background-color', markColor); 
+                    this.editor.dom.setStyle(cell, 'background-color', markColor)
                 }
             });
         }
@@ -94,7 +100,7 @@ class TableTools {
         } 
     }
 
-     cellPanelInput(title, markType, attrName, minValue, maxValue) {
+    cellPanelInput(title, markType, attrName, minValue, maxValue) {
         let selectedCells = this.editor.dom.select(this.activeSelectionQuery);
         
         if (selectedCells.length === 0) {

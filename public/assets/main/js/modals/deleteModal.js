@@ -36,7 +36,7 @@ async function confirmDelete() {
             const row = document.querySelector(`[data-doc-id="${deleteTargetId}"]`);
             if (row) {
                 row.remove();
-                document.dispatchEvent(new CustomEvent('item-deleted'));
+                document.dispatchEvent(new CustomEvent('item-deleted'));   
             }
             
             deleteModal.close();

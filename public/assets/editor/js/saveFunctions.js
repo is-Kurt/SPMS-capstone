@@ -1,4 +1,5 @@
 let savePromise = null;
+let submitting = false;
 
 function saveDocument() {
     if (savePromise) {
@@ -36,10 +37,8 @@ function saveDocument() {
             const response = await axios.post(AppConfig.saveUrl, formData, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
-            
-            const data = response.data;
 
-            if (data.status === 'success') {
+            if (response.data.status === 'success') {
                 AppState.setDirty(false);
                 AppConfig.csrfHash = response.data.csrfHash;
 
@@ -51,7 +50,6 @@ function saveDocument() {
                 console.warn(data.message, data.errors);
             }
 
-            return data;
 
         } catch (error) {
             console.error('Failed at:', error);
@@ -101,7 +99,7 @@ function saveOnExit() {
 
 async function prepareAndSubmit() {
     try {
-        if (AppState.isDirty || savePromise !== null) {
+        if (AppState.isDirty || savePromise === null) {
             console.log("Ensuring document is saved before submitting...");
             await saveDocument();
             console.log("Document is fully saved. Submitting form...");
@@ -113,11 +111,14 @@ async function prepareAndSubmit() {
 }
 
 async function submit() {
+     if (submitting) return;
+
     const formData = new FormData();
     formData.append('doc_id', AppConfig.docId);
     formData.append(AppConfig.csrfToken, AppConfig.csrfHash);
 
     try  {
+        submitting = true;
         const response = await axios.post(AppConfig.submitUrl, formData, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
@@ -126,6 +127,8 @@ async function submit() {
             AppConfig.csrfHash = response.data.csrfHash;
             console.log(response.data.message);
             if (AppConfig.redirectUrl) window.location.href = AppConfig.redirectUrl;
+
+            submitting = false;
         } else {
             console.log(response.data.message);
         }

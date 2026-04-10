@@ -40,7 +40,6 @@ class Index extends BaseController
             'evaluated'   => $submissionModel->where('user_id', $userId)->where('is_rated', true)->countAllResults(),
         ];
 
-        
         $data['docs'] = $docs;
         $data['filter'] = $filter;
         $data['now'] = $now;

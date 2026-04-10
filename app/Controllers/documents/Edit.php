@@ -43,27 +43,35 @@ class Edit extends BaseController
         $newId = null;
         $maxAttempts = 5;
 
-        $existingDocs = $documentModel->where('user_id', session()->get('user_id'))
-                                      ->groupStart()
-                                          ->where('title', $baseTitle)
-                                          ->orLike('title', $baseTitle . ' (', 'after')
-                                      ->groupEnd()
-                                      ->findAll();
-                                      
+        $userId = session()->get('user_id');
+
+        $existingDocs = $documentModel->select('documents.*')
+                                    ->join('shared_documents sd', 'sd.document_id = documents.id', 'left')
+                                    ->groupStart()
+                                        ->where('documents.user_id', $userId)
+                                        ->orWhere('sd.collaborator_id', $userId)
+                                    ->groupEnd()
+                                    ->groupStart()
+                                        ->where('documents.title', $baseTitle)
+                                        ->orLike('documents.title', $baseTitle . ' (', 'after')
+                                    ->groupEnd()
+                                    ->findAll();
+
         $exactMatchFound = false;
-        $maxSuffix = 0;
+        $baseMatchFound = false;
+        $usedSuffixes = [];
 
         foreach ($existingDocs as $doc) {
             $existingTitle = $doc['title'];
 
             // If we find the exact base string, flag it
             if ($existingTitle === $baseTitle) {
+                $baseMatchFound = true;
                 $exactMatchFound = true;
                 continue;
             }
 
-            // Regex: Look ONLY at the very end of the string for a space, a parenthesis, numbers, and a closing parenthesis.
-            // e.g., matches " (1)", " (42)", but ignores "(1) Hello"
+            // Regex: Look ONLY at the very end of the string
             if (preg_match('/ \((\d+)\)$/', $existingTitle, $matches)) {
                 $number = (int)$matches[1];
                 $suffixLength = strlen(' (' . $number . ')');
@@ -72,20 +80,27 @@ class Edit extends BaseController
                 $prefix = substr($existingTitle, 0, -$suffixLength);
                 
                 if ($prefix === $baseTitle) {
-                    $exactMatchFound = true;
-                    // Keep track of the highest number we've seen
-                    if ($number > $maxSuffix) {
-                        $maxSuffix = $number;
-                    }
+                    // Save this number as a "key" in our array so we know it is taken
+                    $usedSuffixes[$number] = true;
                 }
             }
         }
 
         // 4. Construct the final safe title
         $finalTitle = $baseTitle;
+        
         if ($exactMatchFound) {
-            // Add 1 to the highest number found
-            $finalTitle = $baseTitle . ' (' . ($maxSuffix + 1) . ')';
+            if (!$baseMatchFound) return;
+
+            $nextSuffix = 1;
+            
+            // Keep counting up until we find a number that is NOT in our used list
+            while (isset($usedSuffixes[$nextSuffix])) {
+                $nextSuffix++;
+            }
+            
+            // Add the lowest available gap number
+            $finalTitle = $baseTitle . ' (' . $nextSuffix . ')';
         }
 
         // 5. Generate ID and Save
@@ -108,19 +123,19 @@ class Edit extends BaseController
             return $this->response->setJSON([
                 'status'   => 'success',
                 'id'       => $newId,
-                'csrfHash' => csrf_hash()
+                'csrfHash' => csrf_hash(),
+                'docs' => $existingDocs
             ]);
         }
 
         return $this->response->setJSON([
             'status'   => 'error',
             'message'  => 'Could not generate a unique ID. Please try again.',
-            'csrfHash' => csrf_hash()
+            'csrfHash' => csrf_hash(),
         ])->setStatusCode(500);
     }
 
     public function patch() {
-        sleep(1);
         $content = $this->request->getPost('content');
         $title   = $this->request->getPost('title');
         $id      = $this->request->getPost('id');

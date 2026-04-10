@@ -33,8 +33,61 @@ class Edit extends BaseController
             ]);
         }
 
-        $maxAttempts = 5;
+        $baseTitle = $sourceDoc['title'];
+        $existingDocs = $submissionModel->where('user_id', $userId)
+                                        ->groupStart()
+                                            ->where('title', $baseTitle)
+                                            ->orLike('title', $baseTitle . ' (', 'after')
+                                        ->groupEnd()
+                                        ->findAll();
 
+        $exactMatchFound = false;
+        $baseMatchFound = false;
+        $usedSuffixes = [];
+
+        foreach ($existingDocs as $doc) {
+            $existingTitle = $doc['title'];
+
+            // If we find the exact base string, flag it
+            if ($existingTitle === $baseTitle) {
+                $baseMatchFound = true;
+                $exactMatchFound = true;
+                continue;
+            }
+
+            // Regex: Look ONLY at the very end of the string
+            if (preg_match('/ \((\d+)\)$/', $existingTitle, $matches)) {
+                $number = (int)$matches[1];
+                $suffixLength = strlen(' (' . $number . ')');
+                
+                // Cut off the suffix and verify the prefix is exactly our base title
+                $prefix = substr($existingTitle, 0, -$suffixLength);
+                
+                if ($prefix === $baseTitle) {
+                    // Save this number as a "key" in our array so we know it is taken
+                    $usedSuffixes[$number] = true;
+                }
+            }
+        }
+
+        // 4. Construct the final safe title
+        $finalTitle = $baseTitle;
+        
+        if ($exactMatchFound) {
+            if (!$baseMatchFound) return;
+
+            $nextSuffix = 1;
+            
+            // Keep counting up until we find a number that is NOT in our used list
+            while (isset($usedSuffixes[$nextSuffix])) {
+                $nextSuffix++;
+            }
+            
+            // Add the lowest available gap number
+            $finalTitle = $baseTitle . ' (' . $nextSuffix . ')';
+        }
+
+        $maxAttempts = 5;
         for ($i = 0; $i < $maxAttempts; $i++) {
             $id = generate_short_id();
 
@@ -42,7 +95,7 @@ class Edit extends BaseController
                 $saved = $submissionModel->save([
                     'id'              => $id,
                     'user_id'         => $userId,
-                    'title'           => $sourceDoc['title'],
+                    'title'           => $finalTitle,
                     'content'         => $sourceDoc['content'],
                     'eval_date_start' => $sourceDoc['eval_date_start'],
                     'eval_date_end'   => $sourceDoc['eval_date_end']

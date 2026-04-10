@@ -135,7 +135,7 @@ function restoreTitle(el, defaultTitle) {
 
 function clearMarks(editor, body) {
     const tableTools = new TableTools(editor);
-    const allAttribs = tableTools.attrNames;
+    const allAttribs = tableTools.classNames;
 
     const markedCells = body.querySelectorAll(allAttribs);
     markedCells.forEach(cell => {
@@ -198,4 +198,13 @@ function updateDisplayDate(input, spanId) {
             updateDisplayDate(endInput, 'display-date-end');
         }
     }
+}
+
+function disableSubmitBtn(text) {
+    const submitBtn = document.getElementById('submit-btn');
+
+    if (!submitBtn) return;
+
+    submitBtn.innerText = text;
+    submitBtn.disabled = true;
 }

@@ -40,3 +40,60 @@ tinymce.PluginManager.add('cellSelect', function(editor) {
         }
     });
 })
+
+tinymce.PluginManager.add('disableBackgroundCloning', function(editor) {
+    editor.on('ExecCommand', function (e) {
+            
+            // ==========================================
+            // 1. HANDLE ROW INSERTIONS
+            // ==========================================
+            if (e.command === 'mceTableInsertRowAfter' || e.command === 'mceTableInsertRowBefore') {
+                const newRow = editor.dom.getParent(editor.selection.getStart(), 'tr');
+                
+                if (newRow) {
+                    editor.dom.setStyle(newRow, 'background-color', '');
+                    const cells = newRow.querySelectorAll('td, th');
+                    cells.forEach(cell => {
+                        editor.dom.setStyle(cell, 'background-color', '');
+                    });
+                }
+            }
+
+            // ==========================================
+            // 2. HANDLE COLUMN INSERTIONS
+            // ==========================================
+            if (e.command === 'mceTableInsertColAfter' || e.command === 'mceTableInsertColBefore') {
+                // Grab the cell where the cursor landed (this is the newly created cell)
+                const currentCell = editor.dom.getParent(editor.selection.getStart(), 'td, th');
+                
+                if (currentCell) {
+                    // Find the row it belongs to
+                    const currentRow = editor.dom.getParent(currentCell, 'tr');
+                    
+                    // Calculate the index of our new column (e.g., index 2 = 3rd column)
+                    const cellIndex = Array.from(currentRow.children).indexOf(currentCell);
+                    
+                    // Find the parent table so we can loop through it
+                    const table = editor.dom.getParent(currentRow, 'table');
+                    
+                    if (table && cellIndex > -1) {
+                        // Loop through every row in the table
+                        const rows = table.querySelectorAll('tr');
+                        rows.forEach(row => {
+                            // Grab the cell at the exact index of our new column
+                            const cellInColumn = row.children[cellIndex];
+                            
+                            if (cellInColumn) {
+                                // Strip the background color
+                                editor.dom.setStyle(cellInColumn, 'background-color', '');
+                                
+                                // Optional: If you use classes for background colors, remove them here:
+                                // editor.dom.removeClass(cellInColumn, 'your-custom-bg-class');
+                            }
+                        });
+                    }
+                }
+            }
+
+        });
+});

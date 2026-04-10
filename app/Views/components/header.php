@@ -3,7 +3,7 @@
         <div class="flex h-16 items-center justify-between">
             
             <div class="hidden md:flex items-center">
-                <div class="flex-shrink-0 flex items-center gap-2 mr-6 text-white">
+                <div class="flex-shrink-0 flex items-center gap-1 mr-6 text-white">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
@@ -22,9 +22,9 @@
                         foreach ($nav_items as $uri => $label):
                             $is_active = ($current_uri === $uri) || ($uri !== '' && strpos($current_uri, $uri) === 0);
                     ?>
-                        <a href="<?= site_url($uri . ($uri === 'documents' || $uri === 'submissions' ? '?docs=all' : '')) ?>" 
+                        <a href="<?= site_url($uri) ?>" 
                             class="px-4 py-2 transition-all duration-200 <?= $is_active ? 
-                            'rounded-xl bg-black/10 text-white shadow-inner' : 'rounded-xl hover:bg-white/10 hover:text-white'?>">
+                            'rounded-xl bg-black/15 text-white shadow-inner' : 'rounded-xl hover:bg-black/10 hover:text-white'?>">
                             <?= $label ?>
                         </a>
                     <?php endforeach; ?>

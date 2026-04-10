@@ -14,7 +14,7 @@ function initEditor() {
         
         font_family_formats: 'Roboto=Roboto, Helvetica, Arial, sans-serif; Sans Serif=sans-serif; Andale Mono=andale mono,times; Arial=arial,helvetica,sans-serif; Arial Black=arial black,avant garde; Book Antiqua=book antiqua,palatino; Comic Sans MS=comic sans ms,sans-serif; Courier New=courier new,courier; Georgia=georgia,palatino; Helvetica=helvetica; Impact=impact,chicago; Symbol=symbol; Tahoma=tahoma,arial,helvetica,sans-serif; Terminal=terminal,monaco; Times New Roman=times new roman,times; Trebuchet MS=trebuchet ms,geneva; Verdana=verdana,geneva;',
         
-        plugins: 'table lists advlist saveShortcut setDirty cellSelect',
+        plugins: 'table lists advlist saveShortcut setDirty cellSelect disableBackgroundCloning',
         toolbar_mode: 'wrap',
         toolbar: [
             'undo redo | fontfamily fontsize blocks | bold italic underline strikethrough | forecolor backcolor tablecellbackgroundcolor',
@@ -38,27 +38,26 @@ function initEditor() {
             editor.ui.registry.addButton('toggleRating', {
                 text: '🎯 Rating',
                 tooltip: 'Select cells for input',
-                onAction: () => tableTools.modifyCell('calc-rating', '#d4edda')
+                onAction: () => tableTools.modifyCell('calc-rating', 'rgba(16, 185, 129, 0.25)') 
             });
 
             editor.ui.registry.addButton('toggleRowAvg', {
                 text: '🟦 Row Avg',
                 tooltip: 'Displays the average of the Q, E, T ratings in this row',
-                onAction: () => tableTools.modifyCell('calc-row-avg', '#cce5ff')
+                onAction: () => tableTools.modifyCell('calc-row-avg', 'rgba(14, 165, 233, 0.25)') 
             });
 
             editor.ui.registry.addButton('toggleTotal', {
                 text: '🧮 Mark as Total',
                 tooltip: 'Display the weighted total for this table',
-                onAction: () => tableTools.modifyCell('calc-total', '#fff3cd')
+                onAction: () => tableTools.modifyCell('calc-total', 'rgba(245, 158, 11, 0.25)') 
             });
 
             editor.ui.registry.addButton('toggleFinalRating', {
                 text: '🧮 Mark as Final Rating',
                 tooltip: 'Display the final rating for this table',
-                onAction: () => tableTools.modifyCell('calc-final-total', '#dbcfa7')
+                onAction: () => tableTools.modifyCell('calc-final-total', 'rgba(139, 92, 246, 0.25)') 
             });
-
             editor.ui.registry.addButton('clearMarks', {
                 text: '🧹 Clear Marks',
                 tooltip: 'Removes all markers from the selected area',
@@ -169,11 +168,10 @@ function initPlainEditor(evaluated) {
                     return;
                 };
 
-                // Find all the rating cells and make ONLY them editable
                 const ratingCells = body.querySelectorAll('.calc-rating');
                 ratingCells.forEach(cell => {
                     cell.setAttribute('contenteditable', 'true');
-                    cell.style.border = '2px solid #10b981'; 
+                    cell.style.backgroundColor = 'rgba(16, 185, 129, 0.25)'; 
                 });
             });
 
@@ -188,15 +186,13 @@ function initPlainEditor(evaluated) {
                 }
             });
 
-            // 3. THE CLEANUP: Prevent these temporary lock states from saving to your database
             editor.on('PreProcess', function (e) {
-                // e.node represents the HTML right before it is extracted for saving
                 e.node.removeAttribute('contenteditable');
                 
                 const ratingCells = e.node.querySelectorAll('.calc-rating');
                 ratingCells.forEach(cell => {
                     cell.removeAttribute('contenteditable');
-                    cell.style.border = '';
+                    cell.style.backgroundColor = '';
                 });
             });
         }

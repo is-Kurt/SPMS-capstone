@@ -5,11 +5,16 @@
     
     <div class="flex-none flex items-center justify-between py-2 px-6 bg-bg">
         <div class="flex items-center gap-3">
-            <a href="<?= site_url('documents?docs=all') ?>" class="text-text hover:text-accent transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-                </svg>
+            <a href="<?= site_url('documents') ?>">
+                <div class="flex-shrink-0 flex items-center gap-1 mr-6 text-white hover:text-accent transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span class="font-black tracking-tighter text-xl uppercase">IPCR</span>
+                </div>
             </a>
+
+            
 
             <input type="text" id="doc-title" value="<?= esc($doc['title']) ?>"
                 class="bg-transparent border-none font-bold text-sm text-text focus:ring-0 px-2 py-1"
@@ -68,7 +73,7 @@
                 </div>
             </div>
 
-            <button type="button" onclick="prepareAndSubmit()" class="bg-accent hover:bg-accent-hover text-accent-text text-s font-bold py-2 px-12 rounded-lg shadow-sm transition-all cursor-pointer">
+            <button type="button" onclick="prepareAndSubmit()" class="bg-accent hover:bg-accent-hover text-white text-xs font-bold py-2.5 px-6 rounded-lg shadow-lg shadow-accent/20 transition-all active:scale-[0.98] cursor-pointer">
                 Submit
             </button>
         </div>
