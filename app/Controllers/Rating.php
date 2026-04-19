@@ -48,12 +48,19 @@ class Rating extends BaseController
 
         return view('rating/show', $data);
     }
+public function destroy() {
+        if (session()->get('role') !== 'admin') {
+            return $this->response->setJSON([
+                'status'  => 'error', 
+                'message' => 'Unauthorized'
+            ]);
+        }
 
-    public function destroy() {
-        // Reusing the 'doc_id' parameter sent by your existing deleteModal.js
         $ratingId = $this->request->getPost('doc_id'); 
         
-        $ratingModel = new \App\Models\RatingModel();
+        $ratingModel     = new \App\Models\RatingModel();
+        $userRatingModel = new \App\Models\UserRatingModel();
+        $documentModel   = new \App\Models\DocumentModel();
         
         $rating = $ratingModel->find($ratingId);
         
@@ -64,6 +71,21 @@ class Rating extends BaseController
             ]);
         }
 
+        // 1. Fetch all the linked user_ratings for this specific batch
+        $userRatings = $userRatingModel->where('rating_id', $ratingId)->findAll();
+        
+        // Extract just the document IDs into a clean array
+        $docIds = array_column($userRatings, 'document_id');
+
+        // 2. Delete ALL the cloned documents from the employees' accounts!
+        if (!empty($docIds)) {
+            $documentModel->whereIn('id', $docIds)->delete();
+        }
+
+        // 3. Manually delete the junction rows (This fixes your SQLite orphaned row bug!)
+        $userRatingModel->where('rating_id', $ratingId)->delete();
+
+        // 4. Finally, delete the parent folder
         $ratingModel->delete($ratingId);
 
         return $this->response->setJSON([

@@ -21,10 +21,11 @@ class CreateRatingsTable extends Migration
             'title' => [
                 'type'           => 'VARCHAR',
                 'constraint'     => 255,
+                'null'           => true,
             ],
             'created_at' => [
-                    'type'           => 'DATETIME',
-                    'null'           => true,
+                'type'           => 'DATETIME',
+                'null'           => true,
             ],
             'deleted_at' => [
                 'type'           => 'DATETIME',
@@ -41,6 +42,6 @@ class CreateRatingsTable extends Migration
 
     public function down()
     {
-        $this->forge->dropTabke('ratings');
+        $this->forge->dropTable('ratings');
     }
 }

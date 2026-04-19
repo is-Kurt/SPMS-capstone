@@ -167,6 +167,9 @@ class Document extends BaseController
             ]);
         }
 
+        $userRatingModel = new \App\Models\UserRatingModel();
+        $userRatingModel->where('document_id', $doc_id)->delete();
+        
         $documentModel->delete($doc_id);
 
         return $this->response->setJSON([

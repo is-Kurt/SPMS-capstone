@@ -26,10 +26,11 @@ class CreateUserRatingsTable extends Migration
             'remarks' => [
                 'type'           => 'VARCHAR',
                 'constraint'     => 255,
+                'null'           => true,
             ],
             'created_at' => [
-                    'type'           => 'DATETIME',
-                    'null'           => true,
+                'type'           => 'DATETIME',
+                'null'           => true,
             ],
             'deleted_at' => [
                 'type'           => 'DATETIME',
@@ -49,6 +50,6 @@ class CreateUserRatingsTable extends Migration
 
     public function down()
     {
-        $this->forge->createTable('user_ratings');
+        $this->forge->dropTable('user_ratings');
     }
 }
