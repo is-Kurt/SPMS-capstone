@@ -3,10 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <link rel="preload" href="<?= base_url('assets/fonts/Roboto/Roboto-VariableFont_wdth,wght.ttf') ?>" as="font" type="font/ttf" crossorigin>
-    <link rel="stylesheet" href="<?= base_url('assets/main/css/style.css') ?>">
-    <script src="<?= base_url('assets/tinymce/tinymce.min.js') ?>"></script>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="<?= base_url('assets/css/main/style.css') ?>">
+
+    <script src="<?= base_url('assets/vendor/tinymce/tinymce.min.js') ?>"></script>
+    <script src="<?= base_url('assets/vendor/axios/dist/axios.min.js') ?>"></script>
+
+    <meta name="csrf-token-name" content="<?= csrf_token() ?>">
+    <meta name="csrf-token-hash" content="<?= csrf_hash() ?>">
+
     <title>IPCR System</title>
 </head>
 <body class="h-full bg-surface text-text antialiased">
@@ -31,6 +37,9 @@
             }
         });
     </script>
-    <script src="<?= base_url('assets/main/js/header.js') ?>"></script>
+    
+    <script src="<?= base_url('assets/js/main/header.js') ?>"></script>
+    <script src="<?= base_url('assets/js/axios/config.js') ?>"></script>
+    <script src="<?= base_url('assets/js/axios/api.js') ?>"></script>
 </body>
 </html>

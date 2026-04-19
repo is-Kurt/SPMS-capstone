@@ -10,28 +10,41 @@ $routes->get('/test', 'Test::index');
 $routes->post('/test/importWordTable', 'Test::importWordTable');
 
 $routes->group('', ['filter' => 'auth'], function($routes) {
-    $routes->get('/', 'Home::index');
+    $routes->get('ratings', 'Rating', ['filter' => 'admin']);
+    $routes->get('rating', 'Rating::show', ['filter' => 'admin']);
+    $routes->delete('rating', 'Rating::destroy', ['filter' => 'admin']);
+    $routes->post('rating/saveRemark', 'Rating::saveRemark', ['filter' => 'admin']);
 
-    $routes->get('documents', 'Documents\Index::index');
-    $routes->delete('documents', 'Documents\Index::delete');
-    $routes->post('documents/share', 'Documents\Index::share');
-    $routes->get('document', 'Documents\Edit::index');
-    $routes->patch('document', 'Documents\Edit::patch');
-    $routes->post('document', 'Documents\Edit::store');
+    // Document
+    $routes->get('documents', 'Document');
 
-    $routes->get('submissions', 'Submissions\Index::index');
-    $routes->delete('submissions', 'Submissions\Index::delete');
-    $routes->get('submission', 'Submissions\Edit::index');
-    $routes->post('submission', 'Submissions\Edit::store');
-    $routes->patch('submission', 'Submissions\Edit::patch');
-    $routes->post('submission/rated', 'Submissions\Edit::rated');
+    $routes->get('document', 'Document::show');
+    $routes->patch('document', 'Document::update');
+    $routes->post('document', 'Document::store');
+    $routes->delete('document', 'Document::destroy');
+    $routes->post('document/share', 'Document::share');
+    $routes->post('document/send', 'Document::send', ['filter' => 'admin']);
+    $routes->get('document/count', 'Document::count');
 
-    $routes->get('users/search', 'Auth\Users::search');
+    // Submission
+    $routes->get('submissions', 'Submission');
+
+    $routes->delete('submission', 'Submission::destroy');
+    $routes->get('submission', 'Submission::show');
+    $routes->post('submission', 'Submission::store');
+    $routes->patch('submission', 'Submission::patch');
+    $routes->post('submission/rate', 'Submission::rate');
+    $routes->get('submission/count', 'Submission::count');
+
+    $routes->get('user/find', 'User::find');
+
+    $routes->delete('login', 'Auth\Session::destroy');
 });
 
+$routes->group('', ['filter' => 'guest'], function($routes) {
     $routes->get('signup', 'Auth\Register::index');
     $routes->post('signup', 'Auth\Register::store');
     
     $routes->get('login', 'Auth\Session::index');
     $routes->post('login', 'Auth\Session::edit');
-    $routes->delete('login', 'Auth\Session::destroy');
+});

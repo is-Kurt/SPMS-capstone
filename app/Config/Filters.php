@@ -35,6 +35,10 @@ class Filters extends BaseFilters
         'pagecache'     => PageCache::class,
         'performance'   => PerformanceMetrics::class,
         'auth' => \App\Filters\AuthFilter::class,
+        'guest' => \App\Filters\GuestFilter::class,
+        'admin' => \App\Filters\AdminFilter::class,
+        'evaluator' => \App\Filters\EvaluatorFilter::class,
+        'csrf_update' => \App\Filters\CsrfHeaderFilter::class,
     ];
 
     /**
@@ -73,13 +77,14 @@ class Filters extends BaseFilters
      */
     public array $globals = [
         'before' => [
-            // 'honeypot',
-            // 'csrf',
+            'honeypot',
+            'csrf',
             // 'invalidchars',
         ],
         'after' => [
-            // 'honeypot',
-            // 'secureheaders',
+            'honeypot',
+            'secureheaders',
+            'csrf_update'
         ],
     ];
 

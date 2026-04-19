@@ -6,13 +6,19 @@ use CodeIgniter\Model;
 
 class SubmissionModel extends Model
 {
-    protected $table            = 'submissions';
-    protected $primaryKey       = 'id';
-    protected $useAutoIncrement = false;
+   protected $table            = 'submissions';
+    protected $primaryKey       = 'id'; 
+    protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['id', 'content', 'title', 'user_id', 'is_rated', 'date_rated', 'eval_date_start', 'eval_date_end'];
+    protected $allowedFields    = [
+        'document_id', 
+        'is_rated', 
+        'final_rating', 
+        'submitted_at', 
+        'rated_at'
+    ];
 
     protected bool $allowEmptyInserts = false;
     protected bool $updateOnlyChanged = true;
@@ -23,8 +29,8 @@ class SubmissionModel extends Model
     // Dates
     protected $useTimestamps = true;
     protected $dateFormat    = 'datetime';
-    protected $createdField  = 'created_at';
-    protected $updatedField  = 'updated_at';
+    protected $createdField  = '';
+    protected $updatedField  = '';
     protected $deletedField  = 'deleted_at';
 
     // Validation

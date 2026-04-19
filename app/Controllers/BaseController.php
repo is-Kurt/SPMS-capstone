@@ -40,5 +40,31 @@ abstract class BaseController extends Controller
         parent::initController($request, $response, $logger);
         // Preload any models, libraries, etc, here.
         // $this->session = service('session');
+
+        $this->restoreSessionFromCookie();
+    }
+
+    private function restoreSessionFromCookie() {
+        if (session()->get('isLoggedIn')) {
+            return;
+        }
+
+        $token = $_COOKIE['remember_me'] ?? null;
+
+        if ($token) {
+            $userModel = new \App\Models\UserModel();
+            $user = $userModel->where('remember_token', hash('sha256', $token))
+                              ->where('remember_token_expiry >', date('Y-m-d H:i:s'))
+                              ->first();
+
+            if ($user) {
+                session()->set([
+                    'user_id'    => $user['id'],
+                    'email'      => $user['email'],
+                    'username'   => $user['username'],
+                    'isLoggedIn' => true
+                ]);
+            }
+        }
     }
 }

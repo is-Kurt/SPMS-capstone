@@ -1,11 +1,10 @@
 {
   "scripts": {
-    "watch:main": "npx @tailwindcss/cli -i ./public/assets/main/css/input.css -o ./public/assets/main/css/style.css --watch",
-    "watch:editor": "npx @tailwindcss/cli -i ./public/assets/editor/css/editor-input.css -o ./public/assets/editor/css/editor.css --watch",
-    "dev": "concurrently \"npm run watch:main\" \"npm run watch:editor\""
+    "dev": "npx @tailwindcss/cli -i ./public/assets/css/main/input.css -o ./public/assets/css/main/style.css --watch"
   },
   "dependencies": {
     "@tailwindcss/cli": "^4.1.18",
+    "axios": "^1.15.0",
     "tailwindcss": "^4.1.18",
     "tinymce": "^8.3.2"
   },

@@ -39,7 +39,9 @@
                 </button>
             </div>
 
-            <p id="share-error" class="hidden text-[11px] font-medium text-red-500 text-center italic"></p>
+            <p id="share-error" class="hidden mt-4 text-xs font-semibold text-red-500 dark:text-red-400 text-center animate-in fade-in duration-200">
+                </p>
+
         </div>
     </div>
 </div>

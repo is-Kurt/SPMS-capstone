@@ -29,12 +29,21 @@ class CreateUsersTable extends Migration
         'username' => [
             'type'       => 'VARCHAR',
             'constraint' => '255',
-            'null'       => true,
+            'null'       => false,
+        ],
+        'role' => [
+            'type'       => 'ENUM',
+            'constraint' => ['user', 'admin', 'supervisor'],
+            'default'    => 'user',
         ],
         'remember_token' => [
             'type'       => 'VARCHAR',
-            'constraint' => '100',
+            'constraint' => '255',
             'null'       => true,
+        ],
+        'remember_token_expiry' => [
+            'type' => 'DATETIME',
+            'null' => true,
         ],
         'created_at' => [
             'type' => 'DATETIME',
@@ -51,6 +60,7 @@ class CreateUsersTable extends Migration
     ]);
 
         $this->forge->addKey('id', true);
+        
         $this->forge->createTable('users');
     }
 

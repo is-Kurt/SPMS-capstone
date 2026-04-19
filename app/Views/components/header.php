@@ -13,11 +13,17 @@
                 <div class="ml-10 flex items-baseline space-x-2 text-white text-sm font-bold">
                     <?php 
                         $current_uri = uri_string();
+                        
+                        $role = session()->get('role'); 
+                        
                         $nav_items = [
-                            '' => 'Home',
                             'documents' => 'Documents',
                             'submissions' => 'Submissions'
                         ];
+
+                        if ($role === 'admin' || $role === 'evaluator') {
+                            $nav_items = ['ratings' => 'Ratings'] + $nav_items; 
+                        }
 
                         foreach ($nav_items as $uri => $label):
                             $is_active = ($current_uri === $uri) || ($uri !== '' && strpos($current_uri, $uri) === 0);
@@ -45,7 +51,7 @@
                                     alt="User" class="size-10 rounded-full object-cover ring-1 ring-surface-border" />
                                 <div class="flex flex-col min-w-0">
                                     <p class="text-sm font-bold text-text truncate">
-                                        <?= esc(session()->get('username') ?? 'User') ?>
+                                        <?= esc(session()->get('username') ?? 'Null username') ?>
                                     </p>
                                     <p class="text-[11px] font-bold text-text-muted tracking-widest"><?= esc(session()->get('email') ?? 'User@email') ?></p>
                                 </div>

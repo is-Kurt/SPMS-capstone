@@ -35,7 +35,7 @@ class DocumentModel extends Model
 
     // Callbacks
     protected $allowCallbacks = true;
-    protected $beforeInsert   = [];
+    protected $beforeInsert = ['setDefaultEvalDates'];
     protected $afterInsert    = [];
     protected $beforeUpdate   = [];
     protected $afterUpdate    = [];
@@ -43,4 +43,13 @@ class DocumentModel extends Model
     protected $afterFind      = [];
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
+
+    protected function setDefaultEvalDates(array $data): array {
+        $now = date('Y-m-d');
+
+        $data['data']['eval_date_start'] = $now . ' 00:00:00';
+        $data['data']['eval_date_end']   = date('Y-m-d', strtotime('+1 day')) . ' 00:00:00';
+
+        return $data;
+    }
 }

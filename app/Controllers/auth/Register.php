@@ -17,8 +17,14 @@ class Register extends BaseController
         $validation = \Config\Services::validation();
         
         $validation->setRules([
-            'email' => 'required|valid_email|is_unique[users.email]',
-            'password' => 'required|min_length[8]',
+            'email' => [
+                'label'  => 'Email Address',
+                'rules'  => 'required|valid_email|max_length[254]|is_unique[users.email]',
+            ],
+            'password' => [
+                'label'  => 'Password',
+                'rules'  => 'required|min_length[3]|max_length[72]'
+            ],
             'confirm-password' => 'required|matches[password]'
         ]);
 
@@ -27,8 +33,13 @@ class Register extends BaseController
         }
 
         $userModel = new \App\Models\UserModel();
+
+        $email = $this->request->getPost()['email'];
+        $username = strstr($email, '@', true);
+
         $userModel->save([
-            'email' => $this->request->getPost()['email'],
+            'email' => $email, 
+            'username' => $username,
             'password' => password_hash($this->request->getPost()['password'], PASSWORD_DEFAULT)
         ]);
 

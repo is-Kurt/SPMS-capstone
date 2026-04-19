@@ -10,43 +10,29 @@ class CreateSubmissionsTable extends Migration
     {
         $this->forge->addField([
             'id' => [
+                'type'           => 'INT', 
+                'constraint'     => 11, 
+                'unsigned'       => true, 
+                'auto_increment' => true
+            ],
+            'document_id' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 11,
-            ],
-            'user_id' => [
-                'type'       => 'INT',
-                'constraint' => 11,
-                'unsigned'   => true,
-            ],
-            'title' => [
-                'type'           => 'VARCHAR',
-                'constraint'     => 255,
-            ],
-            'content' => [
-                'type'           => 'TEXT',
-                'null'           => true,
             ],
             'is_rated' => [
                 'type'    => 'BOOLEAN',
                 'default' => false,
             ],
-            'date_rated' => [
+            'final_rating' => [
+                'type'       => 'DOUBLE',
+                'unsigned'   => true,
+                'null'       => true,
+            ],
+            'rated_at' => [
                 'type'           => 'DATETIME',
                 'null'           => true,
             ],
-            'eval_date_start' => [
-                'type'           => 'DATETIME',
-                'null'           => true,
-            ],
-            'eval_date_end' => [
-                'type'           => 'DATETIME',
-                'null'           => true,
-            ],
-            'created_at' => [
-                'type'           => 'DATETIME',
-                'null'           => true,
-            ],
-            'updated_at' => [
+            'submitted_at' => [
                 'type'           => 'DATETIME',
                 'null'           => true,
             ],
@@ -57,7 +43,9 @@ class CreateSubmissionsTable extends Migration
         ]);
 
         $this->forge->addKey('id', true);
-        $this->forge->addForeignKey('user_id', 'users', 'id', 'CASCADE', 'CASCADE');
+
+        $this->forge->addForeignKey('document_id', 'documents', 'id', 'CASCADE', 'CASCADE');
+        
         $this->forge->createTable('submissions');
     }
 
