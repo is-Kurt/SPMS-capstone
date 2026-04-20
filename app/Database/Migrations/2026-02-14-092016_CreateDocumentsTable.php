@@ -34,6 +34,12 @@ class CreateDocumentsTable extends Migration
                 'type'           => 'DATETIME',
                 'null'           => true,
             ],
+            'document_folder_id' => [
+                'type'           => 'INT',
+                'constraint'     => 11,
+                'unsigned'       => true,
+                'null'           => true,
+            ],
             'created_at' => [
                 'type'           => 'DATETIME',
                 'null'           => true,
@@ -50,6 +56,7 @@ class CreateDocumentsTable extends Migration
 
         $this->forge->addKey('id', true);
         $this->forge->addForeignKey('user_id', 'users', 'id', 'CASCADE', 'CASCADE');
+        $this->forge->addForeignKey('document_folder_id', 'document_folders', 'id', 'CASCADE', 'CASCADE');
         
         $this->forge->createTable('documents');
     }

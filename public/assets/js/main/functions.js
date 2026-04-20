@@ -128,7 +128,7 @@ function saveRemark(userRatingId, inputElement) {
     formData.append('remarks', remarks);
 
     // Uses the apiPost loaded globally by main.php
-    apiPost('rating/saveRemark', formData, {
+    apiPost(`${AppConfig.baseUrl}/save`, formData, {
         onSuccess: () => {
             inputElement.classList.remove('border-red-500', 'text-red-500');
             indicator.classList.remove('opacity-0');

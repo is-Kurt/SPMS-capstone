@@ -13,7 +13,7 @@ class Document extends BaseController
         $filter = $this->request->getGet('docs') ?? 'all_docs';
 
         $baseQuery = $documentModel->db->table('documents d')
-            ->select('d.*, sd.collaborator_id, u.email, u.username')
+            ->select('d.*, sd.collaborator_id, u.email, u.first_name, u.last_name')
             ->join('shared_documents sd', 'sd.document_id = d.id AND sd.collaborator_id = ' . $userId, 'left')
             
             ->join('submissions s', 's.document_id = d.id', 'left')
@@ -177,6 +177,39 @@ class Document extends BaseController
         ]);
     }
 
+    public function createFolder() {
+        $adminId = session()->get('user_id');
+        $title = trim($this->request->getPost('title'));
+        
+        $DocumentFolderModel = new \App\Models\DocumentFolderModel();
+
+        $newId = null;
+        $maxAttempts = 999;
+
+        for ($i = 0; $i < $maxAttempts; $i++) {
+            $id = generate_short_id();
+            if ($DocumentFolderModel->find($id) === null) {
+                $DocumentFolderModel->save([
+                    'id'      => $id,
+                    'title'   => $title ?: 'New Evaluation Batch',
+                ]);
+                $newId = $id;
+                break;
+            }
+        }
+
+        if (!$newId) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Could not generate a unique ID. Please try again.',
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status' => 'success',
+        ]);
+    }
+
     public function share() {
         $documentId     = $this->request->getPost('document_id');
         $collaboratorId = $this->request->getPost('collaborator_id');
@@ -224,7 +257,7 @@ class Document extends BaseController
         ]);
     }
 
-public function send() {
+    public function send() {
         $documentId = $this->request->getPost('document_id');
         $ratingTitle = $this->request->getPost('rating_title'); // 🚨 Catch the new title!
         $adminId    = session()->get('user_id');

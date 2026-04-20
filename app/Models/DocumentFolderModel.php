@@ -4,25 +4,15 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class UserModel extends Model
+class  DocumentFolderModel extends Model
 {
-    protected $table            = 'users';
+    protected $table            = 'document_folders';
     protected $primaryKey       = 'id';
-    protected $useAutoIncrement = true;
+    protected $useAutoIncrement = false;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = [
-        'email', 
-        'password',
-        'first_name',
-        'last_name',
-        'role', 
-        'position', 
-        'department', 
-        'remember_token', 
-        'remember_token_expiry'
-    ];
+    protected $allowedFields    = ['id', 'title'];
 
     protected bool $allowEmptyInserts = false;
     protected bool $updateOnlyChanged = true;

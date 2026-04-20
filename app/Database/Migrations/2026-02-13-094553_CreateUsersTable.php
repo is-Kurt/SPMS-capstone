@@ -26,14 +26,29 @@ class CreateUsersTable extends Migration
             'constraint' => '255',
             'null'       => false,
         ],
-        'username' => [
+        'first_name' => [
+            'type'       => 'VARCHAR',
+            'constraint' => '255',
+            'null'       => false,
+        ],
+        'last_name' => [
             'type'       => 'VARCHAR',
             'constraint' => '255',
             'null'       => false,
         ],
         'role' => [
             'type'       => 'ENUM',
-            'constraint' => ['user', 'admin', 'supervisor'],
+            'constraint' => ['user', 'supervisor', 'admin'],
+            'default'    => 'user',
+        ],
+        'position' => [
+            'type'       => 'VARCHAR',
+            'constraint' => '255',
+            'default'    => 'user',
+        ],
+        'department' => [
+            'type'       => 'VARCHAR',
+            'constraint' => '255',
             'default'    => 'user',
         ],
         'remember_token' => [

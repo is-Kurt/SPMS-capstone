@@ -17,6 +17,14 @@ class Register extends BaseController
         $validation = \Config\Services::validation();
         
         $validation->setRules([
+            'first_name' => [
+                'label'  => 'First Name',
+                'rules'  => 'required|min_length[2]|max_length[100]'
+            ],
+            'last_name' => [
+                'label'  => 'Last Name',
+                'rules'  => 'required|min_length[2]|max_length[100]'
+            ],
             'email' => [
                 'label'  => 'Email Address',
                 'rules'  => 'required|valid_email|max_length[254]|is_unique[users.email]',
@@ -25,7 +33,15 @@ class Register extends BaseController
                 'label'  => 'Password',
                 'rules'  => 'required|min_length[3]|max_length[72]'
             ],
-            'confirm-password' => 'required|matches[password]'
+            'confirm-password' => 'required|matches[password]',
+            'department' => [
+                'label'  => 'Department',
+                'rules'  => 'required'
+            ],
+            'position' => [
+                'label'  => 'Position',
+                'rules'  => 'required'
+            ]
         ]);
 
         if (! $validation->run($this->request->getPost())) {
@@ -34,13 +50,13 @@ class Register extends BaseController
 
         $userModel = new \App\Models\UserModel();
 
-        $email = $this->request->getPost()['email'];
-        $username = strstr($email, '@', true);
-
         $userModel->save([
-            'email' => $email, 
-            'username' => $username,
-            'password' => password_hash($this->request->getPost()['password'], PASSWORD_DEFAULT)
+            'first_name' => $this->request->getPost()['first_name'],
+            'last_name'  => $this->request->getPost()['last_name'],
+            'email'      => $this->request->getPost()['email'], 
+            'password'   => password_hash($this->request->getPost()['password'], PASSWORD_DEFAULT),
+            'department' => $this->request->getPost()['department'],
+            'position'   => $this->request->getPost()['position']
         ]);
 
         return redirect()->to('/login');

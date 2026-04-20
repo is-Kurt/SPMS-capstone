@@ -10,10 +10,11 @@ $routes->get('/test', 'Test::index');
 $routes->post('/test/importWordTable', 'Test::importWordTable');
 
 $routes->group('', ['filter' => 'auth'], function($routes) {
-    $routes->get('ratings', 'Rating', ['filter' => 'admin']);
-    $routes->get('rating', 'Rating::show', ['filter' => 'admin']);
+    $routes->get('ratings', 'Rating::index', ['filter' => 'admin']);
+    $routes->get('rating/departments', 'Rating::departments', ['filter' => 'admin']);
+    $routes->get('rating/show', 'Rating::show', ['filter' => 'admin']);
     $routes->delete('rating', 'Rating::destroy', ['filter' => 'admin']);
-    $routes->post('rating/saveRemark', 'Rating::saveRemark', ['filter' => 'admin']);
+    $routes->post('rating/save', 'Rating::save', ['filter' => 'admin']);
 
     // Document
     $routes->get('documents', 'Document');
@@ -24,6 +25,7 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->delete('document', 'Document::destroy');
     $routes->post('document/share', 'Document::share');
     $routes->post('document/send', 'Document::send', ['filter' => 'admin']);
+    $routes->post('document/createFolder', 'Document::createFolder', ['filter' => 'admin']);
     $routes->get('document/count', 'Document::count');
 
     // Submission

@@ -23,7 +23,7 @@
                     
                     <div data-doc-id="<?= $rating['id'] ?>" class="relative flex items-center bg-surface border border-surface-border rounded-2xl shadow-sm hover:shadow-md hover:border-accent/30 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-all group">
                         
-                        <a href="<?= site_url('rating?Id=' . $rating['id']) ?>" class="flex-1 flex items-center gap-4 p-5 cursor-pointer">
+                        <a href="<?= site_url('rating/departments?Id=' . $rating['id']) ?>" class="flex-1 flex items-center gap-4 p-5 cursor-pointer">
                             <div class="p-3 rounded-xl bg-accent/10 text-accent border border-accent/20 transition-transform group-hover:scale-110 shrink-0">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
