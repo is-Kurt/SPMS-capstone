@@ -10,11 +10,15 @@ $routes->get('/test', 'Test::index');
 $routes->post('/test/importWordTable', 'Test::importWordTable');
 
 $routes->group('', ['filter' => 'auth'], function($routes) {
-    $routes->get('ratings', 'Rating::index', ['filter' => 'admin']);
+    //Ratings
+    $routes->get('ratings', 'Rating', ['filter' => 'admin']);
+
     $routes->get('rating/departments', 'Rating::departments', ['filter' => 'admin']);
     $routes->get('rating/show', 'Rating::show', ['filter' => 'admin']);
     $routes->delete('rating', 'Rating::destroy', ['filter' => 'admin']);
     $routes->post('rating/save', 'Rating::save', ['filter' => 'admin']);
+
+    $routes->get('profile', 'Profile');
 
     // Document
     $routes->get('documents', 'Document');
@@ -47,6 +51,7 @@ $routes->group('', ['filter' => 'guest'], function($routes) {
     $routes->get('signup', 'Auth\Register::index');
     $routes->post('signup', 'Auth\Register::store');
     
+    $routes->get('/', 'Auth\Session::index');
     $routes->get('login', 'Auth\Session::index');
     $routes->post('login', 'Auth\Session::edit');
 });

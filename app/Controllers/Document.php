@@ -339,6 +339,31 @@ class Document extends BaseController
             $userRatingModel->insertBatch($userRatingsBatch);
         }
 
+        $emailService = \Config\Services::email();
+        
+        foreach ($targetUsers as $user) {
+            // It is important to clear the email settings for each recipient in a loop
+            $emailService->clear(); 
+            
+            $emailService->setFrom('skurto123o@gmail.com', 'System Name');
+            $emailService->setTo($user['email']);
+            $emailService->setSubject('New Document Assigned: ' . $templateDoc['title']);
+            
+            $message = "
+                <h2>Hello, " . esc($user['first_name']) . "!</h2>
+                <p>A new document has been assigned to you for rating.</p>
+                <p><strong>Title:</strong> " . esc($templateDoc['title']) . "</p>
+                <p>Please log in to your dashboard to review it.</p>
+            ";
+            
+            $emailService->setMessage($message);
+
+            if (!$emailService->send()) {
+                log_message('error', $emailService->printDebugger(['headers']));
+                continue;
+            } 
+        }
+
         return $this->response->setJSON([
             'status'  => 'success',
             'message' => 'Successfully distributed to ' . count($targetUsers) . ' users.'
