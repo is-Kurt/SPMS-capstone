@@ -42,6 +42,7 @@ class Session extends BaseController
                 'user_id' => $user['id'],
                 'email' => $user['email'],
                 'role'       => $user['role'],
+                'department' => $user['department'],
                 'username' => $user['first_name'] . ' ' . $user['last_name'],
                 'isLoggedIn' => true
             ]);

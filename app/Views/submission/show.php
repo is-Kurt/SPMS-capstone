@@ -1,8 +1,11 @@
 <?= $this->extend('layouts/main') ?>
 <?= $this->section('content') ?>
 
-<?php $isLocked = strtotime($doc['eval_date_start']) > time() ? false : true?>
-<?php $isEditable = ($doc['is_rated'] || strtotime($doc['eval_date_end']) < time() || !$isLocked) ? true : false ?>
+<?php 
+    $isLocked = strtotime($doc['eval_date_start']) > time() ? false : true;
+    $isEditable = ($doc['is_rated'] || strtotime($doc['eval_date_end']) < time() || !$isLocked) ? true : false;
+    $redirectPath = !empty($returnUrl) ? "rating/show?" . $returnUrl : "submission?Id=" . $doc['id'];
+?>
 
 <div class="h-screen flex flex-col bg-gray-50 dark:bg-zinc-950 overflow-hidden">
     
@@ -77,7 +80,7 @@
             <?php if(!$isEditable): ?>
                 <button type="button" onclick="
                         saveWith(
-                            () => submit('submission/rate', 'submission?Id=<?= $doc['id'] ?>', getEditorData()), 
+                            () => submit('submission/rate', '<?= $redirectPath ?>', getEditorData()), 
                             rate
                         );
                         " id="submit-btn";
@@ -103,6 +106,7 @@
         ciDebug: <?= (ENVIRONMENT === 'development') ? 'true' : 'false' ?>,
         baseUrl: '<?= site_url('submission') ?>',
         docId: '<?= $doc['id'] ?>',
+        isRatingMode: <?= $isRatingMode ? 'true' : 'false' ?>,
     };
 
     const AppState = {

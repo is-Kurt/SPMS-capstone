@@ -5,9 +5,8 @@ namespace App\Filters;
 use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
-use CodeIgniter\Exceptions\PageNotFoundException;
 
-class AdminFilter implements FilterInterface
+class RoleFilter implements FilterInterface
 {
     /**
      * Do whatever processing this filter needs to do.
@@ -26,12 +25,10 @@ class AdminFilter implements FilterInterface
      */
     public function before(RequestInterface $request, $arguments = null)
     {
-        if (!session()->get('isLoggedIn')) {
-            return redirect()->to('/login')->with('error', 'Please log in first.');
-        }
+        $role = session()->get('role');
 
-        if (session()->get('role') !== 'admin') {
-            throw PageNotFoundException::forPageNotFound();
+        if (!$role || !in_array($role, $arguments)) {
+            return redirect()->to(site_url('ratings'))->with('error', 'Unauthorized access.');
         }
     }
 

@@ -13,10 +13,13 @@ async function createDocument() {
     const formData = new FormData();
     formData.append('title', title);
     formData.append('template', template);
+    formData.append('folder_id', AppConfig.currentFolderId);
 
     isCreating = true;
     apiPost(AppConfig.baseUrl, formData, {
-        onSuccess: (response) => { 
+        onSuccess: (response) => {
+            isCreating = false;
+            createModal.close();
             window.location.href = `${AppConfig.baseUrl}?Id=${response.id}`;
         },
         onError: () => {

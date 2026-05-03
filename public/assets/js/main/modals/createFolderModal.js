@@ -16,10 +16,11 @@ document.getElementById('form-create-folder').addEventListener('submit', async (
     const formData = new FormData(form);
 
     isCreatingFolder = true;
-    apiPost(`${AppConfig.baseUrl}/createFolder`, formData, {
-        onSuccess: () => {
+    apiPost(`folder`, formData, {
+        onSuccess: (response) => {
             isCreatingFolder = false;
             folderModal.close();
+            window.location.href = `folder?Id=${response.id}`;
         },
         onError: () => {
             isCreatingFolder = false;

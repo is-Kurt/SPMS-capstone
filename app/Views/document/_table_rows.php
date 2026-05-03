@@ -7,65 +7,56 @@
     <p class="text-sm text-text-muted font-medium italic">No documents found in this folder.</p>
 </div>
 
-<?php foreach ($docs as $doc): ?>
-    <?php 
-        $userId = session()->get('user_id');
-        $type = ($doc['user_id'] == $userId) ? 'owned' : 'shared';
-    ?>
-    <div data-doc-id="<?= $doc['id'] ?>" 
-         data-type="<?= $type ?>" 
+<!-- app/Views/document/_table_rows.php -->
+<?php foreach ($folders as $folder): ?>
+    <div data-doc-id="<?= $folder['id'] ?>" 
          class="doc-row grid grid-cols-13 gap-4 px-8 py-4 items-center hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all group">
         
+        <!-- Col 1-5: Folder Name -->
         <div class="col-span-5 flex items-center gap-4">
-            <div class="bg-accent/10 p-1.5 rounded-xl text-accent border border-accent/20 group-hover:scale-110 transition-transform">
+            <div class="bg-amber-500/10 p-1.5 rounded-xl text-amber-500 border border-amber-500/20 group-hover:scale-110 transition-transform">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-                    <path d="M14 2v6h6"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                 </svg>
             </div>
             <div class="flex flex-col min-w-0">
-                <a href="<?= site_url('document?Id=' . $doc['id']) ?>" class="font-bold text-sm text-text hover:text-accent transition-colors truncate max-w-xs md:max-w-md">
-                    <?= esc($doc['title']) ?>
+                <a href="<?= site_url('folder?Id=' . $folder['id']) ?>" class="font-bold text-sm text-text hover:text-accent transition-colors truncate">
+                    <?= esc($folder['title']) ?>
                 </a>
-                <span class="text-[10px] text-text-muted font-bold tracking-tight uppercase">IPCR Template</span>
+                <span class="text-[10px] text-text-muted font-bold tracking-tight uppercase">Evaluation Folder</span>
             </div>
         </div>
-
+        
+        <!-- Col 6-8: Activity -->
         <div class="col-span-3 text-xs font-semibold text-text-muted">
-            <?= date('M d, Y g:ia', strtotime($doc['updated_at'] ?? $doc['created_at'])) ?>
+            <?= date('M d, Y', strtotime($folder['updated_at'] ?? $folder['created_at'])) ?>
         </div>
 
+        <!-- Col 9-12: Owner (Restored) -->
         <div class="col-span-4 text-xs font-semibold text-text-muted flex flex-row items-center gap-2">
-            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
-                    alt="User" class="size-8 rounded-full object-cover ring-1 ring-surface-border" />
-            <p><?= esc($doc['email'] ?? 'Unknown User') ?></p>
+            <img src="https://ui-avatars.com/api/?name=<?= urlencode($folder['email'] ?? 'U') ?>&background=random" 
+                 alt="User" class="size-8 rounded-full object-cover ring-1 ring-surface-border" />
+            <p><?= esc($folder['email'] ?? 'Unknown User') ?></p>
         </div>
 
+        <!-- Col 13: Actions (Consolidated) -->
         <div class="col-span-1 flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
-            <?php if ($type === 'owned'): ?>
-                <button onclick="openShareModal('<?= $doc['id'] ?>')" 
-                        class="p-2 rounded-lg text-text-muted hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-text transition-all" title="Share Access">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                    </svg>
-                </button>
-            <?php endif; ?>
-            
-            <button class="btn-trigger-delete p-2 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 transition-all cursor-pointer"
-                    data-id="<?= $doc['id'] ?>" 
-                    data-title="<?= esc($doc['title']) ?>" title="Delete Document">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                </svg>
-            </button>
-
-            <?php if (session()->get('role') === 'admin'): ?>
-                <button class="btn-trigger-send-all p-2 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 hover:text-blue-600 transition-all cursor-pointer"
-                        data-id="<?= $doc['id'] ?>" 
-                        data-title="<?= esc($doc['title']) ?>" 
-                        title="Distribute to All Users">
+            <?php if (session()->get('role') === 'admin' && $folder['user_id'] == session()->get('user_id')): ?>
+                <!-- Send Button -->
+                <button class="btn-trigger-send-all p-2 rounded-lg text-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-all cursor-pointer"
+                        data-id="<?= $folder['id'] ?>" 
+                        data-title="<?= esc($folder['title']) ?>" title="Distribute Folder">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                </button>
+
+                <!-- Delete Folder Button -->
+                <button class="btn-trigger-delete p-2 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-all cursor-pointer"
+                        data-id="<?= $folder['id'] ?>" 
+                        data-title="<?= esc($folder['title']) ?>" title="Delete Folder">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                     </svg>
                 </button>
             <?php endif; ?>

@@ -9,8 +9,6 @@
  */
 async function apiPost(url, data, { onSuccess, onError, config = {} } = {}) {
     try {
-        console.log(url);
-        // config.js interceptor will automatically add X-CSRF-TOKEN to this request
         const response = await axios.post(url, data, config);
 
         if (response.data.status === 'success') {

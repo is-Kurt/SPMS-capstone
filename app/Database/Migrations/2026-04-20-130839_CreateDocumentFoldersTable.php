@@ -14,6 +14,11 @@ class CreateDocumentFoldersTable extends Migration
                 'constraint' => 11,
                 'null'       => false,
             ],
+            'user_id' => [
+                'type'           => 'INT',
+                'constraint'     => 11,
+                'unsigned'       => true,
+            ],
             'title' => [
                 'type'           => 'VARCHAR',
                 'constraint'     => 255,
@@ -35,7 +40,7 @@ class CreateDocumentFoldersTable extends Migration
 
         $this->forge->addKey('id', true);
 
-
+        $this->forge->addForeignKey('user_id', 'users', 'id', 'CASCADE', 'CASCADE');
         $this->forge->createTable('document_folders');
     }
 

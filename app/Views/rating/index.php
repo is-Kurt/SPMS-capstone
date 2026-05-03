@@ -1,6 +1,11 @@
 <?= $this->extend('layouts/main') ?>
 <?= $this->section('content') ?>
 
+<?php 
+    $role = session()->get('role');
+    $userDept = session()->get('department'); 
+?>
+
 <?= view('components/header') ?>
 
 <?= view('components/delete_modal') ?>
@@ -21,9 +26,15 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <?php foreach($ratings as $rating): ?>
                     
+                    <?php 
+                        $targetUrl = ($role === 'supervisor')
+                            ? site_url('rating/show?Id=' . $rating['id'])
+                            : site_url('rating/departments?Id=' . $rating['id']);
+                    ?>
+
                     <div data-doc-id="<?= $rating['id'] ?>" class="relative flex items-center bg-surface border border-surface-border rounded-2xl shadow-sm hover:shadow-md hover:border-accent/30 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-all group">
                         
-                        <a href="<?= site_url('rating/departments?Id=' . $rating['id']) ?>" class="flex-1 flex items-center gap-4 p-5 cursor-pointer">
+                        <a href="<?= $targetUrl ?>" class="flex-1 flex items-center gap-4 p-5 cursor-pointer">
                             <div class="p-3 rounded-xl bg-accent/10 text-accent border border-accent/20 transition-transform group-hover:scale-110 shrink-0">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
@@ -40,14 +51,17 @@
                             </div>
                         </a>
 
-                        <button class="btn-trigger-delete absolute right-4 p-2 rounded-lg text-red-400 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 transition-all cursor-pointer z-10"
-                                data-id="<?= $rating['id'] ?>" 
-                                data-title="<?= esc($rating['title']) ?>" 
-                                title="Delete Rating Batch">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                            </svg>
-                        </button>
+                        <?php if ($role === 'admin'): ?>
+                            <!-- Only Admins can delete batches[cite: 31] -->
+                            <button class="btn-trigger-delete absolute right-4 p-2 rounded-lg text-red-400 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 transition-all cursor-pointer z-10"
+                                    data-id="<?= $rating['id'] ?>" 
+                                    data-title="<?= esc($rating['title']) ?>" 
+                                    title="Delete Rating Batch">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </button>
+                        <?php endif; ?>
 
                     </div>
 

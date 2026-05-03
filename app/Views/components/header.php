@@ -21,7 +21,7 @@
                             'submissions' => 'Submissions'
                         ];
 
-                        if ($role === 'admin' || $role === 'evaluator') {
+                        if ($role !== 'user') {
                             $nav_items = ['ratings' => 'Ratings'] + $nav_items; 
                         }
 

@@ -12,7 +12,7 @@ class DocumentModel extends Model
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['id', 'title', 'content', 'user_id', 'eval_date_start', 'eval_date_end'];
+    protected $allowedFields    = ['id', 'title', 'content', 'document_folder_id', 'eval_date_start', 'eval_date_end'];
 
     protected bool $allowEmptyInserts = false;
     protected bool $updateOnlyChanged = true;

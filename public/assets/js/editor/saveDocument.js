@@ -32,6 +32,7 @@ function saveDocument(manualSave = true) {
         formData.append('id', docId);
         formData.append('content', content);
         formData.append('title', title);
+        formData.append('is_rating_mode', AppConfig.isRatingMode);
         formData.append('_method', 'PATCH'); 
         
         const dateStart = document.getElementById('doc-date-start');
@@ -42,14 +43,7 @@ function saveDocument(manualSave = true) {
             formData.append('doc_date_end', dateEnd.value);
         }
 
-        // 🚨 THE FIX: Force all content saves to hit the Document controller, 
-        // even if we are currently looking at the Submissions view!
-        let saveUrl = AppConfig.baseUrl;
-        if (saveUrl.includes('submission')) {
-            saveUrl = saveUrl.replace('submission', 'document');
-        }
-
-        apiPost(saveUrl, formData, {
+        apiPost('document', formData, {
             onSuccess: (data) => { 
                 AppState.setDirty(false); 
 
@@ -147,6 +141,9 @@ function submit(endpointPath, redirectPath, extraData = {}) {
     }
 
     const postUrl = '/' + endpointPath.replace(/^\//, '');
+    console.log(postUrl);
+    console.log(docId);
+    console.log(extraData);
 
     submitting = true;
     apiPost(postUrl, formData, {

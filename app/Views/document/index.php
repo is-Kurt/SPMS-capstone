@@ -11,30 +11,33 @@
     
 <div class="p-8 max-w-7xl mx-auto flex flex-col md:flex-row gap-10">
     <div class="w-full md:w-64 flex-shrink-0">
-        <nav id="sidebar-nav" class="flex flex-col gap-1.5">
-            <p class="px-4 text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Navigation</p>
-            <?php
+    <!-- Inside app/Views/document/index.php -->
+
+    <nav id="sidebar-nav" class="flex flex-col gap-1.5">
+        <p class="px-4 text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Navigation</p>
+        <?php
             $navItems = [
-                ['id' => 'all_docs', 'label' => 'All Documents'],
-                ['id' => 'owned', 'label' => 'Owned Documents'],
-                ['id' => 'shared', 'label' => 'Shared With Me'],
+                ['id' => 'all_folders', 'label' => 'All Folders'],
+                ['id' => 'owned', 'label' => 'My Folders'],
+                ['id' => 'shared', 'label' => 'Shared Folders'], 
             ];
 
-            foreach ($navItems as $item):
-                $isActive = ($filter === $item['id']);
-                $count = $counts[$item['id']] ?? 0;
-            ?>
-                <a href="<?= site_url($item['id'] === 'all_docs' ? 'documents' : 'documents?docs=' . $item['id'] ) ?>"
-                   class="px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex justify-between items-center
-                   <?= $isActive ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-text-muted hover:bg-accent/10 hover:text-accent' ?>">
-                    <span><?= $item['label'] ?></span>
-                    
-                    <span class="text-[10px] px-2 py-0.5 rounded-full min-w-[24px] text-center transition-all <?= $isActive ? 'bg-white/20 text-white' : 'bg-zinc-200 dark:bg-zinc-800 text-text-muted' ?> <?= $count == 0 ? 'invisible' : '' ?>">
-                        <?= $count > 0 ? $count : '0' ?>
-                    </span>
-                </a>
-            <?php endforeach; ?>
-        </nav>
+        foreach ($navItems as $item):
+            $isActive = ($filter === $item['id']);
+            $count = $counts[$item['id']] ?? 0;
+        ?>
+            <!-- Updated check for 'all_folders'[cite: 57] -->
+            <a href="<?= site_url($item['id'] === 'all_folders' ? 'documents' : 'documents?docs=' . $item['id'] ) ?>"
+            class="px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex justify-between items-center
+            <?= $isActive ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-text-muted hover:bg-accent/10 hover:text-accent' ?>">
+                <span><?= $item['label'] ?></span>
+                
+                <span class="text-[10px] px-2 py-0.5 rounded-full min-w-[24px] text-center transition-all <?= $isActive ? 'bg-white/20 text-white' : 'bg-zinc-200 dark:bg-zinc-800 text-text-muted' ?> <?= $count == 0 ? 'invisible' : '' ?>">
+                    <?= $count ?>
+                </span>
+            </a>
+        <?php endforeach; ?>
+    </nav>
     </div>
 
     <div class="flex-1">
@@ -46,23 +49,14 @@
                 <p class="text-sm text-text-muted mt-1 font-medium italic">Manage your IPCR records.</p>
             </div>
             
-            <div class="flex gap-3">
-                <?php if (session()->get('role') === 'admin'): ?>
-                    <button id="btn-open-folder-create" class="flex items-center gap-2 px-6 py-3 bg-surface border border-surface-border hover:border-accent/30 text-text rounded-2xl font-bold text-sm transition-all shadow-sm active:scale-95 cursor-pointer group">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-text-muted group-hover:text-accent transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                            <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-                        </svg>
-                        New Evaluation Folder
-                    </button>
-                <?php endif; ?>
-
-                <button id="btn-open-create" class="flex items-center gap-2 px-6 py-3 bg-accent hover:bg-accent-hover text-white rounded-2xl font-bold text-sm transition-all shadow-xl shadow-accent/20 active:scale-95 cursor-pointer">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                        <path d="M12 5v14M5 12h14"/>
+            <?php if (session()->get('role') === 'admin'): ?>
+                <button id="btn-open-folder-create" class="flex items-center gap-2 px-6 py-3 bg-surface border border-surface-border hover:border-accent/30 text-text rounded-2xl font-bold text-sm transition-all shadow-sm active:scale-95 cursor-pointer group">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-text-muted group-hover:text-accent transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                        <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
                     </svg>
-                    Blank Document
+                    New Evaluation Folder
                 </button>
-            </div>
+            <?php endif; ?>
         </div>
 
         <div class="bg-surface border border-surface-border rounded-2xl shadow-sm overflow-hidden flex flex-col max-h-[calc(100vh-14rem)]">
@@ -75,7 +69,7 @@
 
             <div class="overflow-y-auto custom-scrollbar flex-1 relative">
                 <div id="table-body-container" class="divide-y divide-surface-border mx-2">
-                    <?= view('document/_table_rows', ['docs' => $docs]) ?>
+                    <?= view('document/_table_rows', ['folders' => $folders]) ?>
                 </div>
             </div>
 
@@ -112,7 +106,7 @@
 
 <script>
     const AppConfig = {
-        baseUrl: '<?= site_url('document') ?>',
+        baseUrl: '<?= site_url('folder') ?>',
     };
 
     document.addEventListener('DOMContentLoaded', () => {
