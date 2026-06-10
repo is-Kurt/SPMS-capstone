@@ -23,12 +23,11 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
 
     // Document
     $routes->get('documents', 'Folder');
-    $routes->get('folder', 'Folder::show');
     $routes->post('folder', 'Folder::store', ['filter' => 'role:admin']);
     $routes->post('folder/send', 'Folder::send', ['filter' => 'role:admin']);
     $routes->delete('folder', 'Folder::destroy', ['filter' => 'role:admin']);
 
-    $routes->get('document', 'Document::show');
+    $routes->get('document', 'Document');
     $routes->patch('document', 'Document::update');
     $routes->post('document', 'Document::store');
     $routes->delete('document', 'Document::destroy');

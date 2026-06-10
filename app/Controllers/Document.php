@@ -6,24 +6,13 @@ use App\Controllers\BaseController;
 
 class Document extends BaseController
 {
-    // Verification helper to check if a document belongs to the current user
-    private function getOwnedDocument($id, $userId) {
-        $documentModel = new \App\Models\DocumentModel();
-        return $documentModel->db->table('documents d')
-            ->select('d.*, df.user_id')
-            ->join('document_folders df', 'df.id = d.document_folder_id')
-            ->where('d.id', $id)
-            ->where('df.user_id', $userId)
-            ->get()->getRowArray();
-    }
-
-    public function show(): string {
-        $id      = $this->request->getGet('Id');
+    public function index(): string {
+        $docId      = $this->request->getGet('Id');
         $userId  = session()->get('user_id');
         
-        $doc = $this->getOwnedDocument($id, $userId); // Verification via folder join
+        $doc = $this->getUserDocument($userId, $docId); // Verification via folder join
 
-        if (!$doc) {
+        if (!$docId) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
@@ -32,56 +21,27 @@ class Document extends BaseController
     }
 
     public function store() {
-        $documentModel = new \App\Models\DocumentModel();
-        $userId   = session()->get('user_id');
-        $folderId = $this->request->getPost('folder_id'); // Captured from folder context[cite: 44]
-        
-        $rawTitle  = trim($this->request->getPost('title'));
-        $baseTitle = $rawTitle ?: 'Untitled Document';
-        
-        // Resolve unique title by checking all documents in folders owned by the user
-        $existingDocs = $documentModel->db->table('documents d')
-            ->select('d.title')
-            ->join('document_folders df', 'df.id = d.document_folder_id')
-            ->where('df.user_id', $userId)
-            ->groupStart()
-                ->where('d.title', $baseTitle)
-                ->orLike('d.title', $baseTitle . ' (', 'after')
-            ->groupEnd()
-            ->get()->getResultArray();
+        return $this->tryOrFail(function() {
+            $documentModel = new \App\Models\DocumentModel();
+            $userId   = session()->get('user_id');
+            $folderId = $this->request->getPost('folder_id');
+            $title  = trim($this->request->getPost('title')) ?: 'Untitled Document';
 
-        $existingTitles = array_column($existingDocs, 'title');
-        $finalTitle     = resolveUniqueTitle($baseTitle, $existingTitles);
+            $docs = $this->getUserDocument($userId);
+            $payload = [
+                'title'              => resolve_unique_title($title, $docs),
+                'user_id'            => $userId,
+                'document_folder_id' => $folderId,
+                'content'            => '',
+            ];
+            $newId = create_unique_row($documentModel, $payload);
 
-        $newId = null;
-        $maxAttempts = 999;
-
-        for ($i = 0; $i < $maxAttempts; $i++) {
-            $id = generate_short_id();
-
-            if ($documentModel->find($id) === null) {
-                $documentModel->save([
-                    'id'                 => $id,
-                    'document_folder_id' => $folderId, // Required non-nullable field
-                    'title'              => $finalTitle,
-                    'content'            => '',
-                ]);
-                $newId = $id;
-                break;
+            if (!$newId) {
+                throw new \Exception("Could not generate a unique ID.");
             }
-        }
 
-        if (!$newId) {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'Could not generate a unique ID. Please try again.',
-            ]);
-        }
-
-        return $this->response->setJSON([
-            'status' => 'success',
-            'id'     => $newId,
-        ]);
+            return $this->respond(['status' => 'success', 'id' => $newId]);
+        });
     }
 
     public function update() {
@@ -143,18 +103,18 @@ class Document extends BaseController
     }
         
     public function destroy() {
-        $doc_id = $this->request->getPost('doc_id');
+        $docId = $this->request->getPost('doc_id');
         $userId = session()->get('user_id');
         
         // Verify ownership via folder join since documents no longer have user_id[cite: 49, 50]
-        if (!$this->getOwnedDocument($doc_id, $userId)) {
+        if (!$this->getUserDocument($userId, $docId)) {
             return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized']);
         }
 
         $userRatingModel = new \App\Models\UserRatingModel();
-        $userRatingModel->where('document_id', $doc_id)->delete();
+        $userRatingModel->where('document_id', $docId)->delete();
         
-        (new \App\Models\DocumentModel())->delete($doc_id);
+        (new \App\Models\DocumentModel())->delete($docId);
 
         return $this->response->setJSON(['status' => 'success']);
     }

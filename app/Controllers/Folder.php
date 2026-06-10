@@ -9,183 +9,133 @@ class Folder extends BaseController
 {
     public function index(): string {
         $userId = session()->get('user_id');
-        $db = \Config\Database::connect();
-        $filter = $this->request->getGet('docs') ?? 'all_folders';
+        $folderId = $this->request->getGet('folder_id');
 
-        $builder = $db->table('document_folders df')
-            ->select('df.*, u.email, u.first_name, u.last_name')
-            ->join('users u', 'u.id = df.user_id', 'left')
-            ->orderBy('df.created_at', 'DESC');
+        $folderModel = new \App\Models\DocumentFolderModel();
+        $documentModel = new \App\Models\DocumentModel();
 
-        // FIX: Apply user restriction to both 'owned' and 'all_folders' 
-        // if "all" is intended to be "all of mine"
-        if ($filter === 'owned' || $filter === 'all_folders') {
-            $builder->where('df.user_id', $userId);
-        } 
-        // If 'shared' is added later, you would handle that logic here
-        elseif ($filter === 'shared') {
-            $builder->where('df.user_id', $userId);
+        $data['folders'] = $folderModel->where('user_id', $userId)
+                                    ->orderBy('created_at', 'DESC')
+                                    ->findAll();
+
+        if (!$folderId && !empty($data['folders'])) {
+            $folderId = $data['folders'][0]['id'];
         }
 
-        $data['folders'] = $builder->get()->getResultArray();
-        $data['filter']  = $filter;
-        $data['counts']  = $this->_getCounts(); 
+        $data['selectedFolderId'] = $folderId;
+        $data['activeFolder'] = null;
+        $data['docs'] = [];
+
+        if ($folderId) {
+            $data['activeFolder'] = $folderModel->find($folderId);
+            
+            if ($data['activeFolder'] && $data['activeFolder']['user_id'] == $userId) {
+                $data['docs'] = $documentModel->where('document_folder_id', $folderId)->findAll();
+            } else {
+                $data['activeFolder'] = null;
+            }
+        }
 
         return view('document/index', $data);
     }
 
-    public function show(): string {
-        $folderId = $this->request->getGet('Id');
-
-        $folderModel   = new \App\Models\DocumentFolderModel();
-        $documentModel = new \App\Models\DocumentModel();
-
-        $data['folder'] = $folderModel->find($folderId);
-        if (!$data['folder']) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
-        }
-
-        $data['docs'] = $documentModel->where('document_folder_id', $folderId)
-                                    ->findAll();
-
-        return view('document/folder_view', $data);
-    }
-
     public function store() {
-        $adminId = session()->get('user_id');
-        $title = trim($this->request->getPost('title'));
-        
-        $DocumentFolderModel = new \App\Models\DocumentFolderModel();
+        return $this->tryOrFail(function() {
+            $documentFolderModel = new \App\Models\DocumentFolderModel();
+            $userId = session()->get('user_id');
+            $title = trim($this->request->getPost('title')) ?: 'Untitled Evaluation';
 
-        $newId = null;
-        $maxAttempts = 999;
+            $payload = [
+                'title'   => resolve_unique_title($title, ['user_id' => $userId], 'title', $documentFolderModel),
+                'user_id' => $userId
+            ];
+            $newId = create_unique_row($documentFolderModel, $payload);
 
-        for ($i = 0; $i < $maxAttempts; $i++) {
-            $id = generate_short_id();
-            if ($DocumentFolderModel->find($id) === null) {
-                $DocumentFolderModel->save([
-                    'id'      => $id,
-                    'title'   => $title ?: 'New Evaluation Batch',
-                    'user_id' => session()->get('user_id')
-                ]);
-                $newId = $id;
-                break;
+            if (!$newId) {
+                throw new \Exception("Could not generate a unique ID.");
             }
-        }
 
-        if (!$newId) {
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'Could not generate a unique ID. Please try again.',
-            ]);
-        }
-
-        return $this->response->setJSON([
-            'status' => 'success',
-            'id' => $newId,
-        ]);
+            return $this->respond(['status' => 'success', 'id' => $newId]);
+        });
     }
 
     public function destroy() {
-        $folderId = $this->request->getPost('doc_id'); // Modal uses doc_id for consistency[cite: 14]
-        $folderModel = new \App\Models\DocumentFolderModel();
-        $documentModel = new \App\Models\DocumentModel();
+        return $this->tryOrFail(function() {
+            $folderId = $this->request->getPost('doc_id');
+            $folderModel = new \App\Models\DocumentFolderModel();
+            $documentModel = new \App\Models\DocumentModel();
 
-        $folder = $folderModel->find($folderId);
+            $folder = $folderModel->find($folderId);
 
-        // Security: Only owner can delete[cite: 46]
-        if (!$folder || $folder['user_id'] != session()->get('user_id')) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized']);
-        }
+            if (!$folder || $folder['user_id'] != session()->get('user_id')) {
+                throw new \Exception("Failed to delete.");
+            }
 
-        // Deleting the folder cascades to documents based on your migration[cite: 31]
-        $folderModel->delete($folderId);
+            $folderModel->delete($folderId);
 
-        return $this->response->setJSON(['status' => 'success']);
+            return $this->response->setJSON(['status' => 'success']);
+        });
     }
 
     public function send() {
-        $folderId    = $this->request->getPost('folder_id'); 
-        $ratingTitle = $this->request->getPost('rating_title');
-        $adminId     = session()->get('user_id');
+        return $this->tryOrFail(function() {
+            $folderId = $this->request->getPost('folder_id'); 
+            $adminId  = session()->get('user_id');
 
-        $folderModel     = new \App\Models\DocumentFolderModel();
-        $documentModel   = new \App\Models\DocumentModel();
-        $userModel       = new \App\Models\UserModel();
-        $ratingModel     = new \App\Models\RatingModel();
-        $userRatingModel = new \App\Models\UserRatingModel();
+            $folderModel = new \App\Models\DocumentFolderModel();
+            $userModel   = new \App\Models\UserModel();
+            $db          = \Config\Database::connect();
 
-        // 1. Get the original folder details and its templates
-        $originalFolder = $folderModel->find($folderId);
-        $templates = $documentModel->where('document_folder_id', $folderId)->findAll();
+            // 1. Fetch original folder shell
+            $originalFolder = $folderModel->find($folderId);
 
-        if (!$originalFolder || empty($templates)) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'No documents found in folder to send.']);
-        }
+            if (!$originalFolder) {
+                return $this->response->setJSON(['status' => 'error', 'message' => 'Original folder not found.']);
+            }
 
-        $targetUsers = $userModel->where('id !=', $adminId)->findAll();
-        
-        // 2. Create a single Rating Batch entry for the admin to track this distribution[cite: 42]
-        $ratingBatchId = generate_short_id();
-        $ratingModel->insert([
-            'id'      => $ratingBatchId,
-            'user_id' => $adminId,
-            'title'   => $ratingTitle ?: $originalFolder['title']
-        ]);
+            // Fetch all users who need the folder shell
+            $targetUsers = $userModel->where('id !=', $adminId)->findAll();
+            $failedDistributions = [];
 
-        // 3. Distribute to each user
-        foreach ($targetUsers as $user) {
-            // Step A: Create a NEW folder clone for this specific user[cite: 44]
-            $newUserFolderId = generate_short_id();
-            $folderModel->insert([
-                'id'      => $newUserFolderId,
-                'user_id' => $user['id'], // Ownership is set here[cite: 44]
-                'title'   => $originalFolder['title'],
-                'created_at' => date('Y-m-d H:i:s')
-            ]);
+            foreach ($targetUsers as $user) {
+                $db->transStart(); // Start transaction per user
 
-            // Step B: Clone every document into the new folder
-            foreach ($templates as $tpl) {
-                $newDocId = generate_short_id();
-                $documentModel->insert([
-                    'id'                 => $newDocId,
-                    'document_folder_id' => $newUserFolderId, // Link to the user's folder
-                    'title'              => $tpl['title'],
-                    'content'            => $tpl['content'],
-                    'eval_date_start'    => $tpl['eval_date_start'],
-                    'eval_date_end'      => $tpl['eval_date_end'],
-                    'created_at'         => date('Y-m-d H:i:s')
-                ]);
+                try {
+                    // 2. Clone ONLY the Folder and link to the Master
+                    $folderPayload = [
+                        'title'            => $originalFolder['title'],
+                        'user_id'          => $user['id'],
+                        'parent_folder_id' => $originalFolder['id'] // Links to the Admin's Master Folder
+                    ];
+                    
+                    $newFolderId = create_unique_row($folderModel, $folderPayload);
 
-                // Step C: Link the user's document clone to the Rating Batch[cite: 42]
-                $userRatingModel->insert([
-                    'rating_id'   => $ratingBatchId,
-                    'document_id' => $newDocId
+                    if (!$newFolderId) {
+                        throw new \Exception("Could not generate folder ID.");
+                    }
+
+                    $db->transComplete(); // Commit if folder creation worked
+
+                    if ($db->transStatus() === false) {
+                        throw new \Exception("Transaction failed.");
+                    }
+
+                } catch (\Exception $e) {
+                    // Rollback and log failure if this specific user fails
+                    $db->transRollback();
+                    $failedDistributions[] = $user['email']; 
+                }
+            }
+
+            // 3. Return status
+            if (count($failedDistributions) > 0) {
+                return $this->respond([
+                    'status'  => 'warning', 
+                    'message' => 'Distributed with errors. Failed for: ' . implode(', ', $failedDistributions)
                 ]);
             }
-        }
 
-        return $this->response->setJSON(['status' => 'success', 'message' => 'Folder and contents distributed successfully.']);
-    }
-
-    public function count() {
-        return $this->response->setJSON([
-            'status' => 'success',
-            'counts' => $this->_getCounts()
-        ]);
-    }
-
-    private function _getCounts() {
-        $userId = session()->get('user_id');
-        $folderModel = new \App\Models\DocumentFolderModel();
-
-        // Counts are now strictly for Folder entities[cite: 55]
-        $owned = $folderModel->where('user_id', $userId)->countAllResults();
-
-        return [
-            'all_folders' => $owned, // Adjust if "All" includes shared folders later
-            'owned'       => $owned,
-            'shared'      => 0
-        ];
+            return $this->respond(['status' => 'success', 'message' => 'Evaluation folders distributed successfully to all users.']);
+        });
     }
 }

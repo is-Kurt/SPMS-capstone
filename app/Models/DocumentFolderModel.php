@@ -12,7 +12,7 @@ class  DocumentFolderModel extends Model
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['id', 'title', 'user_id'];
+    protected $allowedFields    = ['id', 'title', 'user_id', 'parent_folder_id'];
 
     protected bool $allowEmptyInserts = false;
     protected bool $updateOnlyChanged = true;

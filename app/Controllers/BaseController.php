@@ -44,7 +44,47 @@ abstract class BaseController extends Controller
         $this->restoreSessionFromCookie();
     }
 
-    private function restoreSessionFromCookie() {
+    protected function respond($data, int $status = 200)
+    {
+        return $this->response
+            ->setStatusCode($status)
+            ->setJSON($data);
+    }
+
+    protected function respondError(string $message, int $status = 500)
+    {
+        return $this->response
+            ->setStatusCode($status)
+            ->setJSON(['status' => 'error', 'message' => $message]);
+    }
+
+    protected function tryOrFail(callable $fn)
+    {
+        try {
+            return $fn();
+        } catch (\Exception $e) {
+            return $this->respondError($e->getMessage());
+        }
+    }
+
+    protected function getUserDocument($userId, $docId = null) {
+        $documentModel = new \App\Models\DocumentModel();
+
+        $builder = $documentModel->db->table('documents d')
+            ->select('d.*, df.user_id')
+            ->join('document_folders df', 'df.id = d.document_folder_id')
+            ->where('df.user_id', $userId);
+
+        if ($docId !== null) {
+            $builder->where('d.id', $docId);
+        }
+
+        return $docId !== null
+            ? $builder->get()->getRowArray()
+            : $builder->get()->getResultArray();
+    }
+
+    protected function restoreSessionFromCookie() {
         if (session()->get('isLoggedIn')) {
             return;
         }

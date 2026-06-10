@@ -8,11 +8,12 @@ axios.interceptors.request.use((config) => {
     const protectedMethods = ['post', 'put', 'patch', 'delete'];
 
     if (protectedMethods.includes(method)) {
-        config.headers['X-CSRF-TOKEN'] = csrfHash;
+        config.headers['x-csrf-token'] = csrfHash;
     }
     return config;
 }, error => Promise.reject(error));
 
+// Response Interceptor
 axios.interceptors.response.use((response) => {
     const newHeaderHash = response.headers['x-csrf-token'];
     
@@ -25,9 +26,13 @@ axios.interceptors.response.use((response) => {
     }
     return response;
 }, (error) => {
-    const errorHash = error.response?.headers?.['x-csrf-token'];
+    const errorHash = error.response?.headers?.['x-csrf-token'] || error.response?.headers?.['X-CSRF-TOKEN'];
     if (errorHash) {
         csrfHash = errorHash;
+        document.querySelector('meta[name="csrf-token-hash"]').setAttribute('content', errorHash);
+        document.querySelectorAll(`input[name="${csrfName}"]`).forEach(input => {
+            input.value = errorHash;
+        });
     }
 
     if (error.response && error.response.data) {

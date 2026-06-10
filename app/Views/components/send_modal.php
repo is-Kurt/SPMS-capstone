@@ -14,15 +14,6 @@
                 Are you sure you want to distribute <span id="send-all-doc-title" class="font-bold text-text"></span> to every user in the system?
             </p>
         </div>
-
-        <div class="mt-4 text-left">
-            <label for="send-rating-title" class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">
-                Batch Title / Rating Name
-            </label>
-            <input type="text" id="send-rating-title" placeholder="e.g., Q1 Performance Review"
-                class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-all placeholder:text-text-muted/50 text-text font-bold">
-            <p id="send-rating-error" class="hidden text-xs text-red-500 font-bold mt-1">Title is required.</p>
-        </div>
         
         <div class="flex flex-col gap-2 mt-8">
             <button id="btn-confirm-send-all" 

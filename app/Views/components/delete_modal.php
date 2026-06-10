@@ -1,5 +1,4 @@
-<div id="delete-modal" 
-     class="hidden fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
+<div id="delete-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
     
     <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-[380px] p-8 border border-zinc-200 dark:border-zinc-800">
         
@@ -9,9 +8,9 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
             </div>
-            <h2 class="text-xl font-black tracking-tight text-text">Delete Document</h2>
+            <h2 class="text-xl font-black tracking-tight text-text"><span id="delete-doc-title"></span></h2>
             <p class="text-xs text-text-muted mt-2 px-4 leading-relaxed font-medium">
-                Are you sure you want to delete <span id="delete-doc-title" class="font-bold text-text"></span>?
+                Are you sure you want to delete <span id="delete-doc-desc" class="font-bold text-text"></span>?
             </p>
         </div>
 
