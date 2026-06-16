@@ -12,7 +12,19 @@ class DocumentModel extends Model
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['id', 'title', 'content', 'document_folder_id', 'eval_date_start', 'eval_date_end'];
+    protected $allowedFields    = [
+        'id', 
+        'title', 
+        'content', 
+        'final_rating', 
+        'document_folder_id', 
+        'eval_date_start', 
+        'eval_date_end', 
+        'submitted_at', 
+        'rated_at',
+        'parent_doc_id',
+        'status'
+    ];
 
     protected bool $allowEmptyInserts = false;
     protected bool $updateOnlyChanged = true;
@@ -45,10 +57,18 @@ class DocumentModel extends Model
     protected $afterDelete    = [];
 
     protected function setDefaultEvalDates(array $data): array {
-        $now = date('Y-m-d');
+        $today = date('Y-m-d');
+        $tomorrow = date('Y-m-d', strtotime('+1 day'));
 
-        $data['data']['eval_date_start'] = $now . ' 00:00:00';
-        $data['data']['eval_date_end']   = date('Y-m-d', strtotime('+1 day')) . ' 00:00:00';
+        // Only set default start date if one wasn't explicitly provided (protects cascaded docs)
+        if (empty($data['data']['eval_date_start'])) {
+            $data['data']['eval_date_start'] = $today . ' 24:00:00'; // 1 second before tomorrow
+        }
+
+        // Only set default end date if one wasn't explicitly provided
+        if (empty($data['data']['eval_date_end'])) {
+            $data['data']['eval_date_end'] = $tomorrow . ' 24:00:00'; // +1 day from start
+        }
 
         return $data;
     }

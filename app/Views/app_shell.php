@@ -2,7 +2,6 @@
 <?= $this->section('content') ?>
 
 <?= view('components/header') ?>
-
 <?= view('components/share_modal') ?>
 <?= view('components/create_file_modal') ?>
 <?= view('components/delete_modal') ?>
@@ -24,12 +23,12 @@
         </div>
         
         <div class="overflow-y-auto custom-scrollbar flex-1 pr-2">
-            <?= view('document/_folder_rows', ['folders' => $folders, 'selectedFolderId' => $selectedFolderId]) ?>
+            <?= view('document/_folder_rows', ['folders' => $sidebarFolders, 'selectedFolderId' => $selectedFolderId]) ?>
         </div>
     </div>
 
-    <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
-        <?= view('document/_doc_rows', ['activeFolder' => $activeFolder, 'docs' => $docs]) ?>
+    <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
+        <?= view($mainView, $mainData) ?>
     </div>
     
 </div>
@@ -42,7 +41,7 @@
 <script type="module" src="<?= base_url('assets/js/main/modals/createFolderModal.js') ?>"></script>
 
 <script>
-    pagination();
+    if (typeof pagination === 'function') pagination();
 </script>
 
 <?= $this->endSection() ?>

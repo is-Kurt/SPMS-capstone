@@ -84,6 +84,11 @@ abstract class BaseController extends Controller
             : $builder->get()->getResultArray();
     }
 
+    protected function getSidebarFolders() {
+        $folderModel = new \App\Models\DocumentFolderModel();
+        return $folderModel->where('user_id', session()->get('user_id'))->orderBy('created_at', 'DESC')->findAll();
+    }
+
     protected function restoreSessionFromCookie() {
         if (session()->get('isLoggedIn')) {
             return;

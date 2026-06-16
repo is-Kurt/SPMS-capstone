@@ -20,11 +20,11 @@ if (formCreateFolder) {
         const formData = new FormData(e.target);
 
         isCreatingFolder = true;
-        apiPost(`folder`, formData, {
+        apiPost('folder', formData, {
             onSuccess: (response) => {
                 isCreatingFolder = false;
                 folderModal.close();
-                window.location.href = `documents?folder_id=${response.id}`;
+                window.location.href = `folders?folder_id=${response.id}`;
             },
             onError: () => {
                 isCreatingFolder = false;

@@ -18,7 +18,7 @@ class UserModel extends Model
         'first_name',
         'last_name',
         'role', 
-        'position', 
+        'position',
         'department', 
         'remember_token', 
         'remember_token_expiry'

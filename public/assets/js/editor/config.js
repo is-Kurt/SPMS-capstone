@@ -150,6 +150,7 @@ function initPlainEditor(evaluated) {
         menubar: false,
         statusbar: false,
         toolbar: false,
+        height: '100%',
 
         plugins: 'saveShortcut, setDirty',
         
@@ -167,17 +168,16 @@ function initPlainEditor(evaluated) {
                 const markedCells = body.querySelectorAll('.calc-rating,.calc-row-avg, .calc-total, .calc-final-total');
                     markedCells.forEach(cell => {
                     cell.style.backgroundColor = '';
+                    cell.removeAttribute('contenteditable');
                 });
 
-                if (evaluated) {
-                    return;
-                };
-
-                const ratingCells = body.querySelectorAll('.calc-rating');
-                ratingCells.forEach(cell => {
-                    cell.setAttribute('contenteditable', 'true');
-                    cell.style.backgroundColor = 'rgba(16, 185, 129, 0.25)';
-                });
+                if (!evaluated) {
+                    const ratingCells = body.querySelectorAll('.calc-rating');
+                    ratingCells.forEach(cell => {
+                        cell.setAttribute('contenteditable', 'true');
+                        cell.style.backgroundColor = 'rgba(16, 185, 129, 0.25)';
+                    });
+                }
             });
         }
     });

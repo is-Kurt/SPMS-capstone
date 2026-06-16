@@ -1,17 +1,3 @@
-<?= $this->extend('layouts/main') ?>
-<?= $this->section('content') ?>
-
-<?php 
-    $role = session()->get('role');
-    $userDept = session()->get('department'); 
-?>
-
-<?= view('components/header') ?>
-
-<?= view('components/delete_modal') ?>
-
-<div class="p-8 max-w-7xl mx-auto flex flex-col h-[calc(100vh-6rem)]">
-    
     <div class="mb-8 shrink-0">
         <h1 class="text-3xl font-black tracking-tight text-text">Rating Directories</h1>
         <p class="text-sm text-text-muted mt-1 font-medium italic">Select an evaluation batch to view employee ratings.</p>
@@ -69,7 +55,6 @@
             </div>
         <?php endif; ?>
     </div>
-</div>
 
 <script src="<?= base_url('assets/js/main/functions.js') ?>"></script>
 <script type="module" src="<?= base_url('assets/js/main/modals/deleteModal.js') ?>"></script>
@@ -79,5 +64,3 @@
         baseUrl: '<?= site_url('rating') ?>',
     };
 </script>
-
-<?= $this->endSection() ?>

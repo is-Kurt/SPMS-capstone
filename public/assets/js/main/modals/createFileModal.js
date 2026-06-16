@@ -28,7 +28,7 @@ if (formCreatFile) {
             onSuccess: (response) => {
                 isCreating = false;
                 createModal.close();
-                window.location.href = `document?Id=${response.id}`;
+                window.location.href = `folders?folder_id=${response.id}`;
             },
             onError: () => {
                 isCreating = false;

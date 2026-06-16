@@ -24,12 +24,17 @@ class CreateDocumentsTable extends Migration
             ],
             'status' => [
                 'type'       => 'VARCHAR',
-                'constraint' => ['submitted', 'draft', 'evaluated'],
+                'constraint' => ['draft', 'submitted', 'toEvaluate', 'evaluated'],
                 'default'    => 'draft',
             ],
             'content' => [
                 'type'           => 'TEXT',
                 'null'           => true,
+            ],
+            'final_rating' => [
+                'type'       => 'DOUBLE',
+                'unsigned'   => true,
+                'null'       => true,
             ],
             'eval_date_start' => [
                 'type'           => 'DATETIME',
@@ -38,6 +43,19 @@ class CreateDocumentsTable extends Migration
             'eval_date_end' => [
                 'type'           => 'DATETIME',
                 'null'           => true,
+            ],
+            'submitted_at' => [
+                'type'           => 'DATETIME',
+                'null'           => true,
+            ],
+            'rated_at' => [
+                'type'           => 'DATETIME',
+                'null'           => true,
+            ],
+            'parent_doc_id' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 11,
+                'null'       => true,
             ],
             'created_at' => [
                 'type'           => 'DATETIME',
@@ -55,6 +73,7 @@ class CreateDocumentsTable extends Migration
 
         $this->forge->addKey('id', true);
         $this->forge->addForeignKey('document_folder_id', 'document_folders', 'id', 'CASCADE', 'CASCADE');
+        $this->forge->addForeignKey('parent_doc_id', 'documents', 'id', 'CASCADE', 'CASCADE');
         
         $this->forge->createTable('documents');
     }

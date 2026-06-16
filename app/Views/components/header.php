@@ -17,11 +17,11 @@
                         $role = session()->get('role'); 
                         
                         $nav_items = [
-                            'documents' => 'Documents',
+                            'folders' => 'Folders',
                             'submissions' => 'Submissions'
                         ];
 
-                        if ($role !== 'user') {
+                        if ($role !== 'Employee') {
                             $nav_items = ['ratings' => 'Ratings'] + $nav_items; 
                         }
 

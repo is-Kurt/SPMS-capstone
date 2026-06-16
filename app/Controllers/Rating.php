@@ -6,142 +6,153 @@ use App\Controllers\BaseController;
 
 class Rating extends BaseController
 {
-    // STEP 1: The Directory View (List of all batches)
     public function index() {
-        $ratingModel = new \App\Models\RatingModel();
-        $data['ratings'] = $ratingModel->orderBy('created_at', 'DESC')->findAll();
+        $userId = session()->get('user_id');
+        $role   = session()->get('role');
+        $dept   = session()->get('department');
+        $folderId = $this->request->getGet('folder_id');
+        $subFolderId = $this->request->getGet('sub_folder'); 
         
-        return view('rating/index', $data);
-    }
-
-    // STEP 2: The Departments View (List of departments inside a batch)
-    public function departments() {
-        $ratingId = $this->request->getGet('Id');
-        $ratingModel = new \App\Models\RatingModel();
+        $folderModel = new \App\Models\DocumentFolderModel();
         
-        $data['rating'] = $ratingModel->find($ratingId);
-        if (!$data['rating']) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        // 1. Fetch Sidebar Folders (The Master Batches)
+        $folders = $folderModel->where('user_id', $userId)
+                               ->orderBy('created_at', 'DESC')
+                               ->findAll();
+                               
+        if (!$folderId && !empty($folders)) {
+            $folderId = $folders[0]['id'];
         }
-
-        // Updated JOIN: Join documents to folders to reach the user[cite: 50, 51]
-        $db = \Config\Database::connect();
-        $data['departments'] = $db->table('user_ratings ur')
-            ->select('u.department')
-            ->join('documents d', 'd.id = ur.document_id')
-            ->join('document_folders df', 'df.id = d.document_folder_id') 
-            ->join('users u', 'u.id = df.user_id') 
-            ->where('ur.rating_id', $ratingId)
-            ->where('u.role', 'user') 
-            ->where('u.department IS NOT NULL')
-            ->distinct()
-            ->orderBy('u.department', 'ASC')
-            ->get()->getResultArray();
-
-        return view('rating/departments', $data);
-    }
-
-    public function show() {
-        $ratingId   = $this->request->getGet('Id');
-        $role       = session()->get('role');
-        $userDept   = session()->get('department');
-        $department = ($role === 'supervisor') ? $userDept : $this->request->getGet('dept');
-
-        if (empty($department)) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
-        }
-
-        $db         = \Config\Database::connect();
-
-        $data['docHeaders'] = $db->table('user_ratings ur')
-        ->select('d.title')
-        ->join('documents d', 'd.id = ur.document_id')
-        ->where('ur.rating_id', $ratingId)
-        ->distinct()
-        ->get()->getResultArray();
-
-        // 2. Fetch data: Added d.id as doc_id and s.id as sub_id
-        $rawRatings = $db->table('user_ratings ur')
-            ->select("ur.id as ur_id, u.id as user_id, (u.first_name || ' ' || u.last_name) as username, 
-                    u.position, d.title as doc_title, d.id as doc_id, 
-                    s.id as sub_id, s.final_rating, s.is_rated", false)
-            ->join('documents d', 'd.id = ur.document_id')
-            ->join('document_folders df', 'df.id = d.document_folder_id')
-            ->join('users u', 'u.id = df.user_id')
-            ->join('submissions s', 's.document_id = d.id', 'left') // Left join handles unsubmitted docs
-            ->where('ur.rating_id', $ratingId)
-            ->where('u.department', $department)
-            ->get()->getResultArray();
-
-        // Pivot logic: Now storing the IDs for the view links[cite: 31]
-        $userRows = [];
-        foreach ($rawRatings as $row) {
-            $userRows[$row['user_id']]['info'] = [
-                'username' => $row['username'], 
-                'position' => $row['position'],
-                'ur_id'    => $row['ur_id']
-            ];
-            $userRows[$row['user_id']]['scores'][$row['doc_title']] = [
-                'doc_id' => $row['doc_id'],
-                'sub_id' => $row['sub_id'], // Will be NULL if no submission exists[cite: 31]
-                'rating' => $row['final_rating'],
-                'rated'  => $row['is_rated']
-            ];
-        }
-
-        $data['userRows']   = $userRows;
-        $data['rating']     = (new \App\Models\RatingModel())->find($ratingId);
-        $data['department'] = $department;
-
-        return view('rating/show', $data);
-    }
-
-    public function destroy() {
-        $ratingId = $this->request->getPost('doc_id'); 
         
-        $ratingModel         = new \App\Models\RatingModel();
-        $userRatingModel     = new \App\Models\UserRatingModel();
-        $folderModel         = new \App\Models\DocumentFolderModel();
-        $documentModel       = new \App\Models\DocumentModel();
-        
-        $rating = $ratingModel->find($ratingId);
-        if (!$rating) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Rating batch not found.']);
-        }
+        $activeFolder = $folderId ? $folderModel->find($folderId) : null;
 
-        // 1. Fetch all documents associated with this batch
-        $userRatings = $userRatingModel->where('rating_id', $ratingId)->findAll();
-        $docIds = array_column($userRatings, 'document_id');
+        // ==============================================================
+        // MODE A: VIEWING A SUBORDINATE'S FOLDER
+        // ==============================================================
+        if ($activeFolder && $subFolderId) {
+            $subFolder = $folderModel->find($subFolderId);
+            if (!$subFolder) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Folder not found.');
 
-        if (!empty($docIds)) {
-            // 2. Identify the unique cloned folders associated with these documents[cite: 50]
-            $folders = $documentModel->select('document_folder_id')
-                                     ->whereIn('id', $docIds)
-                                     ->distinct()
-                                     ->findAll();
+            // Hierarchical Security Check
+            $folderOwnerId = $subFolder['user_id'];
+            $isAuthorized = false;
             
-            $folderIds = array_column($folders, 'document_folder_id');
+            $userModel = new \App\Models\UserModel();
+            $folderOwner = $userModel->find($folderOwnerId);
 
-            // 3. Delete cloned folders (Cascades to documents automatically)[cite: 46]
-            if (!empty($folderIds)) {
-                $folderModel->whereIn('id', $folderIds)->delete();
+            if ($folderOwnerId == $userId || $role === 'Admin') {
+                $isAuthorized = true;
+            } elseif ($folderOwner) {
+                $opcrRoles = ['Vice President', 'Campus Administrator'];
+                $dpcrRoles = ['Dean', 'Director', 'Head of Office'];
+                $ipcrRoles = ['Employee'];
+
+                if (in_array($role, $opcrRoles) && in_array($folderOwner['role'], $dpcrRoles)) {
+                    $isAuthorized = true;
+                } elseif (in_array($role, $dpcrRoles) && in_array($folderOwner['role'], $ipcrRoles) && $folderOwner['department'] === $dept) {
+                    $isAuthorized = true;
+                }
             }
+
+            if (!$isAuthorized) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Unauthorized access.');
+
+            // Fetch the subordinate's documents
+            $documentModel = new \App\Models\DocumentModel();
+            $myDocs = $documentModel->where('document_folder_id', $subFolderId)->findAll();
+
+            // Return the app_shell but load the Folder View instead of the Ratings list!
+            return view('app_shell', [
+                'sidebarFolders'   => $folders, // Keeps the master batch selected in sidebar
+                'selectedFolderId' => $activeFolder['id'],
+                'mainView'         => 'document/_doc_rows', // Swap the view!
+                'mainData'         => [
+                    'activeFolder'  => $subFolder,
+                    'myDocs'        => $myDocs,
+                    'groupedGuides' => [], // FIXED: Explicitly empty so guides don't render!
+                    'isReadOnly'    => true, 
+                    'backUrl'       => site_url('ratings?folder_id=' . $activeFolder['id']) 
+                ]
+            ]);
         }
 
-        // 4. Manually delete junction rows and parent batch record
-        $userRatingModel->where('rating_id', $ratingId)->delete();
-        $ratingModel->delete($ratingId);
-
-        return $this->response->setJSON(['status' => 'success']);
-    }
-
-    public function save() {
-        $ur_id = $this->request->getPost('ur_id');
-        $remarks = $this->request->getPost('remarks');
-
-        $userRatingModel = new \App\Models\UserRatingModel();
-        $userRatingModel->update($ur_id, ['remarks' => $remarks]);
-
-        return $this->response->setJSON(['status' => 'success']);
+        // ==============================================================
+        // MODE B: NORMAL RATINGS LIST VIEW
+        // ==============================================================
+        $data = [
+            'activeFolder' => $activeFolder,
+            'docHeaders'   => [],
+            'userRows'     => [],
+            'viewTitle'    => 'Evaluation Dashboard'
+        ];
+        
+        if ($activeFolder) {
+            $db = \Config\Database::connect();
+            $masterFolderId = $activeFolder['parent_folder_id'] ?? $activeFolder['id'];
+            
+            $data['docHeaders'] = $db->table('documents')
+                ->select('title')
+                ->where('document_folder_id', $masterFolderId)
+                ->distinct()
+                ->get()->getResultArray();
+                
+            $builder = $db->table('document_folders df')
+                ->select("df.id as folder_id, u.id as user_id, (u.first_name || ' ' || u.last_name) as username, 
+                        u.position, u.department, u.role, d.title as doc_title, d.id as doc_id, 
+                        d.final_rating, d.status, d.updated_at, d.created_at", false) // NEW: Added timestamps
+                ->join('users u', 'u.id = df.user_id')
+                ->join('documents d', 'd.document_folder_id = df.id', 'left')
+                ->where('df.parent_folder_id', $masterFolderId);
+                
+            if ($role === 'Admin') {
+                $data['viewTitle'] = "System-wide Evaluation";
+            } elseif (in_array($role, ['Vice President', 'Campus Administrator'])) {
+                $builder->whereIn('u.role', ['Dean', 'Director', 'Head of Office']);
+                $data['viewTitle'] = "DPCR Evaluation";
+            } else {
+                $builder->where('u.role', 'Employee')->where('u.department', $dept);
+                $data['viewTitle'] = "IPCR Evaluation (" . $dept . ")";
+            }
+            
+            $rawRatings = $builder->get()->getResultArray();
+            $userRows = [];
+            
+            foreach ($rawRatings as $row) {
+                if (!isset($userRows[$row['user_id']])) {
+                    $userRows[$row['user_id']]['info'] = [
+                        'username'   => $row['username'], 
+                        'position'   => $row['position'],
+                        'department' => $row['department'],
+                        'folder_id'  => $row['folder_id'],
+                        'role'       => $row['role'],
+                        'latest_eval_date' => null,
+                        'final_rating'     => null
+                    ];
+                }
+                if ($row['doc_title']) {
+                    $userRows[$row['user_id']]['scores'][$row['doc_title']] = [
+                        'doc_id' => $row['doc_id'],
+                        'rating' => $row['final_rating'],
+                        'status' => $row['status']
+                    ];
+                }
+                if ($row['status'] === 'evaluated' && $row['final_rating'] !== null) {
+                    $docDate = strtotime($row['updated_at'] ?? $row['created_at'] ?? '1970-01-01');
+                    $currentLatest = $userRows[$row['user_id']]['info']['latest_eval_date'];
+                    
+                    if ($currentLatest === null || $docDate > $currentLatest) {
+                        $userRows[$row['user_id']]['info']['latest_eval_date'] = $docDate;
+                        $userRows[$row['user_id']]['info']['final_rating'] = $row['final_rating'];
+                    }
+                }
+            }
+            $data['userRows'] = $userRows;
+        }
+        
+        return view('app_shell', [
+            'sidebarFolders'   => $folders,
+            'selectedFolderId' => $activeFolder['id'] ?? null, 
+            'mainView'         => 'rating/_show', 
+            'mainData'         => $data
+        ]);
     }
 }

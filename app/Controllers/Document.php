@@ -7,19 +7,35 @@ use App\Controllers\BaseController;
 class Document extends BaseController
 {
     public function index(): string {
-        $docId      = $this->request->getGet('Id');
-        $userId  = session()->get('user_id');
+        $docId  = $this->request->getGet('Id');
+        $userId = session()->get('user_id');
         
-        $doc = $this->getUserDocument($userId, $docId); // Verification via folder join
-
         if (!$docId) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        $data['doc'] = $doc;
+        $db = \Config\Database::connect();
+        
+        // Fetch the document AND find out who owns the folder it lives in
+        $docInfo = $db->table('documents d')
+            ->select('d.*, df.user_id as owner_id')
+            ->join('document_folders df', 'df.id = d.document_folder_id')
+            ->where('d.id', $docId)
+            ->get()->getRowArray();
+
+        if (!$docInfo) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        // If the current user does NOT own this document's folder, it's a Reference Guide!
+        $isGuide = ($docInfo['owner_id'] !== $userId);
+
+        $data['doc'] = $docInfo;
+        $data['isGuide'] = $isGuide; // Pass the flag to the view
+        
         return view('document/show', $data);
     }
-
+    
     public function store() {
         return $this->tryOrFail(function() {
             $documentModel = new \App\Models\DocumentModel();
@@ -40,7 +56,76 @@ class Document extends BaseController
                 throw new \Exception("Could not generate a unique ID.");
             }
 
-            return $this->respond(['status' => 'success', 'id' => $newId]);
+            return $this->respond(['status' => 'success', 'id' => $folderId]);
+        });
+    }
+
+    public function submit() {
+        return $this->tryOrFail(function() {
+            $docId = $this->request->getPost('doc_id');
+            $action = $this->request->getPost('action');
+            $userId = session()->get('user_id');
+
+            $documentModel = new \App\Models\DocumentModel();
+            $folderModel = new \App\Models\DocumentFolderModel();
+
+            $doc = $documentModel->find($docId);
+            if (!$doc) throw new \Exception("Document not found.");
+
+            $folder = $folderModel->find($doc['document_folder_id']);
+            if (!$folder || $folder['user_id'] != $userId) {
+                throw new \Exception("Unauthorized to modify this document.");
+            }
+
+            // ==========================================
+            // UNSUBMIT LOGIC
+            // ==========================================
+            if ($action === 'unsubmit') {
+                if ($doc['status'] === 'evaluated') {
+                    throw new \Exception("Cannot unsubmit a document that has already been evaluated.");
+                }
+
+                $documentModel->update($docId, [
+                    'status'       => 'draft',
+                    'submitted_at' => null
+                ]);
+
+                return $this->respond(['status' => 'success', 'message' => 'Document unsubmitted successfully.']);
+            }
+
+            // ==========================================
+            // SUBMIT LOGIC (No more cascading!)
+            // ==========================================
+            $documentModel->update($docId, [
+                'status'       => 'submitted',
+                'submitted_at' => date('Y-m-d H:i:s')
+            ]);
+
+            return $this->respond(['status' => 'success', 'message' => 'Document submitted.']);
+        });
+    }
+
+    public function evaluate() {
+        return $this->tryOrFail(function() {
+            $docId = $this->request->getPost('doc_id');
+            $finalRating = $this->request->getPost('final_rating');
+            $userId = session()->get('user_id');
+
+            $documentModel = new \App\Models\DocumentModel();
+            
+            $doc = $documentModel->find($docId);
+            if (!$doc) {
+                throw new \Exception("Document not found.");
+            }
+
+            // Update the document to lock it in as Evaluated
+            $documentModel->update($docId, [
+                'status'       => 'evaluated',
+                'final_rating' => (float) $finalRating,
+                'rated_at'     => date('Y-m-d H:i:s')
+            ]);
+
+            return $this->respond(['status' => 'success', 'message' => 'Document successfully evaluated and locked.']);
         });
     }
 
@@ -71,7 +156,7 @@ class Document extends BaseController
             $isAuthorized = true; // Owner can always save
         } elseif ($isRatingMode) {
             // Non-owners can ONLY save if they are managers in Rating Mode[cite: 21]
-            if ($role === 'admin') {
+            if ($role === 'Admin') {
                 $isAuthorized = true;
             } elseif ($role === 'supervisor' && $docOwnerInfo['owner_dept'] === $userDept) {
                 $isAuthorized = true;

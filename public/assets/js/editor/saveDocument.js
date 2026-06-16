@@ -108,7 +108,7 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
-async function saveWith(after, before) {
+async function saveWith({before, after}) {
     let result = null;
 
     // 1. Run the `rate()` calculation & validation first
@@ -129,30 +129,74 @@ async function saveWith(after, before) {
     }
 }
 
-function submit(endpointPath, redirectPath, extraData = {}) {
+function toggleSubmit(action) {
     if (submitting) return;
 
+    const btn = document.getElementById('btn-submit');
+    const originalText = btn.innerText;
+    
+    // Update button to show loading state
+    btn.innerText = action === 'submit' ? 'Submitting...' : 'Unsubmitting...';
+    btn.classList.add('opacity-75', 'cursor-not-allowed');
+    
     const formData = new FormData();
     const docId = AppConfig.docId || new URLSearchParams(window.location.search).get('Id');
-    formData.append('doc_id', docId);
     
-    for (const key in extraData) {
-        formData.append(key, extraData[key]);
-    }
-
-    const postUrl = '/' + endpointPath.replace(/^\//, '');
-    console.log(postUrl);
-    console.log(docId);
-    console.log(extraData);
+    formData.append('doc_id', docId);
+    formData.append('action', action); // 'submit' or 'unsubmit'
 
     submitting = true;
-    apiPost(postUrl, formData, {
+    
+    apiPost(`${AppConfig.baseUrl}/submit`, formData, {
         onSuccess: () => {
-            submitting = false;
-            window.location.href = '/' + redirectPath.replace(/^\//, '');
+            // Reload the page to reflect the new Status and swap the button UI
+            window.location.reload(); 
+        },
+        onError: () => {
+            // Revert button if something goes wrong
+            submitting = false; 
+            btn.innerText = originalText;
+            btn.classList.remove('opacity-75', 'cursor-not-allowed');
+        }
+    });
+}
+
+function evaluateDocument() {
+    if (submitting) return;
+
+    // 1. Pull the final calculated score directly out of the TinyMCE body attribute
+    const editorBody = tinymce.get('editable-doc').getBody();
+    const finalScore = editorBody.getAttribute('data-final-score');
+
+    if (!finalScore || isNaN(parseFloat(finalScore))) {
+        alert("Could not extract a valid final score. Please ensure the tables are filled out correctly.");
+        return;
+    }
+
+    const btn = document.getElementById('btn-submit');
+    const originalText = btn.innerText;
+    
+    btn.innerText = 'Evaluating...';
+    btn.classList.add('opacity-75', 'cursor-not-allowed');
+
+    // 2. Bundle the score and send it to the backend controller
+    const formData = new FormData();
+    const docId = AppConfig.docId || new URLSearchParams(window.location.search).get('Id');
+    
+    formData.append('doc_id', docId);
+    formData.append('final_rating', finalScore);
+
+    submitting = true;
+    
+    apiPost(`${AppConfig.baseUrl}/evaluate`, formData, {
+        onSuccess: () => {
+            // Instantly reload to show the green "Evaluated ✓" button
+            window.location.reload(); 
         },
         onError: () => {
             submitting = false; 
+            btn.innerText = originalText;
+            btn.classList.remove('opacity-75', 'cursor-not-allowed');
         }
     });
 }

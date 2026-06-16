@@ -63,7 +63,7 @@ class Session extends BaseController
                 ]);
             }
 
-            return redirect()->to($user['role'] === 'admin' ? '/ratings' : '/documents');
+            return redirect()->to(site_url('folders'));
         }
 
         return redirect()->back()->withInput()->with('errors', ['error' => 'Invalid email or password.']);

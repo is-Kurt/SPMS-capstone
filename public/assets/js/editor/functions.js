@@ -199,10 +199,14 @@ function updateDisplayDate(input, spanId) {
 
     if (input.id === 'doc-date-start') {
         const endInput = document.getElementById('doc-date-end');
-        endInput.min = input.value;
-        if (endInput.value < input.value) {
-            endInput.value = input.value;
-            updateDisplayDate(endInput, 'display-date-end');
+        
+        // FIX: Add safety check to ensure endInput actually exists in the DOM
+        if (endInput) {
+            endInput.min = input.value;
+            if (endInput.value < input.value) {
+                endInput.value = input.value;
+                updateDisplayDate(endInput, 'display-date-end');
+            }
         }
     }
 }
