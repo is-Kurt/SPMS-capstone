@@ -15,11 +15,18 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->get('rating/departments', 'Rating::departments', ['filter' => 'role:Admin']);
     $routes->get('rating/show', 'Rating::show', ['filter' => 'role:Admin,supervisor']);
     $routes->post('rating/save', 'Rating::save', ['filter' => 'role:Admin,supervisor']);
-
     $routes->delete('rating', 'Rating::destroy', ['filter' => 'role:admin']);
     $routes->post('rating/save', 'Rating::save', ['filter' => 'role:admin']);
 
+    // Accounts
+    $routes->get('accounts', 'AccountManagement::index', ['filter' => 'role:Admin']);
+    $routes->post('account/store', 'AccountManagement::store', ['filter' => 'role:Admin']);
+    $routes->post('account/toggle', 'AccountManagement::toggleStatus', ['filter' => 'role:Admin']);
+
+    // Profile
     $routes->get('profile', 'Profile');
+    $routes->post('profile/general', 'Profile::updateGeneral');
+    $routes->post('profile/password', 'Profile::updatePassword');
 
     // Document
     $routes->get('folders', 'Folder');

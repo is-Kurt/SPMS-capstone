@@ -18,11 +18,14 @@
                         
                         $nav_items = [
                             'folders' => 'Folders',
-                            'submissions' => 'Submissions'
                         ];
 
                         if ($role !== 'Employee') {
                             $nav_items = ['ratings' => 'Ratings'] + $nav_items; 
+                        }
+
+                        if ($role === 'Admin') {
+                            $nav_items['accounts'] = 'Accounts'; 
                         }
 
                         foreach ($nav_items as $uri => $label):

@@ -76,7 +76,6 @@
                     $currentTime = time();
                     $evalStartTime = strtotime($doc['eval_date_start']);
                     $isEvaluationPhase = ($currentTime >= $evalStartTime);
-                    log_message('debug', 'current: ' . $currentTime . ' ' . 'evaluation_time: ' . $evalStartTime);
                 ?>
 
                 <?php if ($isEvaluated): ?>

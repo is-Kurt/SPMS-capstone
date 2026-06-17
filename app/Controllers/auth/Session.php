@@ -37,7 +37,7 @@ class Session extends BaseController
 
         $rememberMe = (bool) $this->request->getPost('remember-me');
 
-        if ($user && password_verify($password, $user['password'])) {
+        if ($user && isset($user['is_active']) && $user['is_active'] == 1 && password_verify($password, $user['password'])) {
             session()->set([
                 'user_id' => $user['id'],
                 'email' => $user['email'],

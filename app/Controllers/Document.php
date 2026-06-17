@@ -186,6 +186,30 @@ class Document extends BaseController
         $documentModel->save($dataToSave);
         return $this->response->setJSON(['status' => 'success']);
     }
+
+    public function updateTimeBasedStatuses()
+    {
+        $db = \Config\Database::connect();
+        $now = date('Y-m-d H:i:s');
+
+        // 1. Trigger 'toEvaluate': 
+        // If it's submitted and the start date has passed, it's time to evaluate.
+        $db->table($this->table)
+           ->where('status', 'submitted')
+           ->where('eval_date_start <=', $now)
+           ->where('eval_date_end >=', $now) // Ensure it hasn't expired yet
+           ->update(['status' => 'toEvaluate']);
+
+        // 2. Trigger 'unevaluated': 
+        // If it was submitted or waiting for evaluation, but the deadline passed!
+        $db->table($this->table)
+           ->groupStart()
+               ->where('status', 'toEvaluate')
+               ->orWhere('status', 'submitted')
+           ->groupEnd()
+           ->where('eval_date_end <', $now)
+           ->update(['status' => 'unevaluated']);
+    }
         
     public function destroy() {
         $docId = $this->request->getPost('doc_id');
@@ -195,9 +219,6 @@ class Document extends BaseController
         if (!$this->getUserDocument($userId, $docId)) {
             return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized']);
         }
-
-        $userRatingModel = new \App\Models\UserRatingModel();
-        $userRatingModel->where('document_id', $docId)->delete();
         
         (new \App\Models\DocumentModel())->delete($docId);
 

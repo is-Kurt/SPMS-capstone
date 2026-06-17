@@ -180,12 +180,6 @@ class Folder extends BaseController
         }
 
         if ($role === 'Admin') {
-            $folderModel->groupStart()
-                        ->where('id', $folderId)
-                        ->orWhere('parent_folder_id', $folderId)
-                        ->groupEnd()
-                        ->delete();
-        } else {
             $folderModel->delete($folderId);
         }
 

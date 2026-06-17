@@ -37,19 +37,19 @@ class CreateUsersTable extends Migration
                 'null'       => false,
             ],
             'role' => [
-                'type'       => 'ENUM',
-                'constraint' => ['Admin', 'Vice President', 'Campus Administrator', 'Dean', 'Director', 'Head of Office', 'Employee'],
+                'type'       => 'VARCHAR',
+                'constraint' => 50,
                 'default'    => 'Employee', 
             ],
             'position' => [
-                'type'       => 'ENUM',
-                'constraint' => ['Instructor 1', 'Instructor 2', 'Instructor 3', 'Assistant Professor', 'Associate Professor', 'Staff'],
+                'type'       => 'VARCHAR',
+                'constraint' => 100,
                 'null'       => true,
                 'default'    => null,
             ],
             'department' => [
                 'type'       => 'VARCHAR',
-                'constraint' => '255',
+                'constraint' => 100,
                 'null'       => true, 
                 'default'    => null,
             ],
@@ -61,6 +61,12 @@ class CreateUsersTable extends Migration
             'remember_token_expiry' => [
                 'type' => 'DATETIME',
                 'null' => true,
+            ],
+            'is_active' => [
+                'type'       => 'TINYINT',
+                'constraint' => 1,
+                'default'    => 1,
+                'null'       => false,
             ],
             'created_at' => [
                 'type' => 'DATETIME',
