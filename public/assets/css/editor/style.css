@@ -11,7 +11,6 @@ table {
     border-collapse: collapse; 
     
     /* Force tables to stay inside the margins */
-    width: 100% !important; 
     max-width: 100%;
     
     /* Lock the layout so long text wraps instead of stretching the table */

@@ -23,6 +23,14 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->post('account/store', 'AccountManagement::store', ['filter' => 'role:Admin']);
     $routes->post('account/toggle', 'AccountManagement::toggleStatus', ['filter' => 'role:Admin']);
 
+    // Template Management
+    $routes->get('templates', 'Template::index', ['filter' => 'role:Admin']);
+    $routes->get('templates/create', 'Template::create', ['filter' => 'role:Admin']);      // NEW
+    $routes->get('templates/edit/(:num)', 'Template::edit/$1', ['filter' => 'role:Admin']); // NEW
+    
+    $routes->post('templates/store', 'Template::store', ['filter' => 'role:Admin']);
+    $routes->post('templates/delete', 'Template::delete', ['filter' => 'role:Admin']);
+
     // Profile
     $routes->get('profile', 'Profile');
     $routes->post('profile/general', 'Profile::updateGeneral');

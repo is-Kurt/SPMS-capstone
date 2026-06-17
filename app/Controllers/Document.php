@@ -42,13 +42,24 @@ class Document extends BaseController
             $userId   = session()->get('user_id');
             $folderId = $this->request->getPost('folder_id');
             $title  = trim($this->request->getPost('title')) ?: 'Untitled Document';
+            $templateId = $this->request->getPost('template');
+            $initialContent = '';
+
+            if (!empty($templateId)) {
+                $templateModel = new \App\Models\TemplateModel();
+                $template = $templateModel->find($templateId);
+                if ($template) {
+                    $initialContent = $template['content'];
+                }
+            }
 
             $docs = $this->getUserDocument($userId);
             $payload = [
                 'title'              => resolve_unique_title($title, $docs),
                 'user_id'            => $userId,
                 'document_folder_id' => $folderId,
-                'content'            => '',
+                'content'            => $initialContent,
+                'status'             => 'draft'
             ];
             $newId = create_unique_row($documentModel, $payload);
 

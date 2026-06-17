@@ -133,15 +133,19 @@ class Folder extends BaseController
             }
         }
 
+        $templateModel = new \App\Models\TemplateModel();
+        $templates = $templateModel->findAll();
+
         return view('app_shell', [
             'sidebarFolders'   => $this->getSidebarFolders(), 
             'selectedFolderId' => $activeFolder['id'] ?? null,
             'mainView'         => 'document/_doc_rows',
+            'templates'        => $templates,
             'mainData'         => [
                 'activeFolder'  => $activeFolder,
                 'myDocs'        => $myDocs,
                 'groupedGuides' => $groupedGuides, // Pass the grouped data
-                'isReadOnly'    => $isReadOnly
+                'isReadOnly'    => $isReadOnly,
             ]
         ]);
     }

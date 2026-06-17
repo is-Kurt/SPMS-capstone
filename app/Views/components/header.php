@@ -26,6 +26,7 @@
 
                         if ($role === 'Admin') {
                             $nav_items['accounts'] = 'Accounts'; 
+                            $nav_items['templates'] = 'Templates';
                         }
 
                         foreach ($nav_items as $uri => $label):

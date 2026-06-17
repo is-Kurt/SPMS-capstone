@@ -24,6 +24,13 @@
                         <select id="new-doc-template" name="template"
                             class="w-full appearance-none bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none cursor-pointer text-text transition-all">
                             <option value="" selected>Blank Canvas</option>
+                            
+                            <?php if(isset($templates) && !empty($templates)): ?>
+                                <?php foreach($templates as $tpl): ?>
+                                    <option value="<?= $tpl['id'] ?>"><?= esc($tpl['title']) ?></option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                            
                         </select>
                         <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-text-muted group-hover:text-accent transition-colors">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
