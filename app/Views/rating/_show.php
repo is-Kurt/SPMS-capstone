@@ -114,15 +114,17 @@
                     <table class="w-full text-left border-collapse">
                         <thead class="sticky top-0 z-20 bg-zinc-50 dark:bg-zinc-800/90 backdrop-blur-md text-[10px] font-black uppercase tracking-widest text-text-muted border-b border-surface-border shadow-sm">
                             <tr>
-                                <th class="px-6 py-4 min-w-[250px]">User / Position</th>
+                                <th class="px-6 py-4">User / Position</th>
+                                
                                 <?php if ($viewerRole === 'Admin'): ?>
-                                    <th class="px-6 py-4 min-w-[150px]">Department</th>
+                                    <th class="px-6 py-4">Department</th>
                                 <?php endif; ?>
-                                <?php foreach ($docHeaders as $header): ?>
-                                    <th class="px-6 py-4 text-center min-w-[150px]"><?= esc($header['title']) ?></th>
-                                <?php endforeach; ?>
-                                <th class="px-6 py-4 text-center min-w-[150px] border-l border-surface-border text-emerald-700 dark:text-emerald-400">Final Rating</th>
-                                <th class="px-6 py-4 text-right min-w-[300px]">Admin Remarks</th>
+                                
+                                <th class="px-6 py-4 text-center">Document Status</th>
+                                
+                                <th class="px-6 py-4 text-center text-emerald-700 dark:text-emerald-400">Final Rating</th>
+                                
+                                <th class="px-6 py-4 text-left w-1/3">Admin Remarks</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-surface-border" id="tbody-<?= $key ?>">
@@ -152,53 +154,51 @@
                                             </td>
                                         <?php endif; ?>
 
-                                        <?php foreach ($docHeaders as $header): ?>
-                                            <?php 
-                                                $scoreData = $data['scores'][$header['title']] ?? null; 
-                                                $status = $scoreData['status'] ?? 'draft';
-                                            ?>
-                                            <td class="px-6 py-4 text-center">
-                                                <?php if ($status === 'draft'): ?>
-                                                    <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic">
-                                                        Not Submitted
-                                                    </span>
-                                                <?php else: ?>
-                                                    <a href="<?= site_url('submission?Id=' . $scoreData['doc_id'] . '&return=' . urlencode($currentQuery)) ?>" 
-                                                    class="inline-flex flex-col items-center gap-1 group/badge transition-all">
-                                                        <?php if ($status === 'evaluated'): ?>
-                                                            <span class="px-3 py-1 rounded-lg text-xs font-black bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 border border-emerald-200 dark:border-emerald-500/20 group-hover/badge:bg-emerald-600 group-hover/badge:text-white transition-colors">
-                                                                <?= number_format($scoreData['rating'], 3) ?>
-                                                            </span>
-                                                            <span class="rating-badge opacity-60 text-[9px]" data-score="<?= $scoreData['rating'] ?>"></span>
-                                                        <?php else: ?>
-                                                            <span class="px-3 py-1 rounded-lg text-[10px] font-black bg-amber-50 dark:bg-amber-500/10 text-amber-600 border border-amber-200 dark:border-amber-500/20 group-hover/badge:scale-105 transition-transform uppercase tracking-tighter">
-                                                                Review & Rate
-                                                            </span>
-                                                        <?php endif; ?>
-                                                    </a>
-                                                <?php endif; ?>
-                                            </td>
-                                        <?php endforeach; ?>
+                                        <td class="px-6 py-4 text-center">
+                                            <?php $latestDoc = $data['latest_doc'] ?? null; ?>
+                                            
+                                            <?php if (!$latestDoc): ?>
+                                                <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic">
+                                                    No Documents
+                                                </span>
+                                            <?php else: ?>
+                                                <div class="inline-flex flex-col items-center gap-1 cursor-default">
+                                                    <?php if ($latestDoc['status'] === 'evaluated'): ?>
+                                                        <span class="px-3 py-1 rounded-lg text-[10px] font-black bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 border border-emerald-200 dark:border-emerald-500/20 uppercase tracking-widest">
+                                                            Evaluated ✓
+                                                        </span>
+                                                    <?php elseif ($latestDoc['status'] === 'draft'): ?>
+                                                        <span class="px-3 py-1 rounded-lg text-[10px] font-black bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border border-zinc-200 dark:border-zinc-700 uppercase tracking-widest">
+                                                            Drafting
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <span class="px-3 py-1 rounded-lg text-[10px] font-black bg-amber-50 dark:bg-amber-500/10 text-amber-600 border border-amber-200 dark:border-amber-500/20 uppercase tracking-widest shadow-sm">
+                                                            Review & Rate
+                                                        </span>
+                                                    <?php endif; ?>
+                                                </div>
+                                            <?php endif; ?>
+                                        </td>
 
-                                        <td class="px-6 py-4 text-center border-l border-surface-border bg-emerald-50/30 dark:bg-emerald-500/5">
-                                            <?php if (isset($data['info']['final_rating'])): ?>
+                                        <td class="px-6 py-4 text-center bg-emerald-50/30 dark:bg-emerald-500/5">
+                                            <?php if (isset($latestDoc['rating']) && $latestDoc['status'] === 'evaluated'): ?>
                                                 <div class="flex flex-col items-center gap-1 group/final">
                                                     <span class="px-3 py-1.5 rounded-lg text-sm font-black bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">
-                                                        <?= number_format($data['info']['final_rating'], 3) ?>
+                                                        <?= number_format($latestDoc['rating'], 3) ?>
                                                     </span>
-                                                    <span class="rating-badge opacity-60 text-[10px] font-bold uppercase tracking-widest" data-score="<?= $data['info']['final_rating'] ?>"></span>
+                                                    <span class="rating-badge opacity-60 text-[10px] font-bold uppercase tracking-widest" data-score="<?= $latestDoc['rating'] ?>"></span>
                                                 </div>
                                             <?php else: ?>
                                                 <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic">N/A</span>
                                             <?php endif; ?>
                                         </td>
 
-                                        <td class="px-6 py-4 relative group">
+                                        <td class="px-6 py-4 relative group w-full">
                                             <div class="flex items-center gap-2">
                                                 <input type="text" 
                                                     value="" 
                                                     placeholder="Add remark..." 
-                                                    class="w-full bg-transparent border-b border-transparent focus:border-accent text-sm text-text transition-all px-1 py-1">
+                                                    class="w-full bg-transparent border-b border-transparent focus:border-accent text-sm text-text transition-all px-1 py-1 outline-none">
                                             </div>
                                         </td>
                                     </tr>

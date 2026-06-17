@@ -80,7 +80,6 @@ class Rating extends BaseController
         // ==============================================================
         $data = [
             'activeFolder' => $activeFolder,
-            'docHeaders'   => [],
             'userRows'     => [],
             'viewTitle'    => 'Evaluation Dashboard'
         ];
@@ -88,17 +87,11 @@ class Rating extends BaseController
         if ($activeFolder) {
             $db = \Config\Database::connect();
             $masterFolderId = $activeFolder['parent_folder_id'] ?? $activeFolder['id'];
-            
-            $data['docHeaders'] = $db->table('documents')
-                ->select('title')
-                ->where('document_folder_id', $masterFolderId)
-                ->distinct()
-                ->get()->getResultArray();
                 
             $builder = $db->table('document_folders df')
                 ->select("df.id as folder_id, u.id as user_id, (u.first_name || ' ' || u.last_name) as username, 
-                        u.position, u.department, u.role, d.title as doc_title, d.id as doc_id, 
-                        d.final_rating, d.status, d.updated_at, d.created_at", false) // NEW: Added timestamps
+                        u.position, u.department, u.role, d.id as doc_id, 
+                        d.final_rating, d.status, d.created_at", false) 
                 ->join('users u', 'u.id = df.user_id')
                 ->join('documents d', 'd.document_folder_id = df.id', 'left')
                 ->where('df.parent_folder_id', $masterFolderId);
@@ -117,31 +110,32 @@ class Rating extends BaseController
             $userRows = [];
             
             foreach ($rawRatings as $row) {
+                // Initialize the user row if it doesn't exist
                 if (!isset($userRows[$row['user_id']])) {
-                    $userRows[$row['user_id']]['info'] = [
-                        'username'   => $row['username'], 
-                        'position'   => $row['position'],
-                        'department' => $row['department'],
-                        'folder_id'  => $row['folder_id'],
-                        'role'       => $row['role'],
-                        'latest_eval_date' => null,
-                        'final_rating'     => null
+                    $userRows[$row['user_id']] = [
+                        'info' => [
+                            'username'   => $row['username'], 
+                            'position'   => $row['position'],
+                            'department' => $row['department'],
+                            'folder_id'  => $row['folder_id'],
+                            'role'       => $row['role'],
+                        ],
+                        'latest_doc'  => null,
+                        'latest_time' => 0
                     ];
                 }
-                if ($row['doc_title']) {
-                    $userRows[$row['user_id']]['scores'][$row['doc_title']] = [
-                        'doc_id' => $row['doc_id'],
-                        'rating' => $row['final_rating'],
-                        'status' => $row['status']
-                    ];
-                }
-                if ($row['status'] === 'evaluated' && $row['final_rating'] !== null) {
-                    $docDate = strtotime($row['updated_at'] ?? $row['created_at'] ?? '1970-01-01');
-                    $currentLatest = $userRows[$row['user_id']]['info']['latest_eval_date'];
+
+                // Find the single MOST RECENT document created by this user
+                if ($row['doc_id']) {
+                    $docDate = strtotime($row['created_at'] ?? '1970-01-01');
                     
-                    if ($currentLatest === null || $docDate > $currentLatest) {
-                        $userRows[$row['user_id']]['info']['latest_eval_date'] = $docDate;
-                        $userRows[$row['user_id']]['info']['final_rating'] = $row['final_rating'];
+                    if ($docDate > $userRows[$row['user_id']]['latest_time']) {
+                        $userRows[$row['user_id']]['latest_time'] = $docDate;
+                        $userRows[$row['user_id']]['latest_doc'] = [
+                            'doc_id' => $row['doc_id'],
+                            'status' => $row['status'],
+                            'rating' => $row['final_rating']
+                        ];
                     }
                 }
             }
