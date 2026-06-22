@@ -16,14 +16,9 @@ class DocumentModel extends Model
         'id', 
         'title', 
         'content', 
-        'final_rating', 
         'document_folder_id', 
-        'eval_date_start', 
-        'eval_date_end', 
-        'submitted_at', 
-        'rated_at',
         'parent_doc_id',
-        'status'
+        'is_target'
     ];
 
     protected bool $allowEmptyInserts = false;
@@ -47,7 +42,7 @@ class DocumentModel extends Model
 
     // Callbacks
     protected $allowCallbacks = true;
-    protected $beforeInsert = ['setDefaultEvalDates'];
+    protected $beforeInsert   = [];
     protected $afterInsert    = [];
     protected $beforeUpdate   = [];
     protected $afterUpdate    = [];
@@ -56,20 +51,5 @@ class DocumentModel extends Model
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
 
-    protected function setDefaultEvalDates(array $data): array {
-        $today = date('Y-m-d');
-        $tomorrow = date('Y-m-d', strtotime('+1 day'));
 
-        // Only set default start date if one wasn't explicitly provided (protects cascaded docs)
-        if (empty($data['data']['eval_date_start'])) {
-            $data['data']['eval_date_start'] = $today . ' 24:00:00'; // 1 second before tomorrow
-        }
-
-        // Only set default end date if one wasn't explicitly provided
-        if (empty($data['data']['eval_date_end'])) {
-            $data['data']['eval_date_end'] = $tomorrow . ' 24:00:00'; // +1 day from start
-        }
-
-        return $data;
-    }
 }

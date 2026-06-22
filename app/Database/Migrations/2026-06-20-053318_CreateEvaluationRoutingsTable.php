@@ -4,7 +4,7 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreateUsersTable extends Migration
+class CreateEvaluationRoutingsTable extends Migration
 {
     public function up()
     {
@@ -15,40 +15,23 @@ class CreateUsersTable extends Migration
                 'unsigned'       => true,
                 'auto_increment' => true,
             ],
-            'email' => [
+            'folder_id' => [
                 'type'       => 'VARCHAR',
-                'constraint' => '255',
-                'unique'     => true,
+                'constraint' => 11,
                 'null'       => false,
             ],
-            'password' => [
+            'evaluator_id' => [
+                'type'           => 'INT',
+                'constraint'     => 11,
+                'unsigned'       => true,
+            ],
+            'status' => [
                 'type'       => 'VARCHAR',
-                'constraint' => '255',
-                'null'       => false,
+                'constraint' => 50,
             ],
-            'first_name' => [
+            'evaluator_folder_id' => [
                 'type'       => 'VARCHAR',
-                'constraint' => '255',
-                'null'       => false,
-            ],
-            'last_name' => [
-                'type'       => 'VARCHAR',
-                'constraint' => '255',
-                'null'       => false,
-            ],
-            'remember_token' => [
-                'type'       => 'VARCHAR',
-                'constraint' => '255',
-                'null'       => true,
-            ],
-            'remember_token_expiry' => [
-                'type' => 'DATETIME',
-                'null' => true,
-            ],
-            'is_active' => [
-                'type'       => 'TINYINT',
-                'constraint' => 1,
-                'default'    => 1,
+                'constraint' => 11,
                 'null'       => false,
             ],
             'created_at' => [
@@ -67,11 +50,14 @@ class CreateUsersTable extends Migration
 
         $this->forge->addKey('id', true);
 
-        $this->forge->createTable('users');
+        $this->forge->addForeignKey('evaluator_id', 'users', 'id', 'CASCADE',  'CASCADE');
+        $this->forge->addForeignKey('folder_id', 'document_folders', 'id', 'CASCADE', 'CASCADE');
+
+        $this->forge->createTable('evaluation_routings');
     }
 
     public function down()
     {
-        $this->forge->dropTable('users');
+        $this->forge->dropTable('evaluation_routings');
     }
 }

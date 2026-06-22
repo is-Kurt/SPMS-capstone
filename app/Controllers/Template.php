@@ -21,14 +21,12 @@ class Template extends BaseController
         return view('templates/index', $data);
     }
 
-    // NEW: Load blank editor
     public function create()
     {
         if (session()->get('role') !== 'Admin') return redirect()->to('/');
         return view('templates/editor', ['template' => null]);
     }
 
-    // NEW: Load populated editor
     public function edit($id)
     {
         if (session()->get('role') !== 'Admin') return redirect()->to('/');
@@ -49,7 +47,6 @@ class Template extends BaseController
 
         $rules = [
             'title'   => 'required|min_length[3]',
-            // Removed content requirement so they can save blank templates if they want
         ];
 
         if (!$this->validate($rules)) {

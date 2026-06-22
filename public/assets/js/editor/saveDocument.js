@@ -34,14 +34,6 @@ function saveDocument(manualSave = true) {
         formData.append('title', title);
         formData.append('is_rating_mode', AppConfig.isRatingMode);
         formData.append('_method', 'PATCH'); 
-        
-        const dateStart = document.getElementById('doc-date-start');
-        const dateEnd = document.getElementById('doc-date-end');
-
-        if (dateStart && dateEnd) {
-            formData.append('doc_date_start', dateStart.value);
-            formData.append('doc_date_end', dateEnd.value);
-        }
 
         apiPost('document', formData, {
             onSuccess: (data) => { 

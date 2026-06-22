@@ -38,12 +38,38 @@ class Session extends BaseController
         $rememberMe = (bool) $this->request->getPost('remember-me');
 
         if ($user && isset($user['is_active']) && $user['is_active'] == 1 && password_verify($password, $user['password'])) {
+            
+            $db = \Config\Database::connect();
+
+            // 1. Fetch System Role (RBAC)
+            $roleData = $db->table('user_roles ur')
+                ->select('r.name as role_name')
+                ->join('roles r', 'r.id = ur.role_id')
+                ->where('ur.user_id', $user['id'])
+                ->get()->getRowArray();
+            
+            $systemRole = $roleData ? $roleData['role_name'] : 'Employee';
+
+            // 2. Fetch HR Department/Unit & Position (Plantilla)
+            $plantillaData = $db->table('plantilla p')
+                ->select('u.name as department, pos.title as position')
+                ->join('units u', 'u.id = p.unit_id')
+                ->join('positions pos', 'pos.id = p.position_id')
+                ->where('p.user_id', $user['id'])
+                ->where('p.ended_at IS NULL') // Ensures we only get their active assignment
+                ->get()->getRowArray();
+
+            $department = $plantillaData ? $plantillaData['department'] : null;
+            $position   = $plantillaData ? $plantillaData['position'] : null;
+
+            // 3. Set the Session
             session()->set([
-                'user_id' => $user['id'],
-                'email' => $user['email'],
-                'role'       => $user['role'],
-                'department' => $user['department'],
-                'username' => $user['first_name'] . ' ' . $user['last_name'],
+                'user_id'    => $user['id'],
+                'email'      => $user['email'],
+                'role'       => $systemRole,       // From RBAC
+                'department' => $department,       // From Plantilla
+                'position'   => $position,         // Extra context from Plantilla
+                'username'   => $user['first_name'] . ' ' . $user['last_name'],
                 'isLoggedIn' => true
             ]);
 

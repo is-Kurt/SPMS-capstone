@@ -4,7 +4,7 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreateUsersTable extends Migration
+class CreatePositionsTable extends Migration
 {
     public function up()
     {
@@ -15,40 +15,15 @@ class CreateUsersTable extends Migration
                 'unsigned'       => true,
                 'auto_increment' => true,
             ],
-            'email' => [
-                'type'       => 'VARCHAR',
-                'constraint' => '255',
-                'unique'     => true,
-                'null'       => false,
-            ],
-            'password' => [
+            'title' => [
                 'type'       => 'VARCHAR',
                 'constraint' => '255',
                 'null'       => false,
             ],
-            'first_name' => [
-                'type'       => 'VARCHAR',
-                'constraint' => '255',
-                'null'       => false,
-            ],
-            'last_name' => [
-                'type'       => 'VARCHAR',
-                'constraint' => '255',
-                'null'       => false,
-            ],
-            'remember_token' => [
-                'type'       => 'VARCHAR',
-                'constraint' => '255',
-                'null'       => true,
-            ],
-            'remember_token_expiry' => [
-                'type' => 'DATETIME',
-                'null' => true,
-            ],
-            'is_active' => [
+            'is_teaching' => [
                 'type'       => 'TINYINT',
                 'constraint' => 1,
-                'default'    => 1,
+                'default'    => 0,  // 0 = non-teaching, 1 = teaching
                 'null'       => false,
             ],
             'created_at' => [
@@ -67,11 +42,11 @@ class CreateUsersTable extends Migration
 
         $this->forge->addKey('id', true);
 
-        $this->forge->createTable('users');
+        $this->forge->createTable('positions');
     }
 
     public function down()
     {
-        $this->forge->dropTable('users');
+        $this->forge->dropTable('positions');
     }
 }

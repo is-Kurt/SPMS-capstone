@@ -7,146 +7,119 @@ use App\Controllers\BaseController;
 class Rating extends BaseController
 {
     public function index() {
-        $userId = session()->get('user_id');
-        $role   = session()->get('role');
-        $dept   = session()->get('department');
-        $folderId = $this->request->getGet('folder_id');
-        $subFolderId = $this->request->getGet('sub_folder'); 
-        
+        $userId  = session()->get('user_id');
+        $sysRole = session()->get('role');     
+
+        $db = \Config\Database::connect();
         $folderModel = new \App\Models\DocumentFolderModel();
+
+        // 1. Get Sidebar Folders & Active Folder ID
+        $folders = $folderModel->where('user_id', $userId)->orderBy('created_at', 'DESC')->findAll();
+        $folderId = $this->request->getGet('folder_id');
         
-        // 1. Fetch Sidebar Folders (The Master Batches)
-        $folders = $folderModel->where('user_id', $userId)
-                               ->orderBy('created_at', 'DESC')
-                               ->findAll();
-                               
+        // Default to the first folder if none is selected
         if (!$folderId && !empty($folders)) {
             $folderId = $folders[0]['id'];
         }
-        
-        $activeFolder = $folderId ? $folderModel->find($folderId) : null;
 
-        // ==============================================================
-        // MODE A: VIEWING A SUBORDINATE'S FOLDER
-        // ==============================================================
-        if ($activeFolder && $subFolderId) {
-            $subFolder = $folderModel->find($subFolderId);
-            if (!$subFolder) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Folder not found.');
+        // 2. Base query: Fetch target folders tied to the SELECTED sidebar folder
+        $builder = $db->table('document_folders df')
+            ->select("df.id as folder_id, df.user_id, (u.first_name || ' ' || u.last_name) as username, 
+                      pos.title as position, un.name as department, df.final_rating, df.status as folder_status")
+            ->join('users u', 'u.id = df.user_id')
+            ->join('plantilla p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
+            ->join('positions pos', 'pos.id = p.position_id', 'left')
+            ->join('units un', 'un.id = p.unit_id', 'left');
 
-            // Hierarchical Security Check
-            $folderOwnerId = $subFolder['user_id'];
-            $isAuthorized = false;
-            
-            $userModel = new \App\Models\UserModel();
-            $folderOwner = $userModel->find($folderOwnerId);
-
-            if ($folderOwnerId == $userId || $role === 'Admin') {
-                $isAuthorized = true;
-            } elseif ($folderOwner) {
-                $opcrRoles = ['Vice President', 'Campus Administrator'];
-                $dpcrRoles = ['Dean', 'Director', 'Head of Office'];
-                $ipcrRoles = ['Employee'];
-
-                if (in_array($role, $opcrRoles) && in_array($folderOwner['role'], $dpcrRoles)) {
-                    $isAuthorized = true;
-                } elseif (in_array($role, $dpcrRoles) && in_array($folderOwner['role'], $ipcrRoles) && $folderOwner['department'] === $dept) {
-                    $isAuthorized = true;
-                }
-            }
-
-            if (!$isAuthorized) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Unauthorized access.');
-
-            // Fetch the subordinate's documents
-            $documentModel = new \App\Models\DocumentModel();
-            $myDocs = $documentModel->where('document_folder_id', $subFolderId)->findAll();
-
-            // Return the app_shell but load the Folder View instead of the Ratings list!
-            return view('app_shell', [
-                'sidebarFolders'   => $folders, // Keeps the master batch selected in sidebar
-                'selectedFolderId' => $activeFolder['id'],
-                'mainView'         => 'document/_doc_rows', // Swap the view!
-                'mainData'         => [
-                    'activeFolder'  => $subFolder,
-                    'myDocs'        => $myDocs,
-                    'groupedGuides' => [], // FIXED: Explicitly empty so guides don't render!
-                    'isReadOnly'    => true, 
-                    'backUrl'       => site_url('ratings?folder_id=' . $activeFolder['id']) 
-                ]
-            ]);
+        // 3. Apply Contextual Filters
+        if ($sysRole === 'Admin') {
+            // Admins see subordinates tied to their Master Folder
+            $builder->where('df.parent_folder_id', $folderId);
+        } else {
+            // Supervisors see subordinates routed specifically to their active folder
+            $builder->join('evaluation_routings er_me', 'er_me.folder_id = df.id')
+                    ->where('er_me.evaluator_id', $userId)
+                    ->where('er_me.evaluator_folder_id', $folderId);
         }
 
-        // ==============================================================
-        // MODE B: NORMAL RATINGS LIST VIEW
-        // ==============================================================
-        $data = [
-            'activeFolder' => $activeFolder,
-            'userRows'     => [],
-            'viewTitle'    => 'Evaluation Dashboard'
+        $rawFolders = $builder->get()->getResultArray();
+
+        // 4. Initialize Task Tabs (Descriptions removed)
+        $tabs = [
+            'action'    => ['label' => 'Action Required', 'folders' => []],
+            'pending'   => ['label' => 'Pending Subordinate', 'folders' => []],
+            'completed' => ['label' => 'Completed', 'folders' => []]
         ];
-        
-        if ($activeFolder) {
-            $db = \Config\Database::connect();
-            $masterFolderId = $activeFolder['parent_folder_id'] ?? $activeFolder['id'];
-                
-            $builder = $db->table('document_folders df')
-                ->select("df.id as folder_id, u.id as user_id, (u.first_name || ' ' || u.last_name) as username, 
-                        u.position, u.department, u.role, d.id as doc_id, 
-                        d.final_rating, d.status, d.created_at", false) 
-                ->join('users u', 'u.id = df.user_id')
-                ->join('documents d', 'd.document_folder_id = df.id', 'left')
-                ->where('df.parent_folder_id', $masterFolderId);
-                
-            if ($role === 'Admin') {
-                $data['viewTitle'] = "System-wide Evaluation";
-            } elseif (in_array($role, ['Vice President', 'Campus Administrator'])) {
-                $builder->whereIn('u.role', ['Dean', 'Director', 'Head of Office']);
-                $data['viewTitle'] = "DPCR Evaluation";
-            } else {
-                $builder->where('u.role', 'Employee')->where('u.department', $dept);
-                $data['viewTitle'] = "IPCR Evaluation (" . $dept . ")";
-            }
-            
-            $rawRatings = $builder->get()->getResultArray();
-            $userRows = [];
-            
-            foreach ($rawRatings as $row) {
-                // Initialize the user row if it doesn't exist
-                if (!isset($userRows[$row['user_id']])) {
-                    $userRows[$row['user_id']] = [
-                        'info' => [
-                            'username'   => $row['username'], 
-                            'position'   => $row['position'],
-                            'department' => $row['department'],
-                            'folder_id'  => $row['folder_id'],
-                            'role'       => $row['role'],
-                        ],
-                        'latest_doc'  => null,
-                        'latest_time' => 0
-                    ];
-                }
 
-                // Find the single MOST RECENT document created by this user
-                if ($row['doc_id']) {
-                    $docDate = strtotime($row['created_at'] ?? '1970-01-01');
-                    
-                    if ($docDate > $userRows[$row['user_id']]['latest_time']) {
-                        $userRows[$row['user_id']]['latest_time'] = $docDate;
-                        $userRows[$row['user_id']]['latest_doc'] = [
-                            'doc_id' => $row['doc_id'],
-                            'status' => $row['status'],
-                            'rating' => $row['final_rating']
-                        ];
-                    }
-                }
+        // 5. Sort folders into tabs based on the Master Folder Status
+        foreach ($rawFolders as $f) {
+            if ($f['folder_status'] === \App\Enums\FolderStatus::APPROVED->value) {
+                $tabs['completed']['folders'][] = $f;
+            } elseif (in_array($f['folder_status'], [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::REEVALUATE->value])) {
+                $tabs['pending']['folders'][] = $f;
+            } else {
+                $tabs['action']['folders'][] = $f;
             }
-            $data['userRows'] = $userRows;
         }
-        
+
+        // 6. Return View and highlight the active folder in the sidebar
         return view('app_shell', [
             'sidebarFolders'   => $folders,
-            'selectedFolderId' => $activeFolder['id'] ?? null, 
+            'selectedFolderId' => $folderId, // <-- This activates the sidebar UI!
             'mainView'         => 'rating/_show', 
-            'mainData'         => $data
+            'mainData'         => [
+                'tabs'    => $tabs,
+                'sysRole' => $sysRole
+            ]
+        ]);
+    }
+
+    public function show($subFolderId) {
+        $userId  = session()->get('user_id');
+        $sysRole = session()->get('role');
+
+        $folderModel = new \App\Models\DocumentFolderModel();
+        $subFolder = $folderModel->find($subFolderId);
+        if (!$subFolder) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+
+        $folderOwnerId = $subFolder['user_id'];
+        $isAuthorized = false;
+        
+        $db = \Config\Database::connect();
+
+        // 1. Authorization Check: Owner, Admin, or Assigned Evaluator
+        if ($folderOwnerId == $userId || $sysRole === 'Admin') {
+            $isAuthorized = true;
+        } else {
+            // Check if this user is explicitly assigned to evaluate this folder
+            $routingCount = $db->table('evaluation_routings')
+                               ->where('folder_id', $subFolderId)
+                               ->where('evaluator_id', $userId)
+                               ->countAllResults();
+            
+            if ($routingCount > 0) {
+                $isAuthorized = true;
+            }
+        }
+
+        if (!$isAuthorized) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Unauthorized access.');
+
+        $documentModel = new \App\Models\DocumentModel();
+        $routingModel = new \App\Models\EvaluationRoutingModel();
+
+        // Load the supervisor's own folders for the sidebar
+        $folders = $folderModel->where('user_id', $userId)->orderBy('created_at', 'DESC')->findAll();
+
+        return view('app_shell', [
+            'sidebarFolders'   => $folders, 
+            'selectedFolderId' => null, // Keep null so it doesn't highlight a random sidebar item
+            'mainView'         => 'document/_doc_rows', 
+            'mainData'         => [
+                'activeFolder'  => $subFolder,
+                'myDocs'        => $documentModel->where('document_folder_id', $subFolderId)->findAll(),
+                'isReadOnly'    => true, // Keep true so supervisors can't delete subordinate's docs
+                'presets'       => []    // Empty array to prevent undefined variable errors in _doc_rows
+            ]
         ]);
     }
 }

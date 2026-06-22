@@ -22,35 +22,14 @@ class CreateDocumentsTable extends Migration
                 'type'           => 'VARCHAR',
                 'constraint'     => 255,
             ],
-            'status' => [
-                'type'       => 'VARCHAR',
-                'constraint' => ['draft', 'submitted', 'toEvaluate', 'evaluated', 'unevaluated'],
-                'default'    => 'draft',
-            ],
             'content' => [
                 'type'           => 'TEXT',
                 'null'           => true,
             ],
-            'final_rating' => [
-                'type'       => 'DOUBLE',
-                'unsigned'   => true,
-                'null'       => true,
-            ],
-            'eval_date_start' => [
-                'type'           => 'DATETIME',
-                'null'           => true,
-            ],
-            'eval_date_end' => [
-                'type'           => 'DATETIME',
-                'null'           => true,
-            ],
-            'submitted_at' => [
-                'type'           => 'DATETIME',
-                'null'           => true,
-            ],
-            'rated_at' => [
-                'type'           => 'DATETIME',
-                'null'           => true,
+            'is_target' => [
+                'type'       => 'TINYINT',
+                'constraint' => 1,
+                'default'    => 0,
             ],
             'created_at' => [
                 'type'           => 'DATETIME',

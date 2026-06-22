@@ -3,35 +3,57 @@
 namespace App\Controllers;
 
 use App\Controllers\BaseController;
+use CodeIgniter\HTTP\ResponseInterface;
 
 class Document extends BaseController
 {
     public function index(): string {
-        $docId  = $this->request->getGet('Id');
-        $userId = session()->get('user_id');
+        $docId   = $this->request->getGet('Id');
+        $userId  = session()->get('user_id');
+        $sysRole = session()->get('role');
         
-        if (!$docId) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
-        }
+        if (!$docId) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
 
         $db = \Config\Database::connect();
         
-        // Fetch the document AND find out who owns the folder it lives in
         $docInfo = $db->table('documents d')
-            ->select('d.*, df.user_id as owner_id')
+            ->select('d.*, df.user_id as owner_id, df.status as folder_status, df.eval_date_start')
             ->join('document_folders df', 'df.id = d.document_folder_id')
-            ->where('d.id', $docId)
-            ->get()->getRowArray();
+            ->where('d.id', $docId)->get()->getRowArray();
 
-        if (!$docInfo) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        if (!$docInfo) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+
+        $docOwnerId = $docInfo['owner_id'];
+        
+        $isGuide = false;
+        $routingStatus = null;
+
+        // 1. Authorization & Routing Check
+        if ($docOwnerId !== $userId) {
+            $routingModel = new \App\Models\EvaluationRoutingModel();
+            
+            // Check if this user is explicitly assigned to evaluate this folder
+            $routing = $routingModel->where('folder_id', $docInfo['document_folder_id'])
+                                    ->where('evaluator_id', $userId)
+                                    ->first();
+            
+            if ($routing) {
+                // User is an assigned evaluator
+                // Fallback support for both Array and Entity return types
+                $routingStatus = is_object($routing) ? $routing->status : $routing['status'];
+            } elseif ($sysRole === 'Admin') {
+                // Admin acts as an implicit evaluator but has no specific routing row
+                $routingStatus = null;
+            } else {
+                // If not the owner, not an evaluator, and not an admin, 
+                // they are viewing this as a read-only guide template.
+                $isGuide = true;
+            }
         }
 
-        // If the current user does NOT own this document's folder, it's a Reference Guide!
-        $isGuide = ($docInfo['owner_id'] !== $userId);
-
+        $data['routingStatus'] = $routingStatus;
         $data['doc'] = $docInfo;
-        $data['isGuide'] = $isGuide; // Pass the flag to the view
+        $data['isGuide'] = $isGuide; 
         
         return view('document/show', $data);
     }
@@ -71,157 +93,65 @@ class Document extends BaseController
         });
     }
 
-    public function submit() {
-        return $this->tryOrFail(function() {
-            $docId = $this->request->getPost('doc_id');
-            $action = $this->request->getPost('action');
-            $userId = session()->get('user_id');
-
-            $documentModel = new \App\Models\DocumentModel();
-            $folderModel = new \App\Models\DocumentFolderModel();
-
-            $doc = $documentModel->find($docId);
-            if (!$doc) throw new \Exception("Document not found.");
-
-            $folder = $folderModel->find($doc['document_folder_id']);
-            if (!$folder || $folder['user_id'] != $userId) {
-                throw new \Exception("Unauthorized to modify this document.");
-            }
-
-            // ==========================================
-            // UNSUBMIT LOGIC
-            // ==========================================
-            if ($action === 'unsubmit') {
-                if ($doc['status'] === 'evaluated') {
-                    throw new \Exception("Cannot unsubmit a document that has already been evaluated.");
-                }
-
-                $documentModel->update($docId, [
-                    'status'       => 'draft',
-                    'submitted_at' => null
-                ]);
-
-                return $this->respond(['status' => 'success', 'message' => 'Document unsubmitted successfully.']);
-            }
-
-            // ==========================================
-            // SUBMIT LOGIC (No more cascading!)
-            // ==========================================
-            $documentModel->update($docId, [
-                'status'       => 'submitted',
-                'submitted_at' => date('Y-m-d H:i:s')
-            ]);
-
-            return $this->respond(['status' => 'success', 'message' => 'Document submitted.']);
-        });
-    }
-
-    public function evaluate() {
-        return $this->tryOrFail(function() {
-            $docId = $this->request->getPost('doc_id');
-            $finalRating = $this->request->getPost('final_rating');
-            $userId = session()->get('user_id');
-
-            $documentModel = new \App\Models\DocumentModel();
-            
-            $doc = $documentModel->find($docId);
-            if (!$doc) {
-                throw new \Exception("Document not found.");
-            }
-
-            // Update the document to lock it in as Evaluated
-            $documentModel->update($docId, [
-                'status'       => 'evaluated',
-                'final_rating' => (float) $finalRating,
-                'rated_at'     => date('Y-m-d H:i:s')
-            ]);
-
-            return $this->respond(['status' => 'success', 'message' => 'Document successfully evaluated and locked.']);
-        });
-    }
-
     public function update() {
-        $userId   = session()->get('user_id');
-        $role     = session()->get('role');
-        $userDept = session()->get('department');
-        $doc_id   = $this->request->getPost('id');
-        $isRatingMode = $this->request->getPost('is_rating_mode') === 'true';
+        $userId  = session()->get('user_id');
+        $sysRole = session()->get('role');
+        $doc_id  = $this->request->getPost('id');
 
         $db = \Config\Database::connect();
 
-        // 1. Fetch the owner ID and the owner's department via a Join
+        // 1. Fetch owner info and folder ID
         $docOwnerInfo = $db->table('documents d')
-            ->select('df.user_id as owner_id, u.department as owner_dept')
+            ->select('df.user_id as owner_id, df.id as folder_id')
             ->join('document_folders df', 'df.id = d.document_folder_id')
-            ->join('users u', 'u.id = df.user_id')
-            ->where('d.id', $doc_id)
-            ->get()->getRowArray();
+            ->where('d.id', $doc_id)->get()->getRowArray();
 
-        if (!$docOwnerInfo) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Document not found']);
-        }
+        if (!$docOwnerInfo) return $this->response->setJSON(['status' => 'error', 'message' => 'Document not found']);
 
-        // 2. Multi-Role Authorization Check
         $isAuthorized = false;
-        if ($docOwnerInfo['owner_id'] === $userId) {
-            $isAuthorized = true; // Owner can always save
-        } elseif ($isRatingMode) {
-            // Non-owners can ONLY save if they are managers in Rating Mode[cite: 21]
-            if ($role === 'Admin') {
-                $isAuthorized = true;
-            } elseif ($role === 'supervisor' && $docOwnerInfo['owner_dept'] === $userDept) {
+
+        // 2. Collaborative Authorization Check
+        if ($docOwnerInfo['owner_id'] === $userId || $sysRole === 'Admin') {
+            $isAuthorized = true; 
+        } else {
+            // Check if user is an evaluator for this document's folder
+            $routingModel = new \App\Models\EvaluationRoutingModel();
+            $isEvaluator = $routingModel->where('folder_id', $docOwnerInfo['folder_id'])
+                                        ->where('evaluator_id', $userId)
+                                        ->countAllResults() > 0;
+            
+            if ($isEvaluator) {
                 $isAuthorized = true;
             }
         }
 
-        if (!$isAuthorized) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized']);
-        }
+        if (!$isAuthorized) return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized']);
 
-        // 3. Save Logic
         $documentModel = new \App\Models\DocumentModel();
-        $dataToSave = [
+        $documentModel->save([
             'id'      => $doc_id,
             'title'   => $this->request->getPost('title'),
             'content' => $this->request->getPost('content'),
-        ];
+        ]);
 
-        $start = $this->request->getPost('doc_date_start');
-        $end   = $this->request->getPost('doc_date_end');
-
-        if (!empty($start) && !empty($end)) {
-            $dataToSave['eval_date_start'] = date('Y-m-d H:i', strtotime($start));
-            $dataToSave['eval_date_end']   = date('Y-m-d H:i', strtotime($end));
-        }
-
-        $documentModel->save($dataToSave);
         return $this->response->setJSON(['status' => 'success']);
     }
+    
+    public function setTarget() {
+        return $this->tryOrFail(function() {
+            $docId = $this->request->getPost('doc_id');
+            $folderId = $this->request->getPost('folder_id');
+            $db = \Config\Database::connect();
 
-    public function updateTimeBasedStatuses()
-    {
-        $db = \Config\Database::connect();
-        $now = date('Y-m-d H:i:s');
+            // Reset all documents in this folder to 0 (Evidence)
+            $db->table('documents')->where('document_folder_id', $folderId)->update(['is_target' => 0]);
+            // Set the selected one to 1 (Target)
+            $db->table('documents')->where('id', $docId)->update(['is_target' => 1]);
 
-        // 1. Trigger 'toEvaluate': 
-        // If it's submitted and the start date has passed, it's time to evaluate.
-        $db->table($this->table)
-           ->where('status', 'submitted')
-           ->where('eval_date_start <=', $now)
-           ->where('eval_date_end >=', $now) // Ensure it hasn't expired yet
-           ->update(['status' => 'toEvaluate']);
-
-        // 2. Trigger 'unevaluated': 
-        // If it was submitted or waiting for evaluation, but the deadline passed!
-        $db->table($this->table)
-           ->groupStart()
-               ->where('status', 'toEvaluate')
-               ->orWhere('status', 'submitted')
-           ->groupEnd()
-           ->where('eval_date_end <', $now)
-           ->update(['status' => 'unevaluated']);
+            return $this->respond(['status' => 'success', 'message' => 'Target document updated.']);
+        });
     }
-        
+
     public function destroy() {
         $docId = $this->request->getPost('doc_id');
         $userId = session()->get('user_id');

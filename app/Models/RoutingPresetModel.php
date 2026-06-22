@@ -4,22 +4,18 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class UserModel extends Model
+class RoutingPresetModel extends Model
 {
-    protected $table            = 'users';
+    protected $table            = 'routing_presets';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'email',
-        'password',
-        'first_name',
-        'last_name',
-        'remember_token',
-        'remember_token_expiry',
-        'is_active',
+        'owner_id',
+        'name',
+        'description',
     ];
 
     protected bool $allowEmptyInserts = false;
@@ -29,7 +25,7 @@ class UserModel extends Model
     protected array $castHandlers = [];
 
     // Dates
-    protected $useTimestamps = true;
+    protected $useTimestamps = false;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';

@@ -11,12 +11,19 @@ $routes->post('/test/importWordTable', 'Test::importWordTable');
 
 $routes->group('', ['filter' => 'auth'], function($routes) {
     // Ratings
-    $routes->get('ratings', 'Rating', ['filter' => 'role:Admin, Vice President, Campus Administrator, Dean, Director, Head of Office']);
-    $routes->get('rating/departments', 'Rating::departments', ['filter' => 'role:Admin']);
-    $routes->get('rating/show', 'Rating::show', ['filter' => 'role:Admin,supervisor']);
-    $routes->post('rating/save', 'Rating::save', ['filter' => 'role:Admin,supervisor']);
-    $routes->delete('rating', 'Rating::destroy', ['filter' => 'role:admin']);
-    $routes->post('rating/save', 'Rating::save', ['filter' => 'role:admin']);
+    $routes->get('ratings', 'Rating', ['filter' => 'role:Admin, Supervisor']);
+    $routes->get('ratings/show/(:segment)', 'Rating::show/$1', ['filter' => 'role:Admin, Supervisor']);
+    // $routes->get('rating/departments', 'Rating::departments', ['filter' => 'role:Admin, Supervisor']);
+    // $routes->get('rating/show', 'Rating::show', ['filter' => 'role:Admin, Supervisor']);
+    // $routes->post('rating/save', 'Rating::save', ['filter' => 'role:Admin, Supervisor']);
+    // $routes->delete('rating', 'Rating::destroy', ['filter' => 'role:Admin, Supervisor']);
+    // $routes->post('rating/save', 'Rating::save', ['filter' => 'role:Admin, Supervisor']);
+
+    // Routing Presets (My Teams)
+    $routes->get('teams', 'Team::index', ['filter' => 'role:Admin,Supervisor']);
+    $routes->post('teams/create-shell', 'Team::createShell', ['filter' => 'role:Admin,Supervisor']);
+    $routes->post('teams/store', 'Team::store', ['filter' => 'role:Admin,Supervisor']);
+    $routes->delete('teams/delete', 'Team::delete', ['filter' => 'role:Admin,Supervisor']);
 
     // Accounts
     $routes->get('accounts', 'AccountManagement::index', ['filter' => 'role:Admin']);
@@ -25,8 +32,8 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
 
     // Template Management
     $routes->get('templates', 'Template::index', ['filter' => 'role:Admin']);
-    $routes->get('templates/create', 'Template::create', ['filter' => 'role:Admin']);      // NEW
-    $routes->get('templates/edit/(:num)', 'Template::edit/$1', ['filter' => 'role:Admin']); // NEW
+    $routes->get('templates/create', 'Template::create', ['filter' => 'role:Admin']);
+    $routes->get('templates/edit/(:num)', 'Template::edit/$1', ['filter' => 'role:Admin']);
     
     $routes->post('templates/store', 'Template::store', ['filter' => 'role:Admin']);
     $routes->post('templates/delete', 'Template::delete', ['filter' => 'role:Admin']);
@@ -36,18 +43,27 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->post('profile/general', 'Profile::updateGeneral');
     $routes->post('profile/password', 'Profile::updatePassword');
 
-    // Document
+    // Folder
     $routes->get('folders', 'Folder');
     $routes->post('folder', 'Folder::store', ['filter' => 'role:Admin']);
-    $routes->post('folder/send', 'Folder::send', ['filter' => 'role:Admin']);
+    $routes->post('folder/update', 'Folder::update', ['filter' => 'role:Admin']);
     $routes->delete('folder', 'Folder::destroy', ['filter' => 'role:Admin']);
+    
+    $routes->post('folder/submit', 'Folder::submit');
+    $routes->post('folder/unsubmit', 'Folder::unsubmit');
+    $routes->post('folder/evaluate', 'Folder::evaluate');
+    $routes->post('folder/approve', 'Folder::approve');
+    $routes->post('folder/return', 'Folder::returnRevision');
+    $routes->post('folder/cascade-team', 'Folder::cascadeTeam', ['filter' => 'role:Admin,Supervisor']);
+    $routes->post('folder/uncascade-team', 'Folder::uncascadeTeam', ['filter' => 'role:Admin,Supervisor']);
 
+
+    // Document
     $routes->get('document', 'Document');
-    $routes->post('document/submit', 'Document::submit');
-    $routes->post('document/evaluate', 'Document::evaluate');
-    $routes->patch('document', 'Document::update');
     $routes->post('document', 'Document::store');
+    $routes->patch('document', 'Document::update');
     $routes->delete('document', 'Document::destroy');
+    $routes->post('document/target', 'Document::setTarget'); // NEW
 
     $routes->get('user/find', 'User::find');
 

@@ -20,8 +20,14 @@
                             'folders' => 'Folders',
                         ];
 
-                        if ($role !== 'Employee') {
-                            $nav_items = ['ratings' => 'Ratings'] + $nav_items; 
+                        // Roles that evaluate others get the Ratings tab
+                        if (in_array($role, ['Admin', 'Supervisor', 'HR'])) {
+                            $nav_items['ratings'] = 'Ratings'; 
+                        }
+
+                        // Only Admins and Supervisors create Distribution Lists (Teams)
+                        if (in_array($role, ['Admin', 'Supervisor'])) {
+                            $nav_items['teams'] = 'My Teams';
                         }
 
                         if ($role === 'Admin') {

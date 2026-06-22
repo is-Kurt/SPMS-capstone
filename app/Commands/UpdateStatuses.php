@@ -12,28 +12,28 @@ class UpdateStatuses extends BaseCommand
      *
      * @var string
      */
-    protected $group = 'App';
+    protected $group = 'SPMS Tasks';
 
     /**
      * The Command's Name
      *
      * @var string
      */
-    protected $name = 'command:name';
+    protected $name = 'spms:update-statuses';
 
     /**
      * The Command's Description
      *
      * @var string
      */
-    protected $description = '';
+    protected $description = 'Sweeps the database to update IPCR/DPCR/OPCR statuses based on evaluation dates.';
 
     /**
      * The Command's Usage
      *
      * @var string
      */
-    protected $usage = 'command:name [arguments] [options]';
+    protected $usage = 'spms:update-statuses';
 
     /**
      * The Command's Arguments
@@ -56,6 +56,16 @@ class UpdateStatuses extends BaseCommand
      */
     public function run(array $params)
     {
-        //
+        CLI::write('Sweeping database for expired evaluation dates...', 'yellow');
+
+        try {
+            // Call the math logic we put in the model!
+            $documentModel = new \App\Models\DocumentFolderModel();
+            $documentModel->updateTimeBasedStatuses();
+            
+            CLI::write('Successfully updated all document statuses!', 'green');
+        } catch (\Exception $e) {
+            CLI::error('Failed to update statuses: ' . $e->getMessage());
+        }
     }
 }

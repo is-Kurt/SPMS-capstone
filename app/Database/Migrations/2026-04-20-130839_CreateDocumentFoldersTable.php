@@ -29,6 +29,37 @@ class CreateDocumentFoldersTable extends Migration
                 'constraint' => 11,
                 'null'       => true,
             ],
+            'final_rating' => [
+                'type'       => 'DOUBLE',
+                'unsigned'   => true,
+                'null'       => true,
+            ],
+            'status' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 50,
+            ],
+            'routing_preset_id' => [
+                'type' => 'INT', 
+                'constraint' => 11,
+                'unsigned' => true,
+                'null'     => true
+            ],
+            'eval_date_start' => [
+                'type'           => 'DATETIME',
+                'null'           => true,
+            ],
+            'eval_date_end' => [
+                'type'           => 'DATETIME',
+                'null'           => true,
+            ],
+            'submitted_at' => [
+                'type'           => 'DATETIME',
+                'null'           => true,
+            ],
+            'rated_at' => [
+                'type'           => 'DATETIME',
+                'null'           => true,
+            ],
             'created_at' => [
                 'type' => 'DATETIME',
                 'null' => true,
@@ -47,6 +78,7 @@ class CreateDocumentFoldersTable extends Migration
 
         $this->forge->addForeignKey('user_id', 'users', 'id', 'CASCADE', 'CASCADE');
         $this->forge->addForeignKey('parent_folder_id', 'document_folders', 'id', 'CASCADE', 'CASCADE'); 
+        $this->forge->addForeignKey('routing_preset_id', 'routing_presets', 'id', 'CASCADE', 'CASCADE'); 
         $this->forge->createTable('document_folders');
     }
 
