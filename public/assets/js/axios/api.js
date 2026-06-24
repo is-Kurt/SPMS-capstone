@@ -7,17 +7,18 @@
  * @param {function} [options.onError] - Callback when status === 'error' or HTTP fails
  * @param {Object} [options.config] - Axios request configuration object
  */
-async function apiPost(url, data, { onSuccess, onError, config = {} } = {}) {
+async function apiPost(url, data, { onSuccess, onError, onDefault, config = {} } = {}) {
     try {
         const response = await axios.post(url, data, config);
 
         if (response.data.status === 'success') {
             if (onSuccess) onSuccess(response.data);
-            
         } else if (response.data.status === 'error') {
             console.error("Application Error:", response.data.message);
-            if (onError) onError(response.data.message);
-        }
+            if (onError) onError(response.data.message); }
+            
+        if (onDefault) onDefault(response.data);
+
     } catch (error) {
         handleApiError(error, onError);
     }
@@ -32,18 +33,19 @@ async function apiPost(url, data, { onSuccess, onError, config = {} } = {}) {
  * @param {function} [options.onError] - Callback when status === 'error' or HTTP fails
  * @param {Object} [options.config] - Axios request configuration object
  */
-async function apiGet(url, params = {}, { onSuccess, onError, config = {} } = {}) {
+async function apiGet(url, params = {}, { onSuccess, onError, onDefault, config = {} } = {}) {
     try {
         const requestConfig = { ...config, params: params };
         const response = await axios.get(url, requestConfig);
 
         if (response.data.status === 'success') {
             if (onSuccess) onSuccess(response.data);
-            
         } else if (response.data.status === 'error') {
             console.error("Application Error:", response.data.message);
-            if (onError) onError(response.data.message);
-        }
+            if (onError) onError(response.data.message); }
+
+        if (onDefault) onDefault(response.data);
+
     } catch (error) {
         handleApiError(error, onError);
     }

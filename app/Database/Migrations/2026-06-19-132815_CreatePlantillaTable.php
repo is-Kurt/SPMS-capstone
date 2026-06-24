@@ -60,7 +60,7 @@ class CreatePlantillaTable extends Migration
         $this->forge->addForeignKey('position_id', 'positions', 'id', 'RESTRICT', 'CASCADE');
         $this->forge->addForeignKey('unit_id',     'units',     'id', 'RESTRICT', 'CASCADE');
 
-        $this->forge->createTable('plantilla');
+        $this->forge->createTable('plantillas');
     }
 
     public function down()

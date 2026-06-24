@@ -57,11 +57,6 @@
                 </div>
 
             <?= form_close() ?>
-
-            <p class="mt-8 text-center text-sm text-text-muted font-medium">
-                Don't have an account?
-                <a href="signup" class="font-bold text-accent hover:text-accent-hover transition-colors">Sign up</a>
-            </p>
         </div>
 
     </div>

@@ -18,14 +18,25 @@ class Team extends BaseController
 
         // 1. Fetch all active users with their Plantilla assignments
         $users = $db->table('users u')
-            ->select('u.id as user_id, u.first_name, u.last_name, u.email, pos.id as position_id, pos.title as position, pos.is_teaching, un.id as unit_id, un.name as department')
+            ->select("u.id as user_id, u.first_name, u.last_name, u.email, 
+                      GROUP_CONCAT(DISTINCT pos.id) as position_id, 
+                      REPLACE(GROUP_CONCAT(DISTINCT pos.title), ',', ', ') as position, 
+                      MAX(pos.is_teaching) as is_teaching, 
+                      GROUP_CONCAT(DISTINCT un.id) as unit_id, 
+                      REPLACE(GROUP_CONCAT(DISTINCT un.name), ',', ', ') as department")
             ->join('plantilla p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
             ->join('positions pos', 'pos.id = p.position_id', 'left')
             ->join('units un', 'un.id = p.unit_id', 'left')
             ->where('u.is_active', 1)
             ->where('u.id !=', $userId) 
+            ->groupBy('u.id') // FIX: Strictly group by User ID only
             ->orderBy('u.last_name', 'ASC')
             ->get()->getResultArray();
+        
+        foreach ($users as &$u) {
+            if ($u['position'])   $u['position']   = str_replace(',', ', ', $u['position']);
+            if ($u['department']) $u['department'] = str_replace(',', ', ', $u['department']);
+        }
 
         $units = $db->table('units')->orderBy('name', 'ASC')->get()->getResultArray();
         $positions = $db->table('positions')->orderBy('title', 'ASC')->get()->getResultArray();

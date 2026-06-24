@@ -10,32 +10,44 @@ use App\Models\EvaluationRoutingModel;
 use App\Models\RoutingPresetMemberModel;
 use App\Models\DocumentModel;
 use App\Models\TemplateModel;
+use App\Model\UserModel;
 use App\Models\RoutingPresetModel;
 
 class Folder extends BaseController
 {
-    public function index(): string {
+    public function index($folderId = null) {
         $userId   = session()->get('user_id');
         $sysRole  = session()->get('role');
         $userPos  = session()->get('position');
         $dept     = session()->get('department');
-        $folderId = $this->request->getGet('folder_id');
 
-        $folderModel   = new DocumentFolderModel();
-        $documentModel = new DocumentModel();
-        $presetModel   = new RoutingPresetModel();
+        $folderModel   = new \App\Models\DocumentFolderModel();
+        $documentModel = new \App\Models\DocumentModel();
+        $presetModel   = new \App\Models\RoutingPresetModel();
         $db            = \Config\Database::connect();
 
         // 1. Get Folder Sidebar
         $folders = $folderModel->where('user_id', $userId)->orderBy('created_at', 'DESC')->findAll();
-        if (!$folderId && !empty($folders)) $folderId = $folders[0]['id'];
+
+        // 2. Clean URL Redirect Logic
+        if (!$folderId) {
+            $lastId = session()->get('active_folder_id');
+
+            if ($lastId && array_search($lastId, array_column($folders, 'id')) !== false) {
+                return redirect()->to('folders/' . $lastId);
+            } elseif (!empty($folders)) {
+                return redirect()->to('folders/' . $folders[0]['id']);
+            }
+        } else {
+            session()->set('active_folder_id', $folderId);
+        }
 
         $activeFolder = null;
         $myDocs = [];
         $groupedGuides = []; 
         $isReadOnly = true; 
 
-        // 2. Fetch presets for the dropdown
+        // 3. Fetch presets for the dropdown
         $presets = $presetModel->where('owner_id', $userId)->orderBy('name', 'ASC')->findAll();
 
         if ($folderId) {
@@ -43,10 +55,12 @@ class Folder extends BaseController
             
             // Security check
             if (!$activeFolder || $activeFolder['user_id'] != $userId) {
-                throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Unauthorized.');
+                session()->remove('active_folder_id');
+
+                return redirect()->to('folders'); 
             }
 
-            // 3. Hierarchical Security Check
+            // 4. Hierarchical Security Check
             $folderOwnerId = $activeFolder['user_id'];
             $isAuthorized = false;
 
@@ -79,10 +93,10 @@ class Folder extends BaseController
 
             if (!$isAuthorized) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Unauthorized.');
 
-            // 4. Load Docs and Guides
+            // 5. Load Docs and Guides
             $myDocs = $documentModel->where('document_folder_id', $folderId)->findAll();
 
-            $routingModel = new EvaluationRoutingModel();
+            $routingModel = new \App\Models\EvaluationRoutingModel();
 
             $cascadedRoutes = $routingModel->select('evaluation_routings.*, u.first_name, u.last_name, pos.title as evaluator_position')
                                             ->join('users u', 'u.id = evaluation_routings.evaluator_id')
@@ -92,17 +106,17 @@ class Folder extends BaseController
                                             ->findAll();
 
             foreach ($cascadedRoutes as $route) {
+                
                 $guideFolder = $folderModel->find($route['evaluator_folder_id']);
                 
                 if ($guideFolder) {
                     $docs = $documentModel->where('document_folder_id', $guideFolder['id'])->findAll();
-
+                    
                     if (!empty($docs)) {
                         $groupedGuides[] = [
                             'superior' => [
                                 'id'   => $route['evaluator_id'],
                                 'name' => $route['first_name'] . ' ' . $route['last_name'],
-                                // Use the position fetched from the join
                                 'role' => $route['evaluator_position'] ?? 'Evaluator' 
                             ], 
                             'docs' => $docs
@@ -110,10 +124,29 @@ class Folder extends BaseController
                     }
                 }
             }
-        }
 
-        $templateModel = new TemplateModel();
+            $mergedGuides = [];
 
+            foreach ($groupedGuides as $guide) {
+                $key = $guide['superior']['name']; 
+
+                if (!isset($mergedGuides[$key])) {
+                    $mergedGuides[$key] = $guide;
+                } else {
+                    $existingRoles = $mergedGuides[$key]['superior']['role'];
+                    $newRole       = $guide['superior']['role'];
+
+                    if (strpos($existingRoles, $newRole) === false) {
+                        $mergedGuides[$key]['superior']['role'] .= ', ' . $newRole;
+                    }
+                }
+            }
+
+            $groupedGuides = array_values($mergedGuides);
+            }
+
+        $templateModel = new \App\Models\TemplateModel();
+        
         return view('app_shell', [
             'sidebarFolders'   => $this->getSidebarFolders(), 
             'selectedFolderId' => $activeFolder['id'] ?? null,
@@ -131,14 +164,17 @@ class Folder extends BaseController
 
     public function cascadeTeam() {
         return $this->tryOrFail(function() {
+
             $folderId = $this->request->getPost('folder_id'); 
             $teamId   = $this->request->getPost('team_id');
             $userId   = session()->get('user_id');
             $role     = session()->get('role');
 
-            $folderModel = new DocumentFolderModel();
-            $routingModel = new EvaluationRoutingModel();
-            $presetMemberModel = new RoutingPresetMemberModel();
+            // 1. Initialize all Models (No raw DB connections)
+            $folderModel       = new \App\Models\DocumentFolderModel();
+            $routingModel      = new \App\Models\EvaluationRoutingModel();
+            $presetMemberModel = new \App\Models\RoutingPresetMemberModel();
+            $userModel         = new \App\Models\UserModel(); 
 
             $activeFolder = $folderModel->find($folderId);
             if (!$activeFolder) throw new \Exception("Folder not found.");
@@ -148,23 +184,45 @@ class Folder extends BaseController
 
             $folderModel->db->transStart();
 
-            // 1. Update the master folder to permanently remember this team
+            // Update the master folder to permanently remember this team
             $folderModel->update($folderId, ['routing_preset_id' => $teamId]);
+            $emailsQueued = 0; // Track how many emails we generate
 
             if ($role === 'Admin') {
                 foreach ($members as $member) {
-                    // Using Model's built-in where logic
                     $exists = $folderModel->where('user_id', $member['user_id'])
-                                        ->where('parent_folder_id', $activeFolder['id'])->first();
+                                          ->where('parent_folder_id', $activeFolder['id'])->first();
+                    
                     if (!$exists) {
-                        create_unique_row($folderModel, [
+                        // FIX: Capture the generated ID so we can use it in the email link
+                        $newFolderId = create_unique_row($folderModel, [
                             'title'            => $activeFolder['title'],
                             'user_id'          => $member['user_id'],
                             'parent_folder_id' => $activeFolder['id'],
                             'eval_date_start'  => $activeFolder['eval_date_start'],
                             'eval_date_end'    => $activeFolder['eval_date_end'],
-                            'status'           => FolderStatus::DRAFT->value
+                            'status'           => \App\Enums\FolderStatus::DRAFT->value
                         ]);
+                    } else {
+                        // If it already existed, grab the ID so the link still works
+                        $newFolderId = $exists['id']; 
+                    }
+
+                    // Only send an email if a NEW folder was actually created 
+                    // (Prevents spamming users if the Admin clicks Cascade twice)
+                    if (!$exists) {
+                        $memberInfo = $userModel->find($member['user_id']); // Use UserModel
+                        
+                        if ($memberInfo) {
+                            $link = site_url("folders/" . $newFolderId);
+
+                            queue_email(
+                                $memberInfo['email'], 
+                                'New Evaluation Folder: Drafting Period Open', 
+                                "Hello {$memberInfo['first_name']},<br><br>A new performance evaluation folder has been assigned to you. You may now begin drafting your entries and submitting your self-rating.<br><br><a href='{$link}'>Click here to open your folder</a>"
+                            );
+                            $emailsQueued++;
+                        }
                     }
                 }
                 $message = "Batch evaluation distributed to team members.";
@@ -173,19 +231,18 @@ class Folder extends BaseController
 
                 foreach ($members as $member) {
                     $subFolder = $folderModel->where('user_id', $member['user_id'])
-                                            ->where('parent_folder_id', $batchId)->first();
+                                             ->where('parent_folder_id', $batchId)->first();
                     
                     if ($subFolder) {
-                        // Using Model to check for existing route
                         $exists = $routingModel->where('folder_id', $subFolder['id'])
-                                            ->where('evaluator_id', $userId)->first();
+                                               ->where('evaluator_id', $userId)->first();
 
                         if (!$exists) {
                             $routingModel->insert([
-                                'folder_id'    => $subFolder['id'],
-                                'evaluator_id' => $userId,
+                                'folder_id'           => $subFolder['id'],
+                                'evaluator_id'        => $userId,
                                 'evaluator_folder_id' => $folderId,
-                                'status'       => FolderStatus::DRAFT->value
+                                'status'              => \App\Enums\FolderStatus::DRAFT->value
                             ]);
                         }
                     }
@@ -194,6 +251,7 @@ class Folder extends BaseController
             }
 
             $folderModel->db->transComplete();
+
             return $this->respond(['status' => 'success', 'message' => $message]);
         });
     }
@@ -362,12 +420,9 @@ class Folder extends BaseController
 
             // Using Model Update
             $folderModel->update($folderId, [
-                'status'       => 'submitted',
+                'status'       => FolderStatus::SUBMITTED->value,
                 'submitted_at' => date('Y-m-d H:i:s')
             ]);
-
-            // FUTURE: If you add an afterUpdate hook to DocumentFolderModel, 
-            // you can trigger a "Folder Submitted" notification here automatically.
 
             return $this->respond(['status' => 'success', 'message' => 'Folder submitted for evaluation.']);
         });
@@ -396,13 +451,34 @@ class Folder extends BaseController
         return $this->tryOrFail(function() {
             $folderId = $this->request->getPost('folder_id');
             $finalRating = $this->request->getPost('final_rating');
-            $folderModel = new DocumentFolderModel();
+            $folderModel = new \App\Models\DocumentFolderModel();
 
             $folderModel->update($folderId, [
-                'status'       => FolderStatus::EVALUATED->value,
+                'status'       => \App\Enums\FolderStatus::EVALUATED->value,
                 'final_rating' => (float) $finalRating,
                 'rated_at'     => date('Y-m-d H:i:s')
             ]);
+
+            $userModel    = new \App\Models\UserModel();
+            $routingModel = new \App\Models\EvaluationRoutingModel();
+            
+            $folder = $folderModel->find($folderId);
+            $subordinate = $userModel->find($folder['user_id']);
+            $routings = $routingModel->where('folder_id', $folderId)->findAll();
+            
+            foreach ($routings as $route) {
+                $evaluator = $userModel->find($route['evaluator_id']);
+                
+                if ($evaluator) {
+                    $link = site_url("ratings/show/" . $folderId);
+                    
+                    queue_email(
+                        $evaluator['email'],
+                        'Pending Review: ' . $subordinate['first_name'] . ' has evaluated their folder',
+                        "Hello {$evaluator['first_name']},<br><br>{$subordinate['first_name']} {$subordinate['last_name']} has completed the self-evaluation for their folder (<b>{$folder['title']}</b>). It is now in your queue and ready for your official review.<br><br><a href='{$link}'>Click here to review their evaluation</a>"
+                    );
+                }
+            }
 
             return $this->respond(['status' => 'success', 'message' => 'Folder successfully evaluated and locked.']);
         });
@@ -420,6 +496,19 @@ class Folder extends BaseController
 
             $this->updateFolderConsensus($folderId);
 
+            $userModel = new UserModel();
+            $folderModel = new DocumentFolderModel();
+            $folder = $folderModel->find($folderId);
+            $subordinate = $userModel->find($folder['user_id']);
+            $supervisor = $userModel->find(session()->get('user_id'));
+            $link = site_url("folders/" . $folderId);
+            
+            queue_email(
+                $subordinate['email'],
+                'Folder Approved: ' . $folder['title'],
+                "Hello {$subordinate['first_name']},<br><br>Your supervisor, {$supervisor['first_name']} {$supervisor['last_name']}, has officially approved your evaluation folder (<b>{$folder['title']}</b>).<br><br><a href='{$link}'>Click here to view your finalized rating</a>"
+            );
+
             return $this->respond(['status' => 'success', 'message' => 'Approved!']);
         });
     }
@@ -435,6 +524,19 @@ class Folder extends BaseController
                 ->update(['status' => FolderStatus::REEVALUATE->value, 'updated_at' => date('Y-m-d H:i:s')]);
 
             $this->updateFolderConsensus($folderId);
+
+            $userModel = new \App\Models\UserModel();
+            $folderModel = new DocumentFolderModel();
+            $folder = $folderModel->find($folderId);
+            $subordinate = $userModel->find($folder['user_id']);
+            $supervisor = $userModel->find(session()->get('user_id'));
+            $link = site_url("folders/" . $folderId);
+            
+            queue_email(
+                $subordinate['email'],
+                'Action Required: Folder Returned for Revision',
+                "Hello {$subordinate['first_name']},<br><br>Your supervisor, {$supervisor['first_name']} {$supervisor['last_name']}, has returned your evaluation folder (<b>{$folder['title']}</b>) for re-evaluation or corrections.<br><br><a href='{$link}'>Click here to open your folder and make adjustments</a>"
+            );
 
             return $this->respond(['status' => 'success', 'message' => 'Returned for revision.']);
         });

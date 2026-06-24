@@ -11,13 +11,9 @@ $routes->post('/test/importWordTable', 'Test::importWordTable');
 
 $routes->group('', ['filter' => 'auth'], function($routes) {
     // Ratings
-    $routes->get('ratings', 'Rating', ['filter' => 'role:Admin, Supervisor']);
+    $routes->get('ratings', 'Rating::index');
+    $routes->get('ratings/(:segment)', 'Rating::index/$1');
     $routes->get('ratings/show/(:segment)', 'Rating::show/$1', ['filter' => 'role:Admin, Supervisor']);
-    // $routes->get('rating/departments', 'Rating::departments', ['filter' => 'role:Admin, Supervisor']);
-    // $routes->get('rating/show', 'Rating::show', ['filter' => 'role:Admin, Supervisor']);
-    // $routes->post('rating/save', 'Rating::save', ['filter' => 'role:Admin, Supervisor']);
-    // $routes->delete('rating', 'Rating::destroy', ['filter' => 'role:Admin, Supervisor']);
-    // $routes->post('rating/save', 'Rating::save', ['filter' => 'role:Admin, Supervisor']);
 
     // Routing Presets (My Teams)
     $routes->get('teams', 'Team::index', ['filter' => 'role:Admin,Supervisor']);
@@ -27,8 +23,20 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
 
     // Accounts
     $routes->get('accounts', 'AccountManagement::index', ['filter' => 'role:Admin']);
-    $routes->post('account/store', 'AccountManagement::store', ['filter' => 'role:Admin']);
+    $routes->post('account/sendInvites', 'AccountManagement::sendInvites', ['filter' => 'role:Admin']);
     $routes->post('account/toggle', 'AccountManagement::toggleStatus', ['filter' => 'role:Admin']);
+    $routes->post('account/process-queue', 'AccountManagement::processQueueAjax');
+    $routes->delete('account', 'AccountManagement::destroy', ['filter' => 'role:Admin']);
+
+    // System Data Management Routes
+    $routes->post('account/role/add', 'AccountManagement::addRole');
+    $routes->post('account/role/delete', 'AccountManagement::deleteRole');
+
+    $routes->post('account/position/add', 'AccountManagement::addPosition');
+    $routes->post('account/position/delete', 'AccountManagement::deletePosition');
+
+    $routes->post('account/unit/add', 'AccountManagement::addUnit');
+    $routes->post('account/unit/delete', 'AccountManagement::deleteUnit');
 
     // Template Management
     $routes->get('templates', 'Template::index', ['filter' => 'role:Admin']);
@@ -45,10 +53,10 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
 
     // Folder
     $routes->get('folders', 'Folder');
+    $routes->get('folders/(:segment)', 'Folder::index/$1');
     $routes->post('folder', 'Folder::store', ['filter' => 'role:Admin']);
     $routes->post('folder/update', 'Folder::update', ['filter' => 'role:Admin']);
     $routes->delete('folder', 'Folder::destroy', ['filter' => 'role:Admin']);
-    
     $routes->post('folder/submit', 'Folder::submit');
     $routes->post('folder/unsubmit', 'Folder::unsubmit');
     $routes->post('folder/evaluate', 'Folder::evaluate');
@@ -57,16 +65,15 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->post('folder/cascade-team', 'Folder::cascadeTeam', ['filter' => 'role:Admin,Supervisor']);
     $routes->post('folder/uncascade-team', 'Folder::uncascadeTeam', ['filter' => 'role:Admin,Supervisor']);
 
-
     // Document
     $routes->get('document', 'Document');
+    $routes->get('document/(:segment)', 'Document::index/$1');
     $routes->post('document', 'Document::store');
     $routes->patch('document', 'Document::update');
     $routes->delete('document', 'Document::destroy');
-    $routes->post('document/target', 'Document::setTarget'); // NEW
+    $routes->post('document/target', 'Document::setTarget');
 
-    $routes->get('user/find', 'User::find');
-
+    // Auth
     $routes->delete('login', 'Auth\Session::destroy');
 });
 

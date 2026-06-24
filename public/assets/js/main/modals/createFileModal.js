@@ -24,11 +24,11 @@ if (formCreatFile) {
         formData.append('folder_id', activeFolderId);
 
         isCreating = true;
-        apiPost('document', formData, {
+        apiPost('/document', formData, {
             onSuccess: (response) => {
                 isCreating = false;
                 createModal.close();
-                window.location.href = `folders?folder_id=${response.id}`;
+                window.location.reload();
             },
             onError: () => {
                 isCreating = false;

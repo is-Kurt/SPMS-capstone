@@ -5,7 +5,7 @@
     $hasGuides = !empty($groupedGuides);
 
     $folderModel = new \App\Models\DocumentFolderModel();
-    $isLocked = $folderModel->isFolderLocked($activeFolder);
+    $isLocked = $activeFolder ? $folderModel->isFolderLocked($activeFolder) : true;
 ?>
 
 <?php if (!$activeFolder): ?>
@@ -55,9 +55,10 @@
                         <div class="flex items-center bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-surface-border p-1 shrink-0">
                             <div class="relative">
                                 <select id="team-cascade-select" <?= ($cascadedTeamId || $isLocked) ? 'disabled' : '' ?> class="bg-transparent text-[11px] font-black uppercase tracking-widest text-text outline-none pl-3 pr-8 py-1.5 appearance-none border-r border-surface-border <?= ($cascadedTeamId || $isLocked) ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer' ?>">
-                                    <option value="" disabled <?= !$cascadedTeamId ? 'selected' : '' ?>>Cascade to...</option>
                                     <?php foreach($presets as $preset): ?>
-                                        <option value="<?= $preset['id'] ?>" <?= ($cascadedTeamId == $preset['id']) ? 'selected' : '' ?>><?= esc($preset['name']) ?></option>
+                                        <option value="<?= $preset['id'] ?>" <?= ($cascadedTeamId == $preset['id'] || (!$cascadedTeamId && $preset === reset($presets))) ? 'selected' : '' ?>>
+                                            <?= esc($preset['name']) ?>
+                                        </option>
                                     <?php endforeach; ?>
                                 </select>
                                 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-text-muted">
@@ -111,7 +112,6 @@
                     $folderModel = new \App\Models\DocumentFolderModel();
                     $isLocked = $folderModel->isFolderLocked($activeFolder);
                     $status = $activeFolder['status'] ?? 'draft';
-
                     $hasBeenSubmitted = !empty($activeFolder['submitted_at']);
                 ?>
 
@@ -202,7 +202,7 @@
                                         </svg>
                                     </div>
                                     <div class="flex flex-col min-w-0">
-                                        <a href="<?= site_url('document?Id=' . $doc['id']) ?>" class="font-bold text-sm text-text hover:text-blue-500 transition-colors truncate">
+                                        <a href="<?= site_url('document/' . $doc['id']) ?>" class="font-bold text-sm text-text hover:text-blue-500 transition-colors truncate">
                                             <?= esc($doc['title']) ?>
                                         </a>
                                         <span class="text-[10px] text-blue-500 font-bold tracking-tight uppercase">Basis / Guide</span>
@@ -213,7 +213,7 @@
                                     <span class="text-[10px] font-semibold text-text-muted"><?= date('M d, Y g:ia', strtotime($doc['updated_at'] ?? $doc['created_at'])) ?></span>
                                 </div>
                                 <div class="col-span-2 flex justify-end gap-1">
-                                    <a href="<?= site_url('document?Id=' . $doc['id']) ?>" class="text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 hover:text-blue-800 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:bg-blue-500/20 transition-colors cursor-pointer">
+                                    <a href="<?= site_url('document/' . $doc['id']) ?>" class="text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 hover:text-blue-800 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:bg-blue-500/20 transition-colors cursor-pointer">
                                         View Target
                                     </a>
                                 </div>
@@ -242,7 +242,7 @@
                                         </svg>
                                     </div>
                                     <div class="flex flex-col min-w-0">
-                                        <a href="<?= site_url('document?Id=' . $doc['id']) ?>" class="font-bold text-sm text-text hover:text-accent hover:underline transition-colors truncate">
+                                        <a href="<?= site_url('document/' . $doc['id']) ?>" class="font-bold text-sm text-text hover:text-accent hover:underline transition-colors truncate">
                                             <?= esc($doc['title']) ?>
                                         </a>
                                         <span class="text-[10px] text-text-muted font-bold tracking-tight">
@@ -327,35 +327,39 @@
             });
         }
 
+        let sending = false;
+
         function triggerCascade(folderId) {
+            if (sending) return;
+            sending = true;
+
             const teamId = document.getElementById('team-cascade-select').value;
-            if (!teamId) return alert("Please select a team from the dropdown first.");
+            if (!teamId) return;
             
             const formData = new FormData();
             formData.append('folder_id', folderId);
             formData.append('team_id', teamId);
-            
+
             apiPost('<?= site_url('folder/cascade-team') ?>', formData, {
-                onSuccess: () => {
-                    alert("Successfully cascaded to team!");
+                onDefault: () => {
                     window.location.reload();
                 }
             });
         }
 
         function triggerUncascade(folderId) {
+            if (sending) return;
+            sending = true;
+
             const teamId = document.getElementById('team-cascade-select').value;
-            if (!teamId) return alert("Please select a team from the dropdown first.");
-            
-            if(!confirm("Are you sure you want to revoke this cascade?")) return;
+            if (!teamId) return;
 
             const formData = new FormData();
             formData.append('folder_id', folderId);
             formData.append('team_id', teamId);
             
             apiPost('<?= site_url('folder/uncascade-team') ?>', formData, {
-                onSuccess: () => {
-                    alert("Cascade revoked successfully.");
+                onDefault: () => {
                     window.location.reload();
                 }
             });

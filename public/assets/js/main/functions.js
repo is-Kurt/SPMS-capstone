@@ -75,72 +75,18 @@ function pagination() {
     });
 }
 
-// function syncSidebarCounts() {
-//     apiGet(`${AppConfig.baseUrl}/count`, {}, {
-//         onSuccess: (response) => {
-//             const counts = response.counts;
-            
-//             const mapping = {
-//                 'all_docs': 'documents',
-//                 'owned': 'docs=owned',
-//                 'shared': 'docs=shared',
-                
-//                 'all_submissions': 'submissions',
-//                 'locked': 'docs=locked',
-//                 'pending': 'docs=pending',
-//                 'unevaluated': 'docs=unevaluated',
-//                 'evaluated': 'docs=evaluated'
-//             };
+function processBackgroundEmails() {
+    const formData = new FormData();
 
-//             const sidebar = document.getElementById('sidebar-nav');
-//             if (!sidebar) return;
-
-//             Object.entries(mapping).forEach(([key, searchString]) => {
-//                 const navLink = sidebar.querySelector(`a[href*="${searchString}"]`);
-                
-//                 if (navLink) {
-//                     const span = navLink.querySelector('span:last-child');
-//                     if (span) {
-//                         const newCount = counts[key] || 0;
-//                         span.innerText = newCount;
-                        
-//                         if (newCount === 0) {
-//                             span.classList.add('invisible');
-//                         } else {
-//                             span.classList.remove('invisible');
-//                         }
-//                     }
-//                 }
-//             });
-//         }
-//     });
-// }
-
-// function saveRemark(userRatingId, inputElement) {
-//     const remarks = inputElement.value.trim();
-//     const indicator = document.getElementById(`save-indicator-${userRatingId}`);
-    
-//     const formData = new FormData();
-//     formData.append('ur_id', userRatingId);
-//     formData.append('remarks', remarks);
-
-//     // Uses the apiPost loaded globally by main.php
-//     apiPost(`${AppConfig.baseUrl}/save`, formData, {
-//         onSuccess: () => {
-//             inputElement.classList.remove('border-red-500', 'text-red-500');
-//             indicator.classList.remove('opacity-0');
-//             setTimeout(() => indicator.classList.add('opacity-0'), 2000);
-//         },
-//         onError: () => {
-//             inputElement.classList.add('border-red-500', 'text-red-500');
-//         }
-//     });
-// }
-
-// function getAdjectivalRating(score) {
-//     if (score >= 4.30) return 'O';  // Outstanding
-//     if (score >= 3.54) return 'VS'; // Very Satisfactory
-//     if (score >= 2.70) return 'S';  // Satisfactory
-//     if (score >= 1.50) return 'US'; // Unsatisfactory (Standard scale continuation)
-//     return 'P';                     // Poor (Standard scale continuation)
-// }
+    apiPost('/account/process-queue', formData, {
+        onSuccess: (data) => {
+            if (data.queue_state === 'working' && data.remaining > 0) {
+                console.log(`Sending emails in background... ${data.remaining} left.`);
+                // Rest 2 seconds, then send the next batch of 5
+                setTimeout(processBackgroundEmails, 2000); 
+            }
+        },
+        onError: () => {
+        }
+    });
+}

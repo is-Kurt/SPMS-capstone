@@ -6,26 +6,36 @@ use App\Controllers\BaseController;
 
 class Rating extends BaseController
 {
-    public function index() {
+    public function index($folderId = null) {
         $userId  = session()->get('user_id');
         $sysRole = session()->get('role');     
 
         $db = \Config\Database::connect();
         $folderModel = new \App\Models\DocumentFolderModel();
 
-        // 1. Get Sidebar Folders & Active Folder ID
+        // 1. Get Sidebar Folders
         $folders = $folderModel->where('user_id', $userId)->orderBy('created_at', 'DESC')->findAll();
-        $folderId = $this->request->getGet('folder_id');
-        
-        // Default to the first folder if none is selected
-        if (!$folderId && !empty($folders)) {
-            $folderId = $folders[0]['id'];
+
+        // --- NEW: SESSION MEMORY LOGIC ---
+        if (!$folderId) {
+            $lastId = session()->get('active_folder_id');
+            
+            if ($lastId && array_search($lastId, array_column($folders, 'id')) !== false) {
+                return redirect()->to('ratings/' . $lastId);
+            } elseif (!empty($folders)) {
+                return redirect()->to('ratings/' . $folders[0]['id']);
+            }
+        } else {
+            session()->set('active_folder_id', $folderId);
         }
+        // ---------------------------------
 
         // 2. Base query: Fetch target folders tied to the SELECTED sidebar folder
         $builder = $db->table('document_folders df')
             ->select("df.id as folder_id, df.user_id, (u.first_name || ' ' || u.last_name) as username, 
-                      pos.title as position, un.name as department, df.final_rating, df.status as folder_status")
+                      REPLACE(GROUP_CONCAT(DISTINCT pos.title), ',', ', ') as position, 
+                      REPLACE(GROUP_CONCAT(DISTINCT un.name), ',', ', ') as department, 
+                      df.final_rating, df.status as folder_status")
             ->join('users u', 'u.id = df.user_id')
             ->join('plantilla p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
             ->join('positions pos', 'pos.id = p.position_id', 'left')
@@ -33,18 +43,22 @@ class Rating extends BaseController
 
         // 3. Apply Contextual Filters
         if ($sysRole === 'Admin') {
-            // Admins see subordinates tied to their Master Folder
             $builder->where('df.parent_folder_id', $folderId);
         } else {
-            // Supervisors see subordinates routed specifically to their active folder
             $builder->join('evaluation_routings er_me', 'er_me.folder_id = df.id')
                     ->where('er_me.evaluator_id', $userId)
                     ->where('er_me.evaluator_folder_id', $folderId);
         }
 
+        $builder->groupBy('df.id');
         $rawFolders = $builder->get()->getResultArray();
 
-        // 4. Initialize Task Tabs (Descriptions removed)
+        foreach ($rawFolders as &$f) {
+            if ($f['position'])   $f['position']   = str_replace(',', ', ', $f['position']);
+            if ($f['department']) $f['department'] = str_replace(',', ', ', $f['department']);
+        }
+
+        // 4. Initialize Task Tabs
         $tabs = [
             'action'    => ['label' => 'Action Required', 'folders' => []],
             'pending'   => ['label' => 'Pending Subordinate', 'folders' => []],
@@ -62,10 +76,9 @@ class Rating extends BaseController
             }
         }
 
-        // 6. Return View and highlight the active folder in the sidebar
         return view('app_shell', [
             'sidebarFolders'   => $folders,
-            'selectedFolderId' => $folderId, // <-- This activates the sidebar UI!
+            'selectedFolderId' => $folderId, 
             'mainView'         => 'rating/_show', 
             'mainData'         => [
                 'tabs'    => $tabs,

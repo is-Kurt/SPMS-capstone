@@ -7,11 +7,11 @@ use CodeIgniter\HTTP\ResponseInterface;
 
 class Document extends BaseController
 {
-    public function index(): string {
-        $docId   = $this->request->getGet('Id');
+    public function index($docId = null) {
         $userId  = session()->get('user_id');
         $sysRole = session()->get('role');
         
+        // If there's no ID in the URL, throw a 404
         if (!$docId) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
 
         $db = \Config\Database::connect();

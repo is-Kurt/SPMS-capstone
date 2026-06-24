@@ -42,6 +42,10 @@
 
 <script>
     if (typeof pagination === 'function') pagination();
+
+    document.addEventListener('DOMContentLoaded', () => {
+        processBackgroundEmails();
+    });
 </script>
 
 <?= $this->endSection() ?>

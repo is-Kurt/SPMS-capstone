@@ -33,7 +33,7 @@ class UpdateStatuses extends BaseCommand
      *
      * @var string
      */
-    protected $usage = 'spms:update-statuses';
+    protected $usage = 'command:name [arguments] [options]';
 
     /**
      * The Command's Arguments
@@ -59,13 +59,27 @@ class UpdateStatuses extends BaseCommand
         CLI::write('Sweeping database for expired evaluation dates...', 'yellow');
 
         try {
-            // Call the math logic we put in the model!
             $documentModel = new \App\Models\DocumentFolderModel();
             $documentModel->updateTimeBasedStatuses();
             
             CLI::write('Successfully updated all document statuses!', 'green');
+
+            // ==========================================
+            // PROCESS THE EMAIL QUEUE
+            // ==========================================
+            CLI::write('Checking for pending automated emails...', 'yellow');
+            
+            helper('email_queue');
+            $result = \process_email_queue(0);
+            
+            if ($result['processed'] > 0) {
+                CLI::write("Successfully sent {$result['processed']} automated emails.", 'green');
+            } else {
+                CLI::write("No pending emails to send.", 'cyan');
+            }
+
         } catch (\Exception $e) {
-            CLI::error('Failed to update statuses: ' . $e->getMessage());
+            CLI::error('Failed to run 1-minute tasks: ' . $e->getMessage());
         }
     }
 }

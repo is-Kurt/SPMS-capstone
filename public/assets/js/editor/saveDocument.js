@@ -35,7 +35,7 @@ function saveDocument(manualSave = true) {
         formData.append('is_rating_mode', AppConfig.isRatingMode);
         formData.append('_method', 'PATCH'); 
 
-        apiPost('document', formData, {
+        apiPost('/document', formData, {
             onSuccess: (data) => { 
                 AppState.setDirty(false); 
 

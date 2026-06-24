@@ -89,7 +89,7 @@ if (formCreateFolder) {
         if (isCreatingFolder) return;
         
         const formData = new FormData(e.target);
-        const targetUrl = currentAction === 'create' ? 'folder' : 'folder/update';
+        const targetUrl = currentAction === 'create' ? '/folder' : '/folder/update';
 
         isCreatingFolder = true;
         submitBtn.innerText = currentAction === 'create' ? 'Creating...' : 'Saving...';
@@ -101,7 +101,7 @@ if (formCreateFolder) {
                 
                 // If creating, we want to jump to the new folder. If updating, just reload the page.
                 if (currentAction === 'create' && response.id) {
-                    window.location.href = `folders?folder_id=${response.id}`;
+                    window.location.href = `/folders/${response.id}`;
                 } else {
                     window.location.reload();
                 }

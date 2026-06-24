@@ -1,6 +1,5 @@
-<?php
-    $uri = uri_string();
-    $baseRoute = (strpos($uri, 'rating') === 0 || $uri === 'ratings') ? 'ratings' : 'folders';
+<?php   
+    $currentBaseUrl = (service('uri')->getSegment(1) === 'ratings') ? 'ratings' : 'folders';
 ?>
 
 <nav id="sidebar-nav" class="flex flex-col gap-1.5">
@@ -10,7 +9,7 @@
         <?php foreach ($folders as $folder): ?>
             <?php $isActive = ($selectedFolderId == $folder['id']); ?>
             
-            <a href="<?= site_url($baseRoute . '?folder_id=' . $folder['id']) ?>"
+            <a href="<?= site_url($currentBaseUrl . '/' . $folder['id']) ?>"
                class="px-4 py-3 rounded-xl text-sm font-bold transition-all flex justify-between items-center group
                <?= $isActive ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-text-muted hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-text' ?>">
                 

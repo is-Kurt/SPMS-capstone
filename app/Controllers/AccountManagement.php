@@ -3,78 +3,129 @@
 namespace App\Controllers;
 
 use App\Controllers\BaseController;
-use CodeIgniter\HTTP\ResponseInterface;
 use App\Models\UserModel;
+use App\Enums\InvitationStatus;
+use App\Enums\EmailStatus;
 
 class AccountManagement extends BaseController
 {
-    public function index()
-    {
-        // Security check: Only Admins can access this
-        if (session()->get('role') !== 'Admin') {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+    public function index() {
+        if (session()->get('role') !== 'Admin') throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+
+        $userModel = new \App\Models\UserModel();
+        
+        $users = $userModel->asArray()
+            ->select("users.id, users.first_name, users.last_name, users.email, users.is_active, 
+                      GROUP_CONCAT(DISTINCT pos.title) as position, 
+                      GROUP_CONCAT(DISTINCT un.name) as department, 
+                      GROUP_CONCAT(DISTINCT r.name) as role_name")
+            ->join('plantilla p', 'p.user_id = users.id AND p.ended_at IS NULL', 'left')
+            ->join('positions pos', 'pos.id = p.position_id', 'left')
+            ->join('units un', 'un.id = p.unit_id', 'left')
+            ->join('user_roles ur', 'ur.user_id = users.id', 'left')
+            ->join('roles r', 'r.id = ur.role_id', 'left')
+            ->groupBy('users.id')
+            ->orderBy('users.last_name', 'ASC')
+            ->findAll();
+
+        foreach ($users as &$u) {
+            if ($u['position'])   $u['position']   = str_replace(',', ', ', $u['position']);
+            if ($u['department']) $u['department'] = str_replace(',', ', ', $u['department']);
+            if ($u['role_name'])  $u['role_name']  = str_replace(',', ', ', $u['role_name']);
         }
 
-        $userModel = new UserModel();
-        
-        $data = [
-            'users' => $userModel->orderBy('role', 'ASC')->orderBy('last_name', 'ASC')->findAll()
-        ];
+        $roleModel     = new \App\Models\RoleModel();
+        $positionModel = new \App\Models\PositionModel();
+        $unitModel     = new \App\Models\UnitModel();
 
-        return view('auth/accounts', $data);
+        $roles     = $roleModel->orderBy('name', 'ASC')->findAll();
+        $positions = $positionModel->orderBy('title', 'ASC')->findAll();
+        $units     = $unitModel->orderBy('name', 'ASC')->findAll();
+
+        return view('auth/accounts', [
+            'users'     => $users,
+            'roles'     => $roles,
+            'positions' => $positions,
+            'units'     => $units
+        ]);
     }
 
-    public function store()
-    {
+    public function sendInvites() {
         if (session()->get('role') !== 'Admin') return redirect()->to('/');
 
-        $role = $this->request->getPost('role');
+        $rawEmails = $this->request->getPost('emails');
+        $roleId    = $this->request->getPost('role_id');
 
-        $rules = [
-            'first_name' => 'required|min_length[2]',
-            'last_name'  => 'required|min_length[2]',
-            'email'      => 'required|valid_email|is_unique[users.email]',
-            'password'   => 'required|min_length[8]',
-            'role'       => 'required'
-        ];
+        $emails = preg_split('/[\s,;]+/', trim($rawEmails));
+        $validEmails = [];
+        
+        $userModel = new UserModel();
+        $invitationModel = new InvitationModel();
 
-        // 1. Conditional Validation Logic
-        $requiresDept = !in_array($role, ['Admin', 'Vice President', 'Campus Administrator']);
-        $requiresPos  = !in_array($role, ['Admin', 'Vice President', 'Campus Administrator', 'Dean']);
-
-        if ($requiresDept) $rules['department'] = 'required';
-        if ($requiresPos)  $rules['position']   = 'required';
-
-        if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('error', 'Please check the form for errors.');
+        foreach ($emails as $email) {
+            $email = trim($email);
+            if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                if ($userModel->where('email', $email)->countAllResults() == 0) {
+                    $validEmails[] = $email;
+                }
+            }
         }
 
-        // 2. Save User (Insert 'N/A' for fields that aren't required)
-        $userModel = new UserModel();
-        $userModel->save([
-            'first_name' => $this->request->getPost('first_name'),
-            'last_name'  => $this->request->getPost('last_name'),
-            'email'      => $this->request->getPost('email'),
-            'password'   => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT),
-            'role'       => $role,
-            'department' => $requiresDept ? $this->request->getPost('department') : null,
-            'position'   => $requiresPos  ? $this->request->getPost('position')   : null,
-            'is_active'  => 1
-        ]);
+        if (empty($validEmails)) return redirect()->back()->with('error', 'No valid or new email addresses found.');
 
-        return redirect()->back()->with('success', 'User account created successfully.');
+        $userModel->db->transStart();
+        foreach ($validEmails as $email) {
+            $token = bin2hex(random_bytes(32)); 
+
+            $invitationModel->insert([
+                'email'      => $email,
+                'token'      => $token,
+                'status'     => InvitationStatus::PENDING->value,
+                'role_id'    => $roleId, 
+                'expires_at' => date('Y-m-d H:i:s', strtotime('+7 days')),
+                'created_at' => date('Y-m-d H:i:s')
+            ]);
+
+            $inviteLink = site_url("signup?token={$token}");
+            
+            queue_email(
+                $email, 
+                'Invitation to join SPMS', 
+                "You have been invited to join the system. Click here: {$inviteLink}"
+            );
+        }
+        $userModel->db->transComplete();
+
+        return redirect()->back()->with('success', count($validEmails) . ' invitations queued for sending!');
     }
 
-    public function toggleStatus()
-    {
+    public function processQueueAjax() {
+        if (!$this->request->isAJAX()) return $this->response->setStatusCode(403);
+        session_write_close();
+
+        $result = process_email_queue(5);
+
+        if ($result['processed'] === 0 && $result['remaining'] === 0) {
+            return $this->response->setJSON([
+                'status'      => 'success', 
+                'queue_state' => 'complete', 
+                'message'     => 'Queue empty'
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status'      => 'success', 
+            'queue_state' => 'working', 
+            'processed'   => $result['processed'],
+            'remaining'   => $result['remaining']
+        ]);
+    }
+
+    public function toggleStatus() {
         if (session()->get('role') !== 'Admin') return redirect()->to('/');
 
         $targetId = $this->request->getPost('user_id');
-        
-        // Prevent admin from disabling themselves
-        if ($targetId == session()->get('user_id')) {
-            return redirect()->back()->with('error', 'You cannot disable your own account.');
-        }
+        if ($targetId == session()->get('user_id')) return redirect()->back()->with('error', 'Cannot disable yourself.');
 
         $userModel = new UserModel();
         $user = $userModel->find($targetId);
@@ -82,10 +133,103 @@ class AccountManagement extends BaseController
         if ($user) {
             $newStatus = $user['is_active'] == 1 ? 0 : 1;
             $userModel->update($targetId, ['is_active' => $newStatus]);
-            $msg = $newStatus == 1 ? 'Account enabled.' : 'Account disabled.';
-            return redirect()->back()->with('success', $msg);
+            return redirect()->back()->with('success', $newStatus == 1 ? 'Account enabled.' : 'Account disabled.');
         }
-
         return redirect()->back()->with('error', 'User not found.');
+    }
+
+    public function destroy() {
+        if (session()->get('role') !== 'Admin') return redirect()->to('/');
+
+        $targetId = $this->request->getPost('user_id');
+        if ($targetId == session()->get('user_id')) return redirect()->back()->with('error', 'Cannot delete yourself.');
+
+        $userModel = new UserModel();
+        $userModel->delete($targetId); 
+
+        return redirect()->back()->with('success', 'User account deleted permanently.');
+    }
+
+    // ==========================================
+    // SYSTEM DATA MANAGEMENT (Roles, Positions, Units)
+    // ==========================================
+
+    public function addRole() {
+        if (session()->get('role') !== 'Admin') return redirect()->to('/');
+        $name = trim($this->request->getPost('name'));
+        if (empty($name)) return redirect()->back()->with('error', 'Role name is required.');
+
+        try {
+            $roleModel = new \App\Models\RoleModel();
+            $roleModel->insert(['name' => $name, 'created_at' => date('Y-m-d H:i:s')]);
+            return redirect()->back()->with('success', 'Role added successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to add role. It may already exist.');
+        }
+    }
+
+    public function deleteRole() {
+        if (session()->get('role') !== 'Admin') return redirect()->to('/');
+        try {
+            $roleModel = new \App\Models\RoleModel();
+            $roleModel->delete($this->request->getPost('id'));
+            return redirect()->back()->with('success', 'Role deleted.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Cannot delete this role because it is currently assigned to users.');
+        }
+    }
+
+    public function addPosition() {
+        if (session()->get('role') !== 'Admin') return redirect()->to('/');
+        $title = trim($this->request->getPost('title'));
+        $isTeaching = $this->request->getPost('is_teaching') ? 1 : 0;
+
+        if (empty($title)) return redirect()->back()->with('error', 'Position title is required.');
+
+        $positionModel = new \App\Models\PositionModel();
+        $positionModel->insert([
+            'title' => $title, 
+            'is_teaching' => $isTeaching, 
+            'created_at' => date('Y-m-d H:i:s')
+        ]);
+        return redirect()->back()->with('success', 'Position added successfully.');
+    }
+
+    public function deletePosition() {
+        if (session()->get('role') !== 'Admin') return redirect()->to('/');
+        try {
+            $positionModel = new \App\Models\PositionModel();
+            $positionModel->delete($this->request->getPost('id'));
+            return redirect()->back()->with('success', 'Position deleted.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Cannot delete this position. It is in use.');
+        }
+    }
+
+    public function addUnit() {
+        if (session()->get('role') !== 'Admin') return redirect()->to('/');
+        $name = trim($this->request->getPost('name'));
+        $parentId = $this->request->getPost('parent_id') ?: null; 
+
+        if (empty($name)) return redirect()->back()->with('error', 'Unit name is required.');
+
+        $unitModel = new \App\Models\UnitModel();
+        $unitModel->insert([
+            'name' => $name, 
+            'parent_id' => $parentId, 
+            'created_at' => date('Y-m-d H:i:s')
+        ]);
+        return redirect()->back()->with('success', 'Unit added successfully.');
+    }
+
+    public function deleteUnit() {
+        if (session()->get('role') !== 'Admin') return redirect()->to('/');
+        try {
+            $unitModel = new \App\Models\UnitModel();
+            $unitModel->delete($this->request->getPost('id'));
+            return redirect()->back()->with('success', 'Unit deleted.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Cannot delete unit. It contains sub-units or is assigned to users.');
+        }
     }
 }

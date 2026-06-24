@@ -73,27 +73,64 @@ class  DocumentFolderModel extends Model
     {
         $db = \Config\Database::connect();
         $now = date('Y-m-d H:i:s');
+        helper('email_queue');
 
-        $db->table($this->table)
-        ->where('status', FolderStatus::SUBMITTED->value)
-        ->where('eval_date_start <=', $now)
-        ->where('eval_date_end >=', $now)
-        ->update(['status' => FolderStatus::TO_EVALUATE->value]);
+        // 1. Process "Submitted" -> "To Evaluate"
+        $startingFolders = $db->table($this->table . ' df')
+            ->select('df.id, df.title, u.email, u.first_name')
+            ->join('users u', 'u.id = df.user_id')
+            ->where('df.status', \App\Enums\FolderStatus::SUBMITTED->value)
+            ->where('df.eval_date_start <=', $now)
+            ->where('df.eval_date_end >=', $now)
+            ->get()->getResultArray();
 
-        $db->table($this->table)
-        ->groupStart()
-            ->where('status', FolderStatus::TO_EVALUATE->value)
-            ->orWhere('status', FolderStatus::SUBMITTED->value)
-            ->orWhere('status', FolderStatus::DRAFT->value)
-        ->groupEnd()
-        ->where('eval_date_end <', $now)
-        ->update(['status' => FolderStatus::UNEVALUATED->value]);
+        foreach ($startingFolders as $folder) {
+            $link = site_url("folders/" . $folder['id']);
+            queue_email(
+                $folder['email'],
+                'Action Required: Evaluation Period Open',
+                "Hello {$folder['first_name']},<br><br>The official evaluation window for <b>{$folder['title']}</b> has now opened. You may now access your folder to conduct and lock in your self-evaluation.<br><br><a href='{$link}'>Click here to open your folder</a>"
+            );
+        }
+
+        if (!empty($startingFolders)) {
+            $db->table($this->table)
+                ->whereIn('id', array_column($startingFolders, 'id'))
+                ->update(['status' => \App\Enums\FolderStatus::TO_EVALUATE->value]);
+        }
+
+        // 2. Find folders that just expired (Before we change their status)
+        $expiringFolders = $db->table($this->table . ' df')
+            ->select('df.id, u.email, u.first_name')
+            ->join('users u', 'u.id = df.user_id')
+            ->whereNotIn('df.status', [
+                \App\Enums\FolderStatus::APPROVED->value, 
+                \App\Enums\FolderStatus::UNEVALUATED->value
+            ])
+            ->where('df.eval_date_end <', $now)
+            ->get()->getResultArray();
+
+        foreach ($expiringFolders as $folder) {
+            queue_email(
+                $folder['email'],
+                'Notice: Evaluation Submission Deadline Missed',
+                "Hello {$folder['first_name']},<br><br>The deadline for submitting your performance evaluation has passed. Your folder has been locked and marked as <b>Unevaluated</b>. Please contact your supervisor or the HR department if this is an error."
+            );
+        }
+        
+        if (!empty($expiringFolders)) {
+            $db->table($this->table)
+                ->whereIn('id', array_column($expiringFolders, 'id'))
+                ->update(['status' => \App\Enums\FolderStatus::UNEVALUATED->value]);
+        }
     }
 
     public function isFolderLocked($folder) {
-    $isLocked = !in_array($folder['status'], [FolderStatus::DRAFT->value, FolderStatus::SUBMITTED->value]);
-    $isPastDeadline = !empty($folder['eval_date_end']) && date('Y-m-d H:i:s') > $folder['eval_date_end'];
-    
-    return ($isLocked || $isPastDeadline);
-}
+        if (!$folder) return true; 
+
+        $isLocked = !in_array($folder['status'], [FolderStatus::DRAFT->value, FolderStatus::SUBMITTED->value]);
+        $isPastDeadline = !empty($folder['eval_date_end']) && date('Y-m-d H:i:s') > $folder['eval_date_end'];
+        
+        return ($isLocked || $isPastDeadline);
+    }
 }

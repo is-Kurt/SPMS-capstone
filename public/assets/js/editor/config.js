@@ -13,12 +13,13 @@ function initEditor() {
         highlight_on_focus: false,
         
         font_family_formats: 'Roboto=Roboto, Helvetica, Arial, sans-serif; Sans Serif=sans-serif; Andale Mono=andale mono,times; Arial=arial,helvetica,sans-serif; Arial Black=arial black,avant garde; Book Antiqua=book antiqua,palatino; Comic Sans MS=comic sans ms,sans-serif; Courier New=courier new,courier; Georgia=georgia,palatino; Helvetica=helvetica; Impact=impact,chicago; Symbol=symbol; Tahoma=tahoma,arial,helvetica,sans-serif; Terminal=terminal,monaco; Times New Roman=times new roman,times; Trebuchet MS=trebuchet ms,geneva; Verdana=verdana,geneva;',
-        
+        line_height_formats: '1 1.15 1.5 2 2.5 3',
+
         plugins: 'table lists advlist saveShortcut setDirty cellSelect disableBackgroundCloning',
         toolbar_mode: 'wrap',
         toolbar: [
             'undo redo | fontfamily fontsize blocks | bold italic underline strikethrough | forecolor backcolor tablecellbackgroundcolor',
-            'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent',
+            'alignleft aligncenter alignright alignjustify | lineheight | bullist numlist outdent indent',
             'table tableinsertrowbefore tableinsertrowafter tabledeleterow | tablemergecells tablesplitcells | clearMarks toggleRating toggleRowAvg toggleTotal toggleFinalRating | toggleId toggleCellWeight | toggleScoreRange toggleWeight'
         ],
         

@@ -207,7 +207,7 @@
         <h3 class="text-xl font-black text-text tracking-tight mb-2">Create New Team</h3>
         <p class="text-xs font-bold text-text-muted uppercase tracking-widest mb-6">Distribution List</p>
 
-        <form action="<?= site_url('teams/create-shell') ?>" method="POST">
+        <form action="<?= site_url('teams/create-shell') ?>" method="POST" onsubmit="handleCreateTeam(this)">
             <?= csrf_field() ?>
             <div class="space-y-4">
                 <div>
@@ -224,7 +224,7 @@
                 <button type="button" onclick="document.getElementById('modal-create-team').classList.add('hidden'); document.getElementById('modal-create-team').classList.remove('flex')" class="flex-1 px-6 py-3 rounded-xl border border-surface-border text-sm font-bold text-text hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
                     Cancel
                 </button>
-                <button type="submit" class="flex-1 px-6 py-3 rounded-xl bg-accent hover:bg-accent-hover text-white text-sm font-bold shadow-lg shadow-accent/20 transition-all active:scale-95 cursor-pointer">
+                <button type="submit" id="btn-create-team" class="flex-1 px-6 py-3 rounded-xl bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold shadow-lg shadow-accent/20 transition-all active:scale-95 cursor-pointer">
                     Create & Select
                 </button>
             </div>
@@ -234,6 +234,20 @@
 
 <?php if ($activeTeam): ?>
 <script>
+     function handleCreateTeam(form) {
+        const btn = document.getElementById('btn-create-team');
+        btn.disabled = true;
+        btn.innerText = 'Creating...';
+    }
+
+    window.addEventListener('pageshow', function(e) {
+        const btn = document.getElementById('btn-create-team');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = 'Create & Select';
+        }
+    });
+
     // PRE-LOADER LOGIC
     const activeMemberIds = <?= json_encode($activeMemberIds ?? []) ?>;
 
@@ -287,8 +301,12 @@
 
         cards.forEach(card => {
             const matchSearch = card.getAttribute('data-name').includes(searchTerm) || card.getAttribute('data-email').includes(searchTerm);
-            const matchUnit = unit === "" || card.getAttribute('data-unit') === unit;
-            const matchPosition = position === "" || card.getAttribute('data-position') === position;
+            
+            const unitData = card.getAttribute('data-unit');
+            const matchUnit = unit === "" || (unitData && unitData.split(',').includes(unit));
+            
+            const posData = card.getAttribute('data-position');
+            const matchPosition = position === "" || (posData && posData.split(',').includes(position));
             
             const isTeachingUser = card.getAttribute('data-teaching') === "1";
             let matchStaffType = true;
