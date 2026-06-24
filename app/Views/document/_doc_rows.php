@@ -56,7 +56,7 @@
                             <div class="relative">
                                 <select id="team-cascade-select" <?= ($cascadedTeamId || $isLocked) ? 'disabled' : '' ?> class="bg-transparent text-[11px] font-black uppercase tracking-widest text-text outline-none pl-3 pr-8 py-1.5 appearance-none border-r border-surface-border <?= ($cascadedTeamId || $isLocked) ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer' ?>">
                                     <?php foreach($presets as $preset): ?>
-                                        <option value="<?= $preset['id'] ?>" <?= ($cascadedTeamId == $preset['id'] || (!$cascadedTeamId && $preset === reset($presets))) ? 'selected' : '' ?>>
+                                        <option value="<?= $preset['id'] ?>" <?= ($cascadedTeamId == $preset['id'] || (!$cascadedTeamId && $preset === reset($presets))) ? 'selected' : '' ?> class="bg-white dark:bg-zinc-900">
                                             <?= esc($preset['name']) ?>
                                         </option>
                                     <?php endforeach; ?>
@@ -314,7 +314,27 @@
             const formData = new FormData();
             formData.append('folder_id', folderId);
             apiPost('<?= site_url('folder/submit') ?>', formData, {
-                onSuccess: () => window.location.reload()
+                onSuccess: () => window.location.reload(),
+                onError: (errMsg) => {
+                    alert(errMsg || "An error occurred.");
+                    window.location.reload();
+                }
+            });
+        }
+
+        function unsubmitFolder(folderId, btn) {
+            if(!confirm("Are you sure you want to revoke your submission?")) return;
+            
+            btn.innerText = 'Unsubmitting...';
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            const formData = new FormData();
+            formData.append('folder_id', folderId);
+            apiPost('<?= site_url('folder/unsubmit') ?>', formData, {
+                onSuccess: () => window.location.reload(),
+                onError: (errMsg) => {
+                    alert(errMsg || "An error occurred.");
+                    window.location.reload();
+                }
             });
         }
 
@@ -341,7 +361,9 @@
             formData.append('team_id', teamId);
 
             apiPost('<?= site_url('folder/cascade-team') ?>', formData, {
-                onDefault: () => {
+                onSuccess: () => window.location.reload(),
+                onError: (errMsg) => {
+                    alert(errMsg || "An error occurred.");
                     window.location.reload();
                 }
             });
@@ -359,7 +381,9 @@
             formData.append('team_id', teamId);
             
             apiPost('<?= site_url('folder/uncascade-team') ?>', formData, {
-                onDefault: () => {
+                onSuccess: () => window.location.reload(),
+                onError: (errMsg) => {
+                    alert(errMsg || "An error occurred.");
                     window.location.reload();
                 }
             });
@@ -401,18 +425,6 @@
                     activeBadge.classList.add('bg-accent/10', 'text-accent');
                 }
             }
-        }
-
-        function unsubmitFolder(folderId, btn) {
-            if(!confirm("Are you sure you want to revoke your submission?")) return;
-            
-            btn.innerText = 'Unsubmitting...';
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
-            const formData = new FormData();
-            formData.append('folder_id', folderId);
-            apiPost('<?= site_url('folder/unsubmit') ?>', formData, {
-                onSuccess: () => window.location.reload()
-            });
         }
     </script>
 <?php endif; ?>

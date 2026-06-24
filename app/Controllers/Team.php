@@ -4,32 +4,41 @@ namespace App\Controllers;
 
 use App\Controllers\BaseController;
 use CodeIgniter\HTTP\ResponseInterface;
+use App\Models\UserModel;
+use App\Models\UnitModel;
+use App\Models\PositionModel;
+use App\Models\RoutingPresetModel;
+use App\Models\RoutingPresetMemberModel;
 
 class Team extends BaseController
 {
-    public function index()
-    {
+    public function index() {
         $role = session()->get('role');
         if (!in_array($role, ['Admin', 'Supervisor'])) return redirect()->to('/');
 
-        $db = \Config\Database::connect();
         $userId = session()->get('user_id');
         $teamId = $this->request->getGet('team_id');
 
-        // 1. Fetch all active users with their Plantilla assignments
-        $users = $db->table('users u')
+        $userModel     = new UserModel();
+        $unitModel     = new UnitModel();
+        $positionModel = new PositionModel();
+        $presetModel   = new RoutingPresetModel();
+        $memberModel   = new RoutingPresetMemberModel();
+
+        $users = $userModel->db->table('users u')
             ->select("u.id as user_id, u.first_name, u.last_name, u.email, 
                       GROUP_CONCAT(DISTINCT pos.id) as position_id, 
                       REPLACE(GROUP_CONCAT(DISTINCT pos.title), ',', ', ') as position, 
                       MAX(pos.is_teaching) as is_teaching, 
                       GROUP_CONCAT(DISTINCT un.id) as unit_id, 
                       REPLACE(GROUP_CONCAT(DISTINCT un.name), ',', ', ') as department")
-            ->join('plantilla p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
+            // FIXED: plantillas
+            ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
             ->join('positions pos', 'pos.id = p.position_id', 'left')
             ->join('units un', 'un.id = p.unit_id', 'left')
             ->where('u.is_active', 1)
             ->where('u.id !=', $userId) 
-            ->groupBy('u.id') // FIX: Strictly group by User ID only
+            ->groupBy('u.id') 
             ->orderBy('u.last_name', 'ASC')
             ->get()->getResultArray();
         
@@ -38,30 +47,26 @@ class Team extends BaseController
             if ($u['department']) $u['department'] = str_replace(',', ', ', $u['department']);
         }
 
-        $units = $db->table('units')->orderBy('name', 'ASC')->get()->getResultArray();
-        $positions = $db->table('positions')->orderBy('title', 'ASC')->get()->getResultArray();
+        $units     = $unitModel->orderBy('name', 'ASC')->findAll();
+        $positions = $positionModel->orderBy('title', 'ASC')->findAll();
 
-        // 2. Fetch existing Presets for the current user
-        $presets = $db->table('routing_presets rp')
-            ->select('rp.*, COUNT(rpm.id) as member_count')
-            ->join('routing_preset_members rpm', 'rpm.preset_id = rp.id', 'left')
-            ->where('rp.owner_id', $userId)
-            ->groupBy('rp.id')
-            ->orderBy('rp.created_at', 'DESC')
-            ->get()->getResultArray();
+        $presets = $presetModel->select('routing_presets.*, COUNT(rpm.id) as member_count')
+            ->join('routing_preset_members rpm', 'rpm.preset_id = routing_presets.id', 'left')
+            ->where('routing_presets.owner_id', $userId)
+            ->groupBy('routing_presets.id')
+            ->orderBy('routing_presets.created_at', 'DESC')
+            ->findAll();
 
-        // 3. State Management: Fetch Active Team if selected
         $activeTeam = null;
         $activeMemberIds = [];
 
         if ($teamId) {
-            $activeTeam = $db->table('routing_presets')->where('id', $teamId)->where('owner_id', $userId)->get()->getRowArray();
+            $activeTeam = $presetModel->where('id', $teamId)->where('owner_id', $userId)->first();
             if ($activeTeam) {
-                // Fetch just the IDs of the members to pass to JavaScript for pre-loading
-                $members = $db->table('routing_preset_members')->where('preset_id', $teamId)->get()->getResultArray();
+                $members = $memberModel->where('preset_id', $teamId)->findAll();
                 $activeMemberIds = array_column($members, 'user_id');
             } else {
-                return redirect()->to('teams')->with('error', 'Team not found.'); // Prevent URL tampering
+                return redirect()->to('teams')->with('error', 'Team not found.'); 
             }
         }
 
@@ -75,51 +80,46 @@ class Team extends BaseController
         ]);
     }
 
-    // NEW: Creates the empty shell from the Modal and redirects to the workspace
-    public function createShell()
-    {
+    public function createShell() {
         $role = session()->get('role');
         if (!in_array($role, ['Admin', 'Supervisor'])) return redirect()->to('/');
 
-        $db = \Config\Database::connect();
+        $presetModel = new RoutingPresetModel();
         
-        $db->table('routing_presets')->insert([
+        // REPLACED $db
+        $newId = $presetModel->insert([
             'owner_id'    => session()->get('user_id'),
             'name'        => trim($this->request->getPost('name')),
             'description' => trim($this->request->getPost('description')) ?: null,
             'created_at'  => date('Y-m-d H:i:s')
         ]);
         
-        $newId = $db->insertID();
         return redirect()->to("teams?team_id={$newId}");
     }
 
-    // UPDATED: Syncs the selected team members
-    public function store()
-    {
+    public function store() {
         $role = session()->get('role');
         if (!in_array($role, ['Admin', 'Supervisor'])) return redirect()->to('/');
 
-        $db = \Config\Database::connect();
         $teamId  = $this->request->getPost('team_id');
         $name    = trim($this->request->getPost('name'));
-        $userIds = $this->request->getPost('user_ids') ?? []; // Array of selected IDs (can be empty)
+        $userIds = $this->request->getPost('user_ids') ?? [];
 
         if (empty($name)) return redirect()->back()->with('error', 'Team name is required.');
 
-        $db->transStart();
+        $presetModel = new RoutingPresetModel();
+        $memberModel = new RoutingPresetMemberModel();
 
-        // 1. Update the Team's Name and Description
-        $db->table('routing_presets')->where('id', $teamId)->where('owner_id', session()->get('user_id'))->update([
+        $presetModel->db->transStart();
+
+        $presetModel->where('id', $teamId)->where('owner_id', session()->get('user_id'))->set([
             'name'        => $name,
             'description' => trim($this->request->getPost('description')) ?: null,
             'updated_at'  => date('Y-m-d H:i:s')
-        ]);
+        ])->update();
         
-        // 2. Wipe the old members
-        $db->table('routing_preset_members')->where('preset_id', $teamId)->delete();
+        $memberModel->where('preset_id', $teamId)->delete();
 
-        // 3. Insert the new members
         $membersData = [];
         foreach ($userIds as $uid) {
             $membersData[] = [
@@ -129,28 +129,26 @@ class Team extends BaseController
             ];
         }
         if (!empty($membersData)) {
-            $db->table('routing_preset_members')->insertBatch($membersData);
+            $memberModel->insertBatch($membersData);
         }
 
-        $db->transComplete();
+        $presetModel->db->transComplete();
 
-        if ($db->transStatus() === false) return redirect()->back()->with('error', 'Failed to update team.');
-        
+        if ($presetModel->db->transStatus() === false) return redirect()->back()->with('error', 'Failed to update team.');
         return redirect()->back()->with('success', 'Distribution list saved successfully!');
     }
 
-    public function delete()
-    {
+    public function delete() {
         $role = session()->get('role');
         if (!in_array($role, ['Admin', 'Supervisor'])) return redirect()->to('/');
 
         $presetId = $this->request->getPost('preset_id');
-        $db = \Config\Database::connect();
+        $presetModel = new RoutingPresetModel();
         
-        $preset = $db->table('routing_presets')->where('id', $presetId)->where('owner_id', session()->get('user_id'))->get()->getRowArray();
+        $preset = $presetModel->where('id', $presetId)->where('owner_id', session()->get('user_id'))->first();
         
         if ($preset) {
-            $db->table('routing_presets')->where('id', $presetId)->delete();
+            $presetModel->delete($presetId);
             return redirect()->to('teams')->with('success', 'Team deleted successfully.');
         }
 

@@ -7,6 +7,10 @@ use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
+use App\Models\UserModel;
+use App\Models\DocumentModel;
+use App\Models\DocumentFolderModel;
+
 /**
  * BaseController provides a convenient place for loading components
  * and performing functions that are needed by all your controllers.
@@ -44,22 +48,19 @@ abstract class BaseController extends Controller
         $this->restoreSessionFromCookie();
     }
 
-    protected function respond($data, int $status = 200)
-    {
+    protected function respond($data, int $status = 200) {
         return $this->response
             ->setStatusCode($status)
             ->setJSON($data);
     }
 
-    protected function respondError(string $message, int $status = 500)
-    {
+    protected function respondError(string $message, int $status = 500) {
         return $this->response
             ->setStatusCode($status)
             ->setJSON(['status' => 'error', 'message' => $message]);
     }
 
-    protected function tryOrFail(callable $fn)
-    {
+    protected function tryOrFail(callable $fn) {
         try {
             return $fn();
         } catch (\Exception $e) {
@@ -68,49 +69,42 @@ abstract class BaseController extends Controller
     }
 
     protected function getUserDocument($userId, $docId = null) {
-        $documentModel = new \App\Models\DocumentModel();
+        $documentModel = new DocumentModel();
 
         $builder = $documentModel->db->table('documents d')
             ->select('d.*, df.user_id')
             ->join('document_folders df', 'df.id = d.document_folder_id')
             ->where('df.user_id', $userId);
 
-        if ($docId !== null) {
-            $builder->where('d.id', $docId);
-        }
+        if ($docId !== null) $builder->where('d.id', $docId);
 
-        return $docId !== null
-            ? $builder->get()->getRowArray()
-            : $builder->get()->getResultArray();
+        return $docId !== null ? $builder->get()->getRowArray() : $builder->get()->getResultArray();
     }
 
     protected function getSidebarFolders() {
-        $folderModel = new \App\Models\DocumentFolderModel();
+        $folderModel = new DocumentFolderModel();
         return $folderModel->where('user_id', session()->get('user_id'))->orderBy('created_at', 'DESC')->findAll();
     }
 
     protected function restoreSessionFromCookie() {
-        if (session()->get('isLoggedIn')) {
-            return;
-        }
+        if (session()->get('isLoggedIn')) return;
 
         $token = $_COOKIE['remember_me'] ?? null;
 
         if ($token) {
-            $db = \Config\Database::connect();
-            $userModel = new \App\Models\UserModel();
+            $userModel = new UserModel();
             $user = $userModel->where('remember_token', hash('sha256', $token))
                               ->where('remember_token_expiry >', date('Y-m-d H:i:s'))
                               ->first();
 
             if ($user) {
-                // 1. Fetch System Role
-                $roleData = $db->table('user_roles ur')->select('r.name')
+                // Use the userModel's database instance for cross-table joins
+                $roleData = $userModel->db->table('user_roles ur')->select('r.name')
                     ->join('roles r', 'r.id = ur.role_id')
                     ->where('ur.user_id', $user['id'])->get()->getRowArray();
                 
-                // 2. Fetch Plantilla
-                $plantilla = $db->table('plantilla p')
+                // FIX: Updated table name to 'plantillas'
+                $plantilla = $userModel->db->table('plantillas p')
                     ->select('un.name as department, pos.title as position')
                     ->join('units un', 'un.id = p.unit_id')
                     ->join('positions pos', 'pos.id = p.position_id')

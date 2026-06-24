@@ -4,6 +4,7 @@ namespace App\Commands;
 
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
+use App\Models\DocumentFolderModel;
 
 class UpdateStatuses extends BaseCommand
 {
@@ -59,14 +60,11 @@ class UpdateStatuses extends BaseCommand
         CLI::write('Sweeping database for expired evaluation dates...', 'yellow');
 
         try {
-            $documentModel = new \App\Models\DocumentFolderModel();
+            $documentModel = new DocumentFolderModel();
             $documentModel->updateTimeBasedStatuses();
             
             CLI::write('Successfully updated all document statuses!', 'green');
 
-            // ==========================================
-            // PROCESS THE EMAIL QUEUE
-            // ==========================================
             CLI::write('Checking for pending automated emails...', 'yellow');
             
             helper('email_queue');

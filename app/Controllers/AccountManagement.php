@@ -3,23 +3,25 @@
 namespace App\Controllers;
 
 use App\Controllers\BaseController;
-use App\Models\UserModel;
 use App\Enums\InvitationStatus;
 use App\Enums\EmailStatus;
+use App\Models\UserModel;
+use App\Models\RoleModel;
+use App\Models\PositionModel;
+use App\Models\UnitModel;
+use App\Models\InvitationModel;
 
 class AccountManagement extends BaseController
 {
     public function index() {
-        if (session()->get('role') !== 'Admin') throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
-
-        $userModel = new \App\Models\UserModel();
+        $userModel = new UserModel();
         
         $users = $userModel->asArray()
             ->select("users.id, users.first_name, users.last_name, users.email, users.is_active, 
                       GROUP_CONCAT(DISTINCT pos.title) as position, 
                       GROUP_CONCAT(DISTINCT un.name) as department, 
                       GROUP_CONCAT(DISTINCT r.name) as role_name")
-            ->join('plantilla p', 'p.user_id = users.id AND p.ended_at IS NULL', 'left')
+            ->join('plantillas p', 'p.user_id = users.id AND p.ended_at IS NULL', 'left')
             ->join('positions pos', 'pos.id = p.position_id', 'left')
             ->join('units un', 'un.id = p.unit_id', 'left')
             ->join('user_roles ur', 'ur.user_id = users.id', 'left')
@@ -34,9 +36,9 @@ class AccountManagement extends BaseController
             if ($u['role_name'])  $u['role_name']  = str_replace(',', ', ', $u['role_name']);
         }
 
-        $roleModel     = new \App\Models\RoleModel();
-        $positionModel = new \App\Models\PositionModel();
-        $unitModel     = new \App\Models\UnitModel();
+        $roleModel     = new RoleModel();
+        $positionModel = new PositionModel();
+        $unitModel     = new UnitModel();
 
         $roles     = $roleModel->orderBy('name', 'ASC')->findAll();
         $positions = $positionModel->orderBy('title', 'ASC')->findAll();
@@ -51,8 +53,6 @@ class AccountManagement extends BaseController
     }
 
     public function sendInvites() {
-        if (session()->get('role') !== 'Admin') return redirect()->to('/');
-
         $rawEmails = $this->request->getPost('emails');
         $roleId    = $this->request->getPost('role_id');
 
@@ -122,8 +122,6 @@ class AccountManagement extends BaseController
     }
 
     public function toggleStatus() {
-        if (session()->get('role') !== 'Admin') return redirect()->to('/');
-
         $targetId = $this->request->getPost('user_id');
         if ($targetId == session()->get('user_id')) return redirect()->back()->with('error', 'Cannot disable yourself.');
 
@@ -139,8 +137,6 @@ class AccountManagement extends BaseController
     }
 
     public function destroy() {
-        if (session()->get('role') !== 'Admin') return redirect()->to('/');
-
         $targetId = $this->request->getPost('user_id');
         if ($targetId == session()->get('user_id')) return redirect()->back()->with('error', 'Cannot delete yourself.');
 
@@ -150,17 +146,12 @@ class AccountManagement extends BaseController
         return redirect()->back()->with('success', 'User account deleted permanently.');
     }
 
-    // ==========================================
-    // SYSTEM DATA MANAGEMENT (Roles, Positions, Units)
-    // ==========================================
-
     public function addRole() {
-        if (session()->get('role') !== 'Admin') return redirect()->to('/');
         $name = trim($this->request->getPost('name'));
         if (empty($name)) return redirect()->back()->with('error', 'Role name is required.');
 
         try {
-            $roleModel = new \App\Models\RoleModel();
+            $roleModel = new RoleModel();
             $roleModel->insert(['name' => $name, 'created_at' => date('Y-m-d H:i:s')]);
             return redirect()->back()->with('success', 'Role added successfully.');
         } catch (\Exception $e) {
@@ -169,9 +160,8 @@ class AccountManagement extends BaseController
     }
 
     public function deleteRole() {
-        if (session()->get('role') !== 'Admin') return redirect()->to('/');
         try {
-            $roleModel = new \App\Models\RoleModel();
+            $roleModel = new RoleModel();
             $roleModel->delete($this->request->getPost('id'));
             return redirect()->back()->with('success', 'Role deleted.');
         } catch (\Exception $e) {
@@ -180,13 +170,12 @@ class AccountManagement extends BaseController
     }
 
     public function addPosition() {
-        if (session()->get('role') !== 'Admin') return redirect()->to('/');
         $title = trim($this->request->getPost('title'));
         $isTeaching = $this->request->getPost('is_teaching') ? 1 : 0;
 
         if (empty($title)) return redirect()->back()->with('error', 'Position title is required.');
 
-        $positionModel = new \App\Models\PositionModel();
+        $positionModel = new PositionModel();
         $positionModel->insert([
             'title' => $title, 
             'is_teaching' => $isTeaching, 
@@ -196,9 +185,8 @@ class AccountManagement extends BaseController
     }
 
     public function deletePosition() {
-        if (session()->get('role') !== 'Admin') return redirect()->to('/');
         try {
-            $positionModel = new \App\Models\PositionModel();
+            $positionModel = new PositionModel();
             $positionModel->delete($this->request->getPost('id'));
             return redirect()->back()->with('success', 'Position deleted.');
         } catch (\Exception $e) {
@@ -207,13 +195,12 @@ class AccountManagement extends BaseController
     }
 
     public function addUnit() {
-        if (session()->get('role') !== 'Admin') return redirect()->to('/');
         $name = trim($this->request->getPost('name'));
         $parentId = $this->request->getPost('parent_id') ?: null; 
 
         if (empty($name)) return redirect()->back()->with('error', 'Unit name is required.');
 
-        $unitModel = new \App\Models\UnitModel();
+        $unitModel = new UnitModel();
         $unitModel->insert([
             'name' => $name, 
             'parent_id' => $parentId, 
@@ -223,9 +210,8 @@ class AccountManagement extends BaseController
     }
 
     public function deleteUnit() {
-        if (session()->get('role') !== 'Admin') return redirect()->to('/');
         try {
-            $unitModel = new \App\Models\UnitModel();
+            $unitModel = new UnitModel();
             $unitModel->delete($this->request->getPost('id'));
             return redirect()->back()->with('success', 'Unit deleted.');
         } catch (\Exception $e) {

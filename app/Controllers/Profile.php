@@ -5,6 +5,9 @@ namespace App\Controllers;
 use App\Controllers\BaseController;
 use CodeIgniter\HTTP\ResponseInterface;
 use App\Models\UserModel;
+use App\Models\UnitModel;
+use App\Models\PositionModel;
+use App\Models\PlantillaModel;
 
 class Profile extends BaseController
 {
@@ -12,14 +15,12 @@ class Profile extends BaseController
     {
         $userId = session()->get('user_id');
         $userModel      = new UserModel();
-        $unitModel      = new \App\Models\UnitModel();
-        $positionModel  = new \App\Models\PositionModel();
-        $plantillaModel = new \App\Models\PlantillaModel();
+        $unitModel      = new UnitModel();
+        $positionModel  = new PositionModel();
+        $plantillaModel = new PlantillaModel();
         
-        // Fetch current active positions for this user
         $currentPlantilla = $plantillaModel->where('user_id', $userId)->where('ended_at IS NULL')->findAll();
         
-        // If they somehow have no positions, provide one empty array so the UI renders at least one card
         if (empty($currentPlantilla)) {
             $currentPlantilla = [['unit_id' => '', 'position_id' => '']];
         }
@@ -37,9 +38,9 @@ class Profile extends BaseController
     public function updateGeneral()
     {
         $userId = session()->get('user_id');
-        $userModel = new UserModel();
+        $userModel      = new UserModel();
+        $plantillaModel = new PlantillaModel();
 
-        // 1. Validation Rules
         $rules = [
             'first_name' => 'required|min_length[2]',
             'last_name'  => 'required|min_length[2]',
@@ -50,31 +51,23 @@ class Profile extends BaseController
             return redirect()->back()->withInput()->with('error', 'Please check your inputs and try again.');
         }
 
-        // Wrap the updates in a transaction since we are touching multiple tables
         $userModel->db->transStart();
 
-        // 2. Update Database (Basic Info)
         $userModel->update($userId, [
             'first_name' => $this->request->getPost('first_name'),
             'last_name'  => $this->request->getPost('last_name'),
             'email'      => $this->request->getPost('email'),
         ]);
 
-        // 3. Update Plantilla (Positions & Units)
+        $plantillaModel->where('user_id', $userId)->where('ended_at IS NULL')->delete();
+
         $units     = $this->request->getPost('units');
         $positions = $this->request->getPost('positions');
 
-        // Wipe the current active designations
-        $userModel->db->table('plantilla')
-                      ->where('user_id', $userId)
-                      ->where('ended_at IS NULL')
-                      ->delete();
-
-        // Loop through the submitted arrays and insert the fresh ones
         if (!empty($units) && !empty($positions)) {
             for ($i = 0; $i < count($units); $i++) {
                 if (!empty($units[$i]) && !empty($positions[$i])) {
-                    $userModel->db->table('plantilla')->insert([
+                    $plantillaModel->insert([
                         'user_id'     => $userId,
                         'unit_id'     => $units[$i],
                         'position_id' => $positions[$i],
@@ -86,7 +79,6 @@ class Profile extends BaseController
 
         $userModel->db->transComplete();
 
-        // 4. Update Session variables so the UI updates instantly
         session()->set([
             'first_name' => $this->request->getPost('first_name'),
             'last_name'  => $this->request->getPost('last_name'),

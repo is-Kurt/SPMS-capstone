@@ -7,6 +7,9 @@ use CodeIgniter\CLI\CLI;
 use App\Enums\FolderStatus;
 use App\Enums\EmailStatus;
 
+use App\Models\DocumentFolderModel;
+use App\Models\EmailQueueModel;
+
 class CheckFolderDeadlines extends BaseCommand
 {
     /**
@@ -58,13 +61,13 @@ class CheckFolderDeadlines extends BaseCommand
      */
     public function run(array $params)
     {
-        $db = \Config\Database::connect();
+        $folderModel = new DocumentFolderModel();
+        $emailModel  = new EmailQueueModel();
+        
+        $today = date('Y-m-d');
         $threeDaysFromNow = date('Y-m-d', strtotime('+3 days'));
 
-        // ==========================================
-        // NEARING DEADLINE (3 Days Left)
-        // ==========================================
-        $nearingFolders = $db->table('document_folders df')
+        $nearingFolders = $folderModel->db->table('document_folders df')
             ->select('df.id, u.email, u.first_name, df.eval_date_start')
             ->join('users u', 'u.id = df.user_id')
             ->where('df.status', FolderStatus::DRAFT->value)
@@ -74,7 +77,7 @@ class CheckFolderDeadlines extends BaseCommand
         foreach ($nearingFolders as $folder) {
             $link = site_url("folders/" . $folder['id']);
             
-            $db->table('email_queue')->insert([
+            $emailModel->insert([
                 'to_email'   => $folder['email'],
                 'subject'    => 'Action Required: Evaluation Submission Deadline Approaching',
                 'body'       => "Hello {$folder['first_name']},<br><br>This is an automated reminder that your performance evaluation submission is due in 3 days on <b>{$folder['eval_date_start']}</b>. Please finalize and submit your self-rating before the system locks your folder.<br><br><a href='{$link}'>Click here to open your evaluation folder</a>",
@@ -87,7 +90,7 @@ class CheckFolderDeadlines extends BaseCommand
         CLI::write("Dispatching automated alerts...", 'yellow');
         
         helper('email_queue');
-        $result = process_email_queue(0); 
+        $result = \process_email_queue(0);
         
         CLI::write("Successfully sent {$result['processed']} automated emails.", 'green');
     }

@@ -8,8 +8,7 @@ use App\Models\TemplateModel;
 
 class Template extends BaseController
 {
-    public function index()
-    {
+    public function index() {
         if (session()->get('role') !== 'Admin') return redirect()->to('/');
 
         $templateModel = new TemplateModel();
@@ -21,14 +20,12 @@ class Template extends BaseController
         return view('templates/index', $data);
     }
 
-    public function create()
-    {
+    public function create() {
         if (session()->get('role') !== 'Admin') return redirect()->to('/');
         return view('templates/editor', ['template' => null]);
     }
 
-    public function edit($id)
-    {
+    public function edit($id) {
         if (session()->get('role') !== 'Admin') return redirect()->to('/');
         
         $templateModel = new TemplateModel();
@@ -41,8 +38,7 @@ class Template extends BaseController
         return view('templates/editor', ['template' => $template]);
     }
 
-    public function store()
-    {
+    public function store() {
         if (session()->get('role') !== 'Admin') return redirect()->to('/');
 
         $rules = [
@@ -69,12 +65,10 @@ class Template extends BaseController
             $msg = 'New template created successfully.';
         }
 
-        // Redirect back to the library
         return redirect()->to('templates')->with('success', $msg);
     }
 
-    public function delete()
-    {
+    public function delete() {
         if (session()->get('role') !== 'Admin') return redirect()->to('/');
 
         $templateId = $this->request->getPost('template_id');

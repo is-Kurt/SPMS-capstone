@@ -13,10 +13,10 @@ class InvitationModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'id',
         'email',
         'token',
         'status',
+        'role_id',
         'expires_at',
         'created_at',
     ];

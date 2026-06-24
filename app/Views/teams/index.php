@@ -246,7 +246,7 @@
             btn.disabled = false;
             btn.innerText = 'Create & Select';
         }
-    });
+});
 
     // PRE-LOADER LOGIC
     const activeMemberIds = <?= json_encode($activeMemberIds ?? []) ?>;

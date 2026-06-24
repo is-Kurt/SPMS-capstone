@@ -119,7 +119,7 @@ class MasterSeeder extends Seeder
             ['user_id' => $userMap['Bautista'],'position_id' => $posMap['Administrative Assistant'], 'unit_id' => $accId,   'started_at' => '2021-09-01', 'ended_at' => null],
         ];
 
-        $db->table('plantilla')->insertBatch($plantillaData);
+        $db->table('plantillas')->insertBatch($plantillaData);
 
         echo "Database successfully seeded with RBAC roles and full Plantilla Hierarchy!\n";
     }

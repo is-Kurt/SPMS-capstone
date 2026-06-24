@@ -5,6 +5,11 @@ namespace App\Controllers\Auth;
 use App\Controllers\BaseController;
 use CodeIgniter\HTTP\ResponseInterface;
 use App\Enums\InvitationStatus;
+use App\Models\UserModel;
+use App\Models\UnitModel;
+use App\Models\PositionModel;
+use App\Models\InvitationModel;
+use App\Models\PlantillaModel;
 
 class Register extends BaseController
 {
@@ -13,22 +18,21 @@ class Register extends BaseController
         $token = $this->request->getGet('token');
         if (!$token) return redirect()->to('/login')->with('error', 'Missing invitation token.');
 
-        $db = \Config\Database::connect();
+        $invitationModel = new InvitationModel();
+        $unitModel       = new UnitModel();
+        $positionModel   = new PositionModel();
         
-        // 1. Validate the token
-        $invitation = $db->table('invitations')
-                         ->where('token', $token)
+        $invitation = $invitationModel->where('token', $token)
                          ->where('status', InvitationStatus::PENDING->value)
                          ->where('expires_at >', date('Y-m-d H:i:s'))
-                         ->get()->getRowArray();
+                         ->first();
 
         if (!$invitation) {
             return redirect()->to('/login')->with('error', 'This invitation link is invalid or has expired.');
         }
 
-        // 2. Fetch required data for dropdowns
-        $units = $db->table('units')->orderBy('name', 'ASC')->get()->getResultArray();
-        $positions = $db->table('positions')->orderBy('title', 'ASC')->get()->getResultArray();
+        $units = $unitModel->orderBy('name', 'ASC')->findAll();
+        $positions = $positionModel->orderBy('title', 'ASC')->findAll();
 
         return view('auth/signup', [
             'invitation' => $invitation,
@@ -39,11 +43,16 @@ class Register extends BaseController
 
     public function store()
     {
-        $db = \Config\Database::connect();
         $token = $this->request->getPost('token');
 
-        // Security: Re-verify token on submission
-        $invitation = $db->table('invitations')->where('token', $token)->where('status', InvitationStatus::PENDING->value)->get()->getRowArray();
+        $invitationModel = new InvitationModel();
+        $userModel       = new UserModel();
+        $plantillaModel  = new PlantillaModel();
+
+        $invitation = $invitationModel->where('token', $token)
+                                      ->where('status', InvitationStatus::PENDING->value)
+                                      ->first();
+                                      
         if (!$invitation) return redirect()->to('/login')->with('error', 'Invalid token submission.');
 
         $validation = \Config\Services::validation();
@@ -60,11 +69,8 @@ class Register extends BaseController
             return redirect()->back()->withInput();
         }
 
-        $db->transStart();
+        $userModel->db->transStart();
 
-        $userModel = new \App\Models\UserModel();
-        
-        // 1. Create the User 
         $userId = $userModel->insert([
             'first_name' => $this->request->getPost('first_name'),
             'last_name'  => $this->request->getPost('last_name'),
@@ -73,23 +79,21 @@ class Register extends BaseController
             'is_active'  => 1
         ]);
 
-        // 2. Link the User to their Role in the junction table
         if ($invitation['role_id']) {
-            $db->table('user_roles')->insert([
+            $userModel->db->table('user_roles')->insert([
                 'user_id'    => $userId,
                 'role_id'    => $invitation['role_id'],
                 'created_at' => date('Y-m-d H:i:s')
             ]);
         }
 
-        // 3. Insert Multiple Positions into Plantilla
         $units = $this->request->getPost('units');
         $positions = $this->request->getPost('positions');
 
         if (is_array($positions) && is_array($units)) {
             foreach ($positions as $index => $posId) {
                 if (!empty($posId) && !empty($units[$index])) {
-                    $db->table('plantilla')->insert([
+                    $plantillaModel->insert([
                         'user_id'     => $userId,
                         'position_id' => $posId,
                         'unit_id'     => $units[$index],
@@ -99,10 +103,9 @@ class Register extends BaseController
             }
         }
 
-        // 3. Burn the Invitation Token
-        $db->table('invitations')->where('id', $invitation['id'])->update(['status' => InvitationStatus::ACCEPTED->value]);
+        $invitationModel->update($invitation['id'], ['status' => InvitationStatus::ACCEPTED->value]);
 
-        $db->transComplete();
+        $userModel->db->transComplete();
 
         return redirect()->to('/login')->with('success', 'Account fully configured! You may now log in.');
     }
