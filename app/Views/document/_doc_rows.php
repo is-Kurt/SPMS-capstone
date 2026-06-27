@@ -184,7 +184,7 @@
             </div>
         </div>
 
-        <div id="bottom-sheet" class="fixed inset-x-0 bottom-0 z-50 bg-surface border-t border-surface-border shadow-[0_-10px_40px_rgba(0,0,0,0.1)] rounded-t-3xl transition-transform duration-300 transform translate-y-[calc(100%-110px)] lg:static lg:translate-y-0 lg:w-80 lg:shrink-0 lg:shadow-none lg:border-none lg:bg-transparent lg:rounded-none flex flex-col">
+        <div id="bottom-sheet" class="lg:gap-6 fixed inset-x-0 bottom-0 z-50 bg-surface border-t border-surface-border shadow-[0_-10px_40px_rgba(0,0,0,0.1)] rounded-t-3xl transition-transform duration-300 transform translate-y-[calc(100%-90px)] lg:static lg:translate-y-0 lg:w-80 lg:shrink-0 lg:shadow-none lg:border-none lg:bg-transparent lg:rounded-none flex flex-col">
             
             <div class="lg:hidden flex justify-center py-3 cursor-pointer touch-none" onclick="toggleBottomSheet()">
                 <div class="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full"></div>
@@ -200,7 +200,7 @@
                     ?>
 
                     <?php if (!$isReadOnly): ?>
-                        <div class="flex flex-col gap-3 lg:mt-1">
+                        <div class="flex gap-3 lg:mt-1 lg:flex-col">
                             <?php if (!$hasBeenSubmitted || $status === \App\Enums\FolderStatus::REEVALUATE->value): ?>
                                 <button onclick="submitFolder('<?= $activeFolder['id'] ?>', this)" 
                                     <?= $isLocked ? 'disabled' : '' ?>
@@ -275,8 +275,9 @@
                         </div>
 
                         <?php if (in_array(session()->get('role'), ['Admin']) && $activeFolder['user_id'] == session()->get('user_id')): ?>
-                            <div class="h-px bg-surface-border my-2 w-full"></div>
-                            <div class="grid grid-cols-2 gap-3">
+                            <h4 class="text-[10px] font-black uppercase text-text-muted tracking-widest border-b border-surface-border pb-2">Folder Management</h4>
+                            
+                            <div class="grid grid-cols-2 gap-3 mt-1">
                                 <button onclick="openEditFolderModal('<?= esc($activeFolder['id']) ?>', '<?= esc(addslashes($activeFolder['title'])) ?>', '<?= esc($activeFolder['eval_date_start'] ?? '') ?>', '<?= esc($activeFolder['eval_date_end'] ?? '') ?>')"
                                         class="flex items-center justify-center gap-2 py-2.5 rounded-xl text-amber-600 border border-amber-200 bg-amber-50 hover:bg-amber-500 hover:text-white dark:bg-amber-500/10 dark:hover:bg-amber-600 dark:border-amber-500/20 transition-all cursor-pointer font-bold shadow-sm active:scale-95">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
@@ -366,12 +367,12 @@
             
             if (isSheetOpen) {
                 // Expand
-                sheet.classList.remove('translate-y-[calc(100%-110px)]');
+                sheet.classList.remove('translate-y-[calc(100%-90px)]');
                 sheet.classList.add('translate-y-0');
                 overlay.classList.remove('hidden');
             } else {
                 // Collapse
-                sheet.classList.add('translate-y-[calc(100%-110px)]');
+                sheet.classList.add('translate-y-[calc(100%-90px)]');
                 sheet.classList.remove('translate-y-0');
                 overlay.classList.add('hidden');
             }
