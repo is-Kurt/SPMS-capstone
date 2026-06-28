@@ -25,6 +25,7 @@ class Team extends BaseController
         $presetModel   = new RoutingPresetModel();
         $memberModel   = new RoutingPresetMemberModel();
 
+        // 1. Fetch Master Data
         $users = $userModel->db->table('users u')
             ->select("u.id as user_id, u.first_name, u.last_name, u.email, 
                       GROUP_CONCAT(DISTINCT pos.id) as position_id, 
@@ -32,7 +33,6 @@ class Team extends BaseController
                       MAX(pos.is_teaching) as is_teaching, 
                       GROUP_CONCAT(DISTINCT un.id) as unit_id, 
                       REPLACE(GROUP_CONCAT(DISTINCT un.name), ',', ', ') as department")
-            // FIXED: plantillas
             ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
             ->join('positions pos', 'pos.id = p.position_id', 'left')
             ->join('units un', 'un.id = p.unit_id', 'left')
@@ -57,6 +57,11 @@ class Team extends BaseController
             ->orderBy('routing_presets.created_at', 'DESC')
             ->findAll();
 
+        // 2. Handle Auto-Routing & Active Team selection
+        if (!$teamId && !empty($presets)) {
+            return redirect()->to('teams?team_id=' . $presets[0]['id']);
+        }
+
         $activeTeam = null;
         $activeMemberIds = [];
 
@@ -70,13 +75,24 @@ class Team extends BaseController
             }
         }
 
-        return view('teams/index', [
-            'users'           => $users,
-            'units'           => $units,
-            'positions'       => $positions,
-            'presets'         => $presets,
-            'activeTeam'      => $activeTeam,
-            'activeMemberIds' => $activeMemberIds
+        // 3. Return using the App Shell paradigm
+        return view('app_shell', [
+            'context'        => 'teams',
+            'sidebarTitle'   => 'Teams',
+            'sidebarView'    => 'teams/_sidebar',
+            'sidebarData'    => [
+                'presets'        => $presets,
+                'selectedTeamId' => $activeTeam['id'] ?? null
+            ],
+            'mainView'       => 'teams/index',
+            'mainData'       => [
+                'users'           => $users,
+                'units'           => $units,
+                'positions'       => $positions,
+                'presets'         => $presets,
+                'activeTeam'      => $activeTeam,
+                'activeMemberIds' => $activeMemberIds
+            ]
         ]);
     }
 
@@ -86,7 +102,6 @@ class Team extends BaseController
 
         $presetModel = new RoutingPresetModel();
         
-        // REPLACED $db
         $newId = $presetModel->insert([
             'owner_id'    => session()->get('user_id'),
             'name'        => trim($this->request->getPost('name')),

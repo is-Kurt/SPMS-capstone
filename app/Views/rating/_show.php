@@ -3,10 +3,23 @@
     $firstTabKey = array_key_first($tabs);
 ?>
 
-<div class="flex items-center gap-4 shrink-0 mb-6 px-1">
-    <div>
-        <h1 class="text-3xl font-black tracking-tight text-text">Collaborative Evaluation Queue</h1>
-        <p class="text-xs font-bold text-text-muted mt-1 uppercase tracking-widest">Manage your assigned reviews</p>
+<div class="relative flex flex-col shrink-0 mb-6 px-1" id="folder-dropdown-container">
+    
+    <button onclick="toggleFolderDropdown()" class="flex items-center justify-between w-full text-left group cursor-pointer lg:cursor-default">
+        <h1 class="text-3xl font-black tracking-tight text-text truncate group-hover:text-accent lg:group-hover:text-text transition-colors">
+            <?= esc($activeFolder['title']) ?>
+        </h1>
+        <svg id="folder-dropdown-icon" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 shrink-0 text-text-muted transition-transform lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+    </button>
+    
+    <p class="text-[10px] md:text-xs font-bold text-text-muted mt-1 uppercase tracking-widest">
+        Manage your assigned reviews
+    </p>
+
+    <div id="folder-dropdown-menu" class="hidden absolute top-full left-0 mt-2 w-full max-w-sm bg-surface border border-surface-border rounded-xl shadow-xl z-[100] max-h-64 overflow-y-auto lg:hidden">
+        <?= view('document/_folder_rows', ['folders' => $sidebarFolders ?? [], 'selectedFolderId' => null]) ?>
     </div>
 </div>
 
@@ -22,103 +35,126 @@
     <?php endforeach; ?>
 </div>
 
-<div class="bg-surface border border-surface-border rounded-2xl shadow-sm flex flex-col flex-1 min-h-0 overflow-hidden relative">
+<div class="bg-surface border border-surface-border rounded-2xl shadow-sm flex flex-col flex-1 lg:min-h-0 lg:overflow-hidden relative pb-10 lg:pb-0">
     
     <?php foreach ($tabs as $key => $group): ?>
-        <div id="tab-content-<?= $key ?>" class="tab-content <?= ($key === $firstTabKey) ? 'flex flex-col absolute inset-0' : 'hidden' ?>">
+        <div id="tab-content-<?= $key ?>" class="tab-content <?= ($key === $firstTabKey) ? 'flex flex-col lg:absolute lg:inset-0' : 'hidden' ?>">
             
-            <div class="overflow-y-auto overflow-x-auto custom-scrollbar flex-1">
-                <table class="w-full text-left border-collapse min-w-[800px]">
-                    <thead class="sticky top-0 z-20 bg-zinc-50 dark:bg-zinc-800/90 backdrop-blur-md text-[10px] font-black uppercase tracking-widest text-text-muted border-b border-surface-border shadow-sm">
-                        <tr>
-                            <th class="px-6 py-4">User / Position</th>
-                            <?php if ($sysRole === 'Admin'): ?>
-                                <th class="px-6 py-4">Department</th>
-                            <?php endif; ?>
-                            <th class="px-6 py-4">Folder Status</th>
-                            <th class="px-6 py-4 text-center">Score</th>
-                            <th class="px-6 py-4 text-center">Adjectival Rating</th>
-                            <th class="px-6 py-4 text-right">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-surface-border">
-                        <?php if (empty($group['folders'])): ?>
-                            <tr>
-                                <td colspan="100%" class="px-6 py-12 text-center text-sm font-bold text-text-muted italic">
-                                    No records found in this queue.
-                                </td>
-                            </tr>
-                        <?php else: ?>
-                            <?php foreach ($group['folders'] as $row): ?>
-                                <tr class="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors">
-                                    
-                                    <td class="px-6 py-4">
-                                        <div class="flex flex-col min-w-0">
-                                            <span class="text-sm font-bold text-text truncate">
-                                                <?= esc($row['username']) ?>
-                                            </span>
-                                            <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate">
-                                                <?= esc($row['position'] ?? 'No Position') ?>
-                                            </span>
-                                        </div>
-                                    </td>
-
-                                    <?php if ($sysRole === 'Admin'): ?>
-                                        <td class="px-6 py-4">
-                                            <span class="text-xs font-semibold text-text-muted"><?= esc($row['department'] ?? 'N/A') ?></span>
-                                        </td>
-                                    <?php endif; ?>
-
-                                    <td class="px-6 py-4">
-                                        <?php 
-                                            $s = strtolower($row['folder_status']);
-                                            $badgeColors = [
-                                                'approved'    => 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400',
-                                                'submitted'   => 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400',
-                                                'reevaluate'  => 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-500/20 dark:text-orange-400',
-                                                'to evaluate' => 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400',
-                                                'draft'       => 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400'
-                                            ];
-                                            $c = $badgeColors[$s] ?? $badgeColors['draft'];
-                                        ?>
-                                        <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border <?= $c ?>">
-                                            <?= esc($row['folder_status']) ?>
-                                        </span>
-                                    </td>
-
-                                    <td class="px-6 py-4 text-center">
-                                        <?php if (!is_null($row['final_rating'])): ?>
-                                            <span class="text-sm font-black text-text">
-                                                <?= number_format($row['final_rating'], 3) ?>
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic">--</span>
+            <div class="overflow-y-auto overflow-x-hidden custom-scrollbar flex-1 w-full p-2 lg:p-0">
+    <table class="w-full text-left border-collapse block lg:table">
+        
+        <thead class="hidden lg:table-header-group sticky top-0 z-20 bg-zinc-50 dark:bg-zinc-800/90 backdrop-blur-md text-[10px] font-black uppercase tracking-widest text-text-muted border-b border-surface-border shadow-sm">
+            <tr>
+                <th class="px-6 py-4">User / Position</th>
+                <?php if ($sysRole === 'Admin'): ?>
+                    <th class="px-6 py-4">Department</th>
+                <?php endif; ?>
+                <th class="px-6 py-4">Folder Status</th>
+                <th class="px-6 py-4 text-center">Score</th>
+                <th class="px-6 py-4 text-center">Adjectival Rating</th>
+                <th class="px-6 py-4 text-right">Action</th>
+            </tr>
+        </thead>
+        
+        <tbody class="block lg:table-row-group divide-y lg:divide-y-0 divide-transparent lg:divide-surface-border">
+            <?php if (empty($group['folders'])): ?>
+                <tr class="block lg:table-row">
+                    <td colspan="100%" class="block lg:table-cell px-6 py-12 text-center text-sm font-bold text-text-muted italic">
+                        No records found in this queue.
+                    </td>
+                </tr>
+            <?php else: ?>
+                <?php foreach ($group['folders'] as $row): ?>
+                    <tr class="block lg:table-row hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors bg-surface border lg:border-none border-surface-border rounded-xl lg:rounded-none mb-3 lg:mb-0 p-4 lg:p-0 shadow-sm lg:shadow-none">
+                        
+                        <td class="block lg:table-cell px-0 lg:px-6 py-1 lg:py-4">
+                            <div class="flex justify-between items-start lg:items-center">
+                                <div class="flex flex-col min-w-0 pr-4">
+                                    <span class="text-sm font-bold text-text truncate">
+                                        <?= esc($row['username']) ?>
+                                    </span>
+                                    <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate">
+                                        <?= esc($row['position'] ?? 'No Position') ?>
+                                        <?php if ($sysRole === 'Admin'): ?>
+                                            <span class="lg:hidden"> • <?= esc($row['department'] ?? 'N/A') ?></span>
                                         <?php endif; ?>
-                                    </td>
+                                    </span>
+                                </div>
 
-                                    <td class="px-6 py-4 text-center">
-                                        <?php if (!is_null($row['final_rating'])): ?>
-                                            <span class="adjective-badge px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm border border-transparent" 
-                                                  data-score="<?= $row['final_rating'] ?>">
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic">Not Rated</span>
-                                        <?php endif; ?>
-                                    </td>
+                                <div class="lg:hidden shrink-0 mt-0.5">
+                                    <?php 
+                                        $s = strtolower($row['folder_status']);
+                                        $badgeColors = [
+                                            'approved'    => 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400',
+                                            'submitted'   => 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400',
+                                            'reevaluate'  => 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-500/20 dark:text-orange-400',
+                                            'to evaluate' => 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400',
+                                            'draft'       => 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400'
+                                        ];
+                                        $c = $badgeColors[$s] ?? $badgeColors['draft'];
+                                    ?>
+                                    <span class="px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border <?= $c ?> whitespace-nowrap">
+                                        <?= esc($row['folder_status']) ?>
+                                    </span>
+                                </div>
+                            </div>
+                        </td>
 
-                                    <td class="px-6 py-4 text-right">
-                                        <a href="<?= site_url('ratings/show/' . $row['folder_id']) ?>" 
-                                           class="inline-flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accent-hover text-white rounded-xl font-bold text-xs transition-all shadow-md active:scale-95 cursor-pointer">
-                                            Open Evaluation
-                                        </a>
-                                    </td>
-
-                                </tr>
-                            <?php endforeach; ?>
+                        <?php if ($sysRole === 'Admin'): ?>
+                            <td class="hidden lg:table-cell px-6 py-4">
+                                <span class="text-xs font-semibold text-text-muted"><?= esc($row['department'] ?? 'N/A') ?></span>
+                            </td>
                         <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+
+                        <td class="hidden lg:table-cell px-6 py-4">
+                            <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border <?= $c ?> whitespace-nowrap">
+                                <?= esc($row['folder_status']) ?>
+                            </span>
+                        </td>
+
+                        <td class="block lg:table-cell px-0 lg:px-6 py-3 lg:py-4 text-left lg:text-center mt-2 lg:mt-0 border-t border-surface-border lg:border-none">
+                            <div class="flex items-center lg:justify-center gap-3">
+                                <span class="lg:hidden text-[10px] font-black text-text-muted uppercase tracking-widest">Score:</span>
+                                
+                                <?php if (!is_null($row['final_rating'])): ?>
+                                    <span class="text-sm font-black text-text">
+                                        <?= number_format($row['final_rating'], 3) ?>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic">--</span>
+                                <?php endif; ?>
+
+                                <div class="lg:hidden flex items-center gap-3 border-l border-surface-border pl-3">
+                                    <?php if (!is_null($row['final_rating'])): ?>
+                                        <span class="adjective-badge px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm border border-transparent" data-score="<?= $row['final_rating'] ?>"></span>
+                                    <?php else: ?>
+                                        <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic">N/A</span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td class="hidden lg:table-cell px-6 py-4 text-center">
+                            <?php if (!is_null($row['final_rating'])): ?>
+                                <span class="adjective-badge px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm border border-transparent whitespace-nowrap" data-score="<?= $row['final_rating'] ?>"></span>
+                            <?php else: ?>
+                                <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic whitespace-nowrap">Not Rated</span>
+                            <?php endif; ?>
+                        </td>
+
+                        <td class="block lg:table-cell px-0 lg:px-6 pt-1 pb-0 lg:py-4 text-right">
+                            <a href="<?= site_url('ratings/show/' . $row['folder_id']) ?>" 
+                               class="w-full lg:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 lg:py-2 bg-accent hover:bg-accent-hover text-white rounded-xl font-bold text-xs transition-all shadow-md active:scale-95 cursor-pointer whitespace-nowrap">
+                                Open Evaluation
+                            </a>
+                        </td>
+
+                    </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </tbody>
+    </table>
+</div>
         </div>
     <?php endforeach; ?>
 </div>
@@ -155,11 +191,12 @@
         });
     });
 
-    // Tab Switching Logic
+    // Tab Switching Logic (Updated for mobile native scrolling)
     function switchTab(tabId, btnElement) {
         document.querySelectorAll('.tab-content').forEach(el => {
             el.classList.add('hidden');
-            el.classList.remove('flex', 'flex-col', 'absolute', 'inset-0');
+            // Changed to toggle the desktop-only absolute positioning
+            el.classList.remove('flex', 'flex-col', 'lg:absolute', 'lg:inset-0');
         });
         
         document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -175,7 +212,8 @@
         const target = document.getElementById('tab-content-' + tabId);
         if (target) {
             target.classList.remove('hidden');
-            target.classList.add('flex', 'flex-col', 'absolute', 'inset-0');
+            // Changed to toggle the desktop-only absolute positioning
+            target.classList.add('flex', 'flex-col', 'lg:absolute', 'lg:inset-0');
         }
 
         if (btnElement) {
@@ -188,4 +226,23 @@
             }
         }
     }
+
+    // Dropdown Logic
+    function toggleFolderDropdown() {
+        const menu = document.getElementById('folder-dropdown-menu');
+        const icon = document.getElementById('folder-dropdown-icon');
+        if (menu && icon) {
+            menu.classList.toggle('hidden');
+            icon.classList.toggle('rotate-180');
+        }
+    }
+
+    // Close dropdown if clicking outside
+    document.addEventListener('click', function(event) {
+        const container = document.getElementById('folder-dropdown-container');
+        const menu = document.getElementById('folder-dropdown-menu');
+        if (container && menu && !container.contains(event.target) && !menu.classList.contains('hidden')) {
+            toggleFolderDropdown();
+        }
+    });
 </script>

@@ -184,7 +184,7 @@
             </div>
         </div>
 
-        <div id="bottom-sheet" class="lg:gap-6 fixed inset-x-0 bottom-0 z-50 bg-surface border-t border-surface-border shadow-[0_-10px_40px_rgba(0,0,0,0.1)] rounded-t-3xl transition-transform duration-300 transform translate-y-[calc(100%-90px)] lg:static lg:translate-y-0 lg:w-80 lg:shrink-0 lg:shadow-none lg:border-none lg:bg-transparent lg:rounded-none flex flex-col">
+        <div id="bottom-sheet" class="lg:gap-6 fixed inset-x-0 bottom-0 z-50 bg-surface border-t border-surface-border shadow-[0_-10px_40px_rgba(0,0,0,0.1)] rounded-t-3xl transition-transform duration-300 transform translate-y-[calc(100%-95px)] lg:static lg:translate-y-0 lg:w-80 lg:shrink-0 lg:shadow-none lg:border-none lg:bg-transparent lg:rounded-none flex flex-col">
             
             <div class="lg:hidden flex justify-center py-3 cursor-pointer touch-none" onclick="toggleBottomSheet()">
                 <div class="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full"></div>
@@ -367,12 +367,12 @@
             
             if (isSheetOpen) {
                 // Expand
-                sheet.classList.remove('translate-y-[calc(100%-90px)]');
+                sheet.classList.remove('translate-y-[calc(100%-95px)]');
                 sheet.classList.add('translate-y-0');
                 overlay.classList.remove('hidden');
             } else {
                 // Collapse
-                sheet.classList.add('translate-y-[calc(100%-90px)]');
+                sheet.classList.add('translate-y-[calc(100%-95px)]');
                 sheet.classList.remove('translate-y-0');
                 overlay.classList.add('hidden');
             }

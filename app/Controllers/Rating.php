@@ -71,11 +71,14 @@ class Rating extends BaseController
             }
         }
 
+        $activeFolder = $folderModel->find($folderId);
+
         return view('app_shell', [
             'sidebarFolders'   => $folders,
             'selectedFolderId' => $folderId, 
             'mainView'         => 'rating/_show', 
             'mainData'         => [
+                'activeFolder'  => $activeFolder,
                 'tabs'    => $tabs,
                 'sysRole' => $sysRole
             ]

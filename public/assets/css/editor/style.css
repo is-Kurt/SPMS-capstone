@@ -6,6 +6,12 @@ body {
     margin: 1in; 
 }
 
+@media (max-width: 768px) {
+    body {
+        margin: 12px !important; 
+    }
+}
+
 /* 2. Fix the Table Overflow */
 table { 
     border-collapse: collapse; 
