@@ -201,18 +201,20 @@
 
                     <?php if (!$isReadOnly): ?>
                         <div class="flex gap-3 lg:mt-1 lg:flex-col">
-                            <?php if (!$hasBeenSubmitted || $status === \App\Enums\FolderStatus::REEVALUATE->value): ?>
-                                <button onclick="submitFolder('<?= $activeFolder['id'] ?>', this)" 
-                                    <?= $isLocked ? 'disabled' : '' ?>
-                                    class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-blue-500 hover:bg-blue-600 disabled:bg-zinc-400 disabled:cursor-not-allowed text-white rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-md active:scale-95 cursor-pointer">
-                                    Submit For Evaluation
-                                </button>
-                            <?php else: ?>
-                                <button onclick="unsubmitFolder('<?= $activeFolder['id'] ?>', this)" 
-                                    <?= $isLocked ? 'disabled' : '' ?>
-                                    class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-amber-500 hover:bg-amber-600 disabled:bg-zinc-400 disabled:cursor-not-allowed text-white rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-md active:scale-95 cursor-pointer">
-                                    Unsubmit Folder
-                                </button>
+                            <?php if (session()->get('role') != 'Admin'): ?>
+                                <?php if (!$hasBeenSubmitted || $status === \App\Enums\FolderStatus::REEVALUATE->value): ?>
+                                    <button onclick="submitFolder('<?= $activeFolder['id'] ?>', this)" 
+                                        <?= $isLocked ? 'disabled' : '' ?>
+                                        class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-blue-500 hover:bg-blue-600 disabled:bg-zinc-400 disabled:cursor-not-allowed text-white rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-md active:scale-95 cursor-pointer">
+                                        Submit For Evaluation
+                                    </button>
+                                <?php else: ?>
+                                    <button onclick="unsubmitFolder('<?= $activeFolder['id'] ?>', this)" 
+                                        <?= $isLocked ? 'disabled' : '' ?>
+                                        class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-amber-500 hover:bg-amber-600 disabled:bg-zinc-400 disabled:cursor-not-allowed text-white rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-md active:scale-95 cursor-pointer">
+                                        Unsubmit Folder
+                                    </button>
+                                <?php endif; ?>
                             <?php endif; ?>
 
                             <?php if (!$isLocked && $status !== FolderStatus::SUBMITTED->value): ?>

@@ -3,6 +3,10 @@
 
 <?php 
     use App\Enums\FolderStatus;
+
+    $status = $doc['folder_status']; 
+    $isOwner = ($doc['owner_id'] == session()->get('user_id'));
+
 ?>
 
 <div class="h-full flex flex-col bg-bg">
@@ -22,18 +26,14 @@
             <input type="text" maxlength="100" id="doc-title" value="<?= esc($doc['title']) ?>"
                 class="bg-transparent border-none font-bold text-sm text-text focus:ring-0 px-1 sm:px-2 py-1 min-w-0 w-full truncate"
                 oninput="autoResize(this); AppState.setDirty(true);"
-                onblur="restoreTitle(this, '<?= esc($doc['title']) ?>')">
+                onblur="restoreTitle(this, '<?= esc($doc['title']) ?>')"
+                <?= $status === FolderStatus::SUBMITTED->value ? 'disabled' : '' ?>>
 
             <span id="save-status" class="ml-1 sm:ml-3 shrink-0 text-[10px] uppercase tracking-widest font-bold transition-all"></span>
         </div>
         
         <div class="flex items-center gap-2 sm:gap-4 shrink-0">
             <?php if (!$isGuide): ?>
-                <?php 
-                    $status = $doc['folder_status']; 
-                    $isOwner = ($doc['owner_id'] == session()->get('user_id'));
-                ?>
-
                 <?php if ($status === FolderStatus::APPROVED->value): ?>
                     <button type="button" disabled class="bg-emerald-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
                         <span class="hidden sm:inline">Folder </span>Approved ✓

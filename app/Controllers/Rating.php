@@ -12,8 +12,8 @@ class Rating extends BaseController
 {
     public function index($folderId = null) {
         $userId  = session()->get('user_id');
-        $sysRole = session()->get('role');     
-
+        $sysRole = session()->get('role');
+        
         $folderModel = new DocumentFolderModel();
 
         $folders = $folderModel->where('user_id', $userId)->orderBy('created_at', 'DESC')->findAll();

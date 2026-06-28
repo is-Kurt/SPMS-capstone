@@ -74,7 +74,7 @@ class Register extends BaseController
         $userId = $userModel->insert([
             'first_name' => $this->request->getPost('first_name'),
             'last_name'  => $this->request->getPost('last_name'),
-            'email'      => $invitation['email'], 
+            'email'      => strtolower($invitation['email']),
             'password'   => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT),
             'is_active'  => 1
         ]);
