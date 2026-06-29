@@ -50,6 +50,7 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->get('profile', 'Profile');
     $routes->post('profile/general', 'Profile::updateGeneral');
     $routes->post('profile/password', 'Profile::updatePassword');
+    $routes->post('profile/updateAvatar', 'Profile::updateAvatar');
 
     // Folder
     $routes->get('folders', 'Folder');

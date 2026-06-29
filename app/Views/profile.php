@@ -4,6 +4,59 @@
 <?= view('components/header') ?>
 
 <div class="p-8 max-w-4xl mx-auto flex flex-col gap-8 pb-20 h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar">
+    <div class="bg-surface border border-surface-border rounded-2xl shadow-sm overflow-hidden shrink-0 flex flex-col md:flex-row">
+        
+        <div class="p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-surface-border bg-zinc-50/50 dark:bg-zinc-800/10 min-w-[250px]">
+            <?php if (session('avatar_image')): ?>
+                <img src="<?= base_url('uploads/avatars/' . session('avatar_image')) ?>" alt="Avatar" class="w-32 h-32 rounded-full object-cover shadow-lg border-4 border-white dark:border-zinc-800">
+            <?php else: ?>
+                <div class="w-32 h-32 rounded-full flex items-center justify-center text-white text-5xl font-black shadow-lg border-4 border-white dark:border-zinc-800" style="background-color: <?= esc(session('avatar_color')) ?>;">
+                    <?= esc(session('avatar_letter')) ?>
+                </div>
+            <?php endif; ?>
+            <p class="mt-4 text-xs font-bold text-text-muted uppercase tracking-widest">Current Avatar</p>
+        </div>
+
+        <div class="p-8 flex-1 flex flex-col gap-6">
+            
+            <?= form_open_multipart('profile/updateAvatar') ?>
+                <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Upload Custom Image</label>
+                <div class="flex items-center gap-3">
+                    <input type="file" name="avatar_file" accept="image/png, image/jpeg, image/webp" required
+                           class="block w-full text-sm text-text-muted file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-accent/10 file:text-accent hover:file:bg-accent/20 transition-all cursor-pointer">
+                    <button type="submit" class="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-4 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-95 whitespace-nowrap">Upload</button>
+                </div>
+            <?= form_close() ?>
+
+            <div class="h-px bg-surface-border w-full"></div>
+
+            <?= form_open('profile/updateAvatar', ['class' => 'flex flex-col gap-4']) ?>
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Background Color</label>
+                        <div class="flex items-center gap-2">
+                            <input type="color" name="avatar_color" value="<?= esc(session('avatar_color')) ?>" class="h-10 w-16 p-0.5 rounded-lg border border-surface-border cursor-pointer">
+                            <span class="text-xs text-text-muted font-mono"><?= esc(session('avatar_color')) ?></span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1">
+                        <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Display Letter</label>
+                        <input type="text" name="avatar_letter" value="<?= esc(session('avatar_letter')) ?>" maxlength="2" required
+                               class="w-20 bg-zinc-50 dark:bg-zinc-800/50 border border-surface-border rounded-xl px-4 py-2 text-center font-bold text-text focus:border-accent outline-none">
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 mt-2">
+                    <button type="submit" class="bg-accent text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-95 shadow-md shadow-accent/20">Save Initials</button>
+                    <?php if (session('avatar_image')): ?>
+                        <button type="submit" name="remove_image" value="1" class="text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 px-4 py-2.5 rounded-xl text-xs font-bold transition-all">Remove Image</button>
+                    <?php endif; ?>
+                </div>
+            <?= form_close() ?>
+
+        </div>
+    </div>
     
     <?= form_open('profile/general', ['class' => 'bg-surface border border-surface-border rounded-2xl shadow-sm overflow-hidden shrink-0']) ?>
         <div class="px-8 py-5 border-b border-surface-border bg-zinc-50 dark:bg-zinc-800/30">

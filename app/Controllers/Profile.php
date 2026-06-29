@@ -117,4 +117,69 @@ class Profile extends BaseController
 
         return redirect()->back()->with('success', 'Password updated successfully.');
     }
+
+    public function updateAvatar() {
+        $userModel = new \App\Models\UserModel();
+        $userId = session()->get('user_id');
+        $uploadPath = FCPATH . 'uploads/avatars/'; // Define path once here
+
+        // 1. Check if they uploaded an image
+        $file = $this->request->getFile('avatar_file');
+        
+        if ($file && $file->isValid() && !$file->hasMoved()) {
+            if (!in_array($file->getMimeType(), ['image/jpeg', 'image/png', 'image/webp'])) {
+                return redirect()->back()->with('error', 'Invalid image format.');
+            }
+
+            if (!is_dir($uploadPath)) mkdir($uploadPath, 0777, true);
+
+            $newName = $file->getRandomName();
+            $newNameWebp = pathinfo($newName, PATHINFO_FILENAME) . '.webp';
+
+            \Config\Services::image()
+                ->withFile($file)
+                ->fit(256, 256, 'center') 
+                ->convert(IMAGETYPE_WEBP) 
+                ->save($uploadPath . $newNameWebp, 80); 
+
+            // Delete old avatar if exists
+            $oldAvatar = session('avatar_image');
+            if ($oldAvatar && file_exists($uploadPath . $oldAvatar)) {
+                unlink($uploadPath . $oldAvatar);
+            }
+
+            $userModel->update($userId, ['avatar_image' => $newNameWebp]);
+            session()->set('avatar_image', $newNameWebp);
+
+            return redirect()->back()->with('success', 'Profile image updated!');
+        }
+
+        // 2. If no image, check if they are updating the Initials/Color
+        $color = $this->request->getPost('avatar_color');
+        $letter = strtoupper(substr($this->request->getPost('avatar_letter'), 0, 1));
+        $removeImage = $this->request->getPost('remove_image');
+
+        $updateData = [];
+        if ($color) $updateData['avatar_color'] = $color;
+        if ($letter) $updateData['avatar_letter'] = $letter;
+        
+        if ($removeImage == '1') {
+            // FIX: Actually delete the physical file when "Remove Image" is clicked!
+            $oldAvatar = session('avatar_image');
+            if ($oldAvatar && file_exists($uploadPath . $oldAvatar)) {
+                unlink($uploadPath . $oldAvatar);
+            }
+
+            $updateData['avatar_image'] = null;
+            session()->set('avatar_image', null);
+        }
+
+        if (!empty($updateData)) {
+            $userModel->update($userId, $updateData);
+            if(isset($updateData['avatar_color'])) session()->set('avatar_color', $updateData['avatar_color']);
+            if(isset($updateData['avatar_letter'])) session()->set('avatar_letter', $updateData['avatar_letter']);
+        }
+
+        return redirect()->back()->with('success', 'Avatar settings updated!');
+    }
 }

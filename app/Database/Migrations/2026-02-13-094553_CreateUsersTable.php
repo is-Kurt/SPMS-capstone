@@ -45,6 +45,15 @@ class CreateUsersTable extends Migration
                 'type' => 'DATETIME',
                 'null' => true,
             ],
+            'reset_attempts' => [
+                'type'           => 'INT',
+                'constraint'     => 11,
+                'default'        => 0,
+            ],
+            'reset_last_attempt_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
             'remember_token' => [
                 'type'       => 'VARCHAR',
                 'constraint' => '255',

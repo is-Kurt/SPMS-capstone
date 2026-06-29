@@ -66,7 +66,10 @@ class Session extends BaseController
                 'department' => $department,
                 'position'   => $position,
                 'username'   => $user['first_name'] . ' ' . $user['last_name'],
-                'isLoggedIn' => true
+                'isLoggedIn' => true,
+                'avatar_image'  => $user['avatar_image'],
+                'avatar_color'  => $user['avatar_color'] ?? sprintf('#%06X', mt_rand(0, 0xFFFFFF)),
+                'avatar_letter' => $user['avatar_letter'] ?? strtoupper(substr($user['first_name'], 0, 1)),
             ]);
 
             if ($rememberMe) {

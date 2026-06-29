@@ -68,14 +68,24 @@
             
                 <div class="relative">
                     <button id="profile-btn-mobile" class="relative flex items-center rounded-full cursor-pointer border-2 border-transparent hover:border-white/20 transition-all">
-                        <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
-                                alt="User" class="size-10 md:size-12 rounded-full" />
+                        <?php if (session('avatar_image')): ?>
+                            <img src="<?= base_url('uploads/avatars/' . session('avatar_image')) ?>" alt="User" class="size-10 md:size-12 rounded-full object-cover border border-surface-border" />
+                        <?php else: ?>
+                            <div class="size-10 md:size-12 rounded-full flex items-center justify-center text-white font-black text-lg border border-surface-border" style="background-color: <?= esc(session('avatar_color')) ?>;">
+                                <?= esc(session('avatar_letter')) ?>
+                            </div>
+                        <?php endif; ?>
                     </button>
 
                     <div id="profile-dropdown-menu" class="hidden absolute right-0 mt-3 w-56 origin-top-right rounded-2xl bg-surface p-2 shadow-2xl ring-1 ring-surface-border z-[100]">
                         <div class="flex items-center gap-3 px-3 py-2 mb-1">
-                            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
-                                alt="User" class="size-10 rounded-full object-cover ring-1 ring-surface-border" />
+                            <?php if (session('avatar_image')): ?>
+                                <img src="<?= base_url('uploads/avatars/' . session('avatar_image')) ?>" alt="User" class="size-10 md:size-12 rounded-full object-cover border border-surface-border" />
+                            <?php else: ?>
+                                <div class="size-10 md:size-12 rounded-full flex items-center justify-center text-white font-black text-lg border border-surface-border" style="background-color: <?= esc(session('avatar_color')) ?>;">
+                                    <?= esc(session('avatar_letter')) ?>
+                                </div>
+                            <?php endif; ?>
                             <div class="flex flex-col min-w-0">
                                 <p class="text-sm font-bold text-text truncate break-all">
                                     <?= esc(session()->get('username') ?? 'Null username') ?>
