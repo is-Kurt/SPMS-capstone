@@ -30,7 +30,7 @@ class Session extends BaseController
             return redirect()->back()->withInput();
         }
 
-        $email = strtolower($this->request->getPost('email'));
+        $email    = trim(strtolower($this->request->getPost('email')));
         $password = $this->request->getPost()['password'];
 
         $userModel = new UserModel();

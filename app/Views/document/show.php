@@ -34,7 +34,12 @@
         
         <div class="flex items-center gap-2 sm:gap-4 shrink-0">
             <?php if (!$isGuide): ?>
-                <?php if ($status === FolderStatus::APPROVED->value): ?>
+                <?php if ($doc['is_target'] == 0 && !in_array($status, [FolderStatus::DRAFT->value, FolderStatus::REEVALUATE->value])): ?>
+                    <button type="button" disabled class="bg-zinc-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
+                        Supporting<span class="hidden sm:inline"> Evidence</span>
+                    </button>
+
+                <?php elseif ($status === FolderStatus::APPROVED->value): ?>
                     <button type="button" disabled class="bg-emerald-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
                         <span class="hidden sm:inline">Folder </span>Approved ✓
                     </button>
@@ -188,6 +193,7 @@
 <script>
     const isGuide = <?= json_encode($isGuide) ?>;
     const status = <?= json_encode($doc['folder_status']) ?>;
+    const isTarget = <?= json_encode($doc['is_target'] == 1) ?>;
     const isOwner = <?= json_encode($doc['owner_id'] == session()->get('user_id')) ?>;
 
     // Enum values exported for JS use
@@ -205,9 +211,11 @@
 
     if (!isGuide) {
         if ((status === FolderStatus.TO_EVALUATE || status === FolderStatus.REEVALUATE) && isOwner) {
-            isFullyLocked = false;
+            // Owner can only self-rate the TARGET document. If REEVALUATE, they can edit anything.
+            isFullyLocked = !isTarget && status === FolderStatus.TO_EVALUATE;
         } else if (status === FolderStatus.EVALUATED && !isOwner) {
-            isFullyLocked = false;
+            // Evaluator can only evaluate/rate the TARGET document.
+            isFullyLocked = !isTarget;
         }
     }
 

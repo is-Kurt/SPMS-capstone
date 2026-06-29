@@ -86,7 +86,13 @@ class Folder extends BaseController
 
             $myDocs = $documentModel->where('document_folder_id', $folderId)->findAll();
             $routingModel = new EvaluationRoutingModel();
+            
+            // We need UserModel to fetch the Admin's details later
+            $userModel = new \App\Models\UserModel(); 
 
+            // ==========================================
+            // 1. FETCH SUPERVISOR GUIDES (Routings)
+            // ==========================================
             $cascadedRoutes = $routingModel->select('evaluation_routings.*, u.first_name, u.last_name, pos.title as evaluator_position')
                                             ->join('users u', 'u.id = evaluation_routings.evaluator_id')
                                             ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
@@ -111,6 +117,41 @@ class Folder extends BaseController
                 }
             }
 
+            // ==========================================
+            // 2. FETCH ADMIN MASTER GUIDES (Parent Folder)
+            // ==========================================
+            if (!empty($activeFolder['parent_folder_id'])) {
+                $adminFolder = $folderModel->find($activeFolder['parent_folder_id']);
+                
+                if ($adminFolder) {
+                    // Get all documents belonging to the Admin's master folder
+                    $adminDocs = $documentModel->where('document_folder_id', $adminFolder['id'])->findAll();
+                    
+                    if (!empty($adminDocs)) {
+                        // Fetch the Admin's name and position
+                        $adminInfo = $userModel->select('users.id, users.first_name, users.last_name, pos.title as admin_position')
+                                               ->join('plantillas p', 'p.user_id = users.id AND p.ended_at IS NULL', 'left')
+                                               ->join('positions pos', 'pos.id = p.position_id', 'left')
+                                               ->where('users.id', $adminFolder['user_id'])
+                                               ->first();
+
+                        if ($adminInfo) {
+                            $groupedGuides[] = [
+                                'superior' => [
+                                    'id'   => $adminInfo['id'],
+                                    'name' => $adminInfo['first_name'] . ' ' . $adminInfo['last_name'],
+                                    'role' => $adminInfo['admin_position'] ?? 'System Administrator'
+                                ],
+                                'docs' => $adminDocs
+                            ];
+                        }
+                    }
+                }
+            }
+
+            // ==========================================
+            // 3. MERGE & DEDUPLICATE ALL GUIDES
+            // ==========================================
             $mergedGuides = [];
             foreach ($groupedGuides as $guide) {
                 $key = $guide['superior']['name']; 
@@ -365,21 +406,76 @@ class Folder extends BaseController
             $title = $this->request->getPost('title');
             $dateStart = $this->request->getPost('eval_date_start');
             $dateEnd = $this->request->getPost('eval_date_end');
-
-            $folderModel->update($folderId, [
+            
+            $now = date('Y-m-d H:i:s');
+            $isNowActive = !empty($dateEnd) && $dateEnd > $now;
+            
+            // 1. Update the Admin's Master Folder (Title and Dates only)
+            $folderData = [
                 'title'           => $title,
                 'eval_date_start' => $dateStart,
                 'eval_date_end'   => $dateEnd,
-            ]);
+            ];
+            $folderModel->update($folderId, $folderData);
 
-            $folderModel->where('parent_folder_id', $folderId)
-               ->set([
-                   'title'           => $title,
-                   'eval_date_start' => $dateStart,
-                   'eval_date_end'   => $dateEnd,
-               ])->update();
+            // 2. Fetch and Process Cascaded Child Folders
+            $childFolders = $folderModel->where('parent_folder_id', $folderId)->findAll();
+            $routingModel = new EvaluationRoutingModel();
+            
+            $targetStatuses = [
+                FolderStatus::TO_EVALUATE->value,
+                FolderStatus::UNEVALUATED->value,
+                FolderStatus::EVALUATED->value,
+                FolderStatus::APPROVED->value
+            ];
 
-            return $this->respond(['status' => 'success', 'message' => 'Folder updated and synced to all users.']);
+            $didResetAny = false;
+
+            if (!empty($childFolders)) {
+                foreach ($childFolders as $child) {
+                    // Base payload for every child (syncing titles and dates)
+                    $childData = [
+                        'title'           => $title,
+                        'eval_date_start' => $dateStart,
+                        'eval_date_end'   => $dateEnd,
+                    ];
+
+                    // Check if THIS specific child folder needs a reset
+                    $isInTargetStatus = in_array($child['status'], $targetStatuses);
+                    $shouldReset = ($isInTargetStatus && $isNowActive);
+
+                    if ($shouldReset) {
+                        $didResetAny = true;
+
+                        // Smart Reset Logic: Protect submitted work
+                        if (empty($child['submitted_at'])) {
+                            $childData['status'] = FolderStatus::DRAFT->value;
+                        } else {
+                            $childData['status'] = FolderStatus::SUBMITTED->value;
+                        }
+                        
+                        // Wipe evaluation outcomes
+                        $childData['final_rating'] = null; 
+                        $childData['rated_at']     = null; 
+
+                        // Reset Evaluator Routing Statuses for this specific child
+                        $routingModel->where('folder_id', $child['id'])
+                                     ->set(['status' => FolderStatus::DRAFT->value])
+                                     ->update();
+                    }
+
+                    // Apply the update to the child
+                    $folderModel->update($child['id'], $childData);
+                }
+            }
+
+            // 3. Set the dynamic success message
+            $message = 'Folder updated and synced.';
+            if ($didResetAny) {
+                $message .= " The timeline was adjusted: active/expired cascaded folders have been safely reset.";
+            }
+
+            return $this->respond(['status' => 'success', 'message' => $message]);
         });
     }
 
@@ -398,6 +494,17 @@ class Folder extends BaseController
             if (!$folder || $folder['user_id'] != $userId) {
                 throw new \Exception("Unauthorized to submit this folder.");
             }
+
+            // --- NEW: Target Document Validation ---
+            $documentModel = new DocumentModel();
+            $hasTarget = $documentModel->where('document_folder_id', $folderId)
+                                       ->where('is_target', 1)
+                                       ->countAllResults();
+            
+            if ($hasTarget == 0) {
+                throw new \Exception("Submission Failed: You must set at least one document as the Basis Target (★) before submitting.");
+            }
+            // ---------------------------------------
 
             // Using Model Update
             $folderModel->update($folderId, [

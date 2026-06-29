@@ -20,6 +20,11 @@ class UserModel extends Model
         'remember_token',
         'remember_token_expiry',
         'is_active',
+        'reset_code', 
+        'reset_code_expires_at',
+        'avatar_image', 
+        'avatar_color', 
+        'avatar_letter'
     ];
 
     protected bool $allowEmptyInserts = false;

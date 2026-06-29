@@ -13,7 +13,7 @@ class Rating extends BaseController
     public function index($folderId = null) {
         $userId  = session()->get('user_id');
         $sysRole = session()->get('role');
-        
+
         $folderModel = new DocumentFolderModel();
 
         $folders = $folderModel->where('user_id', $userId)->orderBy('created_at', 'DESC')->findAll();
@@ -27,6 +27,10 @@ class Rating extends BaseController
             }
         } else {
             session()->set('active_folder_id', $folderId);
+        }
+
+        if (!empty($folders)) {
+            $activeFolder = $folderModel->find($folderId);
         }
 
         $builder = $folderModel->db->table('document_folders df')
@@ -55,6 +59,8 @@ class Rating extends BaseController
             if ($f['department']) $f['department'] = str_replace(',', ', ', $f['department']);
         }
 
+        unset($f);
+
         $tabs = [
             'action'    => ['label' => 'Action Required', 'folders' => []],
             'pending'   => ['label' => 'Pending Subordinate', 'folders' => []],
@@ -71,14 +77,12 @@ class Rating extends BaseController
             }
         }
 
-        $activeFolder = $folderModel->find($folderId);
-
         return view('app_shell', [
             'sidebarFolders'   => $folders,
             'selectedFolderId' => $folderId, 
             'mainView'         => 'rating/_show', 
             'mainData'         => [
-                'activeFolder'  => $activeFolder,
+                'activeFolder'  => $activeFolder ?? null,
                 'tabs'    => $tabs,
                 'sysRole' => $sysRole
             ]

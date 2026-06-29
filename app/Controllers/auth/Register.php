@@ -71,6 +71,9 @@ class Register extends BaseController
 
         $userModel->db->transStart();
 
+        $firstName = trim($this->request->getPost('first_name'));
+        $lastName  = trim($this->request->getPost('last_name'));
+
         $userId = $userModel->insert([
             'first_name' => $this->request->getPost('first_name'),
             'last_name'  => $this->request->getPost('last_name'),

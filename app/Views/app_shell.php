@@ -7,10 +7,8 @@
 
 <!-- Only load Document/Folder Modals if we are actually in the Folders context -->
 <?php if ($context === 'folders'): ?>
-    <?= view('components/share_modal') ?>
     <?= view('components/create_file_modal') ?>
     <?= view('components/delete_modal') ?>
-    <?= view('components/send_modal') ?>
     <?= view('components/create_folder_modal') ?>
 <?php endif; ?>
 
@@ -59,10 +57,8 @@
 
 <!-- Only load Document/Folder JS logic if we are in the Folders context -->
 <?php if ($context === 'folders'): ?>
-    <script type="module" src="<?= base_url('assets/js/main/modals/shareModal.js') ?>"></script>
     <script type="module" src="<?= base_url('assets/js/main/modals/deleteModal.js') ?>"></script>
     <script type="module" src="<?= base_url('assets/js/main/modals/createFileModal.js') ?>"></script>
-    <script type="module" src="<?= base_url('assets/js/main/modals/sendModal.js') ?>"></script>
     <script type="module" src="<?= base_url('assets/js/main/modals/createFolderModal.js') ?>"></script>
 <?php endif; ?>
 

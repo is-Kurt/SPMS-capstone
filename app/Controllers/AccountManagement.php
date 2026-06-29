@@ -61,17 +61,29 @@ class AccountManagement extends BaseController
         
         $userModel = new UserModel();
         $invitationModel = new InvitationModel();
+        $now = date('Y-m-d H:i:s'); // Current time for expiration check
 
         foreach ($emails as $email) {
             $email = trim($email);
             if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                if ($userModel->where('email', $email)->countAllResults() == 0) {
+                
+                // 1. Check if they already have an account
+                $hasAccount = $userModel->where('email', $email)->countAllResults() > 0;
+                
+                // 2. Check if they already have a pending, unexpired invitation
+                $hasPendingInvite = $invitationModel->where('email', $email)
+                                                    ->where('status', InvitationStatus::PENDING->value)
+                                                    ->where('expires_at >', $now)
+                                                    ->countAllResults() > 0;
+
+                // Only add them if BOTH are false
+                if (!$hasAccount && !$hasPendingInvite) {
                     $validEmails[] = $email;
                 }
             }
         }
 
-        if (empty($validEmails)) return redirect()->back()->with('error', 'No valid or new email addresses found.');
+        if (empty($validEmails)) return redirect()->back()->with('error', 'No valid or new email addresses found (they may already have accounts or pending invites).');
 
         $userModel->db->transStart();
         foreach ($validEmails as $email) {

@@ -1,4 +1,4 @@
-<div id="delete-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
+<div id="delete-modal" class="hidden fixed inset-0 z-100 flex items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
     
     <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-[380px] p-8 border border-zinc-200 dark:border-zinc-800">
         

@@ -1,4 +1,4 @@
-<div id="create-folder-modal" class="fixed inset-0 z-[60] hidden overflow-y-auto items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
+<div id="create-folder-modal" class="fixed inset-0 z-100 hidden overflow-y-auto items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
     
     <div class="relative w-full max-w-md rounded-2xl bg-surface border border-surface-border p-8 shadow-2xl transition-all">
         <h3 id="folder-modal-heading" class="text-xl font-black text-text tracking-tight mb-2">Create Evaluation Folder</h3>

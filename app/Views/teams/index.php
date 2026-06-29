@@ -13,7 +13,7 @@
     </p>
 
     <!-- The Dropdown Menu (Hidden by default, shown via JS on mobile) -->
-    <div id="mobile-team-dropdown-menu" class="hidden absolute top-[52px] left-0 w-full max-w-sm bg-surface border border-surface-border rounded-xl shadow-xl z-[100] max-h-64 overflow-y-auto custom-scrollbar">
+    <div id="mobile-team-dropdown-menu" class="hidden absolute top-[52px] left-0 w-full max-w-sm bg-surface border border-surface-border rounded-xl shadow-xl z-[40] max-h-64 overflow-y-auto custom-scrollbar">
         <div class="p-2 border-b border-surface-border">
             <button onclick="document.getElementById('modal-create-team').classList.remove('hidden'); document.getElementById('modal-create-team').classList.add('flex'); toggleMobileTeamDropdown();" class="w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold text-accent bg-accent/10 hover:bg-accent/20 transition-colors flex justify-between items-center cursor-pointer">
                 + Create New Team
@@ -40,7 +40,7 @@
                             </span>
                             
                             <!-- Delete Button -->
-                            <?= form_open('teams/delete', ['onsubmit' => "return confirm('Delete this team?');", 'class' => 'flex items-center']) ?>
+                            <?= form_open('teams/delete', ['onsubmit' => "return confirmTeamDelete(event, " . ($preset['in_use'] ? 'true' : 'false') . ");", 'class' => 'flex items-center']) ?>
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="_method" value="DELETE">
                                 <input type="hidden" name="preset_id" value="<?= $preset['id'] ?>">
@@ -455,6 +455,22 @@
             clearBtn.classList.add('hidden');
             clearBtn.classList.remove('flex');
         }
+    }
+
+    function confirmTeamDelete(event, inUse) {
+        if (inUse) {
+            // The team is actively cascaded - STOP them with a warning!
+            alert("⚠️ Cannot delete this team!\n\nIt is currently cascaded to an active evaluation folder. Please revoke the cascade from your Folders tab before deleting this distribution list.");
+            event.preventDefault(); // Stops the form from submitting
+            return false;
+        }
+        
+        // Normal deletion flow
+        if (!confirm('Are you sure you want to delete this team?')) {
+            event.preventDefault();
+            return false;
+        }
+        return true;
     }
 <?php endif; ?>
 </script>

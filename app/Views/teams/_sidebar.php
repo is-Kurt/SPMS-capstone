@@ -18,7 +18,7 @@
                         <?= $preset['member_count'] ?>
                     </span>
                     
-                    <?= form_open('teams/delete', ['onsubmit' => "return confirm('Delete this team?');", 'class' => 'flex items-center']) ?>
+                    <?= form_open('teams/delete', ['onsubmit' => "return confirmTeamDelete(event, " . ($preset['in_use'] ? 'true' : 'false') . ");", 'class' => 'flex items-center']) ?>
                         <input type="hidden" name="_method" value="DELETE">
                         <input type="hidden" name="preset_id" value="<?= $preset['id'] ?>">
                         <button type="submit" class="p-1 rounded-md <?= $isActive ? 'text-white/60 hover:text-white hover:bg-white/20' : 'text-zinc-400 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10' ?> transition-all cursor-pointer" title="Delete Team">

@@ -25,7 +25,7 @@
     $showHamburger = count($nav_items) > 1;
 ?>
 
-<nav class="bg-accent shadow-lg shadow-accent/10 antialiased relative z-[100]">
+<nav class="bg-accent shadow-lg shadow-accent/10 antialiased relative z-[110]">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-16 items-center justify-between">
             

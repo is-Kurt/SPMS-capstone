@@ -44,7 +44,7 @@
                     </div>
 
                     <div class="text-sm">
-                        <a href="#" class="font-bold text-accent hover:text-accent-hover transition-colors">
+                        <a href="<?= site_url('password/forgot') ?>" class="font-bold text-accent hover:text-accent-hover transition-colors">
                             Forgot password?
                         </a>
                     </div>

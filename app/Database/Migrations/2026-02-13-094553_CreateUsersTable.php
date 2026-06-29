@@ -36,6 +36,15 @@ class CreateUsersTable extends Migration
                 'constraint' => '255',
                 'null'       => false,
             ],
+            'reset_code' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '10',
+                'null'       => true,
+            ],
+            'reset_code_expires_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
             'remember_token' => [
                 'type'       => 'VARCHAR',
                 'constraint' => '255',
@@ -50,6 +59,21 @@ class CreateUsersTable extends Migration
                 'constraint' => 1,
                 'default'    => 1,
                 'null'       => false,
+            ],
+            'avatar_image' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '255',
+                'null'       => true,
+            ],
+            'avatar_color' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '7',
+                'null'       => true,
+            ],
+            'avatar_letter' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '2',
+                'null'       => true,
             ],
             'created_at' => [
                 'type' => 'DATETIME',

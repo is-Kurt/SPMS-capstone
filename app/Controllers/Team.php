@@ -9,6 +9,7 @@ use App\Models\UnitModel;
 use App\Models\PositionModel;
 use App\Models\RoutingPresetModel;
 use App\Models\RoutingPresetMemberModel;
+use App\Models\DocumentFolderModel;
 
 class Team extends BaseController
 {
@@ -24,6 +25,7 @@ class Team extends BaseController
         $positionModel = new PositionModel();
         $presetModel   = new RoutingPresetModel();
         $memberModel   = new RoutingPresetMemberModel();
+        $folderModel   = new DocumentFolderModel();
 
         // 1. Fetch Master Data
         $users = $userModel->db->table('users u')
@@ -56,6 +58,11 @@ class Team extends BaseController
             ->groupBy('routing_presets.id')
             ->orderBy('routing_presets.created_at', 'DESC')
             ->findAll();
+
+        foreach ($presets as &$p) {
+            $p['in_use'] = $folderModel->where('routing_preset_id', $p['id'])->countAllResults() > 0;
+        }
+        unset($p);
 
         // 2. Handle Auto-Routing & Active Team selection
         if (!$teamId && !empty($presets)) {
@@ -163,6 +170,11 @@ class Team extends BaseController
         $preset = $presetModel->where('id', $presetId)->where('owner_id', session()->get('user_id'))->first();
         
         if ($preset) {
+            $folderModel = new DocumentFolderModel();
+            if ($folderModel->where('routing_preset_id', $presetId)->countAllResults() > 0) {
+                return redirect()->back()->with('error', 'Backend blocked: Team is actively cascaded.');
+            }
+
             $presetModel->delete($presetId);
             return redirect()->to('teams')->with('success', 'Team deleted successfully.');
         }
