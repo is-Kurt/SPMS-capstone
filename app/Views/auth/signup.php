@@ -3,11 +3,26 @@
 
 <main class="flex min-h-screen flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8 bg-zinc-50 dark:bg-zinc-950">
     
-    <div class="w-full max-w-2xl mb-8 text-center">
+    <div class="w-full max-w-2xl mb-6 text-center">
         <h2 class="text-3xl font-black tracking-tight text-text">Account Setup</h2>
         <p class="text-text-muted font-medium mt-2">Complete your profile to access the system.</p>
     </div>
 
+    <div class="w-full max-w-2xl">
+        <?php if (session()->has('success')): ?>
+            <div class="mb-6 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 flex items-start gap-3">
+                <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <p class="text-sm font-bold text-emerald-800 dark:text-emerald-400 leading-tight"><?= session('success') ?></p>
+            </div>
+        <?php endif; ?>
+
+        <?php if (session()->has('error')): ?>
+            <div class="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 flex items-start gap-3">
+                <svg class="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                <p class="text-sm font-bold text-red-800 dark:text-red-400 leading-tight"><?= session('error') ?></p>
+            </div>
+        <?php endif; ?>
+    </div>
     <?= form_open('signup', ['class' => 'w-full max-w-2xl flex flex-col gap-6']) ?>
         <input type="hidden" name="token" value="<?= esc($invitation['token']) ?>">
 
@@ -28,26 +43,36 @@
                     <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">First Name</label>
                     <input type="text" name="first_name" value="<?= old('first_name') ?>" required
                            class="w-full bg-zinc-50 dark:bg-zinc-950 border border-surface-border rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:outline-none text-text transition-all" />
-                    <p class="text-red-500 text-[10px] font-bold mt-1 uppercase tracking-wider"><?= validation_show_error('first_name') ?></p>
+                    <div class="h-3 pl-1 mt-1">
+                        <p class="text-red-500 text-[10px] font-bold uppercase tracking-wider"><?= validation_show_error('first_name') ?></p>
+                    </div>
                 </div>
 
                 <div class="col-span-1">
                     <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Last Name</label>
                     <input type="text" name="last_name" value="<?= old('last_name') ?>" required
                            class="w-full bg-zinc-50 dark:bg-zinc-950 border border-surface-border rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:outline-none text-text transition-all" />
+                    <div class="h-3 pl-1 mt-1">
+                        <p class="text-red-500 text-[10px] font-bold uppercase tracking-wider"><?= validation_show_error('last_name') ?></p>
+                    </div>
                 </div>
 
                 <div class="col-span-1">
                     <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Password</label>
                     <input type="password" name="password" required minlength="8"
                            class="w-full bg-zinc-50 dark:bg-zinc-950 border border-surface-border rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:outline-none text-text transition-all" />
-                    <p class="text-red-500 text-[10px] font-bold mt-1 uppercase tracking-wider"><?= validation_show_error('password') ?></p>
+                    <div class="h-3 pl-1 mt-1">
+                        <p class="text-red-500 text-[10px] font-bold uppercase tracking-wider"><?= validation_show_error('password') ?></p>
+                    </div>
                 </div>
 
                 <div class="col-span-1">
                     <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Confirm Password</label>
                     <input type="password" name="confirm-password" required
                            class="w-full bg-zinc-50 dark:bg-zinc-950 border border-surface-border rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:outline-none text-text transition-all" />
+                    <div class="h-3 pl-1 mt-1">
+                        <p class="text-red-500 text-[10px] font-bold uppercase tracking-wider"><?= validation_show_error('confirm-password') ?></p>
+                    </div>
                 </div>
             </div>
         </div>

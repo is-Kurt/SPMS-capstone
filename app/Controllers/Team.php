@@ -38,8 +38,16 @@ class Team extends BaseController
             ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
             ->join('positions pos', 'pos.id = p.position_id', 'left')
             ->join('units un', 'un.id = p.unit_id', 'left')
+            // Join the role tables
+            ->join('user_roles ur', 'ur.user_id = u.id', 'left')
+            ->join('roles r', 'r.id = ur.role_id', 'left')
             ->where('u.is_active', 1)
             ->where('u.id !=', $userId) 
+            // Exclude users with the 'Admin' role (but keep users with null/no role just in case)
+            ->groupStart()
+                ->where('r.name !=', 'Admin')
+                ->orWhere('r.name IS NULL')
+            ->groupEnd()
             ->groupBy('u.id') 
             ->orderBy('u.last_name', 'ASC')
             ->get()->getResultArray();
