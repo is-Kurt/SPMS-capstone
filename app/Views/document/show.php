@@ -50,7 +50,13 @@
                             <span class="hidden sm:inline">Awaiting </span>Approval
                         </button>
                     <?php else: ?>
-                        <?php if (isset($routingStatus) && $routingStatus === FolderStatus::APPROVED->value): ?>
+                        
+                        <?php if (session()->get('role') === 'Admin'): ?>
+                            <button type="button" disabled class="bg-indigo-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
+                                Monitoring<span class="hidden sm:inline"> View</span>
+                            </button>
+                            
+                        <?php elseif (isset($routingStatus) && $routingStatus === FolderStatus::APPROVED->value): ?>
                             <button type="button" disabled class="bg-emerald-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
                                 Approved ✓
                             </button>
@@ -68,6 +74,7 @@
                                 </button>
                             </div>
                         <?php endif; ?>
+                        
                     <?php endif; ?>
 
                 <?php elseif ($status === FolderStatus::TO_EVALUATE->value || $status === FolderStatus::REEVALUATE->value): ?>

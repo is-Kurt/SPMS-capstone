@@ -10,6 +10,7 @@ use App\Models\UnitModel;
 use App\Models\PositionModel;
 use App\Models\InvitationModel;
 use App\Models\PlantillaModel;
+use App\Models\RoleModel;
 
 class Register extends BaseController
 {
@@ -21,6 +22,7 @@ class Register extends BaseController
         $invitationModel = new InvitationModel();
         $unitModel       = new UnitModel();
         $positionModel   = new PositionModel();
+        $roleModel       = new RoleModel();
         
         $invitation = $invitationModel->where('token', $token)
                          ->where('status', InvitationStatus::PENDING->value)
@@ -31,13 +33,17 @@ class Register extends BaseController
             return redirect()->to('/login')->with('error', 'This invitation link is invalid or has expired.');
         }
 
+        $role = $invitation['role_id'] ? $roleModel->find($invitation['role_id']) : null;
+        $isAdminInvite = $role && strtolower($role['name']) === 'admin';
+
         $units = $unitModel->orderBy('name', 'ASC')->findAll();
         $positions = $positionModel->orderBy('title', 'ASC')->findAll();
 
         return view('auth/signup', [
-            'invitation' => $invitation,
-            'units'      => $units,
-            'positions'  => $positions
+            'invitation'    => $invitation,
+            'units'         => $units,
+            'positions'     => $positions,
+            'isAdminInvite' => $isAdminInvite
         ]);
     }
 
@@ -48,6 +54,7 @@ class Register extends BaseController
         $invitationModel = new InvitationModel();
         $userModel       = new UserModel();
         $plantillaModel  = new PlantillaModel();
+        $roleModel       = new RoleModel();
 
         $invitation = $invitationModel->where('token', $token)
                                       ->where('status', InvitationStatus::PENDING->value)
@@ -55,24 +62,30 @@ class Register extends BaseController
                                       
         if (!$invitation) return redirect()->to('/login')->with('error', 'Invalid token submission.');
 
+        // Determine if admin invite
+        $role = $invitation['role_id'] ? $roleModel->find($invitation['role_id']) : null;
+        $isAdminInvite = $role && strtolower($role['name']) === 'admin';
+
         $validation = \Config\Services::validation();
-        $validation->setRules([
+        $rules = [
             'first_name' => 'required|min_length[2]|max_length[100]',
             'last_name'  => 'required|min_length[2]|max_length[100]',
             'password'   => 'required|min_length[8]',
-            'confirm-password' => 'required|matches[password]',
-            'units.*'     => 'required', // Validate arrays!
-            'positions.*' => 'required'
-        ]);
+            'confirm-password' => 'required|matches[password]'
+        ];
+
+        if (!$isAdminInvite) {
+            $rules['units.*'] = 'required';
+            $rules['positions.*'] = 'required';
+        }
+
+        $validation->setRules($rules);
 
         if (!$validation->run($this->request->getPost())) {
             return redirect()->back()->withInput();
         }
 
         $userModel->db->transStart();
-
-        $firstName = trim($this->request->getPost('first_name'));
-        $lastName  = trim($this->request->getPost('last_name'));
 
         $userId = $userModel->insert([
             'first_name' => $this->request->getPost('first_name'),
@@ -90,18 +103,20 @@ class Register extends BaseController
             ]);
         }
 
-        $units = $this->request->getPost('units');
-        $positions = $this->request->getPost('positions');
+        if (!$isAdminInvite) {
+            $units = $this->request->getPost('units');
+            $positions = $this->request->getPost('positions');
 
-        if (is_array($positions) && is_array($units)) {
-            foreach ($positions as $index => $posId) {
-                if (!empty($posId) && !empty($units[$index])) {
-                    $plantillaModel->insert([
-                        'user_id'     => $userId,
-                        'position_id' => $posId,
-                        'unit_id'     => $units[$index],
-                        'started_at'  => date('Y-m-d')
-                    ]);
+            if (is_array($positions) && is_array($units)) {
+                foreach ($positions as $index => $posId) {
+                    if (!empty($posId) && !empty($units[$index])) {
+                        $plantillaModel->insert([
+                            'user_id'     => $userId,
+                            'position_id' => $posId,
+                            'unit_id'     => $units[$index],
+                            'started_at'  => date('Y-m-d')
+                        ]);
+                    }
                 }
             }
         }

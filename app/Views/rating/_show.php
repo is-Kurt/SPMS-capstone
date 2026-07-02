@@ -155,14 +155,12 @@
                             <?php endif; ?>
                         </td>
 
-                        <?php if ($sysRole != "Admin"): ?>
-                            <td class="block lg:table-cell px-0 lg:px-6 pt-1 pb-0 lg:py-4 text-right">
-                                <a href="<?= site_url('ratings/show/' . $row['folder_id']) ?>" 
-                                class="w-full lg:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 lg:py-2 bg-accent hover:bg-accent-hover text-white rounded-xl font-bold text-xs transition-all shadow-md active:scale-95 cursor-pointer whitespace-nowrap">
-                                    Open Evaluation
-                                </a>
-                            </td>
-                        <?php endif; ?>
+                        <td class="block lg:table-cell px-0 lg:px-6 pt-1 pb-0 lg:py-4 text-right">
+                            <a href="<?= site_url('ratings/show/' . $row['folder_id']) ?>" 
+                            class="w-full lg:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 lg:py-2 bg-accent hover:bg-accent-hover text-white rounded-xl font-bold text-xs transition-all shadow-md active:scale-95 cursor-pointer whitespace-nowrap">
+                                Open Evaluation
+                            </a>
+                        </td>
 
                     </tr>
                 <?php endforeach; ?>

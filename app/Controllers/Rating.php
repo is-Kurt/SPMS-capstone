@@ -116,6 +116,50 @@ class Rating extends BaseController
 
         $folders = $folderModel->where('user_id', $userId)->orderBy('created_at', 'DESC')->findAll();
 
+        // ==========================================
+        // NEW: Fetch Evaluator Progress & Guides
+        // ==========================================
+        $groupedGuides = [];
+        $cascadedRoutes = $routingModel->select('evaluation_routings.*, u.first_name, u.last_name, pos.title as evaluator_position')
+                                        ->join('users u', 'u.id = evaluation_routings.evaluator_id')
+                                        ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
+                                        ->join('positions pos', 'pos.id = p.position_id', 'left')
+                                        ->where('folder_id', $subFolderId)
+                                        ->findAll();
+
+        foreach ($cascadedRoutes as $route) {
+            $guideFolder = $folderModel->find($route['evaluator_folder_id']);
+            if ($guideFolder) {
+                $docs = $documentModel->where('document_folder_id', $guideFolder['id'])->findAll();
+                $groupedGuides[] = [
+                    'superior' => [
+                        'id'   => $route['evaluator_id'],
+                        'name' => $route['first_name'] . ' ' . $route['last_name'],
+                        'role' => $route['evaluator_position'] ?? 'Evaluator' 
+                    ], 
+                    // Add a fallback so the frontend doesn't break if the evaluator hasn't uploaded a document yet
+                    'docs' => !empty($docs) ? $docs : [['document_folder_id' => $route['evaluator_folder_id']]] 
+                ];
+            }
+        }
+
+        // Deduplicate roles if the supervisor has multiple active plantillas
+        $mergedGuides = [];
+        foreach ($groupedGuides as $guide) {
+            $key = $guide['superior']['name']; 
+            if (!isset($mergedGuides[$key])) {
+                $mergedGuides[$key] = $guide;
+            } else {
+                $existingRoles = $mergedGuides[$key]['superior']['role'];
+                $newRole       = $guide['superior']['role'];
+                if (strpos($existingRoles, $newRole) === false) {
+                    $mergedGuides[$key]['superior']['role'] .= ', ' . $newRole;
+                }
+            }
+        }
+        $groupedGuides = array_values($mergedGuides);
+        // ==========================================
+
         return view('app_shell', [
             'sidebarFolders'   => $folders, 
             'selectedFolderId' => null, 
@@ -124,7 +168,8 @@ class Rating extends BaseController
                 'activeFolder'  => $subFolder,
                 'myDocs'        => $documentModel->where('document_folder_id', $subFolderId)->findAll(),
                 'isReadOnly'    => true, 
-                'presets'       => []    
+                'presets'       => [],
+                'groupedGuides' => $groupedGuides
             ]
         ]);
     }

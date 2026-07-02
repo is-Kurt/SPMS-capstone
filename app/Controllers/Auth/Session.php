@@ -68,7 +68,7 @@ class Session extends BaseController
                 'username'   => $user['first_name'] . ' ' . $user['last_name'],
                 'isLoggedIn' => true,
                 'avatar_image'  => $user['avatar_image'],
-                'avatar_color'  => $user['avatar_color'] ?? sprintf('#%06X', mt_rand(0, 0xFFFFFF)),
+                'avatar_color'  => $user['avatar_color'] ?? '#' . substr(md5($user['email']), 0, 6),
                 'avatar_letter' => $user['avatar_letter'] ?? strtoupper(substr($user['first_name'], 0, 1)),
             ]);
 
