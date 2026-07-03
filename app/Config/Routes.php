@@ -76,6 +76,8 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
 
     // Auth
     $routes->delete('login', 'Auth\Session::destroy');
+
+    $routes->get('api/csrf-token', 'Auth\Session::getCsrfToken');
 });
 
 $routes->group('', ['filter' => 'guest'], function($routes) {

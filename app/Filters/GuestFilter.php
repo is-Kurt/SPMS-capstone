@@ -25,7 +25,9 @@ class GuestFilter implements FilterInterface
      */
     public function before(RequestInterface $request, $arguments = null)
     {
-        if (session()->get('isLoggedIn')) {
+        helper('functions');
+
+        if (restore_session_from_cookie()) {
             return redirect()->to(site_url('folders'));
         }
     }

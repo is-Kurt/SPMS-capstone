@@ -65,6 +65,6 @@ class CreatePlantillaTable extends Migration
 
     public function down()
     {
-        $this->forge->dropTable('plantilla');
+        $this->forge->dropTable('plantillas');
     }
 }

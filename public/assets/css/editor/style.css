@@ -6,20 +6,10 @@ body {
     margin: 1in; 
 }
 
-@media (max-width: 768px) {
-    body {
-        margin: 12px !important; 
-    }
-}
-
-/* 2. Fix the Table Overflow */
+/* 2. Standard Table Rules (Desktop) */
 table { 
     border-collapse: collapse; 
-    
-    /* Force tables to stay inside the margins */
     max-width: 100%;
-    
-    /* Lock the layout so long text wraps instead of stretching the table */
     table-layout: fixed; 
     word-wrap: break-word; 
     box-sizing: border-box;
@@ -28,12 +18,31 @@ table {
 th, td { 
     border: 1px solid #ccc; 
     padding: 8px; 
-    
-    /* Ensure text inside cells doesn't break out */
     overflow: hidden;
 }
 
 td.custom-selected, th.custom-selected { 
     /* Mathematically dialed to hit #cae3ff on white and #a8d3da on green */
     background-image: linear-gradient(rgba(0, 119, 255, 0.208), rgba(0, 119, 255, 0.208)) !important; 
+}
+
+/* 3. Mobile Overrides */
+@media (max-width: 768px) {
+    body {
+        margin: 12px !important; 
+        /* Allow the editor body to scroll horizontally */
+        overflow-x: auto !important; 
+    }
+
+    /* Prevent tables from squishing text on small screens */
+    table {
+        table-layout: auto !important;
+        max-width: none !important;
+        width: max-content !important;
+    }
+
+    /* Guarantee cells have enough space to read words normally */
+    th, td {
+        min-width: 120px !important; 
+    }
 }

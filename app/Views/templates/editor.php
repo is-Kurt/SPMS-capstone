@@ -17,7 +17,7 @@
                     </div>
                 </a>
 
-                <input type="text" name="title" required placeholder="Enter Template Title..."
+                <input type="text" name="title" placeholder="Enter Template Title..."
                     value="<?= $template ? esc($template['title']) : '' ?>"
                     class="bg-transparent border-none font-bold text-sm text-text focus:ring-0 px-2 py-1 w-64 md:w-96 placeholder:text-text-muted/50">
             </div>

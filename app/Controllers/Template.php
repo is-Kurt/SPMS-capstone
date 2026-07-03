@@ -41,26 +41,35 @@ class Template extends BaseController
     public function store() {
         if (session()->get('role') !== 'Admin') return redirect()->to('/');
 
-        $rules = [
-            'title'   => 'required|min_length[3]',
-        ];
-
-        if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('error', 'A valid Template Title is required.');
-        }
-
         $templateModel = new TemplateModel();
         $templateId = $this->request->getPost('template_id');
 
-        $data = [
-            'title'   => $this->request->getPost('title'),
-            'content' => $this->request->getPost('content') ?? ''
-        ];
+        // 1. Get the title or set the default
+        $title = trim($this->request->getPost('title'));
+        if (empty($title)) {
+            $title = 'Basic template';
+        }
 
         if ($templateId) {
+            // Update: Resolve unique title, ignoring the current template's ID
+            $title = resolve_unique_title($title, function($db) use ($templateId) {
+                return $db->table('templates')->where('id !=', $templateId);
+            }, 'title', $templateModel);
+
+            $data = [
+                'title'   => $title,
+                'content' => $this->request->getPost('content') ?? ''
+            ];
             $templateModel->update($templateId, $data);
             $msg = 'Template updated successfully.';
         } else {
+            // Creation: Resolve unique title against all templates
+            $title = resolve_unique_title($title, [], 'title', $templateModel);
+
+            $data = [
+                'title'   => $title,
+                'content' => $this->request->getPost('content') ?? ''
+            ];
             $templateModel->save($data);
             $msg = 'New template created successfully.';
         }

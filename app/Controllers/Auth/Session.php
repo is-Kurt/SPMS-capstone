@@ -110,4 +110,11 @@ class Session extends BaseController
         session()->destroy();
         return redirect()->to(site_url('login'));
     }
+
+    public function getCsrfToken() {
+        return $this->response->setJSON([
+            'status'    => 'success',
+            'csrf_hash' => csrf_hash()
+        ]);
+    }
 }

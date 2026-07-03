@@ -76,7 +76,7 @@
         <div class="mb-4 shrink-0 flex flex-col sm:flex-row gap-3 lg:gap-4 bg-surface lg:bg-transparent p-4 lg:p-0 rounded-2xl lg:rounded-none border border-surface-border lg:border-none shadow-sm lg:shadow-none">
             <div class="w-full sm:w-[35%]">
                 <label class="block text-[10px] font-black uppercase tracking-widest text-accent mb-1 ml-1 lg:ml-0">Team Title</label>
-                <input type="text" name="name" required value="<?= esc($activeTeam['name']) ?>" placeholder="Team Name" class="w-full bg-transparent text-xl lg:text-2xl font-black text-text placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-0 px-1 border-b border-transparent focus:border-accent/30 transition-colors pb-1">
+                <input type="text" name="name" value="<?= esc($activeTeam['name']) ?>" placeholder="Team Name" class="w-full bg-transparent text-xl lg:text-2xl font-black text-text placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-0 px-1 border-b border-transparent focus:border-accent/30 transition-colors pb-1">
             </div>
             <div class="w-full sm:w-[65%]">
                 <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1 ml-1 lg:ml-0">Description</label>
@@ -211,7 +211,7 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Team Name</label>
-                    <input type="text" name="name" required placeholder="e.g., OVPAA Staff" class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none text-text transition-all" />
+                    <input type="text" name="name" placeholder="e.g., OVPAA Staff" class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none text-text transition-all" />
                 </div>
                 <div>
                     <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Description (Optional)</label>

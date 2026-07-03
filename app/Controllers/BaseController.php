@@ -44,8 +44,6 @@ abstract class BaseController extends Controller
         parent::initController($request, $response, $logger);
         // Preload any models, libraries, etc, here.
         // $this->session = service('session');
-
-        $this->restoreSessionFromCookie();
     }
 
     protected function respond($data, int $status = 200) {
@@ -84,43 +82,5 @@ abstract class BaseController extends Controller
     protected function getSidebarFolders() {
         $folderModel = new DocumentFolderModel();
         return $folderModel->where('user_id', session()->get('user_id'))->orderBy('created_at', 'DESC')->findAll();
-    }
-
-    protected function restoreSessionFromCookie() {
-        if (session()->get('isLoggedIn')) return;
-
-        $token = $_COOKIE['remember_me'] ?? null;
-
-        if ($token) {
-            $userModel = new UserModel();
-            $user = $userModel->where('remember_token', hash('sha256', $token))
-                              ->where('remember_token_expiry >', date('Y-m-d H:i:s'))
-                              ->first();
-
-            if ($user) {
-                // Use the userModel's database instance for cross-table joins
-                $roleData = $userModel->db->table('user_roles ur')->select('r.name')
-                    ->join('roles r', 'r.id = ur.role_id')
-                    ->where('ur.user_id', $user['id'])->get()->getRowArray();
-                
-                // FIX: Updated table name to 'plantillas'
-                $plantilla = $userModel->db->table('plantillas p')
-                    ->select('un.name as department, pos.title as position')
-                    ->join('units un', 'un.id = p.unit_id')
-                    ->join('positions pos', 'pos.id = p.position_id')
-                    ->where('p.user_id', $user['id'])
-                    ->where('p.ended_at IS NULL')->get()->getRowArray();
-
-                session()->set([
-                    'user_id'    => $user['id'],
-                    'email'      => $user['email'],
-                    'role'       => $roleData ? $roleData['name'] : 'Employee',
-                    'department' => $plantilla ? $plantilla['department'] : null,
-                    'position'   => $plantilla ? $plantilla['position'] : null,
-                    'username'   => $user['first_name'] . ' ' . $user['last_name'],
-                    'isLoggedIn' => true
-                ]);
-            }
-        }
     }
 }

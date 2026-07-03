@@ -65,7 +65,7 @@ function create_unique_row($dbModel, array $data) {
  */
 function resolve_unique_title(
     string $baseTitle,
-    array $scope = [],
+    $scope = [],
     string $titleColumn = 'title',
     $model = null
     ): string {
@@ -131,4 +131,54 @@ function resolve_unique_title(
         }
 
         return $baseTitle . ' (' . $nextSuffix . ')';
+}
+
+/**
+ * Attempts to rebuild a lost session using the Remember Me cookie.
+ * @return bool True if session exists or was restored, False if not.
+ */
+function restore_session_from_cookie(): bool {
+    $session = session();
+    
+    // If they already have an active session, we're good!
+    if ($session->get('isLoggedIn')) return true;
+
+    // Check for the persistent cookie
+    $token = $_COOKIE['remember_me'] ?? null;
+    if (!$token) return false;
+
+    $userModel = new \App\Models\UserModel();
+    $user = $userModel->where('remember_token', hash('sha256', $token))
+                      ->where('remember_token_expiry >', date('Y-m-d H:i:s'))
+                      ->first();
+
+    // If token is valid and user is not banned
+    if ($user && isset($user['is_active']) && $user['is_active'] == 1) {
+        $roleData = $userModel->db->table('user_roles ur')->select('r.name')
+            ->join('roles r', 'r.id = ur.role_id')
+            ->where('ur.user_id', $user['id'])->get()->getRowArray();
+        
+        $plantilla = $userModel->db->table('plantillas p')
+            ->select('un.name as department, pos.title as position')
+            ->join('units un', 'un.id = p.unit_id')
+            ->join('positions pos', 'pos.id = p.position_id')
+            ->where('p.user_id', $user['id'])
+            ->where('p.ended_at IS NULL')->get()->getRowArray();
+
+        $session->set([
+            'user_id'    => $user['id'],
+            'email'      => $user['email'],
+            'role'       => $roleData ? $roleData['name'] : 'Employee',
+            'department' => $plantilla ? $plantilla['department'] : null,
+            'position'   => $plantilla ? $plantilla['position'] : null,
+            'username'   => $user['first_name'] . ' ' . $user['last_name'],
+            'isLoggedIn' => true,
+            'avatar_image'  => $user['avatar_image'],
+            'avatar_color'  => $user['avatar_color'] ?? '#' . substr(md5($user['email']), 0, 6),
+            'avatar_letter' => $user['avatar_letter'] ?? strtoupper(substr($user['first_name'], 0, 1)),
+        ]);
+        return true;
+    }
+    
+    return false;
 }

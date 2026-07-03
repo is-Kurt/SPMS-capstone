@@ -117,9 +117,14 @@ class Team extends BaseController
 
         $presetModel = new RoutingPresetModel();
         
+        $name = trim($this->request->getPost('name'));
+        if (empty($name)) $name = 'Team';
+        
+        $name = resolve_unique_title($name, ['owner_id' => session()->get('user_id')], 'name', $presetModel);
+        
         $newId = $presetModel->insert([
             'owner_id'    => session()->get('user_id'),
-            'name'        => trim($this->request->getPost('name')),
+            'name'        => $name,
             'description' => trim($this->request->getPost('description')) ?: null,
             'created_at'  => date('Y-m-d H:i:s')
         ]);
@@ -134,15 +139,20 @@ class Team extends BaseController
         $teamId  = $this->request->getPost('team_id');
         $name    = trim($this->request->getPost('name'));
         $userIds = $this->request->getPost('user_ids') ?? [];
-
-        if (empty($name)) return redirect()->back()->with('error', 'Team name is required.');
+        $userId  = session()->get('user_id');
 
         $presetModel = new RoutingPresetModel();
         $memberModel = new RoutingPresetMemberModel();
+        
+        if (empty($name)) $name = 'Team';
+
+        $name = resolve_unique_title($name, function($db) use ($teamId, $userId) {
+            return $db->table('routing_presets')->where('owner_id', $userId)->where('id !=', $teamId);
+        }, 'name', $presetModel);
 
         $presetModel->db->transStart();
 
-        $presetModel->where('id', $teamId)->where('owner_id', session()->get('user_id'))->set([
+        $presetModel->where('id', $teamId)->where('owner_id', $userId)->set([
             'name'        => $name,
             'description' => trim($this->request->getPost('description')) ?: null,
             'updated_at'  => date('Y-m-d H:i:s')

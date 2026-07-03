@@ -2,7 +2,7 @@ class TableTools {
     constructor(editor) {
         this.editor = editor;
         this.activeSelectionQuery = 'td[data-mce-selected="1"], th[data-mce-selected="1"], .custom-selected';
-        this.classNames = ['calc-rating', 'calc-row-avg', 'calc-total', 'calc-final-total'];
+        this.classNames = ['calc-rating', 'calc-row-avg', 'calc-total', 'calc-final-total', 'remarks'];
         this.attrNames = ['data-group-id', 'data-cell-weight'];
     }
 
