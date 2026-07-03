@@ -36,8 +36,9 @@ class Rating extends BaseController
         $builder = $folderModel->db->table('document_folders df')
             ->select("df.id as folder_id, df.user_id, (u.first_name || ' ' || u.last_name) as username, 
                       REPLACE(GROUP_CONCAT(DISTINCT pos.title), ',', ', ') as position, 
-                      REPLACE(GROUP_CONCAT(DISTINCT un.name), ',', ', ') as department, 
-                      df.final_rating, df.status as folder_status")
+                      REPLACE(GROUP_CONCAT(DISTINCT un.name), ',', ', ') as department,
+                      MAX(pos.is_teaching) as is_teaching,
+                      df.status as folder_status, df.final_rating")
             ->join('users u', 'u.id = df.user_id')
             ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
             ->join('positions pos', 'pos.id = p.position_id', 'left')
@@ -77,6 +78,23 @@ class Rating extends BaseController
             }
         }
 
+        // ==========================================
+        // NEW: Extract unique filters dynamically
+        // ==========================================
+        $filterUnits = [];
+        $filterPositions = [];
+        foreach ($rawFolders as $f) {
+            if (!empty($f['department'])) {
+                foreach (explode(', ', $f['department']) as $d) $filterUnits[trim($d)] = trim($d);
+            }
+            if (!empty($f['position'])) {
+                foreach (explode(', ', $f['position']) as $p) $filterPositions[trim($p)] = trim($p);
+            }
+        }
+        sort($filterUnits);
+        sort($filterPositions);
+        // =========================================
+
         return view('app_shell', [
             'sidebarFolders'   => $folders,
             'selectedFolderId' => $folderId, 
@@ -84,7 +102,9 @@ class Rating extends BaseController
             'mainData'         => [
                 'activeFolder'  => $activeFolder ?? null,
                 'tabs'    => $tabs,
-                'sysRole' => $sysRole
+                'sysRole' => $sysRole,
+                'filterUnits'     => $filterUnits,    // <-- Add this
+                'filterPositions' => $filterPositions // <-- Add this
             ]
         ]);
     }

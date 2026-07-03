@@ -1,4 +1,4 @@
-<?php 
+    <?php 
     $sysRole = $sysRole ?? session()->get('role');
     $firstTabKey = array_key_first($tabs);
 ?>
@@ -36,6 +36,52 @@
     </div>
 </div>
 
+<div class="flex flex-col lg:flex-row gap-3 mb-6 px-1 shrink-0">
+    
+    <div class="flex-1 relative min-w-0">
+        <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+        <input type="text" id="search-rating" placeholder="Search employee name..." 
+            class="w-full bg-surface border border-surface-border shadow-sm rounded-xl pl-10 pr-4 py-2.5 text-sm focus:border-accent focus:ring-1 focus:outline-none text-text transition-all">
+    </div>
+    
+    <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto shrink-0">
+        <div class="w-full sm:w-48 relative shrink-0">
+            <select id="filter-unit" class="w-full bg-surface border border-surface-border shadow-sm rounded-xl pl-4 pr-10 py-2.5 text-sm focus:border-accent outline-none text-text appearance-none cursor-pointer truncate">
+                <option value="">All Units / Depts</option>
+                <?php foreach($filterUnits as $unit): ?>
+                    <option value="<?= esc($unit) ?>"><?= esc($unit) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                <svg class="h-4 w-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+            </div>
+        </div>
+
+        <div class="w-full sm:w-48 relative shrink-0">
+            <select id="filter-pos" class="w-full bg-surface border border-surface-border shadow-sm rounded-xl pl-4 pr-10 py-2.5 text-sm focus:border-accent outline-none text-text appearance-none cursor-pointer truncate">
+                <option value="">All Positions</option>
+                <?php foreach($filterPositions as $pos): ?>
+                    <option value="<?= esc($pos) ?>"><?= esc($pos) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                <svg class="h-4 w-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="w-full sm:w-40 relative shrink-0">
+            <select id="filter-type" class="w-full bg-surface border border-surface-border shadow-sm rounded-xl pl-4 pr-10 py-2.5 text-sm focus:border-accent outline-none text-text appearance-none cursor-pointer truncate">
+                <option value="">All Types</option>
+                <option value="1">Teaching</option>
+                <option value="0">Non-Teaching</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                <svg class="h-4 w-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+            </div>
+        </div>
+</div>
+
 <div class="flex gap-6 border-b border-surface-border mb-4 px-2 shrink-0 overflow-x-auto custom-scrollbar">
     <?php foreach ($tabs as $key => $group): ?>
         <button id="tab-btn-<?= $key ?>" class="tab-btn pb-3 text-sm font-bold border-b-2 transition-all whitespace-nowrap <?= ($key === $firstTabKey) ? 'border-accent text-accent' : 'border-transparent text-text-muted hover:text-text hover:border-surface-border' ?> cursor-pointer"
@@ -54,120 +100,127 @@
         <div id="tab-content-<?= $key ?>" class="tab-content <?= ($key === $firstTabKey) ? 'flex flex-col lg:absolute lg:inset-0' : 'hidden' ?>">
             
             <div class="overflow-y-auto overflow-x-hidden custom-scrollbar flex-1 w-full p-2 lg:p-0">
-    <table class="w-full text-left border-collapse block lg:table">
-        
-        <thead class="hidden lg:table-header-group sticky top-0 z-20 bg-zinc-50 dark:bg-zinc-800/90 backdrop-blur-md text-[10px] font-black uppercase tracking-widest text-text-muted border-b border-surface-border shadow-sm">
-            <tr>
-                <th class="px-6 py-4">User / Position</th>
-                <?php if ($sysRole === 'Admin'): ?>
-                    <th class="px-6 py-4">Department</th>
-                <?php endif; ?>
-                <th class="px-6 py-4">Folder Status</th>
-                <th class="px-6 py-4 text-center">Score</th>
-                <th class="px-6 py-4 text-center">Adjectival Rating</th>
-                <th class="px-6 py-4 text-right">Action</th>
-            </tr>
-        </thead>
-        
-        <tbody class="block lg:table-row-group divide-y lg:divide-y-0 divide-transparent lg:divide-surface-border">
-            <?php if (empty($group['folders'])): ?>
-                <tr class="block lg:table-row">
-                    <td colspan="100%" class="block lg:table-cell px-6 py-12 text-center text-sm font-bold text-text-muted italic">
-                        No records found in this queue.
-                    </td>
-                </tr>
-            <?php else: ?>
-                <?php foreach ($group['folders'] as $row): ?>
-                    <tr class="block lg:table-row hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors bg-surface border lg:border-none border-surface-border rounded-xl lg:rounded-none mb-3 lg:mb-0 p-4 lg:p-0 shadow-sm lg:shadow-none">
-                        
-                        <td class="block lg:table-cell px-0 lg:px-6 py-1 lg:py-4">
-                            <div class="flex justify-between items-start lg:items-center">
-                                <div class="flex flex-col min-w-0 pr-4">
-                                    <span class="text-sm font-bold text-text truncate">
-                                        <?= esc($row['username']) ?>
-                                    </span>
-                                    <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate">
-                                        <?= esc($row['position'] ?? 'No Position') ?>
-                                        <?php if ($sysRole === 'Admin'): ?>
-                                            <span class="lg:hidden"> • <?= esc($row['department'] ?? 'N/A') ?></span>
-                                        <?php endif; ?>
-                                    </span>
-                                </div>
-
-                                <div class="lg:hidden shrink-0 mt-0.5">
-                                    <?php 
-                                        $s = strtolower($row['folder_status']);
-                                        $badgeColors = [
-                                            'approved'    => 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400',
-                                            'submitted'   => 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400',
-                                            'reevaluate'  => 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-500/20 dark:text-orange-400',
-                                            'to evaluate' => 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400',
-                                            'draft'       => 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400'
-                                        ];
-                                        $c = $badgeColors[$s] ?? $badgeColors['draft'];
-                                    ?>
-                                    <span class="px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border <?= $c ?> whitespace-nowrap">
-                                        <?= esc($row['folder_status']) ?>
-                                    </span>
-                                </div>
-                            </div>
-                        </td>
-
-                        <?php if ($sysRole === 'Admin'): ?>
-                            <td class="hidden lg:table-cell px-6 py-4">
-                                <span class="text-xs font-semibold text-text-muted"><?= esc($row['department'] ?? 'N/A') ?></span>
-                            </td>
-                        <?php endif; ?>
-
-                        <td class="hidden lg:table-cell px-6 py-4">
-                            <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border <?= $c ?> whitespace-nowrap">
-                                <?= esc($row['folder_status']) ?>
-                            </span>
-                        </td>
-
-                        <td class="block lg:table-cell px-0 lg:px-6 py-3 lg:py-4 text-left lg:text-center mt-2 lg:mt-0 border-t border-surface-border lg:border-none">
-                            <div class="flex items-center lg:justify-center gap-3">
-                                <span class="lg:hidden text-[10px] font-black text-text-muted uppercase tracking-widest">Score:</span>
-                                
-                                <?php if (!is_null($row['final_rating'])): ?>
-                                    <span class="text-sm font-black text-text">
-                                        <?= number_format($row['final_rating'], 3) ?>
-                                    </span>
-                                <?php else: ?>
-                                    <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic">--</span>
-                                <?php endif; ?>
-
-                                <div class="lg:hidden flex items-center gap-3 border-l border-surface-border pl-3">
-                                    <?php if (!is_null($row['final_rating'])): ?>
-                                        <span class="adjective-badge px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm border border-transparent" data-score="<?= $row['final_rating'] ?>"></span>
-                                    <?php else: ?>
-                                        <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic">N/A</span>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </td>
-
-                        <td class="hidden lg:table-cell px-6 py-4 text-center">
-                            <?php if (!is_null($row['final_rating'])): ?>
-                                <span class="adjective-badge px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm border border-transparent whitespace-nowrap" data-score="<?= $row['final_rating'] ?>"></span>
-                            <?php else: ?>
-                                <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic whitespace-nowrap">Not Rated</span>
+                <table class="w-full text-left border-collapse block lg:table">
+                    
+                    <thead class="hidden lg:table-header-group sticky top-0 z-20 bg-zinc-50 dark:bg-zinc-800/90 backdrop-blur-md text-[10px] font-black uppercase tracking-widest text-text-muted border-b border-surface-border shadow-sm">
+                        <tr>
+                            <th class="px-6 py-4">User / Position</th>
+                            <?php if ($sysRole === 'Admin'): ?>
+                                <th class="px-6 py-4">Department</th>
                             <?php endif; ?>
-                        </td>
+                            <th class="px-6 py-4">Folder Status</th>
+                            <th class="px-6 py-4 text-center">Score</th>
+                            <th class="px-6 py-4 text-center">Adjectival Rating</th>
+                            <th class="px-6 py-4 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    
+                    <tbody class="block lg:table-row-group divide-y lg:divide-y-0 divide-transparent lg:divide-surface-border">
+                        <?php if (empty($group['folders'])): ?>
+                            <tr class="block lg:table-row">
+                                <td colspan="100%" class="block lg:table-cell px-6 py-12 text-center text-sm font-bold text-text-muted italic">
+                                    No records found in this queue.
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($group['folders'] as $row): ?>
+                                
+                                <tr class="rating-card block lg:table-row hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors bg-surface border lg:border-none border-surface-border rounded-xl lg:rounded-none mb-3 lg:mb-0 p-4 lg:p-0 shadow-sm lg:shadow-none"
+                                    data-name="<?= esc($row['username']) ?>" 
+                                    data-unit="<?= esc($row['department'] ?? '') ?>" 
+                                    data-pos="<?= esc($row['position'] ?? '') ?>"
+                                    data-teaching="<?= esc($row['is_teaching'] ?? 0) ?>"> 
+                                    
+                                    <td class="block lg:table-cell px-0 lg:px-6 py-1 lg:py-4">
+                                        <div class="flex justify-between items-start lg:items-center">
+                                            <div class="flex flex-col min-w-0 pr-4">
+                                                <span class="text-sm font-bold text-text truncate">
+                                                    <?= esc($row['username']) ?>
+                                                </span>
+                                                <div class="flex items-center gap-2 mt-0.5">
+                                                    <span class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest <?= ($row['is_teaching'] == 1) ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400' ?>">
+                                                        <?= ($row['is_teaching'] == 1) ? 'Teaching' : 'Non-Teaching' ?>
+                                                    </span>
+                                                    <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate">
+                                                        <?= esc($row['position'] ?? 'No Position') ?>
+                                                    </span>
+                                                </div>
+                                            </div>
 
-                        <td class="block lg:table-cell px-0 lg:px-6 pt-1 pb-0 lg:py-4 text-right">
-                            <a href="<?= site_url('ratings/show/' . $row['folder_id']) ?>" 
-                            class="w-full lg:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 lg:py-2 bg-accent hover:bg-accent-hover text-white rounded-xl font-bold text-xs transition-all shadow-md active:scale-95 cursor-pointer whitespace-nowrap">
-                                Open Evaluation
-                            </a>
-                        </td>
+                                            <div class="lg:hidden shrink-0 mt-0.5">
+                                                <?php 
+                                                    $s = strtolower($row['folder_status']);
+                                                    $badgeColors = [
+                                                        'approved'    => 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400',
+                                                        'submitted'   => 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400',
+                                                        'reevaluate'  => 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-500/20 dark:text-orange-400',
+                                                        'to evaluate' => 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400',
+                                                        'draft'       => 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400'
+                                                    ];
+                                                    $c = $badgeColors[$s] ?? $badgeColors['draft'];
+                                                ?>
+                                                <span class="px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border <?= $c ?> whitespace-nowrap">
+                                                    <?= esc($row['folder_status']) ?>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </td>
 
-                    </tr>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </tbody>
-    </table>
-</div>
+                                    <?php if ($sysRole === 'Admin'): ?>
+                                        <td class="hidden lg:table-cell px-6 py-4">
+                                            <span class="text-xs font-semibold text-text-muted"><?= esc($row['department'] ?? 'N/A') ?></span>
+                                        </td>
+                                    <?php endif; ?>
+
+                                    <td class="hidden lg:table-cell px-6 py-4">
+                                        <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border <?= $c ?> whitespace-nowrap">
+                                            <?= esc($row['folder_status']) ?>
+                                        </span>
+                                    </td>
+
+                                    <td class="block lg:table-cell px-0 lg:px-6 py-3 lg:py-4 text-left lg:text-center mt-2 lg:mt-0 border-t border-surface-border lg:border-none">
+                                        <div class="flex items-center lg:justify-center gap-3">
+                                            <span class="lg:hidden text-[10px] font-black text-text-muted uppercase tracking-widest">Score:</span>
+                                            
+                                            <?php if (!is_null($row['final_rating'])): ?>
+                                                <span class="text-sm font-black text-text">
+                                                    <?= number_format($row['final_rating'], 3) ?>
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic">--</span>
+                                            <?php endif; ?>
+
+                                            <div class="lg:hidden flex items-center gap-3 border-l border-surface-border pl-3">
+                                                <?php if (!is_null($row['final_rating'])): ?>
+                                                    <span class="adjective-badge px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm border border-transparent" data-score="<?= $row['final_rating'] ?>"></span>
+                                                <?php else: ?>
+                                                    <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic">N/A</span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <td class="hidden lg:table-cell px-6 py-4 text-center">
+                                        <?php if (!is_null($row['final_rating'])): ?>
+                                            <span class="adjective-badge px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm border border-transparent whitespace-nowrap" data-score="<?= $row['final_rating'] ?>"></span>
+                                        <?php else: ?>
+                                            <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic whitespace-nowrap">Not Rated</span>
+                                        <?php endif; ?>
+                                    </td>
+
+                                    <td class="block lg:table-cell px-0 lg:px-6 pt-1 pb-0 lg:py-4 text-right">
+                                        <a href="<?= site_url('ratings/show/' . $row['folder_id']) ?>" 
+                                        class="w-full lg:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 lg:py-2 bg-accent hover:bg-accent-hover text-white rounded-xl font-bold text-xs transition-all shadow-md active:scale-95 cursor-pointer whitespace-nowrap">
+                                            Open Evaluation
+                                        </a>
+                                    </td>
+
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
     <?php endforeach; ?>
 </div>
@@ -204,11 +257,10 @@
         });
     });
 
-    // Tab Switching Logic (Updated for mobile native scrolling)
+    // Tab Switching Logic 
     function switchTab(tabId, btnElement) {
         document.querySelectorAll('.tab-content').forEach(el => {
             el.classList.add('hidden');
-            // Changed to toggle the desktop-only absolute positioning
             el.classList.remove('flex', 'flex-col', 'lg:absolute', 'lg:inset-0');
         });
         
@@ -225,7 +277,6 @@
         const target = document.getElementById('tab-content-' + tabId);
         if (target) {
             target.classList.remove('hidden');
-            // Changed to toggle the desktop-only absolute positioning
             target.classList.add('flex', 'flex-col', 'lg:absolute', 'lg:inset-0');
         }
 
@@ -257,6 +308,46 @@
         if (container && menu && !container.contains(event.target) && !menu.classList.contains('hidden')) {
             toggleFolderDropdown();
         }
+    });
+
+    // REAL-TIME SEARCH AND FILTER LOGIC
+    document.addEventListener('DOMContentLoaded', () => {
+        const searchInput = document.getElementById('search-rating');
+        const unitSelect  = document.getElementById('filter-unit');
+        const posSelect   = document.getElementById('filter-pos');
+        const typeSelect  = document.getElementById('filter-type'); // <-- Grab the new dropdown
+        
+        function filterRatings() {
+            const searchTerm   = searchInput.value.toLowerCase();
+            const selectedUnit = unitSelect.value.toLowerCase();
+            const selectedPos  = posSelect.value.toLowerCase();
+            const selectedType = typeSelect.value; // <-- Grab the selected type ("1", "0", or "")
+            
+            document.querySelectorAll('.rating-card').forEach(card => {
+                const name = (card.getAttribute('data-name') || '').toLowerCase();
+                const unit = (card.getAttribute('data-unit') || '').toLowerCase();
+                const pos  = (card.getAttribute('data-pos') || '').toLowerCase();
+                const type = card.getAttribute('data-teaching') || '0';
+                
+                const matchesSearch = name.includes(searchTerm);
+                const matchesUnit   = selectedUnit === "" || unit.includes(selectedUnit);
+                const matchesPos    = selectedPos === ""  || pos.includes(selectedPos);
+                
+                // If typeSelect is empty (""), show all. Otherwise, exact match the 1 or 0
+                const matchesType   = selectedType === "" || type === selectedType;
+                
+                if (matchesSearch && matchesUnit && matchesPos && matchesType) {
+                    card.style.display = ''; 
+                } else {
+                    card.style.display = 'none'; 
+                }
+            });
+        }
+        
+        searchInput.addEventListener('input', filterRatings);
+        unitSelect.addEventListener('change', filterRatings);
+        posSelect.addEventListener('change', filterRatings);
+        typeSelect.addEventListener('change', filterRatings); // <-- Listen for changes
     });
 </script>
 
