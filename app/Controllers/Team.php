@@ -27,30 +27,7 @@ class Team extends BaseController
         $memberModel   = new RoutingPresetMemberModel();
         $folderModel   = new DocumentFolderModel();
 
-        // 1. Fetch Master Data
-        $users = $userModel->db->table('users u')
-            ->select("u.id as user_id, u.first_name, u.last_name, u.email, 
-                      GROUP_CONCAT(DISTINCT pos.id) as position_id, 
-                      REPLACE(GROUP_CONCAT(DISTINCT pos.title), ',', ', ') as position, 
-                      MAX(pos.is_teaching) as is_teaching, 
-                      GROUP_CONCAT(DISTINCT un.id) as unit_id, 
-                      REPLACE(GROUP_CONCAT(DISTINCT un.name), ',', ', ') as department")
-            ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
-            ->join('positions pos', 'pos.id = p.position_id', 'left')
-            ->join('units un', 'un.id = p.unit_id', 'left')
-            // Join the role tables
-            ->join('user_roles ur', 'ur.user_id = u.id', 'left')
-            ->join('roles r', 'r.id = ur.role_id', 'left')
-            ->where('u.is_active', 1)
-            ->where('u.id !=', $userId) 
-            // Exclude users with the 'Admin' role (but keep users with null/no role just in case)
-            ->groupStart()
-                ->where('r.name !=', 'Admin')
-                ->orWhere('r.name IS NULL')
-            ->groupEnd()
-            ->groupBy('u.id') 
-            ->orderBy('u.last_name', 'ASC')
-            ->get()->getResultArray();
+        $users = $userModel->getEligibleTeamMembers($userId);
         
         foreach ($users as &$u) {
             if ($u['position'])   $u['position']   = str_replace(',', ', ', $u['position']);
@@ -60,19 +37,13 @@ class Team extends BaseController
         $units     = $unitModel->orderBy('name', 'ASC')->findAll();
         $positions = $positionModel->orderBy('title', 'ASC')->findAll();
 
-        $presets = $presetModel->select('routing_presets.*, COUNT(rpm.id) as member_count')
-            ->join('routing_preset_members rpm', 'rpm.preset_id = routing_presets.id', 'left')
-            ->where('routing_presets.owner_id', $userId)
-            ->groupBy('routing_presets.id')
-            ->orderBy('routing_presets.created_at', 'DESC')
-            ->findAll();
+        $presets = $presetModel->getPresetsWithDetails($userId);
 
         foreach ($presets as &$p) {
             $p['in_use'] = $folderModel->where('routing_preset_id', $p['id'])->countAllResults() > 0;
         }
         unset($p);
 
-        // 2. Handle Auto-Routing & Active Team selection
         if (!$teamId && !empty($presets)) {
             return redirect()->to('teams?team_id=' . $presets[0]['id']);
         }
@@ -90,7 +61,6 @@ class Team extends BaseController
             }
         }
 
-        // 3. Return using the App Shell paradigm
         return view('app_shell', [
             'context'        => 'teams',
             'sidebarTitle'   => 'Teams',

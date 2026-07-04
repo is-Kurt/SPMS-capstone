@@ -47,4 +47,24 @@ class RoutingPresetModel extends Model
     protected $afterFind      = [];
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
+
+    /**
+     * For Team.php: Gets all teams, their member count, and active usage status.
+     */
+    public function getPresetsWithDetails(int $ownerId): array
+    {
+        $presets = $this->select('routing_presets.*, COUNT(rpm.id) as member_count')
+            ->join('routing_preset_members rpm', 'rpm.preset_id = routing_presets.id', 'left')
+            ->where('routing_presets.owner_id', $ownerId)
+            ->groupBy('routing_presets.id')
+            ->orderBy('routing_presets.created_at', 'DESC')
+            ->findAll();
+
+        $folderModel = new DocumentFolderModel();
+        foreach ($presets as &$p) {
+            $p['in_use'] = $folderModel->where('routing_preset_id', $p['id'])->countAllResults() > 0;
+        }
+
+        return $presets;
+    }
 }

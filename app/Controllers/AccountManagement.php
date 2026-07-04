@@ -16,19 +16,7 @@ class AccountManagement extends BaseController
     public function index() {
         $userModel = new UserModel();
         
-        $users = $userModel->asArray()
-            ->select("users.id, users.first_name, users.last_name, users.email, users.is_active, 
-                      GROUP_CONCAT(DISTINCT pos.title) as position, 
-                      GROUP_CONCAT(DISTINCT un.name) as department, 
-                      GROUP_CONCAT(DISTINCT r.name) as role_name")
-            ->join('plantillas p', 'p.user_id = users.id AND p.ended_at IS NULL', 'left')
-            ->join('positions pos', 'pos.id = p.position_id', 'left')
-            ->join('units un', 'un.id = p.unit_id', 'left')
-            ->join('user_roles ur', 'ur.user_id = users.id', 'left')
-            ->join('roles r', 'r.id = ur.role_id', 'left')
-            ->groupBy('users.id')
-            ->orderBy('users.last_name', 'ASC')
-            ->findAll();
+        $users = $userModel->getAllUsersWithDetails();
 
         foreach ($users as &$u) {
             if ($u['position'])   $u['position']   = str_replace(',', ', ', $u['position']);
@@ -61,7 +49,7 @@ class AccountManagement extends BaseController
         
         $userModel = new UserModel();
         $invitationModel = new InvitationModel();
-        $now = date('Y-m-d H:i:s'); // Current time for expiration check
+        $now = date('Y-m-d H:i:s');
 
         foreach ($emails as $email) {
             $email = trim($email);

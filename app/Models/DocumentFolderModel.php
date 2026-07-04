@@ -57,6 +57,47 @@ class  DocumentFolderModel extends Model
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
 
+    /**
+     * For Rating.php: Fetches all subordinates' folders for the dashboard
+     */
+    public function getRatingDashboardFolders(int $userId, string $sysRole, ?string $parentFolderId = null): array
+    {
+        $builder = $this->db->table('document_folders df')
+            ->select("df.id as folder_id, df.user_id, (u.first_name || ' ' || u.last_name) as username, 
+                      REPLACE(GROUP_CONCAT(DISTINCT pos.title), ',', ', ') as position, 
+                      REPLACE(GROUP_CONCAT(DISTINCT un.name), ',', ', ') as department, 
+                      MAX(pos.is_teaching) as is_teaching,
+                      df.final_rating, df.status as folder_status")
+            ->join('users u', 'u.id = df.user_id')
+            ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
+            ->join('positions pos', 'pos.id = p.position_id', 'left')
+            ->join('units un', 'un.id = p.unit_id', 'left');
+
+        if ($sysRole === 'Admin' && $parentFolderId) {
+            $builder->where('df.parent_folder_id', $parentFolderId);
+        } else if ($parentFolderId) {
+            $builder->join('evaluation_routings er_me', 'er_me.folder_id = df.id')
+                    ->where('er_me.evaluator_id', $userId)
+                    ->where('er_me.evaluator_folder_id', $parentFolderId);
+        }
+
+        $builder->groupBy('df.id');
+        return $builder->get()->getResultArray();
+    }
+
+    /**
+     * For CheckFolderDeadlines Cron Job
+     */
+    public function getNearingDeadlineFolders(string $targetDate): array
+    {
+        return $this->db->table('document_folders df')
+            ->select('df.id, u.email, u.first_name, df.eval_date_start')
+            ->join('users u', 'u.id = df.user_id')
+            ->where('df.status', FolderStatus::DRAFT->value)
+            ->where('DATE(df.eval_date_start)', $targetDate) 
+            ->get()->getResultArray();
+    }
+
     protected function setDefaultEvalDates(array $data): array {
         $today = date('Y-m-d');
         $tomorrow = date('Y-m-d', strtotime('+1 day'));

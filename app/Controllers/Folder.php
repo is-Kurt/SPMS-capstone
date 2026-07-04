@@ -24,6 +24,7 @@ class Folder extends BaseController
         $folderModel   = new DocumentFolderModel();
         $documentModel = new DocumentModel();
         $presetModel   = new RoutingPresetModel();
+        $userModel     = new UserModel();
 
         $folders = $folderModel->where('user_id', $userId)->orderBy('created_at', 'DESC')->findAll();
 
@@ -61,12 +62,7 @@ class Folder extends BaseController
             } elseif ($sysRole === 'Admin') {
                 $isAuthorized = true;
             } else {
-                $ownerPlantilla = $folderModel->db->table('plantillas p')
-                    ->select('pos.title as position, un.name as department')
-                    ->join('positions pos', 'pos.id = p.position_id')
-                    ->join('units un', 'un.id = p.unit_id')
-                    ->where('p.user_id', $folderOwnerId)
-                    ->where('p.ended_at IS NULL')->get()->getRowArray();
+                $ownerPlantilla = $userModel->getActivePlantillaDetails($folderOwnerId);
 
                 if ($ownerPlantilla) {
                     $ownerPos = $ownerPlantilla['position'];
@@ -87,18 +83,7 @@ class Folder extends BaseController
             $myDocs = $documentModel->where('document_folder_id', $folderId)->findAll();
             $routingModel = new EvaluationRoutingModel();
             
-            // We need UserModel to fetch the Admin's details later
-            $userModel = new \App\Models\UserModel(); 
-
-            // ==========================================
-            // 1. FETCH SUPERVISOR GUIDES (Routings)
-            // ==========================================
-            $cascadedRoutes = $routingModel->select('evaluation_routings.*, u.first_name, u.last_name, pos.title as evaluator_position')
-                                            ->join('users u', 'u.id = evaluation_routings.evaluator_id')
-                                            ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
-                                            ->join('positions pos', 'pos.id = p.position_id', 'left')
-                                            ->where('folder_id', $folderId)
-                                            ->findAll();
+            $cascadedRoutes = $routingModel->getEvaluatorsForFolder($folderId);
 
             foreach ($cascadedRoutes as $route) {
                 $guideFolder = $folderModel->find($route['evaluator_folder_id']);
@@ -117,23 +102,14 @@ class Folder extends BaseController
                 }
             }
 
-            // ==========================================
-            // 2. FETCH ADMIN MASTER GUIDES (Parent Folder)
-            // ==========================================
             if (!empty($activeFolder['parent_folder_id'])) {
                 $adminFolder = $folderModel->find($activeFolder['parent_folder_id']);
                 
                 if ($adminFolder) {
-                    // Get all documents belonging to the Admin's master folder
                     $adminDocs = $documentModel->where('document_folder_id', $adminFolder['id'])->findAll();
                     
                     if (!empty($adminDocs)) {
-                        // Fetch the Admin's name and position
-                        $adminInfo = $userModel->select('users.id, users.first_name, users.last_name, pos.title as admin_position')
-                                               ->join('plantillas p', 'p.user_id = users.id AND p.ended_at IS NULL', 'left')
-                                               ->join('positions pos', 'pos.id = p.position_id', 'left')
-                                               ->where('users.id', $adminFolder['user_id'])
-                                               ->first();
+                        $adminInfo = $userModel->getAdminPosition($adminFolder['user_id']);
 
                         if ($adminInfo) {
                             $groupedGuides[] = [
@@ -149,9 +125,6 @@ class Folder extends BaseController
                 }
             }
 
-            // ==========================================
-            // 3. MERGE & DEDUPLICATE ALL GUIDES
-            // ==========================================
             $mergedGuides = [];
             foreach ($groupedGuides as $guide) {
                 $key = $guide['superior']['name']; 
@@ -171,7 +144,7 @@ class Folder extends BaseController
         $templateModel = new TemplateModel();
         
         return view('app_shell', [
-            'sidebarFolders'   => $this->getSidebarFolders(), 
+            'sidebarFolders'   => $folders,
             'selectedFolderId' => $activeFolder['id'] ?? null,
             'mainView'         => 'document/_doc_rows',
             'templates'        => $templateModel->findAll(),

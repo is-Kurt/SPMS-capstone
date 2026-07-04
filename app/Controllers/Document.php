@@ -19,10 +19,7 @@ class Document extends BaseController
 
         $documentModel = new DocumentModel();
         
-        $docInfo = $documentModel->db->table('documents d')
-            ->select('d.*, df.user_id as owner_id, df.status as folder_status, df.eval_date_start')
-            ->join('document_folders df', 'df.id = d.document_folder_id')
-            ->where('d.id', $docId)->get()->getRowArray();
+        $docInfo = $documentModel->getDocumentWithFolderInfo($docId);
 
         if (!$docInfo) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
 

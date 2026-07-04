@@ -48,4 +48,17 @@ class EvaluationRoutingModel extends Model
     protected $afterFind      = [];
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
+
+    /**
+     * For Folder.php & Rating.php: Fetches all cascaded evaluators with their job titles.
+     */
+    public function getEvaluatorsForFolder(string $folderId): array
+    {
+        return $this->select('evaluation_routings.*, u.first_name, u.last_name, pos.title as evaluator_position')
+            ->join('users u', 'u.id = evaluation_routings.evaluator_id')
+            ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
+            ->join('positions pos', 'pos.id = p.position_id', 'left')
+            ->where('folder_id', $folderId)
+            ->findAll();
+    }
 }

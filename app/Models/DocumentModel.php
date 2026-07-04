@@ -51,5 +51,27 @@ class DocumentModel extends Model
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
 
+    /**
+     * For Document.php & BaseController: Secures document fetching by checking folder ownership.
+     */
+    public function getDocumentWithFolderInfo(string $docId): ?array
+    {
+        return $this->db->table('documents d')
+            ->select('d.*, df.user_id as owner_id, df.status as folder_status, df.eval_date_start')
+            ->join('document_folders df', 'df.id = d.document_folder_id')
+            ->where('d.id', $docId)
+            ->get()->getRowArray();
+    }
 
+    public function getUserDocuments(int $userId, ?string $docId = null)
+    {
+        $builder = $this->db->table('documents d')
+            ->select('d.*, df.user_id')
+            ->join('document_folders df', 'df.id = d.document_folder_id')
+            ->where('df.user_id', $userId);
+
+        if ($docId !== null) $builder->where('d.id', $docId);
+
+        return $docId !== null ? $builder->get()->getRowArray() : $builder->get()->getResultArray();
+    }
 }

@@ -65,22 +65,4 @@ abstract class BaseController extends Controller
             return $this->respondError($e->getMessage());
         }
     }
-
-    protected function getUserDocument($userId, $docId = null) {
-        $documentModel = new DocumentModel();
-
-        $builder = $documentModel->db->table('documents d')
-            ->select('d.*, df.user_id')
-            ->join('document_folders df', 'df.id = d.document_folder_id')
-            ->where('df.user_id', $userId);
-
-        if ($docId !== null) $builder->where('d.id', $docId);
-
-        return $docId !== null ? $builder->get()->getRowArray() : $builder->get()->getResultArray();
-    }
-
-    protected function getSidebarFolders() {
-        $folderModel = new DocumentFolderModel();
-        return $folderModel->where('user_id', session()->get('user_id'))->orderBy('created_at', 'DESC')->findAll();
-    }
 }

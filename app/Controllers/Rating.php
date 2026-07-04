@@ -33,27 +33,7 @@ class Rating extends BaseController
             $activeFolder = $folderModel->find($folderId);
         }
 
-        $builder = $folderModel->db->table('document_folders df')
-            ->select("df.id as folder_id, df.user_id, (u.first_name || ' ' || u.last_name) as username, 
-                      REPLACE(GROUP_CONCAT(DISTINCT pos.title), ',', ', ') as position, 
-                      REPLACE(GROUP_CONCAT(DISTINCT un.name), ',', ', ') as department,
-                      MAX(pos.is_teaching) as is_teaching,
-                      df.status as folder_status, df.final_rating")
-            ->join('users u', 'u.id = df.user_id')
-            ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
-            ->join('positions pos', 'pos.id = p.position_id', 'left')
-            ->join('units un', 'un.id = p.unit_id', 'left');
-
-        if ($sysRole === 'Admin') {
-            $builder->where('df.parent_folder_id', $folderId);
-        } else {
-            $builder->join('evaluation_routings er_me', 'er_me.folder_id = df.id')
-                    ->where('er_me.evaluator_id', $userId)
-                    ->where('er_me.evaluator_folder_id', $folderId);
-        }
-
-        $builder->groupBy('df.id');
-        $rawFolders = $builder->get()->getResultArray();
+        $rawFolders = $folderModel->getRatingDashboardFolders($userId, $sysRole);
 
         foreach ($rawFolders as &$f) {
             if ($f['position'])   $f['position']   = str_replace(',', ', ', $f['position']);
@@ -78,9 +58,6 @@ class Rating extends BaseController
             }
         }
 
-        // ==========================================
-        // NEW: Extract unique filters dynamically
-        // ==========================================
         $filterUnits = [];
         $filterPositions = [];
         foreach ($rawFolders as $f) {
@@ -93,7 +70,6 @@ class Rating extends BaseController
         }
         sort($filterUnits);
         sort($filterPositions);
-        // =========================================
 
         return view('app_shell', [
             'sidebarFolders'   => $folders,
@@ -103,8 +79,8 @@ class Rating extends BaseController
                 'activeFolder'  => $activeFolder ?? null,
                 'tabs'    => $tabs,
                 'sysRole' => $sysRole,
-                'filterUnits'     => $filterUnits,    // <-- Add this
-                'filterPositions' => $filterPositions // <-- Add this
+                'filterUnits'     => $filterUnits,
+                'filterPositions' => $filterPositions
             ]
         ]);
     }
@@ -136,16 +112,8 @@ class Rating extends BaseController
 
         $folders = $folderModel->where('user_id', $userId)->orderBy('created_at', 'DESC')->findAll();
 
-        // ==========================================
-        // NEW: Fetch Evaluator Progress & Guides
-        // ==========================================
         $groupedGuides = [];
-        $cascadedRoutes = $routingModel->select('evaluation_routings.*, u.first_name, u.last_name, pos.title as evaluator_position')
-                                        ->join('users u', 'u.id = evaluation_routings.evaluator_id')
-                                        ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
-                                        ->join('positions pos', 'pos.id = p.position_id', 'left')
-                                        ->where('folder_id', $subFolderId)
-                                        ->findAll();
+        $cascadedRoutes = $routingModel->getEvaluatorsForFolder($subFolderId);
 
         foreach ($cascadedRoutes as $route) {
             $guideFolder = $folderModel->find($route['evaluator_folder_id']);
@@ -157,13 +125,11 @@ class Rating extends BaseController
                         'name' => $route['first_name'] . ' ' . $route['last_name'],
                         'role' => $route['evaluator_position'] ?? 'Evaluator' 
                     ], 
-                    // Add a fallback so the frontend doesn't break if the evaluator hasn't uploaded a document yet
                     'docs' => !empty($docs) ? $docs : [['document_folder_id' => $route['evaluator_folder_id']]] 
                 ];
             }
         }
 
-        // Deduplicate roles if the supervisor has multiple active plantillas
         $mergedGuides = [];
         foreach ($groupedGuides as $guide) {
             $key = $guide['superior']['name']; 
@@ -178,7 +144,6 @@ class Rating extends BaseController
             }
         }
         $groupedGuides = array_values($mergedGuides);
-        // ==========================================
 
         return view('app_shell', [
             'sidebarFolders'   => $folders, 
