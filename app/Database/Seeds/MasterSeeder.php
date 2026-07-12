@@ -130,6 +130,1054 @@ class MasterSeeder extends Seeder
 
         $db->table('plantillas')->insertBatch($plantillaData);
 
+        // ==========================================
+        // 7. SEED TEMPLATES (IPCR/DPCR/OPCR/IPERF forms)
+        // ==========================================
+        $templatesData = [
+            ['title' => 'IPCR', 'content' => '<table style="border-collapse: collapse; width: 100%; height: 1329.17px; margin-left: auto; margin-right: auto;" border="1" data-score-range="5"><colgroup><col style="width: 13.6857%;"><col style="width: 22.027%;"><col style="width: 17.8577%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 17.8745%;"></colgroup>
+<tbody>
+<tr style="height: 40.375px;">
+<td style="text-align: center;" colspan="8">INDIVIDUAL PERFORMANCE COMMITMENT AND REVIEW</td>
+</tr>
+<tr style="height: 40.375px;">
+<td colspan="8">&nbsp;</td>
+</tr>
+<tr style="height: 66.375px;">
+<td colspan="8">I, <span style="color: #ba372a;">FULL NAME HERE</span>, <span style="color: #ba372a;">Position and Official Designation </span>of the<span style="color: #ba372a;"> Office Name</span>, commit to deliver and agree to be rated on the attainment of the following targets in accordance with the indicated measure for the period (<span style="color: #ba372a;">January - June or July - December and Year; e.g., July - December 2026</span>).</td>
+</tr>
+<tr style="height: 40.375px;">
+<td colspan="8">&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="3">
+<div>
+<div>(full name here)</div>
+</div>
+</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="3">
+<div>
+<div>Name of Employee</div>
+</div>
+</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 66.0417px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="3">
+<div>
+<div>Date: ___________________</div>
+</div>
+</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>APPROVED BY:</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>
+<div>
+<div>Rating Scale:</div>
+</div>
+</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>Name:</td>
+<td>(name of office head)</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>
+<div>
+<div>5 &ndash; Outstanding</div>
+</div>
+</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 66.375px;">
+<td>Position:</td>
+<td>(position of office head)</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>
+<div>
+<div>4 &ndash; Very Satisfactory</div>
+</div>
+</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>Date:</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>
+<div>
+<div>3 &ndash; Satisfactory</div>
+</div>
+</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>
+<div>
+<div>2 &ndash; Unsatisfactory</div>
+</div>
+</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>
+<div>
+<div>1 &ndash; Poor</div>
+</div>
+</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>
+<div>
+<div>&nbsp;</div>
+</div>
+</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td rowspan="2">
+<div>MAJOR FINAL OUTPUT</div>
+</td>
+<td>SUCCESS INDICATORS</td>
+<td rowspan="2">
+<div>ACTUAL ACCOMPLISHMENTS</div>
+</td>
+<td colspan="4">RATING</td>
+<td rowspan="2">
+<div>REMARKS</div>
+</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>(TARGETS + MEASURES)</td>
+<td>Q</td>
+<td>T</td>
+<td>E</td>
+<td>Ave.</td>
+</tr>
+<tr style="height: 40.375px;">
+<td colspan="8">CORE FUNCTIONS (70%)</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="1">&nbsp;</td>
+<td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="1">&nbsp;</td>
+<td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td colspan="8">STRATEGIC FUNCTIONS (20%)</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="2">&nbsp;</td>
+<td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="2">&nbsp;</td>
+<td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td colspan="8">SUPPORT FUNCTIONS (10%)</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="3">&nbsp;</td>
+<td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="3">&nbsp;</td>
+<td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr style="height: 40.25px;">
+<td colspan="8">&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="4">CORE</td>
+<td class="calc-total" style="background-color: rgba(245, 158, 11, 0.25);" data-cell-weight="100" data-group-id="1">&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="4">STRATEGIC</td>
+<td class="calc-total" style="background-color: rgba(245, 158, 11, 0.25);" data-cell-weight="100" data-group-id="2">&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="4">SUPPORT</td>
+<td class="calc-total" style="background-color: rgba(245, 158, 11, 0.25);" data-cell-weight="100" data-group-id="3">&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="4">FINAL AVERAGE RATING</td>
+<td class="calc-final-total" style="background-color: rgba(139, 92, 246, 0.25);">&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>Other Accomplishments</td>
+<td colspan="7">&nbsp;</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>'],
+            ['title' => 'DPCR', 'content' => '<table style="border-collapse: collapse; width: 100%; height: 1329.17px; margin-left: auto; margin-right: auto;" border="1" data-score-range="5"><colgroup><col style="width: 13.6857%;"><col style="width: 22.027%;"><col style="width: 17.8577%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 17.8745%;"></colgroup>
+<tbody>
+<tr style="height: 40.375px;">
+<td style="text-align: center;" colspan="8">INDIVIDUAL PERFORMANCE COMMITMENT AND REVIEW</td>
+</tr>
+<tr style="height: 40.375px;">
+<td colspan="8">&nbsp;</td>
+</tr>
+<tr style="height: 66.375px;">
+<td colspan="8">I, <span style="color: #ba372a;">FULL NAME HERE</span>, <span style="color: #ba372a;">Position and Official Designation </span>of the<span style="color: #ba372a;"> Office Name</span>, commit to deliver and agree to be rated on the attainment of the following targets in accordance with the indicated measure for the period (<span style="color: #ba372a;">January - June or July - December and Year; e.g., July - December 2026</span>).</td>
+</tr>
+<tr style="height: 40.375px;">
+<td colspan="8">&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="3">
+<div>
+<div>(full name here)</div>
+</div>
+</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="3">
+<div>
+<div>Name of Employee</div>
+</div>
+</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 66.0417px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="3">
+<div>
+<div>Date: ___________________</div>
+</div>
+</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>APPROVED BY:</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>
+<div>
+<div>Rating Scale:</div>
+</div>
+</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>Name:</td>
+<td>(name of office head)</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>
+<div>
+<div>5 &ndash; Outstanding</div>
+</div>
+</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 66.375px;">
+<td>Position:</td>
+<td>(position of office head)</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>
+<div>
+<div>4 &ndash; Very Satisfactory</div>
+</div>
+</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>Date:</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>
+<div>
+<div>3 &ndash; Satisfactory</div>
+</div>
+</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>
+<div>
+<div>2 &ndash; Unsatisfactory</div>
+</div>
+</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>
+<div>
+<div>1 &ndash; Poor</div>
+</div>
+</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>
+<div>
+<div>&nbsp;</div>
+</div>
+</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td rowspan="2">
+<div>MAJOR FINAL OUTPUT</div>
+</td>
+<td>SUCCESS INDICATORS</td>
+<td rowspan="2">
+<div>ACTUAL ACCOMPLISHMENTS</div>
+</td>
+<td colspan="4">RATING</td>
+<td rowspan="2">
+<div>REMARKS</div>
+</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>(TARGETS + MEASURES)</td>
+<td>Q</td>
+<td>T</td>
+<td>E</td>
+<td>Ave.</td>
+</tr>
+<tr style="height: 40.375px;">
+<td colspan="8">CORE FUNCTIONS (70%)</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="1">&nbsp;</td>
+<td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="1">&nbsp;</td>
+<td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td colspan="8">STRATEGIC FUNCTIONS (20%)</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="2">&nbsp;</td>
+<td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="2">&nbsp;</td>
+<td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td colspan="8">SUPPORT FUNCTIONS (10%)</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="3">&nbsp;</td>
+<td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="3">&nbsp;</td>
+<td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr style="height: 40.25px;">
+<td colspan="8">&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="4">CORE</td>
+<td class="calc-total" style="background-color: rgba(245, 158, 11, 0.25);" data-cell-weight="100" data-group-id="1">&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="4">STRATEGIC</td>
+<td class="calc-total" style="background-color: rgba(245, 158, 11, 0.25);" data-cell-weight="100" data-group-id="2">&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="4">SUPPORT</td>
+<td class="calc-total" style="background-color: rgba(245, 158, 11, 0.25);" data-cell-weight="100" data-group-id="3">&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="4">FINAL AVERAGE RATING</td>
+<td class="calc-final-total" style="background-color: rgba(139, 92, 246, 0.25);">&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>Other Accomplishments</td>
+<td colspan="7">&nbsp;</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>'],
+            ['title' => 'OPCR', 'content' => '<table style="border-collapse: collapse; width: 100%; height: 1329.17px; margin-left: auto; margin-right: auto;" border="1" data-score-range="5"><colgroup><col style="width: 13.6857%;"><col style="width: 22.027%;"><col style="width: 17.8577%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 17.8745%;"></colgroup>
+<tbody>
+<tr style="height: 40.375px;">
+<td style="text-align: center;" colspan="8">INDIVIDUAL PERFORMANCE COMMITMENT AND REVIEW</td>
+</tr>
+<tr style="height: 40.375px;">
+<td colspan="8">&nbsp;</td>
+</tr>
+<tr style="height: 66.375px;">
+<td colspan="8">I, <span style="color: #ba372a;">FULL NAME HERE</span>, <span style="color: #ba372a;">Position and Official Designation </span>of the<span style="color: #ba372a;"> Office Name</span>, commit to deliver and agree to be rated on the attainment of the following targets in accordance with the indicated measure for the period (<span style="color: #ba372a;">January - June or July - December and Year; e.g., July - December 2026</span>).</td>
+</tr>
+<tr style="height: 40.375px;">
+<td colspan="8">&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="3">
+<div>
+<div>(full name here)</div>
+</div>
+</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="3">
+<div>
+<div>Name of Employee</div>
+</div>
+</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 66.0417px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="3">
+<div>
+<div>Date: ___________________</div>
+</div>
+</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>APPROVED BY:</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>
+<div>
+<div>Rating Scale:</div>
+</div>
+</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>Name:</td>
+<td>(name of office head)</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>
+<div>
+<div>5 &ndash; Outstanding</div>
+</div>
+</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 66.375px;">
+<td>Position:</td>
+<td>(position of office head)</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>
+<div>
+<div>4 &ndash; Very Satisfactory</div>
+</div>
+</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>Date:</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>
+<div>
+<div>3 &ndash; Satisfactory</div>
+</div>
+</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>
+<div>
+<div>2 &ndash; Unsatisfactory</div>
+</div>
+</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>
+<div>
+<div>1 &ndash; Poor</div>
+</div>
+</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>
+<div>
+<div>&nbsp;</div>
+</div>
+</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td rowspan="2">
+<div>MAJOR FINAL OUTPUT</div>
+</td>
+<td>SUCCESS INDICATORS</td>
+<td rowspan="2">
+<div>ACTUAL ACCOMPLISHMENTS</div>
+</td>
+<td colspan="4">RATING</td>
+<td rowspan="2">
+<div>REMARKS</div>
+</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>(TARGETS + MEASURES)</td>
+<td>Q</td>
+<td>T</td>
+<td>E</td>
+<td>Ave.</td>
+</tr>
+<tr style="height: 40.375px;">
+<td colspan="8">CORE FUNCTIONS (70%)</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="1">&nbsp;</td>
+<td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="1">&nbsp;</td>
+<td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td colspan="8">STRATEGIC FUNCTIONS (20%)</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="2">&nbsp;</td>
+<td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="2">&nbsp;</td>
+<td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td colspan="8">SUPPORT FUNCTIONS (10%)</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="3">&nbsp;</td>
+<td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="3">&nbsp;</td>
+<td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr style="height: 40.25px;">
+<td colspan="8">&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="4">CORE</td>
+<td class="calc-total" style="background-color: rgba(245, 158, 11, 0.25);" data-cell-weight="100" data-group-id="1">&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="4">STRATEGIC</td>
+<td class="calc-total" style="background-color: rgba(245, 158, 11, 0.25);" data-cell-weight="100" data-group-id="2">&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="4">SUPPORT</td>
+<td class="calc-total" style="background-color: rgba(245, 158, 11, 0.25);" data-cell-weight="100" data-group-id="3">&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="4">FINAL AVERAGE RATING</td>
+<td class="calc-final-total" style="background-color: rgba(139, 92, 246, 0.25);">&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.375px;">
+<td>Other Accomplishments</td>
+<td colspan="7">&nbsp;</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>'],
+            ['title' => 'IPERF', 'content' => '<table style="border-collapse: collapse; width: 100%; margin-left: auto; margin-right: auto; height: 1098.75px;" border="1" data-score-range="5"><colgroup><col style="width: 12.5%;"><col style="width: 12.5%;"><col style="width: 12.5%;"><col style="width: 5%;"><col style="width: 5%;"><col style="width: 5%;"><col style="width: 5%;"><col style="width: 12.5%;"></colgroup>
+<tbody>
+<tr style="height: 40.25px;">
+<td style="text-align: center;" colspan="8">INDIVIDUAL PERFORMANCE EVALUATION RATING FORM FOR CONTRACT OF SERVICE AND JOB ORDER PERSONNEL</td>
+</tr>
+<tr style="height: 40.25px;">
+<td colspan="8">(attach rubrics for the rating of actual accomplishments vis-&agrave;-vis expected outputs)</td>
+</tr>
+<tr style="height: 40.25px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.25px;">
+<td>Name of Employee:</td>
+<td colspan="2"><span style="color: #ba372a;">indicate full name (First Name Middle Initial Last Name, Extension; e.g., Juan D. Cruz III)</span></td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.25px;">
+<td>Position:</td>
+<td colspan="2"><span style="color: #ba372a;">indicate the full position title specified in the contract/job order</span></td>
+<td>&nbsp;</td>
+<td colspan="3">Classification:</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 66.375px;">
+<td>Office:</td>
+<td colspan="2"><span style="color: #ba372a;">indicate in full the specific area of assignment (e.g., CIS - Department of Development Communication)</span></td>
+<td>&nbsp;</td>
+<td colspan="3">Rating Period:</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.25px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.25px;">
+<td rowspan="2">
+<div>OFFICE PPA<br>(PROGRAMS, PROJECTS, ACTIVITIES)</div>
+</td>
+<td rowspan="2">
+<div>EXPECTED OUTPUTS</div>
+</td>
+<td rowspan="2">
+<div>ACTUAL ACCOMPLISHMENTS</div>
+</td>
+<td colspan="4">RATING</td>
+<td>REMARKS</td>
+</tr>
+<tr style="height: 40.25px;">
+<td>Q</td>
+<td>T</td>
+<td>E</td>
+<td>Ave.</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 66.375px;">
+<td><span style="color: #ba372a;">aligned with the deliverables of the office</span></td>
+<td><span style="color: #ba372a;">based on contract or duties and responsibilities in the request to hire personnel</span></td>
+<td>&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);">&nbsp;</td>
+<td class="calc-final-total" style="background-color: rgba(139, 92, 246, 0.25);">&nbsp;</td>
+</tr>
+<tr style="height: 40.25px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);">&nbsp;</td>
+<td class="calc-final-total" style="background-color: rgba(139, 92, 246, 0.25);">&nbsp;</td>
+</tr>
+<tr style="height: 40.25px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
+<td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);">&nbsp;</td>
+<td class="calc-final-total" style="background-color: rgba(139, 92, 246, 0.25);">&nbsp;</td>
+</tr>
+<tr style="height: 40.25px;">
+<td colspan="6">OVERALL AVERAGE RATING</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.25px;">
+<td colspan="8">Remarks/Suggestions/Recommendations on Ratee\'s Performance:</td>
+</tr>
+<tr style="height: 40.25px;">
+<td><span style="color: #ba372a;">signed at the start of the rating period</span></td>
+<td><span style="color: #ba372a;">&nbsp;</span></td>
+<td><span style="color: #ba372a;">signed at the end of the rating period</span></td>
+<td>&nbsp;</td>
+<td colspan="4">&nbsp;</td>
+</tr>
+<tr style="height: 40.25px;">
+<td>Targets prepared by:</td>
+<td>&nbsp;</td>
+<td>Rated by:</td>
+<td>&nbsp;</td>
+<td colspan="4">Measures:</td>
+</tr>
+<tr style="height: 40.25px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>Q</td>
+<td colspan="2">Quality</td>
+</tr>
+<tr style="height: 40.25px;">
+<td><span style="color: #ba372a;">(Signature over Printed Name)</span></td>
+<td>&nbsp;</td>
+<td><span style="color: #ba372a;">(Signature over Printed Name)</span></td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>T</td>
+<td colspan="2">Timeliness</td>
+</tr>
+<tr style="height: 40.25px;">
+<td>Employee (Ratee)</td>
+<td>&nbsp;</td>
+<td>Immediate Supervisor (Rater)</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>E</td>
+<td colspan="2">Efficiency</td>
+</tr>
+<tr style="height: 40.25px;">
+<td>Date:</td>
+<td>&nbsp;</td>
+<td>Date:</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+</tr>
+<tr style="height: 40.25px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td colspan="4">Rating Guide:</td>
+</tr>
+<tr style="height: 40.25px;">
+<td>Approved by:</td>
+<td>&nbsp;</td>
+<td>Conforme:</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>5</td>
+<td colspan="2">Outstanding</td>
+</tr>
+<tr style="height: 40.25px;">
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>4</td>
+<td colspan="2">Very Satisfactory</td>
+</tr>
+<tr style="height: 40.25px;">
+<td><span style="color: #ba372a;">(Signature over Printed Name)</span></td>
+<td>&nbsp;</td>
+<td><span style="color: #ba372a;">(Signature over Printed Name)</span></td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>3</td>
+<td colspan="2">Satisfactory</td>
+</tr>
+<tr style="height: 40.25px;">
+<td>Immediate Supervisor (Rater)</td>
+<td>&nbsp;</td>
+<td>Employee (Ratee)</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>2</td>
+<td colspan="2">Unsatisfactory</td>
+</tr>
+<tr style="height: 40.25px;">
+<td>Date:</td>
+<td>&nbsp;</td>
+<td>Date:</td>
+<td>&nbsp;</td>
+<td>&nbsp;</td>
+<td>1</td>
+<td colspan="2">Poor</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>'],
+        ];
+
+        $db->table('templates')->insertBatch($templatesData);
+
         echo "Database successfully seeded with RBAC roles and full Plantilla Hierarchy!\n";
     }
 }
