@@ -32,7 +32,32 @@ function queue_email(string $toEmail, string $subject, string $body)
 }
 
 /**
- * Processes pending emails. Pass 0 to process all (for midnight tasks), 
+ * Sends $response to the browser right away, then drains up to $limit queued
+ * emails before the process ends - for actions a user is actively waiting on
+ * (invite sent, password reset code, etc.) so they don't sit stuck for up to
+ * a minute waiting on the spms:update-statuses cron sweep to pick it up.
+ *
+ * On Nginx+PHP-FPM production this detaches the browser via
+ * fastcgi_finish_request() first, so sending mail adds zero latency to the
+ * response. Locally (or anywhere fastcgi_finish_request isn't available)
+ * it just falls back to sending inline before returning normally.
+ */
+function dispatch_email_now($response, int $limit = 1)
+{
+    if (ENVIRONMENT === 'development' || !function_exists('fastcgi_finish_request')) {
+        process_email_queue($limit);
+        return $response;
+    }
+
+    $response->send();
+    session_write_close();
+    fastcgi_finish_request();
+    process_email_queue($limit);
+    exit();
+}
+
+/**
+ * Processes pending emails. Pass 0 to process all (for midnight tasks),
  * or a number to process in batches (for UI/AJAX).
  */
 function process_email_queue(int $limit = 5): array

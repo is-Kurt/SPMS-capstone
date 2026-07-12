@@ -67,35 +67,10 @@ class PasswordReset extends BaseController
                 render_email('password_reset_code', ['code' => $code])
             );
 
-            // ==========================================
-            // DYNAMIC EXECUTION BASED ON ENVIRONMENT
-            // ==========================================
-            if (ENVIRONMENT === 'development' || !function_exists('fastcgi_finish_request')) {
-                // LOCAL: Standard blocking redirect
-                \process_email_queue(1);
-                return redirect()->to('password/verify')->with('reset_email', $email);
-            } else {
-                // PRODUCTION (Nginx): Non-Blocking
-                
-                // 1. Manually set flashdata so it isn't lost when we force-exit
-                session()->setFlashdata('reset_email', $email);
-                
-                // 2. Create the redirect response
-                $response = redirect()->to('password/verify');
-                
-                // 3. Send the redirect headers to the browser (Fixes the white screen!)
-                $response->send();
-                
-                // 4. Force PHP to write the session data to the server immediately
-                session_write_close();
-                
-                // 5. Detach the browser (User instantly goes to the next page)
-                fastcgi_finish_request(); 
-                
-                // 6. Send the email quietly in the background
-                \process_email_queue(1); 
-                exit();
-            }
+            // Flashdata must be set before dispatch_email_now() can send()/exit()
+            // on the production path, so set it here rather than chaining ->with().
+            session()->setFlashdata('reset_email', $email);
+            return dispatch_email_now(redirect()->to('password/verify'), 1);
         }
 
         // No active account matches this email. Respond exactly like the success

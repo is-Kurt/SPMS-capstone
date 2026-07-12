@@ -513,13 +513,44 @@ class Folder extends BaseController
             }
             // ---------------------------------------
 
-            // Using Model Update
+            $now = date('Y-m-d H:i:s');
+
+            // If the eval window is already open at submit time, skip straight to
+            // "To Evaluate" instead of leaving it at "Submitted" for up to a minute
+            // waiting on updateTimeBasedStatuses()'s cron sweep - keep this condition
+            // in sync with that method's "Submitted -> To Evaluate" check.
+            $windowAlreadyOpen = !empty($folder['eval_date_start']) && !empty($folder['eval_date_end'])
+                && $folder['eval_date_start'] <= $now && $folder['eval_date_end'] >= $now;
+
             $folderModel->update($folderId, [
-                'status'       => FolderStatus::SUBMITTED->value,
-                'submitted_at' => date('Y-m-d H:i:s')
+                'status'       => $windowAlreadyOpen ? FolderStatus::TO_EVALUATE->value : FolderStatus::SUBMITTED->value,
+                'submitted_at' => $now
             ]);
 
-            return $this->respond(['status' => 'success', 'message' => 'Folder submitted for evaluation.']);
+            $message = $windowAlreadyOpen
+                ? 'Folder submitted - the evaluation period is already open, so it has moved straight to evaluation.'
+                : 'Folder submitted for evaluation.';
+
+            $response = $this->respond(['status' => 'success', 'message' => $message]);
+
+            if ($windowAlreadyOpen) {
+                $userModel = new UserModel();
+                if (!$userModel->hasRole($userId, 'Admin')) {
+                    $owner = $userModel->find($userId);
+                    queue_email(
+                        $owner['email'],
+                        'Action Required: Evaluation Period Open',
+                        render_email('evaluation_period_open', [
+                            'firstName' => $owner['first_name'],
+                            'title'     => $folder['title'],
+                            'link'      => site_url("folders/" . $folderId),
+                        ])
+                    );
+                    return dispatch_email_now($response, 1);
+                }
+            }
+
+            return $response;
         });
     }
 

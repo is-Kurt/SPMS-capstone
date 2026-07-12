@@ -132,11 +132,13 @@ class AccountManagement extends BaseController
             }
             $userModel->db->transComplete();
 
-            return $this->respond([
+            $response = $this->respond([
                 'status'      => 'success',
                 'message'     => count($validEmails) . ' invitations queued for sending!',
                 'invitations' => $createdInvitations,
             ]);
+
+            return dispatch_email_now($response, count($validEmails));
         });
     }
 
