@@ -125,4 +125,4 @@ _modules/*
 /results/
 /phpunit*.xml
 
-writable/spms_db
+writable/spms_db*
