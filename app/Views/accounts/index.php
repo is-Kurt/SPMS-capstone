@@ -37,7 +37,7 @@
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div class="relative">
-                        <select id="filter-role" class="appearance-none w-full bg-surface lg:bg-white dark:bg-zinc-900 border border-surface-border rounded-xl px-3 py-3 lg:py-2 text-sm focus:border-accent outline-none text-text cursor-pointer shadow-sm lg:shadow-none">
+                        <select id="filter-role" class="appearance-none w-full bg-surface lg:bg-white dark:bg-zinc-900 dark:[color-scheme:dark] border border-surface-border rounded-xl px-3 py-3 lg:py-2 text-sm focus:border-accent outline-none text-text cursor-pointer shadow-sm lg:shadow-none">
                             <option value="all">All Roles</option>
                             <option value="Admin">System Admin</option>
                             <option value="Vice President">Vice President</option>
@@ -52,7 +52,7 @@
                     </div>
 
                     <div class="relative">
-                        <select id="filter-dept" class="appearance-none w-full bg-surface lg:bg-white dark:bg-zinc-900 border border-surface-border rounded-xl px-3 py-3 lg:py-2 text-sm focus:border-accent outline-none text-text cursor-pointer shadow-sm lg:shadow-none">
+                        <select id="filter-dept" class="appearance-none w-full bg-surface lg:bg-white dark:bg-zinc-900 dark:[color-scheme:dark] border border-surface-border rounded-xl px-3 py-3 lg:py-2 text-sm focus:border-accent outline-none text-text cursor-pointer shadow-sm lg:shadow-none">
                             <option value="all">All Departments/Units</option>
                             <option value="Academics">Academics</option>
                             <option value="Administration">Administration</option>
@@ -65,7 +65,7 @@
                     </div>
 
                     <div class="relative">
-                        <select id="filter-status" class="appearance-none w-full bg-surface lg:bg-white dark:bg-zinc-900 border border-surface-border rounded-xl px-3 py-3 lg:py-2 text-sm focus:border-accent outline-none text-text cursor-pointer shadow-sm lg:shadow-none">
+                        <select id="filter-status" class="appearance-none w-full bg-surface lg:bg-white dark:bg-zinc-900 dark:[color-scheme:dark] border border-surface-border rounded-xl px-3 py-3 lg:py-2 text-sm focus:border-accent outline-none text-text cursor-pointer shadow-sm lg:shadow-none">
                             <option value="all">All Statuses</option>
                             <option value="1">Active Accounts</option>
                             <option value="0">Disabled Accounts</option>
@@ -134,9 +134,27 @@
 
                                 <td class="block lg:table-cell px-0 lg:px-6 py-2 lg:py-4 border-t border-surface-border lg:border-none mt-2 lg:mt-0 lg:min-w-[90px]">
                                     <div class="flex flex-col gap-2 lg:block">
-                                        <span class="w-max px-3 py-1 rounded-lg text-[10px] font-black bg-info-50 dark:bg-info-500/10 text-info-600 border border-info-200 dark:border-info-500/20 uppercase tracking-widest lg:w-auto">
-                                            <?= esc($u['role_name'] ?? 'No Role') ?>
-                                        </span>
+                                        <?php if ($u['id'] != session()->get('user_id')): ?>
+                                            <?php $currentRoleId = explode(',', $u['role_id'] ?? '')[0] ?? null; ?>
+                                            <?= form_open('account/update-role', ['class' => 'inline-block', 'data-ajax' => 'change-role']) ?>
+                                                <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
+                                                <div class="relative inline-block w-max">
+                                                    <select name="role_id" onchange="this.form.requestSubmit()" data-previous="<?= esc($currentRoleId) ?>"
+                                                            class="js-role-select appearance-none pl-3 pr-7 py-1.5 rounded-lg text-[10px] font-black bg-surface lg:bg-white dark:bg-zinc-900 dark:[color-scheme:dark] border border-surface-border uppercase tracking-widest text-text cursor-pointer focus:outline-none focus:border-accent">
+                                                        <?php foreach ($roles as $role): ?>
+                                                            <option value="<?= $role['id'] ?>" <?= $currentRoleId == $role['id'] ? 'selected' : '' ?>><?= esc($role['name']) ?></option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                    <div class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-text-muted">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                                                    </div>
+                                                </div>
+                                            <?= form_close() ?>
+                                        <?php else: ?>
+                                            <span class="w-max px-3 py-1 rounded-lg text-[10px] font-black bg-info-50 dark:bg-info-500/10 text-info-600 border border-info-200 dark:border-info-500/20 uppercase tracking-widest lg:w-auto">
+                                                <?= esc($u['role_name'] ?? 'No Role') ?>
+                                            </span>
+                                        <?php endif; ?>
                                         <div class="flex flex-col min-w-0 lg:hidden mt-1">
                                             <span class="text-xs font-bold text-text truncate"><?= esc($u['department'] ?? 'No Unit') ?></span>
                                             <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate"><?= esc($u['position'] ?? 'No Position') ?></span>
@@ -204,7 +222,7 @@
                 <div class="shrink-0">
                     <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Assign Role</label>
                     <div class="relative w-full lg:max-w-md">
-                        <select name="role_id" id="select-invite-role" required class="appearance-none w-full bg-zinc-50 lg:bg-white dark:bg-zinc-900 border border-surface-border rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text cursor-pointer font-bold">
+                        <select name="role_id" id="select-invite-role" required class="appearance-none w-full bg-zinc-50 lg:bg-white dark:bg-zinc-900 dark:[color-scheme:dark] border border-surface-border rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text cursor-pointer font-bold">
                             <option value="" disabled selected>Select a role for this batch...</option>
                             <?php foreach($roles as $role): ?>
                                 <option value="<?= $role['id'] ?>"><?= esc($role['name']) ?></option>
@@ -263,7 +281,7 @@
                     </div>
 
                     <div class="relative flex-1">
-                        <select id="invite-filter-role" class="appearance-none w-full bg-surface lg:bg-white dark:bg-zinc-900 border border-surface-border rounded-xl px-3 py-3 lg:py-2 text-sm focus:border-accent outline-none text-text cursor-pointer shadow-sm lg:shadow-none">
+                        <select id="invite-filter-role" class="appearance-none w-full bg-surface lg:bg-white dark:bg-zinc-900 dark:[color-scheme:dark] border border-surface-border rounded-xl px-3 py-3 lg:py-2 text-sm focus:border-accent outline-none text-text cursor-pointer shadow-sm lg:shadow-none">
                             <option value="all">All Roles</option>
                             <?php foreach ($roles as $role): ?>
                                 <option value="<?= esc($role['name']) ?>"><?= esc($role['name']) ?></option>
@@ -519,6 +537,20 @@
             if (!ok) return;
         }
 
+        if (action === 'change-role') {
+            const select = form.querySelector('.js-role-select');
+            const newLabel = select.options[select.selectedIndex].text;
+            const ok = await window.appConfirm(`Change this user's role to "${newLabel}"? This updates their system permissions immediately.`, {
+                title: 'Change Role',
+                confirmText: 'Change Role',
+                variant: 'warning'
+            });
+            if (!ok) {
+                select.value = select.dataset.previous;
+                return;
+            }
+        }
+
         const formData = new FormData(form);
         const submitBtn = form.querySelector('button[type="submit"]');
         if (submitBtn) submitBtn.disabled = true;
@@ -529,6 +561,10 @@
                 if (submitBtn) submitBtn.disabled = false;
             },
             onError: (errMsg) => {
+                if (action === 'change-role') {
+                    const select = form.querySelector('.js-role-select');
+                    select.value = select.dataset.previous;
+                }
                 window.appAlert(errMsg || 'Something went wrong.', { variant: 'danger' });
                 if (submitBtn) submitBtn.disabled = false;
             }
@@ -567,6 +603,14 @@
             case 'delete-user': {
                 form.closest('.user-dir-row').remove();
                 document.getElementById('directory-count').textContent = document.querySelectorAll('.user-dir-row').length;
+                break;
+            }
+
+            case 'change-role': {
+                form.closest('.user-dir-row').dataset.role = data.role_name;
+                const select = form.querySelector('.js-role-select');
+                select.dataset.previous = select.value;
+                window.appAlert(`Role updated to "${data.role_name}".`, { title: 'Role Updated', variant: 'success' });
                 break;
             }
 

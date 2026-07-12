@@ -218,6 +218,31 @@ class AccountManagement extends BaseController
         });
     }
 
+    /** POST /account/update-role - Replaces a user's role assignment with the selected one. Can't target yourself. */
+    public function updateRole() {
+        return $this->tryOrFail(function() {
+            $targetId = $this->request->getPost('user_id');
+            $roleId   = $this->request->getPost('role_id');
+
+            if ($targetId == session()->get('user_id')) {
+                throw new \Exception('Cannot change your own role.');
+            }
+
+            $userModel = new UserModel();
+            $roleModel = new RoleModel();
+
+            $user = $userModel->find($targetId);
+            $role = $roleModel->find($roleId);
+            if (!$user || !$role) throw new \Exception('User or role not found.');
+
+            $db = \Config\Database::connect();
+            $db->table('user_roles')->where('user_id', $targetId)->delete();
+            $db->table('user_roles')->insert(['user_id' => $targetId, 'role_id' => $roleId]);
+
+            return $this->respond(['status' => 'success', 'role_name' => $role['name']]);
+        });
+    }
+
     /** POST /account (DELETE) - Permanently deletes a user account. Can't target yourself. */
     public function destroy() {
         return $this->tryOrFail(function() {

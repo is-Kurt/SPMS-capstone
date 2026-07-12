@@ -24,6 +24,11 @@ const VARIANTS = {
         wrap: 'bg-info-50 dark:bg-info-500/10 text-info-500 ring-info-50 dark:ring-info-500/5',
         btn: 'bg-accent hover:bg-accent-hover shadow-accent/20',
         path: 'M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0Zm-9-3.75h.008v.008H12V8.25Z'
+    },
+    success: {
+        wrap: 'bg-success-50 dark:bg-success-500/10 text-success-500 ring-success-50 dark:ring-success-500/5',
+        btn: 'bg-success-500 hover:bg-success-600 shadow-success-500/20',
+        path: 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0Z'
     }
 };
 

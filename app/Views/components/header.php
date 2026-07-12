@@ -31,10 +31,6 @@
             
         <div class="flex items-center gap-3">
 
-            <?php if (!$showHamburger): ?>
-                <span class="md:hidden text-white text-sm font-bold opacity-90 mr-2">Folders</span>
-            <?php endif; ?>
-
             <?php if ($showHamburger): ?>
                 <button type="button" id="mobile-menu-btn" class="md:hidden inline-flex items-center justify-center rounded-lg bg-black/10 p-2.5 text-white hover:bg-black/20 focus:outline-none transition-colors">
                     <!-- Hamburger icon: opens the mobile nav menu (#mobile-menu) -->
