@@ -74,19 +74,3 @@ function pagination() {
         updatePagination();
     });
 }
-
-function processBackgroundEmails() {
-    const formData = new FormData();
-
-    apiPost('/account/process-queue', formData, {
-        onSuccess: (data) => {
-            if (data.queue_state === 'working' && data.remaining > 0) {
-                console.log(`Sending emails in background... ${data.remaining} left.`);
-                // Rest 2 seconds, then send the next batch of 5
-                setTimeout(processBackgroundEmails, 2000); 
-            }
-        },
-        onError: () => {
-        }
-    });
-}

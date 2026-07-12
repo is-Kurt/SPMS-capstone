@@ -11,8 +11,11 @@
         <div class="flex-none flex items-center justify-between py-2 px-3 sm:px-6 bg-bg border-b border-surface-border gap-2 sm:gap-4 w-full">
             
             <div class="flex items-center gap-1 sm:gap-3 flex-1 min-w-0">
+                <!-- Back-to-templates link. text-text (not text-white) so it stays visible on the
+                     theme-aware bg-bg header in both light and dark mode. -->
                 <a href="<?= site_url('templates') ?>" class="shrink-0">
-                    <div class="flex-shrink-0 flex items-center gap-1 mr-2 sm:mr-4 text-white hover:text-accent transition-colors">
+                    <div class="flex-shrink-0 flex items-center gap-1 mr-2 sm:mr-4 text-text hover:text-accent transition-colors">
+                        <!-- Left-arrow icon -->
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                         </svg>

@@ -42,8 +42,20 @@ class UserModel extends Model
     protected $updatedField  = 'updated_at';
     protected $deletedField  = 'deleted_at';
 
-    // Validation
-    protected $validationRules      = [];
+    // Validation - base field-shape rules only. Request-specific concerns (password
+    // confirmation matching, email-uniqueness-excluding-self, current-password
+    // verification) stay in the controllers since they aren't real column rules.
+    // No 'password' rule here on purpose: every caller hashes the password before
+    // insert()/update(), so a min_length rule here would only ever see a ~60-char
+    // bcrypt hash and could never meaningfully enforce raw password strength -
+    // that check has to happen in the controller, before hashing.
+    // $cleanValidationRules (below) means a partial update() only validates whichever
+    // of these fields are actually present in that call's data.
+    protected $validationRules      = [
+        'first_name' => 'required|min_length[2]|max_length[100]',
+        'last_name'  => 'required|min_length[2]|max_length[100]',
+        'email'      => 'required|valid_email',
+    ];
     protected $validationMessages   = [];
     protected $skipValidation       = false;
     protected $cleanValidationRules = true;
@@ -128,7 +140,7 @@ class UserModel extends Model
     public function getActivePlantillaDetails(int $userId): ?array
     {
         return $this->db->table('plantillas p')
-            ->select('pos.title as position, un.name as department')
+            ->select('pos.title as position, un.id as unit_id, un.name as department')
             ->join('positions pos', 'pos.id = p.position_id')
             ->join('units un', 'un.id = p.unit_id')
             ->where('p.user_id', $userId)
@@ -146,5 +158,21 @@ class UserModel extends Model
             ->join('positions pos', 'pos.id = p.position_id', 'left')
             ->where('users.id', $adminId)
             ->first();
+    }
+
+    /**
+     * True if this user currently holds the given system role. Used to keep Admin
+     * accounts out of the folder/document workflow notification emails (drafting,
+     * deadlines, approvals) - Admins oversee the whole system rather than being
+     * evaluated employees, so those reminders don't apply to them even if they
+     * happen to own or be routed to a folder.
+     */
+    public function hasRole(int $userId, string $roleName): bool
+    {
+        return $this->db->table('user_roles ur')
+            ->join('roles r', 'r.id = ur.role_id')
+            ->where('ur.user_id', $userId)
+            ->where('r.name', $roleName)
+            ->countAllResults() > 0;
     }
 }

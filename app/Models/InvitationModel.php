@@ -50,4 +50,14 @@ class InvitationModel extends Model
     protected $afterFind      = [];
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
+
+    /** For AccountManagement.php: Fetches every invitation with its role name, newest first. */
+    public function getAllWithRoleNames(): array
+    {
+        return $this->db->table('invitations i')
+            ->select('i.id, i.email, i.status, i.expires_at, i.created_at, r.name as role_name')
+            ->join('roles r', 'r.id = i.role_id', 'left')
+            ->orderBy('i.created_at', 'DESC')
+            ->get()->getResultArray();
+    }
 }

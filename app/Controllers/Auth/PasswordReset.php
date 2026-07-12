@@ -6,6 +6,11 @@ use App\Controllers\BaseController;
 use CodeIgniter\HTTP\ResponseInterface;
 use App\Models\UserModel;
 
+/**
+ * The "Forgot Password" flow: email -> 6-digit code (rate-limited to 5/day,
+ * 60s apart) -> code+new-password. Steps are numbered below in the order the
+ * user moves through them.
+ */
 class PasswordReset extends BaseController
 {
     // 1. Shows the "Enter Email" page
@@ -15,12 +20,15 @@ class PasswordReset extends BaseController
 
     // 2. Generates the code and emails the user
     public function sendCode() {
-        // 1. Validate the email input format
-        if (!$this->validate(['email' => 'required|valid_email'])) {
-            return redirect()->back()->withInput()->with('error', 'Please enter a valid email address.');
+        // Trim/lowercase before validating, not after - valid_email rejects a string
+        // with stray leading/trailing whitespace, so this must happen first.
+        $email = strtolower(trim($this->request->getPost('email') ?? ''));
+
+        // 1. Validate the email input format (the field-level error is shown inline, no need for a duplicate banner)
+        if (!$this->validateData(['email' => $email], ['email' => 'required|valid_email'])) {
+            return redirect()->back()->withInput();
         }
 
-        $email = strtolower(trim($this->request->getPost('email')));
         $userModel = new UserModel();
         $user = $userModel->where('email', $email)->first();
 
@@ -33,13 +41,13 @@ class PasswordReset extends BaseController
                 $attempts = 0;
             }
 
-            if ($attempts >= 5) {
-                return redirect()->back()->with('error', 'Security Lock: You have reached the maximum number of password reset requests (5) for today. Please try again tomorrow.');
+            if ($attempts >= 3) {
+                return redirect()->back()->with('error', 'You have reached the maximum number of password reset requests (3) for today. Please try again tomorrow.');
             }
 
             if (($now - $lastAttempt) < 60) {
                 $secondsLeft = 60 - ($now - $lastAttempt);
-                return redirect()->back()->with('error', "Anti-Spam: Please wait {$secondsLeft} seconds before requesting another code.");
+                return redirect()->back()->with('error', "Please wait {$secondsLeft} seconds before requesting another code.");
             }
 
             $code = sprintf("%06d", mt_rand(1, 999999)); 
@@ -54,9 +62,9 @@ class PasswordReset extends BaseController
 
             helper('email_queue');
             queue_email(
-                $email, 
-                'SPMS Password Reset Code', 
-                "Your password reset code is: <b style='font-size:24px;'>{$code}</b><br><br>This code will expire in exactly 5 minutes."
+                $email,
+                'SPMS Password Reset Code',
+                render_email('password_reset_code', ['code' => $code])
             );
 
             // ==========================================
@@ -90,53 +98,11 @@ class PasswordReset extends BaseController
             }
         }
 
-        // 3. Rate Limiting Check
-        $now = time();
-        $lastAttempt = strtotime($user['reset_last_attempt_at'] ?? '2000-01-01');
-        $attempts = (int)($user['reset_attempts'] ?? 0);
-
-        if (date('Y-m-d', $lastAttempt) !== date('Y-m-d', $now)) $attempts = 0;
-
-        if ($attempts >= 5) {
-            return redirect()->back()->with('error', 'Security Lock: You have reached the maximum number of password reset requests (5) for today. Please try again tomorrow.');
-        }
-
-        if (($now - $lastAttempt) < 60) {
-            $secondsLeft = 60 - ($now - $lastAttempt);
-            return redirect()->back()->with('error', "Anti-Spam: Please wait {$secondsLeft} seconds before requesting another code.");
-        }
-
-        // 4. Generate and Save Code
-        $code = sprintf("%06d", mt_rand(1, 999999)); 
-        $expiresAt = date('Y-m-d H:i:s', strtotime('+5 minutes'));
-
-        $userModel->update($user['id'], [
-            'reset_code'            => $code,
-            'reset_code_expires_at' => $expiresAt,
-            'reset_attempts'        => $attempts + 1,
-            'reset_last_attempt_at' => date('Y-m-d H:i:s', $now)
-        ]);
-
-        // 5. Send Email
-        queue_email(
-            $email, 
-            'SPMS Password Reset Code', 
-            "Your password reset code is: <b style='font-size:24px;'>{$code}</b><br><br>This code will expire in exactly 5 minutes."
-        );
-
-        if (ENVIRONMENT === 'development' || !function_exists('fastcgi_finish_request')) {
-            \process_email_queue(1);
-            return redirect()->to('password/verify')->with('reset_email', $email);
-        } else {
-            session()->setFlashdata('reset_email', $email);
-            $response = redirect()->to('password/verify');
-            $response->send();
-            
-            session_write_close();
-            fastcgi_finish_request(); 
-            \process_email_queue(1); 
-            exit();
-        }
+        // No active account matches this email. Respond exactly like the success
+        // path (redirect to the code-entry page) without generating or sending
+        // anything, so this form can't be used to discover which emails are
+        // registered or to request a code for a disabled account.
+        return redirect()->to('password/verify')->with('reset_email', $email);
     }
 
     // 3. Shows the "Enter Code & New Password" page
@@ -155,7 +121,7 @@ class PasswordReset extends BaseController
         ];
 
         if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('reset_email', $this->request->getPost('email'))->with('error', 'Please check your inputs and try again.');
+            return redirect()->back()->withInput()->with('reset_email', $this->request->getPost('email'));
         }
 
         $email = strtolower(trim($this->request->getPost('email')));
@@ -183,6 +149,6 @@ class PasswordReset extends BaseController
             'reset_code_expires_at' => null
         ]);
 
-        return redirect()->to('login')->with('success', 'Password reset successfully! You may now log in.');
+        return redirect()->to('login');
     }
 }

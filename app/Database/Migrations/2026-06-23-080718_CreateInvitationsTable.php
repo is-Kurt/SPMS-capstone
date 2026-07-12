@@ -48,7 +48,9 @@ class CreateInvitationsTable extends Migration
 
         $this->forge->addPrimaryKey('id');
 
-        $this->forge->addForeignKey('role_id', 'roles', 'id', 'RESTRICT', 'CASCADE');
+        // addForeignKey($field, $table, $column, $onUpdate, $onDelete) - onDelete must be
+        // RESTRICT here so deleting a role with pending invitations is blocked, not cascaded.
+        $this->forge->addForeignKey('role_id', 'roles', 'id', 'CASCADE', 'RESTRICT');
 
         $this->forge->createTable('invitations');
     }

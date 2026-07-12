@@ -21,8 +21,9 @@ class  DocumentFolderModel extends Model
         'final_rating',
         'eval_date_start', 
         'eval_date_end', 
-        'submitted_at', 
+        'submitted_at',
         'rated_at',
+        'deadline_reminder_sent_at',
         'routing_preset_id',
         'status'
     ];
@@ -58,14 +59,17 @@ class  DocumentFolderModel extends Model
     protected $afterDelete    = [];
 
     /**
-     * For Rating.php: Fetches all subordinates' folders for the dashboard
+     * For Rating.php: Fetches the folders that belong on this evaluator's dashboard.
+     * Admins see every folder system-wide (oversight); everyone else (Supervisor, HR)
+     * only sees folders they've actually been routed to evaluate via a cascaded Team
+     * (evaluation_routings.evaluator_id), not everyone in the organization.
      */
-    public function getRatingDashboardFolders(int $userId, string $sysRole, ?string $parentFolderId = null): array
+    public function getRatingDashboardFolders(int $userId, string $sysRole): array
     {
         $builder = $this->db->table('document_folders df')
-            ->select("df.id as folder_id, df.user_id, (u.first_name || ' ' || u.last_name) as username, 
-                      REPLACE(GROUP_CONCAT(DISTINCT pos.title), ',', ', ') as position, 
-                      REPLACE(GROUP_CONCAT(DISTINCT un.name), ',', ', ') as department, 
+            ->select("df.id as folder_id, df.user_id, (u.first_name || ' ' || u.last_name) as username,
+                      REPLACE(GROUP_CONCAT(DISTINCT pos.title), ',', ', ') as position,
+                      REPLACE(GROUP_CONCAT(DISTINCT un.name), ',', ', ') as department,
                       MAX(pos.is_teaching) as is_teaching,
                       df.final_rating, df.status as folder_status")
             ->join('users u', 'u.id = df.user_id')
@@ -73,12 +77,9 @@ class  DocumentFolderModel extends Model
             ->join('positions pos', 'pos.id = p.position_id', 'left')
             ->join('units un', 'un.id = p.unit_id', 'left');
 
-        if ($sysRole === 'Admin' && $parentFolderId) {
-            $builder->where('df.parent_folder_id', $parentFolderId);
-        } else if ($parentFolderId) {
+        if ($sysRole !== 'Admin') {
             $builder->join('evaluation_routings er_me', 'er_me.folder_id = df.id')
-                    ->where('er_me.evaluator_id', $userId)
-                    ->where('er_me.evaluator_folder_id', $parentFolderId);
+                    ->where('er_me.evaluator_id', $userId);
         }
 
         $builder->groupBy('df.id');
@@ -86,15 +87,34 @@ class  DocumentFolderModel extends Model
     }
 
     /**
-     * For CheckFolderDeadlines Cron Job
+     * For CheckFolderDeadlines cron: still-Draft folders whose real deadline
+     * (eval_date_end - the same field updateTimeBasedStatuses() uses to sweep
+     * unfinished folders to UNEVALUATED, and what the "deadline missed" email
+     * itself calls the deadline) is within $withinDays but hasn't passed yet,
+     * and that haven't already had a reminder queued (deadline_reminder_sent_at).
+     * A "<=" range instead of an exact-day match so a missed cron run still
+     * catches the folder on its next run, instead of silently skipping it.
+     * Excludes Admin-owned folders - Admins don't get this reminder even if
+     * they happen to have their own Draft folder nearing deadline.
      */
-    public function getNearingDeadlineFolders(string $targetDate): array
+    public function getNearingDeadlineFolders(int $withinDays = 3): array
     {
+        $now    = date('Y-m-d H:i:s');
+        $cutoff = date('Y-m-d H:i:s', strtotime("+{$withinDays} days"));
+
         return $this->db->table('document_folders df')
-            ->select('df.id, u.email, u.first_name, df.eval_date_start')
+            ->select('df.id, u.email, u.first_name, df.eval_date_end')
             ->join('users u', 'u.id = df.user_id')
+            ->join('user_roles ur', 'ur.user_id = u.id', 'left')
+            ->join('roles r', 'r.id = ur.role_id', 'left')
             ->where('df.status', FolderStatus::DRAFT->value)
-            ->where('DATE(df.eval_date_start)', $targetDate) 
+            ->where('df.eval_date_end >=', $now)
+            ->where('df.eval_date_end <=', $cutoff)
+            ->where('df.deadline_reminder_sent_at IS NULL')
+            ->groupStart()
+                ->where('r.name !=', 'Admin')
+                ->orWhere('r.name IS NULL')
+            ->groupEnd()
             ->get()->getResultArray();
     }
 
@@ -115,10 +135,15 @@ class  DocumentFolderModel extends Model
         $db = \Config\Database::connect();
         $now = date('Y-m-d H:i:s');
         helper('email_queue');
+        $userModel = new UserModel();
 
         // 1. Process "Submitted" -> "To Evaluate"
+        // Note: this query intentionally stays unfiltered by role - it also drives
+        // the status update just below, and an Admin's own folder still needs to
+        // transition normally even though (per the per-folder check in the loop
+        // further down) Admins don't get emailed about it.
         $startingFolders = $db->table($this->table . ' df')
-            ->select('df.id, df.title, u.email, u.first_name')
+            ->select('df.id, df.user_id, df.title, u.email, u.first_name')
             ->join('users u', 'u.id = df.user_id')
             ->where('df.status', \App\Enums\FolderStatus::SUBMITTED->value)
             ->where('df.eval_date_start <=', $now)
@@ -126,11 +151,21 @@ class  DocumentFolderModel extends Model
             ->get()->getResultArray();
 
         foreach ($startingFolders as $folder) {
+            // Admins oversee the whole system rather than being evaluated employees,
+            // so drafting/deadline/approval reminders don't apply to them even if
+            // they happen to own a folder themselves - status still transitions
+            // normally above/below, only the notification email is skipped.
+            if ($userModel->hasRole($folder['user_id'], 'Admin')) continue;
+
             $link = site_url("folders/" . $folder['id']);
             queue_email(
                 $folder['email'],
                 'Action Required: Evaluation Period Open',
-                "Hello {$folder['first_name']},<br><br>The official evaluation window for <b>{$folder['title']}</b> has now opened. You may now access your folder to conduct and lock in your self-evaluation.<br><br><a href='{$link}'>Click here to open your folder</a>"
+                render_email('evaluation_period_open', [
+                    'firstName' => $folder['first_name'],
+                    'title'     => $folder['title'],
+                    'link'      => $link,
+                ])
             );
         }
 
@@ -141,21 +176,25 @@ class  DocumentFolderModel extends Model
         }
 
         // 2. Find folders that just expired (Before we change their status)
+        // Also intentionally unfiltered by role for the same reason as above - the
+        // status update below still needs to run for an Admin's own folder.
         $expiringFolders = $db->table($this->table . ' df')
-            ->select('df.id, u.email, u.first_name')
+            ->select('df.id, df.user_id, u.email, u.first_name')
             ->join('users u', 'u.id = df.user_id')
             ->whereNotIn('df.status', [
-                \App\Enums\FolderStatus::APPROVED->value, 
+                \App\Enums\FolderStatus::APPROVED->value,
                 \App\Enums\FolderStatus::UNEVALUATED->value
             ])
             ->where('df.eval_date_end <', $now)
             ->get()->getResultArray();
 
         foreach ($expiringFolders as $folder) {
+            if ($userModel->hasRole($folder['user_id'], 'Admin')) continue;
+
             queue_email(
                 $folder['email'],
                 'Notice: Evaluation Submission Deadline Missed',
-                "Hello {$folder['first_name']},<br><br>The deadline for submitting your performance evaluation has passed. Your folder has been locked and marked as <b>Unevaluated</b>. Please contact your supervisor or the HR department if this is an error."
+                render_email('deadline_missed', ['firstName' => $folder['first_name']])
             );
         }
         

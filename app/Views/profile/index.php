@@ -7,30 +7,33 @@
     <div class="bg-surface border border-surface-border rounded-2xl shadow-sm overflow-hidden shrink-0 flex flex-col md:flex-row">
         
         <div class="p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-surface-border bg-zinc-50/50 dark:bg-zinc-800/10 min-w-[250px]">
-            <?php if (session('avatar_image')): ?>
-                <img src="<?= base_url('uploads/avatars/' . session('avatar_image')) ?>" alt="Avatar" class="w-32 h-32 rounded-full object-cover shadow-lg border-4 border-white dark:border-zinc-800">
-            <?php else: ?>
-                <div class="w-32 h-32 rounded-full flex items-center justify-center text-white text-5xl font-black shadow-lg border-4 border-white dark:border-zinc-800" style="background-color: <?= esc(session('avatar_color')) ?>;">
-                    <?= esc(session('avatar_letter')) ?>
-                </div>
-            <?php endif; ?>
+            <div id="avatar-preview-wrap">
+                <?php if (session('avatar_image')): ?>
+                    <img id="avatar-preview-img" src="<?= base_url('uploads/avatars/' . session('avatar_image')) ?>" alt="Avatar" class="w-32 h-32 rounded-full object-cover shadow-lg border-4 border-white dark:border-zinc-800">
+                <?php else: ?>
+                    <div id="avatar-preview-initials" class="w-32 h-32 rounded-full flex items-center justify-center text-white text-5xl font-black shadow-lg border-4 border-white dark:border-zinc-800" style="background-color: <?= esc(session('avatar_color')) ?>;">
+                        <?= esc(session('avatar_letter')) ?>
+                    </div>
+                <?php endif; ?>
+            </div>
             <p class="mt-4 text-xs font-bold text-text-muted uppercase tracking-widest">Current Avatar</p>
         </div>
 
         <div class="p-8 flex-1 flex flex-col gap-6">
-            
-            <?= form_open_multipart('profile/updateAvatar') ?>
+
+            <?= form_open_multipart('profile/updateAvatar', ['data-ajax' => 'update-avatar']) ?>
                 <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Upload Custom Image</label>
                 <div class="flex items-center gap-3">
                     <input type="file" name="avatar_file" accept="image/png, image/jpeg, image/webp" required
                            class="block w-full text-sm text-text-muted file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-accent/10 file:text-accent hover:file:bg-accent/20 transition-all cursor-pointer">
                     <button type="submit" class="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-4 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-95 whitespace-nowrap">Upload</button>
                 </div>
+                <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="avatar_file"></p>
             <?= form_close() ?>
 
             <div class="h-px bg-surface-border w-full"></div>
 
-            <?= form_open('profile/updateAvatar', ['class' => 'flex flex-col gap-4']) ?>
+            <?= form_open('profile/updateAvatar', ['class' => 'flex flex-col gap-4', 'data-ajax' => 'update-avatar']) ?>
                 <div class="flex gap-4">
                     <div class="flex-1">
                         <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Background Color</label>
@@ -39,7 +42,7 @@
                             <span class="text-xs text-text-muted font-mono"><?= esc(session('avatar_color')) ?></span>
                         </div>
                     </div>
-                    
+
                     <div class="flex-1">
                         <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Display Letter</label>
                         <input type="text" name="avatar_letter" value="<?= esc(session('avatar_letter')) ?>" maxlength="2" required
@@ -49,49 +52,44 @@
 
                 <div class="flex items-center gap-3 mt-2">
                     <button type="submit" class="bg-accent text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-95 shadow-md shadow-accent/20">Save Initials</button>
-                    <?php if (session('avatar_image')): ?>
-                        <button type="submit" name="remove_image" value="1" class="text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 px-4 py-2.5 rounded-xl text-xs font-bold transition-all">Remove Image</button>
-                    <?php endif; ?>
+                    <button type="submit" name="remove_image" value="1" id="btn-remove-avatar-image"
+                            class="text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10 px-4 py-2.5 rounded-xl text-xs font-bold transition-all <?= session('avatar_image') ? '' : 'hidden' ?>">Remove Image</button>
                 </div>
+                <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="_general"></p>
             <?= form_close() ?>
 
         </div>
     </div>
     
-    <?= form_open('profile/general', ['class' => 'bg-surface border border-surface-border rounded-2xl shadow-sm overflow-hidden shrink-0']) ?>
+    <?= form_open('profile/general', ['class' => 'bg-surface border border-surface-border rounded-2xl shadow-sm overflow-hidden shrink-0', 'data-ajax' => 'update-general']) ?>
         <div class="px-8 py-5 border-b border-surface-border bg-zinc-50 dark:bg-zinc-800/30">
             <h2 class="text-[11px] font-black uppercase tracking-widest text-text">General Information</h2>
         </div>
-        
+
         <div class="p-8 flex flex-col gap-8">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">First Name</label>
-                    <input type="text" name="first_name" value="<?= old('first_name', esc($user['first_name'])) ?>" required
+                    <input type="text" name="first_name" value="<?= esc($user['first_name']) ?>" required
                         class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold">
-                    <div class="h-3 pl-1 mt-1">
-                        <p class="text-red-500 text-[10px] font-bold uppercase tracking-wider"><?= validation_show_error('first_name') ?></p>
-                    </div>
+                    <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="first_name"></p>
                 </div>
-                
+
                 <div>
                     <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Last Name</label>
-                    <input type="text" name="last_name" value="<?= old('last_name', esc($user['last_name'])) ?>" required
+                    <input type="text" name="last_name" value="<?= esc($user['last_name']) ?>" required
                         class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold">
-                    <div class="h-3 pl-1 mt-1">
-                        <p class="text-red-500 text-[10px] font-bold uppercase tracking-wider"><?= validation_show_error('last_name') ?></p>
-                    </div>
+                    <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="last_name"></p>
                 </div>
 
                 <div class="md:col-span-2">
                     <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Email Address</label>
-                    <input type="email" name="email" value="<?= old('email', esc($user['email'])) ?>" required
+                    <input type="email" name="email" value="<?= esc($user['email']) ?>" required
                         class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold">
-                    <div class="h-3 pl-1 mt-1">
-                        <p class="text-red-500 text-[10px] font-bold uppercase tracking-wider"><?= validation_show_error('email') ?></p>
-                    </div>
+                    <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="email"></p>
                 </div>
             </div>
+            <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="_general"></p>
         </div>
 
         <div class="px-8 py-5 border-t border-surface-border bg-zinc-50 dark:bg-zinc-800/30">
@@ -106,7 +104,8 @@
                             <span class="w-5 h-5 rounded-full bg-accent text-white flex items-center justify-center num-badge"><?= $index + 1 ?></span>
                             Designation
                         </div>
-                        <button type="button" class="btn-remove hidden text-red-500 hover:text-red-700 transition-colors">
+                        <!-- Trash icon (icon-only button): removes this extra position/designation card client-side. Hidden on the first card since at least one is required -->
+                        <button type="button" class="btn-remove hidden text-danger-500 hover:text-danger-700 transition-colors">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         </button>
                     </h3>
@@ -159,11 +158,11 @@
         </div>
     <?= form_close() ?>
 
-    <?= form_open('profile/password', ['class' => 'bg-surface border border-surface-border rounded-2xl shadow-sm overflow-hidden shrink-0']) ?>
+    <?= form_open('profile/password', ['class' => 'bg-surface border border-surface-border rounded-2xl shadow-sm overflow-hidden shrink-0', 'data-ajax' => 'update-password']) ?>
         <div class="px-8 py-5 border-b border-surface-border bg-zinc-50 dark:bg-zinc-800/30">
             <h2 class="text-[11px] font-black uppercase tracking-widest text-text">Security & Authentication</h2>
         </div>
-        
+
         <div class="p-8 flex flex-col gap-8">
             <div class="flex flex-col gap-6">
                 <div>
@@ -176,31 +175,24 @@
                         <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Current Password</label>
                         <input type="password" name="current_password" required
                             class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold">
-                        <div class="h-3 pl-1 mt-1">
-                            <p class="text-red-500 text-[10px] font-bold uppercase tracking-wider">
-                                <?= session('errors.current_password') ?? validation_show_error('current_password') ?>
-                            </p>
-                        </div>
+                        <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="current_password"></p>
                     </div>
-                    
+
                     <div>
                         <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">New Password</label>
-                        <input type="password" name="new_password" required
+                        <input type="password" name="new_password" required minlength="8"
                             class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold">
-                        <div class="h-3 pl-1 mt-1">
-                            <p class="text-red-500 text-[10px] font-bold uppercase tracking-wider"><?= validation_show_error('new_password') ?></p>
-                        </div>
+                        <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="new_password"></p>
                     </div>
 
                     <div>
                         <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Confirm Password</label>
-                        <input type="password" name="confirm_password" required
+                        <input type="password" name="confirm_password" required minlength="8"
                             class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold">
-                        <div class="h-3 pl-1 mt-1">
-                            <p class="text-red-500 text-[10px] font-bold uppercase tracking-wider"><?= validation_show_error('confirm_password') ?></p>
-                        </div>
+                        <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="confirm_password"></p>
                     </div>
                 </div>
+                <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="_general"></p>
 
                 <div class="flex justify-start mt-2">
                     <button type="submit" class="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90 text-xs font-bold py-2.5 px-6 rounded-lg transition-all active:scale-[0.98] cursor-pointer">
@@ -214,8 +206,127 @@
 </div>
 
 <script>
+    // ==========================================
+    // AJAX FORM HANDLING (no more full-page reloads for profile actions)
+    // Registered synchronously (not inside DOMContentLoaded) so this listener
+    // attaches before confirmModal.js's global data-confirm auto-submit
+    // listener does - stopImmediatePropagation() below then keeps that older
+    // listener from ever seeing these same submits.
+    // ==========================================
+    document.addEventListener('submit', async (e) => {
+        const form = e.target;
+        const action = form.dataset.ajax;
+        if (!action) return;
+
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        clearFormErrors(form);
+
+        // Pass the submitter so a clicked button's name/value (e.g. remove_image=1)
+        // is included - FormData(form) alone omits button data entirely.
+        const formData = new FormData(form, e.submitter);
+        const submitBtn = e.submitter;
+        if (submitBtn) submitBtn.disabled = true;
+
+        apiPost(form.getAttribute('action'), formData, {
+            onSuccess: (data) => {
+                handleProfileAjaxSuccess(action, form, data);
+                if (submitBtn) submitBtn.disabled = false;
+            },
+            onError: (errMsg, data) => {
+                showFormErrors(form, errMsg, data && data.errors);
+                if (submitBtn) submitBtn.disabled = false;
+            }
+        });
+    });
+
+    // Success is confirmed via appAlert(); errors are shown inline next to the
+    // relevant field instead, keyed by the server's {errors: {field: message}}.
+    // Falls back to a form-level "_general" slot, and to appAlert() as a last
+    // resort if a form has no matching slot at all, so an error can never be
+    // silently dropped.
+    function clearFormErrors(form) {
+        form.querySelectorAll('.field-error').forEach(el => {
+            el.textContent = '';
+            el.classList.add('hidden');
+        });
+    }
+
+    function showFormErrors(form, message, errors) {
+        clearFormErrors(form);
+
+        let shown = false;
+        if (errors) {
+            for (const [field, msg] of Object.entries(errors)) {
+                const slot = form.querySelector(`.field-error[data-field="${field}"]`);
+                if (slot) {
+                    slot.textContent = msg;
+                    slot.classList.remove('hidden');
+                    shown = true;
+                }
+            }
+        }
+
+        if (!shown) {
+            const fallback = form.querySelector('.field-error[data-field="_general"]');
+            if (fallback) {
+                fallback.textContent = message || 'Something went wrong.';
+                fallback.classList.remove('hidden');
+            } else {
+                window.appAlert(message || 'Something went wrong.', { variant: 'danger' });
+            }
+        }
+    }
+
+    function updateAvatarPreview(avatar) {
+        const wrap = document.getElementById('avatar-preview-wrap');
+        if (wrap) {
+            if (avatar.image) {
+                wrap.innerHTML = `<img id="avatar-preview-img" src="${avatar.image}" alt="Avatar" class="w-32 h-32 rounded-full object-cover shadow-lg border-4 border-white dark:border-zinc-800">`;
+            } else {
+                wrap.innerHTML = `<div id="avatar-preview-initials" class="w-32 h-32 rounded-full flex items-center justify-center text-white text-5xl font-black shadow-lg border-4 border-white dark:border-zinc-800" style="background-color: ${avatar.color};">${escapeHtml(avatar.letter || '')}</div>`;
+            }
+        }
+
+        const removeBtn = document.getElementById('btn-remove-avatar-image');
+        if (removeBtn) removeBtn.classList.toggle('hidden', !avatar.image);
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str ?? '';
+        return div.innerHTML;
+    }
+
+    function handleProfileAjaxSuccess(action, form, data) {
+        switch (action) {
+            case 'update-general': {
+                window.appAlert(data.message, { title: 'Profile Updated', variant: 'info' });
+                break;
+            }
+
+            case 'update-password': {
+                form.reset();
+                window.appAlert(data.message, { title: 'Password Updated', variant: 'info' });
+                break;
+            }
+
+            case 'update-avatar': {
+                if (data.avatar) updateAvatarPreview(data.avatar);
+
+                // Reset the "remove image" trigger and file input so a re-submit doesn't resend stale data.
+                const fileInput = form.querySelector('input[name="avatar_file"]');
+                if (fileInput) fileInput.value = '';
+
+                window.appAlert(data.message, { title: 'Avatar Updated', variant: 'info' });
+                break;
+            }
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
-        
+
         // --- DYNAMIC POSITION CARDS LOGIC ---
         const container = document.getElementById('positions-container');
         if(container) {
@@ -233,7 +344,12 @@
                         removeBtn.classList.add('hidden');
                     } else {
                         removeBtn.classList.remove('hidden');
-                        removeBtn.onclick = function() {
+                        removeBtn.onclick = async function() {
+                            const ok = await window.appConfirm('Remove this position/designation?', {
+                                title: 'Remove Position',
+                                confirmText: 'Remove'
+                            });
+                            if (!ok) return;
                             card.remove();
                             updateCardUI();
                         };

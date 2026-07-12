@@ -9,8 +9,14 @@ use App\Models\DocumentFolderModel;
 use App\Models\EvaluationRoutingModel;
 use App\Models\TemplateModel;
 
+/**
+ * Handles individual documents (the actual IPCR/DPCR/OPCR pages inside a folder):
+ * viewing/editing content, creating new documents from a template, and marking
+ * which document in a folder counts as the "target" used for the final rating.
+ */
 class Document extends BaseController
 {
+    /** GET /document/{docId} - Opens the TinyMCE editor view for a single document. */
     public function index($docId = null) {
         $userId  = session()->get('user_id');
         $sysRole = session()->get('role');
@@ -49,6 +55,7 @@ class Document extends BaseController
         return view('document/show', $data);
     }
     
+    /** POST /document - Creates a new (optionally template-seeded) document inside a folder. */
     public function store() {
         return $this->tryOrFail(function() {
             $documentModel = new DocumentModel();
@@ -66,7 +73,7 @@ class Document extends BaseController
                 }
             }
 
-            $docs = $this->getUserDocument($userId);
+            $docs = $documentModel->getUserDocuments($userId);
             $payload = [
                 'title'              => resolve_unique_title($title, $docs),
                 'user_id'            => $userId,
@@ -84,17 +91,18 @@ class Document extends BaseController
         });
     }
 
+    /** POST /document/update - Autosave endpoint: persists title/content for an owner or assigned evaluator. */
     public function update() {
         $userId  = session()->get('user_id');
         $sysRole = session()->get('role');
-        $doc_id  = $this->request->getPost('id');
+        $docId  = $this->request->getPost('id');
 
         $documentModel = new DocumentModel();
 
         $docOwnerInfo = $documentModel->db->table('documents d')
             ->select('df.user_id as owner_id, df.id as folder_id')
             ->join('document_folders df', 'df.id = d.document_folder_id')
-            ->where('d.id', $doc_id)->get()->getRowArray();
+            ->where('d.id', $docId)->get()->getRowArray();
 
         if (!$docOwnerInfo) return $this->response->setJSON(['status' => 'error', 'message' => 'Document not found']);
 
@@ -113,7 +121,7 @@ class Document extends BaseController
         if (!$isAuthorized) return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized']);
 
         $documentModel->save([
-            'id'      => $doc_id,
+            'id'      => $docId,
             'title'   => $this->request->getPost('title'),
             'content' => $this->request->getPost('content'),
         ]);
@@ -121,11 +129,16 @@ class Document extends BaseController
         return $this->response->setJSON(['status' => 'success']);
     }
     
+    /**
+     * POST /document/set-target - Marks one document (the ★) in a folder as the
+     * basis for the final rating. Clears the flag on every other document in the
+     * same folder first, since only one document can be the target at a time.
+     */
     public function setTarget() {
         return $this->tryOrFail(function() {
             $docId = $this->request->getPost('doc_id');
             $folderId = $this->request->getPost('folder_id');
-            
+
             $documentModel = new DocumentModel();
 
             $documentModel->where('document_folder_id', $folderId)->set(['is_target' => 0])->update();
@@ -135,16 +148,18 @@ class Document extends BaseController
         });
     }
 
+    /** POST /document/delete - Deletes a document after confirming the requester owns its folder. */
     public function destroy() {
         $docId = $this->request->getPost('doc_id');
         $userId = session()->get('user_id');
-        
-        // Verify ownership via folder join since documents no longer have user_id[cite: 49, 50]
-        if (!$this->getUserDocument($userId, $docId)) {
+        $documentModel = new DocumentModel();
+
+        // Verify ownership via folder join since documents no longer have user_id
+        if (!$documentModel->getUserDocuments($userId, $docId)) {
             return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized']);
         }
-        
-        (new DocumentModel())->delete($docId);
+
+        $documentModel->delete($docId);
 
         return $this->response->setJSON(['status' => 'success']);
     }

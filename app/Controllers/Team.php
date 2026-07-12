@@ -11,8 +11,14 @@ use App\Models\RoutingPresetModel;
 use App\Models\RoutingPresetMemberModel;
 use App\Models\DocumentFolderModel;
 
+/**
+ * "My Teams": lets Admins/Supervisors build reusable distribution lists
+ * (routing presets) of people, which then get "cascaded" onto a folder via
+ * Folder::cascadeTeam() to assign evaluators or spin up subordinate folders.
+ */
 class Team extends BaseController
 {
+    /** GET /teams - Lists this user's saved teams and shows the selected one's member roster. */
     public function index() {
         $role = session()->get('role');
         if (!in_array($role, ['Admin', 'Supervisor'])) return redirect()->to('/');
@@ -28,13 +34,27 @@ class Team extends BaseController
         $folderModel   = new DocumentFolderModel();
 
         $users = $userModel->getEligibleTeamMembers($userId);
-        
+        $units = $unitModel->orderBy('name', 'ASC')->findAll();
+
+        // Supervisors are scoped to their own unit and everything nested under it
+        // (e.g. a VP only sees/builds teams from their colleges/offices); Admins see everyone.
+        if ($role === 'Supervisor') {
+            $ownPlantilla  = $userModel->getActivePlantillaDetails($userId);
+            $scopedUnitIds = $ownPlantilla ? $unitModel->getDescendantIds([$ownPlantilla['unit_id']]) : [];
+
+            $units = array_values(array_filter($units, fn ($u) => in_array($u['id'], $scopedUnitIds)));
+            $users = array_values(array_filter($users, function ($u) use ($scopedUnitIds) {
+                if (empty($u['unit_id'])) return false;
+                return count(array_intersect(explode(',', $u['unit_id']), $scopedUnitIds)) > 0;
+            }));
+        }
+
         foreach ($users as &$u) {
             if ($u['position'])   $u['position']   = str_replace(',', ', ', $u['position']);
             if ($u['department']) $u['department'] = str_replace(',', ', ', $u['department']);
         }
+        unset($u);
 
-        $units     = $unitModel->orderBy('name', 'ASC')->findAll();
         $positions = $positionModel->orderBy('title', 'ASC')->findAll();
 
         $presets = $presetModel->getPresetsWithDetails($userId);
@@ -81,6 +101,7 @@ class Team extends BaseController
         ]);
     }
 
+    /** POST /teams/create - Creates an empty, unnamed team shell so the UI has an id to attach members to. */
     public function createShell() {
         $role = session()->get('role');
         if (!in_array($role, ['Admin', 'Supervisor'])) return redirect()->to('/');
@@ -102,6 +123,7 @@ class Team extends BaseController
         return redirect()->to("teams?team_id={$newId}");
     }
 
+    /** POST /teams - Saves a team's name/description and replaces its full member list. */
     public function store() {
         $role = session()->get('role');
         if (!in_array($role, ['Admin', 'Supervisor'])) return redirect()->to('/');
@@ -113,7 +135,24 @@ class Team extends BaseController
 
         $presetModel = new RoutingPresetModel();
         $memberModel = new RoutingPresetMemberModel();
-        
+
+        // Server-side mirror of the index() scoping: a Supervisor can't add members
+        // outside their own unit branch by crafting the request directly.
+        if ($role === 'Supervisor') {
+            $userModel     = new UserModel();
+            $unitModel     = new UnitModel();
+            $ownPlantilla  = $userModel->getActivePlantillaDetails($userId);
+            $scopedUnitIds = $ownPlantilla ? $unitModel->getDescendantIds([$ownPlantilla['unit_id']]) : [];
+
+            $eligible = array_filter($userModel->getEligibleTeamMembers($userId), function ($u) use ($scopedUnitIds) {
+                if (empty($u['unit_id'])) return false;
+                return count(array_intersect(explode(',', $u['unit_id']), $scopedUnitIds)) > 0;
+            });
+            $allowedUserIds = array_map('strval', array_column($eligible, 'user_id'));
+
+            $userIds = array_values(array_intersect($userIds, $allowedUserIds));
+        }
+
         if (empty($name)) $name = 'Team';
 
         $name = resolve_unique_title($name, function($db) use ($teamId, $userId) {
@@ -148,6 +187,7 @@ class Team extends BaseController
         return redirect()->back()->with('success', 'Distribution list saved successfully!');
     }
 
+    /** POST /teams/delete - Deletes a team, refusing if it's currently cascaded onto a live folder. */
     public function delete() {
         $role = session()->get('role');
         if (!in_array($role, ['Admin', 'Supervisor'])) return redirect()->to('/');

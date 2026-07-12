@@ -60,6 +60,10 @@ class CreateDocumentFoldersTable extends Migration
                 'type'           => 'DATETIME',
                 'null'           => true,
             ],
+            'deadline_reminder_sent_at' => [
+                'type'           => 'DATETIME',
+                'null'           => true, // set once the "3 days left" reminder email is queued, so it's only ever sent once per folder
+            ],
             'created_at' => [
                 'type' => 'DATETIME',
                 'null' => true,

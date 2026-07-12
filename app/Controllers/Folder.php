@@ -13,13 +13,23 @@ use App\Models\TemplateModel;
 use App\Models\UserModel;
 use App\Models\RoutingPresetModel;
 
+/**
+ * Handles evaluation folders: the top-level container that groups a person's
+ * IPCR/DPCR/OPCR documents for one evaluation period, plus the drafting ->
+ * submission -> evaluation -> approval lifecycle and team "cascading" (assigning
+ * a distribution-list team as evaluators/subordinates for a folder).
+ */
 class Folder extends BaseController
 {
+    /**
+     * GET /folders/{folderId} - Main folder workspace. Resolves which folder to
+     * show (last-viewed, or the newest owned folder, if none given), checks the
+     * viewer's access level (owner / Admin / cascaded evaluator / supervisor),
+     * and builds the "guide" documents from superiors so subordinates can see
+     * their commitments alongside their own.
+     */
     public function index($folderId = null) {
         $userId   = session()->get('user_id');
-        $sysRole  = session()->get('role');
-        $userPos  = session()->get('position');
-        $dept     = session()->get('department');
 
         $folderModel   = new DocumentFolderModel();
         $documentModel = new DocumentModel();
@@ -48,37 +58,32 @@ class Folder extends BaseController
 
         if ($folderId) {
             $activeFolder = $folderModel->find($folderId);
+
+            // This route is always "my own workspace" - every "Open Your Folder" email
+            // link points here and is always addressed to the folder's owner, so a
+            // mismatch means the browser's active session belongs to someone else
+            // (e.g. a different account was already logged in). Rather than silently
+            // bouncing them to their own folder list with no explanation, send them
+            // to a screen that names the account the link was actually for and offers
+            // to switch. (Evaluators/Admins/Supervisors viewing someone else's folder
+            // for rating purposes go through Rating::show() instead, which has its
+            // own proper authorization check.)
             if (!$activeFolder || $activeFolder['user_id'] != $userId) {
                 session()->remove('active_folder_id');
-                return redirect()->to('folders'); 
-            }
 
-            $folderOwnerId = $activeFolder['user_id'];
-            $isAuthorized = false;
-
-            if ($folderOwnerId == $userId) {
-                $isAuthorized = true;
-                $isReadOnly = false;
-            } elseif ($sysRole === 'Admin') {
-                $isAuthorized = true;
-            } else {
-                $ownerPlantilla = $userModel->getActivePlantillaDetails($folderOwnerId);
-
-                if ($ownerPlantilla) {
-                    $ownerPos = $ownerPlantilla['position'];
-                    $ownerDept = $ownerPlantilla['department'];
-                    $opcrPos = ['Vice President', 'Campus Administrator'];
-                    $dpcrPos = ['Dean', 'Director', 'Head of Office'];
-
-                    if (in_array($userPos, $opcrPos) && in_array($ownerPos, $dpcrPos)) {
-                        $isAuthorized = true;
-                    } elseif (in_array($userPos, $dpcrPos) && !in_array($ownerPos, array_merge($opcrPos, $dpcrPos)) && $ownerDept === $dept) {
-                        $isAuthorized = true;
+                if ($activeFolder) {
+                    $owner = $userModel->find($activeFolder['user_id']);
+                    if ($owner) {
+                        session()->setFlashdata('mismatch_detected', true);
+                        session()->setFlashdata('mismatch_target_email', $owner['email']);
+                        return redirect()->to('account-mismatch');
                     }
                 }
+
+                return redirect()->to('folders');
             }
 
-            if (!$isAuthorized) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Unauthorized.');
+            $isReadOnly = false;
 
             $myDocs = $documentModel->where('document_folder_id', $folderId)->findAll();
             $routingModel = new EvaluationRoutingModel();
@@ -158,6 +163,12 @@ class Folder extends BaseController
         ]);
     }
 
+    /**
+     * POST /folder/cascade-team - Assigns a saved team (routing preset) to a folder.
+     * Admins get a distribution-list meaning: creates a child folder for every
+     * team member. Everyone else gets an evaluator meaning: registers themself
+     * as the evaluator/reviewer for each member's matching sub-folder.
+     */
     public function cascadeTeam() {
         return $this->tryOrFail(function() {
 
@@ -206,14 +217,22 @@ class Folder extends BaseController
 
                     if (!$exists) {
                         $memberInfo = $userModel->find($member['user_id']);
-                        
-                        if ($memberInfo) {
+
+                        // Defense-in-depth, not just relying on the picker: an Admin
+                        // building this team (unlike a Supervisor) isn't filtered by
+                        // getEligibleTeamMembers(), so another Admin could technically
+                        // end up as a "member" here. Admins don't get evaluated-employee
+                        // notifications either way.
+                        if ($memberInfo && !$userModel->hasRole($memberInfo['id'], 'Admin')) {
                             $link = site_url("folders/" . $newFolderId);
 
                             queue_email(
-                                $memberInfo['email'], 
-                                'New Evaluation Folder: Drafting Period Open', 
-                                "Hello {$memberInfo['first_name']},<br><br>A new performance evaluation folder has been assigned to you. You may now begin drafting your entries and submitting your self-rating.<br><br><a href='{$link}'>Click here to open your folder</a>"
+                                $memberInfo['email'],
+                                'New Evaluation Folder: Drafting Period Open',
+                                render_email('folder_assigned', [
+                                    'firstName' => $memberInfo['first_name'],
+                                    'link'      => $link,
+                                ])
                             );
                             $emailsQueued++;
                         }
@@ -250,6 +269,7 @@ class Folder extends BaseController
         });
     }
 
+    /** POST /folder/uncascade-team - Reverses cascadeTeam(): removes the team's child folders/evaluator routings. */
     public function uncascadeTeam() {
         return $this->tryOrFail(function() {
             $folderId = $this->request->getPost('folder_id'); 
@@ -299,6 +319,11 @@ class Folder extends BaseController
         });
     }
 
+    /**
+     * Recomputes a folder's status from the combined verdict of all its evaluators:
+     * any single "return for revision" sends the whole folder back, otherwise it
+     * only becomes "Approved" once every assigned evaluator has approved it.
+     */
     private function updateFolderConsensus($folderId) {
         $folderModel = new DocumentFolderModel();
         $routingModel = new EvaluationRoutingModel();
@@ -322,6 +347,7 @@ class Folder extends BaseController
         }
     }
 
+    /** POST /folder - Creates a new blank evaluation folder (in Draft) for the current user. */
     public function store() {
         return $this->tryOrFail(function() {
             $documentFolderModel = new DocumentFolderModel();
@@ -349,8 +375,9 @@ class Folder extends BaseController
         });
     }
 
+    /** POST /folder/delete - Deletes a folder. Only the owning Admin can actually remove it. */
     public function destroy() {
-        $folderId = $this->request->getPost('doc_id'); 
+        $folderId = $this->request->getPost('doc_id');
         $folderModel = new DocumentFolderModel();
         
         $userId = session()->get('user_id');
@@ -369,6 +396,12 @@ class Folder extends BaseController
         return $this->response->setJSON(['status' => 'success']);
     }
 
+    /**
+     * POST /folder/update - Admin-only: retitles/reschedules a master folder and syncs
+     * the same title/dates to every cascaded child folder. If the new window makes a
+     * child active again, that child's evaluation progress is safely reset (submitted
+     * work is preserved as "Submitted" rather than wiped back to "Draft").
+     */
     public function update() {
         return $this->tryOrFail(function() {
             $folderId = $this->request->getPost('folder_id');
@@ -452,6 +485,7 @@ class Folder extends BaseController
         });
     }
 
+    /** POST /folder/submit - Owner submits a Draft folder for evaluation (requires a Basis Target document set). */
     public function submit() {
         return $this->tryOrFail(function() {
             $folderId = $this->request->getPost('folder_id');
@@ -489,6 +523,7 @@ class Folder extends BaseController
         });
     }
 
+    /** POST /folder/unsubmit - Owner recalls a Submitted folder back to Draft, only while the eval window is still open. */
     public function unsubmit() {
         return $this->tryOrFail(function() {
             $folderId = $this->request->getPost('folder_id');
@@ -512,11 +547,27 @@ class Folder extends BaseController
         });
     }
 
+    /**
+     * POST /folder/evaluate - Owner locks in their self-rating (final_rating) on the
+     * target document, then emails every evaluator assigned to this folder so they
+     * know it's ready for their review.
+     */
     public function evaluate() {
         return $this->tryOrFail(function() {
             $folderId = $this->request->getPost('folder_id');
             $finalRating = $this->request->getPost('final_rating');
+            $userId = session()->get('user_id');
             $folderModel = new DocumentFolderModel();
+
+            $folder = $folderModel->find($folderId);
+
+            if (!$folder || $folder['user_id'] != $userId) {
+                throw new \Exception("Unauthorized to evaluate this folder.");
+            }
+
+            if (!in_array($folder['status'], [FolderStatus::TO_EVALUATE->value, FolderStatus::REEVALUATE->value])) {
+                throw new \Exception("This folder cannot be evaluated at this time.");
+            }
 
             $folderModel->update($folderId, [
                 'status'       => FolderStatus::EVALUATED->value,
@@ -526,21 +577,29 @@ class Folder extends BaseController
 
             $userModel    = new UserModel();
             $routingModel = new EvaluationRoutingModel();
-            
-            $folder = $folderModel->find($folderId);
+
             $subordinate = $userModel->find($folder['user_id']);
             $routings = $routingModel->where('folder_id', $folderId)->findAll();
             
             foreach ($routings as $route) {
                 $evaluator = $userModel->find($route['evaluator_id']);
-                
-                if ($evaluator) {
+
+                // Admins already see every folder on their dashboard without needing
+                // a nudge, and oversee the whole system rather than being a specific
+                // assigned reviewer - so they're skipped even if routed as one.
+                if ($evaluator && !$userModel->hasRole($evaluator['id'], 'Admin')) {
                     $link = site_url("ratings/show/" . $folderId);
-                    
+
                     queue_email(
                         $evaluator['email'],
                         'Pending Review: ' . $subordinate['first_name'] . ' has evaluated their folder',
-                        "Hello {$evaluator['first_name']},<br><br>{$subordinate['first_name']} {$subordinate['last_name']} has completed the self-evaluation for their folder (<b>{$folder['title']}</b>). It is now in your queue and ready for your official review.<br><br><a href='{$link}'>Click here to review their evaluation</a>"
+                        render_email('pending_review', [
+                            'evaluatorFirstName'    => $evaluator['first_name'],
+                            'subordinateFirstName'  => $subordinate['first_name'],
+                            'subordinateLastName'   => $subordinate['last_name'],
+                            'folderTitle'           => $folder['title'],
+                            'link'                  => $link,
+                        ])
                     );
                 }
             }
@@ -549,6 +608,10 @@ class Folder extends BaseController
         });
     }
 
+    /**
+     * POST /folder/approve - The current evaluator approves their assigned folder,
+     * then re-checks the folder's overall consensus status and emails the owner.
+     */
     public function approve() {
         return $this->tryOrFail(function() {
             $folderId = $this->request->getPost('folder_id');
@@ -567,13 +630,28 @@ class Folder extends BaseController
             $subordinate = $userModel->find($folder['user_id']);
             $supervisor = $userModel->find(session()->get('user_id'));
             $link = site_url("folders/" . $folderId);
-            
-            queue_email($subordinate['email'], 'Folder Approved: ' . $folder['title'], "Hello {$subordinate['first_name']},<br><br>Your supervisor, {$supervisor['first_name']} {$supervisor['last_name']}, has officially approved your evaluation folder (<b>{$folder['title']}</b>).<br><br><a href='{$link}'>Click here to view your finalized rating</a>");
+
+            // Admins oversee the whole system rather than being an evaluated
+            // employee, so they don't get this notification even if it's their
+            // own folder that just got approved.
+            if (!$userModel->hasRole($subordinate['id'], 'Admin')) {
+                queue_email($subordinate['email'], 'Folder Approved: ' . $folder['title'], render_email('folder_approved', [
+                    'firstName'           => $subordinate['first_name'],
+                    'supervisorFirstName' => $supervisor['first_name'],
+                    'supervisorLastName'  => $supervisor['last_name'],
+                    'folderTitle'         => $folder['title'],
+                    'link'                => $link,
+                ]));
+            }
 
             return $this->respond(['status' => 'success', 'message' => 'Approved!']);
         });
     }
 
+    /**
+     * POST /folder/return - The current evaluator sends the folder back for revision
+     * instead of approving it, then re-checks consensus and emails the owner.
+     */
     public function returnRevision() {
         return $this->tryOrFail(function() {
             $folderId = $this->request->getPost('folder_id');
@@ -592,8 +670,19 @@ class Folder extends BaseController
             $subordinate = $userModel->find($folder['user_id']);
             $supervisor = $userModel->find(session()->get('user_id'));
             $link = site_url("folders/" . $folderId);
-            
-            queue_email($subordinate['email'], 'Action Required: Folder Returned for Revision', "Hello {$subordinate['first_name']},<br><br>Your supervisor, {$supervisor['first_name']} {$supervisor['last_name']}, has returned your evaluation folder (<b>{$folder['title']}</b>) for re-evaluation or corrections.<br><br><a href='{$link}'>Click here to open your folder and make adjustments</a>");
+
+            // Admins oversee the whole system rather than being an evaluated
+            // employee, so they don't get this notification even if it's their
+            // own folder that just got sent back for revision.
+            if (!$userModel->hasRole($subordinate['id'], 'Admin')) {
+                queue_email($subordinate['email'], 'Action Required: Folder Returned for Revision', render_email('folder_returned', [
+                    'firstName'           => $subordinate['first_name'],
+                    'supervisorFirstName' => $supervisor['first_name'],
+                    'supervisorLastName'  => $supervisor['last_name'],
+                    'folderTitle'         => $folder['title'],
+                    'link'                => $link,
+                ]));
+            }
 
             return $this->respond(['status' => 'success', 'message' => 'Returned for revision.']);
         });

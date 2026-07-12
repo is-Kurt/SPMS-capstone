@@ -1,15 +1,24 @@
 <?= $this->extend('layouts/main') ?>
 <?= $this->section('content') ?>
 
+<!--
+    Shared two-column shell (sidebar + main content) reused by Folder, Rating,
+    and Team controllers. $context picks which modals/JS to load, $sidebarView/
+    $mainView pick which partial gets rendered into each column - see the
+    view()/mainView calls below.
+-->
 <?= view('components/header') ?>
 
 <?php $context = $context ?? 'folders'; ?>
 
-<!-- Only load Document/Folder Modals if we are actually in the Folders context -->
+<!-- Only load the modals relevant to the current context -->
 <?php if ($context === 'folders'): ?>
     <?= view('components/create_file_modal') ?>
     <?= view('components/delete_modal') ?>
     <?= view('components/create_folder_modal') ?>
+    <?= view('components/edit_folder_modal') ?>
+<?php elseif ($context === 'teams'): ?>
+    <?= view('components/create_team_modal') ?>
 <?php endif; ?>
 
 <div class="p-4 lg:p-8 max-w-7xl mx-auto flex flex-col lg:flex-row gap-4 lg:gap-8 lg:h-[calc(100vh-6rem)]">
@@ -23,13 +32,15 @@
             
             <!-- Dynamic Add Button -->
             <?php if ($context === 'folders' && session()->get('role') === 'Admin'): ?>
+                <!-- Plus icon (icon-only button, see title=): opens create_folder_modal.php -->
                 <button id="btn-create-folder-modal" class="text-accent hover:text-accent-hover transition-colors cursor-pointer" title="New Folder">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                     </svg>
                 </button>
             <?php elseif ($context === 'teams'): ?>
-                <button onclick="document.getElementById('modal-create-team').classList.remove('hidden'); document.getElementById('modal-create-team').classList.add('flex')" class="text-accent hover:text-accent-hover transition-colors cursor-pointer" title="New Team">
+                <!-- Plus icon (icon-only button, see title=): opens create_team_modal.php -->
+                <button id="btn-create-team-modal" class="text-accent hover:text-accent-hover transition-colors cursor-pointer" title="New Team">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                     </svg>
@@ -55,11 +66,14 @@
 
 <script src="<?= base_url('assets/js/main/functions.js') ?>"></script>
 
-<!-- Only load Document/Folder JS logic if we are in the Folders context -->
+<!-- Only load the JS relevant to the current context -->
 <?php if ($context === 'folders'): ?>
     <script type="module" src="<?= base_url('assets/js/main/modals/deleteModal.js') ?>"></script>
     <script type="module" src="<?= base_url('assets/js/main/modals/createFileModal.js') ?>"></script>
     <script type="module" src="<?= base_url('assets/js/main/modals/createFolderModal.js') ?>"></script>
+    <script type="module" src="<?= base_url('assets/js/main/modals/editFolderModal.js') ?>"></script>
+<?php elseif ($context === 'teams'): ?>
+    <script type="module" src="<?= base_url('assets/js/main/modals/createTeamModal.js') ?>"></script>
 <?php endif; ?>
 
 <?= $this->endSection() ?>

@@ -6,13 +6,18 @@ use App\Controllers\BaseController;
 use CodeIgniter\HTTP\ResponseInterface;
 use App\Models\TemplateModel;
 
+/**
+ * Admin-only "Templates": the reusable IPCR/DPCR/OPCR content blueprints that
+ * can be picked when creating a new Document (see Document::store()).
+ */
 class Template extends BaseController
 {
+    /** GET /templates - Lists every template, newest first. */
     public function index() {
         if (session()->get('role') !== 'Admin') return redirect()->to('/');
 
         $templateModel = new TemplateModel();
-        
+
         $data = [
             'templates' => $templateModel->orderBy('created_at', 'DESC')->findAll()
         ];
@@ -20,17 +25,19 @@ class Template extends BaseController
         return view('templates/index', $data);
     }
 
+    /** GET /templates/create - Opens the editor with a blank template. */
     public function create() {
         if (session()->get('role') !== 'Admin') return redirect()->to('/');
         return view('templates/editor', ['template' => null]);
     }
 
+    /** GET /templates/edit/{id} - Opens the editor pre-loaded with an existing template's content. */
     public function edit($id) {
         if (session()->get('role') !== 'Admin') return redirect()->to('/');
-        
+
         $templateModel = new TemplateModel();
         $template = $templateModel->find($id);
-        
+
         if (!$template) {
             return redirect()->to('templates')->with('error', 'Template not found.');
         }
@@ -38,6 +45,7 @@ class Template extends BaseController
         return view('templates/editor', ['template' => $template]);
     }
 
+    /** POST /templates/store - Creates a new template, or updates one if template_id is present. */
     public function store() {
         if (session()->get('role') !== 'Admin') return redirect()->to('/');
 
@@ -77,6 +85,7 @@ class Template extends BaseController
         return redirect()->to('templates')->with('success', $msg);
     }
 
+    /** POST /templates/delete */
     public function delete() {
         if (session()->get('role') !== 'Admin') return redirect()->to('/');
 

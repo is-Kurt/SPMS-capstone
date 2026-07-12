@@ -25,13 +25,13 @@ class CreatePlantillaTable extends Migration
                 'type'       => 'INT',
                 'constraint' => 11,
                 'unsigned'   => true,
-                'null'       => false,
+                'null'       => true,  // NULL = position was deleted; the assignment itself lives on
             ],
             'unit_id' => [
                 'type'       => 'INT',
                 'constraint' => 11,
                 'unsigned'   => true,
-                'null'       => false,
+                'null'       => true,  // NULL = unit was deleted; the assignment itself lives on
             ],
             'started_at' => [
                 'type' => 'DATE',
@@ -56,9 +56,12 @@ class CreatePlantillaTable extends Migration
         ]);
 
         $this->forge->addKey('id', true);
-        $this->forge->addForeignKey('user_id',     'users',     'id', 'CASCADE',  'CASCADE');
-        $this->forge->addForeignKey('position_id', 'positions', 'id', 'RESTRICT', 'CASCADE');
-        $this->forge->addForeignKey('unit_id',     'units',     'id', 'RESTRICT', 'CASCADE');
+        // addForeignKey($field, $table, $column, $onUpdate, $onDelete) - onDelete is SET
+        // NULL here so deleting a position/unit that's in use un-assigns it (the plantilla
+        // row survives with a null position_id/unit_id) instead of being blocked or cascaded.
+        $this->forge->addForeignKey('user_id',     'users',     'id', 'CASCADE', 'CASCADE');
+        $this->forge->addForeignKey('position_id', 'positions', 'id', 'CASCADE', 'SET NULL');
+        $this->forge->addForeignKey('unit_id',     'units',     'id', 'CASCADE', 'SET NULL');
 
         $this->forge->createTable('plantillas');
     }

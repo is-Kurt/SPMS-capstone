@@ -20,25 +20,21 @@
     </div>
 
     <?php if (session()->getFlashdata('success')): ?>
-        <div class="px-6 py-4 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 text-sm font-bold">
-            <?= session()->getFlashdata('success') ?>
-        </div>
+        <p class="text-sm font-bold text-success-500 dark:text-success-400"><?= session()->getFlashdata('success') ?></p>
     <?php endif; ?>
     <?php if (session()->getFlashdata('error')): ?>
-        <div class="px-6 py-4 rounded-xl bg-red-50 text-red-600 border border-red-200 text-sm font-bold">
-            <?= session()->getFlashdata('error') ?>
-        </div>
+        <p class="text-sm font-bold text-danger-500 dark:text-danger-400"><?= session()->getFlashdata('error') ?></p>
     <?php endif; ?>
 
     <div class="bg-transparent lg:bg-surface border-none lg:border border-surface-border rounded-none lg:rounded-2xl shadow-none lg:shadow-sm overflow-hidden flex flex-col">
         <div class="overflow-x-hidden w-full">
             
-            <table class="w-full text-left border-collapse block lg:table">
+            <table class="w-full text-left border-collapse block lg:table lg:table-fixed">
                 <thead class="hidden lg:table-header-group bg-zinc-50 dark:bg-zinc-800/90 backdrop-blur-md text-[10px] font-black uppercase tracking-widest text-text-muted border-b border-surface-border shadow-sm">
                     <tr>
-                        <th class="px-6 py-4">Template Title</th>
-                        <th class="px-6 py-4">Last Updated</th>
-                        <th class="px-6 py-4 text-right">Actions</th>
+                        <th class="px-6 py-4 w-[45%]">Template Title</th>
+                        <th class="px-6 py-4 w-[25%]">Last Updated</th>
+                        <th class="px-6 py-4 w-[30%] min-w-[150px] text-right">Actions</th>
                     </tr>
                 </thead>
                 
@@ -72,9 +68,13 @@
                                         Edit
                                     </a>
 
-                                    <?= form_open('templates/delete', ['class' => 'flex-1 lg:flex-none', 'onsubmit' => 'return confirm("Are you sure you want to delete this template?");']) ?>
+                                    <?= form_open('templates/delete', [
+                                        'class' => 'flex-1 lg:flex-none',
+                                        'data-confirm' => 'Are you sure you want to delete this template?',
+                                        'data-confirm-title' => 'Delete Template'
+                                    ]) ?>
                                         <input type="hidden" name="template_id" value="<?= $t['id'] ?>">
-                                        <button type="submit" class="w-full text-[10px] font-black uppercase tracking-widest px-4 py-2.5 lg:px-3 lg:py-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer border border-red-200 dark:border-red-500/20 lg:border-transparent bg-red-50 dark:bg-red-500/5 lg:bg-transparent">
+                                        <button type="submit" class="w-full text-[10px] font-black uppercase tracking-widest px-4 py-2.5 lg:px-3 lg:py-1.5 rounded-lg text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10 transition-colors cursor-pointer border border-danger-200 dark:border-danger-500/20 lg:border-transparent bg-danger-50 dark:bg-danger-500/5 lg:bg-transparent">
                                             Delete
                                         </button>
                                     <?= form_close() ?>

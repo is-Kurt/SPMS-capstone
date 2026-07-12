@@ -46,18 +46,32 @@ abstract class BaseController extends Controller
         // $this->session = service('session');
     }
 
+    /** Shortcut for a JSON success/data response, used by AJAX endpoints. */
     protected function respond($data, int $status = 200) {
         return $this->response
             ->setStatusCode($status)
             ->setJSON($data);
     }
 
-    protected function respondError(string $message, int $status = 500) {
+    /**
+     * Shortcut for a JSON {status: 'error', message} response. Pass $errors
+     * (field => message) when the caller wants the frontend to display errors
+     * inline next to each field instead of a single generic message.
+     */
+    protected function respondError(string $message, int $status = 500, array $errors = []) {
+        $data = ['status' => 'error', 'message' => $message];
+        if (!empty($errors)) $data['errors'] = $errors;
+
         return $this->response
             ->setStatusCode($status)
-            ->setJSON(['status' => 'error', 'message' => $message]);
+            ->setJSON($data);
     }
 
+    /**
+     * Runs an AJAX action and converts any \Exception into a JSON error response
+     * instead of a raw PHP error page - lets controller actions just `throw` on
+     * invalid state instead of manually building error responses everywhere.
+     */
     protected function tryOrFail(callable $fn) {
         try {
             return $fn();

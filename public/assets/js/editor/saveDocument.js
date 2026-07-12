@@ -22,7 +22,7 @@ function saveDocument(manualSave = true) {
                 saveStatusTimeout = null;
             }
             saveStatus.innerText = '● Saving...';
-            saveStatus.className = 'ml-3 text-[10px] uppercase tracking-widest font-bold transition-all text-blue-500 animate-pulse';
+            saveStatus.className = 'ml-3 text-[10px] uppercase tracking-widest font-bold transition-all text-info-500 animate-pulse';
         }
 
         const formData = new FormData();
@@ -41,7 +41,7 @@ function saveDocument(manualSave = true) {
 
                 if (saveStatus && manualSave) {
                     saveStatus.innerText = '✓ Saved';
-                    saveStatus.className = 'ml-3 text-[10px] uppercase tracking-widest font-bold transition-all text-emerald-500';
+                    saveStatus.className = 'ml-3 text-[10px] uppercase tracking-widest font-bold transition-all text-success-500';
 
                     saveStatusTimeout = setTimeout(() => {
                         saveStatus.innerText = '';
@@ -54,7 +54,7 @@ function saveDocument(manualSave = true) {
             onError: (errorMessage) => {
                 if (saveStatus && manualSave) {
                     saveStatus.innerText = '✗ Save Failed';
-                    saveStatus.className = 'ml-3 text-[10px] uppercase tracking-widest font-bold transition-all text-red-500';
+                    saveStatus.className = 'ml-3 text-[10px] uppercase tracking-widest font-bold transition-all text-danger-500';
                 }
                 reject(new Error(errorMessage));
             },
@@ -103,9 +103,10 @@ window.addEventListener('beforeunload', () => {
 async function saveWith({before, after}) {
     let result = null;
 
-    // 1. Run the `rate()` calculation & validation first
-    if (before) result = before();
-    
+    // 1. Run the `rate()` calculation & validation first (awaited: rate() may show
+    // a blocking appAlert() on validation failure before resolving)
+    if (before) result = await before();
+
     // Halt immediately if a user left a cell blank or typed an invalid number
     if (result === 'hasError') return;
 
@@ -153,7 +154,7 @@ function toggleSubmit(action) {
     });
 }
 
-function evaluateDocument() {
+async function evaluateDocument() {
     if (submitting) return;
 
     // 1. Pull the final calculated score directly out of the TinyMCE body attribute
@@ -161,7 +162,7 @@ function evaluateDocument() {
     const finalScore = editorBody.getAttribute('data-final-score');
 
     if (!finalScore || isNaN(parseFloat(finalScore))) {
-        alert("Could not extract a valid final score. Please ensure the tables are filled out correctly.");
+        await window.appAlert("Could not extract a valid final score. Please ensure the tables are filled out correctly.");
         return;
     }
 
@@ -205,9 +206,9 @@ function getEditorData() {
     };
 }
 
-function rate() {
-    let hasError = false; 
-    
+async function rate() {
+    let hasError = false;
+
     const editor = tinymce.get('editable-doc');
     if (!editor) return 'hasError';
 
@@ -218,20 +219,17 @@ function rate() {
     ratingCells.forEach(cell => {
         const value = cell.innerText.trim();
         const num = parseFloat(value);
-        
+
         const parentTable = cell.closest('table');
         const scoreRange = parentTable ? parseFloat(parentTable.getAttribute('data-score-range')) : null;
 
-        const isInvalid = value === '' || 
-                          isNaN(num) || 
-                          num < 0 || 
+        const isInvalid = value === '' ||
+                          isNaN(num) ||
+                          num < 0 ||
                           (scoreRange !== null && num > scoreRange);
-
-        const validationMsg = document.getElementById('validation-msg');
 
         if (isInvalid) {
             cell.style.backgroundColor = 'rgba(220, 38, 38, 0.35)'; // Red Error Box
-            if(validationMsg) validationMsg.classList.remove('hidden');
             hasError = true;
         } else {
             cell.style.backgroundColor = 'rgba(16, 185, 129, 0.25)'; // Green Success Box
@@ -240,6 +238,7 @@ function rate() {
 
     if (hasError) {
         console.warn('Validation failed: check highlighted cells.');
+        await window.appAlert('Please fill in every rating cell with a valid score before continuing.', { title: 'Missing or Invalid Scores', variant: 'danger' });
         return 'hasError';
     }
 
@@ -247,7 +246,7 @@ function rate() {
     if (typeof calculateAllTables === 'function') {
         calculateAllTables();
     }
-    
+
     // 3. Mark the document as dirty so `saveWith` knows it needs to save the new green boxes/math!
-    AppState.setDirty(true); 
+    AppState.setDirty(true);
 }

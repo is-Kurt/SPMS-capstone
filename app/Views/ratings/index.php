@@ -31,7 +31,7 @@
         Manage your assigned reviews
     </p>
 
-    <div id="folder-dropdown-menu" class="hidden absolute top-full left-0 mt-2 w-full max-w-sm bg-surface border border-surface-border rounded-xl shadow-xl z-[100] max-h-64 overflow-y-auto lg:hidden">
+    <div id="folder-dropdown-menu" class="hidden absolute top-full left-0 mt-2 w-full max-w-sm bg-surface border border-surface-border rounded-xl shadow-xl z-[40] max-h-64 overflow-y-auto lg:hidden">
         <?= view('document/_folder_rows', ['folders' => $sidebarFolders ?? [], 'selectedFolderId' => null]) ?>
     </div>
 </div>
@@ -99,22 +99,36 @@
     <?php foreach ($tabs as $key => $group): ?>
         <div id="tab-content-<?= $key ?>" class="tab-content <?= ($key === $firstTabKey) ? 'flex flex-col lg:absolute lg:inset-0' : 'hidden' ?>">
             
-            <div class="overflow-y-auto overflow-x-hidden custom-scrollbar flex-1 w-full p-2 lg:p-0">
-                <table class="w-full text-left border-collapse block lg:table">
-                    
-                    <thead class="hidden lg:table-header-group sticky top-0 z-20 bg-zinc-50 dark:bg-zinc-800/90 backdrop-blur-md text-[10px] font-black uppercase tracking-widest text-text-muted border-b border-surface-border shadow-sm">
+            <?php
+                $colWidths = ['26%'];
+                if ($sysRole === 'Admin') { $colWidths[] = '15%'; }
+                $colWidths = array_merge($colWidths, ['15%', '10%', '12%', '18%']);
+            ?>
+            <div class="hidden lg:block shrink-0 overflow-hidden bg-zinc-50 dark:bg-zinc-800 border-b border-surface-border shadow-sm" data-frozen-header>
+                <table class="w-full text-left border-collapse table-fixed">
+                    <colgroup>
+                        <?php foreach ($colWidths as $cw): ?><col style="width:<?= $cw ?>"><?php endforeach; ?>
+                    </colgroup>
+                    <thead class="text-[10px] font-black uppercase tracking-widest text-text-muted">
                         <tr>
                             <th class="px-6 py-4">User / Position</th>
                             <?php if ($sysRole === 'Admin'): ?>
                                 <th class="px-6 py-4">Department</th>
                             <?php endif; ?>
-                            <th class="px-6 py-4">Folder Status</th>
-                            <th class="px-6 py-4 text-center">Score</th>
-                            <th class="px-6 py-4 text-center">Adjectival Rating</th>
-                            <th class="px-6 py-4 text-right">Action</th>
+                            <th class="px-6 py-4 min-w-[110px]">Folder Status</th>
+                            <th class="px-6 py-4 min-w-[60px] text-center">Score</th>
+                            <th class="px-6 py-4 min-w-[70px] text-center">Adjectival Rating</th>
+                            <th class="px-6 py-4 min-w-[135px] text-right">Action</th>
                         </tr>
                     </thead>
-                    
+                </table>
+            </div>
+
+            <div class="overflow-y-auto overflow-x-hidden custom-scrollbar flex-1 w-full p-2 lg:p-0" data-frozen-body>
+                <table class="w-full text-left border-collapse block lg:table lg:table-fixed">
+                    <colgroup>
+                        <?php foreach ($colWidths as $cw): ?><col style="width:<?= $cw ?>"><?php endforeach; ?>
+                    </colgroup>
                     <tbody class="block lg:table-row-group divide-y lg:divide-y-0 divide-transparent lg:divide-surface-border">
                         <?php if (empty($group['folders'])): ?>
                             <tr class="block lg:table-row">
@@ -138,7 +152,7 @@
                                                     <?= esc($row['username']) ?>
                                                 </span>
                                                 <div class="flex items-center gap-2 mt-0.5">
-                                                    <span class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest <?= ($row['is_teaching'] == 1) ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400' ?>">
+                                                    <span class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest <?= ($row['is_teaching'] == 1) ? 'bg-highlight-100 text-highlight-700 dark:bg-highlight-500/20 dark:text-highlight-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400' ?>">
                                                         <?= ($row['is_teaching'] == 1) ? 'Teaching' : 'Non-Teaching' ?>
                                                     </span>
                                                     <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate">
@@ -151,10 +165,10 @@
                                                 <?php 
                                                     $s = strtolower($row['folder_status']);
                                                     $badgeColors = [
-                                                        'approved'    => 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400',
-                                                        'submitted'   => 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400',
-                                                        'reevaluate'  => 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-500/20 dark:text-orange-400',
-                                                        'to evaluate' => 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400',
+                                                        'approved'    => 'bg-success-100 text-success-700 border-success-200 dark:bg-success-500/20 dark:text-success-400',
+                                                        'submitted'   => 'bg-info-100 text-info-700 border-info-200 dark:bg-info-500/20 dark:text-info-400',
+                                                        'reevaluate'  => 'bg-revision-100 text-revision-700 border-revision-200 dark:bg-revision-500/20 dark:text-revision-400',
+                                                        'to evaluate' => 'bg-warning-100 text-warning-700 border-warning-200 dark:bg-warning-500/20 dark:text-warning-400',
                                                         'draft'       => 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400'
                                                     ];
                                                     $c = $badgeColors[$s] ?? $badgeColors['draft'];
@@ -172,13 +186,13 @@
                                         </td>
                                     <?php endif; ?>
 
-                                    <td class="hidden lg:table-cell px-6 py-4">
+                                    <td class="hidden lg:table-cell px-6 py-4 lg:min-w-[110px]">
                                         <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border <?= $c ?> whitespace-nowrap">
                                             <?= esc($row['folder_status']) ?>
                                         </span>
                                     </td>
 
-                                    <td class="block lg:table-cell px-0 lg:px-6 py-3 lg:py-4 text-left lg:text-center mt-2 lg:mt-0 border-t border-surface-border lg:border-none">
+                                    <td class="block lg:table-cell px-0 lg:px-6 py-3 lg:py-4 text-left lg:text-center mt-2 lg:mt-0 border-t border-surface-border lg:border-none lg:min-w-[60px]">
                                         <div class="flex items-center lg:justify-center gap-3">
                                             <span class="lg:hidden text-[10px] font-black text-text-muted uppercase tracking-widest">Score:</span>
                                             
@@ -200,7 +214,7 @@
                                         </div>
                                     </td>
 
-                                    <td class="hidden lg:table-cell px-6 py-4 text-center">
+                                    <td class="hidden lg:table-cell px-6 py-4 text-center lg:min-w-[70px]">
                                         <?php if (!is_null($row['final_rating'])): ?>
                                             <span class="adjective-badge px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm border border-transparent whitespace-nowrap" data-score="<?= $row['final_rating'] ?>"></span>
                                         <?php else: ?>
@@ -208,7 +222,7 @@
                                         <?php endif; ?>
                                     </td>
 
-                                    <td class="block lg:table-cell px-0 lg:px-6 pt-1 pb-0 lg:py-4 text-right">
+                                    <td class="block lg:table-cell px-0 lg:px-6 pt-1 pb-0 lg:py-4 text-right lg:min-w-[135px]">
                                         <a href="<?= site_url('ratings/show/' . $row['folder_id']) ?>" 
                                         class="w-full lg:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 lg:py-2 bg-accent hover:bg-accent-hover text-white rounded-xl font-bold text-xs transition-all shadow-md active:scale-95 cursor-pointer whitespace-nowrap">
                                             Open Evaluation
@@ -245,11 +259,11 @@
                 
                 // Apply specific colors based on the adjective
                 const styles = {
-                    'O':  ['bg-blue-100', 'text-blue-700', 'border-blue-200', 'dark:bg-blue-500/20', 'dark:text-blue-400'],
-                    'VS': ['bg-emerald-100', 'text-emerald-700', 'border-emerald-200', 'dark:bg-emerald-500/20', 'dark:text-emerald-400'],
-                    'S':  ['bg-amber-100', 'text-amber-700', 'border-amber-200', 'dark:bg-amber-500/20', 'dark:text-amber-400'],
-                    'US': ['bg-orange-100', 'text-orange-700', 'border-orange-200', 'dark:bg-orange-500/20', 'dark:text-orange-400'],
-                    'P':  ['bg-red-100', 'text-red-700', 'border-red-200', 'dark:bg-red-500/20', 'dark:text-red-400']
+                    'O':  ['bg-info-100', 'text-info-700', 'border-info-200', 'dark:bg-info-500/20', 'dark:text-info-400'],
+                    'VS': ['bg-success-100', 'text-success-700', 'border-success-200', 'dark:bg-success-500/20', 'dark:text-success-400'],
+                    'S':  ['bg-warning-100', 'text-warning-700', 'border-warning-200', 'dark:bg-warning-500/20', 'dark:text-warning-400'],
+                    'US': ['bg-revision-100', 'text-revision-700', 'border-revision-200', 'dark:bg-revision-500/20', 'dark:text-revision-400'],
+                    'P':  ['bg-danger-100', 'text-danger-700', 'border-danger-200', 'dark:bg-danger-500/20', 'dark:text-danger-400']
                 };
                 
                 if (styles[adj]) badge.classList.add(...styles[adj]);

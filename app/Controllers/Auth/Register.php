@@ -12,12 +12,17 @@ use App\Models\InvitationModel;
 use App\Models\PlantillaModel;
 use App\Models\RoleModel;
 
+/**
+ * Handles the invite-only signup flow: a user can only reach signup via a valid,
+ * unexpired invitation token (created by AccountManagement::sendInvites()).
+ */
 class Register extends BaseController
 {
+    /** GET /signup?token=... - Validates the invite token and shows the signup form. */
     public function index()
-    {        
+    {
         $token = $this->request->getGet('token');
-        if (!$token) return redirect()->to('/login')->with('error', 'Missing invitation token.');
+        if (!$token) return redirect()->to('/login');
 
         $invitationModel = new InvitationModel();
         $unitModel       = new UnitModel();
@@ -30,7 +35,15 @@ class Register extends BaseController
                          ->first();
 
         if (!$invitation) {
-            return redirect()->to('/login')->with('error', 'This invitation link is invalid or has expired.');
+            return redirect()->to('/login');
+        }
+
+        // A valid invite always wins over whatever session this browser happens to have -
+        // log out any current user so the invitee lands on a clean registration form
+        // instead of being redirected away by an unrelated active session.
+        if (session()->get('isLoggedIn')) {
+            setcookie('remember_me', '', time() - 3600, '/');
+            session()->destroy();
         }
 
         $role = $invitation['role_id'] ? $roleModel->find($invitation['role_id']) : null;
@@ -47,6 +60,11 @@ class Register extends BaseController
         ]);
     }
 
+    /**
+     * POST /signup - Creates the account, assigns the invited role, records the
+     * plantilla (unit+position) rows unless this is an admin invite, and marks
+     * the invitation as accepted so the token can't be reused.
+     */
     public function store()
     {
         $token = $this->request->getPost('token');
@@ -60,7 +78,7 @@ class Register extends BaseController
                                       ->where('status', InvitationStatus::PENDING->value)
                                       ->first();
                                       
-        if (!$invitation) return redirect()->to('/login')->with('error', 'Invalid token submission.');
+        if (!$invitation) return redirect()->to('/login');
 
         // Determine if admin invite
         $role = $invitation['role_id'] ? $roleModel->find($invitation['role_id']) : null;
@@ -125,6 +143,6 @@ class Register extends BaseController
 
         $userModel->db->transComplete();
 
-        return redirect()->to('/login')->with('success', 'Account fully configured! You may now log in.');
+        return redirect()->to('/login');
     }
 }

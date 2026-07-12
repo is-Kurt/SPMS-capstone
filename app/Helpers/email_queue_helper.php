@@ -4,6 +4,19 @@ use App\Enums\EmailStatus;
 use App\Models\EmailQueueModel;
 
 /**
+ * Renders one of the app/Views/emails/*.php content templates into the shared
+ * branded layout (app/Views/emails/layout.php) and returns the final HTML
+ * string ready to pass as queue_email()'s $body - keeps email markup out of
+ * controllers/models entirely.
+ */
+function render_email(string $template, array $data = []): string
+{
+    return view('emails/layout', [
+        'content' => view("emails/{$template}", $data),
+    ]);
+}
+
+/**
  * Instantly queues an email to be sent in the background.
  */
 function queue_email(string $toEmail, string $subject, string $body)
@@ -41,15 +54,37 @@ function process_email_queue(int $limit = 5): array
     $processed = 0;
 
     foreach ($emails as $job) {
-        $emailService->clear(); // CRITICAL: Prevents recipient stacking in loops
-        
-        $emailService->setTo($job['to_email']);
-        $emailService->setSubject($job['subject']);
-        $emailService->setMessage($job['body']);
+        // Atomically claim this row before sending - if another concurrent call (a
+        // second browser tab's poller, an overlapping cron run) already grabbed it
+        // between our SELECT above and this UPDATE, affectedRows() comes back 0 and
+        // we skip it, instead of two processes both sending the same email.
+        $queueModel->where('id', $job['id'])
+                   ->where('status', EmailStatus::PENDING->value)
+                   ->set(['status' => EmailStatus::SENDING->value])
+                   ->update();
 
-        if ($emailService->send()) {
-            $queueModel->update($job['id'], ['status' => EmailStatus::SENT->value]);
-        } else {
+        if ($queueModel->db->affectedRows() !== 1) {
+            continue;
+        }
+
+        try {
+            $emailService->clear(); // CRITICAL: Prevents recipient stacking in loops
+
+            $emailService->setTo($job['to_email']);
+            $emailService->setSubject($job['subject']);
+            $emailService->setMessage($job['body']);
+
+            if ($emailService->send()) {
+                $queueModel->update($job['id'], ['status' => EmailStatus::SENT->value]);
+            } else {
+                $queueModel->update($job['id'], [
+                    'status'   => EmailStatus::FAILED->value,
+                    'attempts' => $job['attempts'] + 1
+                ]);
+            }
+        } catch (\Throwable $e) {
+            // Make sure a thrown error (e.g. an SMTP failure) still releases the claim
+            // instead of leaving the row stuck at "sending" forever.
             $queueModel->update($job['id'], [
                 'status'   => EmailStatus::FAILED->value,
                 'attempts' => $job['attempts'] + 1

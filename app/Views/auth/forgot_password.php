@@ -7,13 +7,6 @@
         <h2 class="text-center text-3xl font-black tracking-tight text-text mb-2">Forgot Password</h2>
         <p class="text-center text-sm font-medium text-text-muted mb-6">Enter your email address and we'll send you a 6-digit code to reset your password.</p>
 
-        <?php if (session()->has('error')): ?>
-            <div class="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 flex items-start gap-3">
-                <svg class="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                <p class="text-sm font-bold text-red-800 dark:text-red-400 leading-tight"><?= session('error') ?></p>
-            </div>
-        <?php endif; ?>
-
         <?= form_open('password/send', ['class' => 'space-y-4']) ?>
             <div>
                 <label for="email" class="block text-sm font-bold text-text">Email address</label>
@@ -21,8 +14,8 @@
                     <input id="email" type="email" name="email" value="<?= old('email') ?>" required
                            class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none text-text transition-all" />
                 </div>
-                <div class="h-3 pl-1">
-                    <p class="text-red-500 text-[10px] font-bold mt-1 uppercase tracking-wider"><?= validation_show_error('email') ?></p>
+                <div class="min-h-3 pl-1">
+                    <p class="text-danger-500 text-[10px] font-bold mt-1 uppercase tracking-wider"><?= session('error') ?? validation_show_error('email') ?></p>
                 </div>
             </div>
 

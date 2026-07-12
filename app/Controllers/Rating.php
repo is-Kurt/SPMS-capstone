@@ -8,8 +8,19 @@ use App\Models\DocumentFolderModel;
 use App\Models\EvaluationRoutingModel;
 use App\Models\DocumentModel;
 
+/**
+ * The "Ratings" dashboard: lets evaluators (Admins, Supervisors, HR) see every
+ * subordinate folder they're responsible for, grouped into Action
+ * Required / Pending Subordinate / Completed queues, and drill into one folder
+ * to actually review and rate it.
+ */
 class Rating extends BaseController
 {
+    /**
+     * GET /ratings/{folderId} - Builds the evaluator's queue: fetches every folder
+     * routed to this evaluator and buckets each into a tab based on its status
+     * (still with the employee vs. awaiting this evaluator's action vs. approved).
+     */
     public function index($folderId = null) {
         $userId  = session()->get('user_id');
         $sysRole = session()->get('role');
@@ -74,7 +85,7 @@ class Rating extends BaseController
         return view('app_shell', [
             'sidebarFolders'   => $folders,
             'selectedFolderId' => $folderId, 
-            'mainView'         => 'rating/_show', 
+            'mainView'         => 'ratings/index',
             'mainData'         => [
                 'activeFolder'  => $activeFolder ?? null,
                 'tabs'    => $tabs,
@@ -85,6 +96,19 @@ class Rating extends BaseController
         ]);
     }
 
+    /**
+     * GET /ratings/show/{subFolderId} - Opens one subordinate's folder for review,
+     * after verifying the viewer is an Admin or a routed evaluator. Deliberately
+     * does NOT grant access to the folder's own owner: this route only exists to
+     * review someone else's folder, there's no in-app link that ever points an
+     * owner at their own folder here (Rating::index()'s dashboard only lists
+     * folders you're routed to evaluate), and Folder::index() already gives owners
+     * a strictly better - editable, not artificially read-only - view of their
+     * own folder. So an owner landing here only ever means they clicked a
+     * "Pending Review" email link addressed to their evaluator, not to them.
+     * Also gathers "guide" documents from that subordinate's own superiors so the
+     * evaluator has the same reference material the employee saw while drafting.
+     */
     public function show($subFolderId) {
         $userId  = session()->get('user_id');
         $sysRole = session()->get('role');
@@ -96,10 +120,9 @@ class Rating extends BaseController
         $subFolder = $folderModel->find($subFolderId);
         if (!$subFolder) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
 
-        $folderOwnerId = $subFolder['user_id'];
         $isAuthorized = false;
 
-        if ($folderOwnerId == $userId || $sysRole === 'Admin') {
+        if ($sysRole === 'Admin') {
             $isAuthorized = true;
         } else {
             $routingCount = $routingModel->where('folder_id', $subFolderId)
@@ -108,7 +131,15 @@ class Rating extends BaseController
             if ($routingCount > 0) $isAuthorized = true;
         }
 
-        if (!$isAuthorized) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Unauthorized access.');
+        if (!$isAuthorized) {
+            // Unlike Folder::index() (a folder always has exactly one owner), this
+            // route can legitimately belong to several accounts - a folder may have
+            // multiple routed evaluators, and "Pending Review" emails the same link
+            // to all of them. There's no single correct account to name here, so the
+            // mismatch screen shows its generic wording instead of guessing one.
+            session()->setFlashdata('mismatch_detected', true);
+            return redirect()->to('account-mismatch');
+        }
 
         $folders = $folderModel->where('user_id', $userId)->orderBy('created_at', 'DESC')->findAll();
 

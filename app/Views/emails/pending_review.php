@@ -1,0 +1,4 @@
+<p style="margin:0 0 16px; font-size:12px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:#3b82f6; font-family: Arial, Helvetica, sans-serif;">Pending Review</p>
+<h2 style="margin:0 0 12px; font-size:21px; font-weight:800; color:#0f172a; font-family: Arial, Helvetica, sans-serif;"><?= esc($subordinateFirstName) ?> Has Evaluated Their Folder</h2>
+<p style="margin:0 0 24px; font-size:14px; line-height:1.6; color:#475569; font-family: Arial, Helvetica, sans-serif;">Hello <?= esc($evaluatorFirstName) ?>, <?= esc($subordinateFirstName) ?> <?= esc($subordinateLastName) ?> has completed the self-evaluation for their folder (<strong style="color:#0f172a;"><?= esc($folderTitle) ?></strong>). It is now in your queue and ready for your official review.</p>
+<?= view('emails/_button', ['link' => $link, 'label' => 'Review Their Evaluation', 'color' => '#3b82f6']) ?>

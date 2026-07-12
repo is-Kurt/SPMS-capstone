@@ -46,8 +46,10 @@ class CreateUserRolesTable extends Migration
         // A user cannot have the same role twice
         $this->forge->addUniqueKey(['user_id', 'role_id']);
 
-        $this->forge->addForeignKey('user_id', 'users', 'id', 'CASCADE',  'CASCADE');
-        $this->forge->addForeignKey('role_id', 'roles', 'id', 'RESTRICT', 'CASCADE');
+        // addForeignKey($field, $table, $column, $onUpdate, $onDelete) - onDelete must be
+        // RESTRICT here so deleting a role still assigned to a user is blocked, not cascaded.
+        $this->forge->addForeignKey('user_id', 'users', 'id', 'CASCADE', 'CASCADE');
+        $this->forge->addForeignKey('role_id', 'roles', 'id', 'CASCADE', 'RESTRICT');
 
         $this->forge->createTable('user_roles');
     }

@@ -21,6 +21,90 @@
     --color-accent:         #10b981; /* emerald-500 */
     --color-accent-hover:   #059669; /* emerald-600 */
     --color-accent-text:    #ffffff;
+
+    /* ============================================================
+       STATUS COLORS
+       ------------------------------------------------------------
+       Semantic color ramps used for state/feedback UI: badges,
+       buttons, alerts, borders. Each ramp mirrors Tailwind's own
+       50 (lightest tint) -> 900 (darkest) shade scale, so existing
+       "dark:bg-danger-500/20 dark:text-danger-400" style patterns
+       in the views keep working exactly as before.
+
+       This is the ONE place to re-theme the app's status colors:
+       change the values below and every "bg-danger-500",
+       "text-warning-600", "border-info-200", etc. across every
+       view updates automatically - no view file needs to change.
+
+       Naming reflects MEANING, not hue, on purpose: if "danger"
+       is ever changed from red to something else, class names like
+       "bg-danger-500" in the views still make sense.
+    ============================================================ */
+
+    /* Danger - destructive/negative actions & errors.
+       Used by: delete buttons & confirmations, error alerts,
+       "Rejected"-style badges. */
+    --color-danger-50:  #fef2f2;
+    --color-danger-100: #fee2e2;
+    --color-danger-200: #fecaca;
+    --color-danger-400: #f87171;
+    --color-danger-500: #ef4444;
+    --color-danger-600: #dc2626;
+    --color-danger-700: #b91c1c;
+    --color-danger-800: #991b1b;
+
+    /* Success - approved / positive / completed states.
+       Used by: "Approved" badges, "Enable" buttons, success alerts. */
+    --color-success-50:  #ecfdf5;
+    --color-success-100: #d1fae5;
+    --color-success-200: #a7f3d0;
+    --color-success-400: #34d399;
+    --color-success-500: #10b981;
+    --color-success-600: #059669;
+    --color-success-700: #047857;
+    --color-success-800: #065f46;
+
+    /* Warning - pending / needs-attention states.
+       Used by: "To Evaluate" badges, "Disable" buttons, warning alerts. */
+    --color-warning-50:  #fffbeb;
+    --color-warning-100: #fef3c7;
+    --color-warning-200: #fde68a;
+    --color-warning-400: #fbbf24;
+    --color-warning-500: #f59e0b;
+    --color-warning-600: #d97706;
+    --color-warning-700: #b45309;
+
+    /* Info - informational / in-progress states.
+       Used by: "Submitted" badges, guide/notice panels. */
+    --color-info-50:  #eff6ff;
+    --color-info-100: #dbeafe;
+    --color-info-200: #bfdbfe;
+    --color-info-400: #60a5fa;
+    --color-info-500: #3b82f6;
+    --color-info-600: #2563eb;
+    --color-info-700: #1d4ed8;
+    --color-info-800: #1e40af;
+    --color-info-900: #1e3a8a;
+
+    /* Highlight - secondary tags, distinct from the main accent/status set.
+       Used by: "Teaching" badge, admin monitoring indicators, role picker. */
+    --color-highlight-50:  #eef2ff;
+    --color-highlight-100: #e0e7ff;
+    --color-highlight-200: #c7d2fe;
+    --color-highlight-300: #a5b4fc;
+    --color-highlight-400: #818cf8;
+    --color-highlight-500: #6366f1;
+    --color-highlight-600: #4f46e5;
+    --color-highlight-900: #312e81;
+
+    /* Revision - "sent back for changes" states, distinct from Warning.
+       Used by: "Reevaluate" folder status, "Return for Revision" button. */
+    --color-revision-100: #ffedd5;
+    --color-revision-200: #fed7aa;
+    --color-revision-400: #fb923c;
+    --color-revision-500: #f97316;
+    --color-revision-600: #ea580c;
+    --color-revision-700: #c2410c;
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -96,6 +180,14 @@ a {
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background-color: var(--color-text-muted);
+}
+
+/* Suppress the browser's own native password-reveal icon (Edge's built-in eye
+   icon) so it doesn't double up with, or clash in color with, our own themed
+   toggle button injected by passwordToggle.js. */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+    display: none;
 }
 
 input[type="datetime-local"] {

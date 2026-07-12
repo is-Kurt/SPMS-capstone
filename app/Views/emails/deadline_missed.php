@@ -1,0 +1,3 @@
+<p style="margin:0 0 16px; font-size:12px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:#ef4444; font-family: Arial, Helvetica, sans-serif;">Notice</p>
+<h2 style="margin:0 0 12px; font-size:21px; font-weight:800; color:#0f172a; font-family: Arial, Helvetica, sans-serif;">Submission Deadline Missed</h2>
+<p style="margin:0; font-size:14px; line-height:1.6; color:#475569; font-family: Arial, Helvetica, sans-serif;">Hello <?= esc($firstName) ?>, the deadline for submitting your performance evaluation has passed. Your folder has been locked and marked as <strong style="color:#0f172a;">Unevaluated</strong>. Please contact your supervisor or the HR department if this is an error.</p>

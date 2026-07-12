@@ -18,10 +18,25 @@
                         <?= $preset['member_count'] ?>
                     </span>
                     
-                    <?= form_open('teams/delete', ['onsubmit' => "return confirmTeamDelete(event, " . ($preset['in_use'] ? 'true' : 'false') . ");", 'class' => 'flex items-center']) ?>
+                    <?php if ($preset['in_use']): ?>
+                        <?= form_open('teams/delete', [
+                            'class' => 'flex items-center',
+                            'data-blocked-message' => 'It is currently cascaded to an active evaluation folder. Please revoke the cascade from your Folders tab before deleting this distribution list.',
+                            'data-blocked-title' => 'Cannot Delete This Team'
+                        ]) ?>
+                    <?php else: ?>
+                        <?= form_open('teams/delete', [
+                            'class' => 'flex items-center',
+                            'data-confirm' => 'Are you sure you want to delete this team?',
+                            'data-confirm-title' => 'Delete Team',
+                            'data-confirm-text' => 'Delete Team'
+                        ]) ?>
+                    <?php endif; ?>
+                        <?= csrf_field() ?>
                         <input type="hidden" name="_method" value="DELETE">
                         <input type="hidden" name="preset_id" value="<?= $preset['id'] ?>">
-                        <button type="submit" class="p-1 rounded-md <?= $isActive ? 'text-white/60 hover:text-white hover:bg-white/20' : 'text-zinc-400 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10' ?> transition-all cursor-pointer" title="Delete Team">
+                        <!-- Trash icon (icon-only button, see title=): deletes this team. Blocked with a message instead of a confirm if it's actively cascaded (see data-blocked-* above) -->
+                        <button type="submit" class="p-1 rounded-md <?= $isActive ? 'text-white/60 hover:text-white hover:bg-white/20' : 'text-zinc-400 opacity-0 group-hover:opacity-100 hover:text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10' ?> transition-all cursor-pointer" title="Delete Team">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         </button>
                     <?= form_close() ?>

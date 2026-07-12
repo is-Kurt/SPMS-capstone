@@ -1,0 +1,4 @@
+<p style="margin:0 0 16px; font-size:12px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:#f59e0b; font-family: Arial, Helvetica, sans-serif;">Reminder</p>
+<h2 style="margin:0 0 12px; font-size:21px; font-weight:800; color:#0f172a; font-family: Arial, Helvetica, sans-serif;">Submission Deadline Approaching</h2>
+<p style="margin:0 0 24px; font-size:14px; line-height:1.6; color:#475569; font-family: Arial, Helvetica, sans-serif;">Hello <?= esc($firstName) ?>, your performance evaluation submission deadline is in 3 days, on <strong style="color:#0f172a;"><?= esc($deadline) ?></strong>. Please finalize and submit your self-rating before your folder is automatically locked.</p>
+<?= view('emails/_button', ['link' => $link, 'label' => 'Open Your Folder', 'color' => '#f59e0b']) ?>

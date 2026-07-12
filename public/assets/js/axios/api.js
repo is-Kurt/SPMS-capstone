@@ -15,8 +15,8 @@ async function apiPost(url, data, { onSuccess, onError, onDefault, config = {} }
             if (onSuccess) onSuccess(response.data);
         } else if (response.data.status === 'error') {
             console.error("Application Error:", response.data.message);
-            if (onError) onError(response.data.message); }
-            
+            if (onError) onError(response.data.message, response.data); }
+
         if (onDefault) onDefault(response.data);
 
     } catch (error) {
@@ -60,10 +60,10 @@ function handleApiError(error, onError) {
     if (axios.isAxiosError(error)) {
         // Captures 403 (CSRF failures), 500 (Server crashes), etc.
         console.error("Network/Server Error:", error.response?.data?.message || error.message);
-        
+
         if (onError) {
             const userMessage = error.response?.data?.message || "Connection or server error occurred.";
-            onError(userMessage);
+            onError(userMessage, error.response?.data);
         }
     } else {
         // Captures coding mistakes inside the onSuccess/onError callbacks
