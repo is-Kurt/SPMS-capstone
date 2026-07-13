@@ -224,6 +224,45 @@
 <?php endif; ?>
 
 <script>
+    // --- DELETE TEAM (AJAX) ---
+    // Registered synchronously (not inside DOMContentLoaded) so this listener attaches
+    // before confirmModal.js's global data-confirm auto-submit listener does -
+    // stopImmediatePropagation() below then keeps that older listener from ever seeing
+    // this same submit, so the confirm dialog doesn't fire twice.
+    document.addEventListener('submit', async (e) => {
+        const form = e.target;
+        if (form.dataset.ajax !== 'delete-team') return;
+
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        const ok = await window.appConfirm(form.dataset.confirm, {
+            title: form.dataset.confirmTitle || undefined,
+            confirmText: form.dataset.confirmText || 'Delete'
+        });
+        if (!ok) return;
+
+        const formData = new FormData(form);
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.disabled = true;
+
+        apiPost(form.getAttribute('action'), formData, {
+            onSuccess: () => {
+                const row = form.closest('[data-preset-id]');
+                if (row?.dataset.active === '1') {
+                    window.location.href = '<?= site_url('teams') ?>';
+                } else {
+                    row?.remove();
+                    if (submitBtn) submitBtn.disabled = false;
+                }
+            },
+            onError: (errMsg) => {
+                window.appAlert(errMsg || 'Something went wrong.', { variant: 'danger' });
+                if (submitBtn) submitBtn.disabled = false;
+            }
+        });
+    });
+
     // MOBILE DROPDOWN LOGIC
     function toggleMobileTeamDropdown() {
         const menu = document.getElementById('mobile-team-dropdown-menu');

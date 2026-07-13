@@ -85,6 +85,18 @@ class Folder extends BaseController
 
             $isReadOnly = false;
 
+            // The cascaded team may have since been archived (soft-deleted), in which
+            // case it no longer shows up in $presets above - inject it back in just for
+            // this folder so the "Cascade Management" panel can still show/select its
+            // name and Revoke Cascade keeps working, without making an archived team
+            // pickable for any other folder's "Cascade to Team" dropdown.
+            if ($activeFolder['routing_preset_id'] && !in_array($activeFolder['routing_preset_id'], array_column($presets, 'id'))) {
+                $archivedPreset = $presetModel->withDeleted()->find($activeFolder['routing_preset_id']);
+                if ($archivedPreset) {
+                    $presets[] = $archivedPreset;
+                }
+            }
+
             $myDocs = $documentModel->where('document_folder_id', $folderId)->findAll();
             $routingModel = new EvaluationRoutingModel();
             
@@ -272,16 +284,24 @@ class Folder extends BaseController
     /** POST /folder/uncascade-team - Reverses cascadeTeam(): removes the team's child folders/evaluator routings. */
     public function uncascadeTeam() {
         return $this->tryOrFail(function() {
-            $folderId = $this->request->getPost('folder_id'); 
-            $teamId   = $this->request->getPost('team_id');
+            $folderId = $this->request->getPost('folder_id');
             $userId   = session()->get('user_id');
             $role     = session()->get('role');
 
             $folderModel = new DocumentFolderModel();
             $routingModel = new EvaluationRoutingModel();
             $presetMemberModel = new RoutingPresetMemberModel();
-            
+
             $activeFolder = $folderModel->find($folderId);
+
+            // Use the folder's own stored reference rather than trusting a client-submitted
+            // team_id - the cascade-select dropdown's value isn't reliable once the cascaded
+            // team is missing/archived, so this must be authoritative, not client-supplied.
+            $teamId = $activeFolder['routing_preset_id'] ?? null;
+            if (!$teamId) {
+                throw new \Exception("This folder isn't currently cascaded to a team.");
+            }
+
             $members = $presetMemberModel->where('preset_id', $teamId)->findAll();
             $memberIds = array_column($members, 'user_id');
 
@@ -390,7 +410,42 @@ class Folder extends BaseController
         }
 
         if ($role === 'Admin') {
+            // evaluation_routings.folder_id and document_folders.parent_folder_id are
+            // both ON DELETE CASCADE, so deleting the folder below already wipes the
+            // whole subtree (children, grandchildren, etc.) and their eval routing in
+            // one shot - nothing extra needed for that part.
+            //
+            // But that cascade happens at the SQL level, so it silently takes any
+            // descendant's OWN routing_preset_id with it too - e.g. a Supervisor's own
+            // cascaded team on their own folder, nested somewhere under this tree.
+            // Walk the whole subtree first and collect every team reference in it, not
+            // just this folder's own, so none of them get missed for the orphan check.
+            $teamIds = [];
+            $toVisit = [$folderId];
+            while (!empty($toVisit)) {
+                $currentId = array_pop($toVisit);
+                $current = $folderModel->find($currentId);
+                if ($current && $current['routing_preset_id']) {
+                    $teamIds[] = $current['routing_preset_id'];
+                }
+                foreach ($folderModel->where('parent_folder_id', $currentId)->findAll() as $child) {
+                    $toVisit[] = $child['id'];
+                }
+            }
+            $teamIds = array_unique($teamIds);
+
             $folderModel->delete($folderId);
+
+            // Any of those teams that were already archived and are no longer referenced
+            // by any remaining folder are now truly orphaned - purge them for real.
+            // routing_preset_members cascades with each one automatically.
+            $presetModel = new RoutingPresetModel();
+            foreach ($teamIds as $teamId) {
+                $archived = $presetModel->onlyDeleted()->find($teamId);
+                if ($archived && $folderModel->where('routing_preset_id', $teamId)->countAllResults() === 0) {
+                    $presetModel->delete($teamId, true);
+                }
+            }
         }
 
         return $this->response->setJSON(['status' => 'success']);

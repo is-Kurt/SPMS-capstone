@@ -484,16 +484,9 @@
             if (sending) return;
             sending = true;
 
-            const teamId = document.getElementById('team-cascade-select').value;
-            if (!teamId) {
-                sending = false;
-                return;
-            }
-
             const formData = new FormData();
             formData.append('folder_id', folderId);
-            formData.append('team_id', teamId);
-            
+
             apiPost('<?= site_url('folder/uncascade-team') ?>', formData, {
                 onSuccess: () => window.location.reload(),
                 onError: async (errMsg) => {

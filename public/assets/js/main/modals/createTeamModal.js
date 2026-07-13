@@ -16,12 +16,25 @@ if (btnOpenMobile) {
 
 document.getElementById('btn-close-create-team').addEventListener('click', () => teamModal.close());
 
-// Disable the submit button while the real (non-AJAX) form submission is in flight
 const formCreateTeam = document.getElementById('form-create-team');
 if (formCreateTeam && submitBtn) {
-    formCreateTeam.addEventListener('submit', () => {
+    formCreateTeam.addEventListener('submit', (e) => {
+        e.preventDefault();
         submitBtn.disabled = true;
         submitBtn.innerText = 'Creating...';
+
+        const formData = new FormData(formCreateTeam);
+
+        apiPost(formCreateTeam.getAttribute('action'), formData, {
+            onSuccess: (data) => {
+                window.location.href = '/teams?team_id=' + data.id;
+            },
+            onError: async (errMsg) => {
+                await window.appAlert(errMsg || 'Something went wrong.', { variant: 'danger' });
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Create & Select';
+            }
+        });
     });
 }
 

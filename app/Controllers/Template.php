@@ -60,8 +60,8 @@ class Template extends BaseController
 
         if ($templateId) {
             // Update: Resolve unique title, ignoring the current template's ID
-            $title = resolve_unique_title($title, function($db) use ($templateId) {
-                return $db->table('templates')->where('id !=', $templateId);
+            $title = resolve_unique_title($title, function($model) use ($templateId) {
+                $model->where('id !=', $templateId);
             }, 'title', $templateModel);
 
             $data = [

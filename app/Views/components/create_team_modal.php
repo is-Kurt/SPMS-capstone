@@ -1,7 +1,8 @@
 <!--
     Create-team dialog, loaded via app_shell.php in the 'teams' context.
-    Opened by #btn-create-team-modal; submits straight to Team::createShell()
-    (a plain form post, not AJAX) which redirects into teams?team_id=... where
+    Opened by #btn-create-team-modal; submit handling lives in
+    public/assets/js/main/modals/createTeamModal.js, posting to
+    Team::createShell() via AJAX then navigating to teams?team_id=... where
     the new team's member list can then be edited.
 -->
 <div id="modal-create-team" class="fixed inset-0 z-[120] hidden overflow-y-auto items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">

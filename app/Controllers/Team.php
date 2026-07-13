@@ -119,23 +119,23 @@ class Team extends BaseController
     /** POST /teams/create - Creates an empty, unnamed team shell so the UI has an id to attach members to. */
     public function createShell() {
         $role = session()->get('role');
-        if (!in_array($role, ['Admin', 'Supervisor'])) return redirect()->to('/');
+        if (!in_array($role, ['Admin', 'Supervisor'])) return $this->respondError('Unauthorized.', 403);
 
         $presetModel = new RoutingPresetModel();
-        
+
         $name = trim($this->request->getPost('name'));
         if (empty($name)) $name = 'Team';
-        
+
         $name = resolve_unique_title($name, ['owner_id' => session()->get('user_id')], 'name', $presetModel);
-        
+
         $newId = $presetModel->insert([
             'owner_id'    => session()->get('user_id'),
             'name'        => $name,
             'description' => trim($this->request->getPost('description')) ?: null,
             'created_at'  => date('Y-m-d H:i:s')
         ]);
-        
-        return redirect()->to("teams?team_id={$newId}");
+
+        return $this->respond(['status' => 'success', 'id' => $newId]);
     }
 
     /** POST /teams - Saves a team's name/description and replaces its full member list. */
@@ -170,8 +170,8 @@ class Team extends BaseController
 
         if (empty($name)) $name = 'Team';
 
-        $name = resolve_unique_title($name, function($db) use ($teamId, $userId) {
-            return $db->table('routing_presets')->where('owner_id', $userId)->where('id !=', $teamId);
+        $name = resolve_unique_title($name, function($model) use ($teamId, $userId) {
+            $model->where('owner_id', $userId)->where('id !=', $teamId);
         }, 'name', $presetModel);
 
         $presetModel->db->transStart();
@@ -202,26 +202,24 @@ class Team extends BaseController
         return redirect()->back()->with('success', 'Distribution list saved successfully!');
     }
 
-    /** POST /teams/delete - Deletes a team, refusing if it's currently cascaded onto a live folder. */
+    /** POST /teams/delete - Archives (soft-deletes) a team, safe even while it's cascaded onto a live folder. */
     public function delete() {
         $role = session()->get('role');
-        if (!in_array($role, ['Admin', 'Supervisor'])) return redirect()->to('/');
+        if (!in_array($role, ['Admin', 'Supervisor'])) return $this->respondError('Unauthorized.', 403);
 
         $presetId = $this->request->getPost('preset_id');
         $presetModel = new RoutingPresetModel();
-        
-        $preset = $presetModel->where('id', $presetId)->where('owner_id', session()->get('user_id'))->first();
-        
-        if ($preset) {
-            $folderModel = new DocumentFolderModel();
-            if ($folderModel->where('routing_preset_id', $presetId)->countAllResults() > 0) {
-                return redirect()->back()->with('error', 'Backend blocked: Team is actively cascaded.');
-            }
 
+        $preset = $presetModel->where('id', $presetId)->where('owner_id', session()->get('user_id'))->first();
+
+        if ($preset) {
+            // Soft delete: folders already cascaded from this team keep their
+            // routing_preset_id pointing at it (see Folder::index()'s withDeleted()
+            // lookup), so archiving is safe even while it's actively in use.
             $presetModel->delete($presetId);
-            return redirect()->to('teams')->with('success', 'Team deleted successfully.');
+            return $this->respond(['status' => 'success', 'message' => 'Team archived successfully.']);
         }
 
-        return redirect()->back()->with('error', 'Team not found or unauthorized.');
+        return $this->respondError('Team not found or unauthorized.');
     }
 }

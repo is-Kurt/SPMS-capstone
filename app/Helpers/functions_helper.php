@@ -57,8 +57,9 @@ function create_unique_row($dbModel, array $data) {
  * pre-fetched mode (works against an already-retrieved array of rows).
  *
  * @param string $baseTitle The intended title to check and resolve
- * @param array|callable $scope Either a WHERE conditions array, a closure that receives $model->db
- *                              and returns a configured builder, or a pre-fetched array of rows
+ * @param array|callable $scope Either a WHERE conditions array, a closure that receives $model
+ *                              and chains extra conditions onto it (no return needed), or a
+ *                              pre-fetched array of rows
  * @param string $titleColumn The column name holding the title, supports dot notation e.g. 'd.title'
  * @param \CodeIgniter\Model|null $model The target model (required in query mode, null in pre-fetched mode)
  * @return string The resolved unique title, with a suffix appended if the base title is already taken
@@ -76,22 +77,22 @@ function resolve_unique_title(
                 : $titleColumn;
             $existingTitles = array_column($scope, $columnKey);
         } else {
-            // Query mode
+            // Query mode - chain conditions onto $model itself rather than $model->builder()
+            // or $model->db directly, so Model-level query scoping (soft-delete filtering)
+            // still applies. findAll() below adds the deleted_at check on top of whatever
+            // conditions got chained on here, instead of silently matching archived rows too.
             if (is_callable($scope)) {
-                $builder = $scope($model->db);
-            } else {
-                $builder = $model->builder();
-                if (!empty($scope)) {
-                    $builder->where($scope);
-                }
+                $scope($model);
+            } elseif (!empty($scope)) {
+                $model->where($scope);
             }
 
-            $builder->groupStart()
-                        ->where($titleColumn, $baseTitle)
-                        ->orLike($titleColumn, $baseTitle . ' (', 'after')
-                    ->groupEnd();
+            $model->groupStart()
+                      ->where($titleColumn, $baseTitle)
+                      ->orLike($titleColumn, $baseTitle . ' (', 'after')
+                  ->groupEnd();
 
-            $results = $builder->select($titleColumn)->get()->getResultArray();
+            $results = $model->select($titleColumn)->findAll();
             $columnKey = strpos($titleColumn, '.') !== false
                 ? explode('.', $titleColumn)[1]
                 : $titleColumn;
@@ -116,7 +117,7 @@ function resolve_unique_title(
                 if ($prefix === $baseTitle) {
                     $usedSuffixes[$number] = true;
                 }
-            }
+        }
         }
 
         // If no exact match is found, we don't need to append anything!

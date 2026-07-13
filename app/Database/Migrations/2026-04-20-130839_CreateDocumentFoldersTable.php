@@ -81,8 +81,12 @@ class CreateDocumentFoldersTable extends Migration
         $this->forge->addKey('id', true);
 
         $this->forge->addForeignKey('user_id', 'users', 'id', 'CASCADE', 'CASCADE');
-        $this->forge->addForeignKey('parent_folder_id', 'document_folders', 'id', 'CASCADE', 'CASCADE'); 
-        $this->forge->addForeignKey('routing_preset_id', 'routing_presets', 'id', 'CASCADE', 'CASCADE'); 
+        $this->forge->addForeignKey('parent_folder_id', 'document_folders', 'id', 'CASCADE', 'CASCADE');
+        // SET NULL, not CASCADE: routing_presets rows are archived (soft-deleted) rather
+        // than hard-deleted in normal use, so this never fires in practice - but it's the
+        // right safety net if a team row is ever actually purged, so a folder just loses
+        // its "cascaded from" label instead of getting wiped out along with it.
+        $this->forge->addForeignKey('routing_preset_id', 'routing_presets', 'id', 'SET NULL', 'CASCADE');
         $this->forge->createTable('document_folders');
     }
 
