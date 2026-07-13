@@ -55,7 +55,22 @@ class Team extends BaseController
         }
         unset($u);
 
+        // Positions aren't unit-linked in the schema (the same title can span multiple
+        // top-level branches - e.g. "Vice President" holds under both OVPAA and OVPAF),
+        // so instead of listing every position system-wide, scope the "All Positions"
+        // filter to only positions actually held by someone in $users (already
+        // unit-scoped above for Supervisors). A position nobody in scope holds would
+        // never match a user anyway, so excluding it costs nothing.
+        $activePositionIds = [];
+        foreach ($users as $u) {
+            if (!empty($u['position_id'])) {
+                $activePositionIds = array_merge($activePositionIds, array_map('intval', explode(',', $u['position_id'])));
+            }
+        }
+        $activePositionIds = array_unique($activePositionIds);
+
         $positions = $positionModel->orderBy('title', 'ASC')->findAll();
+        $positions = array_values(array_filter($positions, fn ($p) => in_array((int) $p['id'], $activePositionIds, true)));
 
         $presets = $presetModel->getPresetsWithDetails($userId);
 

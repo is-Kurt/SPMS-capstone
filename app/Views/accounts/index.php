@@ -402,40 +402,17 @@
         </div>
 
         <div id="tab-content-system" class="tab-content <?= $activeTab === 'system' ? 'flex' : 'hidden' ?> flex-col lg:absolute lg:inset-0 overflow-y-auto custom-scrollbar lg:bg-zinc-50/50 lg:dark:bg-zinc-900/30">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 p-0 lg:p-6 lg:h-full">
-                
-                <div class="bg-surface border border-surface-border rounded-2xl shadow-sm flex flex-col lg:h-full lg:overflow-hidden">
-                    <div class="p-4 border-b border-surface-border bg-zinc-50 dark:bg-zinc-800/30 shrink-0">
-                        <h2 class="text-sm font-black text-text tracking-tight uppercase">System Roles</h2>
-                    </div>
-                    <div class="flex-1 lg:overflow-y-auto custom-scrollbar p-2">
-                        <ul class="divide-y divide-surface-border" id="roles-list">
-                            <?php foreach ($roles as $role): ?>
-                                <li class="flex justify-between items-center px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 rounded-lg transition-colors group">
-                                    <span class="text-sm font-bold text-text"><?= esc($role['name']) ?></span>
-                                    <?= form_open('account/role/delete', ['data-ajax' => 'delete-role', 'data-confirm' => 'Delete this role?', 'data-confirm-title' => 'Delete Role']) ?>
-                                        <input type="hidden" name="id" value="<?= $role['id'] ?>">
-                                        <!-- Trash icon (icon-only button): deletes this role. Only shows on hover/tap; fails server-side if any user still holds it -->
-                                        <button type="submit" class="text-danger-400 hover:text-danger-600 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-1">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                        </button>
-                                    <?= form_close() ?>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                    <!-- No "add role" form here on purpose: role names are hardcoded into access-control
-                         checks throughout the app, so they're managed in the backend, not this UI. -->
-                </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-0 lg:p-6 lg:h-full">
 
                 <div class="bg-surface border border-surface-border rounded-2xl shadow-sm flex flex-col lg:h-full lg:overflow-hidden">
-                    <div class="p-4 border-b border-surface-border bg-zinc-50 dark:bg-zinc-800/30 shrink-0">
+                    <div class="p-4 border-b border-surface-border bg-zinc-50 dark:bg-zinc-800/30 shrink-0 space-y-3">
                         <h2 class="text-sm font-black text-text tracking-tight uppercase">Job Positions</h2>
+                        <input type="text" id="filter-positions" placeholder="Search positions..." class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-lg px-3 py-2 text-xs focus:border-accent outline-none text-text">
                     </div>
                     <div class="flex-1 lg:overflow-y-auto custom-scrollbar p-2">
                         <ul class="divide-y divide-surface-border" id="positions-list">
                             <?php foreach ($positions as $pos): ?>
-                                <li class="flex justify-between items-center px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 rounded-lg transition-colors group">
+                                <li class="flex justify-between items-center px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 rounded-lg transition-colors group" data-title="<?= strtolower(esc($pos['title'])) ?>">
                                     <div class="flex flex-col">
                                         <span class="text-sm font-bold text-text"><?= esc($pos['title']) ?></span>
                                         <span class="text-[9px] font-black tracking-widest uppercase <?= $pos['is_teaching'] ? 'text-warning-500' : 'text-zinc-400' ?>"><?= $pos['is_teaching'] ? 'Teaching' : 'Non-Teaching' ?></span>
@@ -449,6 +426,7 @@
                                     <?= form_close() ?>
                                 </li>
                             <?php endforeach; ?>
+                            <li id="positions-empty-state" class="hidden px-4 py-8 text-center text-xs font-bold text-text-muted italic">No positions matched your search.</li>
                         </ul>
                     </div>
                     <?= form_open('account/position/add', ['class' => 'p-4 border-t border-surface-border bg-zinc-50 dark:bg-zinc-800/30 space-y-3 shrink-0', 'data-ajax' => 'add-position']) ?>
@@ -464,13 +442,14 @@
                 </div>
 
                 <div class="bg-surface border border-surface-border rounded-2xl shadow-sm flex flex-col lg:h-full lg:overflow-hidden">
-                    <div class="p-4 border-b border-surface-border bg-zinc-50 dark:bg-zinc-800/30 shrink-0">
+                    <div class="p-4 border-b border-surface-border bg-zinc-50 dark:bg-zinc-800/30 shrink-0 space-y-3">
                         <h2 class="text-sm font-black text-text tracking-tight uppercase">Departments & Units</h2>
+                        <input type="text" id="filter-units" placeholder="Search units..." class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-lg px-3 py-2 text-xs focus:border-accent outline-none text-text">
                     </div>
                     <div class="flex-1 lg:overflow-y-auto custom-scrollbar p-2">
                         <ul class="divide-y divide-surface-border" id="units-list">
                             <?php foreach ($units as $unit): ?>
-                                <li class="flex justify-between items-center px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 rounded-lg transition-colors group">
+                                <li class="flex justify-between items-center px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 rounded-lg transition-colors group" data-name="<?= strtolower(esc($unit['name'])) ?>">
                                     <div class="flex flex-col pr-2">
                                         <span class="text-sm font-bold text-text"><?= esc($unit['name']) ?></span>
                                         <?php if ($unit['parent_id']): ?>
@@ -492,6 +471,7 @@
                                     <?= form_close() ?>
                                 </li>
                             <?php endforeach; ?>
+                            <li id="units-empty-state" class="hidden px-4 py-8 text-center text-xs font-bold text-text-muted italic">No units matched your search.</li>
                         </ul>
                     </div>
                     <?= form_open('account/unit/add', ['class' => 'p-4 border-t border-surface-border bg-zinc-50 dark:bg-zinc-800/30 space-y-3 shrink-0', 'data-ajax' => 'add-unit']) ?>
@@ -507,7 +487,7 @@
                         </div>
                     <?= form_close() ?>
                 </div>
-                
+
             </div>
         </div>
     </div>
@@ -614,7 +594,6 @@
                 break;
             }
 
-            case 'delete-role':
             case 'delete-position':
             case 'delete-unit': {
                 form.closest('li').remove();
@@ -624,6 +603,7 @@
             case 'add-position': {
                 const li = document.createElement('li');
                 li.className = 'flex justify-between items-center px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 rounded-lg transition-colors group';
+                li.dataset.title = data.item.title.toLowerCase();
                 const isTeaching = data.item.is_teaching == 1;
                 li.innerHTML = `
                     <div class="flex flex-col">
@@ -645,6 +625,7 @@
             case 'add-unit': {
                 const li = document.createElement('li');
                 li.className = 'flex justify-between items-center px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 rounded-lg transition-colors group';
+                li.dataset.name = data.item.name.toLowerCase();
                 const parentLabel = data.item.parent_name
                     ? `<span class="text-[9px] font-bold text-text-muted uppercase tracking-widest mt-0.5 leading-tight">Parent: ${escapeHtml(data.item.parent_name)}</span>`
                     : `<span class="text-[9px] font-bold text-info-500 uppercase tracking-widest mt-0.5">Top Level Node</span>`;
@@ -919,6 +900,30 @@
 
         filterInvitations();
     });
+
+    // --- SYSTEM DATA TAB: simple text search over the Positions and Units panels ---
+    function filterSystemList(inputId, listId, dataAttr, emptyStateId) {
+        const input = document.getElementById(inputId);
+        const list = document.getElementById(listId);
+        if (!input || !list) return;
+
+        input.addEventListener('input', () => {
+            const query = input.value.trim().toLowerCase();
+            let visibleCount = 0;
+
+            list.querySelectorAll(`li[data-${dataAttr}]`).forEach(li => {
+                const matches = li.dataset[dataAttr === 'title' ? 'title' : 'name'].includes(query);
+                li.style.display = matches ? '' : 'none';
+                if (matches) visibleCount++;
+            });
+
+            const emptyState = document.getElementById(emptyStateId);
+            if (emptyState) emptyState.style.display = visibleCount === 0 ? '' : 'none';
+        });
+    }
+
+    filterSystemList('filter-positions', 'positions-list', 'title', 'positions-empty-state');
+    filterSystemList('filter-units', 'units-list', 'name', 'units-empty-state');
 </script>
 
 <?= $this->endSection() ?>

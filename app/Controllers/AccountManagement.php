@@ -259,19 +259,8 @@ class AccountManagement extends BaseController
     }
 
     // --- System Data CRUD: manages the lookup tables used by the invite form and profile/plantilla pickers. ---
-    // Roles have no "add" endpoint - role names are hardcoded into access-control checks
-    // throughout the app (nav visibility, route filters), so they're managed in the backend only.
-
-    /** POST /account/role/delete - Blocked by a DB constraint (caught below) while any user still holds this role. */
-    public function deleteRole() {
-        try {
-            $roleModel = new RoleModel();
-            $roleModel->delete($this->request->getPost('id'));
-            return $this->respond(['status' => 'success']);
-        } catch (\Exception $e) {
-            return $this->respondError('Cannot delete this role because it is currently assigned to users.');
-        }
-    }
+    // Roles have no CRUD endpoints here at all - role names are hardcoded into access-control
+    // checks throughout the app (nav visibility, route filters), so they're managed in the backend only.
 
     /** POST /account/position/add */
     public function addPosition() {

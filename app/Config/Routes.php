@@ -37,10 +37,6 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->delete('account', 'AccountManagement::destroy', ['filter' => 'role:Admin']);
 
     // System Data Management Routes
-    // Roles are intentionally not admin-creatable here - role names are hardcoded into
-    // access-control checks throughout the app, so a UI-created role would grant nothing.
-    $routes->post('account/role/delete', 'AccountManagement::deleteRole', ['filter' => 'role:Admin']);
-
     $routes->post('account/position/add', 'AccountManagement::addPosition', ['filter' => 'role:Admin']);
     $routes->post('account/position/delete', 'AccountManagement::deletePosition', ['filter' => 'role:Admin']);
 
