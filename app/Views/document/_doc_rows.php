@@ -99,7 +99,7 @@
             </div>
 
             <!-- Added h-[calc(100dvh-240px)] for mobile, resets to h-auto on lg screens -->
-            <div class="bg-surface border border-surface-border rounded-2xl shadow-sm overflow-hidden flex flex-col flex-1 min-h-0 relative h-[calc(100dvh-240px)] lg:h-auto pb-32 lg:pb-0">
+            <div class="bg-surface border border-surface-border rounded-2xl shadow-sm overflow-hidden flex flex-col flex-1 min-h-0 lg:min-h-[400px] relative h-[calc(100dvh-240px)] lg:h-auto pb-32 lg:pb-0">
                 
                 <div class="grid grid-cols-12 gap-4 px-8 py-4 bg-zinc-50 dark:bg-zinc-800/30 border-b border-surface-border text-[10px] font-black uppercase tracking-widest text-text-muted shrink-0 z-10 hidden md:grid">
                     <div class="col-span-6">Document Name</div>

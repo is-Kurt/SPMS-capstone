@@ -94,7 +94,7 @@
     <?php endforeach; ?>
 </div>
 
-<div class="bg-surface border border-surface-border rounded-2xl shadow-sm flex flex-col flex-1 lg:min-h-0 lg:overflow-hidden relative pb-10 lg:pb-0">
+<div class="bg-surface border border-surface-border rounded-2xl shadow-sm flex flex-col flex-1 lg:min-h-[400px] lg:overflow-hidden relative pb-10 lg:pb-0">
     
     <?php foreach ($tabs as $key => $group): ?>
         <div id="tab-content-<?= $key ?>" class="tab-content <?= ($key === $firstTabKey) ? 'flex flex-col lg:absolute lg:inset-0' : 'hidden' ?>">

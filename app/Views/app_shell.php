@@ -21,7 +21,7 @@
     <?= view('components/create_team_modal') ?>
 <?php endif; ?>
 
-<div class="p-4 lg:p-8 max-w-7xl mx-auto flex flex-col lg:flex-row gap-4 lg:gap-8 lg:h-[calc(100vh-6rem)]">
+<div class="p-4 lg:p-8 max-w-7xl mx-auto flex flex-col lg:flex-row gap-4 lg:gap-8 lg:min-h-[calc(100vh-6rem)] lg:pb-12">
     
     <!-- LEFT SIDEBAR -->
     <div class="hidden lg:flex w-64 flex-shrink-0 flex-col h-full overflow-hidden">
@@ -58,7 +58,7 @@
     </div>
 
     <!-- MAIN CONTENT (Changed h-full to lg:h-full to FIX MOBILE SCROLLING) -->
-    <div class="flex-1 flex flex-col lg:h-full min-w-0 overflow-visible lg:overflow-hidden relative">
+    <div class="flex-1 flex flex-col min-w-0 overflow-visible relative">
         <?= view($mainView, $mainData) ?>
     </div>
 

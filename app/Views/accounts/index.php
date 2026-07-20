@@ -3,7 +3,7 @@
 
 <?= view('components/header') ?>
 
-<div class="p-4 md:p-8 max-w-7xl mx-auto flex flex-col gap-6 md:gap-8 pb-20 lg:h-[calc(100vh-6rem)] lg:overflow-hidden">
+<div class="p-4 md:p-8 max-w-7xl mx-auto flex flex-col gap-6 md:gap-8 pb-20 lg:min-h-[calc(100vh-6rem)]">
     
     <div class="shrink-0">
         <h1 class="text-2xl md:text-3xl font-black tracking-tight text-text">User Management</h1>
@@ -27,7 +27,7 @@
         </button>
     </div>
 
-    <div class="bg-surface lg:bg-surface/50 border-none lg:border border-surface-border rounded-none lg:rounded-2xl shadow-none lg:shadow-sm flex flex-col flex-1 lg:min-h-0 lg:overflow-hidden relative pb-10 lg:pb-0">
+    <div class="bg-surface lg:bg-surface/50 border-none lg:border border-surface-border rounded-none lg:rounded-2xl shadow-none lg:shadow-sm flex flex-col flex-1 lg:min-h-[400px] lg:overflow-hidden relative pb-10 lg:pb-0">
         
         <div id="tab-content-directory" class="tab-content <?= $activeTab === 'directory' ? 'flex' : 'hidden' ?> flex-col lg:absolute lg:inset-0 bg-transparent lg:bg-surface">
             

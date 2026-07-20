@@ -82,7 +82,7 @@
     </div>
 <?php else: ?>
 
-    <form action="<?= site_url('teams/store') ?>" method="POST" class="flex-1 flex flex-col lg:h-full lg:min-h-0">
+    <form action="<?= site_url('teams/store') ?>" method="POST" class="flex-1 flex flex-col">
         <?= csrf_field() ?>
         <input type="hidden" name="team_id" value="<?= $activeTeam['id'] ?>">
 
@@ -110,7 +110,7 @@
         </div>
 
         <!-- The Dual-Panel Grid (Notice lg:absolute lg:inset-0 to enable native mobile scrolling) -->
-        <div class="flex-1 lg:min-h-0 relative pb-[80px] lg:pb-0">
+        <div class="flex-1 lg:min-h-[550px] relative pb-[80px] lg:pb-0">
             <div class="flex flex-col lg:absolute lg:inset-0 lg:flex-row gap-0 lg:gap-6">
                 
                 <!-- Panel 1: Directory Search -->
