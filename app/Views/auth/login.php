@@ -36,7 +36,7 @@
                     </div>
                 </div>
 
-                <div class="flex flex-col gap-3 mt-5 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
+                <div class="flex items-center justify-between mt-5">
                     <div class="flex items-center gap-2">
                         <input id="remember-me" name="remember-me" type="checkbox" class="checkbox" />
                         <label for="remember-me" class="block text-sm font-medium text-text-muted cursor-pointer">
@@ -44,7 +44,7 @@
                         </label>
                     </div>
 
-                    <div class="text-sm">
+                    <div class="text-sm hidden sm:block">
                         <a href="<?= site_url('password/forgot') ?>" class="font-bold text-accent hover:text-accent-hover transition-colors">
                             Forgot password?
                         </a>
@@ -55,6 +55,12 @@
                     <button type="submit" class="w-full bg-accent text-white font-bold py-3.5 rounded-xl cursor-pointer hover:bg-accent-hover transition-all text-sm shadow-lg shadow-accent/20 active:scale-[0.98]">
                         Log in
                     </button>
+                </div>
+
+                <div class="mt-5 text-center sm:hidden">
+                    <a href="<?= site_url('password/forgot') ?>" class="text-sm font-bold text-accent hover:text-accent-hover transition-colors">
+                        Forgot password?
+                    </a>
                 </div>
 
             <?= form_close() ?>
