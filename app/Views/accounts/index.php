@@ -107,9 +107,9 @@
                         <col style="width:12%">
                         <col style="width:26%">
                     </colgroup>
-                    <tbody class="block lg:table-row-group divide-y lg:divide-y-0 divide-transparent lg:divide-surface-border" id="user-table-body">
+                    <tbody class="block lg:table-row-group divide-y divide-surface-border" id="user-table-body">
                         <?php foreach ($users as $u): ?>
-                            <tr class="user-dir-row block lg:table-row bg-surface border lg:border-none border-surface-border rounded-xl lg:rounded-none mb-3 lg:mb-0 p-4 lg:p-0 shadow-sm lg:shadow-none hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors <?= (isset($u['is_active']) && $u['is_active'] == 0) ? 'opacity-60 lg:opacity-60' : '' ?>"
+                            <tr class="user-dir-row block lg:table-row bg-surface p-4 lg:p-0 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors <?= (isset($u['is_active']) && $u['is_active'] == 0) ? 'opacity-60' : '' ?>"
                                 data-name="<?= strtolower(esc($u['first_name'] . ' ' . $u['last_name'])) ?>"
                                 data-email="<?= strtolower(esc($u['email'])) ?>"
                                 data-role="<?= esc($u['role_name'] ?? 'No Role') ?>"
@@ -132,30 +132,32 @@
                                     </div>
                                 </td>
 
-                                <td class="block lg:table-cell px-0 lg:px-6 py-2 lg:py-4 border-t border-surface-border lg:border-none mt-2 lg:mt-0 lg:min-w-[90px]">
-                                    <div class="flex flex-col gap-2 lg:block">
-                                        <?php if ($u['id'] != session()->get('user_id')): ?>
-                                            <?php $currentRoleId = explode(',', $u['role_id'] ?? '')[0] ?? null; ?>
-                                            <?= form_open('account/update-role', ['class' => 'inline-block', 'data-ajax' => 'change-role']) ?>
-                                                <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
-                                                <div class="relative inline-block w-max">
-                                                    <select name="role_id" onchange="this.form.requestSubmit()" data-previous="<?= esc($currentRoleId) ?>"
-                                                            class="js-role-select appearance-none pl-3 pr-7 py-1.5 rounded-lg text-[10px] font-black bg-surface lg:bg-white dark:bg-zinc-900 dark:[color-scheme:dark] border border-surface-border uppercase tracking-widest text-text cursor-pointer focus:outline-none focus:border-accent">
-                                                        <?php foreach ($roles as $role): ?>
-                                                            <option value="<?= $role['id'] ?>" <?= $currentRoleId == $role['id'] ? 'selected' : '' ?>><?= esc($role['name']) ?></option>
-                                                        <?php endforeach; ?>
-                                                    </select>
-                                                    <div class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-text-muted">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                                <td class="block lg:table-cell px-0 lg:px-6 py-2 lg:py-4 lg:min-w-[90px]">
+                                    <div class="flex justify-between items-center lg:block gap-4">
+                                        <div>
+                                            <?php if ($u['id'] != session()->get('user_id')): ?>
+                                                <?php $currentRoleId = explode(',', $u['role_id'] ?? '')[0] ?? null; ?>
+                                                <?= form_open('account/update-role', ['class' => 'inline-block', 'data-ajax' => 'change-role']) ?>
+                                                    <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
+                                                    <div class="relative inline-block w-max">
+                                                        <select name="role_id" onchange="this.form.requestSubmit()" data-previous="<?= esc($currentRoleId) ?>"
+                                                                class="js-role-select appearance-none pl-3 pr-7 py-1.5 rounded-lg text-[10px] font-black bg-surface lg:bg-white dark:bg-zinc-900 dark:[color-scheme:dark] border border-surface-border uppercase tracking-widest text-text cursor-pointer focus:outline-none focus:border-accent">
+                                                            <?php foreach ($roles as $role): ?>
+                                                                <option value="<?= $role['id'] ?>" <?= $currentRoleId == $role['id'] ? 'selected' : '' ?>><?= esc($role['name']) ?></option>
+                                                            <?php endforeach; ?>
+                                                        </select>
+                                                        <div class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-text-muted">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            <?= form_close() ?>
-                                        <?php else: ?>
-                                            <span class="w-max px-3 py-1 rounded-lg text-[10px] font-black bg-info-50 dark:bg-info-500/10 text-info-600 border border-info-200 dark:border-info-500/20 uppercase tracking-widest lg:w-auto">
-                                                <?= esc($u['role_name'] ?? 'No Role') ?>
-                                            </span>
-                                        <?php endif; ?>
-                                        <div class="flex flex-col min-w-0 lg:hidden mt-1">
+                                                <?= form_close() ?>
+                                            <?php else: ?>
+                                                <span class="w-max px-3 py-1 rounded-lg text-[10px] font-black bg-info-50 dark:bg-info-500/10 text-info-600 border border-info-200 dark:border-info-500/20 uppercase tracking-widest lg:w-auto">
+                                                    <?= esc($u['role_name'] ?? 'No Role') ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="flex flex-col min-w-0 lg:hidden text-right">
                                             <span class="text-xs font-bold text-text truncate"><?= esc($u['department'] ?? 'No Unit') ?></span>
                                             <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate"><?= esc($u['position'] ?? 'No Position') ?></span>
                                         </div>
@@ -177,18 +179,18 @@
                                     <?php endif; ?>
                                 </td>
 
-                                <td class="block lg:table-cell px-0 lg:px-6 pt-3 pb-0 lg:py-4 text-right border-t border-surface-border lg:border-none mt-2 lg:mt-0 lg:min-w-[190px]">
+                                <td class="block lg:table-cell px-0 lg:px-6 py-2 pt-0 lg:py-4 text-right lg:min-w-[190px]">
                                     <?php if ($u['id'] != session()->get('user_id')): ?>
-                                        <div class="flex justify-end gap-2 lg:gap-2">
-                                            <?= form_open('account/toggle', ['class' => 'inline flex-1 lg:flex-none', 'data-ajax' => 'toggle-status']) ?>
+                                        <div class="flex justify-end gap-2">
+                                            <?= form_open('account/toggle', ['class' => 'inline', 'data-ajax' => 'toggle-status']) ?>
                                                 <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
-                                                <button type="submit" class="js-toggle-btn w-full lg:w-auto text-[10px] font-black uppercase tracking-widest px-4 py-2.5 lg:px-3 lg:py-1.5 rounded-lg border lg:border-transparent transition-colors cursor-pointer <?= $u['is_active'] == 1 ? 'border-warning-200 bg-warning-50 lg:bg-transparent text-warning-600 hover:bg-warning-100 lg:hover:bg-warning-50 dark:hover:bg-warning-500/10' : 'border-success-200 bg-success-50 lg:bg-transparent text-success-600 hover:bg-success-100 lg:hover:bg-success-50 dark:hover:bg-success-500/10' ?>">
+                                                <button type="submit" class="js-toggle-btn text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-transparent transition-colors cursor-pointer <?= $u['is_active'] == 1 ? 'text-warning-600 hover:bg-warning-50 dark:hover:bg-warning-500/10' : 'text-success-600 hover:bg-success-50 dark:hover:bg-success-500/10' ?>">
                                                     <?= $u['is_active'] == 1 ? 'Disable' : 'Enable' ?>
                                                 </button>
                                             <?= form_close() ?>
 
                                             <?= form_open('account', [
-                                                'class' => 'inline flex-1 lg:flex-none',
+                                                'class' => 'inline',
                                                 'data-ajax' => 'delete-user',
                                                 'data-confirm' => 'Are you sure you want to permanently delete this user?',
                                                 'data-confirm-title' => 'Delete User Account',
@@ -196,7 +198,7 @@
                                             ]) ?>
                                                 <input type="hidden" name="_method" value="DELETE">
                                                 <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
-                                                <button type="submit" class="w-full lg:w-auto text-[10px] font-black uppercase tracking-widest px-4 py-2.5 lg:px-3 lg:py-1.5 rounded-lg border border-danger-200 lg:border-transparent bg-danger-50 lg:bg-transparent text-danger-500 hover:bg-danger-100 lg:hover:bg-danger-50 dark:hover:bg-danger-500/10 transition-colors cursor-pointer">
+                                                <button type="submit" class="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-transparent text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10 transition-colors cursor-pointer">
                                                     Delete
                                                 </button>
                                             <?= form_close() ?>
@@ -207,7 +209,7 @@
                         <?php endforeach; ?>
                         
                         <tr id="empty-filter-state" class="lg:table-row" style="display:none;">
-                            <td colspan="5" class="block lg:table-cell px-6 py-12 text-center text-sm font-bold text-text-muted italic bg-surface border border-surface-border rounded-xl lg:border-none lg:bg-transparent">
+                            <td colspan="5" class="block lg:table-cell px-6 py-12 text-center text-sm font-bold text-text-muted italic bg-surface">
                                 No users matched your specific search criteria.
                             </td>
                         </tr>
@@ -329,7 +331,7 @@
                         <col style="width:20%">
                         <col style="width:16%">
                     </colgroup>
-                    <tbody class="block lg:table-row-group divide-y lg:divide-y-0 divide-transparent lg:divide-surface-border" id="invitations-table-body">
+                    <tbody class="block lg:table-row-group divide-y divide-surface-border" id="invitations-table-body">
                         <?php foreach ($invitations as $inv):
                             $isExpired = $inv['status'] === 'pending' && strtotime($inv['expires_at']) < time();
                             if ($inv['status'] === 'accepted') {
@@ -343,7 +345,7 @@
                                 $statusClass = 'text-warning-500';
                             }
                         ?>
-                            <tr class="invite-row block lg:table-row bg-surface border lg:border-none border-surface-border rounded-xl lg:rounded-none mb-3 lg:mb-0 p-4 lg:p-0 shadow-sm lg:shadow-none hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors"
+                            <tr class="invite-row block lg:table-row bg-surface p-4 lg:p-0 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors"
                                 data-id="<?= $inv['id'] ?>" data-email="<?= strtolower(esc($inv['email'])) ?>"
                                 data-status="<?= esc($inv['status']) ?>" data-expired="<?= $isExpired ? '1' : '0' ?>" data-role="<?= esc($inv['role_name'] ?? '') ?>">
                                 <td class="block lg:table-cell px-0 lg:px-6 py-1 lg:py-4">
@@ -353,7 +355,7 @@
                                     </div>
                                 </td>
 
-                                <td class="block lg:table-cell px-0 lg:px-6 py-2 lg:py-4 border-t border-surface-border lg:border-none mt-2 lg:mt-0">
+                                <td class="block lg:table-cell px-0 lg:px-6 py-2 lg:py-4">
                                     <span class="w-max px-3 py-1 rounded-lg text-[10px] font-black bg-info-50 dark:bg-info-500/10 text-info-600 border border-info-200 dark:border-info-500/20 uppercase tracking-widest">
                                         <?= esc($inv['role_name'] ?? 'No Role') ?>
                                     </span>
@@ -367,7 +369,7 @@
                                     <span class="text-xs font-bold text-text"><?= date('M d, Y - h:i A', strtotime($inv['expires_at'])) ?></span>
                                 </td>
 
-                                <td class="block lg:table-cell px-0 lg:px-6 pt-3 pb-0 lg:py-4 text-right border-t border-surface-border lg:border-none mt-2 lg:mt-0">
+                                <td class="block lg:table-cell px-0 lg:px-6 py-2 lg:py-4 text-right">
                                     <?= form_open('account/invite/delete', [
                                         'class' => 'inline',
                                         'data-ajax' => 'delete-invite',
@@ -375,7 +377,7 @@
                                         'data-confirm-title' => 'Delete Invitation'
                                     ]) ?>
                                         <input type="hidden" name="id" value="<?= $inv['id'] ?>">
-                                        <button type="submit" class="w-full lg:w-auto text-[10px] font-black uppercase tracking-widest px-4 py-2.5 lg:px-3 lg:py-1.5 rounded-lg border border-danger-200 lg:border-transparent bg-danger-50 lg:bg-transparent text-danger-500 hover:bg-danger-100 lg:hover:bg-danger-50 dark:hover:bg-danger-500/10 transition-colors cursor-pointer">
+                                        <button type="submit" class="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-transparent text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10 transition-colors cursor-pointer">
                                             Delete
                                         </button>
                                     <?= form_close() ?>
@@ -385,14 +387,14 @@
 
                         <?php if (empty($invitations)): ?>
                             <tr class="block lg:table-row" id="invitations-empty-state">
-                                <td colspan="5" class="block lg:table-cell px-6 py-12 text-center text-sm font-bold text-text-muted italic bg-surface border border-surface-border rounded-xl lg:border-none lg:bg-transparent">
+                                <td colspan="5" class="block lg:table-cell px-6 py-12 text-center text-sm font-bold text-text-muted italic bg-surface">
                                     No invitations have been sent yet.
                                 </td>
                             </tr>
                         <?php endif; ?>
 
                         <tr id="invitations-filter-empty-state" class="lg:table-row" style="display:none;">
-                            <td colspan="5" class="block lg:table-cell px-6 py-12 text-center text-sm font-bold text-text-muted italic bg-surface border border-surface-border rounded-xl lg:border-none lg:bg-transparent">
+                            <td colspan="5" class="block lg:table-cell px-6 py-12 text-center text-sm font-bold text-text-muted italic bg-surface">
                                 No invitations matched your search/filter.
                             </td>
                         </tr>

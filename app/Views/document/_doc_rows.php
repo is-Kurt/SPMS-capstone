@@ -42,12 +42,14 @@
             <div class="relative mb-6 pr-4 shrink-0" id="folder-dropdown-container">
                 <div class="flex items-center gap-2 mb-1">
                     <span class="text-[10px] font-black uppercase tracking-widest text-text-muted">Folder Contents</span>
-                    <span class="text-zinc-400">/</span>
-                    <span class="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md 
-                        <?= $activeFolder['status'] === 'draft' ? 'bg-zinc-100 text-zinc-500' : 
-                           ($activeFolder['status'] === 'evaluated' ? 'bg-success-100 text-success-600' : 'bg-warning-100 text-warning-600') ?>">
-                        STATUS: <?= esc($activeFolder['status']) ?>
-                    </span>
+                    <?php if (session()->get('role') !== 'Admin'): ?>
+                        <span class="text-zinc-400">/</span>
+                        <span class="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md 
+                            <?= $activeFolder['status'] === 'draft' ? 'bg-zinc-100 text-zinc-500' : 
+                               ($activeFolder['status'] === 'evaluated' ? 'bg-success-100 text-success-600' : 'bg-warning-100 text-warning-600') ?>">
+                            STATUS: <?= esc($activeFolder['status']) ?>
+                        </span>
+                    <?php endif; ?>
                 </div>
                 
                 <button onclick="toggleFolderDropdown()" class="flex items-center justify-between w-full text-left group cursor-pointer lg:cursor-default">
@@ -330,40 +332,7 @@
                     </div>
                 <?php endif; ?>
 
-                <div class="bg-surface lg:border lg:border-surface-border rounded-2xl lg:p-5 lg:shadow-sm flex flex-col gap-4">
-                    <h4 class="text-[10px] font-black uppercase text-text-muted tracking-widest border-b border-surface-border pb-2">Evaluator Progress</h4>
-                    
-                    <?php if(empty($groupedGuides)): ?>
-                        <p class="text-xs text-text-muted italic text-center py-4 bg-zinc-50 dark:bg-zinc-800/30 rounded-xl border border-dashed border-surface-border">No evaluators assigned yet.</p>
-                    <?php else: ?>
-                        <div class="flex flex-col gap-3 mt-1">
-                            <?php foreach ($groupedGuides as $group): 
-                                $db = \Config\Database::connect();
-                                $routing = $db->table('evaluation_routings')
-                                            ->where('folder_id', $activeFolder['id'])
-                                            ->where('evaluator_folder_id', $group['docs'][0]['document_folder_id'])
-                                            ->get()->getRowArray();
-                                
-                                $rStatus = $routing['status'] ?? 'pending';
-                                $statusColor = $rStatus === 'approved' ? 'bg-success-500' : ($rStatus === 're_evaluate' ? 'bg-danger-500' : 'bg-warning-400');
-                                $statusBg = $rStatus === 'approved' ? 'bg-success-50 text-success-700 dark:bg-success-500/10 border-success-200 dark:border-success-500/20' : 
-                                           ($rStatus === 're_evaluate' ? 'bg-danger-50 text-danger-700 dark:bg-danger-500/10 border-danger-200 dark:border-danger-500/20' : 
-                                           'bg-warning-50 text-warning-700 dark:bg-warning-500/10 border-warning-200 dark:border-warning-500/20');
-                            ?>
-                                <div class="flex flex-col p-4 border rounded-xl <?= $statusBg ?>">
-                                    <div class="flex justify-between items-center mb-1.5">
-                                        <span class="text-xs font-bold truncate pr-2"><?= esc($group['superior']['name']) ?></span>
-                                        <div class="flex items-center gap-1.5 shrink-0 bg-white/50 dark:bg-black/20 px-2 py-1 rounded-md">
-                                            <div class="w-1.5 h-1.5 rounded-full <?= $statusColor ?> <?= $rStatus !== 'approved' ? 'animate-pulse' : '' ?>"></div>
-                                            <span class="text-[9px] font-black uppercase tracking-widest opacity-80"><?= ucfirst(str_replace('_', '-', $rStatus)) ?></span>
-                                        </div>
-                                    </div>
-                                    <span class="text-[10px] font-bold opacity-60 uppercase tracking-widest truncate"><?= esc($group['superior']['role']) ?></span>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
-                </div>
+
 
             </div>
         </div>
