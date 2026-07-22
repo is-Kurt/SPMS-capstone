@@ -184,7 +184,7 @@
                                         <div class="flex justify-end gap-2">
                                             <?= form_open('account/toggle', ['class' => 'inline', 'data-ajax' => 'toggle-status']) ?>
                                                 <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
-                                                <button type="submit" class="js-toggle-btn text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-transparent transition-colors cursor-pointer <?= $u['is_active'] == 1 ? 'text-warning-600 hover:bg-warning-50 dark:hover:bg-warning-500/10' : 'text-success-600 hover:bg-success-50 dark:hover:bg-success-500/10' ?>">
+                                                <button type="submit" class="js-toggle-btn text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-transparent transition-colors cursor-pointer focus:outline-none <?= $u['is_active'] == 1 ? 'text-warning-600 lg:hover:bg-warning-50 lg:dark:hover:bg-warning-500/10' : 'text-success-600 lg:hover:bg-success-50 lg:dark:hover:bg-success-500/10' ?>">
                                                     <?= $u['is_active'] == 1 ? 'Disable' : 'Enable' ?>
                                                 </button>
                                             <?= form_close() ?>
@@ -198,7 +198,7 @@
                                             ]) ?>
                                                 <input type="hidden" name="_method" value="DELETE">
                                                 <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
-                                                <button type="submit" class="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-transparent text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10 transition-colors cursor-pointer">
+                                                <button type="submit" class="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-transparent text-danger-500 lg:hover:bg-danger-50 lg:dark:hover:bg-danger-500/10 focus:outline-none transition-colors cursor-pointer">
                                                     Delete
                                                 </button>
                                             <?= form_close() ?>
@@ -294,7 +294,7 @@
                         </div>
                     </div>
 
-                    <button type="button" id="btn-delete-filtered" class="shrink-0 flex items-center justify-center gap-1.5 text-xs font-bold text-danger-500 hover:text-danger-600 hover:bg-danger-50 dark:hover:bg-danger-500/10 px-3 py-2.5 lg:py-2 rounded-lg transition-colors cursor-pointer">
+                    <button type="button" id="btn-delete-filtered" class="shrink-0 flex items-center justify-center gap-1.5 text-xs font-bold text-danger-500 hover:text-danger-600 lg:hover:bg-danger-50 lg:dark:hover:bg-danger-500/10 focus:outline-none px-3 py-2.5 lg:py-2 rounded-lg transition-colors cursor-pointer">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         Delete Filtered (<span id="invite-filtered-count">0</span>)
                     </button>
@@ -377,7 +377,7 @@
                                         'data-confirm-title' => 'Delete Invitation'
                                     ]) ?>
                                         <input type="hidden" name="id" value="<?= $inv['id'] ?>">
-                                        <button type="submit" class="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-transparent text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10 transition-colors cursor-pointer">
+                                        <button type="submit" class="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-transparent text-danger-500 lg:hover:bg-danger-50 lg:dark:hover:bg-danger-500/10 focus:outline-none transition-colors cursor-pointer">
                                             Delete
                                         </button>
                                     <?= form_close() ?>
@@ -578,7 +578,7 @@
 
                 const btn = form.querySelector('.js-toggle-btn');
                 btn.textContent = isActive ? 'Disable' : 'Enable';
-                btn.className = `js-toggle-btn w-full lg:w-auto text-[10px] font-black uppercase tracking-widest px-4 py-2.5 lg:px-3 lg:py-1.5 rounded-lg border lg:border-transparent transition-colors cursor-pointer ${isActive ? 'border-warning-200 bg-warning-50 lg:bg-transparent text-warning-600 hover:bg-warning-100 lg:hover:bg-warning-50 dark:hover:bg-warning-500/10' : 'border-success-200 bg-success-50 lg:bg-transparent text-success-600 hover:bg-success-100 lg:hover:bg-success-50 dark:hover:bg-success-500/10'}`;
+                btn.className = `js-toggle-btn text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-transparent transition-colors cursor-pointer focus:outline-none ${isActive ? 'text-warning-600 lg:hover:bg-warning-50 lg:dark:hover:bg-warning-500/10' : 'text-success-600 lg:hover:bg-success-50 lg:dark:hover:bg-success-500/10'}`;
                 break;
             }
 
@@ -690,7 +690,7 @@
                         <td class="block lg:table-cell px-0 lg:px-6 pt-3 pb-0 lg:py-4 text-right border-t border-surface-border lg:border-none mt-2 lg:mt-0">
                             <form action="/account/invite/delete" data-ajax="delete-invite" data-confirm="Delete this invitation? If it hasn't been accepted yet, the invite link will stop working." data-confirm-title="Delete Invitation">
                                 <input type="hidden" name="id" value="${inv.id}">
-                                <button type="submit" class="w-full lg:w-auto text-[10px] font-black uppercase tracking-widest px-4 py-2.5 lg:px-3 lg:py-1.5 rounded-lg border border-danger-200 lg:border-transparent bg-danger-50 lg:bg-transparent text-danger-500 hover:bg-danger-100 lg:hover:bg-danger-50 dark:hover:bg-danger-500/10 transition-colors cursor-pointer">
+                                <button type="submit" class="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-transparent text-danger-500 lg:hover:bg-danger-50 lg:dark:hover:bg-danger-500/10 focus:outline-none transition-colors cursor-pointer">
                                     Delete
                                 </button>
                             </form>
