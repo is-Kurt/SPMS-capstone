@@ -3,7 +3,11 @@
 
 <?= view('components/header') ?>
 
-<div class="p-8 max-w-4xl mx-auto flex flex-col gap-8 pb-20 h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar">
+<div class="p-4 md:p-8 max-w-5xl mx-auto flex flex-col gap-6 md:gap-8 pb-20 h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar">
+    <div class="shrink-0">
+        <h1 class="text-2xl md:text-3xl font-black tracking-tight text-text">My Account</h1>
+        <p class="text-xs md:text-sm text-text-muted mt-1 font-medium italic">Manage your profile, avatar, and security settings.</p>
+    </div>
     <div class="bg-surface border border-surface-border rounded-2xl shadow-sm overflow-hidden shrink-0 flex flex-col md:flex-row">
         
         <div class="p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-surface-border bg-zinc-50/50 dark:bg-zinc-800/10 min-w-[250px]">
