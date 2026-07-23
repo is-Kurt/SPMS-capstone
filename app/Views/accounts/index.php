@@ -27,7 +27,7 @@
         </button>
     </div>
 
-    <div class="bg-surface lg:bg-surface/50 border-none lg:border border-surface-border rounded-none lg:rounded-2xl shadow-none lg:shadow-sm flex flex-col flex-1 lg:min-h-[400px] lg:overflow-hidden relative pb-10 lg:pb-0">
+    <div class="-mt-2 md:-mt-4 bg-surface lg:bg-surface/50 border-none lg:border border-surface-border rounded-none lg:rounded-2xl shadow-none lg:shadow-sm flex flex-col flex-1 lg:min-h-[400px] lg:overflow-hidden relative pb-10 lg:pb-0">
         
         <div id="tab-content-directory" class="tab-content <?= $activeTab === 'directory' ? 'flex' : 'hidden' ?> flex-col lg:absolute lg:inset-0 bg-transparent lg:bg-surface">
             
@@ -414,7 +414,7 @@
                     <div class="flex-1 lg:overflow-y-auto custom-scrollbar p-2">
                         <ul class="divide-y divide-surface-border" id="positions-list">
                             <?php foreach ($positions as $pos): ?>
-                                <li class="flex justify-between items-center px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 rounded-lg transition-colors group" data-title="<?= strtolower(esc($pos['title'])) ?>">
+                                <li class="position-item flex justify-between items-center px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 rounded-lg transition-colors group" data-title="<?= strtolower(esc($pos['title'])) ?>">
                                     <div class="flex flex-col">
                                         <span class="text-sm font-bold text-text"><?= esc($pos['title']) ?></span>
                                         <span class="text-[9px] font-black tracking-widest uppercase <?= $pos['is_teaching'] ? 'text-warning-500' : 'text-zinc-400' ?>"><?= $pos['is_teaching'] ? 'Teaching' : 'Non-Teaching' ?></span>
@@ -430,6 +430,11 @@
                             <?php endforeach; ?>
                             <li id="positions-empty-state" class="hidden px-4 py-8 text-center text-xs font-bold text-text-muted italic">No positions matched your search.</li>
                         </ul>
+                    </div>
+                    <div id="positions-pagination" class="p-3 border-t border-surface-border flex justify-between items-center bg-zinc-50 dark:bg-zinc-800/30 shrink-0">
+                        <button type="button" id="pos-prev" class="text-xs font-bold text-accent disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+                        <span id="pos-page-info" class="text-[10px] font-black tracking-widest text-text-muted uppercase">Page 1 of 1</span>
+                        <button type="button" id="pos-next" class="text-xs font-bold text-accent disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
                     </div>
                     <?= form_open('account/position/add', ['class' => 'p-4 border-t border-surface-border bg-zinc-50 dark:bg-zinc-800/30 space-y-3 shrink-0', 'data-ajax' => 'add-position']) ?>
                         <input type="text" name="title" required placeholder="New Position Title" class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-lg px-3 py-2.5 lg:py-2 text-xs focus:border-accent outline-none text-text">
@@ -449,20 +454,45 @@
                         <input type="text" id="filter-units" placeholder="Search units..." class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-lg px-3 py-2 text-xs focus:border-accent outline-none text-text">
                     </div>
                     <div class="flex-1 lg:overflow-y-auto custom-scrollbar p-2">
+                        <?php
+                        $unitTree = [];
+                        foreach ($units as $u) {
+                            $pid = $u['parent_id'] ?: 0;
+                            $unitTree[$pid][] = $u;
+                        }
+                        $flattenedUnits = [];
+                        $flatten = function($parentId, $level) use (&$flatten, &$unitTree, &$flattenedUnits) {
+                            if (!isset($unitTree[$parentId])) return;
+                            foreach ($unitTree[$parentId] as $unit) {
+                                $unit['level'] = $level;
+                                $unit['has_children'] = isset($unitTree[$unit['id']]);
+                                $flattenedUnits[] = $unit;
+                                $flatten($unit['id'], $level + 1);
+                            }
+                        };
+                        $flatten(0, 0);
+                        ?>
                         <ul class="divide-y divide-surface-border" id="units-list">
-                            <?php foreach ($units as $unit): ?>
-                                <li class="flex justify-between items-center px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 rounded-lg transition-colors group" data-name="<?= strtolower(esc($unit['name'])) ?>">
-                                    <div class="flex flex-col pr-2">
-                                        <span class="text-sm font-bold text-text"><?= esc($unit['name']) ?></span>
-                                        <?php if ($unit['parent_id']): ?>
-                                            <?php
-                                                $parentName = 'Top Level';
-                                                foreach($units as $u) { if($u['id'] == $unit['parent_id']) { $parentName = $u['name']; break; } }
-                                            ?>
-                                            <span class="text-[9px] font-bold text-text-muted uppercase tracking-widest mt-0.5 leading-tight">Parent: <?= esc($parentName) ?></span>
+                            <?php foreach ($flattenedUnits as $unit): ?>
+                                <li class="unit-item flex justify-between items-center px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 rounded-lg transition-colors group" 
+                                    data-id="<?= $unit['id'] ?>"
+                                    data-parent="<?= $unit['parent_id'] ?: 0 ?>"
+                                    data-name="<?= strtolower(esc($unit['name'])) ?>"
+                                    style="padding-left: <?= ($unit['level'] * 24 + 16) ?>px; <?= $unit['parent_id'] ? 'display: none;' : '' ?>">
+                                    <div class="flex items-center gap-2 pr-2">
+                                        <?php if ($unit['has_children']): ?>
+                                            <button type="button" class="js-tree-toggle text-text-muted hover:text-text transition-transform transform -rotate-90 focus:outline-none" onclick="toggleUnitTree(this, <?= $unit['id'] ?>)">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                                            </button>
                                         <?php else: ?>
-                                            <span class="text-[9px] font-bold text-info-500 uppercase tracking-widest mt-0.5">Top Level Node</span>
+                                            <div class="w-4 h-4"></div>
                                         <?php endif; ?>
+                                        <div class="flex flex-col">
+                                            <span class="text-sm font-bold text-text"><?= esc($unit['name']) ?></span>
+                                            <?php if (!$unit['parent_id']): ?>
+                                                <span class="text-[9px] font-bold text-info-500 uppercase tracking-widest mt-0.5">Top Level Node</span>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
                                     <?= form_open('account/unit/delete', ['data-ajax' => 'delete-unit', 'data-confirm' => 'Delete this unit? Staff currently assigned to it will keep their account but lose that unit. Sub-units under it will be deleted too.', 'data-confirm-title' => 'Delete Unit']) ?>
                                         <input type="hidden" name="id" value="<?= $unit['id'] ?>">
@@ -596,15 +626,20 @@
                 break;
             }
 
-            case 'delete-position':
-            case 'delete-unit': {
+            case 'delete-position': {
                 form.closest('li').remove();
+                if (typeof filterPositions === 'function') filterPositions();
+                break;
+            }
+
+            case 'delete-unit': {
+                window.location.reload();
                 break;
             }
 
             case 'add-position': {
                 const li = document.createElement('li');
-                li.className = 'flex justify-between items-center px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 rounded-lg transition-colors group';
+                li.className = 'position-item flex justify-between items-center px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 rounded-lg transition-colors group';
                 li.dataset.title = data.item.title.toLowerCase();
                 const isTeaching = data.item.is_teaching == 1;
                 li.innerHTML = `
@@ -621,36 +656,12 @@
                 `;
                 document.getElementById('positions-list').appendChild(li);
                 form.reset();
+                if (typeof filterPositions === 'function') filterPositions();
                 break;
             }
 
             case 'add-unit': {
-                const li = document.createElement('li');
-                li.className = 'flex justify-between items-center px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 rounded-lg transition-colors group';
-                li.dataset.name = data.item.name.toLowerCase();
-                const parentLabel = data.item.parent_name
-                    ? `<span class="text-[9px] font-bold text-text-muted uppercase tracking-widest mt-0.5 leading-tight">Parent: ${escapeHtml(data.item.parent_name)}</span>`
-                    : `<span class="text-[9px] font-bold text-info-500 uppercase tracking-widest mt-0.5">Top Level Node</span>`;
-                li.innerHTML = `
-                    <div class="flex flex-col pr-2">
-                        <span class="text-sm font-bold text-text">${escapeHtml(data.item.name)}</span>
-                        ${parentLabel}
-                    </div>
-                    <form action="${form.getAttribute('action').replace('/add', '/delete')}" data-ajax="delete-unit" data-confirm="Delete this unit? Staff currently assigned to it will keep their account but lose that unit. Sub-units under it will be deleted too." data-confirm-title="Delete Unit">
-                        <input type="hidden" name="id" value="${data.item.id}">
-                        <button type="submit" class="text-danger-400 hover:text-danger-600 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                    </form>
-                `;
-                document.getElementById('units-list').appendChild(li);
-
-                const opt = document.createElement('option');
-                opt.value = data.item.id;
-                opt.textContent = data.item.name;
-                document.getElementById('select-unit-parent').appendChild(opt);
-
-                form.reset();
+                window.location.reload();
                 break;
             }
 
@@ -903,29 +914,127 @@
         filterInvitations();
     });
 
-    // --- SYSTEM DATA TAB: simple text search over the Positions and Units panels ---
-    function filterSystemList(inputId, listId, dataAttr, emptyStateId) {
-        const input = document.getElementById(inputId);
-        const list = document.getElementById(listId);
-        if (!input || !list) return;
+    // --- SYSTEM DATA TAB: JOB POSITIONS PAGINATION & SEARCH ---
+    let posCurrentPage = 1;
+    const posPerPage = 10;
+    let posFilteredRows = [];
 
-        input.addEventListener('input', () => {
-            const query = input.value.trim().toLowerCase();
-            let visibleCount = 0;
+    function renderPositionsPage() {
+        const list = document.getElementById('positions-list');
+        if (!list) return;
+        const allRows = Array.from(list.querySelectorAll('li.position-item'));
+        
+        allRows.forEach(row => row.style.display = 'none');
+        
+        const start = (posCurrentPage - 1) * posPerPage;
+        const end = start + posPerPage;
+        posFilteredRows.slice(start, end).forEach(row => row.style.display = '');
+        
+        const totalPages = Math.ceil(posFilteredRows.length / posPerPage) || 1;
+        document.getElementById('pos-page-info').textContent = `Page ${posCurrentPage} of ${totalPages}`;
+        document.getElementById('pos-prev').disabled = posCurrentPage === 1;
+        document.getElementById('pos-next').disabled = posCurrentPage === totalPages || posFilteredRows.length === 0;
+        
+        const emptyState = document.getElementById('positions-empty-state');
+        if (emptyState) emptyState.style.display = posFilteredRows.length === 0 ? '' : 'none';
+    }
 
-            list.querySelectorAll(`li[data-${dataAttr}]`).forEach(li => {
-                const matches = li.dataset[dataAttr === 'title' ? 'title' : 'name'].includes(query);
-                li.style.display = matches ? '' : 'none';
-                if (matches) visibleCount++;
+    function filterPositions() {
+        const input = document.getElementById('filter-positions');
+        if (!input) return;
+        const query = input.value.trim().toLowerCase();
+        const list = document.getElementById('positions-list');
+        const allRows = Array.from(list.querySelectorAll('li.position-item'));
+        
+        posFilteredRows = allRows.filter(row => row.dataset.title.includes(query));
+        posCurrentPage = 1;
+        renderPositionsPage();
+    }
+
+    const posInput = document.getElementById('filter-positions');
+    if (posInput) posInput.addEventListener('input', filterPositions);
+    
+    const posPrevBtn = document.getElementById('pos-prev');
+    if (posPrevBtn) posPrevBtn.addEventListener('click', () => { if (posCurrentPage > 1) { posCurrentPage--; renderPositionsPage(); } });
+    
+    const posNextBtn = document.getElementById('pos-next');
+    if (posNextBtn) posNextBtn.addEventListener('click', () => { 
+        if (posCurrentPage < Math.ceil(posFilteredRows.length / posPerPage)) { posCurrentPage++; renderPositionsPage(); } 
+    });
+
+    const positionsList = document.getElementById('positions-list');
+    if (positionsList) {
+        posFilteredRows = Array.from(positionsList.querySelectorAll('li.position-item'));
+        renderPositionsPage();
+    }
+
+    // --- SYSTEM DATA TAB: DEPARTMENTS & UNITS TREE VIEW ---
+    function toggleUnitTree(btn, parentId) {
+        const isCollapsed = btn.classList.contains('-rotate-90');
+        if (isCollapsed) {
+            btn.classList.remove('-rotate-90');
+            document.querySelectorAll(`.unit-item[data-parent="${parentId}"]`).forEach(li => {
+                li.style.display = '';
             });
+        } else {
+            btn.classList.add('-rotate-90');
+            hideDescendants(parentId);
+        }
+    }
 
-            const emptyState = document.getElementById(emptyStateId);
-            if (emptyState) emptyState.style.display = visibleCount === 0 ? '' : 'none';
+    function hideDescendants(parentId) {
+        document.querySelectorAll(`.unit-item[data-parent="${parentId}"]`).forEach(li => {
+            li.style.display = 'none';
+            const childId = li.dataset.id;
+            const btn = li.querySelector('.js-tree-toggle');
+            if (btn) btn.classList.add('-rotate-90');
+            hideDescendants(childId);
         });
     }
 
-    filterSystemList('filter-positions', 'positions-list', 'title', 'positions-empty-state');
-    filterSystemList('filter-units', 'units-list', 'name', 'units-empty-state');
+    const unitInput = document.getElementById('filter-units');
+    if (unitInput) {
+        unitInput.addEventListener('input', () => {
+            const query = unitInput.value.trim().toLowerCase();
+            const list = document.getElementById('units-list');
+            let visibleCount = 0;
+
+            if (query === '') {
+                list.querySelectorAll('.unit-item').forEach(li => {
+                    li.style.display = li.dataset.parent === "0" ? '' : 'none';
+                    const btn = li.querySelector('.js-tree-toggle');
+                    if (btn) {
+                        btn.classList.add('-rotate-90');
+                        btn.style.visibility = ''; 
+                    }
+                });
+            } else {
+                list.querySelectorAll('.unit-item').forEach(li => li.style.display = 'none');
+                list.querySelectorAll('.unit-item').forEach(li => {
+                    if (li.dataset.name.includes(query)) {
+                        li.style.display = '';
+                        visibleCount++;
+                        let pId = li.dataset.parent;
+                        while (pId !== "0" && pId !== "") {
+                            const parentLi = document.querySelector(`.unit-item[data-id="${pId}"]`);
+                            if (parentLi) {
+                                parentLi.style.display = '';
+                                const pBtn = parentLi.querySelector('.js-tree-toggle');
+                                if (pBtn) pBtn.classList.remove('-rotate-90'); 
+                                pId = parentLi.dataset.parent;
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                    const btn = li.querySelector('.js-tree-toggle');
+                    if (btn) btn.style.visibility = 'hidden'; 
+                });
+            }
+            const emptyState = document.getElementById('units-empty-state');
+            if (emptyState) emptyState.style.display = query !== '' && visibleCount === 0 ? '' : 'none';
+        });
+    }
 </script>
 
 <?= $this->endSection() ?>
