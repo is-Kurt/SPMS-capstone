@@ -93,8 +93,30 @@ class Register extends BaseController
         ];
 
         if (!$isAdminInvite) {
-            $rules['units.*'] = 'required';
-            $rules['positions.*'] = 'required';
+            $rules['units'] = [
+                'rules' => 'required',
+                'errors' => [
+                    'required' => 'Please select a unit/department.'
+                ]
+            ];
+            $rules['units.*'] = [
+                'rules' => 'required',
+                'errors' => [
+                    'required' => 'Please select a unit/department.'
+                ]
+            ];
+            $rules['positions'] = [
+                'rules' => 'required',
+                'errors' => [
+                    'required' => 'Please select an official position.'
+                ]
+            ];
+            $rules['positions.*'] = [
+                'rules' => 'required',
+                'errors' => [
+                    'required' => 'Please select an official position.'
+                ]
+            ];
         }
 
         $validation->setRules($rules);

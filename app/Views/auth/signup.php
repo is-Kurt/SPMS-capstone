@@ -17,7 +17,7 @@
             <p class="text-sm font-bold text-danger-500 dark:text-danger-400 mb-6"><?= session('error') ?></p>
         <?php endif; ?>
     </div>
-    <?= form_open('signup', ['class' => 'w-full max-w-2xl flex flex-col gap-6']) ?>
+    <?= form_open('signup', ['class' => 'w-full max-w-2xl flex flex-col gap-6', 'novalidate' => 'novalidate']) ?>
         <input type="hidden" name="token" value="<?= esc($invitation['token']) ?>">
 
         <div class="border border-surface-border p-8 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm">
@@ -53,7 +53,7 @@
 
                 <div class="col-span-1">
                     <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Password</label>
-                    <input type="password" name="password" required minlength="8"
+                    <input type="password" name="password" value="<?= old('password') ?>" required minlength="8"
                            class="w-full bg-zinc-50 dark:bg-zinc-950 border border-surface-border rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:outline-none text-text transition-all" />
                     <div class="h-3 pl-1 mt-1">
                         <p class="text-danger-500 text-[10px] font-bold uppercase tracking-wider"><?= validation_show_error('password') ?></p>
@@ -62,7 +62,7 @@
 
                 <div class="col-span-1">
                     <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Confirm Password</label>
-                    <input type="password" name="confirm-password" required
+                    <input type="password" name="confirm-password" value="<?= old('confirm-password') ?>" required
                            class="w-full bg-zinc-50 dark:bg-zinc-950 border border-surface-border rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:outline-none text-text transition-all" />
                     <div class="h-3 pl-1 mt-1">
                         <p class="text-danger-500 text-[10px] font-bold uppercase tracking-wider"><?= validation_show_error('confirm-password') ?></p>
@@ -82,6 +82,30 @@
             </div>
         <?php else: ?>
             <div id="positions-container" class="flex flex-col gap-4">
+                <?php 
+                    $oldUnits = old('units');
+                    $oldPositions = old('positions');
+                    $numCards = (is_array($oldUnits) && count($oldUnits) > 0) ? count($oldUnits) : 1;
+
+                    $unitTree = [];
+                    foreach ($units as $u) {
+                        $pid = $u['parent_id'] ?: 0;
+                        $unitTree[$pid][] = $u;
+                    }
+
+                    $renderOptionsTree = function($parentId, $level, $selectedUnitId) use (&$renderOptionsTree, &$unitTree) {
+                        if (!isset($unitTree[$parentId])) return;
+                        foreach ($unitTree[$parentId] as $unit) {
+                            $sel = ($unit['id'] == $selectedUnitId) ? 'selected' : '';
+                            echo '<option value="' . $unit['id'] . '" data-level="' . $level . '" ' . $sel . '>' . esc($unit['name']) . '</option>';
+                            $renderOptionsTree($unit['id'], $level + 1, $selectedUnitId);
+                        }
+                    };
+
+                    for ($i = 0; $i < $numCards; $i++): 
+                        $selectedUnit = is_array($oldUnits) ? ($oldUnits[$i] ?? '') : '';
+                        $selectedPos = is_array($oldPositions) ? ($oldPositions[$i] ?? '') : '';
+                ?>
                 <div class="position-card border border-surface-border p-8 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm relative group">
                     <h3 class="text-[10px] font-black uppercase tracking-widest text-text-muted mb-6 flex items-center justify-between">
                         <div class="flex items-center gap-2">
@@ -98,23 +122,14 @@
                             <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Department / Unit</label>
                             <div class="relative">
                                 <select name="units[]" required data-custom-select class="w-full bg-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border-2 border-dashed border-surface-border hover:border-accent hover:text-accent rounded-xl px-4 py-3 text-sm focus:outline-none text-text cursor-pointer font-bold transition-all">
-                                    <option value="" disabled selected>Select Unit...</option>
-                                    <?php 
-                                        $unitTree = [];
-                                        foreach ($units as $u) {
-                                            $pid = $u['parent_id'] ?: 0;
-                                            $unitTree[$pid][] = $u;
-                                        }
-                                        $renderOptionsTree = function($parentId, $level) use (&$renderOptionsTree, &$unitTree) {
-                                            if (!isset($unitTree[$parentId])) return;
-                                            foreach ($unitTree[$parentId] as $unit) {
-                                                echo '<option value="' . $unit['id'] . '" data-level="' . $level . '">' . esc($unit['name']) . '</option>';
-                                                $renderOptionsTree($unit['id'], $level + 1);
-                                            }
-                                        };
-                                        $renderOptionsTree(0, 0);
-                                    ?>
+                                    <option value="" disabled <?= empty($selectedUnit) ? 'selected' : '' ?>>Select Unit...</option>
+                                    <?php $renderOptionsTree(0, 0, $selectedUnit); ?>
                                 </select>
+                            </div>
+                            <div class="h-3 pl-1 mt-1">
+                                <p class="text-danger-500 text-[10px] font-bold uppercase tracking-wider">
+                                    <?= validation_show_error("units.{$i}") ?: ($i === 0 ? validation_show_error('units') : '') ?>
+                                </p>
                             </div>
                         </div>
 
@@ -122,15 +137,21 @@
                             <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Official Position</label>
                             <div class="relative">
                                 <select name="positions[]" required data-custom-select class="w-full bg-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border-2 border-dashed border-surface-border hover:border-accent hover:text-accent rounded-xl px-4 py-3 text-sm focus:outline-none text-text cursor-pointer font-bold transition-all">
-                                    <option value="" disabled selected>Select Position...</option>
+                                    <option value="" disabled <?= empty($selectedPos) ? 'selected' : '' ?>>Select Position...</option>
                                     <?php foreach($positions as $pos): ?>
-                                        <option value="<?= $pos['id'] ?>"><?= esc($pos['title']) ?></option>
+                                        <option value="<?= $pos['id'] ?>" <?= ($pos['id'] == $selectedPos) ? 'selected' : '' ?>><?= esc($pos['title']) ?></option>
                                     <?php endforeach; ?>
                                 </select>
+                            </div>
+                            <div class="h-3 pl-1 mt-1">
+                                <p class="text-danger-500 text-[10px] font-bold uppercase tracking-wider">
+                                    <?= validation_show_error("positions.{$i}") ?: ($i === 0 ? validation_show_error('positions') : '') ?>
+                                </p>
                             </div>
                         </div>
                     </div>
                 </div>
+                <?php endfor; ?>
             </div>
 
             <button type="button" id="btn-add-position" class="w-full py-4 border-2 border-dashed border-surface-border rounded-2xl text-sm font-bold text-text-muted hover:text-accent hover:border-accent hover:bg-accent/5 transition-all flex items-center justify-center gap-2 cursor-pointer">
