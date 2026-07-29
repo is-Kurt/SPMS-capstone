@@ -471,16 +471,6 @@ class Folder extends BaseController
             $now = date('Y-m-d H:i:s');
             $isNowActive = !empty($dateEnd) && $dateEnd > $now;
             
-            // 1. Update the Admin's Master Folder (Title and Dates only)
-            $folderData = [
-                'title'           => $title,
-                'eval_date_start' => $dateStart,
-                'eval_date_end'   => $dateEnd,
-            ];
-            $folderModel->update($folderId, $folderData);
-
-            // 2. Fetch and Process Cascaded Child Folders
-            $childFolders = $folderModel->where('parent_folder_id', $folderId)->findAll();
             $routingModel = new EvaluationRoutingModel();
             
             $targetStatuses = [
@@ -491,6 +481,28 @@ class Folder extends BaseController
             ];
 
             $didResetAny = false;
+
+            // 1. Update the Admin's Master Folder
+            $folderData = [
+                'title'           => $title,
+                'eval_date_start' => $dateStart,
+                'eval_date_end'   => $dateEnd,
+            ];
+            
+            $masterFolder = $folderModel->find($folderId);
+            if ($masterFolder && in_array($masterFolder['status'], $targetStatuses) && $isNowActive) {
+                $didResetAny = true;
+                $folderData['status'] = empty($masterFolder['submitted_at']) ? FolderStatus::DRAFT->value : FolderStatus::SUBMITTED->value;
+                $folderData['final_rating'] = null;
+                $folderData['rated_at'] = null;
+                
+                $routingModel->where('folder_id', $folderId)->set(['status' => FolderStatus::DRAFT->value])->update();
+            }
+            
+            $folderModel->update($folderId, $folderData);
+
+            // 2. Fetch and Process Cascaded Child Folders
+            $childFolders = $folderModel->where('parent_folder_id', $folderId)->findAll();
 
             if (!empty($childFolders)) {
                 foreach ($childFolders as $child) {

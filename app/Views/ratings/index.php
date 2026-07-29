@@ -146,20 +146,20 @@
             </button>
         </div>
 
-        <div class="relative flex flex-col shrink-0 mb-6 px-4 lg:px-6 pt-4 lg:pt-6" id="folder-dropdown-container">
+        <div class="relative mb-6 pr-4 pt-6 px-6 lg:pt-8 lg:px-8 shrink-0">
             <button onclick="toggleAppSidebar()" class="flex items-center justify-between w-full text-left group cursor-pointer lg:cursor-default">
-                <h1 class="text-2xl lg:text-3xl font-black tracking-tight text-text truncate group-hover:text-accent lg:group-hover:text-text transition-colors">
+                <h1 class="text-3xl font-black tracking-tight text-text truncate group-hover:text-accent lg:group-hover:text-text transition-colors">
                     <?= esc($activeFolder['title']) ?>
                 </h1>
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 shrink-0 text-text-muted transition-colors group-hover:text-accent lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
             </button>
-            <p class="text-[10px] md:text-xs font-bold text-text-muted mt-1 uppercase tracking-widest">
+            <p class="text-xs font-bold text-text-muted mt-2 uppercase tracking-widest">
                 Manage your assigned reviews
             </p>
         </div>
-        <div class="flex gap-6 px-4 lg:px-6 shrink-0 overflow-x-auto custom-scrollbar pt-2">
+        <div class="flex gap-6 border-b border-surface-border px-6 lg:px-8 shrink-0 overflow-x-auto custom-scrollbar">
             <?php foreach ($tabs as $key => $group): ?>
                 <button id="tab-btn-<?= $key ?>" class="tab-btn pb-3 text-sm font-bold border-b-2 transition-all whitespace-nowrap <?= ($key === $firstTabKey) ? 'border-accent text-accent' : 'border-transparent text-text-muted hover:text-text hover:border-surface-border' ?> cursor-pointer"
                         onclick="switchTab('<?= $key ?>', this)">
@@ -181,7 +181,7 @@
                         if ($sysRole === 'Admin') { $colWidths[] = '15%'; }
                         $colWidths = array_merge($colWidths, ['15%', '10%', '12%', '18%']);
                     ?>
-                    <div id="ratings-header-<?= $key ?>" class="hidden lg:block shrink-0 overflow-hidden bg-zinc-50 dark:bg-zinc-800 border-b border-surface-border shadow-sm" data-frozen-header>
+                    <div id="ratings-header-<?= $key ?>" class="hidden lg:block shrink-0 overflow-hidden bg-zinc-50 dark:bg-zinc-800/30 border-b border-surface-border" data-frozen-header>
                         <table class="w-full text-left border-collapse table-fixed lg:min-w-[900px]">
                             <colgroup>
                                 <?php foreach ($colWidths as $cw): ?><col style="width:<?= $cw ?>"><?php endforeach; ?>
