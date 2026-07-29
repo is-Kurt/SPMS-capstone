@@ -21,11 +21,11 @@
     <?= view('components/create_team_modal') ?>
 <?php endif; ?>
 
-<div class="p-4 lg:p-8 max-w-7xl mx-auto flex flex-col lg:flex-row gap-4 lg:gap-8 lg:min-h-[calc(100vh-6rem)] lg:pb-12">
+<div class="p-4 lg:p-8 max-w-[100rem] mx-auto flex flex-col lg:flex-row gap-4 lg:gap-8 lg:min-h-[calc(100vh-6rem)] lg:pb-4">
     
     <!-- LEFT SIDEBAR -->
-    <div class="hidden lg:flex w-64 flex-shrink-0 flex-col h-full overflow-hidden">
-        <div class="flex justify-between items-center mb-4 px-4 shrink-0">
+    <div id="app-sidebar" class="fixed inset-y-0 left-0 z-[120] w-72 bg-surface lg:bg-transparent lg:w-64 lg:static lg:flex flex-shrink-0 flex-col h-full overflow-hidden transition-transform duration-300 transform -translate-x-full lg:translate-x-0 border-r border-surface-border lg:border-none shadow-2xl lg:shadow-none">
+        <div class="flex justify-between items-center px-5 pt-8 pb-4 lg:p-0 lg:mb-4 lg:px-4 shrink-0">
             <p class="text-[10px] font-black uppercase tracking-widest text-text-muted">
                 <?= esc($sidebarTitle ?? 'Evaluation Folders') ?>
             </p>
@@ -48,7 +48,7 @@
             <?php endif; ?>
             
         </div>
-        <div class="overflow-y-auto custom-scrollbar flex-1 pr-2">
+        <div class="overflow-y-auto custom-scrollbar flex-1 px-3 pb-6 lg:p-0 lg:pr-2">
             <!-- Dynamically injects _folder_rows.php OR teams/_sidebar.php -->
             <?= view($sidebarView ?? 'document/_folder_rows', $sidebarData ?? [
                 'folders' => $sidebarFolders ?? [], 
@@ -56,6 +56,9 @@
             ]) ?>
         </div>
     </div>
+
+    <!-- Mobile App Sidebar Overlay -->
+    <div id="app-sidebar-overlay" onclick="toggleAppSidebar()" class="fixed inset-0 bg-black/50 z-[115] hidden lg:hidden opacity-0 transition-opacity duration-300"></div>
 
     <!-- MAIN CONTENT (Changed h-full to lg:h-full to FIX MOBILE SCROLLING) -->
     <div class="flex-1 flex flex-col min-w-0 overflow-visible relative">
@@ -65,6 +68,26 @@
 </div>
 
 <script src="<?= base_url('assets/js/main/functions.js') ?>"></script>
+
+<script>
+    let isAppSidebarOpen = false;
+    function toggleAppSidebar() {
+        const sidebar = document.getElementById('app-sidebar');
+        const overlay = document.getElementById('app-sidebar-overlay');
+        if (!sidebar || !overlay) return;
+        
+        isAppSidebarOpen = !isAppSidebarOpen;
+        if (isAppSidebarOpen) {
+            overlay.classList.remove('hidden');
+            setTimeout(() => overlay.classList.add('opacity-100'), 10);
+            sidebar.classList.remove('-translate-x-full');
+        } else {
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.remove('opacity-100');
+            setTimeout(() => overlay.classList.add('hidden'), 300);
+        }
+    }
+</script>
 
 <!-- Only load the JS relevant to the current context -->
 <?php if ($context === 'folders'): ?>

@@ -47,7 +47,7 @@
                         </tr>
                     <?php else: ?>
                         <?php foreach ($templates as $t): ?>                            
-                            <tr class="block lg:table-row hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors bg-surface border lg:border-none border-surface-border rounded-xl lg:rounded-none mb-3 lg:mb-0 p-4 lg:p-0 shadow-sm lg:shadow-none">
+                            <tr class="block lg:table-row hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors bg-surface border lg:border-0 lg:border-b border-surface-border rounded-xl lg:rounded-none mb-3 lg:mb-0 p-4 lg:p-0 shadow-sm lg:shadow-none">
                                 
                                 <td class="block lg:table-cell px-0 lg:px-6 py-1 lg:py-4">
                                     <div class="flex flex-col min-w-0">
@@ -74,8 +74,10 @@
                                         'data-confirm-title' => 'Delete Template'
                                     ]) ?>
                                         <input type="hidden" name="template_id" value="<?= $t['id'] ?>">
-                                        <button type="submit" class="w-full text-[10px] font-black uppercase tracking-widest px-4 py-2.5 lg:px-3 lg:py-1.5 rounded-lg text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10 transition-colors cursor-pointer border border-danger-200 dark:border-danger-500/20 lg:border-transparent bg-danger-50 dark:bg-danger-500/5 lg:bg-transparent">
-                                            Delete
+                                        <button type="submit" title="Delete" class="w-full flex justify-center items-center text-[10px] font-black uppercase tracking-widest px-4 py-2.5 lg:px-3 lg:py-1.5 rounded-lg text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10 transition-colors cursor-pointer border border-danger-200 dark:border-danger-500/20 lg:border-transparent bg-danger-50 dark:bg-danger-500/5 lg:bg-transparent">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
                                         </button>
                                     <?= form_close() ?>
                                 </td>

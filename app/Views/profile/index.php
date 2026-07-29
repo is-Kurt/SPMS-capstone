@@ -42,7 +42,7 @@
                     <div class="flex-1">
                         <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Background Color</label>
                         <div class="flex items-center gap-2">
-                            <input type="color" name="avatar_color" value="<?= esc(session('avatar_color')) ?>" class="h-10 w-16 p-0.5 rounded-lg border border-surface-border cursor-pointer">
+                            <input type="color" name="avatar_color" value="<?= esc(session('avatar_color')) ?>" class="h-10 w-16 rounded-lg cursor-pointer bg-transparent border-none p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-none [&::-webkit-color-swatch]:rounded-lg">
                             <span class="text-xs text-text-muted font-mono"><?= esc(session('avatar_color')) ?></span>
                         </div>
                     </div>
@@ -118,30 +118,38 @@
                         <div class="col-span-1">
                             <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Department / Unit</label>
                             <div class="relative">
-                                <select name="units[]" required class="appearance-none w-full bg-zinc-50 dark:bg-zinc-800/50 border border-surface-border rounded-xl pl-4 pr-10 py-3 text-sm focus:border-accent focus:ring-1 focus:outline-none text-text cursor-pointer font-bold">
+                                <select name="units[]" required data-custom-select class="w-full bg-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border-2 border-dashed border-surface-border hover:border-accent hover:text-accent rounded-xl px-4 py-3 text-sm focus:outline-none text-text cursor-pointer font-bold transition-all">
                                     <option value="" disabled <?= empty($plantilla['unit_id']) ? 'selected' : '' ?>>Select Unit...</option>
-                                    <?php foreach($units as $unit): ?>
-                                        <option value="<?= $unit['id'] ?>" <?= (isset($plantilla['unit_id']) && $plantilla['unit_id'] == $unit['id']) ? 'selected' : '' ?>><?= esc($unit['name']) ?></option>
-                                    <?php endforeach; ?>
+                                    <?php 
+                                        $unitTree = [];
+                                        foreach ($units as $u) {
+                                            $pid = $u['parent_id'] ?: 0;
+                                            $unitTree[$pid][] = $u;
+                                        }
+                                        $renderOptionsTree = function($parentId, $level) use (&$renderOptionsTree, &$unitTree, $plantilla) {
+                                            if (!isset($unitTree[$parentId])) return;
+                                            foreach ($unitTree[$parentId] as $unit) {
+                                                $isSelected = (isset($plantilla['unit_id']) && $plantilla['unit_id'] == $unit['id']) ? 'selected' : '';
+                                                echo '<option value="' . $unit['id'] . '" data-level="' . $level . '" ' . $isSelected . '>' . esc($unit['name']) . '</option>';
+                                                // Recurse for children
+                                                $renderOptionsTree($unit['id'], $level + 1);
+                                            }
+                                        };
+                                        $renderOptionsTree(0, 0);
+                                    ?>
                                 </select>
-                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
-                                    <svg class="h-4 w-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                                </div>
                             </div>
                         </div>
 
                         <div class="col-span-1">
                             <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Official Position</label>
                             <div class="relative">
-                                <select name="positions[]" required class="appearance-none w-full bg-zinc-50 dark:bg-zinc-800/50 border border-surface-border rounded-xl pl-4 pr-10 py-3 text-sm focus:border-accent focus:ring-1 focus:outline-none text-text cursor-pointer font-bold">
+                                <select name="positions[]" required data-custom-select class="w-full bg-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border-2 border-dashed border-surface-border hover:border-accent hover:text-accent rounded-xl px-4 py-3 text-sm focus:outline-none text-text cursor-pointer font-bold transition-all">
                                     <option value="" disabled <?= empty($plantilla['position_id']) ? 'selected' : '' ?>>Select Position...</option>
                                     <?php foreach($positions as $pos): ?>
                                         <option value="<?= $pos['id'] ?>" <?= (isset($plantilla['position_id']) && $plantilla['position_id'] == $pos['id']) ? 'selected' : '' ?>><?= esc($pos['title']) ?></option>
                                     <?php endforeach; ?>
                                 </select>
-                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
-                                    <svg class="h-4 w-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -366,9 +374,21 @@
                 const clone = firstCard.cloneNode(true);
                 
                 // Reset values for the new clone
-                clone.querySelectorAll('select').forEach(select => select.value = "");
+                clone.querySelectorAll('select').forEach(select => {
+                    select.value = "";
+                    select.style.display = ''; // unhide it for the custom select script
+                });
+                
+                // Remove the cloned custom UI wrapper
+                clone.querySelectorAll('.custom-select-wrapper').forEach(wrapper => wrapper.remove());
                 
                 container.appendChild(clone);
+                
+                // Initialize custom select on the unhidden selects
+                clone.querySelectorAll('select[data-custom-select]').forEach(select => {
+                    new CustomSelect(select);
+                });
+                
                 updateCardUI();
             });
 

@@ -82,7 +82,7 @@ class Rating extends BaseController
         sort($filterUnits);
         sort($filterPositions);
 
-        return view('app_shell', [
+        return view('components/app_shell', [
             'sidebarFolders'   => $folders,
             'selectedFolderId' => $folderId, 
             'mainView'         => 'ratings/index',
@@ -176,7 +176,7 @@ class Rating extends BaseController
         }
         $groupedGuides = array_values($mergedGuides);
 
-        return view('app_shell', [
+        return view('components/app_shell', [
             'sidebarFolders'   => $folders, 
             'selectedFolderId' => null, 
             'mainView'         => 'document/_doc_rows', 

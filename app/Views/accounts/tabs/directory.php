@@ -1,10 +1,10 @@
 <div id="tab-content-directory" class="tab-content <?= $activeTab === 'directory' ? 'flex' : 'hidden' ?> flex-col lg:flex-row lg:absolute lg:inset-0 bg-transparent lg:bg-surface">
     
     <!-- MOBILE FILTER OVERLAY -->
-    <div id="mobile-filter-overlay" class="fixed inset-0 z-[60] bg-black/50 hidden lg:hidden transition-opacity opacity-0" aria-hidden="true"></div>
+    <div id="mobile-filter-overlay" class="fixed inset-0 z-[115] bg-black/50 hidden lg:hidden transition-opacity opacity-0" aria-hidden="true"></div>
 
     <!-- SIDEBAR FILTERS (Left) -->
-    <div id="directory-sidebar" class="fixed inset-y-0 left-0 z-[70] w-72 bg-surface lg:bg-zinc-50 lg:dark:bg-zinc-800/30 border-r border-surface-border shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 transition-transform duration-300 lg:static shrink-0 flex flex-col h-full">
+    <div id="directory-sidebar" class="fixed inset-y-0 left-0 z-[120] w-72 bg-surface lg:bg-zinc-50 lg:dark:bg-zinc-800/30 border-r border-surface-border shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 transition-transform duration-300 lg:static shrink-0 flex flex-col h-full">
         <div class="px-6 py-4 border-b border-surface-border flex justify-between items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800">
             <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest">Filters</h2>
             <button type="button" id="close-mobile-filters" class="lg:hidden text-text-muted hover:text-text p-1 cursor-pointer">
@@ -50,7 +50,7 @@
                         <input type="text" id="mini-search-units" placeholder="Find unit..." class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-lg pl-7 pr-2 py-1.5 text-[10px] focus:border-accent outline-none text-text">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 absolute left-2.5 top-2 text-text-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                     </div>
-                    <div id="units-checkbox-list">
+                    <div id="units-checkbox-list" class="pr-1">
                         <?php
                         $unitTree = [];
                         foreach ($units as $u) {
@@ -93,6 +93,16 @@
                         $renderTree(0, 0);
                         ?>
                     </div>
+                    <!-- Units Pagination Controls -->
+                    <div class="pt-2 flex justify-between items-center bg-transparent shrink-0" id="filter-units-pagination">
+                        <div class="text-[9px] font-bold text-text-muted uppercase tracking-widest">
+                            <span id="f-units-page-start">0</span>-<span id="f-units-page-end">0</span> of <span id="f-units-page-total">0</span>
+                        </div>
+                        <div class="flex gap-1">
+                            <button type="button" class="js-page-prev p-1 rounded border border-surface-border text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg></button>
+                            <button type="button" class="js-page-next p-1 rounded border border-surface-border text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg></button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -110,13 +120,23 @@
                         <input type="text" id="mini-search-positions" placeholder="Find position..." class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-lg pl-7 pr-2 py-1.5 text-[10px] focus:border-accent outline-none text-text">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 absolute left-2.5 top-2 text-text-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                     </div>
-                    <div class="space-y-1" id="positions-checkbox-list">
+                    <div class="space-y-1 pr-1" id="positions-checkbox-list">
                         <?php foreach ($positions as $pos): ?>
                             <label class="position-filter-label flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors" data-title="<?= strtolower(esc($pos['title'])) ?>">
                                 <input type="checkbox" name="filter_pos[]" value="<?= esc($pos['title']) ?>" class="checkbox directory-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
                                 <span class="truncate"><?= esc($pos['title']) ?></span>
                             </label>
                         <?php endforeach; ?>
+                    </div>
+                    <!-- Positions Pagination Controls -->
+                    <div class="pt-2 flex justify-between items-center bg-transparent shrink-0" id="filter-pos-pagination">
+                        <div class="text-[9px] font-bold text-text-muted uppercase tracking-widest">
+                            <span id="f-pos-page-start">0</span>-<span id="f-pos-page-end">0</span> of <span id="f-pos-page-total">0</span>
+                        </div>
+                        <div class="flex gap-1">
+                            <button type="button" class="js-page-prev p-1 rounded border border-surface-border text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg></button>
+                            <button type="button" class="js-page-next p-1 rounded border border-surface-border text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg></button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -163,11 +183,11 @@
         <div class="hidden lg:block shrink-0 overflow-hidden bg-zinc-50 dark:bg-zinc-800 border-b border-surface-border shadow-sm" data-frozen-header>
                 <table class="w-full text-left border-collapse table-fixed">
                     <colgroup>
+                        <col style="width:30%">
+                        <col style="width:16%">
                         <col style="width:28%">
                         <col style="width:12%">
-                        <col style="width:22%">
-                        <col style="width:12%">
-                        <col style="width:26%">
+                        <col style="width:14%">
                     </colgroup>
                     <thead class="text-[10px] font-black uppercase tracking-widest text-text-muted">
                         <tr>
@@ -184,15 +204,15 @@
             <div class="overflow-y-auto overflow-x-hidden custom-scrollbar flex-1 lg:bg-surface" data-frozen-body>
                 <table class="w-full text-left border-collapse block lg:table lg:table-fixed">
                     <colgroup>
+                        <col style="width:30%">
+                        <col style="width:16%">
                         <col style="width:28%">
                         <col style="width:12%">
-                        <col style="width:22%">
-                        <col style="width:12%">
-                        <col style="width:26%">
+                        <col style="width:14%">
                     </colgroup>
                     <tbody class="block lg:table-row-group divide-y divide-surface-border" id="user-table-body">
                         <?php foreach ($users as $u): ?>
-                            <tr class="user-dir-row block lg:table-row bg-surface p-4 lg:p-0 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors <?= (isset($u['is_active']) && $u['is_active'] == 0) ? 'opacity-60' : '' ?>"
+                            <tr class="user-dir-row block lg:table-row bg-surface p-4 lg:p-0 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors group <?= (isset($u['is_active']) && $u['is_active'] == 0) ? 'opacity-60' : '' ?>"
                                 data-name="<?= strtolower(esc($u['first_name'] . ' ' . $u['last_name'])) ?>"
                                 data-email="<?= strtolower(esc($u['email'])) ?>"
                                 data-role="<?= esc($u['role_name'] ?? 'No Role') ?>"
@@ -201,18 +221,9 @@
                                 data-status="<?= $u['is_active'] ?? 1 ?>">
                                 
                                 <td class="block lg:table-cell px-0 lg:px-6 py-1 lg:py-4">
-                                    <div class="flex justify-between items-start lg:items-center">
-                                        <div class="flex flex-col min-w-0 pr-4">
-                                            <span class="text-sm font-bold text-text truncate"><?= esc($u['first_name'] . ' ' . $u['last_name']) ?></span>
-                                            <span class="text-[10px] font-bold text-text-muted tracking-widest truncate"><?= esc($u['email']) ?></span>
-                                        </div>
-                                        <div class="lg:hidden shrink-0 mt-0.5">
-                                            <?php if (isset($u['is_active']) && $u['is_active'] == 1): ?>
-                                                <span class="js-status-badge-mobile px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border bg-success-50 text-success-600 border-success-200">Active</span>
-                                            <?php else: ?>
-                                                <span class="js-status-badge-mobile px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border bg-danger-50 text-danger-600 border-danger-200">Disabled</span>
-                                            <?php endif; ?>
-                                        </div>
+                                    <div class="flex flex-col min-w-0 pr-4">
+                                        <span class="text-sm font-bold text-text truncate"><?= esc($u['first_name'] . ' ' . $u['last_name']) ?></span>
+                                        <span class="text-[10px] font-bold text-text-muted tracking-widest truncate"><?= esc($u['email']) ?></span>
                                     </div>
                                 </td>
 
@@ -225,7 +236,7 @@
                                                     <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
                                                     <div class="relative inline-block w-max">
                                                         <select name="role_id" onchange="this.form.requestSubmit()" data-previous="<?= esc($currentRoleId) ?>"
-                                                                class="js-role-select appearance-none pl-3 pr-7 py-1.5 rounded-lg text-[10px] font-black bg-surface lg:bg-white dark:bg-zinc-900 dark:[color-scheme:dark] border border-surface-border uppercase tracking-widest text-text cursor-pointer focus:outline-none focus:border-accent">
+                                                                class="js-role-select appearance-none pl-3 pr-7 py-1.5 rounded-lg text-[10px] font-black bg-surface lg:bg-white dark:bg-zinc-900 [color-scheme:light] dark:[color-scheme:dark] border border-surface-border uppercase tracking-widest text-text cursor-pointer focus:outline-none focus:border-accent">
                                                             <?php foreach ($roles as $role): ?>
                                                                 <option value="<?= $role['id'] ?>" <?= $currentRoleId == $role['id'] ? 'selected' : '' ?>><?= esc($role['name']) ?></option>
                                                             <?php endforeach; ?>
@@ -256,25 +267,40 @@
                                 </td>
 
                                 <td class="hidden lg:table-cell px-6 py-4 text-center lg:min-w-[80px]">
-                                    <?php if (isset($u['is_active']) && $u['is_active'] == 1): ?>
-                                        <span class="js-status-badge-desktop text-[10px] font-bold text-success-500 uppercase tracking-widest">Active</span>
+                                    <?php if ($u['id'] != session()->get('user_id')): ?>
+                                        <?= form_open('account/toggle', ['class' => 'inline', 'data-ajax' => 'toggle-status']) ?>
+                                            <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
+                                            <button type="submit" class="js-status-badge-desktop text-[10px] font-bold uppercase tracking-widest cursor-pointer transition-colors focus:outline-none <?= $u['is_active'] == 1 ? 'text-success-500 hover:text-success-600' : 'text-danger-500 hover:text-danger-600' ?>">
+                                                <?= $u['is_active'] == 1 ? 'Active' : 'Disabled' ?>
+                                            </button>
+                                        <?= form_close() ?>
                                     <?php else: ?>
-                                        <span class="js-status-badge-desktop text-[10px] font-bold text-danger-500 uppercase tracking-widest">Disabled</span>
+                                        <span class="js-status-badge-desktop text-[10px] font-bold uppercase tracking-widest <?= $u['is_active'] == 1 ? 'text-success-500' : 'text-danger-500' ?>">
+                                            <?= $u['is_active'] == 1 ? 'Active' : 'Disabled' ?>
+                                        </span>
                                     <?php endif; ?>
                                 </td>
 
-                                <td class="block lg:table-cell px-0 lg:px-6 py-2 pt-0 lg:py-4 text-right lg:min-w-[190px]">
-                                    <?php if ($u['id'] != session()->get('user_id')): ?>
-                                        <div class="flex justify-end gap-2">
-                                            <?= form_open('account/toggle', ['class' => 'inline', 'data-ajax' => 'toggle-status']) ?>
-                                                <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
-                                                <button type="submit" class="js-toggle-btn text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-transparent transition-colors cursor-pointer focus:outline-none <?= $u['is_active'] == 1 ? 'text-warning-600 lg:hover:bg-warning-50 lg:dark:hover:bg-warning-500/10' : 'text-success-600 lg:hover:bg-success-50 lg:dark:hover:bg-success-500/10' ?>">
-                                                    <?= $u['is_active'] == 1 ? 'Disable' : 'Enable' ?>
-                                                </button>
-                                            <?= form_close() ?>
+                                <td class="block lg:table-cell px-0 lg:px-6 pt-3 pb-0 lg:py-4 text-right lg:min-w-[100px]">
+                                    <div class="flex items-center justify-between lg:justify-end gap-2 w-full">
+                                        <div class="flex-1 lg:hidden">
+                                            <?php if ($u['id'] != session()->get('user_id')): ?>
+                                                <?= form_open('account/toggle', ['class' => 'w-full', 'data-ajax' => 'toggle-status']) ?>
+                                                    <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
+                                                    <button type="submit" class="js-status-badge-mobile w-full px-3 py-2.5 rounded-lg text-xs font-bold border border-transparent transition-colors cursor-pointer text-center <?= $u['is_active'] == 1 ? 'text-success-600 dark:text-success-500 bg-success-50 dark:bg-success-500/10 hover:bg-success-100 dark:hover:bg-success-500/20' : 'text-danger-500 bg-danger-50 dark:bg-danger-500/10 hover:bg-danger-100 dark:hover:bg-danger-500/20' ?>">
+                                                        <?= $u['is_active'] == 1 ? 'Active' : 'Disabled' ?>
+                                                    </button>
+                                                <?= form_close() ?>
+                                            <?php else: ?>
+                                                <div class="js-status-badge-mobile w-full px-3 py-2.5 rounded-lg text-xs font-bold text-center border border-transparent <?= $u['is_active'] == 1 ? 'text-success-600 dark:text-success-500 bg-success-50 dark:bg-success-500/10' : 'text-danger-500 bg-danger-50 dark:bg-danger-500/10' ?>">
+                                                    <?= $u['is_active'] == 1 ? 'Active' : 'Disabled' ?>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
 
+                                        <?php if ($u['id'] != session()->get('user_id')): ?>
                                             <?= form_open('account', [
-                                                'class' => 'inline',
+                                                'class' => 'flex-1 lg:flex-none inline-block',
                                                 'data-ajax' => 'delete-user',
                                                 'data-confirm' => 'Are you sure you want to permanently delete this user?',
                                                 'data-confirm-title' => 'Delete User Account',
@@ -282,12 +308,13 @@
                                             ]) ?>
                                                 <input type="hidden" name="_method" value="DELETE">
                                                 <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
-                                                <button type="submit" class="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-transparent text-danger-500 lg:hover:bg-danger-50 lg:dark:hover:bg-danger-500/10 focus:outline-none transition-colors cursor-pointer">
-                                                    Delete
+                                                <button type="submit" class="w-full lg:w-auto px-3 py-2.5 lg:p-2 rounded-lg text-xs font-bold text-danger-500 lg:text-danger-400 lg:hover:text-danger-600 bg-danger-50 dark:bg-danger-500/10 hover:bg-danger-100 dark:hover:bg-danger-500/20 lg:bg-transparent dark:lg:bg-transparent lg:hover:bg-danger-100 dark:lg:hover:bg-danger-500/20 border border-transparent opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all cursor-pointer text-center flex justify-center items-center gap-1" title="Delete User">
+                                                    <span class="lg:hidden">Delete</span>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="hidden lg:block h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                                 </button>
                                             <?= form_close() ?>
-                                        </div>
-                                    <?php endif; ?>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -300,5 +327,17 @@
                     </tbody>
                 </table>
             </div>
+            
+            <!-- Pagination Controls -->
+            <div class="px-6 py-4 border-t border-surface-border flex justify-between items-center bg-surface shrink-0 hidden" id="directory-pagination">
+                <div class="text-xs font-bold text-text-muted">
+                    Showing <span id="dir-page-start">0</span> to <span id="dir-page-end">0</span> of <span id="dir-page-total">0</span>
+                </div>
+                <div class="flex gap-2">
+                    <button type="button" class="js-page-prev px-3 py-1.5 rounded-lg border border-surface-border text-xs font-bold text-text hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer">Prev</button>
+                    <button type="button" class="js-page-next px-3 py-1.5 rounded-lg border border-surface-border text-xs font-bold text-text hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer">Next</button>
+                </div>
+            </div>
+            
         </div>
     </div>

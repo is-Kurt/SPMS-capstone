@@ -7,7 +7,6 @@
     
     <div class="shrink-0">
         <h1 class="text-2xl md:text-3xl font-black tracking-tight text-text">User Management</h1>
-        <p class="text-xs md:text-sm text-text-muted mt-1 font-medium italic">Manage directories and invite personnel to the system.</p>
     </div>
 
     <div class="flex gap-6 border-b border-surface-border shrink-0 px-2 overflow-x-auto custom-scrollbar whitespace-nowrap">

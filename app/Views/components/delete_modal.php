@@ -4,7 +4,7 @@
     data-url/data-title attributes (see document/_doc_rows.php) - wired up by
     public/assets/js/main/modals/deleteModal.js, which posts to data-url on confirm.
 -->
-<div id="delete-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
+<div id="delete-modal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
     
     <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-[380px] p-8 border border-zinc-200 dark:border-zinc-800">
         

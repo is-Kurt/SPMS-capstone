@@ -153,6 +153,35 @@ class AccountManagement extends BaseController
         }
     }
 
+    /** POST /account/invite/resend - Resends the invitation email using the existing token. */
+    public function resendInvite() {
+        try {
+            $invitationModel = new \App\Models\InvitationModel();
+            $invite = $invitationModel->find($this->request->getPost('id'));
+            
+            if (!$invite) {
+                return $this->respondError('Invitation not found.');
+            }
+
+            $inviteLink = site_url("signup?token={$invite['token']}");
+
+            queue_email(
+                $invite['email'],
+                'Invitation to join SPMS',
+                render_email('invitation', ['link' => $inviteLink])
+            );
+            
+            $response = $this->respond([
+                'status' => 'success',
+                'message' => 'Invitation resent to ' . $invite['email']
+            ]);
+            
+            return dispatch_email_now($response, 1);
+        } catch (\Exception $e) {
+            return $this->respondError('Could not resend this invitation.');
+        }
+    }
+
     /** POST /account/invite/delete-bulk - Deletes every invitation id given (used by the Invitations tab's "Delete Filtered" action). */
     public function deleteInvitesBulk() {
         $ids = $this->request->getPost('ids');

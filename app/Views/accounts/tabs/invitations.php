@@ -1,10 +1,10 @@
 <div id="tab-content-invitations" class="tab-content <?= $activeTab === 'invitations' ? 'flex' : 'hidden' ?> flex-col lg:flex-row lg:absolute lg:inset-0 bg-transparent lg:bg-surface">
     
     <!-- MOBILE FILTER OVERLAY -->
-    <div id="mobile-invite-filter-overlay" class="fixed inset-0 z-[60] bg-black/50 hidden lg:hidden transition-opacity opacity-0" aria-hidden="true"></div>
+    <div id="mobile-invite-filter-overlay" class="fixed inset-0 z-[115] bg-black/50 hidden lg:hidden transition-opacity opacity-0" aria-hidden="true"></div>
 
     <!-- SIDEBAR FILTERS (Left) -->
-    <div id="invitations-sidebar" class="fixed inset-y-0 left-0 z-[70] w-72 bg-surface lg:bg-zinc-50 lg:dark:bg-zinc-800/30 border-r border-surface-border shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 transition-transform duration-300 lg:static shrink-0 flex flex-col h-full">
+    <div id="invitations-sidebar" class="fixed inset-y-0 left-0 z-[120] w-72 bg-surface lg:bg-zinc-50 lg:dark:bg-zinc-800/30 border-r border-surface-border shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 transition-transform duration-300 lg:static shrink-0 flex flex-col h-full">
         <div class="px-6 py-4 border-b border-surface-border flex justify-between items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800">
             <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest">Filters</h2>
             <button type="button" id="close-mobile-invite-filters" class="lg:hidden text-text-muted hover:text-text p-1 cursor-pointer">
@@ -157,10 +157,13 @@
                                     <span class="w-max px-3 py-1 rounded-lg text-[10px] font-black bg-info-50 dark:bg-info-500/10 text-info-600 border border-info-200 dark:border-info-500/20 uppercase tracking-widest">
                                         <?= esc($inv['role_name'] ?? 'No Role') ?>
                                     </span>
+                                    <span class="lg:hidden px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border bg-zinc-50 dark:bg-zinc-800/50 border-surface-border <?= $statusClass ?>">
+                                        <?= $statusLabel ?>
+                                    </span>
                                 </div>
                             </td>
 
-                            <td class="block lg:table-cell px-0 lg:px-6 py-2 lg:py-4 text-left lg:text-center">
+                            <td class="hidden lg:table-cell px-0 lg:px-6 py-2 lg:py-4 text-left lg:text-center">
                                 <span class="px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border bg-zinc-50 dark:bg-zinc-800/50 border-surface-border <?= $statusClass ?>">
                                     <?= $statusLabel ?>
                                 </span>
@@ -175,16 +178,16 @@
                                 </div>
                             </td>
 
-                            <td class="block lg:table-cell px-0 lg:px-6 py-3 lg:py-4 text-right">
-                                <div class="flex items-center justify-end gap-2">
-                                    <?= form_open('account/invitation/resend', ['class' => 'inline-block', 'data-ajax' => 'resend-invitation']) ?>
+                            <td class="block lg:table-cell px-0 lg:px-6 pt-3 pb-0 lg:py-4 text-right">
+                                <div class="flex items-center justify-between lg:justify-end gap-2 w-full">
+                                    <?= form_open('account/invite/resend', ['class' => 'flex-1 lg:flex-none inline-block', 'data-ajax' => 'resend-invitation']) ?>
                                         <input type="hidden" name="id" value="<?= $inv['id'] ?>">
-                                        <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-bold text-accent hover:bg-accent/10 border border-transparent transition-colors cursor-pointer" title="Resend Email">Resend</button>
+                                        <button type="submit" class="w-full px-3 py-2.5 lg:py-1.5 rounded-lg text-xs font-bold text-accent bg-accent/10 lg:bg-transparent hover:bg-accent/20 lg:hover:bg-accent/10 border border-transparent transition-colors cursor-pointer text-center" title="Resend Email">Resend</button>
                                     <?= form_close() ?>
                                     
-                                    <?= form_open('account/invitation/delete', ['class' => 'inline-block', 'data-ajax' => 'delete-invitation', 'data-confirm' => 'Revoke this invitation? The link will immediately stop working.', 'data-confirm-title' => 'Revoke Invitation']) ?>
+                                    <?= form_open('account/invite/delete', ['class' => 'flex-1 lg:flex-none inline-block', 'data-ajax' => 'delete-invitation', 'data-confirm' => 'Revoke this invitation? The link will immediately stop working.', 'data-confirm-title' => 'Revoke Invitation']) ?>
                                         <input type="hidden" name="id" value="<?= $inv['id'] ?>">
-                                        <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-bold text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10 border border-transparent transition-colors cursor-pointer" title="Revoke Invitation">Revoke</button>
+                                        <button type="submit" class="w-full px-3 py-2.5 lg:py-1.5 rounded-lg text-xs font-bold text-danger-500 bg-danger-50 dark:bg-danger-500/10 lg:bg-transparent dark:lg:bg-transparent hover:bg-danger-100 dark:hover:bg-danger-500/20 border border-transparent transition-colors cursor-pointer text-center" title="Revoke Invitation">Revoke</button>
                                     <?= form_close() ?>
                                 </div>
                             </td>
@@ -203,5 +206,17 @@
                 <p class="text-sm font-bold text-text">No invitations match your filters.</p>
             </div>
         </div>
+        
+        <!-- Pagination Controls -->
+        <div class="px-6 py-4 border-t border-surface-border flex justify-between items-center bg-surface shrink-0 hidden" id="invitations-pagination">
+            <div class="text-xs font-bold text-text-muted">
+                Showing <span id="inv-page-start">0</span> to <span id="inv-page-end">0</span> of <span id="inv-page-total">0</span>
+            </div>
+            <div class="flex gap-2">
+                <button type="button" class="js-page-prev px-3 py-1.5 rounded-lg border border-surface-border text-xs font-bold text-text hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer">Prev</button>
+                <button type="button" class="js-page-next px-3 py-1.5 rounded-lg border border-surface-border text-xs font-bold text-text hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer">Next</button>
+            </div>
+        </div>
+        
     </div>
 </div>

@@ -1,13 +1,17 @@
-<div id="tab-content-system" class="tab-content <?= $activeTab === 'system' ? 'flex' : 'hidden' ?> flex-col lg:absolute lg:inset-0 bg-transparent lg:bg-surface">
+import os
+
+filepath = r'c:\laragon\www\SPMS\app\Views\accounts\tabs\system.php'
+
+content = """<div id="tab-content-system" class="tab-content <?= $activeTab === 'system' ? 'flex' : 'hidden' ?> flex-col lg:absolute lg:inset-0 bg-transparent lg:bg-surface">
 
     <?= view('components/create_position_modal') ?>
     <?= view('components/create_unit_modal') ?>
     
     <!-- MOBILE FILTER OVERLAY -->
-    <div id="mobile-system-filter-overlay" class="fixed inset-0 z-[115] bg-black/50 hidden lg:hidden transition-opacity opacity-0" aria-hidden="true"></div>
+    <div id="mobile-system-filter-overlay" class="fixed inset-0 z-[60] bg-black/50 hidden lg:hidden transition-opacity opacity-0" aria-hidden="true"></div>
 
     <!-- Sub-Tabs Header -->
-    <div class="px-4 pt-4 shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800/30 border-b border-surface-border flex items-end justify-between gap-4">
+    <div class="px-4 pt-4 shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800/30 border-b border-surface-border">
         <div class="flex gap-6 overflow-x-auto custom-scrollbar whitespace-nowrap">
             <button type="button" id="subtab-btn-positions" class="subtab-btn pb-3 text-sm font-bold border-b-2 border-accent text-accent transition-all cursor-pointer" onclick="switchSystemTab('positions')">
                 Job Positions
@@ -16,19 +20,15 @@
                 Departments & Units
             </button>
         </div>
-        <button type="button" class="btn-open-system-mobile lg:hidden flex items-center gap-1.5 text-xs font-bold text-accent bg-accent/10 hover:bg-accent/20 px-3 py-1.5 rounded-lg active:scale-95 transition-colors cursor-pointer mb-2.5 shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
-            Filters
-        </button>
     </div>
 
     <!-- POSITIONS SUB-TAB -->
     <div id="system-panel-positions" class="system-panel flex flex-col lg:flex-row flex-1 lg:min-h-0 relative">
         <!-- Sidebar -->
-        <div class="system-sidebar fixed inset-y-0 left-0 z-[120] w-72 bg-surface lg:bg-zinc-50 lg:dark:bg-zinc-800/30 lg:border-r border-surface-border shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 transition-transform duration-300 lg:static shrink-0 flex flex-col h-full">
-            <div class="px-6 py-4 border-b border-surface-border flex justify-center relative items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800">
-                <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest w-full">Filters</h2>
-                <button type="button" class="btn-close-system-mobile absolute right-6 lg:hidden text-text-muted hover:text-text p-1 cursor-pointer">
+        <div class="system-sidebar fixed inset-y-0 left-0 z-[70] w-72 bg-surface lg:bg-zinc-50 lg:dark:bg-zinc-800/30 lg:border-r border-surface-border shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 transition-transform duration-300 lg:static shrink-0 flex flex-col h-full">
+            <div class="px-6 py-4 border-b border-surface-border flex justify-between items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800">
+                <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest">Filters</h2>
+                <button type="button" class="btn-close-system-mobile lg:hidden text-text-muted hover:text-text p-1 cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>
@@ -50,13 +50,20 @@
 
         <!-- Main Content (List) -->
         <div class="flex-1 flex flex-col h-full min-w-0 bg-transparent lg:bg-surface">
-
+            <!-- Mobile Toggle Bar -->
+            <div class="lg:hidden p-4 mb-2 bg-surface border-b border-surface-border shrink-0 flex items-center justify-between">
+                <span class="text-xs font-bold text-text">Job Positions</span>
+                <button type="button" class="btn-open-system-mobile flex items-center gap-2 text-xs font-bold text-accent bg-accent/10 px-3 py-1.5 rounded-lg active:scale-95 transition-transform cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+                    Filters
+                </button>
+            </div>
             
             <div class="overflow-y-auto custom-scrollbar flex-1 p-0 border-t border-surface-border lg:border-t-0">
-                <ul class="border-collapse divide-y divide-surface-border block lg:table lg:table-fixed w-full" id="positions-list">
+                <ul class="divide-y divide-surface-border block lg:table lg:table-fixed w-full" id="positions-list">
                     <?php foreach ($positions as $pos): ?>
-                        <li class="position-item block lg:table-row bg-surface hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors group" data-title="<?= strtolower(esc($pos['title'])) ?>">
-                            <div class="flex flex-col justify-center lg:table-cell px-6 py-4 align-middle h-[72px]">
+                        <li class="position-item block lg:table-row bg-surface p-4 lg:p-0 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors group" data-title="<?= strtolower(esc($pos['title'])) ?>">
+                            <div class="block lg:table-cell px-6 py-4 align-middle">
                                 <div class="flex justify-between items-center w-full">
                                     <div class="flex flex-col">
                                         <span class="text-sm font-bold text-text"><?= esc($pos['title']) ?></span>
@@ -76,14 +83,10 @@
                 </ul>
             </div>
             
-            <div class="px-6 py-4 border-t border-surface-border flex justify-between items-center bg-surface shrink-0 hidden" id="positions-pagination">
-                <div class="text-xs font-bold text-text-muted">
-                    Showing <span id="pos-page-start">0</span> to <span id="pos-page-end">0</span> of <span id="pos-page-total">0</span>
-                </div>
-                <div class="flex gap-2">
-                    <button type="button" class="js-page-prev px-3 py-1.5 rounded-lg border border-surface-border text-xs font-bold text-text hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer">Prev</button>
-                    <button type="button" class="js-page-next px-3 py-1.5 rounded-lg border border-surface-border text-xs font-bold text-text hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer">Next</button>
-                </div>
+            <div id="positions-pagination" class="p-3 border-t border-surface-border flex justify-between items-center bg-zinc-50 dark:bg-zinc-800/30 shrink-0">
+                <button type="button" id="pos-prev" class="text-xs font-bold text-accent hover:text-accent-hover px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+                <span id="pos-page-info" class="text-[10px] font-black tracking-widest text-text-muted uppercase">Page 1 of 1</span>
+                <button type="button" id="pos-next" class="text-xs font-bold text-accent hover:text-accent-hover px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
             </div>
         </div>
     </div>
@@ -91,10 +94,10 @@
     <!-- UNITS SUB-TAB -->
     <div id="system-panel-units" class="system-panel hidden flex-col lg:flex-row flex-1 lg:min-h-0 relative">
         <!-- Sidebar -->
-        <div class="system-sidebar fixed inset-y-0 left-0 z-[120] w-72 bg-surface lg:bg-zinc-50 lg:dark:bg-zinc-800/30 lg:border-r border-surface-border shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 transition-transform duration-300 lg:static shrink-0 flex flex-col h-full">
-            <div class="px-6 py-4 border-b border-surface-border flex justify-center relative items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800">
-                <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest w-full">Filters</h2>
-                <button type="button" class="btn-close-system-mobile absolute right-6 lg:hidden text-text-muted hover:text-text p-1 cursor-pointer">
+        <div class="system-sidebar fixed inset-y-0 left-0 z-[70] w-72 bg-surface lg:bg-zinc-50 lg:dark:bg-zinc-800/30 lg:border-r border-surface-border shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 transition-transform duration-300 lg:static shrink-0 flex flex-col h-full">
+            <div class="px-6 py-4 border-b border-surface-border flex justify-between items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800">
+                <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest">Filters</h2>
+                <button type="button" class="btn-close-system-mobile lg:hidden text-text-muted hover:text-text p-1 cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>
@@ -116,7 +119,14 @@
 
         <!-- Main Content (List) -->
         <div class="flex-1 flex flex-col h-full min-w-0 bg-transparent lg:bg-surface">
-
+            <!-- Mobile Toggle Bar -->
+            <div class="lg:hidden p-4 mb-2 bg-surface border-b border-surface-border shrink-0 flex items-center justify-between">
+                <span class="text-xs font-bold text-text">Departments & Units</span>
+                <button type="button" class="btn-open-system-mobile flex items-center gap-2 text-xs font-bold text-accent bg-accent/10 px-3 py-1.5 rounded-lg active:scale-95 transition-transform cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+                    Filters
+                </button>
+            </div>
 
             <div class="overflow-y-auto custom-scrollbar flex-1 p-0 border-t border-surface-border lg:border-t-0">
                 <?php
@@ -137,14 +147,14 @@
                 };
                 $flatten(0, 0);
                 ?>
-                <ul class="border-collapse divide-y divide-surface-border block lg:table lg:table-fixed w-full" id="units-list">
+                <ul class="divide-y divide-surface-border block lg:table lg:table-fixed w-full" id="units-list">
                     <?php foreach ($flattenedUnits as $unit): ?>
                         <li class="unit-item block lg:table-row bg-surface hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors group" 
                             data-id="<?= $unit['id'] ?>"
                             data-parent="<?= $unit['parent_id'] ?: 0 ?>"
                             data-name="<?= strtolower(esc($unit['name'])) ?>"
                             style="<?= $unit['parent_id'] ? 'display: none;' : '' ?>">
-                            <div class="flex flex-col justify-center lg:table-cell py-4 align-middle h-[72px]" style="padding-left: <?= ($unit['level'] * 24 + 24) ?>px; padding-right: 24px;">
+                            <div class="block lg:table-cell py-4 align-middle" style="padding-left: <?= ($unit['level'] * 24 + 24) ?>px; padding-right: 24px;">
                                 <div class="flex justify-between items-center w-full">
                                     <div class="flex items-center gap-2 pr-2">
                                         <?php if ($unit['has_children']): ?>
@@ -174,17 +184,11 @@
                     <li id="units-empty-state" class="hidden px-4 py-16 text-center text-sm font-bold text-text-muted">No units matched your search.</li>
                 </ul>
             </div>
-            
-            <div class="px-6 py-4 border-t border-surface-border flex justify-between items-center bg-surface shrink-0 hidden" id="units-pagination">
-                <div class="text-xs font-bold text-text-muted">
-                    Showing <span id="uni-page-start">0</span> to <span id="uni-page-end">0</span> of <span id="uni-page-total">0</span>
-                </div>
-                <div class="flex gap-2">
-                    <button type="button" class="js-page-prev px-3 py-1.5 rounded-lg border border-surface-border text-xs font-bold text-text hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer">Prev</button>
-                    <button type="button" class="js-page-next px-3 py-1.5 rounded-lg border border-surface-border text-xs font-bold text-text hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer">Next</button>
-                </div>
-            </div>
-            
         </div>
     </div>
 </div>
+"""
+
+with open(filepath, 'w', encoding='utf-8') as f:
+    f.write(content)
+print("Updated system tab layout with modals")

@@ -4,7 +4,7 @@
     button); submit handling lives in public/assets/js/main/modals/createFileModal.js,
     posting to Document::store().
 -->
-<div id="create-file-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
+<div id="create-file-modal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
     <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-[450px] p-8 border border-zinc-200 dark:border-zinc-800">
         
         <div class="text-center mb-8">

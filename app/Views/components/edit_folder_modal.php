@@ -4,7 +4,7 @@
     which fills the hidden #edit-folder-id + inputs below; submit handling lives in
     public/assets/js/main/modals/editFolderModal.js, posting to Folder::update().
 -->
-<div id="edit-folder-modal" class="fixed inset-0 z-[120] hidden overflow-y-auto items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
+<div id="edit-folder-modal" class="fixed inset-0 z-[150] hidden overflow-y-auto items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
 
     <div class="relative w-full max-w-md rounded-2xl bg-surface border border-surface-border p-8 shadow-2xl transition-all">
         <h3 class="text-xl font-black text-text tracking-tight mb-2">Edit Evaluation Folder</h3>

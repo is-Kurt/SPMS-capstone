@@ -96,7 +96,7 @@ class Team extends BaseController
             }
         }
 
-        return view('app_shell', [
+        return view('components/app_shell', [
             'context'        => 'teams',
             'sidebarTitle'   => 'Teams',
             'sidebarView'    => 'teams/_sidebar',

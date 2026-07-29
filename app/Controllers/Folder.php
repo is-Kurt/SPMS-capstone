@@ -160,7 +160,7 @@ class Folder extends BaseController
 
         $templateModel = new TemplateModel();
         
-        return view('app_shell', [
+        return view('components/app_shell', [
             'sidebarFolders'   => $folders,
             'selectedFolderId' => $activeFolder['id'] ?? null,
             'mainView'         => 'document/_doc_rows',

@@ -9,37 +9,35 @@
 ?>
 
 <?php if (!$activeFolder): ?>
-    <div class="flex-1 flex flex-col items-center justify-center min-h-[400px] w-full">
-        <?php if (session()->get('role') === 'Admin'): ?>
-            <button onclick="document.getElementById('btn-create-folder-modal').click()" class="w-full max-w-2xl border-2 border-dashed border-surface-border hover:border-accent rounded-2xl flex flex-col items-center justify-center text-center p-12 bg-surface/50 hover:bg-accent/5 transition-all group cursor-pointer h-full min-h-[300px]">
-                <div class="inline-flex p-4 rounded-full bg-zinc-100 dark:bg-zinc-800/80 group-hover:bg-accent/10 text-zinc-400 group-hover:text-accent dark:text-zinc-500 mb-4 shadow-sm transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                </div>
-                <h3 class="text-lg font-bold text-text group-hover:text-accent transition-colors mb-1">Create New Folder</h3>
-                <p class="text-sm text-text-muted max-w-sm">Click here to start a new evaluation period and create the initial folder.</p>
-            </button>
-        <?php else: ?>
-            <div class="w-full max-w-2xl border-2 border-dashed border-surface-border rounded-2xl flex flex-col items-center justify-center text-center p-12 bg-surface/50 h-full min-h-[300px]">
-                <div class="inline-flex p-4 rounded-full bg-zinc-100 dark:bg-zinc-800/80 text-zinc-400 dark:text-zinc-500 mb-4 shadow-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                </div>
-                <h3 class="text-lg font-bold text-text mb-1">Select a Folder</h3>
-                <p class="text-sm text-text-muted max-w-sm">Choose an evaluation folder from the sidebar to view or manage its documents.</p>
+    <?php if (session()->get('role') === 'Admin'): ?>
+        <button onclick="document.getElementById('btn-create-folder-modal').click()" class="flex-1 w-full border-2 border-dashed border-surface-border hover:border-accent rounded-2xl flex flex-col items-center justify-center text-center p-12 bg-surface/50 hover:bg-accent/5 transition-all group cursor-pointer min-h-[400px]">
+            <div class="inline-flex p-4 rounded-full bg-zinc-100 dark:bg-zinc-800/80 group-hover:bg-accent/10 text-zinc-400 group-hover:text-accent dark:text-zinc-500 mb-4 shadow-sm transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
             </div>
-        <?php endif; ?>
-    </div>
+            <h3 class="text-lg font-bold text-text group-hover:text-accent transition-colors mb-1">Create New Folder</h3>
+            <p class="text-sm text-text-muted max-w-sm">Click here to start a new evaluation period and create the initial folder.</p>
+        </button>
+    <?php else: ?>
+        <button onclick="toggleAppSidebar()" class="flex-1 w-full border-2 border-dashed border-surface-border hover:border-accent rounded-2xl flex flex-col items-center justify-center text-center p-12 bg-surface/50 hover:bg-accent/5 transition-all group cursor-pointer lg:cursor-default min-h-[400px]">
+            <div class="inline-flex p-4 rounded-full bg-zinc-100 dark:bg-zinc-800/80 group-hover:bg-accent/10 text-zinc-400 group-hover:text-accent dark:text-zinc-500 mb-4 shadow-sm transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-text group-hover:text-accent transition-colors mb-1">Select a Folder</h3>
+            <p class="text-sm text-text-muted max-w-sm">Choose an evaluation folder from the sidebar to view or manage its documents.</p>
+        </button>
+    <?php endif; ?>
 
 <?php else: ?>
     
-    <div class="flex flex-col lg:flex-row gap-8 h-full relative">
+    <div class="flex flex-col lg:flex-row flex-1 lg:absolute lg:inset-0 bg-transparent lg:gap-6 lg:pb-6">
         
-        <div class="flex flex-col flex-1 min-w-0 h-full relative">
+        <div class="flex flex-col flex-1 min-w-0 relative bg-transparent lg:bg-surface lg:rounded-2xl lg:border border-surface-border lg:shadow-sm overflow-hidden">
             
-            <div class="relative mb-6 pr-4 shrink-0" id="folder-dropdown-container">
+            <div class="relative mb-6 pr-4 pt-6 px-6 lg:pt-8 lg:px-8 shrink-0" id="folder-dropdown-container">
                 <div class="flex items-center gap-2 mb-1">
                     <span class="text-[10px] font-black uppercase tracking-widest text-text-muted">Folder Contents</span>
                     <?php if (session()->get('role') !== 'Admin'): ?>
@@ -52,13 +50,13 @@
                     <?php endif; ?>
                 </div>
                 
-                <button onclick="toggleFolderDropdown()" class="flex items-center justify-between w-full text-left group cursor-pointer lg:cursor-default">
+                <button onclick="toggleAppSidebar()" class="flex items-center justify-between w-full text-left group cursor-pointer lg:cursor-default">
                     <h1 class="text-3xl font-black tracking-tight text-text truncate group-hover:text-accent lg:group-hover:text-text transition-colors">
                         <?= esc($activeFolder['title']) ?>
                     </h1>
-                    <!-- Chevron-down: rotates via toggleFolderDropdown() to indicate the mobile folder-switcher is open -->
-                    <svg id="folder-dropdown-icon" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 shrink-0 text-text-muted transition-transform lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    <!-- Hamburger menu: opens the mobile sidebar folder list -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 shrink-0 text-text-muted transition-colors group-hover:text-accent lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                 </button>
                 
@@ -69,20 +67,9 @@
                     <span class="text-text"><?= !empty($activeFolder['eval_date_end']) ? date('M d, Y h:ia', strtotime($activeFolder['eval_date_end'])) : 'Not Set' ?></span>
                 </p>
 
-                <div id="folder-dropdown-menu" class="hidden absolute top-full left-0 mt-2 w-full max-w-sm bg-surface border border-surface-border rounded-xl shadow-xl z-[40] max-h-64 overflow-y-auto lg:hidden custom-scrollbar">
-                    <?php if (session()->get('role') === 'Admin'): ?>
-                        <div class="p-2 border-b border-surface-border">
-                            <button onclick="toggleFolderDropdown(); event.stopPropagation(); setTimeout(() => document.getElementById('btn-create-folder-modal').click(), 50);" 
-                                class="w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold text-accent bg-accent/10 hover:bg-accent/20 transition-colors flex justify-between items-center cursor-pointer">
-                                + Create New Folder
-                            </button>
-                        </div>
-                    <?php endif; ?>
-                    <?= view('document/_folder_rows', ['folders' => $sidebarFolders ?? [], 'selectedFolderId' => $activeFolder['id']]) ?>
-                </div>
             </div>
 
-            <div class="flex gap-6 border-b border-surface-border mb-4 px-2 shrink-0 overflow-x-auto custom-scrollbar">
+            <div class="flex gap-6 border-b border-surface-border px-6 lg:px-8 shrink-0 overflow-x-auto custom-scrollbar">
                 <button id="tab-btn-mine" class="tab-btn-doc whitespace-nowrap pb-3 text-sm font-bold border-b-2 border-accent text-accent transition-all cursor-pointer" onclick="switchDocTab('mine')">
                     My Submissions
                     <span class="ml-1.5 px-2 py-0.5 rounded-full bg-accent/10 text-accent text-[10px] tab-badge transition-colors"><?= count($myDocs) ?></span>
@@ -101,7 +88,7 @@
             </div>
 
             <!-- Added h-[calc(100dvh-240px)] for mobile, resets to h-auto on lg screens -->
-            <div class="bg-surface border border-surface-border rounded-2xl shadow-sm overflow-hidden flex flex-col flex-1 min-h-0 lg:min-h-[400px] relative h-[calc(100dvh-240px)] lg:h-auto pb-32 lg:pb-0">
+            <div class="overflow-hidden flex flex-col flex-1 min-h-0 lg:min-h-[400px] relative h-[calc(100dvh-240px)] lg:h-auto pb-32 lg:pb-0">
                 
                 <div class="grid grid-cols-12 gap-4 px-8 py-4 bg-zinc-50 dark:bg-zinc-800/30 border-b border-surface-border text-[10px] font-black uppercase tracking-widest text-text-muted shrink-0 z-10 hidden md:grid">
                     <div class="col-span-6">Document Name</div>
@@ -214,15 +201,15 @@
             </div>
         </div>
 
-        <div id="bottom-sheet" class="lg:overflow-y-auto custom-scrollbar lg:gap-6 fixed inset-x-0 bottom-0 z-50 bg-surface border-t border-surface-border shadow-[0_-10px_40px_rgba(0,0,0,0.1)] rounded-t-3xl transition-transform duration-300 transform translate-y-[calc(100%-95px)] lg:static lg:translate-y-0 lg:w-80 lg:shrink-0 lg:shadow-none lg:border-none lg:bg-transparent lg:rounded-none flex flex-col">
+        <div id="bottom-sheet" class="lg:overflow-y-auto custom-scrollbar fixed inset-x-0 bottom-0 z-50 bg-surface/90 dark:bg-zinc-800/90 backdrop-blur-xl border-t border-surface-border shadow-[0_-10px_40px_rgba(0,0,0,0.1)] rounded-t-3xl transition-transform duration-300 transform translate-y-[calc(100%-95px)] lg:static lg:translate-y-0 lg:w-80 lg:shrink-0 lg:border lg:bg-zinc-50 lg:dark:bg-zinc-800/30 lg:backdrop-blur-none lg:rounded-2xl lg:shadow-sm flex flex-col">
             
             <div class="lg:hidden flex justify-center py-3 cursor-pointer touch-none" onclick="toggleBottomSheet()">
-                <div class="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full"></div>
+                <div class="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-600 rounded-full"></div>
             </div>
 
-            <div class="px-5 pb-5 lg:p-0">
-                <div class="bg-surface lg:border lg:border-surface-border rounded-2xl lg:p-5 lg:shadow-sm flex flex-col gap-4">
-                    <h4 class="hidden lg:block text-[10px] font-black uppercase text-text-muted tracking-widest border-b border-surface-border pb-2">Primary Actions</h4>
+            <div class="px-5 pb-5 lg:p-0 lg:h-full lg:flex lg:flex-col">
+                <div class="flex flex-col gap-4 lg:p-6 lg:pb-0">
+                    <h4 class="hidden lg:block text-[10px] font-black uppercase text-text-muted tracking-widest border-b border-surface-border pb-2 lg:-mx-6 lg:px-6">Primary Actions</h4>
                     
                     <?php 
                         $status = $activeFolder['status'] ?? 'draft';
@@ -235,13 +222,13 @@
                                 <?php if (!$hasBeenSubmitted || $status === \App\Enums\FolderStatus::REEVALUATE->value): ?>
                                     <button onclick="submitFolder('<?= $activeFolder['id'] ?>', this)" 
                                         <?= $isLocked ? 'disabled' : '' ?>
-                                        class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-info-500 hover:bg-info-600 disabled:bg-zinc-400 disabled:cursor-not-allowed text-white rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-md active:scale-95 cursor-pointer">
+                                        class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-info-500 hover:bg-info-600 disabled:bg-zinc-300 disabled:dark:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed text-white rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-md active:scale-95 cursor-pointer">
                                         Submit For Evaluation
                                     </button>
                                 <?php else: ?>
                                     <button onclick="unsubmitFolder('<?= $activeFolder['id'] ?>', this)" 
                                         <?= $isLocked ? 'disabled' : '' ?>
-                                        class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-warning-500 hover:bg-warning-600 disabled:bg-zinc-400 disabled:cursor-not-allowed text-white rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-md active:scale-95 cursor-pointer">
+                                        class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-warning-500 hover:bg-warning-600 disabled:bg-zinc-300 disabled:dark:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed text-white rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-md active:scale-95 cursor-pointer">
                                         Unsubmit Folder
                                     </button>
                                 <?php endif; ?>
@@ -250,7 +237,7 @@
                             <?php if ($status !== FolderStatus::SUBMITTED->value): ?>
                                 <button id="btn-open-create-file" data-folder-id="<?= esc($activeFolder['id']) ?>"
                                     <?= $isLocked ? 'disabled' : '' ?>
-                                    class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90 disabled:bg-zinc-400 disabled:dark:bg-zinc-700 disabled:opacity-60 disabled:hover:opacity-60 disabled:cursor-not-allowed rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-md active:scale-95 cursor-pointer">
+                                    class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90 disabled:bg-zinc-300 disabled:dark:bg-zinc-800 disabled:dark:text-zinc-500 disabled:text-zinc-500 disabled:opacity-100 disabled:hover:opacity-100 disabled:cursor-not-allowed rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-md active:scale-95 cursor-pointer">
                                     + Add Document
                                 </button>
                             <?php endif; ?>
@@ -259,13 +246,12 @@
                         <p class="text-xs text-text-muted italic py-2 text-center">You are viewing this folder in read-only mode.</p>
                     <?php endif; ?>
                 </div>
-            </div>
 
-            <div class="overflow-y-auto max-h-[60vh] px-5 pb-8 flex flex-col gap-6 lg:max-h-none lg:p-0 lg:overflow-visible custom-scrollbar">
+                <div class="overflow-y-auto lg:overflow-visible mt-6 max-h-[60vh] flex flex-col gap-6 lg:max-h-none lg:mt-0 lg:p-6 custom-scrollbar">
                 
                 <?php if (in_array(session()->get('role'), ['Admin', 'Supervisor']) && $activeFolder['user_id'] == session()->get('user_id')): ?>
-                    <div class="bg-surface lg:border lg:border-surface-border rounded-2xl lg:p-5 lg:shadow-sm flex flex-col gap-4">
-                        <h4 class="text-[10px] font-black uppercase text-text-muted tracking-widest border-b border-surface-border pb-2">Cascade Management</h4>
+                    <div class="flex flex-col gap-4">
+                        <h4 class="text-[10px] font-black uppercase text-text-muted tracking-widest border-b border-surface-border pb-2 lg:-mx-6 lg:px-6">Cascade Management</h4>
 
                         <?php $cascadedTeamId = $activeFolder['routing_preset_id']; ?>
                         
@@ -311,7 +297,7 @@
                         </div>
 
                         <?php if (in_array(session()->get('role'), ['Admin']) && $activeFolder['user_id'] == session()->get('user_id')): ?>
-                            <h4 class="text-[10px] font-black uppercase text-text-muted tracking-widest border-b border-surface-border pb-2">Folder Management</h4>
+                            <h4 class="text-[10px] font-black uppercase text-text-muted tracking-widest border-b border-surface-border pb-2 lg:-mx-6 lg:px-6 mt-4">Folder Management</h4>
                             
                             <div class="grid grid-cols-2 gap-3 mt-1">
                                 <!-- Pencil icon: opens components/edit_folder_modal.php prefilled with this folder's title/dates -->
@@ -331,10 +317,8 @@
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
-
-
-
             </div>
+        </div>
         </div>
         
         <div id="bottom-sheet-overlay" onclick="toggleBottomSheet()" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden"></div>
@@ -344,23 +328,6 @@
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             switchDocTab('mine');
-        });
-
-        // Dropdown Logic
-        function toggleFolderDropdown() {
-            const menu = document.getElementById('folder-dropdown-menu');
-            const icon = document.getElementById('folder-dropdown-icon');
-            menu.classList.toggle('hidden');
-            icon.classList.toggle('rotate-180');
-        }
-
-        // Close dropdown if clicking outside
-        document.addEventListener('click', function(event) {
-            const container = document.getElementById('folder-dropdown-container');
-            const menu = document.getElementById('folder-dropdown-menu');
-            if (container && !container.contains(event.target) && !menu.classList.contains('hidden')) {
-                toggleFolderDropdown();
-            }
         });
 
         // Bottom Sheet Logic

@@ -31,6 +31,7 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->post('account/sendInvites', 'AccountManagement::sendInvites', ['filter' => 'role:Admin']);
     $routes->post('account/invite/delete', 'AccountManagement::deleteInvite', ['filter' => 'role:Admin']);
     $routes->post('account/invite/delete-bulk', 'AccountManagement::deleteInvitesBulk', ['filter' => 'role:Admin']);
+    $routes->post('account/invite/resend', 'AccountManagement::resendInvite', ['filter' => 'role:Admin']);
     $routes->post('account/toggle', 'AccountManagement::toggleStatus', ['filter' => 'role:Admin']);
     $routes->post('account/update-role', 'AccountManagement::updateRole', ['filter' => 'role:Admin']);
     $routes->post('account/process-queue', 'AccountManagement::processQueueAjax');

@@ -37,6 +37,7 @@
     <script src="<?= base_url('assets/js/main/header.js') ?>"></script>
     <script src="<?= base_url('assets/js/axios/config.js') ?>"></script>
     <script src="<?= base_url('assets/js/axios/api.js') ?>"></script>
+    <script src="<?= base_url('assets/js/main/customSelect.js') ?>"></script>
     <script type="module" src="<?= base_url('assets/js/main/modals/confirmModal.js') ?>"></script>
     <script src="<?= base_url('assets/js/main/passwordToggle.js') ?>"></script>
 </body>

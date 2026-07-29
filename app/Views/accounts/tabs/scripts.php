@@ -1,4 +1,82 @@
+<style>
+    .page-hidden { display: none !important; }
+</style>
 <script>
+    class ClientPaginator {
+        constructor(config) {
+            this.pageSize = config.pageSize || 20;
+            this.currentPage = 1;
+            this.container = document.getElementById(config.containerId);
+            if (!this.container) return;
+            
+            this.btnPrev = this.container.querySelector('.js-page-prev');
+            this.btnNext = this.container.querySelector('.js-page-next');
+            this.lblStart = this.container.querySelector('[id$="-page-start"]');
+            this.lblEnd = this.container.querySelector('[id$="-page-end"]');
+            this.lblTotal = this.container.querySelector('[id$="-page-total"]');
+            
+            if (this.btnPrev) this.btnPrev.addEventListener('click', () => this.goToPage(this.currentPage - 1));
+            if (this.btnNext) this.btnNext.addEventListener('click', () => this.goToPage(this.currentPage + 1));
+            
+            this.items = [];
+            this.allRows = []; // To easily hide everything before showing slice
+        }
+        
+        init(allRows) {
+            this.allRows = allRows;
+        }
+
+        updateItems(newItems) {
+            this.items = newItems;
+            this.currentPage = 1;
+            this.render();
+        }
+        
+        goToPage(page) {
+            this.currentPage = page;
+            this.render();
+        }
+        
+        render() {
+            if (!this.container) return;
+            const total = this.items.length;
+            const totalPages = Math.ceil(total / this.pageSize) || 1;
+            
+            if (this.currentPage > totalPages) this.currentPage = totalPages;
+            if (this.currentPage < 1) this.currentPage = 1;
+            
+            const startIdx = (this.currentPage - 1) * this.pageSize;
+            const endIdx = Math.min(startIdx + this.pageSize, total);
+            
+            // Hide all rows in this list
+            this.allRows.forEach(el => el.classList.add('page-hidden'));
+            
+            // Show current page items
+            for(let i = startIdx; i < endIdx; i++) {
+                this.items[i].classList.remove('page-hidden');
+            }
+            
+            if (this.lblStart) this.lblStart.textContent = total === 0 ? 0 : startIdx + 1;
+            if (this.lblEnd) this.lblEnd.textContent = endIdx;
+            if (this.lblTotal) this.lblTotal.textContent = total + (total === 1 ? ' entry' : ' entries');
+            
+            if (this.btnPrev) this.btnPrev.disabled = this.currentPage === 1;
+            if (this.btnNext) this.btnNext.disabled = this.currentPage === totalPages;
+            
+            this.container.classList.toggle('hidden', total === 0);
+        }
+    }
+    
+    // Global paginator instances
+    const dirPaginator = new ClientPaginator({ containerId: 'directory-pagination', pageSize: 15 });
+    const invPaginator = new ClientPaginator({ containerId: 'invitations-pagination', pageSize: 15 });
+    const posPaginator = new ClientPaginator({ containerId: 'positions-pagination', pageSize: 10 });
+    const uniPaginator = new ClientPaginator({ containerId: 'units-pagination', pageSize: 15 });
+    
+    // Directory Sidebar Filters
+    const filterUnitsPaginator = new ClientPaginator({ containerId: 'filter-units-pagination', pageSize: 6 });
+    const filterPosPaginator = new ClientPaginator({ containerId: 'filter-pos-pagination', pageSize: 6 });
+
     // ==========================================
     // AJAX FORM HANDLING (no more full-page reloads for accounts actions)
     // Registered synchronously (not inside DOMContentLoaded) so this listener
@@ -75,16 +153,20 @@
 
                 row.querySelectorAll('.js-status-badge-desktop').forEach(el => {
                     el.textContent = isActive ? 'Active' : 'Disabled';
-                    el.className = `js-status-badge-desktop text-[10px] font-bold uppercase tracking-widest ${isActive ? 'text-success-500' : 'text-danger-500'}`;
+                    if (el.tagName === 'BUTTON') {
+                        el.className = `js-status-badge-desktop text-[10px] font-bold uppercase tracking-widest cursor-pointer transition-colors focus:outline-none ${isActive ? 'text-success-500 hover:text-success-600' : 'text-danger-500 hover:text-danger-600'}`;
+                    } else {
+                        el.className = `js-status-badge-desktop text-[10px] font-bold uppercase tracking-widest ${isActive ? 'text-success-500' : 'text-danger-500'}`;
+                    }
                 });
                 row.querySelectorAll('.js-status-badge-mobile').forEach(el => {
                     el.textContent = isActive ? 'Active' : 'Disabled';
-                    el.className = `js-status-badge-mobile px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${isActive ? 'bg-success-50 text-success-600 border-success-200' : 'bg-danger-50 text-danger-600 border-danger-200'}`;
+                    if (el.tagName === 'BUTTON') {
+                        el.className = `js-status-badge-mobile w-full px-3 py-2.5 rounded-lg text-xs font-bold border border-transparent transition-colors cursor-pointer text-center ${isActive ? 'text-success-600 dark:text-success-500 bg-success-50 dark:bg-success-500/10 hover:bg-success-100 dark:hover:bg-success-500/20' : 'text-danger-500 bg-danger-50 dark:bg-danger-500/10 hover:bg-danger-100 dark:hover:bg-danger-500/20'}`;
+                    } else {
+                        el.className = `js-status-badge-mobile w-full px-3 py-2.5 rounded-lg text-xs font-bold text-center border border-transparent ${isActive ? 'text-success-600 dark:text-success-500 bg-success-50 dark:bg-success-500/10' : 'text-danger-500 bg-danger-50 dark:bg-danger-500/10'}`;
+                    }
                 });
-
-                const btn = form.querySelector('.js-toggle-btn');
-                btn.textContent = isActive ? 'Disable' : 'Enable';
-                btn.className = `js-toggle-btn text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-transparent transition-colors cursor-pointer focus:outline-none ${isActive ? 'text-warning-600 lg:hover:bg-warning-50 lg:dark:hover:bg-warning-500/10' : 'text-success-600 lg:hover:bg-success-50 lg:dark:hover:bg-success-500/10'}`;
                 break;
             }
 
@@ -163,20 +245,24 @@
 
             case 'add-position': {
                 const li = document.createElement('li');
-                li.className = 'position-item flex justify-between items-center px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors group';
+                li.className = 'position-item block lg:table-row bg-surface hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors group';
                 li.dataset.title = data.item.title.toLowerCase();
                 const isTeaching = data.item.is_teaching == 1;
                 li.innerHTML = `
-                    <div class="flex flex-col">
-                        <span class="text-sm font-bold text-text">${escapeHtml(data.item.title)}</span>
-                        <span class="text-[9px] font-black tracking-widest uppercase ${isTeaching ? 'text-warning-500' : 'text-zinc-400'}">${isTeaching ? 'Teaching' : 'Non-Teaching'}</span>
+                    <div class="flex flex-col justify-center lg:table-cell px-6 py-4 align-middle h-[72px]">
+                        <div class="flex justify-between items-center w-full">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-text">${escapeHtml(data.item.title)}</span>
+                                <span class="text-[9px] font-black tracking-widest uppercase ${isTeaching ? 'text-warning-500' : 'text-zinc-400'}">${isTeaching ? 'Teaching' : 'Non-Teaching'}</span>
+                            </div>
+                            <form action="${form.getAttribute('action').replace('/add', '/delete')}" method="post" data-ajax="delete-position" data-confirm="Delete this position? Staff currently assigned to it will keep their account but lose that designation." data-confirm-title="Delete Position">
+                                <input type="hidden" name="id" value="${data.item.id}">
+                                <button type="submit" class="text-danger-400 hover:text-danger-600 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-1 cursor-pointer">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                            </form>
+                        </div>
                     </div>
-                    <form action="${form.getAttribute('action').replace('/add', '/delete')}" data-ajax="delete-position" data-confirm="Delete this position? Staff currently assigned to it will keep their account but lose that designation." data-confirm-title="Delete Position">
-                        <input type="hidden" name="id" value="${data.item.id}">
-                        <button type="submit" class="text-danger-400 hover:text-danger-600 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                    </form>
                 `;
                 document.getElementById('positions-list').appendChild(li);
                 form.reset();
@@ -222,11 +308,10 @@
                 }
 
                 const li = document.createElement('li');
-                li.className = 'unit-item flex justify-between items-center px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors group';
+                li.className = 'unit-item block lg:table-row bg-surface hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors group';
                 li.dataset.id = item.id;
                 li.dataset.parent = parentId;
                 li.dataset.name = item.name.toLowerCase();
-                li.style.paddingLeft = `${level * 24 + 16}px`;
 
                 let display = '';
                 if (parentId !== 0) {
@@ -243,20 +328,24 @@
                 li.style.display = display;
 
                 li.innerHTML = `
-                    <div class="flex items-center gap-2 pr-2">
-                        ${parentId !== 0 ? '' : ''}
-                        <div class="w-4 h-4"></div>
-                        <div class="flex flex-col">
-                            <span class="text-sm font-bold text-text">${escapeHtml(item.name)}</span>
-                            ${parentId === 0 ? '<span class="text-[9px] font-bold text-info-500 uppercase tracking-widest mt-0.5">Top Level Node</span>' : ''}
+                    <div class="flex flex-col justify-center lg:table-cell py-4 align-middle h-[72px]" style="padding-left: ${level * 24 + 24}px; padding-right: 24px;">
+                        <div class="flex justify-between items-center w-full">
+                            <div class="flex items-center gap-2 pr-2">
+                                ${parentId !== 0 ? '' : ''}
+                                <div class="w-6 h-4"></div>
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-bold text-text">${escapeHtml(item.name)}</span>
+                                    ${parentId === 0 ? '<span class="text-[9px] font-bold text-info-500 uppercase tracking-widest mt-0.5">Top Level Node</span>' : ''}
+                                </div>
+                            </div>
+                            <form action="${form.getAttribute('action').replace('/add', '/delete')}" method="post" data-ajax="delete-unit" data-confirm="Delete this unit? Staff currently assigned to it will keep their account but lose that unit. Sub-units under it will be deleted too." data-confirm-title="Delete Unit">
+                                <input type="hidden" name="id" value="${item.id}">
+                                <button type="submit" class="text-danger-400 hover:text-danger-600 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-1 cursor-pointer">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                            </form>
                         </div>
                     </div>
-                    <form action="${form.getAttribute('action').replace('/add', '/delete')}" data-ajax="delete-unit" data-confirm="Delete this unit? Staff currently assigned to it will keep their account but lose that unit. Sub-units under it will be deleted too." data-confirm-title="Delete Unit">
-                        <input type="hidden" name="id" value="${item.id}">
-                        <button type="submit" class="text-danger-400 hover:text-danger-600 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                    </form>
                 `;
 
                 if (insertAfterNode) {
@@ -303,24 +392,38 @@
                                 <span class="text-[10px] font-bold text-text-muted tracking-widest truncate">Invited ${escapeHtml(inv.created_display)}</span>
                             </div>
                         </td>
-                        <td class="block lg:table-cell px-0 lg:px-6 py-2 lg:py-4 border-t border-surface-border lg:border-none mt-2 lg:mt-0">
-                            <span class="w-max px-3 py-1 rounded-lg text-[10px] font-black bg-info-50 dark:bg-info-500/10 text-info-600 border border-info-200 dark:border-info-500/20 uppercase tracking-widest">
-                                ${escapeHtml(inv.role_name)}
+                        <td class="block lg:table-cell px-0 lg:px-6 py-2 lg:py-4">
+                            <div class="flex justify-between items-center lg:block">
+                                <span class="w-max px-3 py-1 rounded-lg text-[10px] font-black bg-info-50 dark:bg-info-500/10 text-info-600 border border-info-200 dark:border-info-500/20 uppercase tracking-widest">
+                                    ${escapeHtml(inv.role_name)}
+                                </span>
+                                <span class="lg:hidden px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border bg-zinc-50 dark:bg-zinc-800/50 border-surface-border text-warning-500 border-warning-200/50 dark:border-warning-500/30">
+                                    Pending
+                                </span>
+                            </div>
+                        </td>
+                        <td class="hidden lg:table-cell px-0 lg:px-6 py-2 lg:py-4 text-left lg:text-center">
+                            <span class="px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border bg-zinc-50 dark:bg-zinc-800/50 border-surface-border text-warning-500 border-warning-200/50 dark:border-warning-500/30">
+                                Pending
                             </span>
                         </td>
-                        <td class="block lg:table-cell px-0 lg:px-6 py-2 lg:py-4 text-left lg:text-center">
-                            <span class="text-[10px] font-bold uppercase tracking-widest text-warning-500">Pending</span>
-                        </td>
                         <td class="block lg:table-cell px-0 lg:px-6 py-2 lg:py-4">
-                            <span class="text-xs font-bold text-text">${escapeHtml(inv.expires_display)}</span>
+                            <div class="flex items-center gap-2 text-xs font-bold text-text">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <span>${escapeHtml(inv.expires_display)}</span>
+                            </div>
                         </td>
-                        <td class="block lg:table-cell px-0 lg:px-6 pt-3 pb-0 lg:py-4 text-right border-t border-surface-border lg:border-none mt-2 lg:mt-0">
-                            <form action="/account/invite/delete" data-ajax="delete-invite" data-confirm="Delete this invitation? If it hasn't been accepted yet, the invite link will stop working." data-confirm-title="Delete Invitation">
-                                <input type="hidden" name="id" value="${inv.id}">
-                                <button type="submit" class="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-transparent text-danger-500 lg:hover:bg-danger-50 lg:dark:hover:bg-danger-500/10 focus:outline-none transition-colors cursor-pointer">
-                                    Delete
-                                </button>
-                            </form>
+                        <td class="block lg:table-cell px-0 lg:px-6 pt-3 pb-0 lg:py-4 text-right">
+                            <div class="flex items-center justify-between lg:justify-end gap-2 w-full">
+                                <form action="/account/invite/resend" method="post" class="flex-1 lg:flex-none inline-block" data-ajax="resend-invitation">
+                                    <input type="hidden" name="id" value="${inv.id}">
+                                    <button type="submit" class="w-full px-3 py-2.5 lg:py-1.5 rounded-lg text-xs font-bold text-accent bg-accent/10 lg:bg-transparent hover:bg-accent/20 lg:hover:bg-accent/10 border border-transparent transition-colors cursor-pointer text-center" title="Resend Email">Resend</button>
+                                </form>
+                                <form action="/account/invite/delete" method="post" class="flex-1 lg:flex-none inline-block" data-ajax="delete-invitation" data-confirm="Revoke this invitation? The link will immediately stop working." data-confirm-title="Revoke Invitation">
+                                    <input type="hidden" name="id" value="${inv.id}">
+                                    <button type="submit" class="w-full px-3 py-2.5 lg:py-1.5 rounded-lg text-xs font-bold text-danger-500 bg-danger-50 dark:bg-danger-500/10 lg:bg-transparent dark:lg:bg-transparent hover:bg-danger-100 dark:hover:bg-danger-500/20 border border-transparent transition-colors cursor-pointer text-center" title="Revoke Invitation">Revoke</button>
+                                </form>
+                            </div>
                         </td>
                     `;
                     tbody.prepend(tr);
@@ -332,9 +435,15 @@
                 break;
             }
 
-            case 'delete-invite': {
+            case 'delete-invite':
+            case 'delete-invitation': {
                 form.closest('.invite-row').remove();
                 filterInvitations();
+                break;
+            }
+            
+            case 'resend-invitation': {
+                window.appAlert(data.message, { title: 'Invitation Resent', variant: 'info' });
                 break;
             }
         }
@@ -387,10 +496,43 @@
         switchUserTab((e.state && e.state.tab) || 'directory', false);
     });
 
+    // --- SYSTEM DATA SUB-TABS ---
+    function switchSystemTab(tabId) {
+        // Update Buttons
+        document.querySelectorAll('.subtab-btn').forEach(btn => {
+            btn.classList.remove('border-accent', 'text-accent');
+            btn.classList.add('border-transparent', 'text-text-muted', 'hover:text-text', 'hover:border-surface-border');
+        });
+        const activeBtn = document.getElementById('subtab-btn-' + tabId);
+        if (activeBtn) {
+            activeBtn.classList.remove('border-transparent', 'text-text-muted', 'hover:text-text', 'hover:border-surface-border');
+            activeBtn.classList.add('border-accent', 'text-accent');
+        }
+
+        // Update Panels
+        document.querySelectorAll('.system-panel').forEach(panel => {
+            panel.classList.add('hidden');
+            panel.classList.remove('flex');
+        });
+        const activePanel = document.getElementById('system-panel-' + tabId);
+        if (activePanel) {
+            activePanel.classList.remove('hidden');
+            activePanel.classList.add('flex');
+        }
+    }
+
+    // Get checked values for a specific name
+    function getCheckedValues(name) {
+        // Fallback for both name[] and just name
+        const checkboxes = document.querySelectorAll(`input[name="${name}[]"]:checked, input[name="${name}"]:checked`);
+        return Array.from(checkboxes).map(cb => cb.value);
+    }
+
     // --- SEARCH AND FILTER LOGIC (Updated for Sidebar Checkboxes & Mobile Overlay) ---
     document.addEventListener('DOMContentLoaded', () => {
         const searchInput = document.getElementById('filter-search');
-        const rows        = document.querySelectorAll('.user-dir-row');
+        const rows        = Array.from(document.querySelectorAll('.user-dir-row'));
+        dirPaginator.init(rows);
         const emptyState  = document.getElementById('empty-filter-state');
         const countBadge  = document.getElementById('directory-count');
         const mobileCountBadge = document.getElementById('mobile-directory-count');
@@ -426,11 +568,6 @@
         if (closeBtn) closeBtn.addEventListener('click', () => toggleMobileSidebar(false));
         if (overlay) overlay.addEventListener('click', () => toggleMobileSidebar(false));
 
-        // Get checked values for a specific name
-        function getCheckedValues(name) {
-            return Array.from(document.querySelectorAll(`input[name="${name}[]"]:checked`)).map(cb => cb.value);
-        }
-
         function filterUsers() {
             const query = searchInput ? searchInput.value.toLowerCase() : '';
             const checkedRoles = getCheckedValues('filter_role');
@@ -440,6 +577,7 @@
             
             let visibleCount = 0;
 
+            const matchedRows = [];
             rows.forEach(row => {
                 const rowName   = row.getAttribute('data-name');
                 const rowEmail  = row.getAttribute('data-email');
@@ -455,12 +593,11 @@
                 const matchesStatus = checkedStatus.length === 0 || checkedStatus.includes(rowStatus);
 
                 if (matchesSearch && matchesRole && matchesDept && matchesPos && matchesStatus) {
-                    row.style.display = '';
+                    matchedRows.push(row);
                     visibleCount++;
-                } else {
-                    row.style.display = 'none';
                 }
             });
+            dirPaginator.updateItems(matchedRows);
 
             if (countBadge) countBadge.textContent = visibleCount;
             if (mobileCountBadge) mobileCountBadge.textContent = visibleCount;
@@ -489,34 +626,104 @@
                 filterUsers();
             });
         }
+        
+        filterUsers(); // Call once on load to initialize the paginator
 
-        // Mini-search logic for Units
-        const miniSearchUnits = document.getElementById('mini-search-units');
-        if (miniSearchUnits) {
-            miniSearchUnits.addEventListener('input', (e) => {
-                const q = e.target.value.toLowerCase();
-                document.querySelectorAll('.unit-node').forEach(node => {
-                    const name = node.getAttribute('data-name');
-                    const header = node.firstElementChild;
-                    if (name.includes(q)) {
-                        header.style.display = '';
-                    } else {
-                        header.style.display = 'none';
-                    }
-                });
-            });
+        // --- DIRECTORY SIDEBAR FILTERS PAGINATION & SEARCH ---
+        function filterSidebarUnits() {
+            const input = document.getElementById('mini-search-units');
+            const query = input ? input.value.trim().toLowerCase() : '';
+            const list = document.getElementById('units-checkbox-list');
+            if (!list) return;
+            const allRows = Array.from(list.querySelectorAll(':scope > div > .unit-node'));
+            
+            if (filterUnitsPaginator.allRows.length === 0) filterUnitsPaginator.init(allRows);
+            
+            const matchedRows = allRows.filter(row => row.dataset.name && row.dataset.name.includes(query));
+            filterUnitsPaginator.updateItems(matchedRows);
         }
 
-        // Mini-search logic for Positions
-        const miniSearchPositions = document.getElementById('mini-search-positions');
-        if (miniSearchPositions) {
-            miniSearchPositions.addEventListener('input', (e) => {
-                const q = e.target.value.toLowerCase();
-                document.querySelectorAll('.position-filter-label').forEach(label => {
-                    const title = label.getAttribute('data-title');
-                    label.style.display = title.includes(q) ? '' : 'none';
-                });
-            });
+        const msUnits = document.getElementById('mini-search-units');
+        if (msUnits) msUnits.addEventListener('input', filterSidebarUnits);
+        
+        const cbUnitsList = document.getElementById('units-checkbox-list');
+        if (cbUnitsList) {
+            filterUnitsPaginator.init(Array.from(cbUnitsList.querySelectorAll(':scope > div > .unit-node')));
+            filterSidebarUnits();
+        }
+
+        function filterSidebarPositions() {
+            const input = document.getElementById('mini-search-positions');
+            const query = input ? input.value.trim().toLowerCase() : '';
+            const list = document.getElementById('positions-checkbox-list');
+            if (!list) return;
+            const allRows = Array.from(list.querySelectorAll('.position-filter-label'));
+            
+            if (filterPosPaginator.allRows.length === 0) filterPosPaginator.init(allRows);
+            
+            const matchedRows = allRows.filter(row => row.dataset.title && row.dataset.title.includes(query));
+            filterPosPaginator.updateItems(matchedRows);
+        }
+
+        const msPos = document.getElementById('mini-search-positions');
+        if (msPos) msPos.addEventListener('input', filterSidebarPositions);
+        
+        const cbPosList = document.getElementById('positions-checkbox-list');
+        if (cbPosList) {
+            filterPosPaginator.init(Array.from(cbPosList.querySelectorAll('.position-filter-label')));
+            filterSidebarPositions();
+        }
+
+        // --- SYSTEM DATA TAB: UNITS PAGINATION & SEARCH ---
+        function filterUnits() {
+            const input = document.getElementById('filter-units');
+            const query = input ? input.value.trim().toLowerCase() : '';
+            const list = document.getElementById('units-list');
+            if (!list) return;
+            const allRows = Array.from(list.querySelectorAll('li.unit-item'));
+            
+            if (uniPaginator.allRows.length === 0) uniPaginator.init(allRows);
+            
+            const matchedRows = allRows.filter(row => row.dataset.name && row.dataset.name.includes(query));
+            uniPaginator.updateItems(matchedRows);
+            
+            const emptyState = document.getElementById('units-empty-state');
+            if (emptyState) emptyState.style.display = matchedRows.length === 0 ? '' : 'none';
+        }
+
+        const uniInput = document.getElementById('filter-units');
+        if (uniInput) uniInput.addEventListener('input', filterUnits);
+
+        const unitsList = document.getElementById('units-list');
+        if (unitsList) {
+            uniPaginator.init(Array.from(unitsList.querySelectorAll('li.unit-item')));
+            filterUnits();
+        }
+
+        // --- SYSTEM DATA TAB: POSITIONS PAGINATION & SEARCH ---
+        function filterPositions() {
+            const input = document.getElementById('filter-positions');
+            const query = input ? input.value.trim().toLowerCase() : '';
+            const list = document.getElementById('positions-list');
+            if (!list) return;
+            const allRows = Array.from(list.querySelectorAll('li.position-item'));
+            
+            if (posPaginator.allRows.length === 0) posPaginator.init(allRows);
+            
+            const matchedRows = allRows.filter(row => row.dataset.title && row.dataset.title.includes(query));
+            posPaginator.updateItems(matchedRows);
+            
+            const emptyState = document.getElementById('positions-empty-state');
+            if (emptyState) emptyState.style.display = matchedRows.length === 0 ? '' : 'none';
+        }
+
+        const posInput = document.getElementById('filter-positions');
+        if (posInput) posInput.addEventListener('input', filterPositions);
+
+        const positionsList = document.getElementById('positions-list');
+        if (positionsList) {
+            posPaginator.init(Array.from(positionsList.querySelectorAll('li.position-item')));
+            filterPositions();
         }
     });
 
@@ -528,15 +735,16 @@
         const checkedStatus = getCheckedValues('invite_filter_status');
         const checkedExpiry = getCheckedValues('invite_filter_expiry');
 
-        const rows = document.querySelectorAll('.invite-row');
+        const rows = Array.from(document.querySelectorAll('.invite-row'));
+        if (invPaginator.allRows.length === 0) invPaginator.init(rows);
         let visibleCount = 0;
+        const matchedRows = [];
 
         rows.forEach(row => {
             const matchesSearch = row.dataset.email.includes(query);
             const matchesRole = checkedRoles.length === 0 || checkedRoles.includes(row.dataset.role);
             const matchesStatus = checkedStatus.length === 0 || checkedStatus.includes(row.dataset.status);
             
-            // Expiry logic: 'expired' or 'not-expired'
             const isExpired = row.dataset.expired === '1';
             let matchesExpiry = true;
             if (checkedExpiry.length > 0) {
@@ -545,12 +753,11 @@
             }
 
             if (matchesSearch && matchesRole && matchesStatus && matchesExpiry) {
-                row.style.display = '';
+                matchedRows.push(row);
                 visibleCount++;
-            } else {
-                row.style.display = 'none';
             }
         });
+        invPaginator.updateItems(matchedRows);
 
         const countBadge = document.getElementById('invitations-count');
         if (countBadge) countBadge.textContent = visibleCount;
@@ -660,30 +867,6 @@
     });
 
     // --- SYSTEM DATA TAB: JOB POSITIONS PAGINATION & SEARCH ---
-    let posCurrentPage = 1;
-    const posPerPage = 10;
-    let posFilteredRows = [];
-
-    function renderPositionsPage() {
-        const list = document.getElementById('positions-list');
-        if (!list) return;
-        const allRows = Array.from(list.querySelectorAll('li.position-item'));
-        
-        allRows.forEach(row => row.style.display = 'none');
-        
-        const start = (posCurrentPage - 1) * posPerPage;
-        const end = start + posPerPage;
-        posFilteredRows.slice(start, end).forEach(row => row.style.display = '');
-        
-        const totalPages = Math.ceil(posFilteredRows.length / posPerPage) || 1;
-        document.getElementById('pos-page-info').textContent = `Page ${posCurrentPage} of ${totalPages}`;
-        document.getElementById('pos-prev').disabled = posCurrentPage === 1;
-        document.getElementById('pos-next').disabled = posCurrentPage === totalPages || posFilteredRows.length === 0;
-        
-        const emptyState = document.getElementById('positions-empty-state');
-        if (emptyState) emptyState.style.display = posFilteredRows.length === 0 ? '' : 'none';
-    }
-
     function filterPositions() {
         const input = document.getElementById('filter-positions');
         if (!input) return;
@@ -691,26 +874,22 @@
         const list = document.getElementById('positions-list');
         const allRows = Array.from(list.querySelectorAll('li.position-item'));
         
-        posFilteredRows = allRows.filter(row => row.dataset.title.includes(query));
-        posCurrentPage = 1;
-        renderPositionsPage();
+        if (posPaginator.allRows.length === 0) posPaginator.init(allRows);
+        
+        const matchedRows = allRows.filter(row => row.dataset.title.includes(query));
+        posPaginator.updateItems(matchedRows);
+        
+        const emptyState = document.getElementById('positions-empty-state');
+        if (emptyState) emptyState.style.display = matchedRows.length === 0 ? '' : 'none';
     }
 
     const posInput = document.getElementById('filter-positions');
     if (posInput) posInput.addEventListener('input', filterPositions);
-    
-    const posPrevBtn = document.getElementById('pos-prev');
-    if (posPrevBtn) posPrevBtn.addEventListener('click', () => { if (posCurrentPage > 1) { posCurrentPage--; renderPositionsPage(); } });
-    
-    const posNextBtn = document.getElementById('pos-next');
-    if (posNextBtn) posNextBtn.addEventListener('click', () => { 
-        if (posCurrentPage < Math.ceil(posFilteredRows.length / posPerPage)) { posCurrentPage++; renderPositionsPage(); } 
-    });
 
     const positionsList = document.getElementById('positions-list');
     if (positionsList) {
-        posFilteredRows = Array.from(positionsList.querySelectorAll('li.position-item'));
-        renderPositionsPage();
+        posPaginator.init(Array.from(positionsList.querySelectorAll('li.position-item')));
+        filterPositions();
     }
 
     // --- SYSTEM DATA TAB: DEPARTMENTS & UNITS TREE VIEW ---
@@ -780,4 +959,154 @@
             if (emptyState) emptyState.style.display = query !== '' && visibleCount === 0 ? '' : 'none';
         });
     }
+
+    // --- SYSTEM MODALS & MOBILE SIDEBAR ---
+    document.querySelectorAll('.btn-open-modal').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetId = btn.dataset.target;
+            const modal = document.getElementById(targetId);
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        });
+    });
+
+    document.querySelectorAll('.btn-close-modal').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetId = btn.dataset.target;
+            const modal = document.getElementById(targetId);
+            if (modal) {
+                modal.classList.remove('flex');
+                modal.classList.add('hidden');
+            }
+        });
+    });
+
+    // Close modals when clicking on the backdrop overlay
+    const allModals = [document.getElementById('modal-create-position'), document.getElementById('modal-create-unit')];
+    allModals.forEach(modal => {
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('flex');
+                    modal.classList.add('hidden');
+                }
+            });
+        }
+    });
+
+    const sysMobileOverlay = document.getElementById('mobile-system-filter-overlay');
+    function openSystemSidebar() {
+        if (sysMobileOverlay) {
+            sysMobileOverlay.classList.remove('hidden');
+            // small delay to allow display block to apply before opacity transition
+            setTimeout(() => sysMobileOverlay.classList.remove('opacity-0'), 10);
+        }
+        // There are two sidebars (one in each sub-tab panel), we open the one in the currently active panel
+        const activeSidebar = document.querySelector('.system-panel:not(.hidden) .system-sidebar');
+        if (activeSidebar) {
+            activeSidebar.classList.remove('-translate-x-full');
+            activeSidebar.classList.add('translate-x-0');
+        }
+    }
+
+    function closeSystemSidebar() {
+        if (sysMobileOverlay) {
+            sysMobileOverlay.classList.add('opacity-0');
+            setTimeout(() => sysMobileOverlay.classList.add('hidden'), 300);
+        }
+        document.querySelectorAll('.system-sidebar').forEach(sidebar => {
+            sidebar.classList.remove('translate-x-0');
+            sidebar.classList.add('-translate-x-full');
+        });
+    }
+
+    document.querySelectorAll('.btn-open-system-mobile').forEach(btn => {
+        btn.addEventListener('click', openSystemSidebar);
+    });
+
+    document.querySelectorAll('.btn-close-system-mobile').forEach(btn => {
+        btn.addEventListener('click', closeSystemSidebar);
+    });
+
+    if (sysMobileOverlay) {
+        sysMobileOverlay.addEventListener('click', closeSystemSidebar);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.js-custom-select').forEach(wrapper => {
+            const btn = wrapper.querySelector('.js-select-button');
+            const dropdown = wrapper.querySelector('.js-select-dropdown');
+            const label = wrapper.querySelector('.js-select-label');
+            const hiddenInput = wrapper.querySelector('input[type="hidden"]');
+            const options = wrapper.querySelectorAll('.js-select-option');
+            const icon = btn.querySelector('svg');
+            
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const isExpanded = dropdown.classList.contains('opacity-100');
+                
+                document.querySelectorAll('.js-select-dropdown').forEach(d => {
+                    if (d !== dropdown) {
+                        d.classList.remove('opacity-100', 'scale-100');
+                        d.classList.add('opacity-0', 'scale-95');
+                        d.hideTimeout = setTimeout(() => d.classList.add('hidden'), 200);
+                    }
+                });
+                document.querySelectorAll('.js-select-button svg').forEach(svg => {
+                    if (svg !== icon) {
+                        svg.classList.remove('rotate-180');
+                    }
+                });
+                
+                if (!isExpanded) {
+                    if (dropdown.hideTimeout) clearTimeout(dropdown.hideTimeout);
+                    dropdown.classList.remove('hidden');
+                    // tiny delay so browser registers display:block before opacity trans
+                    setTimeout(() => {
+                        dropdown.classList.remove('opacity-0', 'scale-95');
+                        dropdown.classList.add('opacity-100', 'scale-100');
+                        icon.classList.add('rotate-180');
+                    }, 10);
+                } else {
+                    dropdown.classList.remove('opacity-100', 'scale-100');
+                    dropdown.classList.add('opacity-0', 'scale-95');
+                    dropdown.hideTimeout = setTimeout(() => dropdown.classList.add('hidden'), 200);
+                    icon.classList.remove('rotate-180');
+                }
+            });
+            
+            options.forEach(opt => {
+                opt.addEventListener('click', () => {
+                    hiddenInput.value = opt.dataset.value;
+                    label.textContent = opt.dataset.label;
+                    
+                    options.forEach(o => o.classList.remove('bg-accent/10', 'text-accent'));
+                    opt.classList.add('bg-accent/10', 'text-accent');
+                    
+                    dropdown.classList.remove('opacity-100', 'scale-100');
+                    dropdown.classList.add('opacity-0', 'scale-95');
+                    dropdown.hideTimeout = setTimeout(() => dropdown.classList.add('hidden'), 200);
+                    icon.classList.remove('rotate-180');
+                });
+            });
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.js-custom-select')) {
+                document.querySelectorAll('.js-select-dropdown').forEach(d => {
+                    if (!d.classList.contains('hidden')) {
+                        d.classList.remove('opacity-100', 'scale-100');
+                        d.classList.add('opacity-0', 'scale-95');
+                        d.hideTimeout = setTimeout(() => d.classList.add('hidden'), 200);
+                    }
+                });
+                document.querySelectorAll('.js-select-button svg').forEach(svg => {
+                    svg.classList.remove('rotate-180');
+                });
+            }
+        });
+    });
+
 </script>
