@@ -46,3 +46,21 @@ td.custom-selected, th.custom-selected {
         min-width: 120px !important; 
     }
 }
+
+/* 4. Print Overrides */
+@page {
+    margin: 1in;
+}
+
+@media print {
+    body {
+        color: #000 !important;
+        background: #fff !important;
+        margin: 0 !important; /* Remove screen margin to avoid double margin with @page */
+    }
+    
+    /* Ensure borders are visible when printing */
+    th, td {
+        border: 1px solid #000 !important;
+    }
+}
