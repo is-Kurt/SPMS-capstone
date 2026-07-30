@@ -103,6 +103,8 @@ $routes->group('', ['filter' => 'guest'], function($routes) {
     $routes->get('/', 'Auth\Session::index');
     $routes->get('login', 'Auth\Session::index');
     $routes->post('login', 'Auth\Session::edit');
+    $routes->get('login/2fa', 'Auth\Session::twoFactorAuth');
+    $routes->post('login/2fa', 'Auth\Session::verifyTwoFactorAuth');
 
     $routes->get('password/forgot', 'Auth\PasswordReset::index');
     $routes->post('password/send', 'Auth\PasswordReset::sendCode');

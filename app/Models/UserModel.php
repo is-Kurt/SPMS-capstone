@@ -26,7 +26,9 @@ class UserModel extends Model
         'avatar_color', 
         'avatar_letter',
         'reset_attempts', 
-        'reset_last_attempt_at'
+        'reset_last_attempt_at',
+        'two_factor_code',
+        'two_factor_expires_at'
     ];
 
     protected bool $allowEmptyInserts = false;

@@ -2,6 +2,11 @@
     $sysRole = $sysRole ?? session()->get('role');
     $firstTabKey = array_key_first($tabs);
 ?>
+<style>
+@media (min-width: 1024px) {
+    #ratings-sidebar { z-index: 0 !important; }
+}
+</style>
 
 <?php if (!$activeFolder): ?>
     <button onclick="toggleAppSidebar()" class="flex-1 w-full border-2 border-dashed border-surface-border hover:border-accent rounded-2xl flex flex-col items-center justify-center text-center p-12 bg-surface/50 hover:bg-accent/5 transition-all group cursor-pointer lg:cursor-default min-h-[400px]">
@@ -22,7 +27,7 @@
     <div id="mobile-filter-overlay" class="fixed inset-0 z-[115] bg-black/50 hidden lg:hidden transition-opacity opacity-0" aria-hidden="true"></div>
 
     <!-- SIDEBAR FILTERS (Left on mobile, Right on desktop) -->
-    <div id="ratings-sidebar" class="fixed inset-y-0 left-0 z-[120] w-72 bg-surface lg:bg-zinc-50 lg:dark:bg-zinc-800/30 lg:border border-surface-border shadow-2xl lg:shadow-none lg:rounded-2xl transform -translate-x-full lg:translate-x-0 transition-transform duration-300 lg:static shrink-0 flex flex-col h-full lg:h-auto">
+    <div id="ratings-sidebar" class="fixed inset-y-0 left-0 z-[120] lg:z-0 w-72 bg-surface lg:bg-zinc-50 lg:dark:bg-zinc-800/30 lg:border border-surface-border shadow-2xl lg:shadow-none lg:rounded-2xl transform -translate-x-full lg:translate-x-0 transition-transform duration-300 lg:static shrink-0 flex flex-col h-full lg:h-auto">
         <div class="px-6 py-4 border-b border-surface-border flex justify-between items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800 lg:rounded-t-2xl">
             <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest">Filters</h2>
             <button type="button" id="close-mobile-filters" class="lg:hidden text-text-muted hover:text-text p-1 cursor-pointer">

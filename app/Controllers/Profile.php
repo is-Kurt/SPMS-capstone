@@ -152,6 +152,10 @@ class Profile extends BaseController
             $file = $this->request->getFile('avatar_file');
 
             if ($file && $file->isValid() && !$file->hasMoved()) {
+                if ($file->getSize() > 10485760) {
+                    return $this->respondError('Image must be less than 10MB.', 422, ['avatar_file' => 'Image must be less than 10MB.']);
+                }
+
                 if (!in_array($file->getMimeType(), ['image/jpeg', 'image/png', 'image/webp'])) {
                     return $this->respondError('Invalid image format.', 422, ['avatar_file' => 'Invalid image format.']);
                 }

@@ -1,5 +1,8 @@
-
-
+<style>
+@media (min-width: 1024px) {
+    #teams-filter-sidebar { z-index: 0 !important; }
+}
+</style>
 
 <?php if (!$activeTeam): ?>
     <button onclick="toggleAppSidebar()" class="flex-1 w-full border-2 border-dashed border-surface-border hover:border-accent rounded-2xl flex flex-col items-center justify-center text-center p-12 bg-surface/50 hover:bg-accent/5 transition-all group cursor-pointer lg:cursor-default min-h-[400px]">
@@ -142,7 +145,7 @@
             <div id="teams-filter-overlay" onclick="toggleTeamsFilterSidebar()" class="fixed inset-0 bg-black/50 z-[125] hidden opacity-0 transition-opacity duration-300 lg:hidden"></div>
 
             <div id="teams-filter-sidebar" class="
-                fixed inset-y-0 left-0 z-[130] w-80 transform -translate-x-full transition-transform duration-300 flex flex-col h-full bg-surface border-r border-surface-border shadow-2xl
+                fixed inset-y-0 left-0 z-[130] lg:z-0 w-80 transform -translate-x-full transition-transform duration-300 flex flex-col h-full bg-surface border-r border-surface-border shadow-2xl
                 lg:static lg:w-72 lg:translate-x-0 lg:transition-none lg:shadow-none lg:border border-surface-border lg:rounded-2xl lg:overflow-hidden lg:h-auto lg:flex lg:bg-zinc-50 lg:dark:bg-zinc-800/30 shrink-0
             ">
                 <div class="px-6 py-4 border-b border-surface-border flex justify-between items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800 lg:rounded-t-2xl">

@@ -7,7 +7,7 @@ use CodeIgniter\CLI\CLI;
 
 use App\Models\DocumentFolderModel;
 
-class CheckFolderDeadlines extends BaseCommand
+class NightlyWorker extends BaseCommand
 {
     /**
      * The Command's Group
@@ -21,14 +21,14 @@ class CheckFolderDeadlines extends BaseCommand
      *
      * @var string
      */
-    protected $name = 'folders:check-deadlines';
+    protected $name = 'spms:nightly';
 
     /**
      * The Command's Description
      *
      * @var string
      */
-    protected $description = 'Checks for nearing and missed IPCR submission deadlines.';
+    protected $description = 'Runs daily background tasks like checking deadlines.';
 
     /**
      * The Command's Usage
@@ -84,7 +84,7 @@ class CheckFolderDeadlines extends BaseCommand
         CLI::write("Queued " . count($nearingFolders) . " 'Nearing Deadline' reminders.", 'green');
         CLI::write("Dispatching automated alerts...", 'yellow');
 
-        $result = \process_email_queue(0);
+        $result = \process_email_queue(30);
 
         CLI::write("Successfully sent {$result['processed']} automated emails.", 'green');
     }

@@ -6,7 +6,7 @@ use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
 use App\Models\DocumentFolderModel;
 
-class UpdateStatuses extends BaseCommand
+class RoutineWorker extends BaseCommand
 {
     /**
      * The Command's Group
@@ -20,14 +20,14 @@ class UpdateStatuses extends BaseCommand
      *
      * @var string
      */
-    protected $name = 'spms:update-statuses';
+    protected $name = 'spms:routine';
 
     /**
      * The Command's Description
      *
      * @var string
      */
-    protected $description = 'Sweeps the database to update IPCR/DPCR/OPCR statuses based on evaluation dates.';
+    protected $description = 'Runs 1-minute interval background tasks like updating statuses and garbage collection.';
 
     /**
      * The Command's Usage
@@ -68,7 +68,7 @@ class UpdateStatuses extends BaseCommand
             CLI::write('Checking for pending automated emails...', 'yellow');
             
             helper('email_queue');
-            $result = \process_email_queue(0);
+            $result = \process_email_queue(30);
             
             if ($result['processed'] > 0) {
                 CLI::write("Successfully sent {$result['processed']} automated emails.", 'green');
@@ -103,6 +103,15 @@ class UpdateStatuses extends BaseCommand
                ->update([
                    'reset_code' => null, 
                    'reset_code_expires_at' => null
+               ]);
+               
+            // 4. WIPE EXPIRED 2FA CODES (Security Sweeper)
+            $db->table('users')
+               ->where('two_factor_expires_at <', $now)
+               ->where('two_factor_code IS NOT NULL')
+               ->update([
+                   'two_factor_code' => null, 
+                   'two_factor_expires_at' => null
                ]);
 
             CLI::write("Garbage Collection complete. Cleared old records.", 'green');
