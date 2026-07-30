@@ -180,15 +180,17 @@
 
                             <td class="block lg:table-cell px-0 lg:px-6 pt-3 pb-0 lg:py-4 text-right">
                                 <div class="flex items-center justify-between lg:justify-end gap-2 w-full">
-                                    <?= form_open('account/invite/resend', ['class' => 'flex-1 lg:flex-none inline-block', 'data-ajax' => 'resend-invitation']) ?>
-                                        <input type="hidden" name="id" value="<?= $inv['id'] ?>">
-                                        <button type="submit" class="w-full px-3 py-2.5 lg:py-1.5 rounded-lg text-xs font-bold text-accent bg-accent/10 lg:bg-transparent hover:bg-accent/20 lg:hover:bg-accent/10 border border-transparent transition-colors cursor-pointer text-center" title="Resend Email">Resend</button>
-                                    <?= form_close() ?>
-                                    
-                                    <?= form_open('account/invite/delete', ['class' => 'flex-1 lg:flex-none inline-block', 'data-ajax' => 'delete-invitation', 'data-confirm' => 'Revoke this invitation? The link will immediately stop working.', 'data-confirm-title' => 'Revoke Invitation']) ?>
-                                        <input type="hidden" name="id" value="<?= $inv['id'] ?>">
-                                        <button type="submit" class="w-full px-3 py-2.5 lg:py-1.5 rounded-lg text-xs font-bold text-danger-500 bg-danger-50 dark:bg-danger-500/10 lg:bg-transparent dark:lg:bg-transparent hover:bg-danger-100 dark:hover:bg-danger-500/20 border border-transparent transition-colors cursor-pointer text-center" title="Revoke Invitation">Revoke</button>
-                                    <?= form_close() ?>
+                                    <?php if ($inv['status'] !== 'accepted'): ?>
+                                        <?= form_open('account/invite/resend', ['class' => 'flex-1 lg:flex-none inline-block', 'data-ajax' => 'resend-invitation']) ?>
+                                            <input type="hidden" name="id" value="<?= $inv['id'] ?>">
+                                            <button type="submit" class="w-full px-3 py-2.5 lg:py-1.5 rounded-lg text-xs font-bold text-accent bg-accent/10 lg:bg-transparent hover:bg-accent/20 lg:hover:bg-accent/10 border border-transparent transition-colors cursor-pointer text-center" title="Resend Email">Resend</button>
+                                        <?= form_close() ?>
+                                        
+                                        <?= form_open('account/invite/delete', ['class' => 'flex-1 lg:flex-none inline-block', 'data-ajax' => 'delete-invitation', 'data-confirm' => 'Revoke this invitation? The link will immediately stop working.', 'data-confirm-title' => 'Revoke Invitation']) ?>
+                                            <input type="hidden" name="id" value="<?= $inv['id'] ?>">
+                                            <button type="submit" class="w-full px-3 py-2.5 lg:py-1.5 rounded-lg text-xs font-bold text-danger-500 bg-danger-50 dark:bg-danger-500/10 lg:bg-transparent dark:lg:bg-transparent hover:bg-danger-100 dark:hover:bg-danger-500/20 border border-transparent transition-colors cursor-pointer text-center" title="Revoke Invitation">Revoke</button>
+                                        <?= form_close() ?>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>
