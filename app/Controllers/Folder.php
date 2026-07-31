@@ -198,12 +198,12 @@ class Folder extends BaseController
 
             $allowedStatuses = [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::SUBMITTED->value];
             if (!in_array($activeFolder['status'], $allowedStatuses)) {
-                throw new \Exception("You cannot cascade this folder because it has already moved past the drafting/submission phase.");
+                return $this->respondError("You cannot cascade this folder because it has already moved past the drafting/submission phase.", 400);
             }
-            if (!$activeFolder) throw new \Exception("Folder not found.");
+            if (!$activeFolder) return $this->respondError("Folder not found.", 400);
 
             $members = $presetMemberModel->where('preset_id', $teamId)->findAll();
-            if (empty($members)) throw new \Exception("The selected team has no members.");
+            if (empty($members)) return $this->respondError("The selected team has no members.", 400);
 
             $folderModel->db->transStart();
 
@@ -299,7 +299,7 @@ class Folder extends BaseController
             // team is missing/archived, so this must be authoritative, not client-supplied.
             $teamId = $activeFolder['routing_preset_id'] ?? null;
             if (!$teamId) {
-                throw new \Exception("This folder isn't currently cascaded to a team.");
+                return $this->respondError("This folder isn't currently cascaded to a team.", 400);
             }
 
             $members = $presetMemberModel->where('preset_id', $teamId)->findAll();
@@ -307,7 +307,7 @@ class Folder extends BaseController
 
             $allowedStatuses = [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::SUBMITTED->value];
             if (!in_array($activeFolder['status'], $allowedStatuses)) {
-                throw new \Exception("You cannot revoke the cascade for a folder that is currently being evaluated or is locked.");
+                return $this->respondError("You cannot revoke the cascade for a folder that is currently being evaluated or is locked.", 400);
             }
 
             $folderModel->db->transStart();
@@ -388,7 +388,7 @@ class Folder extends BaseController
             $newId = create_unique_row($documentFolderModel, $payload);
 
             if (!$newId) {
-                throw new \Exception("Could not generate a unique ID.");
+                return $this->respondError("Could not generate a unique ID.", 400);
             }
 
             return $this->respond(['status' => 'success', 'id' => $newId]);
@@ -462,7 +462,7 @@ class Folder extends BaseController
             $folderId = $this->request->getPost('folder_id');
             $folderModel = new DocumentFolderModel();
 
-            if (session()->get('role') !== 'Admin') throw new \Exception("Unauthorized to edit folders.");
+            if (session()->get('role') !== 'Admin') return $this->respondError("Unauthorized to edit folders.", 400);
 
             $title = $this->request->getPost('title');
             $dateStart = $this->request->getPost('eval_date_start');
@@ -562,11 +562,11 @@ class Folder extends BaseController
             $folder = $folderModel->find($folderId);
 
             if (!$folder || $folder['status'] !== FolderStatus::DRAFT->value) {
-                throw new \Exception("This folder cannot be submitted at this time.");
+                return $this->respondError("This folder cannot be submitted at this time.", 400);
             }
 
             if (!$folder || $folder['user_id'] != $userId) {
-                throw new \Exception("Unauthorized to submit this folder.");
+                return $this->respondError("Unauthorized to submit this folder.", 400);
             }
 
             // --- NEW: Target Document Validation ---
@@ -576,7 +576,7 @@ class Folder extends BaseController
                                        ->countAllResults();
             
             if ($hasTarget == 0) {
-                throw new \Exception("Submission Failed: You must set at least one document as the Basis Target (★) before submitting.");
+                return $this->respondError("Submission Failed: You must set at least one document as the Basis Target (★) before submitting.", 400);
             }
             // ---------------------------------------
 
@@ -631,13 +631,13 @@ class Folder extends BaseController
             $folder = $folderModel->find($folderId);
 
             if (!$folder || $folder['status'] !== FolderStatus::SUBMITTED->value) {
-                throw new \Exception("This folder cannot be unsubmitted at this time.");
+                return $this->respondError("This folder cannot be unsubmitted at this time.", 400);
             }
 
-            if (!$folder || $folder['user_id'] != $userId) throw new \Exception("Unauthorized.");
+            if (!$folder || $folder['user_id'] != $userId) return $this->respondError("Unauthorized.", 400);
 
             if (!empty($folder['eval_date_end']) && date('Y-m-d H:i:s') > $folder['eval_date_end']) {
-                throw new \Exception("Cannot unsubmit: Evaluation window has closed.");
+                return $this->respondError("Cannot unsubmit: Evaluation window has closed.", 400);
             }
 
             $folderModel->update($folderId, ['status' => FolderStatus::DRAFT->value, 'submitted_at' => null]);
@@ -660,11 +660,11 @@ class Folder extends BaseController
             $folder = $folderModel->find($folderId);
 
             if (!$folder || $folder['user_id'] != $userId) {
-                throw new \Exception("Unauthorized to evaluate this folder.");
+                return $this->respondError("Unauthorized to evaluate this folder.", 400);
             }
 
             if (!in_array($folder['status'], [FolderStatus::TO_EVALUATE->value, FolderStatus::REEVALUATE->value])) {
-                throw new \Exception("This folder cannot be evaluated at this time.");
+                return $this->respondError("This folder cannot be evaluated at this time.", 400);
             }
 
             $folderModel->update($folderId, [

@@ -90,7 +90,7 @@ class AccountManagement extends BaseController
             }
 
             if (empty($validEmails)) {
-                throw new \Exception('No valid or new email addresses found (they may already have accounts or pending invites).');
+                return $this->respondError('No valid or new email addresses found (they may already have accounts or pending invites).', 400);
             }
 
             $roleModel = new RoleModel();
@@ -233,12 +233,12 @@ class AccountManagement extends BaseController
         return $this->tryOrFail(function() {
             $targetId = $this->request->getPost('user_id');
             if ($targetId == session()->get('user_id')) {
-                throw new \Exception('Cannot disable yourself.');
+                return $this->respondError('Cannot disable yourself.', 400);
             }
 
             $userModel = new UserModel();
             $user = $userModel->find($targetId);
-            if (!$user) throw new \Exception('User not found.');
+            if (!$user) return $this->respondError('User not found.', 400);
 
             $newStatus = $user['is_active'] == 1 ? 0 : 1;
             $userModel->update($targetId, ['is_active' => $newStatus]);
@@ -254,7 +254,7 @@ class AccountManagement extends BaseController
             $roleId   = $this->request->getPost('role_id');
 
             if ($targetId == session()->get('user_id')) {
-                throw new \Exception('Cannot change your own role.');
+                return $this->respondError('Cannot change your own role.', 400);
             }
 
             $userModel = new UserModel();
@@ -262,7 +262,7 @@ class AccountManagement extends BaseController
 
             $user = $userModel->find($targetId);
             $role = $roleModel->find($roleId);
-            if (!$user || !$role) throw new \Exception('User or role not found.');
+            if (!$user || !$role) return $this->respondError('User or role not found.', 400);
 
             $db = \Config\Database::connect();
             $db->table('user_roles')->where('user_id', $targetId)->delete();
@@ -277,7 +277,7 @@ class AccountManagement extends BaseController
         return $this->tryOrFail(function() {
             $targetId = $this->request->getPost('user_id');
             if ($targetId == session()->get('user_id')) {
-                throw new \Exception('Cannot delete yourself.');
+                return $this->respondError('Cannot delete yourself.', 400);
             }
 
             $userModel = new UserModel();

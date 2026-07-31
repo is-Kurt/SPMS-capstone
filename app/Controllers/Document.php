@@ -84,7 +84,7 @@ class Document extends BaseController
             $newId = create_unique_row($documentModel, $payload);
 
             if (!$newId) {
-                throw new \Exception("Could not generate a unique ID.");
+                return $this->respondError("Could not generate a unique ID.", 400);
             }
 
             return $this->respond(['status' => 'success', 'id' => $folderId]);
@@ -138,11 +138,16 @@ class Document extends BaseController
         return $this->tryOrFail(function() {
             $docId = $this->request->getPost('doc_id');
             $folderId = $this->request->getPost('folder_id');
+            $isTarget = $this->request->getPost('is_target') !== null ? (int)$this->request->getPost('is_target') : 1;
 
             $documentModel = new DocumentModel();
 
+            // Clear any existing target in the folder
             $documentModel->where('document_folder_id', $folderId)->set(['is_target' => 0])->update();
-            $documentModel->where('id', $docId)->set(['is_target' => 1])->update();
+            
+            if ($isTarget === 1) {
+                $documentModel->where('id', $docId)->set(['is_target' => 1])->update();
+            }
 
             return $this->respond(['status' => 'success', 'message' => 'Target document updated.']);
         });

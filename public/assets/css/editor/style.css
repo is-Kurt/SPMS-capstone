@@ -27,9 +27,11 @@ td.custom-selected, th.custom-selected {
 }
 
 /* 3. Mobile Overrides */
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     body {
-        margin: 12px !important; 
+        margin: 8px !important; 
+        font-size: 10pt !important; /* Smaller base font for mobile */
+        zoom: 0.8; /* Scales down the entire editor to fit more in the viewport */
         /* Allow the editor body to scroll horizontally */
         overflow-x: auto !important; 
     }
@@ -43,7 +45,8 @@ td.custom-selected, th.custom-selected {
 
     /* Guarantee cells have enough space to read words normally */
     th, td {
-        min-width: 120px !important; 
+        padding: 4px !important; /* Less padding to save space */
+        min-width: 80px !important; /* Smaller minimum width for columns */
     }
 }
 

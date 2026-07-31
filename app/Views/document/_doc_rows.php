@@ -42,9 +42,9 @@
                     <span class="text-[10px] font-black uppercase tracking-widest text-text-muted">Folder Contents</span>
                     <?php if (session()->get('role') !== 'Admin'): ?>
                         <span class="text-zinc-400">/</span>
-                        <span class="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md 
-                            <?= $activeFolder['status'] === 'draft' ? 'bg-zinc-100 text-zinc-500' : 
-                               ($activeFolder['status'] === 'evaluated' ? 'bg-success-100 text-success-600' : 'bg-warning-100 text-warning-600') ?>">
+                        <span class="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border 
+                            <?= $activeFolder['status'] === 'draft' ? 'bg-zinc-50 dark:bg-zinc-500/10 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-500/20' : 
+                               ($activeFolder['status'] === 'evaluated' ? 'bg-success-50 dark:bg-success-500/10 text-success-600 dark:text-success-400 border-success-200 dark:border-success-500/20' : 'bg-warning-50 dark:bg-warning-500/10 text-warning-600 dark:text-warning-400 border-warning-200 dark:border-warning-500/20') ?>">
                             STATUS: <?= esc($activeFolder['status']) ?>
                         </span>
                     <?php endif; ?>
@@ -161,27 +161,35 @@
                                             </div>
                                         </div>
 
-                                        <div class="col-span-1 md:col-span-4 flex items-center gap-2 pl-12 md:pl-0">
+                                        <!-- Wrap actions for mobile inline layout -->
+                                        <div class="col-span-1 md:col-span-6 flex items-center gap-4 pl-12 md:pl-0 md:contents">
+                                            <div class="flex items-center gap-2 md:col-span-4">
                                             <?php if (isset($doc['is_target']) && $doc['is_target'] == 1): ?>
-                                                <span class="text-[10px] font-black text-warning-600 bg-warning-100 px-3 py-1 rounded-lg uppercase tracking-widest border border-warning-200">
-                                                    ★ Basis Target
-                                                </span>
+                                                <?php if (!$isReadOnly && !$isLocked): ?>
+                                                    <button type="button" onclick="setTargetDocument('<?= $doc['id'] ?>', '<?= $activeFolder['id'] ?>', 0)" class="text-[10px] font-black text-warning-600 dark:text-warning-400 bg-warning-50 dark:bg-warning-500/10 hover:bg-warning-100 dark:hover:bg-warning-500/20 px-3 py-1 rounded-lg uppercase tracking-widest border border-warning-200 dark:border-warning-500/20 cursor-pointer transition-colors" title="Unset as Basis for Evaluation">
+                                                        ★ Target
+                                                    </button>
+                                                <?php else: ?>
+                                                    <span class="text-[10px] font-black text-warning-600 dark:text-warning-400 bg-warning-50 dark:bg-warning-500/10 px-3 py-1 rounded-lg uppercase tracking-widest border border-warning-200 dark:border-warning-500/20">
+                                                        ★ Target
+                                                    </span>
+                                                <?php endif; ?>
                                             <?php else: ?>
-                                                <span class="text-[10px] font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-lg uppercase tracking-widest">
-                                                    Evidence
-                                                </span>
+                                                <?php if (!$isReadOnly && !$isLocked): ?>
+                                                    <button type="button" onclick="setTargetDocument('<?= $doc['id'] ?>', '<?= $activeFolder['id'] ?>', 1)" class="text-[10px] font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 px-3 py-1 rounded-lg uppercase tracking-widest border border-transparent cursor-pointer transition-colors" title="Set as Basis for Evaluation">
+                                                        Evidence
+                                                    </button>
+                                                <?php else: ?>
+                                                    <span class="text-[10px] font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-lg uppercase tracking-widest">
+                                                        Evidence
+                                                    </span>
+                                                <?php endif; ?>
                                             <?php endif; ?>
-                                        </div>
+                                            </div>
 
-                                        <div class="col-span-1 md:col-span-2 flex justify-start md:justify-end gap-1 pl-12 md:pl-0 lg:opacity-0 lg:group-hover:opacity-100 transition-all lg:translate-x-2 lg:group-hover:translate-x-0">
+                                            <div class="flex justify-end gap-1 md:col-span-2 lg:opacity-0 lg:group-hover:opacity-100 transition-all lg:translate-x-2 lg:group-hover:translate-x-0">
                                             <?php if (!$isReadOnly && !$isLocked): ?>
-                                                <!-- Star icon (icon-only button, see title= for tooltip): marks this doc as the ★ Basis Target used for the final rating -->
-                                                <button class="p-2 rounded-lg text-warning-500 hover:bg-warning-50 dark:hover:bg-warning-500/10 transition-all cursor-pointer border border-surface-border md:border-transparent"
-                                                        onclick="setTargetDocument('<?= $doc['id'] ?>', '<?= $activeFolder['id'] ?>')" title="Set as Basis for Evaluation">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                                                    </svg>
-                                                </button>
+                                                <!-- The star icon button was removed as the tags themselves are now toggles -->
 
                                                 <!-- Trash icon (icon-only button): opens the shared confirm/delete modal (components/delete_modal.php) via .btn-delete-modal, posting to data-url with the doc's data-id -->
                                                 <button class="btn-delete-modal p-2 rounded-lg text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-500/10 hover:text-danger-600 transition-all cursor-pointer border border-surface-border md:border-transparent"
@@ -191,6 +199,7 @@
                                                     </svg>
                                                 </button>
                                             <?php endif; ?>
+                                            </div>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
@@ -381,10 +390,11 @@
             });
         }
 
-        function setTargetDocument(docId, folderId) {
+        function setTargetDocument(docId, folderId, targetState) {
             const formData = new FormData();
             formData.append('doc_id', docId);
             formData.append('folder_id', folderId);
+            formData.append('is_target', targetState);
             apiPost('<?= site_url('document/target') ?>', formData, {
                 onSuccess: () => window.location.reload()
             });

@@ -15,7 +15,7 @@ function initEditor() {
         font_family_formats: 'Roboto=Roboto, Helvetica, Arial, sans-serif; Sans Serif=sans-serif; Andale Mono=andale mono,times; Arial=arial,helvetica,sans-serif; Arial Black=arial black,avant garde; Book Antiqua=book antiqua,palatino; Comic Sans MS=comic sans ms,sans-serif; Courier New=courier new,courier; Georgia=georgia,palatino; Helvetica=helvetica; Impact=impact,chicago; Symbol=symbol; Tahoma=tahoma,arial,helvetica,sans-serif; Terminal=terminal,monaco; Times New Roman=times new roman,times; Trebuchet MS=trebuchet ms,geneva; Verdana=verdana,geneva;',
         line_height_formats: '1 1.15 1.5 2 2.5 3',
 
-        plugins: 'table lists advlist saveShortcut setDirty cellSelect disableBackgroundCloning print pagebreak',
+        plugins: 'table lists advlist saveShortcut setDirty cellSelect disableBackgroundCloning pagebreak',
         toolbar_mode: 'wrap',
         toolbar: [
             'print | undo redo | fontfamily fontsize blocks | bold italic underline strikethrough | forecolor backcolor tablecellbackgroundcolor',
@@ -35,6 +35,12 @@ function initEditor() {
             const tableTools = new TableTools(editor);
             const DEFAULT_SCORE_RANGE = 5;
             const DEFAULT_WEIGHT = 100;
+
+            editor.ui.registry.addButton('print', {
+                icon: 'print',
+                tooltip: 'Print',
+                onAction: () => editor.getWin().print()
+            });
 
             editor.ui.registry.addButton('toggleRemarks', {
                 text: '📝 Remarks',

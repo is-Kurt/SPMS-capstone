@@ -30,7 +30,7 @@
                 class="bg-transparent border-none font-bold text-sm text-text focus:ring-0 px-1 sm:px-2 py-1 min-w-0 w-full truncate"
                 oninput="autoResize(this); AppState.setDirty(true);"
                 onblur="restoreTitle(this, '<?= esc($doc['title']) ?>')"
-                <?= $status !== FolderStatus::DRAFT->value ? 'disabled' : '' ?>>
+                <?= ($status !== FolderStatus::DRAFT->value || !$isOwner) ? 'disabled' : '' ?>>
 
             <span id="save-status" class="ml-1 sm:ml-3 shrink-0 text-[10px] uppercase tracking-widest font-bold transition-all"></span>
         </div>
@@ -221,8 +221,13 @@
 
     let isFullyLocked = true;
 
-    if (!isGuide) {
-        if ((status === FolderStatus.TO_EVALUATE || status === FolderStatus.REEVALUATE) && isOwner) {
+    if (isGuide) {
+        // Guide documents can only be edited by their owner (the Admin)
+        isFullyLocked = !isOwner;
+    } else {
+        if (status === FolderStatus.DRAFT) {
+            isFullyLocked = !isOwner;
+        } else if ((status === FolderStatus.TO_EVALUATE || status === FolderStatus.REEVALUATE) && isOwner) {
             // Owner can only self-rate the TARGET document. If REEVALUATE, they can edit anything.
             isFullyLocked = !isTarget && status === FolderStatus.TO_EVALUATE;
         } else if (status === FolderStatus.EVALUATED && !isOwner) {
@@ -231,7 +236,7 @@
         }
     }
 
-    if (status === FolderStatus.DRAFT) {
+    if (!isFullyLocked && status === FolderStatus.DRAFT) {
         initEditor();
     } else {
         initPlainEditor(isFullyLocked);
