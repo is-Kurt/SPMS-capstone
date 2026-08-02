@@ -1,5 +1,29 @@
 @import "../global/fonts.css";
 
+html, body {
+    overflow-x: auto !important;
+}
+
+/* Custom Scrollbar for Editor */
+html {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(128, 128, 128, 0.4) transparent;
+}
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background-color: rgba(128, 128, 128, 0.4);
+    border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(128, 128, 128, 0.7);
+}
+
 body {
     font-family: Helvetica, Arial, sans-serif, 'Roboto';
     font-size: 14pt;

@@ -69,4 +69,23 @@
     </div>
 </main>
 
+<script src="<?= base_url('assets/vendor/fingerprintjs/fp.min.js') ?>"></script>
+<script>
+    // Initialize FingerprintJS and populate the hidden device_id field
+    const fpPromise = FingerprintJS.load();
+    fpPromise
+      .then(fp => fp.get())
+      .then(result => {
+        const deviceId = result.visitorId;
+        
+        // Find the login form and append a hidden input for the device ID
+        const form = document.querySelector('form');
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'device_id';
+        input.value = deviceId;
+        form.appendChild(input);
+      });
+</script>
+
 <?= $this->endSection() ?>

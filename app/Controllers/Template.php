@@ -82,6 +82,13 @@ class Template extends BaseController
             $msg = 'New template created successfully.';
         }
 
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'status' => 'success', 
+                'template_id' => $templateId ?: $templateModel->getInsertID()
+            ]);
+        }
+
         return redirect()->to('templates')->with('success', $msg);
     }
 

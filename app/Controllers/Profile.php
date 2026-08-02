@@ -31,11 +31,14 @@ class Profile extends BaseController
             $currentPlantilla = [['unit_id' => '', 'position_id' => '']];
         }
 
+        $isAdmin = $userModel->hasRole($userId, 'Admin');
+
         $data = [
             'user'             => $userModel->find($userId),
             'units'            => $unitModel->orderBy('name', 'ASC')->findAll(),
             'positions'        => $positionModel->orderBy('title', 'ASC')->findAll(),
-            'currentPlantilla' => $currentPlantilla
+            'currentPlantilla' => $currentPlantilla,
+            'isAdmin'          => $isAdmin
         ];
 
         return view('profile/index', $data);

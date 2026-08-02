@@ -50,6 +50,26 @@ class Session extends BaseController
 
         $email    = $postData['email'];
         $password = $postData['password'];
+        $ipAddress = $this->request->getIPAddress();
+        $deviceId = $this->request->getPost('device_id');
+
+        $db = \Config\Database::connect();
+        $attemptBuilder = $db->table('login_attempts');
+        
+        // Cleanup attempts older than 1 hour
+        $attemptBuilder->where('last_attempt_at <', date('Y-m-d H:i:s', strtotime('-1 hour')))->delete();
+        
+        if (!empty($deviceId)) {
+            // Full device block (ignoring email)
+            $attempt = $attemptBuilder->where('device_id', $deviceId)->get()->getRowArray();
+        } else {
+            // Fallback to IP + Email block if JS is disabled
+            $attempt = $attemptBuilder->where('ip_address', $ipAddress)->where('email', $email)->get()->getRowArray();
+        }
+        
+        if ($attempt && $attempt['attempts'] >= 5) {
+            return redirect()->back()->withInput()->with('errors', ['error' => 'Too many failed login attempts. Your device has been temporarily blocked. Please try again in 1 hour.']);
+        }
 
         $userModel = new UserModel();
         $user = $userModel->where('email', $email)->first();
@@ -57,6 +77,15 @@ class Session extends BaseController
         $rememberMe = (bool) $this->request->getPost('remember-me');
 
         if ($user && isset($user['is_active']) && $user['is_active'] == 1 && password_verify($password, $user['password'])) {
+            
+            // Clear failed attempts on successful login
+            if ($attempt) {
+                if (!empty($deviceId)) {
+                    $attemptBuilder->where('device_id', $deviceId)->delete();
+                } else {
+                    $attemptBuilder->where('id', $attempt['id'])->delete();
+                }
+            }
             
             if (strpos($user['email'], '@test.com') !== false) {
                 return $this->finalizeLogin($user, $rememberMe);
@@ -82,6 +111,22 @@ class Session extends BaseController
             ]);
             
             return dispatch_email_now(redirect()->to(site_url('login/2fa')));
+        }
+
+        // Record failed attempt
+        if ($attempt) {
+            $attemptBuilder->where('id', $attempt['id'])->update([
+                'attempts' => $attempt['attempts'] + 1,
+                'last_attempt_at' => date('Y-m-d H:i:s')
+            ]);
+        } else {
+            $attemptBuilder->insert([
+                'ip_address' => $ipAddress,
+                'device_id' => $deviceId,
+                'email' => $email,
+                'attempts' => 1,
+                'last_attempt_at' => date('Y-m-d H:i:s')
+            ]);
         }
 
         return redirect()->back()->withInput()->with('errors', ['error' => 'Invalid email or password.']);

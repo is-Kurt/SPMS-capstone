@@ -96,6 +96,7 @@
             <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="_general"></p>
         </div>
 
+        <?php if (!$isAdmin): ?>
         <div class="px-8 py-5 border-t border-surface-border bg-zinc-50 dark:bg-zinc-800/30">
             <h2 class="text-[11px] font-black uppercase tracking-widest text-text">Positions & Units</h2>
         </div>
@@ -162,6 +163,7 @@
                 Add Additional Position / Designation
             </button>
         </div>
+        <?php endif; ?>
 
         <div class="px-8 py-4 bg-zinc-50 dark:bg-zinc-800/30 border-t border-surface-border flex justify-end">
             <button type="submit" class="bg-accent hover:bg-accent-hover text-white text-xs font-bold py-2.5 px-6 rounded-lg shadow-lg shadow-accent/20 transition-all active:scale-[0.98] cursor-pointer">

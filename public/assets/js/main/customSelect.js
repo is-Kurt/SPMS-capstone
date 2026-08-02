@@ -7,8 +7,13 @@ class CustomSelect {
             return;
         }
 
-        // Hide original select
-        this.select.style.display = 'none';
+        // Hide original select but keep it focusable for HTML5 validation
+        this.select.style.opacity = '0';
+        this.select.style.position = 'absolute';
+        this.select.style.zIndex = '-1';
+        this.select.style.height = '0';
+        this.select.style.width = '0';
+        this.select.style.pointerEvents = 'none';
         this.currentPage = 1;
         this.pageSize = 10;
         

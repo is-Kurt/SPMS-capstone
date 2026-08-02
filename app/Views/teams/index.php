@@ -48,7 +48,7 @@
         </div>
 
         <!-- Main Desktop Layout: Left Col (Tabs + Panels), Right Col (Filters) -->
-        <div class="flex-1 lg:min-h-[550px] relative pb-[80px] lg:pb-0 flex flex-col lg:flex-row lg:gap-6">
+        <div class="flex-1 lg:min-h-[550px] relative pb-[80px] lg:pb-8 flex flex-col lg:flex-row lg:gap-6">
             
             <!-- LEFT COLUMN: Content (Available / Selected) -->
             <div class="flex-1 flex flex-col min-w-0">

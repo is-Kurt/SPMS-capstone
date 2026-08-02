@@ -117,8 +117,8 @@
         </div>
     </div>
 
-    <div class="flex-1 min-h-0 w-full relative">
-        <textarea id="editable-doc"><?= $doc['content'] ?></textarea>
+    <div class="flex-1 min-h-0 w-full relative bg-white dark:bg-zinc-950 overflow-x-auto">
+        <textarea id="editable-doc" name="content"><?= $doc['content'] ?></textarea>
     </div>
 
 </div> <script src="<?= base_url('assets/js/editor/functions.js') ?>"></script>

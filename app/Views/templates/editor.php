@@ -1,10 +1,10 @@
 <?= $this->extend('layouts/main') ?>
 <?= $this->section('content') ?>    
 
-<!-- Added w-full and overflow-x-hidden to strictly enforce screen bounds -->
-<div class="h-full flex flex-col bg-bg w-full overflow-x-hidden">
+<!-- Added w-full to strictly enforce screen bounds -->
+<div class="h-full flex flex-col bg-bg w-full">
     
-    <?= form_open('templates/store', ['id' => 'template-form', 'class' => 'flex flex-col h-full m-0 w-full']) ?>
+    <?= form_open('templates/store', ['id' => 'template-form', 'class' => 'flex flex-col h-full m-0 w-full', 'onsubmit' => 'event.preventDefault(); saveDocument();']) ?>
         <input type="hidden" name="template_id" value="<?= $template ? $template['id'] : '' ?>">
 
         <!-- Adjusted padding, gaps, and added min-w-0 logic so the flexbox can shrink -->
@@ -31,14 +31,15 @@
             </div>
 
             <div class="flex items-center shrink-0">
+                <span id="save-status" class=""></span>
                 <!-- Abbreviated text on mobile (Save), expanded on desktop (Save Template) -->
-                <button type="submit" class="bg-accent hover:bg-accent-hover text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-4 sm:px-6 rounded-lg shadow-lg shadow-accent/20 transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap">
+                <button type="button" onclick="saveDocument()" class="ml-2 bg-accent hover:bg-accent-hover text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-4 sm:px-6 rounded-lg shadow-lg shadow-accent/20 transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap">
                     Save<span class="hidden sm:inline"> Template</span>
                 </button>
             </div>
         </div>
         
-        <div class="flex-1 min-h-0 w-full relative bg-white dark:bg-zinc-950">
+        <div class="flex-1 min-h-0 w-full relative bg-white dark:bg-zinc-950 overflow-x-auto">
             <textarea id="editable-doc" name="content"><?= $template ? $template['content'] : '' ?></textarea>
         </div>
     <?= form_close() ?>
@@ -63,13 +64,101 @@
         }
     };
 
-    function saveDocument() {
-        tinymce.get('editable-doc').save(); 
-        document.getElementById('template-form').submit(); 
+    let savePromise = null;
+    let saveStatusTimeout = null;
+    let isClosing = false;
+
+    function saveDocument(manualSave = true) {
+        if (savePromise && !isClosing) return savePromise;
+
+        savePromise = new Promise((resolve, reject) => {
+            const editor = tinymce.get('editable-doc');
+            if (!editor) return resolve(); 
+
+            const content = editor.getContent();
+            const title = document.querySelector('input[name="title"]').value.trim();
+            const templateIdInput = document.querySelector('input[name="template_id"]');
+            
+            const saveStatus = document.getElementById('save-status');
+            if (saveStatus && manualSave) {
+                if (saveStatusTimeout) {
+                    clearTimeout(saveStatusTimeout);
+                    saveStatusTimeout = null;
+                }
+                saveStatus.innerText = '● Saving...';
+                saveStatus.className = 'text-[10px] uppercase tracking-widest font-bold transition-all text-info-500 animate-pulse';
+            }
+
+            const formData = new FormData();
+            formData.append('template_id', templateIdInput.value);
+            formData.append('content', content);
+            formData.append('title', title);
+
+            apiPost('<?= site_url('templates/store') ?>', formData, {
+                onSuccess: (data) => { 
+                    AppState.setDirty(false); 
+
+                    // If it was a new template, save the ID so subsequent autosaves update it instead of creating a new one
+                    if (data.template_id) {
+                        templateIdInput.value = data.template_id;
+                    }
+
+                    if (saveStatus && manualSave) {
+                        saveStatus.innerText = '✓ Saved';
+                        saveStatus.className = 'text-[10px] uppercase tracking-widest font-bold transition-all text-success-500';
+
+                        saveStatusTimeout = setTimeout(() => {
+                            saveStatus.innerText = '';
+                            saveStatus.className = '';
+                            saveStatusTimeout = null;
+                        }, 2000);
+                    }
+                    resolve(data);
+                },
+                onError: (errorMessage) => {
+                    if (saveStatus && manualSave) {
+                        saveStatus.innerText = '✗ Save Failed';
+                        saveStatus.className = 'text-[10px] uppercase tracking-widest font-bold transition-all text-danger-500';
+                    }
+                    reject(new Error(errorMessage));
+                },
+                config: { keepalive: true }
+            });
+        }).finally(() => {
+            savePromise = null;
+        });
+
+        return savePromise;
     }
+
+    function autoSave() {
+        setTimeout(async () => {
+            if (AppState.isDirty && !savePromise) {
+                try {
+                    await saveDocument(false);
+                } catch (error) {}
+            }
+            autoSave();
+        }, 2000);
+    }
+
+    window.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            saveDocument();
+        }
+    });
+
+    window.addEventListener('beforeunload', () => {
+        isClosing = true;
+        if (AppState.isDirty) {
+            saveDocument(false);
+        }
+    });
 
     document.addEventListener('DOMContentLoaded', () => {
         initEditor();
+        autoSave();
     });
 </script>
 

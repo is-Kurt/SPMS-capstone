@@ -21,6 +21,11 @@ function render_email(string $template, array $data = []): string
  */
 function queue_email(string $toEmail, string $subject, string $body)
 {
+    // Silently drop all emails destined for test accounts
+    if (str_ends_with($toEmail, '@test.com')) {
+        return true;
+    }
+
     $queueModel = new EmailQueueModel();
     return $queueModel->insert([
         'to_email'   => $toEmail,
