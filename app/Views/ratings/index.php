@@ -21,7 +21,7 @@
 
 <?php else: ?>
 
-<div id="ratings-layout-container" class="flex flex-col lg:flex-row-reverse lg:absolute lg:inset-0 bg-transparent lg:gap-6 lg:pb-6">
+<div id="ratings-layout-container" class="flex flex-col lg:flex-row-reverse lg:absolute lg:inset-0 lg:min-h-[650px] bg-transparent lg:gap-6 lg:pb-6">
 
     <!-- MOBILE FILTER OVERLAY -->
     <div id="mobile-filter-overlay" class="fixed inset-0 z-[115] bg-black/50 hidden lg:hidden transition-opacity opacity-0" aria-hidden="true"></div>
@@ -141,7 +141,7 @@
 
 
     <!-- MAIN CONTENT (Left side now) -->
-    <div class="flex-1 flex flex-col min-w-0 bg-transparent lg:bg-surface relative lg:static h-full lg:rounded-2xl lg:border border-surface-border shadow-sm overflow-hidden">
+    <div class="flex-1 flex flex-col min-w-0 min-h-0 bg-transparent lg:bg-surface relative lg:static h-full lg:rounded-2xl lg:border border-surface-border shadow-sm overflow-hidden">
 
         <div class="lg:hidden flex items-center justify-between mb-4 shrink-0 px-4 pt-4">
             <h1 class="text-xl font-black text-text truncate">Ratings</h1>
@@ -176,10 +176,10 @@
             <?php endforeach; ?>
         </div>
 
-        <div class="flex flex-col flex-1 lg:min-h-[400px] lg:overflow-hidden relative pb-10 lg:pb-0">
+        <div class="flex flex-col flex-1 min-w-0 min-h-0 lg:overflow-hidden relative pb-10 lg:pb-0">
             <!-- TABS -->
             <?php foreach ($tabs as $key => $group): ?>
-                <div id="tab-content-<?= $key ?>" class="tab-content <?= ($key === $firstTabKey) ? 'flex flex-col lg:absolute lg:inset-0' : 'hidden' ?>">
+                <div id="tab-content-<?= $key ?>" class="tab-content <?= ($key === $firstTabKey) ? 'flex flex-col flex-1 min-w-0 min-h-0 h-full' : 'hidden' ?>">
                     
                     <?php
                         $colWidths = ['26%'];
@@ -206,7 +206,7 @@
                         </table>
                     </div>
 
-                    <div class="overflow-y-auto overflow-x-auto custom-scrollbar flex-1 w-full p-2 lg:p-0" data-frozen-body onscroll="document.getElementById('ratings-header-<?= $key ?>').scrollLeft = this.scrollLeft">
+                    <div class="overflow-y-auto overflow-x-auto custom-scrollbar flex-1 w-full max-w-full p-2 lg:p-0" data-frozen-body onscroll="document.getElementById('ratings-header-<?= $key ?>').scrollLeft = this.scrollLeft">
                         <table class="w-full text-left border-collapse block lg:table lg:table-fixed lg:min-w-[900px]">
                             <colgroup>
                                 <?php foreach ($colWidths as $cw): ?><col style="width:<?= $cw ?>"><?php endforeach; ?>
@@ -428,7 +428,7 @@
     function switchTab(tabId, btnElement) {
         document.querySelectorAll('.tab-content').forEach(el => {
             el.classList.add('hidden');
-            el.classList.remove('flex', 'flex-col', 'lg:absolute', 'lg:inset-0');
+            el.classList.remove('flex', 'flex-col', 'flex-1', 'min-w-0', 'min-h-0', 'h-full');
         });
         
         document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -444,7 +444,7 @@
         const target = document.getElementById('tab-content-' + tabId);
         if (target) {
             target.classList.remove('hidden');
-            target.classList.add('flex', 'flex-col', 'lg:absolute', 'lg:inset-0');
+            target.classList.add('flex', 'flex-col', 'flex-1', 'min-w-0', 'min-h-0', 'h-full');
         }
 
         if (btnElement) {

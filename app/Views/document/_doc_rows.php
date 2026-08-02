@@ -33,9 +33,9 @@
 
 <?php else: ?>
     
-    <div class="flex flex-col lg:flex-row flex-1 lg:absolute lg:inset-0 bg-transparent lg:gap-6 lg:pb-6">
+    <div class="flex flex-col lg:flex-row flex-1 lg:absolute lg:inset-0 lg:min-h-[650px] bg-transparent lg:gap-6 lg:pb-6">
         
-        <div class="flex flex-col flex-1 min-w-0 relative bg-transparent lg:bg-surface lg:rounded-2xl lg:border border-surface-border lg:shadow-sm overflow-hidden">
+        <div class="flex flex-col flex-1 min-w-0 min-h-0 relative bg-transparent lg:bg-surface lg:rounded-2xl lg:border border-surface-border lg:shadow-sm overflow-hidden">
             
             <div class="relative mb-6 pr-4 pt-6 px-6 lg:pt-8 lg:px-8 shrink-0" id="folder-dropdown-container">
                 <div class="flex items-center gap-2 mb-1">
@@ -88,7 +88,7 @@
             </div>
 
             <!-- Added h-[calc(100dvh-240px)] for mobile, resets to h-auto on lg screens -->
-            <div class="overflow-hidden flex flex-col flex-1 min-h-0 lg:min-h-[400px] relative h-[calc(100dvh-240px)] lg:h-auto pb-32 lg:pb-0">
+            <div class="overflow-hidden flex flex-col flex-1 min-h-0 relative h-[calc(100dvh-240px)] lg:h-auto pb-32 lg:pb-0">
                 
                 <div class="grid grid-cols-12 gap-4 px-8 py-4 bg-zinc-50 dark:bg-zinc-800/30 border-b border-surface-border text-[10px] font-black uppercase tracking-widest text-text-muted shrink-0 z-10 hidden md:grid">
                     <div class="col-span-6">Document Name</div>
@@ -99,7 +99,7 @@
                 <?php $isFirst = false; ?>
                 <?php foreach ($groupedGuides as $index => $group): ?>
                     <!-- Added flex-1 to tab content -->
-                    <div id="tab-content-guide-<?= $index ?>" class="tab-content-doc hidden flex-1 bg-info-50/20 dark:bg-info-900/10">
+                    <div id="tab-content-guide-<?= $index ?>" class="tab-content-doc hidden flex-1 min-h-0 bg-info-50/20 dark:bg-info-900/10">
                         <div class="overflow-y-auto custom-scrollbar flex-1">
                             <div class="divide-y divide-surface-border mx-2">
                                 <?php foreach ($group['docs'] as $doc): ?>
@@ -135,7 +135,7 @@
                 <?php endforeach; ?>
 
                 <!-- Added flex-1 to tab content -->
-                <div id="tab-content-mine" class="tab-content-doc flex-1 flex flex-col lg:absolute lg:inset-0 lg:top-[45px] bg-surface">
+                <div id="tab-content-mine" class="tab-content-doc flex-1 flex flex-col min-h-0 lg:absolute lg:inset-0 lg:top-[45px] bg-surface">
                     <div id="doc-scroll-container" class="overflow-y-auto custom-scrollbar flex-1">
                         <div class="divide-y divide-surface-border mx-2">
                             <?php if (empty($myDocs)): ?>
@@ -448,7 +448,7 @@
             document.querySelectorAll('.tab-content-doc').forEach(el => {
                 el.classList.add('hidden');
                 // Added flex-1 to removal list
-                el.classList.remove('flex', 'flex-col', 'flex-1', 'lg:absolute', 'lg:inset-0', 'lg:top-[45px]');
+                el.classList.remove('flex', 'flex-col', 'flex-1', 'min-h-0', 'lg:absolute', 'lg:inset-0', 'lg:top-[45px]');
             });
             
             // Reset all buttons
@@ -467,7 +467,7 @@
             if (target) {
                 target.classList.remove('hidden');
                 // Added flex-1 to ensure tab content expands
-                target.classList.add('flex', 'flex-col', 'flex-1', 'lg:absolute', 'lg:inset-0', 'lg:top-[45px]');
+                target.classList.add('flex', 'flex-col', 'flex-1', 'min-h-0', 'lg:absolute', 'lg:inset-0', 'lg:top-[45px]');
             }
 
             // Activate Button
