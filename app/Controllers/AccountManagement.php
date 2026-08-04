@@ -37,7 +37,7 @@ class AccountManagement extends BaseController
         $unitModel       = new UnitModel();
         $invitationModel = new InvitationModel();
 
-        $roles       = $roleModel->orderBy('name', 'ASC')->findAll();
+        $roles       = $roleModel->where('name !=', 'Admin')->orderBy('name', 'ASC')->findAll();
         $positions   = $positionModel->orderBy('title', 'ASC')->findAll();
         $units       = $unitModel->orderBy('name', 'ASC')->findAll();
         $invitations = $invitationModel->getAllWithRoleNames();

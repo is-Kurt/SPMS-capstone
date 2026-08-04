@@ -86,12 +86,6 @@
                     <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="last_name"></p>
                 </div>
 
-                <div class="md:col-span-2">
-                    <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Email Address</label>
-                    <input type="email" name="email" value="<?= esc($user['email']) ?>" required
-                        class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold">
-                    <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="email"></p>
-                </div>
             </div>
             <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="_general"></p>
         </div>
@@ -172,50 +166,55 @@
         </div>
     <?= form_close() ?>
 
-    <?= form_open('profile/password', ['class' => 'bg-surface border border-surface-border rounded-2xl shadow-sm overflow-hidden shrink-0', 'data-ajax' => 'update-password']) ?>
+    <div class="bg-surface border border-surface-border rounded-2xl shadow-sm overflow-hidden shrink-0">
         <div class="px-8 py-5 border-b border-surface-border bg-zinc-50 dark:bg-zinc-800/30">
-            <h2 class="text-[11px] font-black uppercase tracking-widest text-text">Security & Authentication</h2>
+            <h2 class="text-[11px] font-black uppercase tracking-widest text-text">Account Security</h2>
         </div>
+
+        <?php if (session('error')): ?>
+            <div class="px-8 py-4 bg-danger-500/10 border-b border-danger-500/20">
+                <p class="text-sm font-bold text-danger-600 dark:text-danger-400"><?= session('error') ?></p>
+            </div>
+        <?php endif; ?>
+        
+        <?php if (session('success')): ?>
+            <div class="px-8 py-4 bg-accent/10 border-b border-accent/20">
+                <p class="text-sm font-bold text-accent"><?= session('success') ?></p>
+            </div>
+        <?php endif; ?>
 
         <div class="p-8 flex flex-col gap-8">
             <div class="flex flex-col gap-6">
                 <div>
-                    <h3 class="text-sm font-bold text-text">Change Password</h3>
+                    <h3 class="text-sm font-bold text-text">Email Address</h3>
+                    <p class="text-xs text-text-muted mt-1 font-medium italic">Your email address is used for login, two-factor authentication, and notifications.</p>
+                </div>
+                
+                <div class="flex flex-col md:flex-row md:items-center gap-4">
+                    <input type="email" value="<?= esc($user['email']) ?>" readonly disabled
+                        class="w-full md:w-96 bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm text-text font-bold opacity-70">
+                    <a href="<?= base_url('profile/email/step1') ?>" class="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90 text-xs font-bold py-3 px-6 rounded-lg transition-all active:scale-[0.98] text-center shrink-0">
+                        Change Email Address
+                    </a>
+                </div>
+            </div>
+
+            <div class="h-px bg-surface-border w-full"></div>
+
+            <div class="flex flex-col gap-6">
+                <div>
+                    <h3 class="text-sm font-bold text-text">Account Password</h3>
                     <p class="text-xs text-text-muted mt-1 font-medium italic">Ensure your account is using a long, random password to stay secure.</p>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="md:col-span-2">
-                        <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Current Password</label>
-                        <input type="password" name="current_password" required
-                            class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold">
-                        <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="current_password"></p>
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">New Password</label>
-                        <input type="password" name="new_password" required minlength="8"
-                            class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold">
-                        <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="new_password"></p>
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Confirm Password</label>
-                        <input type="password" name="confirm_password" required minlength="8"
-                            class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold">
-                        <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="confirm_password"></p>
-                    </div>
-                </div>
-                <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="_general"></p>
-
-                <div class="flex justify-start mt-2">
-                    <button type="submit" class="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90 text-xs font-bold py-2.5 px-6 rounded-lg transition-all active:scale-[0.98] cursor-pointer">
-                        Update Password
-                    </button>
+                <div class="flex">
+                    <a href="<?= base_url('profile/password/step1') ?>" class="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90 text-xs font-bold py-3 px-6 rounded-lg transition-all active:scale-[0.98] text-center shrink-0">
+                        Change Password
+                    </a>
                 </div>
             </div>
         </div>
-    <?= form_close() ?>
+    </div>
 
 </div>
 

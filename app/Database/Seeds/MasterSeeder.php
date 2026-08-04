@@ -31,9 +31,12 @@ class MasterSeeder extends Seeder
         // so there are no collisions and plantillaData below can't reference a
         // user that doesn't exist.
         $supervisorSlugs = ['vpaa', 'dean', 'cao'];
+        
+        $adminEmail = getenv('admin.email') ?: 'admin@test.com';
 
         $usersData = [
-            'admin'     => ['email' => 'admin@test.com',     'first_name' => 'System',    'last_name' => 'Admin',    'password' => $password, 'is_active' => 1],
+            'admin'     => ['email' => $adminEmail,          'first_name' => 'System',    'last_name' => 'Admin',    'password' => $password, 'is_active' => 1],
+            'admin2'    => ['email' => 'admin2@test.com',    'first_name' => 'Secondary', 'last_name' => 'Admin',    'password' => $password, 'is_active' => 1],
             'vpaa'      => ['email' => 'vpaa@test.com',      'first_name' => 'Ana',       'last_name' => 'Santos',   'password' => $password, 'is_active' => 1],
             'dean'      => ['email' => 'dean@test.com',      'first_name' => 'Roberto',   'last_name' => 'Reyes',    'password' => $password, 'is_active' => 1],
             'deptchair' => ['email' => 'deptchair@test.com', 'first_name' => 'Miguel',    'last_name' => 'Cruz',     'password' => $password, 'is_active' => 1],
@@ -55,7 +58,7 @@ class MasterSeeder extends Seeder
             // ==========================================
             // 3. SEED USER ROLES PIVOT
             // ==========================================
-            if ($slug === 'admin') {
+            if (strpos($slug, 'admin') === 0) {
                 $roleId = $adminRoleId;
             } elseif (in_array($slug, $supervisorSlugs)) {
                 $roleId = $supervisorRoleId;

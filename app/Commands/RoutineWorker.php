@@ -89,10 +89,10 @@ class RoutineWorker extends BaseCommand
                                  ->where('status', \App\Enums\InvitationStatus::PENDING->value)
                                  ->delete();
             
-            // 2. Delete Sent Emails older than 30 days to save space
+            // 2. Delete Sent and Failed Emails older than 30 days to save space
             $thirtyDaysAgo = date('Y-m-d H:i:s', strtotime('-30 days'));
             $deletedEmails = $db->table('email_queue')
-                                ->where('status', 'sent')
+                                ->whereIn('status', ['sent', 'failed'])
                                 ->where('created_at <', $thirtyDaysAgo)
                                 ->delete();
 
@@ -112,6 +112,16 @@ class RoutineWorker extends BaseCommand
                ->update([
                    'two_factor_code' => null, 
                    'two_factor_expires_at' => null
+               ]);
+
+            // 5. WIPE EXPIRED EMAIL CHANGE CODES (Security Sweeper)
+            $db->table('users')
+               ->where('email_change_expires_at <', $now)
+               ->where('email_change_code IS NOT NULL')
+               ->update([
+                   'email_change_code' => null, 
+                   'email_change_new_email' => null,
+                   'email_change_expires_at' => null
                ]);
 
             CLI::write("Garbage Collection complete. Cleared old records.", 'green');

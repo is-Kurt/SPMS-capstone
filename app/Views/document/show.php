@@ -28,7 +28,7 @@
 
             <input type="text" maxlength="100" id="doc-title" value="<?= esc($doc['title']) ?>"
                 class="bg-transparent border-none font-bold text-sm text-text focus:ring-0 px-1 sm:px-2 py-1 min-w-0 w-full truncate"
-                oninput="autoResize(this); AppState.setDirty(true);"
+                oninput="AppState.setDirty(true);"
                 onblur="restoreTitle(this, '<?= esc($doc['title']) ?>')"
                 <?= ($status !== FolderStatus::DRAFT->value || !$isOwner) ? 'disabled' : '' ?>>
 
@@ -141,9 +141,6 @@
     
     document.addEventListener('DOMContentLoaded', () => {
         autoSave();
-        
-        const el = document.getElementById('doc-title');
-        if (el) autoResize(el);
     });
 
     async function lockFolderEvaluation() {

@@ -135,9 +135,8 @@ function autoResize(el) {
 
 function restoreTitle(el, defaultTitle) {
     if (el.value.trim() === '') {
-    el.value = defaultTitle;
+        el.value = defaultTitle;
     }
-    autoResize(el);
 }
 
 function clearMarks(editor, body) {

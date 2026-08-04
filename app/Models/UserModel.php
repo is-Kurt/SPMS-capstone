@@ -28,7 +28,14 @@ class UserModel extends Model
         'reset_attempts', 
         'reset_last_attempt_at',
         'two_factor_code',
-        'two_factor_expires_at'
+        'two_factor_expires_at',
+        'email_change_code',
+        'email_change_new_email',
+        'email_change_expires_at',
+        'email_change_attempts',
+        'email_change_last_attempt_at',
+        'password_change_attempts',
+        'password_change_last_attempt_at'
     ];
 
     protected bool $allowEmptyInserts = false;

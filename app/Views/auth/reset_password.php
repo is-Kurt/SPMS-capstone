@@ -43,6 +43,38 @@
                 </button>
             </div>
         <?= form_close() ?>
+
+        <div class="text-center mt-6">
+            <p class="text-xs text-text-muted mb-2">Didn't receive the code?</p>
+            <?= form_open('password/send', ['class' => 'inline']) ?>
+                <input type="hidden" name="email" value="<?= esc($email ?? '') ?>">
+                <button type="submit" id="btn-resend" disabled class="text-sm font-bold text-text-muted transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                    Resend Code (60s)
+                </button>
+            <?= form_close() ?>
+        </div>
     </div>
 </main>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('btn-resend');
+    if (!btn) return;
+    
+    let timeLeft = 60;
+    
+    const tick = setInterval(() => {
+        timeLeft--;
+        if (timeLeft <= 0) {
+            clearInterval(tick);
+            btn.disabled = false;
+            btn.textContent = 'Resend Code Now';
+            btn.classList.remove('text-text-muted');
+            btn.classList.add('text-accent', 'hover:text-accent-hover');
+        } else {
+            btn.textContent = `Resend Code (${timeLeft}s)`;
+        }
+    }, 1000);
+});
+</script>
 <?= $this->endSection() ?>

@@ -131,9 +131,10 @@ class Folder extends BaseController
                         if ($adminInfo) {
                             $groupedGuides[] = [
                                 'superior' => [
-                                    'id'   => $adminInfo['id'],
-                                    'name' => $adminInfo['first_name'] . ' ' . $adminInfo['last_name'],
-                                    'role' => $adminInfo['admin_position'] ?? 'System Administrator'
+                                    'id'       => $adminInfo['id'],
+                                    'name'     => $adminInfo['first_name'] . ' ' . $adminInfo['last_name'],
+                                    'role'     => $adminInfo['admin_position'] ?? 'System Administrator',
+                                    'is_admin' => true
                                 ],
                                 'docs' => $adminDocs
                             ];

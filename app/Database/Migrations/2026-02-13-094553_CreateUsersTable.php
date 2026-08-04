@@ -72,6 +72,40 @@ class CreateUsersTable extends Migration
                 'type' => 'DATETIME',
                 'null' => true,
             ],
+            'email_change_code' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '10',
+                'null'       => true,
+            ],
+            'email_change_new_email' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '255',
+                'null'       => true,
+            ],
+            'email_change_expires_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
+            'email_change_attempts' => [
+                'type'       => 'INT',
+                'constraint' => 11,
+                'default'    => 0,
+                'null'       => false,
+            ],
+            'email_change_last_attempt_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
+            'password_change_attempts' => [
+                'type'       => 'INT',
+                'constraint' => 11,
+                'default'    => 0,
+                'null'       => false,
+            ],
+            'password_change_last_attempt_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
             'is_active' => [
                 'type'       => 'TINYINT',
                 'constraint' => 1,

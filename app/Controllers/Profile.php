@@ -44,7 +44,7 @@ class Profile extends BaseController
         return view('profile/index', $data);
     }
 
-    /** POST /profile/general - Updates name/email and replaces the user's current plantilla (unit+position) rows. */
+    /** POST /profile/general - Updates name and replaces the user's current plantilla (unit+position) rows. */
     public function updateGeneral()
     {
         return $this->tryOrFail(function() {
@@ -52,20 +52,11 @@ class Profile extends BaseController
             $userModel      = new UserModel();
             $plantillaModel = new PlantillaModel();
 
-            // Base first/last name shape is enforced by UserModel::$validationRules on
-            // update() below; email-uniqueness-excluding-self can't live on the model
-            // (it needs this request's user id), so it's checked here explicitly.
-            if (!$this->validate(['email' => "required|valid_email|is_unique[users.email,id,{$userId}]"])) {
-                $errors = $this->validator->getErrors();
-                return $this->respondError(implode(' ', $errors), 422, $errors);
-            }
-
             $userModel->db->transStart();
 
             $saved = $userModel->update($userId, [
                 'first_name' => $this->request->getPost('first_name'),
-                'last_name'  => $this->request->getPost('last_name'),
-                'email'      => $this->request->getPost('email'),
+                'last_name'  => $this->request->getPost('last_name')
             ]);
 
             if (!$saved) {
@@ -93,49 +84,17 @@ class Profile extends BaseController
 
             $userModel->db->transComplete();
 
+            // Fetch the user to get the current email to put back in session
+            $user = $userModel->find($userId);
+
             session()->set([
                 'first_name' => $this->request->getPost('first_name'),
                 'last_name'  => $this->request->getPost('last_name'),
-                'email'      => $this->request->getPost('email'),
+                'email'      => $user['email'],
                 'username'   => $this->request->getPost('first_name') . ' ' . $this->request->getPost('last_name')
             ]);
 
             return $this->respond(['status' => 'success', 'message' => 'Profile updated successfully.']);
-        });
-    }
-
-    /** POST /profile/password - Changes the account password after verifying the current one. */
-    public function updatePassword()
-    {
-        return $this->tryOrFail(function() {
-            $userId = session()->get('user_id');
-            $userModel = new UserModel();
-            $user = $userModel->find($userId);
-
-            $rules = [
-                'current_password' => 'required',
-                'new_password'     => 'required|min_length[8]',
-                'confirm_password' => 'required|matches[new_password]'
-            ];
-
-            if (!$this->validate($rules)) {
-                $errors = $this->validator->getErrors();
-                return $this->respondError(implode(' ', $errors), 422, $errors);
-            }
-
-            $currentPassword = $this->request->getPost('current_password');
-            if (!password_verify($currentPassword, $user['password'])) {
-                return $this->respondError(
-                    'The current password you entered is incorrect.',
-                    422,
-                    ['current_password' => 'The current password you entered is incorrect.']
-                );
-            }
-
-            $newPassword = password_hash($this->request->getPost('new_password'), PASSWORD_DEFAULT);
-            $userModel->update($userId, ['password' => $newPassword]);
-
-            return $this->respond(['status' => 'success', 'message' => 'Password updated successfully.']);
         });
     }
 

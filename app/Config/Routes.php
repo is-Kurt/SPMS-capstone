@@ -55,8 +55,21 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     // Profile
     $routes->get('profile', 'Profile');
     $routes->post('profile/general', 'Profile::updateGeneral');
-    $routes->post('profile/password', 'Profile::updatePassword');
     $routes->post('profile/updateAvatar', 'Profile::updateAvatar');
+    
+    // Profile Email Change
+    $routes->get('profile/email/step1', 'ProfileEmailChange::step1');
+    $routes->post('profile/email/step1', 'ProfileEmailChange::verifyStep1');
+    $routes->get('profile/email/step2', 'ProfileEmailChange::step2');
+    $routes->post('profile/email/step2', 'ProfileEmailChange::sendStep2Code');
+    $routes->get('profile/email/step3', 'ProfileEmailChange::step3');
+    $routes->post('profile/email/step3', 'ProfileEmailChange::verifyStep3');
+    
+    // Profile Password Change
+    $routes->get('profile/password/step1', 'ProfilePasswordChange::step1');
+    $routes->post('profile/password/step1', 'ProfilePasswordChange::verifyStep1');
+    $routes->get('profile/password/step2', 'ProfilePasswordChange::step2');
+    $routes->post('profile/password/step2', 'ProfilePasswordChange::updatePassword');
 
     // Folder
     $routes->get('folders', 'Folder');
@@ -103,8 +116,9 @@ $routes->group('', ['filter' => 'guest'], function($routes) {
     $routes->get('/', 'Auth\Session::index');
     $routes->get('login', 'Auth\Session::index');
     $routes->post('login', 'Auth\Session::edit');
-    $routes->get('login/2fa', 'Auth\Session::twoFactorAuth');
+    $routes->get('login/2fa', 'Auth\Session::show2fa');
     $routes->post('login/2fa', 'Auth\Session::verifyTwoFactorAuth');
+    $routes->post('login/2fa/resend', 'Auth\Session::resend2fa');
 
     $routes->get('password/forgot', 'Auth\PasswordReset::index');
     $routes->post('password/send', 'Auth\PasswordReset::sendCode');

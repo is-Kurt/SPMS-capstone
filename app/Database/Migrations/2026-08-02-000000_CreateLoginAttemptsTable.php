@@ -24,6 +24,11 @@ class CreateLoginAttemptsTable extends Migration
                 'constraint' => '255',
                 'null'       => true,
             ],
+            'device_id' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '255',
+                'null'       => true,
+            ],
             'attempts' => [
                 'type'       => 'INT',
                 'constraint' => 11,

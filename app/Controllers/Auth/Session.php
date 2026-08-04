@@ -132,11 +132,61 @@ class Session extends BaseController
         return redirect()->back()->withInput()->with('errors', ['error' => 'Invalid email or password.']);
     }
 
-    public function twoFactorAuth() {
-        if (!session()->get('pending_2fa_user_id')) {
+    /** GET /login/2fa - Shows the 2FA code entry screen. */
+    public function show2fa() {
+        if (!session()->has('pending_2fa_user_id')) {
             return redirect()->to(site_url('login'));
         }
         return view('auth/2fa');
+    }
+
+    /** POST /login/2fa/resend - Resends the 2FA code. */
+    public function resend2fa() {
+        $userId = session()->get('pending_2fa_user_id');
+        if (!$userId) return redirect()->to(site_url('login'));
+
+        $userModel = new UserModel();
+        $user = $userModel->find($userId);
+
+        helper('email_queue');
+        $code = (string) random_int(100000, 999999);
+        
+        $userModel->update($user['id'], [
+            'two_factor_code'       => $code,
+            'two_factor_expires_at' => date('Y-m-d H:i:s', strtotime('+10 minutes'))
+        ]);
+        
+        queue_email(
+            $user['email'],
+            'Your Login Code',
+            render_email('two_factor_code', ['code' => $code])
+        );
+        
+        return dispatch_email_now(redirect()->to(site_url('login/2fa'))->with('success', 'A new code has been sent.'));
+    }
+
+    /** POST /login/2fa - Validates the 6-digit code and completes login. */
+    public function verifyTwoFactorAuth() {
+        $userId = session()->get('pending_2fa_user_id');
+        if (!$userId) return redirect()->to(site_url('login'));
+
+        $code = $this->request->getPost('code');
+        $userModel = new UserModel();
+        $user = $userModel->find($userId);
+
+        if (!$user || $user['two_factor_code'] !== $code || strtotime($user['two_factor_expires_at']) < time()) {
+            return redirect()->back()->with('errors', ['error' => 'Invalid or expired code.']);
+        }
+
+        $userModel->update($userId, [
+            'two_factor_code' => null,
+            'two_factor_expires_at' => null
+        ]);
+
+        $rememberMe = session()->get('pending_remember_me');
+        session()->remove(['pending_2fa_user_id', 'pending_remember_me']);
+
+        return $this->finalizeLogin($user, $rememberMe);
     }
 
     private function finalizeLogin($user, $rememberMe) {
@@ -192,28 +242,7 @@ class Session extends BaseController
         return redirect()->to(site_url('folders'));
     }
 
-    public function verifyTwoFactorAuth() {
-        $userId = session()->get('pending_2fa_user_id');
-        if (!$userId) return redirect()->to(site_url('login'));
 
-        $code = $this->request->getPost('code');
-        $userModel = new UserModel();
-        $user = $userModel->find($userId);
-
-        if (!$user || $user['two_factor_code'] !== $code || strtotime($user['two_factor_expires_at']) < time()) {
-            return redirect()->back()->with('errors', ['error' => 'Invalid or expired code.']);
-        }
-
-        $userModel->update($userId, [
-            'two_factor_code' => null,
-            'two_factor_expires_at' => null
-        ]);
-
-        $rememberMe = session()->get('pending_remember_me');
-        session()->remove(['pending_2fa_user_id', 'pending_remember_me']);
-
-        return $this->finalizeLogin($user, $rememberMe);
-    }
 
     /** POST /login (DELETE) - Logs out: clears the remember-me token/cookie and destroys the session. */
     public function destroy() {

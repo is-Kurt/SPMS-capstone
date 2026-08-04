@@ -25,6 +25,11 @@
                             <p class="text-danger-500 text-[10px] font-bold mt-1 uppercase tracking-wider"><?= session('errors.error') ?></p>
                         </div>
                     <?php endif; ?>
+                    <?php if (session('success')): ?>
+                        <div class="h-3 pl-1">
+                            <p class="text-accent text-[10px] font-bold mt-1 uppercase tracking-wider"><?= session('success') ?></p>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="mt-8">
@@ -33,9 +38,40 @@
                         Verify Code
                     </button>
                 </div>
-            </form>
+            <?= form_close() ?>
+            
+            <div class="text-center mt-6">
+                <p class="text-xs text-text-muted mb-2">Didn't receive the code?</p>
+                <?= form_open('login/2fa/resend', ['class' => 'inline']) ?>
+                    <button type="submit" id="btn-resend" disabled class="text-sm font-bold text-text-muted transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                        Resend Code (60s)
+                    </button>
+                <?= form_close() ?>
+            </div>
         </div>
     </div>
 </main>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('btn-resend');
+    if (!btn) return;
+    
+    let timeLeft = 60;
+    
+    const tick = setInterval(() => {
+        timeLeft--;
+        if (timeLeft <= 0) {
+            clearInterval(tick);
+            btn.disabled = false;
+            btn.textContent = 'Resend Code Now';
+            btn.classList.remove('text-text-muted');
+            btn.classList.add('text-accent', 'hover:text-accent-hover');
+        } else {
+            btn.textContent = `Resend Code (${timeLeft}s)`;
+        }
+    }, 1000);
+});
+</script>
 
 <?= $this->endSection() ?>
