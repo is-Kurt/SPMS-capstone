@@ -77,6 +77,8 @@ function calculateAllTables() {
         });
 
         // PHASE 3: CATEGORY AVERAGES & WEIGHTS (ABSOLUTE NUMBERS, NO PERCENTAGES)
+        let totalWeight = 0;
+        
         for (const groupId in groupedData) {
             const group = groupedData[groupId];
             
@@ -107,7 +109,13 @@ function calculateAllTables() {
                 // 3. Add to the final Grand Total
                 let finalWeightedScore = categoryAvg * groupWeight;
                 grandTotalScore += finalWeightedScore;
+                totalWeight += groupWeight;
             }
+        }
+        
+        // Normalize the grand total if weights don't sum to exactly 1.0 (e.g., 100% each = 300% total)
+        if (totalWeight > 0 && totalWeight !== 1) {
+            grandTotalScore = grandTotalScore / totalWeight;
         }
     });
 

@@ -327,6 +327,7 @@
                     </div>
                 <?php endif; ?>
 
+                <?php if (session()->get('role') !== 'Admin'): ?>
                 <div class="flex flex-col gap-4 mt-2">
                     <h4 class="text-[10px] font-black uppercase text-text-muted tracking-widest border-b border-surface-border pb-2 lg:-mx-6 lg:px-6">Evaluator Progress</h4>
                     
@@ -367,6 +368,7 @@
                         </div>
                     <?php endif; ?>
                 </div>
+                <?php endif; ?>
 
             </div>
         </div>

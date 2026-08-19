@@ -125,4 +125,8 @@ _modules/*
 /results/
 /phpunit*.xml
 
+<<<<<<< Updated upstream
 writable/spms_db*
+=======
+writable/spms_db
+>>>>>>> Stashed changes

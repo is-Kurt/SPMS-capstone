@@ -543,6 +543,9 @@ class Folder extends BaseController
                 }
             }
 
+            // Instantly trigger cronjob logic to handle shortened due dates securely
+            $folderModel->updateTimeBasedStatuses();
+
             // 3. Set the dynamic success message
             $message = 'Folder updated and synced.';
             if ($didResetAny) {

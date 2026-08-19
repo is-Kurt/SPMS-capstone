@@ -210,8 +210,23 @@ class Session extends BaseController
         $department = $plantillaData ? $plantillaData['department'] : null;
         $position   = $plantillaData ? $plantillaData['position'] : null;
 
+        $targetUserId = $user['id'];
+        if ($systemRole === 'Admin') {
+            // Make secondary admins share data with the primary admin for demonstration purposes
+            $mainAdmin = $userModel->db->table('user_roles ur')
+                ->select('ur.user_id')
+                ->join('roles r', 'r.id = ur.role_id')
+                ->where('r.name', 'Admin')
+                ->orderBy('ur.user_id', 'ASC')
+                ->limit(1)
+                ->get()->getRowArray();
+            if ($mainAdmin) {
+                $targetUserId = $mainAdmin['user_id'];
+            }
+        }
+
         session()->set([
-            'user_id'    => $user['id'],
+            'user_id'    => $targetUserId,
             'email'      => $user['email'],
             'role'       => $systemRole, 
             'department' => $department,
