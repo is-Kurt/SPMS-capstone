@@ -82,7 +82,7 @@
     }
 </script>
 
-<script src="<?= base_url('assets/js/editor/functions.js') ?>"></script>
+<script src="<?= base_url('assets/js/editor/functions.js?v=' . time()) ?>"></script>
 <script src="<?= base_url('assets/js/editor/plugins.js') ?>"></script>
 <script src="<?= base_url('assets/js/editor/TableTools.js') ?>"></script>
 <script src="<?= base_url('assets/js/editor/config.js') ?>"></script>
