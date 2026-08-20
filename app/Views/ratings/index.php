@@ -1,6 +1,17 @@
 <?php 
     $sysRole = $sysRole ?? session()->get('role');
-    $firstTabKey = array_key_first($tabs);
+    $firstPeriodKey = array_key_first($periods);
+
+    if ($activeFolder && isset($activeFolder['target_date_end'])) {
+        $now = date('Y-m-d H:i:s');
+        if ($now <= $activeFolder['target_date_end']) {
+            $firstPeriodKey = 'target';
+        } else {
+            $firstPeriodKey = 'evaluation';
+        }
+    }
+
+    $firstTabKey = array_key_first($periods[$firstPeriodKey]['tabs']);
 ?>
 <style>
 @media (min-width: 1024px) {
@@ -151,40 +162,70 @@
             </button>
         </div>
 
-        <div class="relative mb-6 pr-4 pt-6 px-6 lg:pt-8 lg:px-8 shrink-0">
-            <button onclick="toggleAppSidebar()" class="flex items-center justify-between w-full text-left group cursor-pointer lg:cursor-default">
-                <h1 class="text-3xl font-black tracking-tight text-text truncate group-hover:text-accent lg:group-hover:text-text transition-colors">
-                    <?= esc($activeFolder['title']) ?>
-                </h1>
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 shrink-0 text-text-muted transition-colors group-hover:text-accent lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-            </button>
-            <p class="text-xs font-bold text-text-muted mt-2 uppercase tracking-widest">
-                Manage your assigned reviews
-            </p>
-        </div>
-        <div class="flex gap-6 border-b border-surface-border px-6 lg:px-8 shrink-0 overflow-x-auto custom-scrollbar">
-            <?php foreach ($tabs as $key => $group): ?>
-                <button id="tab-btn-<?= $key ?>" class="tab-btn pb-3 text-sm font-bold border-b-2 transition-all whitespace-nowrap <?= ($key === $firstTabKey) ? 'border-accent text-accent' : 'border-transparent text-text-muted hover:text-text hover:border-surface-border' ?> cursor-pointer"
-                        onclick="switchTab('<?= $key ?>', this)">
-                    <?= esc($group['label']) ?>
-                    <span class="ml-1.5 px-2 py-0.5 rounded-full <?= ($key === $firstTabKey) ? 'bg-accent/10 text-accent' : 'bg-zinc-100 dark:bg-zinc-800 text-text-muted' ?> text-[10px] tab-badge transition-colors">
-                        <?= count($group['folders']) ?>
-                    </span>
+        <div class="relative mb-6 pr-4 pt-6 px-6 lg:pt-8 lg:px-8 shrink-0 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+                <button onclick="toggleAppSidebar()" class="flex items-center text-left group cursor-pointer lg:cursor-default">
+                    <h1 class="text-3xl font-black tracking-tight text-text truncate group-hover:text-accent lg:group-hover:text-text transition-colors">
+                        <?= esc($activeFolder['title']) ?>
+                    </h1>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 shrink-0 text-text-muted transition-colors group-hover:text-accent lg:hidden ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
                 </button>
+                <p class="text-xs font-bold text-text-muted mt-2 uppercase tracking-widest">
+                    Manage your assigned reviews
+                </p>
+            </div>
+            <div class="shrink-0">
+                <div class="relative w-full lg:w-64 js-custom-select" id="period-custom-select">
+                    <input type="hidden" id="period-input" value="<?= $firstPeriodKey ?>">
+                    <button type="button" class="js-select-button w-full bg-surface dark:bg-zinc-900 border border-surface-border rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text cursor-pointer font-bold flex justify-between items-center transition-colors hover:border-accent/50 shadow-sm">
+                        <span class="js-select-label"><?= esc($periods[$firstPeriodKey]['label']) ?></span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-text-muted transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    <ul class="js-select-dropdown absolute right-0 z-50 w-full mt-2 bg-surface dark:bg-zinc-900 border border-surface-border rounded-xl shadow-lg shadow-black/5 dark:shadow-black/20 overflow-hidden hidden transform origin-top transition-all duration-200 scale-95 opacity-0">
+                        <?php foreach($periods as $pKey => $period): ?>
+                            <?php $isSelected = ($pKey === $firstPeriodKey); ?>
+                            <li class="px-4 py-3 text-sm font-bold text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 cursor-pointer transition-colors js-select-option <?= $isSelected ? 'bg-accent/10 text-accent' : '' ?>" data-value="<?= $pKey ?>" data-label="<?= esc($period['label']) ?>">
+                                <?= esc($period['label']) ?>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <!-- QUEUE TABS -->
+        <div class="flex px-6 lg:px-8 border-b border-surface-border shrink-0 overflow-x-auto custom-scrollbar">
+            <?php foreach ($periods as $pKey => $period): ?>
+                <div id="period-subtabs-<?= $pKey ?>" class="gap-6 period-subtabs <?= ($pKey === $firstPeriodKey) ? 'flex' : 'hidden' ?>">
+                    <?php foreach ($period['tabs'] as $key => $group): ?>
+                        <button id="tab-btn-<?= $key ?>" class="tab-btn pb-3 text-sm font-bold border-b-2 transition-all whitespace-nowrap <?= ($pKey === $firstPeriodKey && $key === $firstTabKey) ? 'border-accent text-accent' : 'border-transparent text-text-muted hover:text-text hover:border-surface-border' ?> cursor-pointer"
+                                onclick="switchTab('<?= $key ?>', this)">
+                            <?= esc($group['label']) ?>
+                            <span class="ml-1.5 px-2 py-0.5 rounded-full <?= ($pKey === $firstPeriodKey && $key === $firstTabKey) ? 'bg-accent/10 text-accent' : 'bg-zinc-100 dark:bg-zinc-800 text-text-muted' ?> text-[10px] tab-badge transition-colors">
+                                <?= count($group['folders']) ?>
+                            </span>
+                        </button>
+                    <?php endforeach; ?>
+                </div>
             <?php endforeach; ?>
         </div>
 
         <div class="flex flex-col flex-1 min-w-0 min-h-0 lg:overflow-hidden relative pb-10 lg:pb-0">
             <!-- TABS -->
-            <?php foreach ($tabs as $key => $group): ?>
-                <div id="tab-content-<?= $key ?>" class="tab-content <?= ($key === $firstTabKey) ? 'flex flex-col flex-1 min-w-0 min-h-0 h-full' : 'hidden' ?>">
+            <?php foreach ($periods as $pKey => $period): ?>
+                <?php foreach ($period['tabs'] as $key => $group): ?>
+                <div id="tab-content-<?= $key ?>" class="tab-content <?= ($pKey === $firstPeriodKey && $key === $firstTabKey) ? 'flex flex-col flex-1 min-w-0 min-h-0 h-full' : 'hidden' ?>">
                     
                     <?php
                         $colWidths = ['26%'];
                         if ($sysRole === 'Admin') { $colWidths[] = '15%'; }
-                        $colWidths = array_merge($colWidths, ['15%', '10%', '12%', '18%']);
+                        
+                        if ($pKey === 'target') {
+                            $colWidths = array_merge($colWidths, ['37%', '18%']); // Only Folder Status and Action
+                        } else {
+                            $colWidths = array_merge($colWidths, ['15%', '10%', '12%', '18%']);
+                        }
                     ?>
                     <div id="ratings-header-<?= $key ?>" class="hidden lg:block shrink-0 overflow-hidden bg-zinc-50 dark:bg-zinc-800/30 border-b border-surface-border" data-frozen-header>
                         <table class="w-full text-left border-collapse table-fixed lg:min-w-[900px]">
@@ -198,8 +239,10 @@
                                         <th class="px-6 py-4">Department</th>
                                     <?php endif; ?>
                                     <th class="px-6 py-4 min-w-[110px]">Folder Status</th>
-                                    <th class="px-6 py-4 min-w-[60px] text-center">Score</th>
-                                    <th class="px-6 py-4 min-w-[70px] text-center">Adjectival Rating</th>
+                                    <?php if ($pKey !== 'target'): ?>
+                                        <th class="px-6 py-4 min-w-[60px] text-center">Score</th>
+                                        <th class="px-6 py-4 min-w-[70px] text-center">Adjectival Rating</th>
+                                    <?php endif; ?>
                                     <th class="px-6 py-4 min-w-[135px] text-right">Action</th>
                                 </tr>
                             </thead>
@@ -254,9 +297,10 @@
                                                                 'draft'       => 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400'
                                                             ];
                                                             $c = $badgeColors[$s] ?? $badgeColors['draft'];
+                                                            $displayStatus = str_replace('_', ' ', $row['folder_status']);
                                                         ?>
                                                         <span class="px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border <?= $c ?> whitespace-nowrap">
-                                                            <?= esc($row['folder_status']) ?>
+                                                            <?= esc($displayStatus) ?>
                                                         </span>
                                                     </div>
                                                 </div>
@@ -270,39 +314,43 @@
 
                                             <td class="hidden lg:table-cell px-6 py-4 lg:min-w-[110px]">
                                                 <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border <?= $c ?> whitespace-nowrap">
-                                                    <?= esc($row['folder_status']) ?>
+                                                    <?= esc($displayStatus) ?>
                                                 </span>
                                             </td>
 
-                                            <td class="block lg:table-cell px-0 lg:px-6 py-3 lg:py-4 text-left lg:text-center mt-2 lg:mt-0 border-t border-surface-border lg:border-none lg:min-w-[60px]">
-                                                <div class="flex items-center lg:justify-center gap-3">
-                                                    <span class="lg:hidden text-[10px] font-black text-text-muted uppercase tracking-widest">Score:</span>
-                                                    
-                                                    <?php if (!is_null($row['final_rating'])): ?>
-                                                        <span class="text-sm font-black text-text">
-                                                            <?= number_format($row['final_rating'], 3) ?>
-                                                        </span>
-                                                    <?php else: ?>
-                                                        <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic">--</span>
-                                                    <?php endif; ?>
-
-                                                    <div class="lg:hidden flex items-center gap-3 border-l border-surface-border pl-3">
+                                            <?php if ($pKey !== 'target'): ?>
+                                                <td class="block lg:table-cell px-0 lg:px-6 py-3 lg:py-4 text-left lg:text-center mt-2 lg:mt-0 border-t border-surface-border lg:border-none lg:min-w-[60px]">
+                                                    <div class="flex items-center lg:justify-center gap-3">
+                                                        <span class="lg:hidden text-[10px] font-black text-text-muted uppercase tracking-widest">Score:</span>
+                                                        
                                                         <?php if (!is_null($row['final_rating'])): ?>
-                                                            <span class="adjective-badge px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm border border-transparent" data-score="<?= $row['final_rating'] ?>"></span>
+                                                            <span class="text-sm font-black text-text">
+                                                                <?= number_format($row['final_rating'], 3) ?>
+                                                            </span>
                                                         <?php else: ?>
-                                                            <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic">N/A</span>
+                                                            <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic">--</span>
                                                         <?php endif; ?>
-                                                    </div>
-                                                </div>
-                                            </td>
 
-                                            <td class="hidden lg:table-cell px-6 py-4 text-center lg:min-w-[70px]">
-                                                <?php if (!is_null($row['final_rating'])): ?>
-                                                    <span class="adjective-badge px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm border border-transparent whitespace-nowrap" data-score="<?= $row['final_rating'] ?>"></span>
-                                                <?php else: ?>
-                                                    <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic whitespace-nowrap">Not Rated</span>
-                                                <?php endif; ?>
-                                            </td>
+                                                        <div class="lg:hidden flex items-center gap-3 border-l border-surface-border pl-3">
+                                                            <?php if (!is_null($row['final_rating'])): ?>
+                                                                <span class="adjective-badge px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm border border-transparent" data-score="<?= $row['final_rating'] ?>"></span>
+                                                            <?php else: ?>
+                                                                <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic">N/A</span>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            <?php endif; ?>
+
+                                            <?php if ($pKey !== 'target'): ?>
+                                                <td class="hidden lg:table-cell px-6 py-4 text-center lg:min-w-[70px]">
+                                                    <?php if (!is_null($row['final_rating'])): ?>
+                                                        <span class="adjective-badge px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm border border-transparent whitespace-nowrap" data-score="<?= $row['final_rating'] ?>"></span>
+                                                    <?php else: ?>
+                                                        <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic whitespace-nowrap">Not Rated</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                            <?php endif; ?>
 
                                             <td class="block lg:table-cell px-0 lg:px-6 pt-1 pb-0 lg:py-4 text-right lg:min-w-[135px]">
                                                 <a href="<?= site_url('ratings/show/' . $row['folder_id']) ?>" 
@@ -317,7 +365,9 @@
                             </tbody>
                         </table>
                     </div>
+
                 </div>
+                <?php endforeach; ?>
             <?php endforeach; ?>
         </div>
     </div>
@@ -425,6 +475,25 @@
     });
 
     // Tab Switching Logic 
+    function switchPeriod(periodKey) {
+        document.querySelectorAll('.period-subtabs').forEach(el => {
+            el.classList.add('hidden');
+            el.classList.remove('flex');
+        });
+
+        const targetSubtabs = document.getElementById('period-subtabs-' + periodKey);
+        if (targetSubtabs) {
+            targetSubtabs.classList.remove('hidden');
+            targetSubtabs.classList.add('flex');
+
+            // Automatically click the first subtab in this period
+            const firstTabBtn = targetSubtabs.querySelector('.tab-btn');
+            if (firstTabBtn) {
+                firstTabBtn.click();
+            }
+        }
+    }
+
     function switchTab(tabId, btnElement) {
         document.querySelectorAll('.tab-content').forEach(el => {
             el.classList.add('hidden');
@@ -606,6 +675,70 @@
         if (cbPosList) {
             ratingsPosPaginator.init(Array.from(cbPosList.querySelectorAll('.position-filter-label')));
             filterSidebarPositions();
+        }
+
+        // Period Custom Dropdown Logic
+        const periodSelect = document.getElementById('period-custom-select');
+        if (periodSelect) {
+            const btn = periodSelect.querySelector('.js-select-button');
+            const dropdown = periodSelect.querySelector('.js-select-dropdown');
+            const label = periodSelect.querySelector('.js-select-label');
+            const input = document.getElementById('period-input');
+            const options = periodSelect.querySelectorAll('.js-select-option');
+            const svg = btn.querySelector('svg');
+
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isOpen = !dropdown.classList.contains('hidden');
+                
+                if (isOpen) {
+                    closeDropdown();
+                } else {
+                    openDropdown();
+                }
+            });
+
+            function openDropdown() {
+                dropdown.classList.remove('hidden');
+                // trigger reflow
+                void dropdown.offsetWidth;
+                dropdown.classList.remove('scale-95', 'opacity-0');
+                dropdown.classList.add('scale-100', 'opacity-100');
+                svg.classList.add('rotate-180');
+            }
+
+            function closeDropdown() {
+                dropdown.classList.remove('scale-100', 'opacity-100');
+                dropdown.classList.add('scale-95', 'opacity-0');
+                svg.classList.remove('rotate-180');
+                setTimeout(() => {
+                    dropdown.classList.add('hidden');
+                }, 200);
+            }
+
+            options.forEach(opt => {
+                opt.addEventListener('click', () => {
+                    const val = opt.getAttribute('data-value');
+                    const text = opt.getAttribute('data-label');
+
+                    label.textContent = text;
+                    input.value = val;
+
+                    options.forEach(o => o.classList.remove('bg-accent/10', 'text-accent'));
+                    opt.classList.add('bg-accent/10', 'text-accent');
+
+                    closeDropdown();
+                    
+                    // Trigger the actual period switch
+                    switchPeriod(val);
+                });
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!periodSelect.contains(e.target)) {
+                    closeDropdown();
+                }
+            });
         }
 
     });

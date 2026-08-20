@@ -45,7 +45,7 @@
                         <span class="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border 
                             <?= $activeFolder['status'] === 'draft' ? 'bg-zinc-50 dark:bg-zinc-500/10 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-500/20' : 
                                ($activeFolder['status'] === 'evaluated' ? 'bg-success-50 dark:bg-success-500/10 text-success-600 dark:text-success-400 border-success-200 dark:border-success-500/20' : 'bg-warning-50 dark:bg-warning-500/10 text-warning-600 dark:text-warning-400 border-warning-200 dark:border-warning-500/20') ?>">
-                            STATUS: <?= esc($activeFolder['status']) ?>
+                            STATUS: <?= esc(strtoupper($activeFolder['status'])) ?>
                         </span>
                     <?php endif; ?>
                 </div>
@@ -59,13 +59,28 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                 </button>
-                
-                <p class="text-xs font-bold text-text-muted mt-2">
-                    Evaluation Window: 
-                    <span class="text-text"><?= !empty($activeFolder['eval_date_start']) ? date('M d, Y h:ia', strtotime($activeFolder['eval_date_start'])) : 'Not Set' ?></span> 
-                    — 
-                    <span class="text-text"><?= !empty($activeFolder['eval_date_end']) ? date('M d, Y h:ia', strtotime($activeFolder['eval_date_end'])) : 'Not Set' ?></span>
-                </p>
+
+
+                <div class="flex flex-wrap items-center gap-4 lg:gap-6 mt-3 mb-1">
+                    <div class="flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-text-muted">Target Phase</span>
+                        <div class="text-[11px] font-bold text-text flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 rounded-md ml-1">
+                            <span><?= !empty($activeFolder['target_date_start']) ? date('M j, Y g:ia', strtotime($activeFolder['target_date_start'])) : 'Not Set' ?></span>
+                            <span class="text-text-muted font-normal">&rarr;</span>
+                            <span><?= !empty($activeFolder['target_date_end']) ? date('M j, Y g:ia', strtotime($activeFolder['target_date_end'])) : 'Not Set' ?></span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-text-muted">Eval Phase</span>
+                        <div class="text-[11px] font-bold text-text flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 rounded-md ml-1">
+                            <span><?= !empty($activeFolder['eval_date_start']) ? date('M j, Y g:ia', strtotime($activeFolder['eval_date_start'])) : 'Not Set' ?></span>
+                            <span class="text-text-muted font-normal">&rarr;</span>
+                            <span><?= !empty($activeFolder['eval_date_end']) ? date('M j, Y g:ia', strtotime($activeFolder['eval_date_end'])) : 'Not Set' ?></span>
+                        </div>
+                    </div>
+                </div>
 
             </div>
 
@@ -165,14 +180,31 @@
                                         <div class="col-span-1 md:col-span-6 flex items-center gap-4 pl-12 md:pl-0 md:contents">
                                             <div class="flex items-center gap-2 md:col-span-4">
                                             <?php if (isset($doc['is_target']) && $doc['is_target'] == 1): ?>
+                                                <?php
+                                                    $targetApprovalStatus = '';
+                                                    $folderStatus = $activeFolder['status'] ?? '';
+                                                    if (in_array($folderStatus, [\App\Enums\FolderStatus::DRAFT_TARGET->value, \App\Enums\FolderStatus::DRAFT->value])) {
+                                                        $targetApprovalStatus = '<span class="text-[9px] font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-md uppercase tracking-widest">Draft</span>';
+                                                    } elseif ($folderStatus === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value) {
+                                                        $targetApprovalStatus = '<span class="text-[9px] font-bold text-info-600 bg-info-50 dark:bg-info-500/10 dark:text-info-400 px-2 py-1 rounded-md uppercase tracking-widest">Pending</span>';
+                                                    } elseif ($folderStatus === \App\Enums\FolderStatus::TARGET_RETURNED->value) {
+                                                        $targetApprovalStatus = '<span class="text-[9px] font-bold text-danger-600 bg-danger-50 dark:bg-danger-500/10 dark:text-danger-400 px-2 py-1 rounded-md uppercase tracking-widest">Revision</span>';
+                                                    } elseif ($folderStatus === \App\Enums\FolderStatus::TARGET_UNAPPROVED->value) {
+                                                        $targetApprovalStatus = '<span class="text-[9px] font-bold text-danger-600 bg-danger-50 dark:bg-danger-500/10 dark:text-danger-400 px-2 py-1 rounded-md uppercase tracking-widest">Unapproved</span>';
+                                                    } else {
+                                                        $targetApprovalStatus = '<span class="text-[9px] font-bold text-success-600 bg-success-50 dark:bg-success-500/10 dark:text-success-400 px-2 py-1 rounded-md uppercase tracking-widest">Approved</span>';
+                                                    }
+                                                ?>
                                                 <?php if (!$isReadOnly && !$isLocked): ?>
                                                     <button type="button" onclick="setTargetDocument('<?= $doc['id'] ?>', '<?= $activeFolder['id'] ?>', 0)" class="text-[10px] font-black text-warning-600 dark:text-warning-400 bg-warning-50 dark:bg-warning-500/10 hover:bg-warning-100 dark:hover:bg-warning-500/20 px-3 py-1 rounded-lg uppercase tracking-widest border border-warning-200 dark:border-warning-500/20 cursor-pointer transition-colors" title="Unset as Basis for Evaluation">
                                                         ★ Target
                                                     </button>
+                                                    <?= $targetApprovalStatus ?>
                                                 <?php else: ?>
                                                     <span class="text-[10px] font-black text-warning-600 dark:text-warning-400 bg-warning-50 dark:bg-warning-500/10 px-3 py-1 rounded-lg uppercase tracking-widest border border-warning-200 dark:border-warning-500/20">
                                                         ★ Target
                                                     </span>
+                                                    <?= $targetApprovalStatus ?>
                                                 <?php endif; ?>
                                             <?php else: ?>
                                                 <?php if (!$isReadOnly && !$isLocked): ?>
@@ -217,28 +249,47 @@
             </div>
 
             <div class="px-5 pb-5 lg:p-0 lg:h-full lg:flex lg:flex-col">
+                <?php if (isset($subFolderOwner)): ?>
+                    <div class="flex flex-col gap-3 mb-6 lg:mb-2 lg:p-6 lg:pb-0">
+                        <h4 class="hidden lg:block text-[10px] font-black uppercase text-text-muted tracking-widest border-b border-surface-border pb-2 lg:-mx-6 lg:px-6">Reviewing Employee</h4>
+                        
+                        <div class="flex items-center gap-3 pt-1">
+                            <div class="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0 border border-accent/20">
+                                <span class="text-accent font-black text-sm uppercase"><?= esc(substr($subFolderOwner['first_name'], 0, 1) . substr($subFolderOwner['last_name'], 0, 1)) ?></span>
+                            </div>
+                            <div class="flex flex-col min-w-0">
+                                <span class="text-base font-black text-text truncate leading-tight"><?= esc($subFolderOwner['first_name'] . ' ' . $subFolderOwner['last_name']) ?></span>
+                                <span class="text-[10px] font-bold text-accent uppercase tracking-widest truncate mt-0.5"><?= esc($subFolderOwner['position'] ?? 'No Position') ?></span>
+                                <span class="text-[11px] text-text-muted truncate opacity-80 mt-0.5"><?= esc($subFolderOwner['department'] ?? 'No Department') ?></span>
+                            </div>
+                        </div>
+
+                    </div>
+                <?php endif; ?>
+
                 <div class="flex flex-col gap-4 lg:p-6 lg:pb-0">
                     <h4 class="hidden lg:block text-[10px] font-black uppercase text-text-muted tracking-widest border-b border-surface-border pb-2 lg:-mx-6 lg:px-6">Primary Actions</h4>
                     
                     <?php 
                         $status = $activeFolder['status'] ?? 'draft';
-                        $hasBeenSubmitted = !empty($activeFolder['submitted_at']);
+                        $hasTargetBeenSubmitted = !empty($activeFolder['target_submitted_at']);
                     ?>
 
                     <?php if (!$isReadOnly): ?>
                         <div class="flex gap-3 lg:mt-1 lg:flex-col">
                             <?php if (session()->get('role') != 'Admin'): ?>
-                                <?php if (!$hasBeenSubmitted || $status === \App\Enums\FolderStatus::REEVALUATE->value): ?>
-                                    <button onclick="submitFolder('<?= $activeFolder['id'] ?>', this)" 
-                                        <?= $isLocked ? 'disabled' : '' ?>
+                                <?php $isTargetPeriodEnded = !empty($activeFolder['target_date_end']) && date('Y-m-d H:i:s') > $activeFolder['target_date_end']; ?>
+                                <?php if (!$hasTargetBeenSubmitted || in_array($status, [\App\Enums\FolderStatus::DRAFT_TARGET->value, \App\Enums\FolderStatus::TARGET_RETURNED->value, \App\Enums\FolderStatus::TARGET_UNAPPROVED->value])): ?>
+                                    <button onclick="submitTargetFolder('<?= $activeFolder['id'] ?>', this)" 
+                                        <?= ($isLocked || $isTargetPeriodEnded) ? 'disabled' : '' ?>
                                         class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-info-500 hover:bg-info-600 disabled:bg-zinc-300 disabled:dark:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed text-white rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-md active:scale-95 cursor-pointer">
-                                        Submit For Evaluation
+                                        Submit Targets for Approval
                                     </button>
-                                <?php else: ?>
-                                    <button onclick="unsubmitFolder('<?= $activeFolder['id'] ?>', this)" 
-                                        <?= $isLocked ? 'disabled' : '' ?>
+                                <?php elseif ($status === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value): ?>
+                                    <button onclick="unsubmitTargetFolder('<?= $activeFolder['id'] ?>', this)" 
+                                        <?= $isTargetPeriodEnded ? 'disabled' : '' ?>
                                         class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-warning-500 hover:bg-warning-600 disabled:bg-zinc-300 disabled:dark:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed text-white rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-md active:scale-95 cursor-pointer">
-                                        Unsubmit Folder
+                                        Unsubmit Targets
                                     </button>
                                 <?php endif; ?>
                             <?php endif; ?>
@@ -253,6 +304,12 @@
                         </div>
                     <?php else: ?>
                         <p class="text-xs text-text-muted italic py-2 text-center">You are viewing this folder in read-only mode.</p>
+                        <?php if (isset($subFolderOwner) && strpos(current_url(), 'ratings/show') !== false): ?>
+                            <a href="<?= site_url('ratings') ?>" class="mt-2 w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-md active:scale-95 cursor-pointer">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                                Back to Ratings
+                            </a>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </div>
 
@@ -403,12 +460,12 @@
             }
         }
 
-        function submitFolder(folderId, btn) {
+        function submitTargetFolder(folderId, btn) {
             btn.innerText = 'Submitting...';
             btn.classList.add('opacity-50', 'cursor-not-allowed');
             const formData = new FormData();
             formData.append('folder_id', folderId);
-            apiPost('<?= site_url('folder/submit') ?>', formData, {
+            apiPost('<?= site_url('folder/submit_target') ?>', formData, {
                 onSuccess: () => window.location.reload(),
                 onError: async (errMsg) => {
                     await window.appAlert(errMsg || "An error occurred.");
@@ -417,7 +474,7 @@
             });
         }
 
-        async function unsubmitFolder(folderId, btn) {
+        async function unsubmitTargetFolder(folderId, btn) {
             const ok = await window.appConfirm("Are you sure you want to revoke your submission?", { variant: 'warning', confirmText: 'Revoke' });
             if (!ok) return;
 
@@ -425,7 +482,7 @@
             btn.classList.add('opacity-50', 'cursor-not-allowed');
             const formData = new FormData();
             formData.append('folder_id', folderId);
-            apiPost('<?= site_url('folder/unsubmit') ?>', formData, {
+            apiPost('<?= site_url('folder/unsubmit_target') ?>', formData, {
                 onSuccess: () => window.location.reload(),
                 onError: async (errMsg) => {
                     await window.appAlert(errMsg || "An error occurred.");

@@ -68,7 +68,7 @@ class  DocumentFolderModel extends Model
      * only sees folders they've actually been routed to evaluate via a cascaded Team
      * (evaluation_routings.evaluator_id), not everyone in the organization.
      */
-    public function getRatingDashboardFolders(int $userId, string $sysRole): array
+    public function getRatingDashboardFolders(int $userId, string $sysRole, ?string $parentFolderId = null): array
     {
         $builder = $this->db->table('document_folders df')
             ->select("df.id as folder_id, df.user_id, (u.first_name || ' ' || u.last_name) as username,
@@ -79,7 +79,12 @@ class  DocumentFolderModel extends Model
             ->join('users u', 'u.id = df.user_id')
             ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
             ->join('positions pos', 'pos.id = p.position_id', 'left')
-            ->join('units un', 'un.id = p.unit_id', 'left');
+            ->join('units un', 'un.id = p.unit_id', 'left')
+            ->where('df.parent_folder_id IS NOT NULL');
+
+        if ($parentFolderId) {
+            $builder->where('df.parent_folder_id', $parentFolderId);
+        }
 
         if ($sysRole !== 'Admin') {
             $builder->join('evaluation_routings er_me', 'er_me.folder_id = df.id')
@@ -166,6 +171,36 @@ class  DocumentFolderModel extends Model
         helper('email_queue');
         $userModel = new UserModel();
 
+        // 0. Process Expired Targets -> TARGET_UNAPPROVED
+        $unapprovedFolders = $db->table($this->table)
+            ->select('id')
+            ->whereIn('status', [
+                \App\Enums\FolderStatus::DRAFT_TARGET->value,
+                \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
+                \App\Enums\FolderStatus::TARGET_RETURNED->value
+            ])
+            ->where('target_date_end <', $now)
+            ->get()->getResultArray();
+            
+        if (!empty($unapprovedFolders)) {
+            $db->table($this->table)
+                ->whereIn('id', array_column($unapprovedFolders, 'id'))
+                ->update(['status' => \App\Enums\FolderStatus::TARGET_UNAPPROVED->value]);
+        }
+
+        // 0.5. Process TARGET_APPROVED -> TO_EVALUATE (Eval Window Open)
+        $readyToDraftFolders = $db->table($this->table)
+            ->select('id')
+            ->where('status', \App\Enums\FolderStatus::TARGET_APPROVED->value)
+            ->where('eval_date_start <=', $now)
+            ->get()->getResultArray();
+
+        if (!empty($readyToDraftFolders)) {
+            $db->table($this->table)
+                ->whereIn('id', array_column($readyToDraftFolders, 'id'))
+                ->update(['status' => \App\Enums\FolderStatus::TO_EVALUATE->value]);
+        }
+
         // 1. Process "Submitted" -> "To Evaluate"
         // Note: this query intentionally stays unfiltered by role - it also drives
         // the status update just below, and an Admin's own folder still needs to
@@ -237,7 +272,13 @@ class  DocumentFolderModel extends Model
     public function isFolderLocked($folder) {
         if (!$folder) return true; 
 
-        $isLocked = !in_array($folder['status'], [FolderStatus::DRAFT->value, FolderStatus::SUBMITTED->value]);
+        // Allow structure/cascade changes only during the target drafting phase (or legacy draft)
+        $isLocked = !in_array($folder['status'], [
+            FolderStatus::DRAFT_TARGET->value,
+            FolderStatus::TARGET_RETURNED->value,
+            FolderStatus::DRAFT->value
+        ]);
+        
         $isPastDeadline = !empty($folder['eval_date_end']) && date('Y-m-d H:i:s') > $folder['eval_date_end'];
         
         return ($isLocked || $isPastDeadline);

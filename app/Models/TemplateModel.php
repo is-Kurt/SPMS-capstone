@@ -12,7 +12,7 @@ class TemplateModel extends Model
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['title', 'content'];
+    protected $allowedFields    = ['title', 'content', 'rubrics_content'];
 
     protected bool $allowEmptyInserts = false;
     protected bool $updateOnlyChanged = true;

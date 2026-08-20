@@ -83,6 +83,7 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->post('folder/approve', 'Folder::approve');
     $routes->post('folder/return', 'Folder::returnRevision');
     $routes->post('folder/submit_target', 'Folder::submitTarget');
+    $routes->post('folder/unsubmit_target', 'Folder::unsubmitTarget');
     $routes->post('folder/approve_target', 'Folder::approveTarget');
     $routes->post('folder/return_target', 'Folder::returnTarget');
     $routes->post('folder/cascade-team', 'Folder::cascadeTeam', ['filter' => 'role:Admin,Supervisor']);

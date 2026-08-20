@@ -42,9 +42,12 @@ class Rating extends BaseController
 
         if (!empty($folders)) {
             $activeFolder = $folderModel->find($folderId);
+            $rootFolderId = $activeFolder['parent_folder_id'] ?? $activeFolder['id'];
+        } else {
+            $rootFolderId = null;
         }
 
-        $rawFolders = $folderModel->getRatingDashboardFolders($userId, $sysRole);
+        $rawFolders = $folderModel->getRatingDashboardFolders($userId, $sysRole, $rootFolderId);
 
         foreach ($rawFolders as &$f) {
             if ($f['position'])   $f['position']   = str_replace(',', ', ', $f['position']);
@@ -53,22 +56,42 @@ class Rating extends BaseController
 
         unset($f);
 
-        $tabs = [
-            'target_approval' => ['label' => 'Pending Target Approvals', 'folders' => []],
-            'action'    => ['label' => 'Action Required', 'folders' => []],
-            'pending'   => ['label' => 'Pending Subordinate', 'folders' => []],
-            'completed' => ['label' => 'Completed', 'folders' => []]
+        $periods = [
+            'target' => [
+                'label' => 'Target Approval Period',
+                'tabs' => [
+                    'target_approval' => ['label' => 'Pending', 'folders' => []],
+                    'target_draft'    => ['label' => 'Draft', 'folders' => []],
+                    'target_returned' => ['label' => 'Returned', 'folders' => []],
+                    'target_approved' => ['label' => 'Approved', 'folders' => []]
+                ]
+            ],
+            'evaluation' => [
+                'label' => 'Evaluation Period',
+                'tabs' => [
+                    'action'    => ['label' => 'Action Required', 'folders' => []],
+                    'pending'   => ['label' => 'Pending Subordinate', 'folders' => []],
+                    'completed' => ['label' => 'Completed', 'folders' => []]
+                ]
+            ]
         ];
 
         foreach ($rawFolders as $f) {
-            if ($f['folder_status'] === \App\Enums\FolderStatus::APPROVED->value) {
-                $tabs['completed']['folders'][] = $f;
-            } elseif ($f['folder_status'] === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value) {
-                $tabs['target_approval']['folders'][] = $f;
-            } elseif (in_array($f['folder_status'], [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::DRAFT_TARGET->value, \App\Enums\FolderStatus::TARGET_APPROVED->value, \App\Enums\FolderStatus::REEVALUATE->value])) {
-                $tabs['pending']['folders'][] = $f;
+            $status = $f['folder_status'];
+            if ($status === \App\Enums\FolderStatus::APPROVED->value) {
+                $periods['evaluation']['tabs']['completed']['folders'][] = $f;
+            } elseif ($status === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value) {
+                $periods['target']['tabs']['target_approval']['folders'][] = $f;
+            } elseif ($status === \App\Enums\FolderStatus::DRAFT_TARGET->value) {
+                $periods['target']['tabs']['target_draft']['folders'][] = $f;
+            } elseif ($status === \App\Enums\FolderStatus::TARGET_RETURNED->value || $status === \App\Enums\FolderStatus::TARGET_UNAPPROVED->value) {
+                $periods['target']['tabs']['target_returned']['folders'][] = $f;
+            } elseif ($status === \App\Enums\FolderStatus::TARGET_APPROVED->value) {
+                $periods['target']['tabs']['target_approved']['folders'][] = $f;
+            } elseif (in_array($status, [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::REEVALUATE->value])) {
+                $periods['evaluation']['tabs']['pending']['folders'][] = $f;
             } else {
-                $tabs['action']['folders'][] = $f;
+                $periods['evaluation']['tabs']['action']['folders'][] = $f;
             }
         }
 
@@ -91,7 +114,7 @@ class Rating extends BaseController
             'mainView'         => 'ratings/index',
             'mainData'         => [
                 'activeFolder'  => $activeFolder ?? null,
-                'tabs'    => $tabs,
+                'periods' => $periods,
                 'sysRole' => $sysRole,
                 'filterUnits'     => $filterUnits,
                 'filterPositions' => $filterPositions
@@ -179,16 +202,27 @@ class Rating extends BaseController
         }
         $groupedGuides = array_values($mergedGuides);
 
+        $userModel = new \App\Models\UserModel();
+        $subFolderOwner = $userModel->find($subFolder['user_id']);
+        if ($subFolderOwner) {
+            $plantilla = $userModel->getActivePlantillaDetails($subFolder['user_id']);
+            if ($plantilla) {
+                $subFolderOwner['position'] = $plantilla['position'];
+                $subFolderOwner['department'] = $plantilla['department'];
+            }
+        }
+
         return view('components/app_shell', [
             'sidebarFolders'   => $folders, 
             'selectedFolderId' => null, 
             'mainView'         => 'document/_doc_rows', 
             'mainData'         => [
-                'activeFolder'  => $subFolder,
-                'myDocs'        => $documentModel->where('document_folder_id', $subFolderId)->findAll(),
-                'isReadOnly'    => true, 
-                'presets'       => [],
-                'groupedGuides' => $groupedGuides
+                'activeFolder'   => $subFolder,
+                'subFolderOwner' => $subFolderOwner,
+                'myDocs'         => $documentModel->where('document_folder_id', $subFolderId)->findAll(),
+                'isReadOnly'     => true, 
+                'presets'        => [],
+                'groupedGuides'  => $groupedGuides
             ]
         ]);
     }

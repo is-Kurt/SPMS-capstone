@@ -202,7 +202,7 @@ class Team extends BaseController
         return redirect()->back()->with('success', 'Distribution list saved successfully!');
     }
 
-    /** POST /teams/delete - Archives (soft-deletes) a team, safe even while it's cascaded onto a live folder. */
+    /** POST /teams/delete - Archives (soft-deletes) a team if cascaded, or hard-deletes if unused. */
     public function delete() {
         $role = session()->get('role');
         if (!in_array($role, ['Admin', 'Supervisor'])) return $this->respondError('Unauthorized.', 403);
@@ -213,11 +213,18 @@ class Team extends BaseController
         $preset = $presetModel->where('id', $presetId)->where('owner_id', session()->get('user_id'))->first();
 
         if ($preset) {
-            // Soft delete: folders already cascaded from this team keep their
-            // routing_preset_id pointing at it (see Folder::index()'s withDeleted()
-            // lookup), so archiving is safe even while it's actively in use.
-            $presetModel->delete($presetId);
-            return $this->respond(['status' => 'success', 'message' => 'Team archived successfully.']);
+            $folderModel = new \App\Models\DocumentFolderModel();
+            $isCascaded = $folderModel->where('routing_preset_id', $presetId)->countAllResults() > 0;
+            
+            if ($isCascaded) {
+                // Soft delete: folders already cascaded from this team keep their
+                // routing_preset_id pointing at it, so archiving is safe.
+                $presetModel->delete($presetId);
+            } else {
+                // Hard delete: if it was never used, we can wipe it entirely
+                $presetModel->delete($presetId, true);
+            }
+            return $this->respond(['status' => 'success', 'message' => 'Team archived/deleted successfully.']);
         }
 
         return $this->respondError('Team not found or unauthorized.');

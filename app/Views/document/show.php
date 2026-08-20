@@ -122,15 +122,16 @@
                                 Monitoring<span class="hidden sm:inline"> View</span>
                             </button>
                         <?php else: ?>
+                            <?php $isTargetPeriodEnded = !empty($doc['target_date_end']) && date('Y-m-d H:i:s') > $doc['target_date_end']; ?>
                             <div class="flex gap-1.5 sm:gap-2">
                                 <button id="btn-return-target" type="button" 
-                                        onclick="saveWith({ after: () => returnTargetRevision() })" 
-                                        class="bg-revision-500 hover:bg-revision-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-revision-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                        <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="saveWith({ after: () => returnTargetRevision() })"' ?>
+                                        class="<?= $isTargetPeriodEnded ? 'bg-revision-500/50 cursor-not-allowed opacity-80' : 'bg-revision-500 hover:bg-revision-600 shadow-revision-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg transition-all">
                                     Return<span class="hidden sm:inline"> Target for Revision</span>
                                 </button>
                                 <button id="btn-approve-target" type="button" 
-                                        onclick="saveWith({ after: () => approveFolderTarget() })" 
-                                        class="bg-success-500 hover:bg-success-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-success-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                        <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="saveWith({ after: () => approveFolderTarget() })"' ?>
+                                        class="<?= $isTargetPeriodEnded ? 'bg-success-500/50 cursor-not-allowed opacity-80' : 'bg-success-500 hover:bg-success-600 shadow-success-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg transition-all">
                                     Approve<span class="hidden sm:inline"> Target</span>
                                 </button>
                             </div>
@@ -140,6 +141,10 @@
                 <?php elseif ($status === FolderStatus::TARGET_APPROVED->value || $status === FolderStatus::SUBMITTED->value): ?>
                     <button type="button" disabled class="bg-highlight-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
                         Awaiting Eval<span class="hidden sm:inline"> Window</span>
+                    </button>
+                <?php elseif ($status === \App\Enums\FolderStatus::TARGET_UNAPPROVED->value): ?>
+                    <button type="button" disabled class="bg-revision-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
+                        Target<span class="hidden sm:inline"> Unapproved</span>
                     </button>
 
                 <?php else: ?>
@@ -156,11 +161,45 @@
         </div>
     </div>
 
-    <div class="flex-1 min-h-0 w-full relative bg-white dark:bg-zinc-950 overflow-x-auto">
+    <div class="flex-none flex bg-bg border-b border-surface-border px-3 sm:px-6 gap-6 text-sm font-bold pt-2">
+        <button type="button" id="tab-target" class="pb-2 border-b-2 border-accent text-accent transition-colors" onclick="switchEditorTab('target')">Target Form</button>
+        <button type="button" id="tab-rubrics" class="pb-2 border-b-2 border-transparent text-text-muted hover:text-text transition-colors" onclick="switchEditorTab('rubrics')">Rubrics / Guide</button>
+    </div>
+
+    <div class="flex-1 min-h-0 w-full relative bg-white dark:bg-zinc-950 overflow-x-auto" id="editor-container-target">
         <textarea id="editable-doc" name="content"><?= $doc['content'] ?></textarea>
     </div>
 
-</div> <script src="<?= base_url('assets/js/editor/functions.js') ?>"></script>
+    <div class="flex-1 min-h-0 w-full relative bg-white dark:bg-zinc-950 overflow-x-auto hidden" id="editor-container-rubrics">
+        <textarea id="editable-rubrics" name="rubrics_content"><?= $doc['rubrics_content'] ?? '' ?></textarea>
+    </div>
+</div>
+<script>
+    function switchEditorTab(tab) {
+        const targetTab = document.getElementById('tab-target');
+        const rubricsTab = document.getElementById('tab-rubrics');
+        const targetContainer = document.getElementById('editor-container-target');
+        const rubricsContainer = document.getElementById('editor-container-rubrics');
+
+        if (tab === 'target') {
+            targetTab.classList.replace('border-transparent', 'border-accent');
+            targetTab.classList.replace('text-text-muted', 'text-accent');
+            rubricsTab.classList.replace('border-accent', 'border-transparent');
+            rubricsTab.classList.replace('text-accent', 'text-text-muted');
+            
+            targetContainer.classList.remove('hidden');
+            rubricsContainer.classList.add('hidden');
+        } else {
+            rubricsTab.classList.replace('border-transparent', 'border-accent');
+            rubricsTab.classList.replace('text-text-muted', 'text-accent');
+            targetTab.classList.replace('border-accent', 'border-transparent');
+            targetTab.classList.replace('text-accent', 'text-text-muted');
+            
+            rubricsContainer.classList.remove('hidden');
+            targetContainer.classList.add('hidden');
+        }
+    }
+</script> <script src="<?= base_url('assets/js/editor/functions.js') ?>"></script>
 <script src="<?= base_url('assets/js/editor/saveDocument.js') ?>"></script>
 
 <script>
@@ -278,16 +317,17 @@
 <script src="<?= base_url('assets/js/editor/config.js') ?>"></script>
 
 <script>
-    const isGuide = <?= json_encode($isGuide) ?>;
-    const status = <?= json_encode($doc['folder_status']) ?>;
-    const isTarget = <?= json_encode($doc['is_target'] == 1) ?>;
-    const isOwner = <?= json_encode($doc['owner_id'] == session()->get('user_id')) ?>;
+    window.isGuide = <?= json_encode($isGuide) ?>;
+    window.status = <?= json_encode($doc['folder_status']) ?>;
+    window.isTarget = <?= json_encode($doc['is_target'] == 1) ?>;
+    window.isOwner = <?= json_encode($doc['owner_id'] == session()->get('user_id')) ?>;
 
     // Enum values exported for JS use
-    const FolderStatus = <?= json_encode([
+    window.FolderStatus = <?= json_encode([
         'DRAFT_TARGET'            => \App\Enums\FolderStatus::DRAFT_TARGET->value,
         'PENDING_TARGET_APPROVAL' => \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
         'TARGET_APPROVED'         => \App\Enums\FolderStatus::TARGET_APPROVED->value,
+        'TARGET_RETURNED'         => \App\Enums\FolderStatus::TARGET_RETURNED->value,
         'DRAFT'                   => \App\Enums\FolderStatus::DRAFT->value,
         'SUBMITTED'               => \App\Enums\FolderStatus::SUBMITTED->value,
         'TO_EVALUATE'             => \App\Enums\FolderStatus::TO_EVALUATE->value,
@@ -299,15 +339,21 @@
 
     let isFullyLocked = true;
     let useFullEditor = false;
+    let useRemarksOnlyEditor = false;
 
     if (isGuide) {
         // Guide documents can only be edited by their owner (the Admin)
         isFullyLocked = !isOwner;
         useFullEditor = isOwner;
     } else {
-        if (status === FolderStatus.DRAFT_TARGET) {
+        if (status === FolderStatus.DRAFT_TARGET || status === FolderStatus.TARGET_RETURNED) {
             isFullyLocked = !isOwner;
             useFullEditor = isOwner; // Target drafting gets the full editor to build tables
+        } else if (status === FolderStatus.PENDING_TARGET_APPROVAL && !isOwner) {
+            // Supervisor reviewing targets can only edit the remarks column
+            isFullyLocked = !isTarget;
+            useFullEditor = false;
+            useRemarksOnlyEditor = isTarget; // Only allow editing remarks if it's the target document
         } else if (status === FolderStatus.DRAFT) {
             isFullyLocked = !isOwner;
             useFullEditor = false; // Eval drafting gets plain editor (structure locked)
@@ -327,6 +373,8 @@
 
     if (useFullEditor) {
         initEditor();
+    } else if (useRemarksOnlyEditor) {
+        initRemarksOnlyEditor();
     } else {
         initPlainEditor(isFullyLocked);
     }

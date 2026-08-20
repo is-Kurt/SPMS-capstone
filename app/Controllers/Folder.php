@@ -197,9 +197,9 @@ class Folder extends BaseController
 
             $activeFolder = $folderModel->find($folderId);
 
-            $allowedStatuses = [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::SUBMITTED->value];
+            $allowedStatuses = [\App\Enums\FolderStatus::DRAFT_TARGET->value, \App\Enums\FolderStatus::DRAFT->value];
             if (!in_array($activeFolder['status'], $allowedStatuses)) {
-                return $this->respondError("You cannot cascade this folder because it has already moved past the drafting/submission phase.", 400);
+                return $this->respondError("You cannot cascade this folder because it has already moved past the target setting phase.", 400);
             }
             if (!$activeFolder) return $this->respondError("Folder not found.", 400);
 
@@ -222,7 +222,9 @@ class Folder extends BaseController
                             'parent_folder_id' => $activeFolder['id'],
                             'eval_date_start'  => $activeFolder['eval_date_start'],
                             'eval_date_end'    => $activeFolder['eval_date_end'],
-                            'status'           => FolderStatus::DRAFT->value
+                            'target_date_start'=> $activeFolder['target_date_start'],
+                            'target_date_end'  => $activeFolder['target_date_end'],
+                            'status'           => \App\Enums\FolderStatus::DRAFT_TARGET->value
                         ]);
                     } else {
                         $newFolderId = $exists['id']; 
@@ -292,6 +294,7 @@ class Folder extends BaseController
             $folderModel = new DocumentFolderModel();
             $routingModel = new EvaluationRoutingModel();
             $presetMemberModel = new RoutingPresetMemberModel();
+            $presetModel = new RoutingPresetModel();
 
             $activeFolder = $folderModel->find($folderId);
 
@@ -306,9 +309,9 @@ class Folder extends BaseController
             $members = $presetMemberModel->where('preset_id', $teamId)->findAll();
             $memberIds = array_column($members, 'user_id');
 
-            $allowedStatuses = [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::SUBMITTED->value];
+            $allowedStatuses = [\App\Enums\FolderStatus::DRAFT_TARGET->value, \App\Enums\FolderStatus::DRAFT->value];
             if (!in_array($activeFolder['status'], $allowedStatuses)) {
-                return $this->respondError("You cannot revoke the cascade for a folder that is currently being evaluated or is locked.", 400);
+                return $this->respondError("You cannot revoke the cascade for a folder that has moved past the target setting phase or is locked.", 400);
             }
 
             $folderModel->db->transStart();
@@ -332,6 +335,15 @@ class Folder extends BaseController
                                     ->where('evaluator_folder_id', $folderId)
                                     ->whereIn('folder_id', $subFolderIds)->delete();
                     }
+                }
+            }
+
+            // 2. Clean up the routing preset if it was soft-deleted and is no longer in use anywhere
+            $inUseCount = $folderModel->where('routing_preset_id', $teamId)->countAllResults();
+            if ($inUseCount === 0) {
+                $deletedPreset = $presetModel->onlyDeleted()->find($teamId);
+                if ($deletedPreset) {
+                    $presetModel->delete($teamId, true); // Hard delete
                 }
             }
 
@@ -502,11 +514,16 @@ class Folder extends BaseController
             $masterFolder = $folderModel->find($folderId);
             if ($masterFolder && in_array($masterFolder['status'], $targetStatuses) && $isNowActive) {
                 $didResetAny = true;
-                $folderData['status'] = empty($masterFolder['submitted_at']) ? FolderStatus::DRAFT->value : FolderStatus::SUBMITTED->value;
+                $folderData['status'] = FolderStatus::TO_EVALUATE->value;
                 $folderData['final_rating'] = null;
                 $folderData['rated_at'] = null;
                 
                 $routingModel->where('folder_id', $folderId)->set(['status' => FolderStatus::DRAFT->value])->update();
+            }
+            
+            $isTargetNowActive = !empty($targetEnd) && $targetEnd > $now;
+            if ($masterFolder && $masterFolder['status'] === FolderStatus::TARGET_UNAPPROVED->value && $isTargetNowActive) {
+                $folderData['status'] = FolderStatus::DRAFT_TARGET->value;
             }
             
             $folderModel->update($folderId, $folderData);
@@ -525,19 +542,20 @@ class Folder extends BaseController
                         'eval_date_end'     => $dateEnd,
                     ];
 
-                    // Check if THIS specific child folder needs a reset
+                    // Check if THIS specific child folder needs a reset for eval
                     $isInTargetStatus = in_array($child['status'], $targetStatuses);
                     $shouldReset = ($isInTargetStatus && $isNowActive);
+                    
+                    // Check if it needs a reset for target phase
+                    if ($child['status'] === FolderStatus::TARGET_UNAPPROVED->value && $isTargetNowActive) {
+                        $childData['status'] = FolderStatus::DRAFT_TARGET->value;
+                    }
 
                     if ($shouldReset) {
                         $didResetAny = true;
 
-                        // Smart Reset Logic: Protect submitted work
-                        if (empty($child['submitted_at'])) {
-                            $childData['status'] = FolderStatus::DRAFT->value;
-                        } else {
-                            $childData['status'] = FolderStatus::SUBMITTED->value;
-                        }
+                        // Smart Reset Logic: Evaluation is handled directly
+                        $childData['status'] = FolderStatus::TO_EVALUATE->value;
                         
                         // Wipe evaluation outcomes
                         $childData['final_rating'] = null; 
@@ -727,17 +745,68 @@ class Folder extends BaseController
     public function submitTarget() {
         return $this->tryOrFail(function() {
             $folderId = $this->request->getPost('folder_id');
+            $userId = session()->get('user_id');
             $folderModel = new DocumentFolderModel();
             
+            $folder = $folderModel->find($folderId);
+
+            if (!$folder || $folder['user_id'] != $userId) {
+                return $this->respondError("Unauthorized to submit targets for this folder.", 400);
+            }
+
+            if (!empty($folder['target_date_end']) && date('Y-m-d H:i:s') > $folder['target_date_end']) {
+                return $this->respondError("The target setting period has already ended.", 400);
+            }
+
+            // --- NEW: Target Document Validation ---
+            $documentModel = new \App\Models\DocumentModel();
+            $hasTarget = $documentModel->where('document_folder_id', $folderId)
+                                       ->where('is_target', 1)
+                                       ->countAllResults();
+            
+            if ($hasTarget == 0) {
+                return $this->respondError("Submission Failed: You must set at least one document as the Basis Target (★) before submitting targets.", 400);
+            }
+            // ---------------------------------------
+
             $folderModel->update($folderId, [
                 'status' => FolderStatus::PENDING_TARGET_APPROVAL->value,
                 'target_submitted_at' => date('Y-m-d H:i:s')
             ]);
             
-            // Note: Sending emails to supervisors can be added here if needed,
-            // similar to how evaluations send emails to evaluators.
-            
             return $this->respond(['status' => 'success', 'message' => 'Targets submitted for approval.']);
+        });
+    }
+
+    /**
+     * POST /folder/unsubmit_target - The employee un-submits targets to revise them.
+     */
+    public function unsubmitTarget() {
+        return $this->tryOrFail(function() {
+            $folderId = $this->request->getPost('folder_id');
+            $userId = session()->get('user_id');
+            $folderModel = new DocumentFolderModel();
+            
+            $folder = $folderModel->find($folderId);
+
+            if (!$folder || $folder['user_id'] != $userId) {
+                return $this->respondError("Unauthorized to unsubmit targets for this folder.", 400);
+            }
+
+            if (!empty($folder['target_date_end']) && date('Y-m-d H:i:s') > $folder['target_date_end']) {
+                return $this->respondError("The target setting period has already ended.", 400);
+            }
+
+            if ($folder['status'] !== FolderStatus::PENDING_TARGET_APPROVAL->value) {
+                return $this->respondError("Only pending targets can be unsubmitted.", 400);
+            }
+
+            $folderModel->update($folderId, [
+                'status' => FolderStatus::DRAFT_TARGET->value,
+                'target_submitted_at' => null
+            ]);
+            
+            return $this->respond(['status' => 'success', 'message' => 'Targets unsubmitted successfully.']);
         });
     }
 
@@ -748,6 +817,11 @@ class Folder extends BaseController
         return $this->tryOrFail(function() {
             $folderId = $this->request->getPost('folder_id');
             $folderModel = new DocumentFolderModel();
+            
+            $folder = $folderModel->find($folderId);
+            if (!empty($folder['target_date_end']) && date('Y-m-d H:i:s') > $folder['target_date_end']) {
+                return $this->respondError("The target setting period has already ended.", 400);
+            }
             
             $folderModel->update($folderId, [
                 'status' => FolderStatus::TARGET_APPROVED->value,
@@ -768,8 +842,13 @@ class Folder extends BaseController
             $folderId = $this->request->getPost('folder_id');
             $folderModel = new DocumentFolderModel();
             
+            $folder = $folderModel->find($folderId);
+            if (!empty($folder['target_date_end']) && date('Y-m-d H:i:s') > $folder['target_date_end']) {
+                return $this->respondError("The target setting period has already ended.", 400);
+            }
+            
             $folderModel->update($folderId, [
-                'status' => FolderStatus::DRAFT_TARGET->value
+                'status' => FolderStatus::TARGET_RETURNED->value
             ]);
             
             // Note: Email to subordinate can be sent here

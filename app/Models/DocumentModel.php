@@ -16,6 +16,7 @@ class DocumentModel extends Model
         'id', 
         'title', 
         'content', 
+        'rubrics_content',
         'document_folder_id', 
         'parent_doc_id',
         'is_target'

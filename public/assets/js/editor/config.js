@@ -1,9 +1,9 @@
 function initEditor() {
-    tinymce.remove('#editable-doc');
+    tinymce.remove('#editable-doc, #editable-rubrics');
     const isDark = document.documentElement.classList.contains('dark');
 
     tinymce.init({
-        selector: '#editable-doc',
+        selector: '#editable-doc, #editable-rubrics',
         license_key: 'gpl',
         promotion: false,
         branding: false,
@@ -176,11 +176,11 @@ function initEditor() {
 }
 
 function initPlainEditor(evaluated) {
-    tinymce.remove('#editable-doc');
+    tinymce.remove('#editable-doc, #editable-rubrics');
     const isDark = document.documentElement.classList.contains('dark');
 
     tinymce.init({
-        selector: '#editable-doc',
+        selector: '#editable-doc, #editable-rubrics',
         license_key: 'gpl',
         promotion: false,
         branding: false,
@@ -232,6 +232,48 @@ function initPlainEditor(evaluated) {
                         }
                     }
                 }
+            });
+        }
+    });
+}
+
+function initRemarksOnlyEditor() {
+    tinymce.remove('#editable-doc, #editable-rubrics');
+    const isDark = document.documentElement.classList.contains('dark');
+
+    tinymce.init({
+        selector: '#editable-doc, #editable-rubrics',
+        license_key: 'gpl',
+        promotion: false,
+        branding: false,
+        menubar: false,
+        statusbar: false,
+        toolbar: false,
+        height: '100%',
+
+        plugins: 'saveShortcut, setDirty',
+
+        skin: isDark ? 'oxide-dark' : 'oxide',
+        content_css: [(isDark ? 'dark' : 'default'), AppConfig.editorCss],
+
+        setup: function (editor) {
+            editor.on('init', function () {
+                const body = editor.getBody();
+
+                body.setAttribute('contenteditable', 'false');
+                clearMarks(editor, body);
+
+                const markedCells = body.querySelectorAll('.calc-rating,.calc-row-avg, .calc-total, .calc-final-total, .remarks');
+                markedCells.forEach(cell => {
+                    cell.style.backgroundColor = '';
+                    cell.removeAttribute('contenteditable');
+                });
+
+                const remarkCells = body.querySelectorAll('.remarks');
+                remarkCells.forEach(cell => {
+                    cell.setAttribute('contenteditable', 'true');
+                    cell.style.backgroundColor = 'rgba(235, 49, 49, 0.25)';
+                });
             });
         }
     });

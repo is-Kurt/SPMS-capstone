@@ -7,7 +7,7 @@
 -->
 <div id="create-folder-modal" class="fixed inset-0 z-[150] hidden overflow-y-auto items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
 
-    <div class="relative w-full max-w-md rounded-2xl bg-surface border border-surface-border p-8 shadow-2xl transition-all">
+    <div class="relative w-full max-w-xl rounded-2xl bg-surface border border-surface-border p-8 shadow-2xl transition-all">
         <h3 class="text-xl font-black text-text tracking-tight mb-2">Create Evaluation Folder</h3>
         <p class="text-xs font-bold text-text-muted uppercase tracking-widest mb-6">New Rating Batch</p>
 
@@ -18,28 +18,35 @@
                     <input type="text" name="title" id="create-folder-title" placeholder="e.g., 2026-2027 IPCR"
                            class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none text-text transition-all" />
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1">Target Setting Start</label>
-                        <input type="datetime-local" name="target_date_start" id="create-folder-target-start" required
-                            class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text dark:[color-scheme:dark]">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1">Target Setting End</label>
-                        <input type="datetime-local" name="target_date_end" id="create-folder-target-end" required
-                            class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text dark:[color-scheme:dark]">
+                <div class="pt-2 border-t border-surface-border mt-4">
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-text mb-3">Target Phase</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1">Target Setting Start</label>
+                            <input type="datetime-local" name="target_date_start" id="create-folder-target-start" required
+                                class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text dark:[color-scheme:dark]">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1">Target Setting End</label>
+                            <input type="datetime-local" name="target_date_end" id="create-folder-target-end" required
+                                class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text dark:[color-scheme:dark]">
+                        </div>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1">Evaluation Start</label>
-                        <input type="datetime-local" name="eval_date_start" id="create-folder-date-start" required
-                            class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text dark:[color-scheme:dark]">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1">Evaluation End</label>
-                        <input type="datetime-local" name="eval_date_end" id="create-folder-date-end" required
-                            class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text dark:[color-scheme:dark]">
+                
+                <div class="pt-2 border-t border-surface-border mt-4">
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-text mb-3">Evaluation Phase</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1">Evaluation Start</label>
+                            <input type="datetime-local" name="eval_date_start" id="create-folder-date-start" required
+                                class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text dark:[color-scheme:dark]">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1">Evaluation End</label>
+                            <input type="datetime-local" name="eval_date_end" id="create-folder-date-end" required
+                                class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text dark:[color-scheme:dark]">
+                        </div>
                     </div>
                 </div>
             </div>

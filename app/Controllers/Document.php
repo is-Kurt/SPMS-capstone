@@ -121,9 +121,10 @@ class Document extends BaseController
         if (!$isAuthorized) return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized']);
 
         $documentModel->save([
-            'id'      => $docId,
-            'title'   => $this->request->getPost('title'),
-            'content' => $this->request->getPost('content'),
+            'id'              => $docId,
+            'title'           => $this->request->getPost('title'),
+            'content'         => $this->request->getPost('content'),
+            'rubrics_content' => $this->request->getPost('rubrics_content'),
         ]);
 
         return $this->response->setJSON(['status' => 'success']);

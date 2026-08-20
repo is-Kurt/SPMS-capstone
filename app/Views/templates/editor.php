@@ -39,12 +39,48 @@
             </div>
         </div>
         
-        <div class="flex-1 min-h-0 w-full relative bg-white dark:bg-zinc-950 overflow-x-auto">
+        <div class="flex-none flex bg-bg border-b border-surface-border px-3 sm:px-6 gap-6 text-sm font-bold pt-2">
+            <button type="button" id="tab-target" class="pb-2 border-b-2 border-accent text-accent transition-colors" onclick="switchEditorTab('target')">Target Form</button>
+            <button type="button" id="tab-rubrics" class="pb-2 border-b-2 border-transparent text-text-muted hover:text-text transition-colors" onclick="switchEditorTab('rubrics')">Rubrics / Guide</button>
+        </div>
+        
+        <div class="flex-1 min-h-0 w-full relative bg-white dark:bg-zinc-950 overflow-x-auto" id="editor-container-target">
             <textarea id="editable-doc" name="content"><?= $template ? $template['content'] : '' ?></textarea>
+        </div>
+
+        <div class="flex-1 min-h-0 w-full relative bg-white dark:bg-zinc-950 overflow-x-auto hidden" id="editor-container-rubrics">
+            <textarea id="editable-rubrics" name="rubrics_content"><?= $template ? ($template['rubrics_content'] ?? '') : '' ?></textarea>
         </div>
     <?= form_close() ?>
 
 </div>
+
+<script>
+    function switchEditorTab(tab) {
+        const targetTab = document.getElementById('tab-target');
+        const rubricsTab = document.getElementById('tab-rubrics');
+        const targetContainer = document.getElementById('editor-container-target');
+        const rubricsContainer = document.getElementById('editor-container-rubrics');
+
+        if (tab === 'target') {
+            targetTab.classList.replace('border-transparent', 'border-accent');
+            targetTab.classList.replace('text-text-muted', 'text-accent');
+            rubricsTab.classList.replace('border-accent', 'border-transparent');
+            rubricsTab.classList.replace('text-accent', 'text-text-muted');
+            
+            targetContainer.classList.remove('hidden');
+            rubricsContainer.classList.add('hidden');
+        } else {
+            rubricsTab.classList.replace('border-transparent', 'border-accent');
+            rubricsTab.classList.replace('text-text-muted', 'text-accent');
+            targetTab.classList.replace('border-accent', 'border-transparent');
+            targetTab.classList.replace('text-accent', 'text-text-muted');
+            
+            rubricsContainer.classList.remove('hidden');
+            targetContainer.classList.add('hidden');
+        }
+    }
+</script>
 
 <script src="<?= base_url('assets/js/editor/functions.js') ?>"></script>
 <script src="<?= base_url('assets/js/editor/plugins.js') ?>"></script>
@@ -73,9 +109,11 @@
 
         savePromise = new Promise((resolve, reject) => {
             const editor = tinymce.get('editable-doc');
-            if (!editor) return resolve(); 
+            const editorRubrics = tinymce.get('editable-rubrics');
+            if (!editor && !editorRubrics) return resolve(); 
 
-            const content = editor.getContent();
+            const content = editor ? editor.getContent() : '';
+            const rubricsContent = editorRubrics ? editorRubrics.getContent() : '';
             const title = document.querySelector('input[name="title"]').value.trim();
             const templateIdInput = document.querySelector('input[name="template_id"]');
             
@@ -92,6 +130,7 @@
             const formData = new FormData();
             formData.append('template_id', templateIdInput.value);
             formData.append('content', content);
+            formData.append('rubrics_content', rubricsContent);
             formData.append('title', title);
 
             apiPost('<?= site_url('templates/store') ?>', formData, {

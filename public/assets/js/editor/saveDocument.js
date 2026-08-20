@@ -10,9 +10,11 @@ function saveDocument(manualSave = true) {
 
     savePromise = new Promise((resolve, reject) => {
         const editor = tinymce.get('editable-doc');
-        if (!editor) return resolve(); // Fail gracefully if editor isn't loaded
+        const editorRubrics = tinymce.get('editable-rubrics');
+        if (!editor && !editorRubrics) return resolve(); // Fail gracefully if neither editor is loaded
 
-        const content = editor.getContent();
+        const content = editor ? editor.getContent() : '';
+        const rubricsContent = editorRubrics ? editorRubrics.getContent() : '';
         const title = document.getElementById('doc-title')?.value?.trim() || 'Untitled Document';
 
         const saveStatus = document.getElementById('save-status');
@@ -31,6 +33,7 @@ function saveDocument(manualSave = true) {
         
         formData.append('id', docId);
         formData.append('content', content);
+        formData.append('rubrics_content', rubricsContent);
         formData.append('title', title);
         formData.append('is_rating_mode', AppConfig.isRatingMode);
         formData.append('_method', 'PATCH'); 
