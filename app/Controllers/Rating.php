@@ -54,6 +54,7 @@ class Rating extends BaseController
         unset($f);
 
         $tabs = [
+            'target_approval' => ['label' => 'Pending Target Approvals', 'folders' => []],
             'action'    => ['label' => 'Action Required', 'folders' => []],
             'pending'   => ['label' => 'Pending Subordinate', 'folders' => []],
             'completed' => ['label' => 'Completed', 'folders' => []]
@@ -62,7 +63,9 @@ class Rating extends BaseController
         foreach ($rawFolders as $f) {
             if ($f['folder_status'] === \App\Enums\FolderStatus::APPROVED->value) {
                 $tabs['completed']['folders'][] = $f;
-            } elseif (in_array($f['folder_status'], [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::REEVALUATE->value])) {
+            } elseif ($f['folder_status'] === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value) {
+                $tabs['target_approval']['folders'][] = $f;
+            } elseif (in_array($f['folder_status'], [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::DRAFT_TARGET->value, \App\Enums\FolderStatus::TARGET_APPROVED->value, \App\Enums\FolderStatus::REEVALUATE->value])) {
                 $tabs['pending']['folders'][] = $f;
             } else {
                 $tabs['action']['folders'][] = $f;

@@ -19,15 +19,29 @@
                     <input type="text" name="title" id="edit-folder-title" placeholder="e.g., 2026-2027 IPCR"
                            class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none text-text transition-all" />
                 </div>
-                <div>
-                    <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1">Evaluation Start</label>
-                    <input type="datetime-local" name="eval_date_start" id="edit-folder-date-start" required
-                        class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text dark:[color-scheme:dark]">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1">Target Setting Start</label>
+                        <input type="datetime-local" name="target_date_start" id="edit-folder-target-start" required
+                            class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text dark:[color-scheme:dark]">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1">Target Setting End</label>
+                        <input type="datetime-local" name="target_date_end" id="edit-folder-target-end" required
+                            class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text dark:[color-scheme:dark]">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1">Evaluation End</label>
-                    <input type="datetime-local" name="eval_date_end" id="edit-folder-date-end" required
-                        class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text dark:[color-scheme:dark]">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1">Evaluation Start</label>
+                        <input type="datetime-local" name="eval_date_start" id="edit-folder-date-start" required
+                            class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text dark:[color-scheme:dark]">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1">Evaluation End</label>
+                        <input type="datetime-local" name="eval_date_end" id="edit-folder-date-end" required
+                            class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text dark:[color-scheme:dark]">
+                    </div>
                 </div>
             </div>
 

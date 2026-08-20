@@ -8,33 +8,56 @@ const idInput = document.getElementById('edit-folder-id');
 const titleInput = document.getElementById('edit-folder-title');
 const dateStart = document.getElementById('edit-folder-date-start');
 const dateEnd = document.getElementById('edit-folder-date-end');
+const targetStart = document.getElementById('edit-folder-target-start');
+const targetEnd = document.getElementById('edit-folder-target-end');
 
 // Validation logic: End Date cannot be before Start Date
 function handleDateConstraints() {
+    if (targetStart.value) {
+        targetEnd.min = targetStart.value;
+        if (targetEnd.value && targetEnd.value < targetStart.value) {
+            targetEnd.value = targetStart.value;
+        }
+    }
+
     if (dateStart.value) {
-        dateEnd.min = dateStart.value; // Prevent user from selecting older dates in UI
+        dateEnd.min = dateStart.value;
         if (dateEnd.value && dateEnd.value < dateStart.value) {
-            dateEnd.value = dateStart.value; // Auto-correct if they type it manually
+            dateEnd.value = dateStart.value;
+        }
+    }
+
+    // Evaluation start cannot be before Target end
+    if (targetEnd.value) {
+        dateStart.min = targetEnd.value;
+        if (dateStart.value && dateStart.value < targetEnd.value) {
+            dateStart.value = targetEnd.value;
         }
     }
 }
 
-if (dateStart && dateEnd) {
+if (dateStart && dateEnd && targetStart && targetEnd) {
     dateStart.addEventListener('input', handleDateConstraints);
     dateEnd.addEventListener('input', handleDateConstraints);
+    targetStart.addEventListener('input', handleDateConstraints);
+    targetEnd.addEventListener('input', handleDateConstraints);
 }
 
-window.openEditFolderModal = function(id, title, start, end) {
+window.openEditFolderModal = function(id, title, target_start, target_end, start, end) {
     idInput.value = id;
     titleInput.value = title;
 
     // Convert Database format (YYYY-MM-DD HH:MM:SS) to Input format (YYYY-MM-DDTHH:MM)
     let safeStart = start ? start.replace(' ', 'T').slice(0, 16) : '';
     let safeEnd = end ? end.replace(' ', 'T').slice(0, 16) : '';
+    let safeTargetStart = target_start ? target_start.replace(' ', 'T').slice(0, 16) : '';
+    let safeTargetEnd = target_end ? target_end.replace(' ', 'T').slice(0, 16) : '';
 
     // Sanitize any lingering '24:00' times from the database
     dateStart.value = safeStart.replace('T24:00', 'T23:59');
     dateEnd.value = safeEnd.replace('T24:00', 'T23:59');
+    targetStart.value = safeTargetStart.replace('T24:00', 'T23:59');
+    targetEnd.value = safeTargetEnd.replace('T24:00', 'T23:59');
 
     handleDateConstraints();
 

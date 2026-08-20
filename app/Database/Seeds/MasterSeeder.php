@@ -309,9 +309,9 @@ class MasterSeeder extends Seeder
 <td colspan="8">CORE FUNCTIONS (70%)</td>
 </tr>
 <tr style="height: 40.375px;">
-<td>&nbsp;</td>
-<td>&nbsp;</td>
-<td>&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-eval">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>

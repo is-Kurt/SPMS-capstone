@@ -20,7 +20,7 @@ function initEditor() {
         toolbar: [
             'print | undo redo | fontfamily fontsize blocks | bold italic underline strikethrough | forecolor backcolor tablecellbackgroundcolor',
             'alignleft aligncenter alignright alignjustify | lineheight | bullist numlist outdent indent | pagebreak',
-            'table tableinsertrowbefore tableinsertrowafter tabledeleterow | tablemergecells tablesplitcells | clearMarks toggleRemarks toggleRating toggleRowAvg toggleTotal toggleFinalRating | toggleId toggleCellWeight | toggleScoreRange'
+            'table tableinsertrowbefore tableinsertrowafter tabledeleterow | tablemergecells tablesplitcells | clearMarks toggleRemarks toggleRating toggleRowAvg toggleTotal toggleFinalRating toggleTarget toggleEval | toggleId toggleCellWeight | toggleScoreRange'
         ],
 
         skin: isDark ? 'oxide-dark' : 'oxide',
@@ -70,6 +70,16 @@ function initEditor() {
                 text: '🧮 Mark as Final Rating',
                 tooltip: 'Display the final rating for this table',
                 onAction: () => tableTools.modifyCell('calc-final-total', 'rgba(139, 92, 246, 0.25)')
+            });
+            editor.ui.registry.addButton('toggleTarget', {
+                text: '🎯 Target Content',
+                tooltip: 'Mark cells as Target Content (locked during eval)',
+                onAction: () => tableTools.modifyCell('col-target', 'rgba(234, 179, 8, 0.15)')
+            });
+            editor.ui.registry.addButton('toggleEval', {
+                text: '📝 Eval Content',
+                tooltip: 'Mark cells as Eval Content (locked during target setting)',
+                onAction: () => tableTools.modifyCell('col-eval', 'rgba(59, 130, 246, 0.15)')
             });
             editor.ui.registry.addButton('clearMarks', {
                 text: '🧹 Clear Marks',
@@ -147,6 +157,20 @@ function initEditor() {
                     (val) => `⚖️ Weight ${val}%`
                 )
             });
+
+            editor.on('init', function () {
+                const body = editor.getBody();
+
+                // If we are in the Target drafting phase, prevent editing of evaluation columns
+                if (typeof window.status !== 'undefined' && typeof window.FolderStatus !== 'undefined') {
+                    if (window.status === window.FolderStatus.DRAFT_TARGET) {
+                        const evalCells = body.querySelectorAll('.col-eval, .calc-rating, .calc-row-avg, .calc-total, .calc-final-total, .remarks');
+                        evalCells.forEach(cell => {
+                            cell.setAttribute('contenteditable', 'false');
+                        });
+                    }
+                }
+            });
         }
     });
 }
@@ -196,6 +220,17 @@ function initPlainEditor(evaluated) {
                         cell.setAttribute('contenteditable', 'true');
                         cell.style.backgroundColor = 'rgba(235, 49, 49, 0.25)';
                     });
+
+                    // Unlock Eval Content columns during Evaluation drafting
+                    if (typeof window.status !== 'undefined' && typeof window.FolderStatus !== 'undefined') {
+                        if (window.status === window.FolderStatus.DRAFT) {
+                            const evalContentCells = body.querySelectorAll('.col-eval');
+                            evalContentCells.forEach(cell => {
+                                cell.setAttribute('contenteditable', 'true');
+                                cell.style.backgroundColor = 'rgba(59, 130, 246, 0.10)';
+                            });
+                        }
+                    }
                 }
             });
         }

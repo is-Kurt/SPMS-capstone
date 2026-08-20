@@ -98,7 +98,46 @@
                         Missed Deadline
                     </button>
                     
-                <?php elseif ($status === FolderStatus::SUBMITTED->value): ?>
+                <?php elseif ($status === FolderStatus::DRAFT_TARGET->value): ?>
+                    <?php if ($isOwner): ?>
+                        <button id="btn-submit-target" type="button" 
+                                onclick="saveWith({ after: () => lockFolderTarget() })" 
+                                class="bg-info-500 hover:bg-info-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-info-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                            <span class="sm:hidden">Submit Target</span><span class="hidden sm:inline">Submit Targets</span>
+                        </button>
+                    <?php else: ?>
+                        <button type="button" disabled class="bg-zinc-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
+                            Wait<span class="hidden sm:inline">ing for Employee Targets</span>
+                        </button>
+                    <?php endif; ?>
+
+                <?php elseif ($status === FolderStatus::PENDING_TARGET_APPROVAL->value): ?>
+                    <?php if ($isOwner): ?>
+                        <button type="button" disabled class="bg-warning-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
+                            <span class="hidden sm:inline">Awaiting </span>Target Approval
+                        </button>
+                    <?php else: ?>
+                        <?php if (session()->get('role') === 'Admin'): ?>
+                            <button type="button" disabled class="bg-highlight-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
+                                Monitoring<span class="hidden sm:inline"> View</span>
+                            </button>
+                        <?php else: ?>
+                            <div class="flex gap-1.5 sm:gap-2">
+                                <button id="btn-return-target" type="button" 
+                                        onclick="saveWith({ after: () => returnTargetRevision() })" 
+                                        class="bg-revision-500 hover:bg-revision-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-revision-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                    Return<span class="hidden sm:inline"> Target for Revision</span>
+                                </button>
+                                <button id="btn-approve-target" type="button" 
+                                        onclick="saveWith({ after: () => approveFolderTarget() })" 
+                                        class="bg-success-500 hover:bg-success-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-success-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                    Approve<span class="hidden sm:inline"> Target</span>
+                                </button>
+                            </div>
+                        <?php endif; ?>
+                    <?php endif; ?>
+
+                <?php elseif ($status === FolderStatus::TARGET_APPROVED->value || $status === FolderStatus::SUBMITTED->value): ?>
                     <button type="button" disabled class="bg-highlight-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
                         Awaiting Eval<span class="hidden sm:inline"> Window</span>
                     </button>
@@ -193,6 +232,45 @@
             onSuccess: () => window.location.reload()
         });
     }
+
+    async function lockFolderTarget() {
+        const ok = await window.appConfirm("Submit these targets for approval? You won't be able to edit them until returned.", { confirmText: 'Submit Targets' });
+        if (!ok) return;
+        
+        const formData = new FormData();
+        formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
+
+        document.getElementById('btn-submit-target').innerText = 'Submitting...';
+        apiPost('<?= site_url('folder/submit_target') ?>', formData, {
+            onSuccess: () => window.location.reload()
+        });
+    }
+
+    async function approveFolderTarget() {
+        const ok = await window.appConfirm("Approve these targets?", { confirmText: 'Approve' });
+        if (!ok) return;
+
+        const formData = new FormData();
+        formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
+
+        document.getElementById('btn-approve-target').innerText = 'Approving...';
+        apiPost('<?= site_url('folder/approve_target') ?>', formData, {
+            onSuccess: () => window.location.reload()
+        });
+    }
+
+    async function returnTargetRevision() {
+        const ok = await window.appConfirm("Return targets to the employee for revision?", { variant: 'warning', confirmText: 'Return' });
+        if (!ok) return;
+        
+        const formData = new FormData();
+        formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
+
+        document.getElementById('btn-return-target').innerText = 'Returning...';
+        apiPost('<?= site_url('folder/return_target') ?>', formData, {
+            onSuccess: () => window.location.reload()
+        });
+    }
 </script>
 
 <script src="<?= base_url('assets/js/editor/plugins.js') ?>"></script>
@@ -207,33 +285,47 @@
 
     // Enum values exported for JS use
     const FolderStatus = <?= json_encode([
-        'DRAFT'       => \App\Enums\FolderStatus::DRAFT->value,
-        'SUBMITTED'   => \App\Enums\FolderStatus::SUBMITTED->value,
-        'TO_EVALUATE' => \App\Enums\FolderStatus::TO_EVALUATE->value,
-        'EVALUATED'   => \App\Enums\FolderStatus::EVALUATED->value,
-        'APPROVED'    => \App\Enums\FolderStatus::APPROVED->value,
-        'REEVALUATE'  => \App\Enums\FolderStatus::REEVALUATE->value,
-        'UNEVALUATED' => \App\Enums\FolderStatus::UNEVALUATED->value,
+        'DRAFT_TARGET'            => \App\Enums\FolderStatus::DRAFT_TARGET->value,
+        'PENDING_TARGET_APPROVAL' => \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
+        'TARGET_APPROVED'         => \App\Enums\FolderStatus::TARGET_APPROVED->value,
+        'DRAFT'                   => \App\Enums\FolderStatus::DRAFT->value,
+        'SUBMITTED'               => \App\Enums\FolderStatus::SUBMITTED->value,
+        'TO_EVALUATE'             => \App\Enums\FolderStatus::TO_EVALUATE->value,
+        'EVALUATED'               => \App\Enums\FolderStatus::EVALUATED->value,
+        'APPROVED'                => \App\Enums\FolderStatus::APPROVED->value,
+        'REEVALUATE'              => \App\Enums\FolderStatus::REEVALUATE->value,
+        'UNEVALUATED'             => \App\Enums\FolderStatus::UNEVALUATED->value,
     ]) ?>;
 
     let isFullyLocked = true;
+    let useFullEditor = false;
 
     if (isGuide) {
         // Guide documents can only be edited by their owner (the Admin)
         isFullyLocked = !isOwner;
+        useFullEditor = isOwner;
     } else {
-        if (status === FolderStatus.DRAFT) {
+        if (status === FolderStatus.DRAFT_TARGET) {
             isFullyLocked = !isOwner;
+            useFullEditor = isOwner; // Target drafting gets the full editor to build tables
+        } else if (status === FolderStatus.DRAFT) {
+            isFullyLocked = !isOwner;
+            useFullEditor = false; // Eval drafting gets plain editor (structure locked)
         } else if ((status === FolderStatus.TO_EVALUATE || status === FolderStatus.REEVALUATE) && isOwner) {
-            // Owner can only self-rate the TARGET document. If REEVALUATE, they can edit anything.
+            // Owner can only self-rate the TARGET document.
             isFullyLocked = !isTarget && status === FolderStatus.TO_EVALUATE;
+            // REEVALUATE implies revision of eval, or revision of targets?
+            // For now, if REEVALUATE, we give them the plain editor so they can fix their ratings/eval.
+            // If they need to fix targets, they would need to be back in DRAFT_TARGET.
+            useFullEditor = false; 
         } else if (status === FolderStatus.EVALUATED && !isOwner) {
             // Evaluator can only evaluate/rate the TARGET document.
             isFullyLocked = !isTarget;
+            useFullEditor = false;
         }
     }
 
-    if (!isFullyLocked && status === FolderStatus.DRAFT) {
+    if (useFullEditor) {
         initEditor();
     } else {
         initPlainEditor(isFullyLocked);

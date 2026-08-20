@@ -7,6 +7,8 @@ const submitBtn = document.getElementById('btn-submit-create-folder');
 const titleInput = document.getElementById('create-folder-title');
 const dateStart = document.getElementById('create-folder-date-start');
 const dateEnd = document.getElementById('create-folder-date-end');
+const targetStart = document.getElementById('create-folder-target-start');
+const targetEnd = document.getElementById('create-folder-target-end');
 
 // Helper to correctly format JS dates for <input type="datetime-local">
 function formatForDateTimeLocal(dateObj) {
@@ -16,17 +18,34 @@ function formatForDateTimeLocal(dateObj) {
 
 // Validation logic: End Date cannot be before Start Date
 function handleDateConstraints() {
+    if (targetStart.value) {
+        targetEnd.min = targetStart.value;
+        if (targetEnd.value && targetEnd.value < targetStart.value) {
+            targetEnd.value = targetStart.value;
+        }
+    }
+    
     if (dateStart.value) {
-        dateEnd.min = dateStart.value; // Prevent user from selecting older dates in UI
+        dateEnd.min = dateStart.value; 
         if (dateEnd.value && dateEnd.value < dateStart.value) {
-            dateEnd.value = dateStart.value; // Auto-correct if they type it manually
+            dateEnd.value = dateStart.value; 
+        }
+    }
+    
+    // Evaluation start cannot be before Target end
+    if (targetEnd.value) {
+        dateStart.min = targetEnd.value;
+        if (dateStart.value && dateStart.value < targetEnd.value) {
+            dateStart.value = targetEnd.value;
         }
     }
 }
 
-if (dateStart && dateEnd) {
+if (dateStart && dateEnd && targetStart && targetEnd) {
     dateStart.addEventListener('input', handleDateConstraints);
     dateEnd.addEventListener('input', handleDateConstraints);
+    targetStart.addEventListener('input', handleDateConstraints);
+    targetEnd.addEventListener('input', handleDateConstraints);
 }
 
 const btnCreateFolder = document.getElementById('btn-create-folder-modal');
@@ -34,14 +53,18 @@ if (btnCreateFolder) {
     btnCreateFolder.addEventListener('click', () => {
         titleInput.value = '';
 
-        // Default Logic: Today @ 23:59 -> Tomorrow @ 23:59
+        // Default Logic: Target = Today to Tomorrow; Eval = Tomorrow to +1 week
         const today = new Date();
         today.setHours(23, 59, 0, 0);
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
+        const nextWeek = new Date(tomorrow);
+        nextWeek.setDate(nextWeek.getDate() + 7);
 
-        dateStart.value = formatForDateTimeLocal(today);
-        dateEnd.value = formatForDateTimeLocal(tomorrow);
+        targetStart.value = formatForDateTimeLocal(today);
+        targetEnd.value = formatForDateTimeLocal(tomorrow);
+        dateStart.value = formatForDateTimeLocal(tomorrow);
+        dateEnd.value = formatForDateTimeLocal(nextWeek);
         handleDateConstraints();
 
         folderModal.open();

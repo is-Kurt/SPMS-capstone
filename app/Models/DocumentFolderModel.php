@@ -21,6 +21,10 @@ class  DocumentFolderModel extends Model
         'final_rating',
         'eval_date_start', 
         'eval_date_end', 
+        'target_date_start',
+        'target_date_end',
+        'target_submitted_at',
+        'target_approved_at',
         'submitted_at',
         'rated_at',
         'deadline_reminder_sent_at',
@@ -111,6 +115,31 @@ class  DocumentFolderModel extends Model
             ->where('df.eval_date_end >=', $now)
             ->where('df.eval_date_end <=', $cutoff)
             ->where('df.deadline_reminder_sent_at IS NULL')
+            ->groupStart()
+                ->where('r.name !=', 'Admin')
+                ->orWhere('r.name IS NULL')
+            ->groupEnd()
+            ->get()->getResultArray();
+    }
+
+    /**
+     * Gets folders whose target setting window closes within X days, and haven't
+     * already received a target deadline reminder.
+     */
+    public function getNearingTargetDeadlineFolders(int $withinDays = 3): array
+    {
+        $now    = date('Y-m-d H:i:s');
+        $cutoff = date('Y-m-d H:i:s', strtotime("+{$withinDays} days"));
+
+        return $this->db->table('document_folders df')
+            ->select('df.id, u.email, u.first_name, df.target_date_end')
+            ->join('users u', 'u.id = df.user_id')
+            ->join('user_roles ur', 'ur.user_id = u.id', 'left')
+            ->join('roles r', 'r.id = ur.role_id', 'left')
+            ->where('df.status', FolderStatus::DRAFT_TARGET->value)
+            ->where('df.target_date_end >=', $now)
+            ->where('df.target_date_end <=', $cutoff)
+            ->where('df.target_deadline_reminder_sent_at IS NULL')
             ->groupStart()
                 ->where('r.name !=', 'Admin')
                 ->orWhere('r.name IS NULL')

@@ -61,9 +61,10 @@ class NightlyWorker extends BaseCommand
         helper('email_queue');
         $folderModel = new DocumentFolderModel();
 
-        $nearingFolders = $folderModel->getNearingDeadlineFolders(3);
+        // 1. Evaluation Submission Deadlines
+        $nearingEvalFolders = $folderModel->getNearingDeadlineFolders(3);
 
-        foreach ($nearingFolders as $folder) {
+        foreach ($nearingEvalFolders as $folder) {
             $link = site_url("folders/" . $folder['id']);
 
             queue_email(
@@ -76,12 +77,30 @@ class NightlyWorker extends BaseCommand
                 ])
             );
 
-            // Mark it reminded immediately (not batched at the end) so a folder
-            // never gets queued twice even if something interrupts this loop partway.
             $folderModel->update($folder['id'], ['deadline_reminder_sent_at' => date('Y-m-d H:i:s')]);
         }
 
-        CLI::write("Queued " . count($nearingFolders) . " 'Nearing Deadline' reminders.", 'green');
+        // 2. Target Setting Deadlines
+        $nearingTargetFolders = $folderModel->getNearingTargetDeadlineFolders(3);
+
+        foreach ($nearingTargetFolders as $folder) {
+            $link = site_url("folders/" . $folder['id']);
+
+            queue_email(
+                $folder['email'],
+                'Action Required: Target Setting Deadline Approaching',
+                render_email('target_deadline_approaching', [
+                    'firstName' => $folder['first_name'],
+                    'deadline'  => date('F j, Y', strtotime($folder['target_date_end'])),
+                    'link'      => $link,
+                ])
+            );
+
+            $folderModel->update($folder['id'], ['target_deadline_reminder_sent_at' => date('Y-m-d H:i:s')]);
+        }
+
+        CLI::write("Queued " . count($nearingEvalFolders) . " 'Nearing Eval Deadline' reminders.", 'green');
+        CLI::write("Queued " . count($nearingTargetFolders) . " 'Nearing Target Deadline' reminders.", 'green');
         CLI::write("Dispatching automated alerts...", 'yellow');
 
         $result = \process_email_queue(30);

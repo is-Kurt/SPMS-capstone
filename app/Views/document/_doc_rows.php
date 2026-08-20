@@ -310,7 +310,7 @@
                             
                             <div class="grid grid-cols-2 gap-3 mt-1">
                                 <!-- Pencil icon: opens components/edit_folder_modal.php prefilled with this folder's title/dates -->
-                                <button onclick="openEditFolderModal('<?= esc($activeFolder['id']) ?>', '<?= esc(addslashes($activeFolder['title'])) ?>', '<?= esc($activeFolder['eval_date_start'] ?? '') ?>', '<?= esc($activeFolder['eval_date_end'] ?? '') ?>')"
+                                <button onclick="openEditFolderModal('<?= esc($activeFolder['id']) ?>', '<?= esc(addslashes($activeFolder['title'])) ?>', '<?= esc($activeFolder['target_date_start'] ?? '') ?>', '<?= esc($activeFolder['target_date_end'] ?? '') ?>', '<?= esc($activeFolder['eval_date_start'] ?? '') ?>', '<?= esc($activeFolder['eval_date_end'] ?? '') ?>')"
                                         class="flex items-center justify-center gap-2 py-2.5 rounded-xl text-warning-600 border border-warning-200 bg-warning-50 hover:bg-warning-500 hover:text-white dark:bg-warning-500/10 dark:hover:bg-warning-600 dark:border-warning-500/20 transition-all cursor-pointer font-bold shadow-sm active:scale-95">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                     <span class="text-[10px] font-black uppercase tracking-widest">Edit</span>

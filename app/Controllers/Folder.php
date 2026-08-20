@@ -378,12 +378,17 @@ class Folder extends BaseController
             $startDate = $this->request->getPost('eval_date_start');
             $endDate   = $this->request->getPost('eval_date_end');
 
+            $targetStartDate = $this->request->getPost('target_date_start');
+            $targetEndDate   = $this->request->getPost('target_date_end');
+
             $payload = [
-                'title'           => resolve_unique_title($title, ['user_id' => $userId], 'title', $documentFolderModel),
-                'user_id'         => $userId,
-                'eval_date_start' => $startDate ?: null,
-                'eval_date_end'   => $endDate ?: null,
-                'status'          => FolderStatus::DRAFT->value,
+                'title'             => resolve_unique_title($title, ['user_id' => $userId], 'title', $documentFolderModel),
+                'user_id'           => $userId,
+                'target_date_start' => $targetStartDate ?: null,
+                'target_date_end'   => $targetEndDate ?: null,
+                'eval_date_start'   => $startDate ?: null,
+                'eval_date_end'     => $endDate ?: null,
+                'status'            => FolderStatus::DRAFT_TARGET->value,
             ];
             
             $newId = create_unique_row($documentFolderModel, $payload);
@@ -466,6 +471,8 @@ class Folder extends BaseController
             if (session()->get('role') !== 'Admin') return $this->respondError("Unauthorized to edit folders.", 400);
 
             $title = $this->request->getPost('title');
+            $targetStart = $this->request->getPost('target_date_start');
+            $targetEnd = $this->request->getPost('target_date_end');
             $dateStart = $this->request->getPost('eval_date_start');
             $dateEnd = $this->request->getPost('eval_date_end');
             
@@ -485,9 +492,11 @@ class Folder extends BaseController
 
             // 1. Update the Admin's Master Folder
             $folderData = [
-                'title'           => $title,
-                'eval_date_start' => $dateStart,
-                'eval_date_end'   => $dateEnd,
+                'title'             => $title,
+                'target_date_start' => $targetStart,
+                'target_date_end'   => $targetEnd,
+                'eval_date_start'   => $dateStart,
+                'eval_date_end'     => $dateEnd,
             ];
             
             $masterFolder = $folderModel->find($folderId);
@@ -509,9 +518,11 @@ class Folder extends BaseController
                 foreach ($childFolders as $child) {
                     // Base payload for every child (syncing titles and dates)
                     $childData = [
-                        'title'           => $title,
-                        'eval_date_start' => $dateStart,
-                        'eval_date_end'   => $dateEnd,
+                        'title'             => $title,
+                        'target_date_start' => $targetStart,
+                        'target_date_end'   => $targetEnd,
+                        'eval_date_start'   => $dateStart,
+                        'eval_date_end'     => $dateEnd,
                     ];
 
                     // Check if THIS specific child folder needs a reset
@@ -707,6 +718,63 @@ class Folder extends BaseController
             }
 
             return $this->respond(['status' => 'success', 'message' => 'Folder successfully evaluated and locked.']);
+        });
+    }
+
+    /**
+     * POST /folder/submit_target - The employee submits their targets for approval.
+     */
+    public function submitTarget() {
+        return $this->tryOrFail(function() {
+            $folderId = $this->request->getPost('folder_id');
+            $folderModel = new DocumentFolderModel();
+            
+            $folderModel->update($folderId, [
+                'status' => FolderStatus::PENDING_TARGET_APPROVAL->value,
+                'target_submitted_at' => date('Y-m-d H:i:s')
+            ]);
+            
+            // Note: Sending emails to supervisors can be added here if needed,
+            // similar to how evaluations send emails to evaluators.
+            
+            return $this->respond(['status' => 'success', 'message' => 'Targets submitted for approval.']);
+        });
+    }
+
+    /**
+     * POST /folder/approve_target - The supervisor approves the targets.
+     */
+    public function approveTarget() {
+        return $this->tryOrFail(function() {
+            $folderId = $this->request->getPost('folder_id');
+            $folderModel = new DocumentFolderModel();
+            
+            $folderModel->update($folderId, [
+                'status' => FolderStatus::TARGET_APPROVED->value,
+                'target_approved_at' => date('Y-m-d H:i:s')
+            ]);
+            
+            // Note: Email to subordinate can be sent here
+            
+            return $this->respond(['status' => 'success', 'message' => 'Targets approved.']);
+        });
+    }
+
+    /**
+     * POST /folder/return_target - The supervisor returns targets for revision.
+     */
+    public function returnTarget() {
+        return $this->tryOrFail(function() {
+            $folderId = $this->request->getPost('folder_id');
+            $folderModel = new DocumentFolderModel();
+            
+            $folderModel->update($folderId, [
+                'status' => FolderStatus::DRAFT_TARGET->value
+            ]);
+            
+            // Note: Email to subordinate can be sent here
+            
+            return $this->respond(['status' => 'success', 'message' => 'Targets returned for revision.']);
         });
     }
 
