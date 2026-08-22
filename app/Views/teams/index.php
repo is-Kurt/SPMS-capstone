@@ -137,12 +137,6 @@
                             </div>
                             <div id="selected-no-results" class="hidden text-center py-12 text-sm font-bold text-text-muted italic">No selected members match your search.</div>
                         </div>
-                        <!-- Desktop Save Button Location -->
-                        <div class="hidden lg:block p-4 border-t border-surface-border bg-white dark:bg-zinc-800 shrink-0">
-                            <button type="submit" id="btn-save-desktop" class="w-full py-2.5 rounded-xl bg-accent text-white text-sm font-bold shadow-lg shadow-accent/20 hover:bg-accent-hover transition-all active:scale-[0.98] cursor-pointer">
-                                Save Changes
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -299,6 +293,12 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                    <!-- Desktop Save Button Location -->
+                    <div class="hidden lg:block shrink-0 mt-4">
+                        <button type="submit" id="btn-save-desktop" class="w-full py-2.5 rounded-xl bg-accent text-white text-sm font-bold shadow-lg shadow-accent/20 hover:bg-accent-hover transition-all active:scale-[0.98] cursor-pointer">
+                            Save Changes
+                        </button>
                     </div>
                 </div>
             </div>

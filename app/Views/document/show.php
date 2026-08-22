@@ -6,12 +6,17 @@
 
     $status = $doc['folder_status']; 
     $isOwner = ($doc['owner_id'] == session()->get('user_id'));
-
+    
+    $editableStatuses = [
+        FolderStatus::DRAFT_TARGET->value,
+        FolderStatus::TARGET_RETURNED->value
+    ];
+    $isEditable = ($isOwner && in_array($status, $editableStatuses) && !$isGuide);
 ?>
 
 <div class="h-full flex flex-col bg-bg">
     
-    <div class="flex-none flex items-center justify-between py-2 px-3 sm:px-6 bg-bg border-b border-surface-border shadow-sm gap-2 sm:gap-4">
+    <div class="flex-none flex items-center justify-between py-2 px-3 sm:px-6 bg-bg gap-2 sm:gap-4">
         
         <div class="flex items-center gap-1 sm:gap-3 min-w-0 flex-1">
             <a href="javascript:history.back()" class="cursor-pointer shrink-0">
@@ -30,7 +35,7 @@
                 class="bg-transparent border-none font-bold text-sm text-text focus:ring-0 px-1 sm:px-2 py-1 min-w-0 w-full truncate"
                 oninput="AppState.setDirty(true);"
                 onblur="restoreTitle(this, '<?= esc($doc['title']) ?>')"
-                <?= ($status !== FolderStatus::DRAFT->value || !$isOwner) ? 'disabled' : '' ?>>
+                <?= (!$isEditable) ? 'disabled' : '' ?>>
 
             <span id="save-status" class="ml-1 sm:ml-3 shrink-0 text-[10px] uppercase tracking-widest font-bold transition-all"></span>
         </div>
@@ -98,7 +103,7 @@
                         Missed Deadline
                     </button>
                     
-                <?php elseif ($status === FolderStatus::DRAFT_TARGET->value): ?>
+                <?php elseif ($status === FolderStatus::DRAFT_TARGET->value || $status === FolderStatus::TARGET_RETURNED->value): ?>
                     <?php if ($isOwner): ?>
                         <button id="btn-submit-target" type="button" 
                                 onclick="saveWith({ after: () => lockFolderTarget() })" 
@@ -161,44 +166,197 @@
         </div>
     </div>
 
-    <div class="flex-none flex bg-bg border-b border-surface-border px-3 sm:px-6 gap-6 text-sm font-bold pt-2">
-        <button type="button" id="tab-target" class="pb-2 border-b-2 border-accent text-accent transition-colors" onclick="switchEditorTab('target')">Target Form</button>
-        <button type="button" id="tab-rubrics" class="pb-2 border-b-2 border-transparent text-text-muted hover:text-text transition-colors" onclick="switchEditorTab('rubrics')">Rubrics / Guide</button>
+    <div class="flex-none flex bg-bg border-b border-surface-border px-3 sm:px-6 <?= $isEditable ? 'gap-2' : 'gap-4' ?> text-sm font-bold pt-2 overflow-x-auto whitespace-nowrap scrollbar-hide" id="tab-bar">
+        <!-- Tabs injected here via JS -->
     </div>
 
-    <div class="flex-1 min-h-0 w-full relative bg-white dark:bg-zinc-950 overflow-x-auto" id="editor-container-target">
-        <textarea id="editable-doc" name="content"><?= $doc['content'] ?></textarea>
-    </div>
-
-    <div class="flex-1 min-h-0 w-full relative bg-white dark:bg-zinc-950 overflow-x-auto hidden" id="editor-container-rubrics">
-        <textarea id="editable-rubrics" name="rubrics_content"><?= $doc['rubrics_content'] ?? '' ?></textarea>
+    <div class="flex-1 min-h-0 w-full relative bg-white dark:bg-zinc-950 overflow-x-auto" id="editor-container">
+        <textarea id="editable-doc" name="content"></textarea>
     </div>
 </div>
-<script>
-    function switchEditorTab(tab) {
-        const targetTab = document.getElementById('tab-target');
-        const rubricsTab = document.getElementById('tab-rubrics');
-        const targetContainer = document.getElementById('editor-container-target');
-        const rubricsContainer = document.getElementById('editor-container-rubrics');
 
-        if (tab === 'target') {
-            targetTab.classList.replace('border-transparent', 'border-accent');
-            targetTab.classList.replace('text-text-muted', 'text-accent');
-            rubricsTab.classList.replace('border-accent', 'border-transparent');
-            rubricsTab.classList.replace('text-accent', 'text-text-muted');
+<script>
+    <?php
+    $tabsJson = '[]';
+    if ($doc && !empty($doc['tabs'])) {
+        $tabsJson = is_string($doc['tabs']) ? $doc['tabs'] : json_encode($doc['tabs']);
+    }
+    ?>
+    let tabs = <?= $tabsJson ?>;
+
+    if (!tabs || tabs.length === 0) {
+        tabs = [
+            { id: 'tab-' + Date.now(), title: 'Target Form', content: '' }
+        ];
+    }
+
+    let activeTabId = tabs[0].id;
+    
+    // Set initial content for TinyMCE initialization
+    document.getElementById('editable-doc').value = tabs[0].content;
+
+    function getUniqueTitle(baseTitle, excludeTabId = null) {
+        let title = baseTitle;
+        let counter = 1;
+        const existingTitles = tabs.filter(t => t.id !== excludeTabId).map(t => t.title.toLowerCase());
+        while (existingTitles.includes(title.toLowerCase())) {
+            title = `${baseTitle} (${counter})`;
+            counter++;
+        }
+        return title;
+    }
+
+    function renderTabs() {
+        const tabBar = document.getElementById('tab-bar');
+        tabBar.innerHTML = '';
+        
+        tabs.forEach(tab => {
+            const isActive = tab.id === activeTabId;
             
-            targetContainer.classList.remove('hidden');
-            rubricsContainer.classList.add('hidden');
-        } else {
-            rubricsTab.classList.replace('border-transparent', 'border-accent');
-            rubricsTab.classList.replace('text-text-muted', 'text-accent');
-            targetTab.classList.replace('border-accent', 'border-transparent');
-            targetTab.classList.replace('text-accent', 'text-text-muted');
+            const btn = document.createElement('div');
+            btn.className = `group flex items-center gap-1 pb-2 border-b-2 transition-colors select-none ${isActive ? 'border-accent text-accent' : 'border-transparent text-text-muted hover:text-text cursor-pointer'}`;
+            btn.onclick = () => switchEditorTab(tab.id);
             
-            rubricsContainer.classList.remove('hidden');
-            targetContainer.classList.add('hidden');
+            const span = document.createElement('span');
+            span.textContent = tab.title;
+            
+            <?php if ($isEditable): ?>
+            span.contentEditable = "true";
+            span.title = 'Click to edit tab name';
+            span.className = 'outline-none cursor-text px-1 min-w-[20px] inline-block rounded focus:bg-surface-border/30';
+            
+            span.onblur = (e) => {
+                const newName = e.target.textContent.trim();
+                if (newName !== '' && newName !== tab.title) {
+                    tab.title = getUniqueTitle(newName, tab.id);
+                    AppState.setDirty(true);
+                }
+                e.target.textContent = tab.title;
+            };
+            
+            span.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.target.blur();
+                }
+            };
+            <?php endif; ?>
+            
+            btn.appendChild(span);
+
+            <?php if ($isEditable): ?>
+            if (tabs.length > 1) {
+                const delBtn = document.createElement('span');
+                delBtn.innerHTML = '&times;';
+                delBtn.className = `text-text-muted/40 hover:text-danger-600 transition-colors font-black ml-1 px-1 rounded hover:bg-danger-500/10`;
+                delBtn.title = 'Delete tab';
+                delBtn.onclick = (e) => { e.stopPropagation(); deleteTab(tab.id); };
+                btn.appendChild(delBtn);
+            }
+            <?php endif; ?>
+
+            tabBar.appendChild(btn);
+        });
+        
+        <?php if ($isEditable): ?>
+        const addBtn = document.createElement('button');
+        addBtn.innerHTML = '＋';
+        addBtn.title = 'Add Tab';
+        addBtn.className = 'pb-2 border-b-2 border-transparent text-text-muted hover:text-text transition-colors text-lg font-black px-2';
+        addBtn.onclick = () => addTab();
+        tabBar.appendChild(addBtn);
+        <?php endif; ?>
+    }
+
+    function switchEditorTab(tabId) {
+        if (tabId === activeTabId) return;
+
+        const editor = tinymce.get('editable-doc');
+        if (editor) {
+            const activeTab = tabs.find(t => t.id === activeTabId);
+            if (activeTab) activeTab.content = editor.getContent();
+        }
+        
+        activeTabId = tabId;
+        renderTabs();
+
+        const newTab = tabs.find(t => t.id === activeTabId);
+        if (editor && newTab) {
+            editor.setContent(newTab.content);
         }
     }
+
+    function addTab() {
+        const title = getUniqueTitle('New Section');
+        const newTab = {
+            id: 'tab-' + Date.now(),
+            title: title,
+            content: ''
+        };
+        
+        const editor = tinymce.get('editable-doc');
+        if (editor) {
+            const activeTab = tabs.find(t => t.id === activeTabId);
+            if (activeTab) activeTab.content = editor.getContent();
+        }
+
+        tabs.push(newTab);
+        activeTabId = newTab.id;
+        
+        renderTabs();
+        if (editor) {
+            editor.setContent('');
+            editor.focus();
+        }
+        AppState.setDirty(true);
+    }
+
+    function renameTab(tabId) {
+        const tab = tabs.find(t => t.id === tabId);
+        if (!tab) return;
+        
+        const newName = prompt('Enter new name for tab:', tab.title);
+        if (newName && newName.trim() !== '') {
+            tab.title = getUniqueTitle(newName.trim(), tabId);
+            renderTabs();
+            AppState.setDirty(true);
+        }
+    }
+
+    async function deleteTab(tabId) {
+        if (tabs.length <= 1) return;
+        
+        const tabToDelete = tabs.find(t => t.id === tabId);
+        if (!tabToDelete) return;
+
+        const confirmed = await window.appConfirm(`Are you sure you want to delete '${tabToDelete.title}'? This cannot be undone.`, {
+            title: 'Delete Tab',
+            confirmText: 'Delete',
+            isDanger: true
+        });
+        
+        if (!confirmed) return;
+        
+        const index = tabs.findIndex(t => t.id === tabId);
+        if (index === -1) return;
+        
+        tabs.splice(index, 1);
+        
+        if (activeTabId === tabId) {
+            activeTabId = tabs[Math.min(index, tabs.length - 1)].id;
+            const newActive = tabs.find(t => t.id === activeTabId);
+            const editor = tinymce.get('editable-doc');
+            if (editor && newActive) {
+                editor.setContent(newActive.content);
+            }
+        }
+        
+        renderTabs();
+        AppState.setDirty(true);
+    }
+
+    // Initialize tabs UI
+    renderTabs();
 </script> <script src="<?= base_url('assets/js/editor/functions.js?v=' . time()) ?>"></script>
 <script src="<?= base_url('assets/js/editor/saveDocument.js') ?>"></script>
 

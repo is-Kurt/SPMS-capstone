@@ -65,9 +65,8 @@ class Template extends BaseController
             }, 'title', $templateModel);
 
             $data = [
-                'title'           => $title,
-                'content'         => $this->request->getPost('content') ?? '',
-                'rubrics_content' => $this->request->getPost('rubrics_content') ?? ''
+                'title' => $title,
+                'tabs'  => $this->request->getPost('tabs') ? json_decode($this->request->getPost('tabs'), true) : []
             ];
             $templateModel->update($templateId, $data);
             $msg = 'Template updated successfully.';
@@ -76,9 +75,8 @@ class Template extends BaseController
             $title = resolve_unique_title($title, [], 'title', $templateModel);
 
             $data = [
-                'title'           => $title,
-                'content'         => $this->request->getPost('content') ?? '',
-                'rubrics_content' => $this->request->getPost('rubrics_content') ?? ''
+                'title' => $title,
+                'tabs'  => $this->request->getPost('tabs') ? json_decode($this->request->getPost('tabs'), true) : []
             ];
             $templateModel->save($data);
             $msg = 'New template created successfully.';

@@ -63,14 +63,24 @@ class Document extends BaseController
             $folderId = $this->request->getPost('folder_id');
             $title  = trim($this->request->getPost('title')) ?: 'Untitled Document';
             $templateId = $this->request->getPost('template');
-            $initialContent = '';
+            $initialTabs = [];
 
             if (!empty($templateId)) {
                 $templateModel = new TemplateModel();
                 $template = $templateModel->find($templateId);
-                if ($template) {
-                    $initialContent = $template['content'];
+                if ($template && !empty($template['tabs'])) {
+                    $initialTabs = is_string($template['tabs']) ? json_decode($template['tabs'], true) : $template['tabs'];
                 }
+            }
+
+            if (empty($initialTabs)) {
+                $initialTabs = [
+                    [
+                        'id' => 'tab-' . uniqid(),
+                        'title' => 'Main Document',
+                        'content' => ''
+                    ]
+                ];
             }
 
             $docs = $documentModel->getUserDocuments($userId);
@@ -78,7 +88,7 @@ class Document extends BaseController
                 'title'              => resolve_unique_title($title, $docs),
                 'user_id'            => $userId,
                 'document_folder_id' => $folderId,
-                'content'            => $initialContent,
+                'tabs'               => $initialTabs,
                 'status'             => 'draft'
             ];
             $newId = create_unique_row($documentModel, $payload);
@@ -120,12 +130,20 @@ class Document extends BaseController
 
         if (!$isAuthorized) return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized']);
 
-        $documentModel->save([
-            'id'              => $docId,
-            'title'           => $this->request->getPost('title'),
-            'content'         => $this->request->getPost('content'),
-            'rubrics_content' => $this->request->getPost('rubrics_content'),
-        ]);
+        $payload = [
+            'id'    => $docId,
+            'title' => $this->request->getPost('title')
+        ];
+
+        $tabsJson = $this->request->getPost('tabs');
+        if ($tabsJson) {
+            $decoded = json_decode($tabsJson, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $payload['tabs'] = $decoded;
+            }
+        }
+
+        $documentModel->save($payload);
 
         return $this->response->setJSON(['status' => 'success']);
     }

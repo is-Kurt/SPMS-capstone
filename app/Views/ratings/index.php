@@ -2,9 +2,22 @@
     $sysRole = $sysRole ?? session()->get('role');
     $firstPeriodKey = array_key_first($periods);
 
-    if ($activeFolder && isset($activeFolder['target_date_end'])) {
+    // Attempt to get a representative folder to determine the phase
+    $representativeFolder = $activeFolder;
+    if (!$representativeFolder) {
+        foreach ($periods as $period) {
+            foreach ($period['tabs'] as $tab) {
+                if (!empty($tab['folders'])) {
+                    $representativeFolder = $tab['folders'][0];
+                    break 2;
+                }
+            }
+        }
+    }
+
+    if ($representativeFolder && isset($representativeFolder['target_date_end'])) {
         $now = date('Y-m-d H:i:s');
-        if ($now <= $activeFolder['target_date_end']) {
+        if ($now <= $representativeFolder['target_date_end']) {
             $firstPeriodKey = 'target';
         } else {
             $firstPeriodKey = 'evaluation';

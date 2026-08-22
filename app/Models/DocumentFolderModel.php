@@ -28,6 +28,9 @@ class  DocumentFolderModel extends Model
         'submitted_at',
         'rated_at',
         'deadline_reminder_sent_at',
+        'target_deadline_reminder_sent_at',
+        'target_period_open_sent_at',
+        'eval_period_open_sent_at',
         'routing_preset_id',
         'status'
     ];
@@ -171,16 +174,56 @@ class  DocumentFolderModel extends Model
         helper('email_queue');
         $userModel = new UserModel();
 
-        // 0. Process Expired Targets -> TARGET_UNAPPROVED
-        $unapprovedFolders = $db->table($this->table)
-            ->select('id')
-            ->whereIn('status', [
+        // 0. Process Target Period Open (DRAFT_TARGET && target_date_start <= now)
+        $startingTargetFolders = $db->table($this->table . ' df')
+            ->select('df.id, df.user_id, df.title, u.email, u.first_name')
+            ->join('users u', 'u.id = df.user_id')
+            ->where('df.status', \App\Enums\FolderStatus::DRAFT_TARGET->value)
+            ->where('df.target_date_start <=', $now)
+            ->where('df.target_period_open_sent_at IS NULL')
+            ->get()->getResultArray();
+
+        foreach ($startingTargetFolders as $folder) {
+            if ($userModel->hasRole($folder['user_id'], 'Admin')) continue;
+
+            $link = site_url("folders/" . $folder['id']);
+            queue_email(
+                $folder['email'],
+                'New Evaluation Folder: Target Setting Period Open',
+                render_email('target_period_open', [
+                    'firstName' => $folder['first_name'],
+                    'link'      => $link,
+                ])
+            );
+        }
+
+        if (!empty($startingTargetFolders)) {
+            $db->table($this->table)
+                ->whereIn('id', array_column($startingTargetFolders, 'id'))
+                ->update(['target_period_open_sent_at' => $now]);
+        }
+
+        // 0.25 Process Expired Targets -> TARGET_UNAPPROVED
+        $unapprovedFolders = $db->table($this->table . ' df')
+            ->select('df.id, df.user_id, u.email, u.first_name')
+            ->join('users u', 'u.id = df.user_id')
+            ->whereIn('df.status', [
                 \App\Enums\FolderStatus::DRAFT_TARGET->value,
                 \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
                 \App\Enums\FolderStatus::TARGET_RETURNED->value
             ])
-            ->where('target_date_end <', $now)
+            ->where('df.target_date_end <', $now)
             ->get()->getResultArray();
+
+        foreach ($unapprovedFolders as $folder) {
+            if ($userModel->hasRole($folder['user_id'], 'Admin')) continue;
+
+            queue_email(
+                $folder['email'],
+                'Notice: Target Submission Deadline Missed',
+                render_email('target_deadline_missed', ['firstName' => $folder['first_name']])
+            );
+        }
             
         if (!empty($unapprovedFolders)) {
             $db->table($this->table)
@@ -188,20 +231,7 @@ class  DocumentFolderModel extends Model
                 ->update(['status' => \App\Enums\FolderStatus::TARGET_UNAPPROVED->value]);
         }
 
-        // 0.5. Process TARGET_APPROVED -> TO_EVALUATE (Eval Window Open)
-        $readyToDraftFolders = $db->table($this->table)
-            ->select('id')
-            ->where('status', \App\Enums\FolderStatus::TARGET_APPROVED->value)
-            ->where('eval_date_start <=', $now)
-            ->get()->getResultArray();
-
-        if (!empty($readyToDraftFolders)) {
-            $db->table($this->table)
-                ->whereIn('id', array_column($readyToDraftFolders, 'id'))
-                ->update(['status' => \App\Enums\FolderStatus::TO_EVALUATE->value]);
-        }
-
-        // 1. Process "Submitted" -> "To Evaluate"
+        // 1. Process TARGET_APPROVED or SUBMITTED -> TO_EVALUATE (Eval Window Open)
         // Note: this query intentionally stays unfiltered by role - it also drives
         // the status update just below, and an Admin's own folder still needs to
         // transition normally even though (per the per-folder check in the loop
@@ -209,9 +239,14 @@ class  DocumentFolderModel extends Model
         $startingFolders = $db->table($this->table . ' df')
             ->select('df.id, df.user_id, df.title, u.email, u.first_name')
             ->join('users u', 'u.id = df.user_id')
-            ->where('df.status', \App\Enums\FolderStatus::SUBMITTED->value)
+            ->whereIn('df.status', [
+                \App\Enums\FolderStatus::TARGET_APPROVED->value,
+                \App\Enums\FolderStatus::SUBMITTED->value,
+                \App\Enums\FolderStatus::TO_EVALUATE->value
+            ])
             ->where('df.eval_date_start <=', $now)
             ->where('df.eval_date_end >=', $now)
+            ->where('df.eval_period_open_sent_at IS NULL')
             ->get()->getResultArray();
 
         foreach ($startingFolders as $folder) {
@@ -236,7 +271,10 @@ class  DocumentFolderModel extends Model
         if (!empty($startingFolders)) {
             $db->table($this->table)
                 ->whereIn('id', array_column($startingFolders, 'id'))
-                ->update(['status' => \App\Enums\FolderStatus::TO_EVALUATE->value]);
+                ->update([
+                    'status' => \App\Enums\FolderStatus::TO_EVALUATE->value,
+                    'eval_period_open_sent_at' => $now
+                ]);
         }
 
         // 2. Find folders that just expired (Before we change their status)

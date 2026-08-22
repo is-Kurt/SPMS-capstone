@@ -15,8 +15,7 @@ class DocumentModel extends Model
     protected $allowedFields    = [
         'id', 
         'title', 
-        'content', 
-        'rubrics_content',
+        'tabs',
         'document_folder_id', 
         'parent_doc_id',
         'is_target'
@@ -25,7 +24,9 @@ class DocumentModel extends Model
     protected bool $allowEmptyInserts = false;
     protected bool $updateOnlyChanged = true;
 
-    protected array $casts = [];
+    protected array $casts = [
+        'tabs' => 'json-array'
+    ];
     protected array $castHandlers = [];
 
     // Dates

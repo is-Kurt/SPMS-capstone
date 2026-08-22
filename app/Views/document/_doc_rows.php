@@ -45,7 +45,7 @@
                         <span class="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border 
                             <?= $activeFolder['status'] === 'draft' ? 'bg-zinc-50 dark:bg-zinc-500/10 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-500/20' : 
                                ($activeFolder['status'] === 'evaluated' ? 'bg-success-50 dark:bg-success-500/10 text-success-600 dark:text-success-400 border-success-200 dark:border-success-500/20' : 'bg-warning-50 dark:bg-warning-500/10 text-warning-600 dark:text-warning-400 border-warning-200 dark:border-warning-500/20') ?>">
-                            STATUS: <?= esc(strtoupper($activeFolder['status'])) ?>
+                            STATUS: <?= esc(strtoupper(str_replace('_', ' ', $activeFolder['status']))) ?>
                         </span>
                     <?php endif; ?>
                 </div>
@@ -61,23 +61,27 @@
                 </button>
 
 
-                <div class="flex flex-wrap items-center gap-4 lg:gap-6 mt-3 mb-1">
-                    <div class="flex items-center gap-2">
-                        <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
-                        <span class="text-[10px] font-black uppercase tracking-widest text-text-muted">Target Phase</span>
-                        <div class="text-[11px] font-bold text-text flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 rounded-md ml-1">
-                            <span><?= !empty($activeFolder['target_date_start']) ? date('M j, Y g:ia', strtotime($activeFolder['target_date_start'])) : 'Not Set' ?></span>
-                            <span class="text-text-muted font-normal">&rarr;</span>
-                            <span><?= !empty($activeFolder['target_date_end']) ? date('M j, Y g:ia', strtotime($activeFolder['target_date_end'])) : 'Not Set' ?></span>
+                <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-4 lg:gap-6 mt-3 mb-1">
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-accent shrink-0"></span>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-text-muted shrink-0 whitespace-nowrap">Target Phase</span>
+                        </div>
+                        <div class="text-[11px] font-bold text-text flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 rounded-md sm:ml-1 w-fit">
+                            <span class="whitespace-nowrap"><?= !empty($activeFolder['target_date_start']) ? date('M j, Y g:ia', strtotime($activeFolder['target_date_start'])) : 'Not Set' ?></span>
+                            <span class="text-text-muted font-normal shrink-0">&rarr;</span>
+                            <span class="whitespace-nowrap"><?= !empty($activeFolder['target_date_end']) ? date('M j, Y g:ia', strtotime($activeFolder['target_date_end'])) : 'Not Set' ?></span>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                        <span class="text-[10px] font-black uppercase tracking-widest text-text-muted">Eval Phase</span>
-                        <div class="text-[11px] font-bold text-text flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 rounded-md ml-1">
-                            <span><?= !empty($activeFolder['eval_date_start']) ? date('M j, Y g:ia', strtotime($activeFolder['eval_date_start'])) : 'Not Set' ?></span>
-                            <span class="text-text-muted font-normal">&rarr;</span>
-                            <span><?= !empty($activeFolder['eval_date_end']) ? date('M j, Y g:ia', strtotime($activeFolder['eval_date_end'])) : 'Not Set' ?></span>
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"></span>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-text-muted shrink-0 whitespace-nowrap">Eval Phase</span>
+                        </div>
+                        <div class="text-[11px] font-bold text-text flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 rounded-md sm:ml-1 w-fit">
+                            <span class="whitespace-nowrap"><?= !empty($activeFolder['eval_date_start']) ? date('M j, Y g:ia', strtotime($activeFolder['eval_date_start'])) : 'Not Set' ?></span>
+                            <span class="text-text-muted font-normal shrink-0">&rarr;</span>
+                            <span class="whitespace-nowrap"><?= !empty($activeFolder['eval_date_end']) ? date('M j, Y g:ia', strtotime($activeFolder['eval_date_end'])) : 'Not Set' ?></span>
                         </div>
                     </div>
                 </div>
@@ -177,42 +181,42 @@
                                         </div>
 
                                         <!-- Wrap actions for mobile inline layout -->
-                                        <div class="col-span-1 md:col-span-6 flex items-center gap-4 pl-12 md:pl-0 md:contents">
-                                            <div class="flex items-center gap-2 md:col-span-4">
+                                        <div class="col-span-1 md:col-span-6 flex items-center gap-2 md:gap-4 pl-12 md:pl-0 md:contents">
+                                            <div class="flex items-center flex-wrap gap-2 md:col-span-4">
                                             <?php if (isset($doc['is_target']) && $doc['is_target'] == 1): ?>
                                                 <?php
                                                     $targetApprovalStatus = '';
                                                     $folderStatus = $activeFolder['status'] ?? '';
                                                     if (in_array($folderStatus, [\App\Enums\FolderStatus::DRAFT_TARGET->value, \App\Enums\FolderStatus::DRAFT->value])) {
-                                                        $targetApprovalStatus = '<span class="text-[9px] font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-md uppercase tracking-widest">Draft</span>';
+                                                        $targetApprovalStatus = '<span class="shrink-0 whitespace-nowrap text-[9px] font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-md uppercase tracking-widest">Draft</span>';
                                                     } elseif ($folderStatus === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value) {
-                                                        $targetApprovalStatus = '<span class="text-[9px] font-bold text-info-600 bg-info-50 dark:bg-info-500/10 dark:text-info-400 px-2 py-1 rounded-md uppercase tracking-widest">Pending</span>';
+                                                        $targetApprovalStatus = '<span class="shrink-0 whitespace-nowrap text-[9px] font-bold text-info-600 bg-info-50 dark:bg-info-500/10 dark:text-info-400 px-2 py-1 rounded-md uppercase tracking-widest">Pending</span>';
                                                     } elseif ($folderStatus === \App\Enums\FolderStatus::TARGET_RETURNED->value) {
-                                                        $targetApprovalStatus = '<span class="text-[9px] font-bold text-danger-600 bg-danger-50 dark:bg-danger-500/10 dark:text-danger-400 px-2 py-1 rounded-md uppercase tracking-widest">Revision</span>';
+                                                        $targetApprovalStatus = '<span class="shrink-0 whitespace-nowrap text-[9px] font-bold text-danger-600 bg-danger-50 dark:bg-danger-500/10 dark:text-danger-400 px-2 py-1 rounded-md uppercase tracking-widest">Revision</span>';
                                                     } elseif ($folderStatus === \App\Enums\FolderStatus::TARGET_UNAPPROVED->value) {
-                                                        $targetApprovalStatus = '<span class="text-[9px] font-bold text-danger-600 bg-danger-50 dark:bg-danger-500/10 dark:text-danger-400 px-2 py-1 rounded-md uppercase tracking-widest">Unapproved</span>';
+                                                        $targetApprovalStatus = '<span class="shrink-0 whitespace-nowrap text-[9px] font-bold text-danger-600 bg-danger-50 dark:bg-danger-500/10 dark:text-danger-400 px-2 py-1 rounded-md uppercase tracking-widest">Unapproved</span>';
                                                     } else {
-                                                        $targetApprovalStatus = '<span class="text-[9px] font-bold text-success-600 bg-success-50 dark:bg-success-500/10 dark:text-success-400 px-2 py-1 rounded-md uppercase tracking-widest">Approved</span>';
+                                                        $targetApprovalStatus = '<span class="shrink-0 whitespace-nowrap text-[9px] font-bold text-success-600 bg-success-50 dark:bg-success-500/10 dark:text-success-400 px-2 py-1 rounded-md uppercase tracking-widest">Approved</span>';
                                                     }
                                                 ?>
                                                 <?php if (!$isReadOnly && !$isLocked): ?>
-                                                    <button type="button" onclick="setTargetDocument('<?= $doc['id'] ?>', '<?= $activeFolder['id'] ?>', 0)" class="text-[10px] font-black text-warning-600 dark:text-warning-400 bg-warning-50 dark:bg-warning-500/10 hover:bg-warning-100 dark:hover:bg-warning-500/20 px-3 py-1 rounded-lg uppercase tracking-widest border border-warning-200 dark:border-warning-500/20 cursor-pointer transition-colors" title="Unset as Basis for Evaluation">
+                                                    <button type="button" onclick="setTargetDocument('<?= $doc['id'] ?>', '<?= $activeFolder['id'] ?>', 0)" class="shrink-0 whitespace-nowrap text-[10px] font-black text-warning-600 dark:text-warning-400 bg-warning-50 dark:bg-warning-500/10 hover:bg-warning-100 dark:hover:bg-warning-500/20 px-3 py-1 rounded-lg uppercase tracking-widest border border-warning-200 dark:border-warning-500/20 cursor-pointer transition-colors" title="Unset as Basis for Evaluation">
                                                         ★ Target
                                                     </button>
                                                     <?= $targetApprovalStatus ?>
                                                 <?php else: ?>
-                                                    <span class="text-[10px] font-black text-warning-600 dark:text-warning-400 bg-warning-50 dark:bg-warning-500/10 px-3 py-1 rounded-lg uppercase tracking-widest border border-warning-200 dark:border-warning-500/20">
+                                                    <span class="shrink-0 whitespace-nowrap text-[10px] font-black text-warning-600 dark:text-warning-400 bg-warning-50 dark:bg-warning-500/10 px-3 py-1 rounded-lg uppercase tracking-widest border border-warning-200 dark:border-warning-500/20">
                                                         ★ Target
                                                     </span>
                                                     <?= $targetApprovalStatus ?>
                                                 <?php endif; ?>
                                             <?php else: ?>
                                                 <?php if (!$isReadOnly && !$isLocked): ?>
-                                                    <button type="button" onclick="setTargetDocument('<?= $doc['id'] ?>', '<?= $activeFolder['id'] ?>', 1)" class="text-[10px] font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 px-3 py-1 rounded-lg uppercase tracking-widest border border-transparent cursor-pointer transition-colors" title="Set as Basis for Evaluation">
+                                                    <button type="button" onclick="setTargetDocument('<?= $doc['id'] ?>', '<?= $activeFolder['id'] ?>', 1)" class="shrink-0 whitespace-nowrap text-[10px] font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 px-3 py-1 rounded-lg uppercase tracking-widest border border-transparent cursor-pointer transition-colors" title="Set as Basis for Evaluation">
                                                         Evidence
                                                     </button>
                                                 <?php else: ?>
-                                                    <span class="text-[10px] font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-lg uppercase tracking-widest">
+                                                    <span class="shrink-0 whitespace-nowrap text-[10px] font-bold text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-lg uppercase tracking-widest">
                                                         Evidence
                                                     </span>
                                                 <?php endif; ?>

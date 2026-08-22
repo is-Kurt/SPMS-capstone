@@ -232,25 +232,6 @@ class Folder extends BaseController
 
                     if (!$exists) {
                         $memberInfo = $userModel->find($member['user_id']);
-
-                        // Defense-in-depth, not just relying on the picker: an Admin
-                        // building this team (unlike a Supervisor) isn't filtered by
-                        // getEligibleTeamMembers(), so another Admin could technically
-                        // end up as a "member" here. Admins don't get evaluated-employee
-                        // notifications either way.
-                        if ($memberInfo && !$userModel->hasRole($memberInfo['id'], 'Admin')) {
-                            $link = site_url("folders/" . $newFolderId);
-
-                            queue_email(
-                                $memberInfo['email'],
-                                'New Evaluation Folder: Drafting Period Open',
-                                render_email('folder_assigned', [
-                                    'firstName' => $memberInfo['first_name'],
-                                    'link'      => $link,
-                                ])
-                            );
-                            $emailsQueued++;
-                        }
                     }
                 }
                 $message = "Batch evaluation distributed to team members.";
@@ -387,11 +368,11 @@ class Folder extends BaseController
             $userId = session()->get('user_id');
             $title = trim($this->request->getPost('title')) ?: 'Untitled Evaluation';
 
-            $startDate = $this->request->getPost('eval_date_start');
-            $endDate   = $this->request->getPost('eval_date_end');
+            $startDate = str_replace('T', ' ', $this->request->getPost('eval_date_start'));
+            $endDate   = str_replace('T', ' ', $this->request->getPost('eval_date_end'));
 
-            $targetStartDate = $this->request->getPost('target_date_start');
-            $targetEndDate   = $this->request->getPost('target_date_end');
+            $targetStartDate = str_replace('T', ' ', $this->request->getPost('target_date_start'));
+            $targetEndDate   = str_replace('T', ' ', $this->request->getPost('target_date_end'));
 
             $payload = [
                 'title'             => resolve_unique_title($title, ['user_id' => $userId], 'title', $documentFolderModel),
@@ -439,9 +420,13 @@ class Folder extends BaseController
             // Walk the whole subtree first and collect every team reference in it, not
             // just this folder's own, so none of them get missed for the orphan check.
             $teamIds = [];
+            $allFolderIds = [];
             $toVisit = [$folderId];
+            
             while (!empty($toVisit)) {
                 $currentId = array_pop($toVisit);
+                $allFolderIds[] = $currentId;
+                
                 $current = $folderModel->find($currentId);
                 if ($current && $current['routing_preset_id']) {
                     $teamIds[] = $current['routing_preset_id'];
@@ -449,6 +434,13 @@ class Folder extends BaseController
                 foreach ($folderModel->where('parent_folder_id', $currentId)->findAll() as $child) {
                     $toVisit[] = $child['id'];
                 }
+            }
+
+            // SQLite loses ON DELETE CASCADE for documents table when columns were dropped in migrations,
+            // so we manually purge all documents in the folder subtree before deleting the folders.
+            if (!empty($allFolderIds)) {
+                $documentModel = new \App\Models\DocumentModel();
+                $documentModel->whereIn('document_folder_id', $allFolderIds)->delete();
             }
             $teamIds = array_unique($teamIds);
 
@@ -483,17 +475,22 @@ class Folder extends BaseController
             if (session()->get('role') !== 'Admin') return $this->respondError("Unauthorized to edit folders.", 400);
 
             $title = $this->request->getPost('title');
-            $targetStart = $this->request->getPost('target_date_start');
-            $targetEnd = $this->request->getPost('target_date_end');
-            $dateStart = $this->request->getPost('eval_date_start');
-            $dateEnd = $this->request->getPost('eval_date_end');
+            $targetStart = str_replace('T', ' ', $this->request->getPost('target_date_start'));
+            $targetEnd = str_replace('T', ' ', $this->request->getPost('target_date_end'));
+            $dateStart = str_replace('T', ' ', $this->request->getPost('eval_date_start'));
+            $dateEnd = str_replace('T', ' ', $this->request->getPost('eval_date_end'));
             
             $now = date('Y-m-d H:i:s');
-            $isNowActive = !empty($dateEnd) && $dateEnd > $now;
+            $isEvalFuture  = !empty($dateStart) && $dateStart > $now;
+            $isEvalOpen    = !empty($dateStart) && !empty($dateEnd) && $dateStart <= $now && $dateEnd >= $now;
+            $isEvalExpired = !empty($dateEnd) && $dateEnd < $now;
             
             $routingModel = new EvaluationRoutingModel();
             
+            // These statuses mean the folder has already finished the Target Phase
             $targetStatuses = [
+                FolderStatus::TARGET_APPROVED->value,
+                FolderStatus::SUBMITTED->value,
                 FolderStatus::TO_EVALUATE->value,
                 FolderStatus::UNEVALUATED->value,
                 FolderStatus::EVALUATED->value,
@@ -512,16 +509,24 @@ class Folder extends BaseController
             ];
             
             $masterFolder = $folderModel->find($folderId);
-            if ($masterFolder && in_array($masterFolder['status'], $targetStatuses) && $isNowActive) {
-                $didResetAny = true;
-                $folderData['status'] = FolderStatus::TO_EVALUATE->value;
-                $folderData['final_rating'] = null;
-                $folderData['rated_at'] = null;
-                
-                $routingModel->where('folder_id', $folderId)->set(['status' => FolderStatus::DRAFT->value])->update();
+            if ($masterFolder && in_array($masterFolder['status'], $targetStatuses)) {
+                if ($isEvalOpen) {
+                    $didResetAny = true;
+                    $folderData['status'] = FolderStatus::TO_EVALUATE->value;
+                    $folderData['final_rating'] = null;
+                    $folderData['rated_at'] = null;
+                    $routingModel->where('folder_id', $folderId)->set(['status' => FolderStatus::DRAFT->value])->update();
+                } elseif ($isEvalFuture) {
+                    $folderData['status'] = FolderStatus::TARGET_APPROVED->value;
+                    $folderData['final_rating'] = null;
+                    $folderData['rated_at'] = null;
+                    $routingModel->where('folder_id', $folderId)->set(['status' => FolderStatus::DRAFT->value])->update();
+                } elseif ($isEvalExpired && in_array($masterFolder['status'], [FolderStatus::TARGET_APPROVED->value, FolderStatus::TO_EVALUATE->value, FolderStatus::SUBMITTED->value])) {
+                    $folderData['status'] = FolderStatus::UNEVALUATED->value;
+                }
             }
             
-            $isTargetNowActive = !empty($targetEnd) && $targetEnd > $now;
+            $isTargetNowActive = !empty($targetEnd) && $targetEnd >= $now;
             if ($masterFolder && $masterFolder['status'] === FolderStatus::TARGET_UNAPPROVED->value && $isTargetNowActive) {
                 $folderData['status'] = FolderStatus::DRAFT_TARGET->value;
             }
@@ -544,27 +549,38 @@ class Folder extends BaseController
 
                     // Check if THIS specific child folder needs a reset for eval
                     $isInTargetStatus = in_array($child['status'], $targetStatuses);
-                    $shouldReset = ($isInTargetStatus && $isNowActive);
                     
                     // Check if it needs a reset for target phase
                     if ($child['status'] === FolderStatus::TARGET_UNAPPROVED->value && $isTargetNowActive) {
                         $childData['status'] = FolderStatus::DRAFT_TARGET->value;
                     }
 
-                    if ($shouldReset) {
-                        $didResetAny = true;
+                    if ($isInTargetStatus) {
+                        if ($isEvalOpen) {
+                            $didResetAny = true;
 
-                        // Smart Reset Logic: Evaluation is handled directly
-                        $childData['status'] = FolderStatus::TO_EVALUATE->value;
-                        
-                        // Wipe evaluation outcomes
-                        $childData['final_rating'] = null; 
-                        $childData['rated_at']     = null; 
+                            // Smart Reset Logic: Evaluation is handled directly
+                            $childData['status'] = FolderStatus::TO_EVALUATE->value;
+                            
+                            // Wipe evaluation outcomes
+                            $childData['final_rating'] = null; 
+                            $childData['rated_at']     = null; 
 
-                        // Reset Evaluator Routing Statuses for this specific child
-                        $routingModel->where('folder_id', $child['id'])
-                                     ->set(['status' => FolderStatus::DRAFT->value])
-                                     ->update();
+                            // Reset Evaluator Routing Statuses for this specific child
+                            $routingModel->where('folder_id', $child['id'])
+                                         ->set(['status' => FolderStatus::DRAFT->value])
+                                         ->update();
+                        } elseif ($isEvalFuture) {
+                            $didResetAny = true;
+                            $childData['status'] = FolderStatus::TARGET_APPROVED->value;
+                            $childData['final_rating'] = null; 
+                            $childData['rated_at']     = null; 
+                            $routingModel->where('folder_id', $child['id'])
+                                         ->set(['status' => FolderStatus::DRAFT->value])
+                                         ->update();
+                        } elseif ($isEvalExpired && in_array($child['status'], [FolderStatus::TARGET_APPROVED->value, FolderStatus::TO_EVALUATE->value, FolderStatus::SUBMITTED->value])) {
+                            $childData['status'] = FolderStatus::UNEVALUATED->value;
+                        }
                     }
 
                     // Apply the update to the child

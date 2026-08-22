@@ -1,9 +1,9 @@
 function initEditor() {
-    tinymce.remove('#editable-doc, #editable-rubrics');
+    tinymce.remove('#editable-doc');
     const isDark = document.documentElement.classList.contains('dark');
 
     tinymce.init({
-        selector: '#editable-doc, #editable-rubrics',
+        selector: '#editable-doc',
         license_key: 'gpl',
         promotion: false,
         branding: false,

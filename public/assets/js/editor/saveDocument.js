@@ -10,11 +10,15 @@ function saveDocument(manualSave = true) {
 
     savePromise = new Promise((resolve, reject) => {
         const editor = tinymce.get('editable-doc');
-        const editorRubrics = tinymce.get('editable-rubrics');
-        if (!editor && !editorRubrics) return resolve(); // Fail gracefully if neither editor is loaded
+        if (!editor) return resolve(); // Fail gracefully if editor is not loaded
 
-        const content = editor ? editor.getContent() : '';
-        const rubricsContent = editorRubrics ? editorRubrics.getContent() : '';
+        if (typeof tabs !== 'undefined' && typeof activeTabId !== 'undefined') {
+            const activeTab = tabs.find(t => t.id === activeTabId);
+            if (activeTab) {
+                activeTab.content = editor.getContent();
+            }
+        }
+
         const title = document.getElementById('doc-title')?.value?.trim() || 'Untitled Document';
 
         const saveStatus = document.getElementById('save-status');
@@ -28,15 +32,18 @@ function saveDocument(manualSave = true) {
         }
 
         const formData = new FormData();
-        // Fallback to the ID in the URL if AppConfig is somehow missing it
         const docId = AppConfig.docId || new URLSearchParams(window.location.search).get('Id');
         
         formData.append('id', docId);
-        formData.append('content', content);
-        formData.append('rubrics_content', rubricsContent);
+        if (typeof tabs !== 'undefined' && tabs.length > 0) {
+            formData.append('tabs', JSON.stringify(tabs));
+        } else if (editor) {
+            formData.append('content', editor.getContent());
+        }
+        
         formData.append('title', title);
         formData.append('is_rating_mode', AppConfig.isRatingMode);
-        formData.append('_method', 'PATCH'); 
+        formData.append('_method', 'PATCH');
 
         apiPost('/document', formData, {
             onSuccess: (data) => { 

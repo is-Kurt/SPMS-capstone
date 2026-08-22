@@ -12,12 +12,14 @@ class TemplateModel extends Model
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['title', 'content', 'rubrics_content'];
+    protected $allowedFields    = ['title', 'tabs'];
 
     protected bool $allowEmptyInserts = false;
     protected bool $updateOnlyChanged = true;
 
-    protected array $casts = [];
+    protected array $casts = [
+        'tabs' => 'json-array'
+    ];
     protected array $castHandlers = [];
 
     // Dates

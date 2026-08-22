@@ -214,7 +214,7 @@ class Rating extends BaseController
 
         return view('components/app_shell', [
             'sidebarFolders'   => $folders, 
-            'selectedFolderId' => null, 
+            'selectedFolderId' => session()->get('active_folder_id'), 
             'mainView'         => 'document/_doc_rows', 
             'mainData'         => [
                 'activeFolder'   => $subFolder,
