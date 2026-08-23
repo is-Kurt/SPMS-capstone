@@ -137,8 +137,11 @@ function calculateAllTables() {
 }
 
 function autoResize(el) {
-        el.style.width = '0';
-        el.style.width = el.scrollWidth + 'px';
+    // Reset width to exactly 1px to force the scrollWidth to recalculate
+    // based on the actual text content.
+    el.style.width = '1px';
+    // Add 2px to prevent browser rounding issues from clipping the text
+    el.style.width = (el.scrollWidth + 2) + 'px';
 }
 
 function restoreTitle(el, defaultTitle) {

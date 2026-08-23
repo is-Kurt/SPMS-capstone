@@ -32,13 +32,22 @@
             </a>
 
             <input type="text" maxlength="100" id="doc-title" value="<?= esc($doc['title']) ?>"
-                class="bg-transparent border-none font-bold text-sm text-text focus:ring-0 px-1 sm:px-2 py-1 min-w-0 w-full truncate"
-                oninput="AppState.setDirty(true);"
-                onblur="restoreTitle(this, '<?= esc($doc['title']) ?>')"
+                class="bg-transparent border-none font-bold text-sm text-text focus:ring-0 px-1 sm:px-2 py-1 min-w-[50px]"
+                oninput="AppState.setDirty(true); autoResize(this);"
+                onblur="restoreTitle(this, '<?= esc($doc['title']) ?>'); autoResize(this);"
+                onload="autoResize(this);"
                 <?= (!$isEditable) ? 'disabled' : '' ?>>
 
             <span id="save-status" class="ml-1 sm:ml-3 shrink-0 text-[10px] uppercase tracking-widest font-bold transition-all"></span>
         </div>
+        
+        <!-- Call autoResize immediately after the element is in DOM -->
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const titleInput = document.getElementById('doc-title');
+                if (titleInput) autoResize(titleInput);
+            });
+        </script>
         
         <div class="flex items-center gap-2 sm:gap-4 shrink-0">
             <?php if (!$isGuide): ?>
