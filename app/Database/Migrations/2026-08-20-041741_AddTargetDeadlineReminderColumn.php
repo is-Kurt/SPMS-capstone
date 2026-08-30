@@ -12,7 +12,7 @@ class AddTargetDeadlineReminderColumn extends Migration
             'target_deadline_reminder_sent_at' => [
                 'type' => 'DATETIME',
                 'null' => true,
-                'after' => 'target_approved_at'
+                // 'after' => 'target_approved_at'
             ],
         ]);
     }

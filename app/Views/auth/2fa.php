@@ -57,20 +57,50 @@ document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('btn-resend');
     if (!btn) return;
     
-    let timeLeft = 60;
+    const storageKey = 'resendCooldown_2fa';
+    let lastSent = localStorage.getItem(storageKey);
+    let timeLeft = 0;
     
-    const tick = setInterval(() => {
-        timeLeft--;
+    if (!lastSent) {
+        lastSent = Date.now();
+        localStorage.setItem(storageKey, lastSent);
+    }
+    
+    const elapsed = Math.floor((Date.now() - parseInt(lastSent)) / 1000);
+    timeLeft = Math.max(0, 60 - elapsed);
+    
+    const form = btn.closest('form');
+    if (form) {
+        form.addEventListener('submit', () => {
+            localStorage.setItem(storageKey, Date.now());
+        });
+    }
+    
+    const updateUI = () => {
         if (timeLeft <= 0) {
-            clearInterval(tick);
             btn.disabled = false;
             btn.textContent = 'Resend Code Now';
             btn.classList.remove('text-text-muted');
             btn.classList.add('text-accent', 'hover:text-accent-hover');
         } else {
+            btn.disabled = true;
             btn.textContent = `Resend Code (${timeLeft}s)`;
+            btn.classList.add('text-text-muted');
+            btn.classList.remove('text-accent', 'hover:text-accent-hover');
         }
-    }, 1000);
+    };
+    
+    updateUI();
+    
+    if (timeLeft > 0) {
+        const tick = setInterval(() => {
+            timeLeft--;
+            updateUI();
+            if (timeLeft <= 0) {
+                clearInterval(tick);
+            }
+        }, 1000);
+    }
 });
 </script>
 

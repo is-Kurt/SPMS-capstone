@@ -5,10 +5,7 @@ let isCreatingFolder = false;
 
 const submitBtn = document.getElementById('btn-submit-create-folder');
 const titleInput = document.getElementById('create-folder-title');
-const dateStart = document.getElementById('create-folder-date-start');
-const dateEnd = document.getElementById('create-folder-date-end');
-const targetStart = document.getElementById('create-folder-target-start');
-const targetEnd = document.getElementById('create-folder-target-end');
+const docTypes = ['ipcr', 'dpcr', 'opcr', 'iperf'];
 
 // Helper to correctly format JS dates for <input type="datetime-local">
 function formatForDateTimeLocal(dateObj) {
@@ -16,8 +13,13 @@ function formatForDateTimeLocal(dateObj) {
     return d.toISOString().slice(0, 16);
 }
 
-// Validation logic: End Date cannot be before Start Date
-function handleDateConstraints() {
+// Validation logic for each doctype: End Date cannot be before Start Date
+function handleDateConstraints(docType) {
+    const targetStart = document.getElementById(`create-folder-${docType}-target-start`);
+    const targetEnd = document.getElementById(`create-folder-${docType}-target-end`);
+    const dateStart = document.getElementById(`create-folder-${docType}-eval-start`);
+    const dateEnd = document.getElementById(`create-folder-${docType}-eval-end`);
+
     if (targetStart.value) {
         targetEnd.min = targetStart.value;
         if (targetEnd.value && targetEnd.value < targetStart.value) {
@@ -41,12 +43,19 @@ function handleDateConstraints() {
     }
 }
 
-if (dateStart && dateEnd && targetStart && targetEnd) {
-    dateStart.addEventListener('input', handleDateConstraints);
-    dateEnd.addEventListener('input', handleDateConstraints);
-    targetStart.addEventListener('input', handleDateConstraints);
-    targetEnd.addEventListener('input', handleDateConstraints);
-}
+docTypes.forEach(docType => {
+    const targetStart = document.getElementById(`create-folder-${docType}-target-start`);
+    const targetEnd = document.getElementById(`create-folder-${docType}-target-end`);
+    const dateStart = document.getElementById(`create-folder-${docType}-eval-start`);
+    const dateEnd = document.getElementById(`create-folder-${docType}-eval-end`);
+
+    if (dateStart && dateEnd && targetStart && targetEnd) {
+        dateStart.addEventListener('input', () => handleDateConstraints(docType));
+        dateEnd.addEventListener('input', () => handleDateConstraints(docType));
+        targetStart.addEventListener('input', () => handleDateConstraints(docType));
+        targetEnd.addEventListener('input', () => handleDateConstraints(docType));
+    }
+});
 
 const btnCreateFolder = document.getElementById('btn-create-folder-modal');
 if (btnCreateFolder) {
@@ -61,11 +70,19 @@ if (btnCreateFolder) {
         const nextWeek = new Date(tomorrow);
         nextWeek.setDate(nextWeek.getDate() + 7);
 
-        targetStart.value = formatForDateTimeLocal(today);
-        targetEnd.value = formatForDateTimeLocal(tomorrow);
-        dateStart.value = formatForDateTimeLocal(tomorrow);
-        dateEnd.value = formatForDateTimeLocal(nextWeek);
-        handleDateConstraints();
+        docTypes.forEach(docType => {
+            const targetStart = document.getElementById(`create-folder-${docType}-target-start`);
+            const targetEnd = document.getElementById(`create-folder-${docType}-target-end`);
+            const dateStart = document.getElementById(`create-folder-${docType}-eval-start`);
+            const dateEnd = document.getElementById(`create-folder-${docType}-eval-end`);
+            
+            if(targetStart) targetStart.value = formatForDateTimeLocal(today);
+            if(targetEnd) targetEnd.value = formatForDateTimeLocal(tomorrow);
+            if(dateStart) dateStart.value = formatForDateTimeLocal(tomorrow);
+            if(dateEnd) dateEnd.value = formatForDateTimeLocal(nextWeek);
+            
+            handleDateConstraints(docType);
+        });
 
         folderModal.open();
     });

@@ -17,6 +17,7 @@ class UserModel extends Model
         'password',
         'first_name',
         'last_name',
+        'doc_type',
         'remember_token',
         'remember_token_expiry',
         'is_active',

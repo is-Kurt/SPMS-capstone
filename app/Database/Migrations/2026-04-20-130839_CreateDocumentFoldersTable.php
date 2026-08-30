@@ -44,14 +44,23 @@ class CreateDocumentFoldersTable extends Migration
                 'unsigned' => true,
                 'null'     => true
             ],
-            'eval_date_start' => [
-                'type'           => 'DATETIME',
-                'null'           => true,
-            ],
-            'eval_date_end' => [
-                'type'           => 'DATETIME',
-                'null'           => true,
-            ],
+            'ipcr_target_start' => ['type' => 'DATETIME', 'null' => true],
+            'ipcr_target_end'   => ['type' => 'DATETIME', 'null' => true],
+            'dpcr_target_start' => ['type' => 'DATETIME', 'null' => true],
+            'dpcr_target_end'   => ['type' => 'DATETIME', 'null' => true],
+            'opcr_target_start' => ['type' => 'DATETIME', 'null' => true],
+            'opcr_target_end'   => ['type' => 'DATETIME', 'null' => true],
+            'iperf_target_start'=> ['type' => 'DATETIME', 'null' => true],
+            'iperf_target_end'  => ['type' => 'DATETIME', 'null' => true],
+            
+            'ipcr_eval_start' => ['type' => 'DATETIME', 'null' => true],
+            'ipcr_eval_end'   => ['type' => 'DATETIME', 'null' => true],
+            'dpcr_eval_start' => ['type' => 'DATETIME', 'null' => true],
+            'dpcr_eval_end'   => ['type' => 'DATETIME', 'null' => true],
+            'opcr_eval_start' => ['type' => 'DATETIME', 'null' => true],
+            'opcr_eval_end'   => ['type' => 'DATETIME', 'null' => true],
+            'iperf_eval_start'=> ['type' => 'DATETIME', 'null' => true],
+            'iperf_eval_end'  => ['type' => 'DATETIME', 'null' => true],
             'submitted_at' => [
                 'type'           => 'DATETIME',
                 'null'           => true,

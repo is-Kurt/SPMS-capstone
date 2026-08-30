@@ -12,17 +12,26 @@ class MasterSeeder extends Seeder
 
         $password = password_hash('123', PASSWORD_DEFAULT);
 
+        // Truncate tables to ensure a clean slate
+        $db->table('user_roles')->emptyTable();
+        $db->table('plantillas')->emptyTable();
+        $db->table('users')->emptyTable();
+        $db->table('roles')->emptyTable();
+
         // ==========================================
         // 1. SEED SYSTEM ROLES (RBAC)
         // ==========================================
-        $db->table('roles')->insert(['name' => 'Admin']);
-        $adminRoleId = $db->insertID();
+        $db->table('roles')->ignore(true)->insert(['name' => 'Admin']);
+        $adminRoleId = $db->table('roles')->where('name', 'Admin')->get()->getRow()->id;
 
-        $db->table('roles')->insert(['name' => 'Supervisor']);
-        $supervisorRoleId = $db->insertID();
+        $db->table('roles')->ignore(true)->insert(['name' => 'Supervisor']);
+        $supervisorRoleId = $db->table('roles')->where('name', 'Supervisor')->get()->getRow()->id;
 
-        $db->table('roles')->insert(['name' => 'Employee']);
-        $employeeRoleId = $db->insertID();
+        $db->table('roles')->ignore(true)->insert(['name' => 'Employee']);
+        $employeeRoleId = $db->table('roles')->where('name', 'Employee')->get()->getRow()->id;
+
+        $db->table('roles')->ignore(true)->insert(['name' => 'TWG']);
+        $twgRoleId = $db->table('roles')->where('name', 'TWG')->get()->getRow()->id;
 
         // ==========================================
         // 2. SEED SYSTEM USERS (Identity Only)
@@ -35,18 +44,19 @@ class MasterSeeder extends Seeder
         $adminEmail = getenv('admin.email') ?: 'admin@test.com';
 
         $usersData = [
-            'admin'     => ['email' => $adminEmail,          'first_name' => 'System',    'last_name' => 'Admin',    'password' => $password, 'is_active' => 1],
-            'admin2'    => ['email' => 'admin2@test.com',    'first_name' => 'Secondary', 'last_name' => 'Admin',    'password' => $password, 'is_active' => 1],
-            'vpaa'      => ['email' => 'vpaa@test.com',      'first_name' => 'Ana',       'last_name' => 'Santos',   'password' => $password, 'is_active' => 1],
-            'dean'      => ['email' => 'dean@test.com',      'first_name' => 'Roberto',   'last_name' => 'Reyes',    'password' => $password, 'is_active' => 1],
-            'deptchair' => ['email' => 'deptchair@test.com', 'first_name' => 'Miguel',    'last_name' => 'Cruz',     'password' => $password, 'is_active' => 1],
-            'inst1'     => ['email' => 'inst1@test.com',     'first_name' => 'Carlos',    'last_name' => 'Lim',      'password' => $password, 'is_active' => 1],
-            'instg2a'   => ['email' => 'instg2a@test.com',   'first_name' => 'Teresa',    'last_name' => 'Garcia',   'password' => $password, 'is_active' => 1],
-            'vpadfin'   => ['email' => 'vpadfin@test.com',   'first_name' => 'Michael',   'last_name' => 'Tan',      'password' => $password, 'is_active' => 1],
-            'cao'       => ['email' => 'cao@test.com',       'first_name' => 'Elena',     'last_name' => 'Navarro', 'password' => $password, 'is_active' => 1],
-            'hrdohead'  => ['email' => 'hrdohead@test.com',  'first_name' => 'Patricia',  'last_name' => 'Aquino',   'password' => $password, 'is_active' => 1],
-            'hrdo1'     => ['email' => 'hrdo1@test.com',     'first_name' => 'Grace',     'last_name' => 'Bautista', 'password' => $password, 'is_active' => 1],
-            'hrdo2'     => ['email' => 'hrdo2@test.com',     'first_name' => 'Ramon',     'last_name' => 'Delgado',  'password' => $password, 'is_active' => 1],
+            'admin'     => ['email' => $adminEmail,          'first_name' => 'System',    'last_name' => 'Admin',    'password' => $password, 'is_active' => 1, 'doc_type' => null],
+            'admin2'    => ['email' => 'admin2@test.com',    'first_name' => 'Secondary', 'last_name' => 'Admin',    'password' => $password, 'is_active' => 1, 'doc_type' => null],
+            'twg'       => ['email' => 'twg@test.com',       'first_name' => 'System',    'last_name' => 'TWG',      'password' => password_hash('123', PASSWORD_DEFAULT), 'is_active' => 1, 'doc_type' => null],
+            'vpaa'      => ['email' => 'vpaa@test.com',      'first_name' => 'Ana',       'last_name' => 'Santos',   'password' => $password, 'is_active' => 1, 'doc_type' => 'IPCR'],
+            'dean'      => ['email' => 'dean@test.com',      'first_name' => 'Roberto',   'last_name' => 'Reyes',    'password' => $password, 'is_active' => 1, 'doc_type' => 'OPCR'],
+            'deptchair' => ['email' => 'deptchair@test.com', 'first_name' => 'Miguel',    'last_name' => 'Cruz',     'password' => $password, 'is_active' => 1, 'doc_type' => 'DPCR'],
+            'inst1'     => ['email' => 'inst1@test.com',     'first_name' => 'Carlos',    'last_name' => 'Lim',      'password' => $password, 'is_active' => 1, 'doc_type' => 'IPCR'],
+            'instg2a'   => ['email' => 'instg2a@test.com',   'first_name' => 'Teresa',    'last_name' => 'Garcia',   'password' => $password, 'is_active' => 1, 'doc_type' => 'IPCR'],
+            'vpadfin'   => ['email' => 'vpadfin@test.com',   'first_name' => 'Michael',   'last_name' => 'Tan',      'password' => $password, 'is_active' => 1, 'doc_type' => 'IPCR'],
+            'cao'       => ['email' => 'cao@test.com',       'first_name' => 'Elena',     'last_name' => 'Navarro', 'password' => $password, 'is_active' => 1, 'doc_type' => 'IPCR'],
+            'hrdohead'  => ['email' => 'hrdohead@test.com',  'first_name' => 'Patricia',  'last_name' => 'Aquino',   'password' => $password, 'is_active' => 1, 'doc_type' => 'OPCR'],
+            'hrdo1'     => ['email' => 'hrdo1@test.com',     'first_name' => 'Grace',     'last_name' => 'Bautista', 'password' => $password, 'is_active' => 1, 'doc_type' => 'IPCR'],
+            'hrdo2'     => ['email' => 'hrdo2@test.com',     'first_name' => 'Ramon',     'last_name' => 'Delgado',  'password' => $password, 'is_active' => 1, 'doc_type' => 'IPCR'],
         ];
 
         $userMap = [];
@@ -60,6 +70,8 @@ class MasterSeeder extends Seeder
             // ==========================================
             if (strpos($slug, 'admin') === 0) {
                 $roleId = $adminRoleId;
+            } elseif ($slug === 'twg') {
+                $roleId = $twgRoleId;
             } elseif (in_array($slug, $supervisorSlugs)) {
                 $roleId = $supervisorRoleId;
             } else {
@@ -137,7 +149,7 @@ class MasterSeeder extends Seeder
         // 7. SEED TEMPLATES (IPCR/DPCR/OPCR/IPERF forms)
         // ==========================================
         $templatesData = [
-            ['title' => 'IPCR', 'content' => '<table style="border-collapse: collapse; width: 100%; height: 1329.17px; margin-left: auto; margin-right: auto;" border="1" data-score-range="5"><colgroup><col style="width: 13.6857%;"><col style="width: 22.027%;"><col style="width: 17.8577%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 17.8745%;"></colgroup>
+            ['title' => 'IPCR', 'tabs' => json_encode([['id'=>'tab-target','title'=>'Target Form','content'=> '<table style="border-collapse: collapse; width: 100%; height: 1329.17px; margin-left: auto; margin-right: auto;" border="1" data-score-range="5"><colgroup><col style="width: 13.6857%;"><col style="width: 22.027%;"><col style="width: 17.8577%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 17.8745%;"></colgroup>
 <tbody>
 <tr style="height: 40.375px;">
 <td style="text-align: center;" colspan="8">INDIVIDUAL PERFORMANCE COMMITMENT AND REVIEW</td>
@@ -411,8 +423,8 @@ class MasterSeeder extends Seeder
 </tr>
 </tbody>
 </table>
-<p>&nbsp;</p>'],
-            ['title' => 'DPCR', 'content' => '<table style="border-collapse: collapse; width: 100%; height: 1329.17px; margin-left: auto; margin-right: auto;" border="1" data-score-range="5"><colgroup><col style="width: 13.6857%;"><col style="width: 22.027%;"><col style="width: 17.8577%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 17.8745%;"></colgroup>
+<p>&nbsp;</p>']])],
+            ['title' => 'DPCR', 'tabs' => json_encode([['id'=>'tab-target','title'=>'Target Form','content'=> '<table style="border-collapse: collapse; width: 100%; height: 1329.17px; margin-left: auto; margin-right: auto;" border="1" data-score-range="5"><colgroup><col style="width: 13.6857%;"><col style="width: 22.027%;"><col style="width: 17.8577%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 17.8745%;"></colgroup>
 <tbody>
 <tr style="height: 40.375px;">
 <td style="text-align: center;" colspan="8">INDIVIDUAL PERFORMANCE COMMITMENT AND REVIEW</td>
@@ -686,8 +698,8 @@ class MasterSeeder extends Seeder
 </tr>
 </tbody>
 </table>
-<p>&nbsp;</p>'],
-            ['title' => 'OPCR', 'content' => '<table style="border-collapse: collapse; width: 100%; height: 1329.17px; margin-left: auto; margin-right: auto;" border="1" data-score-range="5"><colgroup><col style="width: 13.6857%;"><col style="width: 22.027%;"><col style="width: 17.8577%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 17.8745%;"></colgroup>
+<p>&nbsp;</p>']])],
+            ['title' => 'OPCR', 'tabs' => json_encode([['id'=>'tab-target','title'=>'Target Form','content'=> '<table style="border-collapse: collapse; width: 100%; height: 1329.17px; margin-left: auto; margin-right: auto;" border="1" data-score-range="5"><colgroup><col style="width: 13.6857%;"><col style="width: 22.027%;"><col style="width: 17.8577%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 17.8745%;"></colgroup>
 <tbody>
 <tr style="height: 40.375px;">
 <td style="text-align: center;" colspan="8">INDIVIDUAL PERFORMANCE COMMITMENT AND REVIEW</td>
@@ -961,8 +973,8 @@ class MasterSeeder extends Seeder
 </tr>
 </tbody>
 </table>
-<p>&nbsp;</p>'],
-            ['title' => 'IPERF', 'content' => '<table style="border-collapse: collapse; width: 100%; margin-left: auto; margin-right: auto; height: 1098.75px;" border="1" data-score-range="5"><colgroup><col style="width: 12.5%;"><col style="width: 12.5%;"><col style="width: 12.5%;"><col style="width: 5%;"><col style="width: 5%;"><col style="width: 5%;"><col style="width: 5%;"><col style="width: 12.5%;"></colgroup>
+<p>&nbsp;</p>']])],
+            ['title' => 'IPERF', 'tabs' => json_encode([['id'=>'tab-target','title'=>'Target Form','content'=> '<table style="border-collapse: collapse; width: 100%; margin-left: auto; margin-right: auto; height: 1098.75px;" border="1" data-score-range="5"><colgroup><col style="width: 12.5%;"><col style="width: 12.5%;"><col style="width: 12.5%;"><col style="width: 5%;"><col style="width: 5%;"><col style="width: 5%;"><col style="width: 5%;"><col style="width: 12.5%;"></colgroup>
 <tbody>
 <tr style="height: 40.25px;">
 <td style="text-align: center;" colspan="8">INDIVIDUAL PERFORMANCE EVALUATION RATING FORM FOR CONTRACT OF SERVICE AND JOB ORDER PERSONNEL</td>
@@ -1176,7 +1188,7 @@ class MasterSeeder extends Seeder
 </tr>
 </tbody>
 </table>
-<p>&nbsp;</p>'],
+<p>&nbsp;</p>']])],
         ];
 
         $db->table('templates')->insertBatch($templatesData);
@@ -1184,3 +1196,4 @@ class MasterSeeder extends Seeder
         echo "Database successfully seeded with RBAC roles and full Plantilla Hierarchy!\n";
     }
 }
+

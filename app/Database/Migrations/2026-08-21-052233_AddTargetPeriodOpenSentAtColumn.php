@@ -12,7 +12,7 @@ class AddTargetPeriodOpenSentAtColumn extends Migration
             'target_period_open_sent_at' => [
                 'type' => 'DATETIME',
                 'null' => true,
-                'after' => 'target_deadline_reminder_sent_at'
+                // 'after' => 'target_deadline_reminder_sent_at'
             ],
         ]);
     }

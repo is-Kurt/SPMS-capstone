@@ -71,7 +71,7 @@
         </div>
 
         <div class="p-8 flex flex-col gap-8">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                     <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">First Name</label>
                     <input type="text" name="first_name" value="<?= esc($user['first_name']) ?>" required
@@ -84,6 +84,30 @@
                     <input type="text" name="last_name" value="<?= esc($user['last_name']) ?>" required
                         class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold">
                     <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="last_name"></p>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Document Type</label>
+                    <div class="relative js-custom-select">
+                        <?php 
+                            $oldDocType = $user['doc_type'] ?? 'IPCR';
+                            $docTypes = ['IPCR', 'DPCR', 'OPCR', 'IPERF'];
+                        ?>
+                        <input type="hidden" name="doc_type" value="<?= $oldDocType ?>" required>
+                        <button type="button" class="js-select-button w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent outline-none text-text cursor-pointer font-bold flex justify-between items-center transition-all">
+                            <span class="js-select-label"><?= $oldDocType ?></span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-text-muted transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        <ul class="js-select-dropdown absolute z-50 w-full mt-2 bg-surface border border-surface-border rounded-xl shadow-lg shadow-black/5 dark:shadow-black/20 overflow-hidden hidden transform origin-top transition-all duration-200 scale-95 opacity-0">
+                            <?php foreach($docTypes as $type): ?>
+                                <?php $isSelected = ($oldDocType === $type); ?>
+                                <li class="px-4 py-3 text-sm font-bold text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 cursor-pointer transition-colors js-select-option <?= $isSelected ? 'bg-accent/10 text-accent' : '' ?>" data-value="<?= $type ?>" data-label="<?= $type ?>">
+                                    <?= $type ?>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                    <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="doc_type"></p>
                 </div>
 
             </div>

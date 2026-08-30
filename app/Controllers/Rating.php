@@ -78,7 +78,7 @@ class Rating extends BaseController
 
         foreach ($rawFolders as $f) {
             $status = $f['folder_status'];
-            if ($status === \App\Enums\FolderStatus::APPROVED->value) {
+            if (in_array($status, [\App\Enums\FolderStatus::APPROVED->value, \App\Enums\FolderStatus::TWG_APPROVED->value, \App\Enums\FolderStatus::TWG_DISAPPROVED->value])) {
                 $periods['evaluation']['tabs']['completed']['folders'][] = $f;
             } elseif ($status === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value) {
                 $periods['target']['tabs']['target_approval']['folders'][] = $f;
@@ -148,7 +148,7 @@ class Rating extends BaseController
 
         $isAuthorized = false;
 
-        if ($sysRole === 'Admin') {
+        if ($sysRole === 'Admin' || $sysRole === 'TWG') {
             $isAuthorized = true;
         } else {
             $routingCount = $routingModel->where('folder_id', $subFolderId)

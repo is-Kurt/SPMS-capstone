@@ -66,13 +66,17 @@ class NightlyWorker extends BaseCommand
 
         foreach ($nearingEvalFolders as $folder) {
             $link = site_url("folders/" . $folder['id']);
+            $docType = strtolower($folder['doc_type'] ?? 'ipcr');
+            $evalDateEndKey = $docType . '_eval_end';
+            $deadline = $folder[$evalDateEndKey] ?? null;
+            if (!$deadline) continue;
 
             queue_email(
                 $folder['email'],
                 'Action Required: Evaluation Submission Deadline Approaching',
                 render_email('deadline_approaching', [
                     'firstName' => $folder['first_name'],
-                    'deadline'  => date('F j, Y', strtotime($folder['eval_date_end'])),
+                    'deadline'  => date('F j, Y', strtotime($deadline)),
                     'link'      => $link,
                 ])
             );
@@ -85,13 +89,17 @@ class NightlyWorker extends BaseCommand
 
         foreach ($nearingTargetFolders as $folder) {
             $link = site_url("folders/" . $folder['id']);
+            $docType = strtolower($folder['doc_type'] ?? 'ipcr');
+            $targetDateEndKey = $docType . '_target_end';
+            $deadline = $folder[$targetDateEndKey] ?? null;
+            if (!$deadline) continue;
 
             queue_email(
                 $folder['email'],
                 'Action Required: Target Setting Deadline Approaching',
                 render_email('target_deadline_approaching', [
                     'firstName' => $folder['first_name'],
-                    'deadline'  => date('F j, Y', strtotime($folder['target_date_end'])),
+                    'deadline'  => date('F j, Y', strtotime($deadline)),
                     'link'      => $link,
                 ])
             );

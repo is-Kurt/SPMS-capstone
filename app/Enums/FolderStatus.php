@@ -17,4 +17,6 @@ enum FolderStatus: string
     case APPROVED    = 'approved';
     case REEVALUATE  = 'reevaluate';
     case UNEVALUATED = 'unevaluated';
+    case TWG_APPROVED = 'twg_approved';
+    case TWG_DISAPPROVED = 'twg_disapproved';
 }

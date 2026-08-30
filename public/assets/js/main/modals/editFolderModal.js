@@ -6,60 +6,73 @@ let isSavingFolder = false;
 const submitBtn = document.getElementById('btn-submit-edit-folder');
 const idInput = document.getElementById('edit-folder-id');
 const titleInput = document.getElementById('edit-folder-title');
-const dateStart = document.getElementById('edit-folder-date-start');
-const dateEnd = document.getElementById('edit-folder-date-end');
-const targetStart = document.getElementById('edit-folder-target-start');
-const targetEnd = document.getElementById('edit-folder-target-end');
 
-// Validation logic: End Date cannot be before Start Date
-function handleDateConstraints() {
-    if (targetStart.value) {
-        targetEnd.min = targetStart.value;
-        if (targetEnd.value && targetEnd.value < targetStart.value) {
-            targetEnd.value = targetStart.value;
+const docTypes = ['ipcr', 'dpcr', 'opcr', 'iperf'];
+const inputs = {};
+
+docTypes.forEach(type => {
+    inputs[type] = {
+        targetStart: document.getElementById(`edit-folder-${type}-target-start`),
+        targetEnd: document.getElementById(`edit-folder-${type}-target-end`),
+        evalStart: document.getElementById(`edit-folder-${type}-eval-start`),
+        evalEnd: document.getElementById(`edit-folder-${type}-eval-end`),
+    };
+});
+
+function handleDateConstraints(type) {
+    const { targetStart, targetEnd, evalStart, evalEnd } = inputs[type];
+
+    if (targetStart?.value) {
+        if (targetEnd) {
+            targetEnd.min = targetStart.value;
+            if (targetEnd.value && targetEnd.value < targetStart.value) {
+                targetEnd.value = targetStart.value;
+            }
         }
     }
 
-    if (dateStart.value) {
-        dateEnd.min = dateStart.value;
-        if (dateEnd.value && dateEnd.value < dateStart.value) {
-            dateEnd.value = dateStart.value;
+    if (evalStart?.value) {
+        if (evalEnd) {
+            evalEnd.min = evalStart.value;
+            if (evalEnd.value && evalEnd.value < evalStart.value) {
+                evalEnd.value = evalStart.value;
+            }
         }
     }
 
-    // Evaluation start cannot be before Target end
-    if (targetEnd.value) {
-        dateStart.min = targetEnd.value;
-        if (dateStart.value && dateStart.value < targetEnd.value) {
-            dateStart.value = targetEnd.value;
+    if (targetEnd?.value) {
+        if (evalStart) {
+            evalStart.min = targetEnd.value;
+            if (evalStart.value && evalStart.value < targetEnd.value) {
+                evalStart.value = targetEnd.value;
+            }
         }
     }
 }
 
-if (dateStart && dateEnd && targetStart && targetEnd) {
-    dateStart.addEventListener('input', handleDateConstraints);
-    dateEnd.addEventListener('input', handleDateConstraints);
-    targetStart.addEventListener('input', handleDateConstraints);
-    targetEnd.addEventListener('input', handleDateConstraints);
-}
+docTypes.forEach(type => {
+    Object.values(inputs[type]).forEach(input => {
+        if (input) {
+            input.addEventListener('input', () => handleDateConstraints(type));
+        }
+    });
+});
 
-window.openEditFolderModal = function(id, title, target_start, target_end, start, end) {
+window.openEditFolderModal = function(id, title, dates = {}) {
     idInput.value = id;
     titleInput.value = title;
 
-    // Convert Database format (YYYY-MM-DD HH:MM:SS) to Input format (YYYY-MM-DDTHH:MM)
-    let safeStart = start ? start.replace(' ', 'T').slice(0, 16) : '';
-    let safeEnd = end ? end.replace(' ', 'T').slice(0, 16) : '';
-    let safeTargetStart = target_start ? target_start.replace(' ', 'T').slice(0, 16) : '';
-    let safeTargetEnd = target_end ? target_end.replace(' ', 'T').slice(0, 16) : '';
-
-    // Sanitize any lingering '24:00' times from the database
-    dateStart.value = safeStart.replace('T24:00', 'T23:59');
-    dateEnd.value = safeEnd.replace('T24:00', 'T23:59');
-    targetStart.value = safeTargetStart.replace('T24:00', 'T23:59');
-    targetEnd.value = safeTargetEnd.replace('T24:00', 'T23:59');
-
-    handleDateConstraints();
+    docTypes.forEach(type => {
+        ['target_start', 'target_end', 'eval_start', 'eval_end'].forEach(phase => {
+            const rawDate = dates[`${type}_${phase}`];
+            const safeDate = rawDate ? String(rawDate).replace(' ', 'T').slice(0, 16).replace('T24:00', 'T23:59') : '';
+            const inputField = inputs[type][phase.replace(/_([a-z])/g, (g) => g[1].toUpperCase())];
+            if (inputField) {
+                inputField.value = safeDate;
+            }
+        });
+        handleDateConstraints(type);
+    });
 
     folderModal.open();
 };
@@ -89,4 +102,4 @@ if (formEditFolder) {
     });
 }
 
-document.getElementById('btn-close-edit-folder').addEventListener('click', () => folderModal.close());
+document.getElementById('btn-close-edit-folder')?.addEventListener('click', () => folderModal.close());

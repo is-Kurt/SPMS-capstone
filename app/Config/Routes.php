@@ -81,6 +81,7 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->post('folder/unsubmit', 'Folder::unsubmit');
     $routes->post('folder/evaluate', 'Folder::evaluate');
     $routes->post('folder/approve', 'Folder::approve');
+    $routes->post('folder/twg_approve', 'Folder::twgApprove');
     $routes->post('folder/return', 'Folder::returnRevision');
     $routes->post('folder/submit_target', 'Folder::submitTarget');
     $routes->post('folder/unsubmit_target', 'Folder::unsubmitTarget');

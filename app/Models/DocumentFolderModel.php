@@ -19,10 +19,10 @@ class  DocumentFolderModel extends Model
         'user_id', 
         'parent_folder_id',
         'final_rating',
-        'eval_date_start', 
-        'eval_date_end', 
-        'target_date_start',
-        'target_date_end',
+        'ipcr_target_start', 'ipcr_target_end', 'ipcr_eval_start', 'ipcr_eval_end',
+        'dpcr_target_start', 'dpcr_target_end', 'dpcr_eval_start', 'dpcr_eval_end',
+        'opcr_target_start', 'opcr_target_end', 'opcr_eval_start', 'opcr_eval_end',
+        'iperf_target_start', 'iperf_target_end', 'iperf_eval_start', 'iperf_eval_end',
         'target_submitted_at',
         'target_approved_at',
         'submitted_at',
@@ -89,7 +89,7 @@ class  DocumentFolderModel extends Model
             $builder->where('df.parent_folder_id', $parentFolderId);
         }
 
-        if ($sysRole !== 'Admin') {
+        if ($sysRole !== 'Admin' && $sysRole !== 'TWG') {
             $builder->join('evaluation_routings er_me', 'er_me.folder_id = df.id')
                     ->where('er_me.evaluator_id', $userId);
         }
@@ -115,17 +115,21 @@ class  DocumentFolderModel extends Model
         $cutoff = date('Y-m-d H:i:s', strtotime("+{$withinDays} days"));
 
         return $this->db->table('document_folders df')
-            ->select('df.id, u.email, u.first_name, df.eval_date_end')
+            ->select('df.id, u.email, u.first_name, u.doc_type, df.ipcr_eval_end, df.dpcr_eval_end, df.opcr_eval_end, df.iperf_eval_end')
             ->join('users u', 'u.id = df.user_id')
             ->join('user_roles ur', 'ur.user_id = u.id', 'left')
             ->join('roles r', 'r.id = ur.role_id', 'left')
             ->where('df.status', FolderStatus::DRAFT->value)
-            ->where('df.eval_date_end >=', $now)
-            ->where('df.eval_date_end <=', $cutoff)
             ->where('df.deadline_reminder_sent_at IS NULL')
             ->groupStart()
                 ->where('r.name !=', 'Admin')
                 ->orWhere('r.name IS NULL')
+            ->groupEnd()
+            ->groupStart()
+                ->groupStart()->where('LOWER(COALESCE(u.doc_type, "ipcr"))', 'ipcr')->where('df.ipcr_eval_end >=', $now)->where('df.ipcr_eval_end <=', $cutoff)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'dpcr')->where('df.dpcr_eval_end >=', $now)->where('df.dpcr_eval_end <=', $cutoff)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'opcr')->where('df.opcr_eval_end >=', $now)->where('df.opcr_eval_end <=', $cutoff)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'iperf')->where('df.iperf_eval_end >=', $now)->where('df.iperf_eval_end <=', $cutoff)->groupEnd()
             ->groupEnd()
             ->get()->getResultArray();
     }
@@ -140,17 +144,21 @@ class  DocumentFolderModel extends Model
         $cutoff = date('Y-m-d H:i:s', strtotime("+{$withinDays} days"));
 
         return $this->db->table('document_folders df')
-            ->select('df.id, u.email, u.first_name, df.target_date_end')
+            ->select('df.id, u.email, u.first_name, u.doc_type, df.ipcr_target_end, df.dpcr_target_end, df.opcr_target_end, df.iperf_target_end')
             ->join('users u', 'u.id = df.user_id')
             ->join('user_roles ur', 'ur.user_id = u.id', 'left')
             ->join('roles r', 'r.id = ur.role_id', 'left')
             ->where('df.status', FolderStatus::DRAFT_TARGET->value)
-            ->where('df.target_date_end >=', $now)
-            ->where('df.target_date_end <=', $cutoff)
             ->where('df.target_deadline_reminder_sent_at IS NULL')
             ->groupStart()
                 ->where('r.name !=', 'Admin')
                 ->orWhere('r.name IS NULL')
+            ->groupEnd()
+            ->groupStart()
+                ->groupStart()->where('LOWER(COALESCE(u.doc_type, "ipcr"))', 'ipcr')->where('df.ipcr_target_end >=', $now)->where('df.ipcr_target_end <=', $cutoff)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'dpcr')->where('df.dpcr_target_end >=', $now)->where('df.dpcr_target_end <=', $cutoff)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'opcr')->where('df.opcr_target_end >=', $now)->where('df.opcr_target_end <=', $cutoff)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'iperf')->where('df.iperf_target_end >=', $now)->where('df.iperf_target_end <=', $cutoff)->groupEnd()
             ->groupEnd()
             ->get()->getResultArray();
     }
@@ -159,9 +167,12 @@ class  DocumentFolderModel extends Model
         $today = date('Y-m-d');
         $tomorrow = date('Y-m-d', strtotime('+1 day'));
 
-        if (empty($data['data']['eval_date_start']) && empty($data['data']['eval_date_end'])) {
-            $data['data']['eval_date_start'] = $today . ' 24:00:00';
-            $data['data']['eval_date_end'] = $tomorrow . ' 24:00:00';
+        $docTypes = ['ipcr', 'dpcr', 'opcr', 'iperf'];
+        foreach ($docTypes as $type) {
+            if (empty($data['data']["{$type}_eval_start"]) && empty($data['data']["{$type}_eval_end"])) {
+                $data['data']["{$type}_eval_start"] = $today . ' 24:00:00';
+                $data['data']["{$type}_eval_end"] = $tomorrow . ' 24:00:00';
+            }
         }
 
         return $data;
@@ -179,8 +190,13 @@ class  DocumentFolderModel extends Model
             ->select('df.id, df.user_id, df.title, u.email, u.first_name')
             ->join('users u', 'u.id = df.user_id')
             ->where('df.status', \App\Enums\FolderStatus::DRAFT_TARGET->value)
-            ->where('df.target_date_start <=', $now)
             ->where('df.target_period_open_sent_at IS NULL')
+            ->groupStart()
+                ->groupStart()->where('LOWER(COALESCE(u.doc_type, "ipcr"))', 'ipcr')->where('df.ipcr_target_start <=', $now)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'dpcr')->where('df.dpcr_target_start <=', $now)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'opcr')->where('df.opcr_target_start <=', $now)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'iperf')->where('df.iperf_target_start <=', $now)->groupEnd()
+            ->groupEnd()
             ->get()->getResultArray();
 
         foreach ($startingTargetFolders as $folder) {
@@ -212,7 +228,12 @@ class  DocumentFolderModel extends Model
                 \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
                 \App\Enums\FolderStatus::TARGET_RETURNED->value
             ])
-            ->where('df.target_date_end <', $now)
+            ->groupStart()
+                ->groupStart()->where('LOWER(COALESCE(u.doc_type, "ipcr"))', 'ipcr')->where('df.ipcr_target_end <', $now)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'dpcr')->where('df.dpcr_target_end <', $now)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'opcr')->where('df.opcr_target_end <', $now)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'iperf')->where('df.iperf_target_end <', $now)->groupEnd()
+            ->groupEnd()
             ->get()->getResultArray();
 
         foreach ($unapprovedFolders as $folder) {
@@ -244,9 +265,13 @@ class  DocumentFolderModel extends Model
                 \App\Enums\FolderStatus::SUBMITTED->value,
                 \App\Enums\FolderStatus::TO_EVALUATE->value
             ])
-            ->where('df.eval_date_start <=', $now)
-            ->where('df.eval_date_end >=', $now)
             ->where('df.eval_period_open_sent_at IS NULL')
+            ->groupStart()
+                ->groupStart()->where('LOWER(COALESCE(u.doc_type, "ipcr"))', 'ipcr')->where('df.ipcr_eval_start <=', $now)->where('df.ipcr_eval_end >=', $now)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'dpcr')->where('df.dpcr_eval_start <=', $now)->where('df.dpcr_eval_end >=', $now)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'opcr')->where('df.opcr_eval_start <=', $now)->where('df.opcr_eval_end >=', $now)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'iperf')->where('df.iperf_eval_start <=', $now)->where('df.iperf_eval_end >=', $now)->groupEnd()
+            ->groupEnd()
             ->get()->getResultArray();
 
         foreach ($startingFolders as $folder) {
@@ -287,7 +312,12 @@ class  DocumentFolderModel extends Model
                 \App\Enums\FolderStatus::APPROVED->value,
                 \App\Enums\FolderStatus::UNEVALUATED->value
             ])
-            ->where('df.eval_date_end <', $now)
+            ->groupStart()
+                ->groupStart()->where('LOWER(COALESCE(u.doc_type, "ipcr"))', 'ipcr')->where('df.ipcr_eval_end <', $now)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'dpcr')->where('df.dpcr_eval_end <', $now)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'opcr')->where('df.opcr_eval_end <', $now)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'iperf')->where('df.iperf_eval_end <', $now)->groupEnd()
+            ->groupEnd()
             ->get()->getResultArray();
 
         foreach ($expiringFolders as $folder) {

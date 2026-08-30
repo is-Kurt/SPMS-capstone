@@ -56,7 +56,8 @@ class Profile extends BaseController
 
             $saved = $userModel->update($userId, [
                 'first_name' => $this->request->getPost('first_name'),
-                'last_name'  => $this->request->getPost('last_name')
+                'last_name'  => $this->request->getPost('last_name'),
+                'doc_type'   => $this->request->getPost('doc_type') ?: 'IPCR'
             ]);
 
             if (!$saved) {

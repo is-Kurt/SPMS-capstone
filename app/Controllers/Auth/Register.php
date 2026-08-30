@@ -93,6 +93,12 @@ class Register extends BaseController
         ];
 
         if (!$isAdminInvite) {
+            $rules['doc_type'] = [
+                'rules' => 'required|in_list[IPCR,DPCR,OPCR,IPERF]',
+                'errors' => [
+                    'required' => 'Please select a document type.'
+                ]
+            ];
             $rules['units'] = [
                 'rules' => 'required',
                 'errors' => [
@@ -127,13 +133,19 @@ class Register extends BaseController
 
         $userModel->db->transStart();
 
-        $userId = $userModel->insert([
+        $userData = [
             'first_name' => $this->request->getPost('first_name'),
             'last_name'  => $this->request->getPost('last_name'),
             'email'      => strtolower($invitation['email']),
             'password'   => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT),
             'is_active'  => 1
-        ]);
+        ];
+
+        if (!$isAdminInvite) {
+            $userData['doc_type'] = $this->request->getPost('doc_type');
+        }
+
+        $userId = $userModel->insert($userData);
 
         if ($invitation['role_id']) {
             $userModel->db->table('user_roles')->insert([

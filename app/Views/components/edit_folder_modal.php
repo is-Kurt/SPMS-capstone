@@ -6,7 +6,7 @@
 -->
 <div id="edit-folder-modal" class="fixed inset-0 z-[150] hidden overflow-y-auto items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
 
-    <div class="relative w-full max-w-xl rounded-2xl bg-surface border border-surface-border p-8 shadow-2xl transition-all">
+    <div class="relative w-full max-w-4xl rounded-2xl bg-surface border border-surface-border p-8 shadow-2xl transition-all">
         <h3 class="text-xl font-black text-text tracking-tight mb-2">Edit Evaluation Folder</h3>
         <p class="text-xs font-bold text-text-muted uppercase tracking-widest mb-6">Update Settings</p>
 
@@ -19,34 +19,52 @@
                     <input type="text" name="title" id="edit-folder-title" placeholder="e.g., 2026-2027 IPCR"
                            class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none text-text transition-all" />
                 </div>
-                <div class="pt-2 border-t border-surface-border mt-4">
-                    <h4 class="text-[10px] font-black uppercase tracking-widest text-text mb-3">Target Phase</h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1">Target Setting Start</label>
-                            <input type="datetime-local" name="target_date_start" id="edit-folder-target-start" required
-                                class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text dark:[color-scheme:dark]">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1">Target Setting End</label>
-                            <input type="datetime-local" name="target_date_end" id="edit-folder-target-end" required
-                                class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text dark:[color-scheme:dark]">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
+                    <!-- TARGET PHASE DATES -->
+                    <div>
+                        <h4 class="text-[10px] font-black uppercase tracking-widest text-text mb-3 pt-2 border-t border-surface-border">Target Setting Windows</h4>
+                        <div class="space-y-4">
+                            <?php foreach (['ipcr', 'dpcr', 'opcr', 'iperf'] as $docType): ?>
+                                <div class="bg-zinc-50 dark:bg-zinc-800/30 p-3 rounded-xl border border-surface-border">
+                                    <h5 class="text-xs font-bold text-accent mb-2 uppercase"><?= strtoupper($docType) ?></h5>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-[9px] font-bold uppercase tracking-widest text-text-muted mb-1">Start</label>
+                                            <input type="datetime-local" name="<?= $docType ?>_target_start" id="edit-folder-<?= $docType ?>-target-start" 
+                                                class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-lg px-3 py-2 text-xs focus:border-accent outline-none text-text dark:[color-scheme:dark]">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[9px] font-bold uppercase tracking-widest text-text-muted mb-1">End</label>
+                                            <input type="datetime-local" name="<?= $docType ?>_target_end" id="edit-folder-<?= $docType ?>-target-end" 
+                                                class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-lg px-3 py-2 text-xs focus:border-accent outline-none text-text dark:[color-scheme:dark]">
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
                     </div>
-                </div>
-                
-                <div class="pt-2 border-t border-surface-border mt-4">
-                    <h4 class="text-[10px] font-black uppercase tracking-widest text-text mb-3">Evaluation Phase</h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1">Evaluation Start</label>
-                            <input type="datetime-local" name="eval_date_start" id="edit-folder-date-start" required
-                                class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text dark:[color-scheme:dark]">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1">Evaluation End</label>
-                            <input type="datetime-local" name="eval_date_end" id="edit-folder-date-end" required
-                                class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text dark:[color-scheme:dark]">
+
+                    <!-- EVALUATION PHASE DATES -->
+                    <div>
+                        <h4 class="text-[10px] font-black uppercase tracking-widest text-text mb-3 pt-2 border-t border-surface-border">Evaluation Windows</h4>
+                        <div class="space-y-4">
+                            <?php foreach (['ipcr', 'dpcr', 'opcr', 'iperf'] as $docType): ?>
+                                <div class="bg-zinc-50 dark:bg-zinc-800/30 p-3 rounded-xl border border-surface-border">
+                                    <h5 class="text-xs font-bold text-accent mb-2 uppercase"><?= strtoupper($docType) ?></h5>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-[9px] font-bold uppercase tracking-widest text-text-muted mb-1">Start</label>
+                                            <input type="datetime-local" name="<?= $docType ?>_eval_start" id="edit-folder-<?= $docType ?>-eval-start" 
+                                                class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-lg px-3 py-2 text-xs focus:border-accent outline-none text-text dark:[color-scheme:dark]">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[9px] font-bold uppercase tracking-widest text-text-muted mb-1">End</label>
+                                            <input type="datetime-local" name="<?= $docType ?>_eval_end" id="edit-folder-<?= $docType ?>-eval-end" 
+                                                class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-lg px-3 py-2 text-xs focus:border-accent outline-none text-text dark:[color-scheme:dark]">
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
                     </div>
                 </div>

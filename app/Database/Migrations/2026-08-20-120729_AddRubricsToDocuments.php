@@ -12,7 +12,7 @@ class AddRubricsToDocuments extends Migration
             'rubrics_content' => [
                 'type' => 'LONGTEXT',
                 'null' => true,
-                'after' => 'content',
+                // 'after' => 'content',
             ],
         ]);
 
@@ -20,7 +20,7 @@ class AddRubricsToDocuments extends Migration
             'rubrics_content' => [
                 'type' => 'LONGTEXT',
                 'null' => true,
-                'after' => 'content',
+                // 'after' => 'content',
             ],
         ]);
     }

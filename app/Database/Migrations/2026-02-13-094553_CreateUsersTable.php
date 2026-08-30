@@ -63,6 +63,12 @@ class CreateUsersTable extends Migration
                 'type' => 'DATETIME',
                 'null' => true,
             ],
+            'doc_type' => [
+                'type'       => 'ENUM',
+                'constraint' => ['IPCR', 'DPCR', 'OPCR', 'IPERF'],
+                'null'       => true,
+                'default'    => null,
+            ],
             'two_factor_code' => [
                 'type'       => 'VARCHAR',
                 'constraint' => '10',

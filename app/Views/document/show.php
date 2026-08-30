@@ -47,10 +47,25 @@
                         Supporting<span class="hidden sm:inline"> Evidence</span>
                     </button>
 
-                <?php elseif ($status === FolderStatus::APPROVED->value): ?>
-                    <button type="button" disabled class="bg-success-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
-                        <span class="hidden sm:inline">Folder </span>Approved ✓
-                    </button>
+                <?php elseif ($status === FolderStatus::APPROVED->value || $status === FolderStatus::TWG_APPROVED->value || $status === FolderStatus::TWG_DISAPPROVED->value): ?>
+                    <?php if (session()->get('role') === 'TWG'): ?>
+                        <div class="flex gap-1.5 sm:gap-2">
+                            <button id="btn-twg-disapprove" type="button" 
+                                    onclick="setTwgStatus('twg_disapproved')" 
+                                    class="<?= $status === FolderStatus::TWG_DISAPPROVED->value ? 'bg-danger-600 ring-2 ring-danger-400' : 'bg-danger-500 hover:bg-danger-600' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-danger-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                Disapprove
+                            </button>
+                            <button id="btn-twg-approve" type="button" 
+                                    onclick="setTwgStatus('twg_approved')" 
+                                    class="<?= $status === FolderStatus::TWG_APPROVED->value ? 'bg-success-600 ring-2 ring-success-400' : 'bg-success-500 hover:bg-success-600' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-success-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                Approve
+                            </button>
+                        </div>
+                    <?php else: ?>
+                        <button type="button" disabled class="bg-success-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
+                            <span class="hidden sm:inline">Folder </span><?= $status === FolderStatus::TWG_APPROVED->value ? 'TWG Approved' : ($status === FolderStatus::TWG_DISAPPROVED->value ? 'TWG Disapproved' : 'Approved ✓') ?>
+                        </button>
+                    <?php endif; ?>
                     
                 <?php elseif ($status === FolderStatus::EVALUATED->value): ?>
                     <?php if ($isOwner): ?>
@@ -63,7 +78,20 @@
                             <button type="button" disabled class="bg-highlight-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
                                 Monitoring<span class="hidden sm:inline"> View</span>
                             </button>
-                            
+                        
+                        <?php elseif (session()->get('role') === 'TWG'): ?>
+                            <div class="flex gap-1.5 sm:gap-2">
+                                <button id="btn-twg-disapprove" type="button" 
+                                        onclick="setTwgStatus('twg_disapproved')" 
+                                        class="bg-danger-500 hover:bg-danger-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-danger-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                    Disapprove
+                                </button>
+                                <button id="btn-twg-approve" type="button" 
+                                        onclick="setTwgStatus('twg_approved')" 
+                                        class="bg-success-500 hover:bg-success-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-success-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                    Approve
+                                </button>
+                            </div>
                         <?php elseif (isset($routingStatus) && $routingStatus === FolderStatus::APPROVED->value): ?>
                             <button type="button" disabled class="bg-success-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
                                 Approved ✓
@@ -414,6 +442,20 @@
         document.getElementById('btn-approve').innerText = 'Approving...';
         apiPost('<?= site_url('folder/approve') ?>', formData, {
             onSuccess: () => window.location.reload()
+        });
+    }
+
+    async function setTwgStatus(status) {
+        const formData = new FormData();
+        formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
+        formData.append('status', status);
+
+        apiPost('<?= site_url('folder/twg_approve') ?>', formData, {
+            onSuccess: () => window.location.reload(),
+            onError: async (errMsg) => {
+                await window.appAlert(errMsg || "An error occurred.");
+                window.location.reload();
+            }
         });
     }
 

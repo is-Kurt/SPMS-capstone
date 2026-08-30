@@ -81,6 +81,41 @@
                 <h3 class="text-sm font-black tracking-tight text-highlight-900 dark:text-highlight-300">Administrator Setup</h3>
             </div>
         <?php else: ?>
+            <div class="border border-surface-border p-8 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm mb-6">
+                <h3 class="text-[10px] font-black uppercase tracking-widest text-text-muted mb-6 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full bg-accent text-white flex items-center justify-center num-badge">2</span>
+                        Document Type
+                    </div>
+                </h3>
+                
+                <div class="col-span-1">
+                    <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Doc Type</label>
+                    <div class="relative js-custom-select">
+                        <?php 
+                            $oldDocType = old('doc_type') ?: 'IPCR';
+                            $docTypes = ['IPCR', 'DPCR', 'OPCR', 'IPERF'];
+                        ?>
+                        <input type="hidden" name="doc_type" value="<?= $oldDocType ?>" required>
+                        <button type="button" class="js-select-button w-full bg-surface border border-surface-border rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text cursor-pointer font-bold flex justify-between items-center transition-colors hover:border-accent/50">
+                            <span class="js-select-label"><?= $oldDocType ?></span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-text-muted transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        <ul class="js-select-dropdown absolute z-50 w-full mt-2 bg-surface border border-surface-border rounded-xl shadow-lg shadow-black/5 dark:shadow-black/20 overflow-hidden hidden transform origin-top transition-all duration-200 scale-95 opacity-0">
+                            <?php foreach($docTypes as $type): ?>
+                                <?php $isSelected = ($oldDocType === $type); ?>
+                                <li class="px-4 py-3 text-sm font-bold text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 cursor-pointer transition-colors js-select-option <?= $isSelected ? 'bg-accent/10 text-accent' : '' ?>" data-value="<?= $type ?>" data-label="<?= $type ?>">
+                                    <?= $type ?>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                    <div class="h-3 pl-1 mt-1">
+                        <p class="text-danger-500 text-[10px] font-bold uppercase tracking-wider"><?= validation_show_error('doc_type') ?></p>
+                    </div>
+                </div>
+            </div>
+
             <div id="positions-container" class="flex flex-col gap-4">
                 <?php 
                     $oldUnits = old('units');
@@ -109,7 +144,7 @@
                 <div class="position-card border border-surface-border p-8 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm relative group">
                     <h3 class="text-[10px] font-black uppercase tracking-widest text-text-muted mb-6 flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <span class="w-5 h-5 rounded-full bg-accent text-white flex items-center justify-center num-badge">2</span>
+                            <span class="w-5 h-5 rounded-full bg-accent text-white flex items-center justify-center num-badge">3</span>
                             Position & Unit
                         </div>
                         <button type="button" class="btn-remove hidden text-danger-500 hover:text-danger-700 transition-colors">
