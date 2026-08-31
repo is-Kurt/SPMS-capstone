@@ -59,8 +59,14 @@ class DocumentModel extends Model
     public function getDocumentWithFolderInfo(string $docId): ?array
     {
         return $this->db->table('documents d')
-            ->select('d.*, df.user_id as owner_id, df.status as folder_status, df.eval_date_start')
+            ->select('d.*, df.user_id as owner_id, df.status as folder_status, 
+                      df.ipcr_target_start, df.ipcr_target_end, df.ipcr_eval_start, df.ipcr_eval_end,
+                      df.dpcr_target_start, df.dpcr_target_end, df.dpcr_eval_start, df.dpcr_eval_end,
+                      df.opcr_target_start, df.opcr_target_end, df.opcr_eval_start, df.opcr_eval_end,
+                      df.iperf_target_start, df.iperf_target_end, df.iperf_eval_start, df.iperf_eval_end,
+                      u.doc_type')
             ->join('document_folders df', 'df.id = d.document_folder_id')
+            ->join('users u', 'u.id = df.user_id', 'left')
             ->where('d.id', $docId)
             ->get()->getRowArray();
     }

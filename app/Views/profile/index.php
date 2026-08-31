@@ -71,7 +71,7 @@
         </div>
 
         <div class="p-8 flex flex-col gap-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 <?= (!$isAdmin && !$isTwg) ? 'md:grid-cols-3' : 'md:grid-cols-2' ?> gap-6">
                 <div>
                     <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">First Name</label>
                     <input type="text" name="first_name" value="<?= esc($user['first_name']) ?>" required
@@ -86,6 +86,7 @@
                     <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="last_name"></p>
                 </div>
 
+                <?php if (!$isAdmin && !$isTwg): ?>
                 <div>
                     <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Document Type</label>
                     <div class="relative js-custom-select">
@@ -109,12 +110,13 @@
                     </div>
                     <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="doc_type"></p>
                 </div>
+                <?php endif; ?>
 
             </div>
             <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="_general"></p>
         </div>
 
-        <?php if (!$isAdmin): ?>
+        <?php if (!$isAdmin && !$isTwg): ?>
         <div class="px-8 py-5 border-t border-surface-border bg-zinc-50 dark:bg-zinc-800/30">
             <h2 class="text-[11px] font-black uppercase tracking-widest text-text">Positions & Units</h2>
         </div>

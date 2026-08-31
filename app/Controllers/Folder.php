@@ -29,6 +29,10 @@ class Folder extends BaseController
      * their commitments alongside their own.
      */
     public function index($folderId = null) {
+        if (session()->get('role') === 'TWG') {
+            return redirect()->to(site_url('ratings'));
+        }
+
         $userId   = session()->get('user_id');
 
         $folderModel   = new DocumentFolderModel();
@@ -159,6 +163,12 @@ class Folder extends BaseController
             $groupedGuides = array_values($mergedGuides);
         }
 
+        $ownerDocType = null;
+        if ($activeFolder) {
+            $owner = $userModel->find($activeFolder['user_id']);
+            $ownerDocType = $owner['doc_type'] ?? null;
+        }
+
         $templateModel = new TemplateModel();
         
         return view('components/app_shell', [
@@ -168,6 +178,7 @@ class Folder extends BaseController
             'templates'        => $templateModel->findAll(),
             'mainData'         => [
                 'activeFolder'  => $activeFolder,
+                'ownerDocType'  => $ownerDocType,
                 'myDocs'        => $myDocs,
                 'groupedGuides' => $groupedGuides,
                 'isReadOnly'    => $isReadOnly,
@@ -217,14 +228,31 @@ class Folder extends BaseController
                     
                     if (!$exists) {
                         $newFolderId = create_unique_row($folderModel, [
-                            'title'            => $activeFolder['title'],
-                            'user_id'          => $member['user_id'],
-                            'parent_folder_id' => $activeFolder['id'],
-                            'eval_date_start'  => $activeFolder['eval_date_start'],
-                            'eval_date_end'    => $activeFolder['eval_date_end'],
-                            'target_date_start'=> $activeFolder['target_date_start'],
-                            'target_date_end'  => $activeFolder['target_date_end'],
-                            'status'           => \App\Enums\FolderStatus::DRAFT_TARGET->value
+                            'title'               => $activeFolder['title'],
+                            'user_id'             => $member['user_id'],
+                            'parent_folder_id'    => $activeFolder['id'],
+                            
+                            'ipcr_target_start'   => $activeFolder['ipcr_target_start'],
+                            'ipcr_target_end'     => $activeFolder['ipcr_target_end'],
+                            'ipcr_eval_start'     => $activeFolder['ipcr_eval_start'],
+                            'ipcr_eval_end'       => $activeFolder['ipcr_eval_end'],
+                            
+                            'dpcr_target_start'   => $activeFolder['dpcr_target_start'],
+                            'dpcr_target_end'     => $activeFolder['dpcr_target_end'],
+                            'dpcr_eval_start'     => $activeFolder['dpcr_eval_start'],
+                            'dpcr_eval_end'       => $activeFolder['dpcr_eval_end'],
+                            
+                            'opcr_target_start'   => $activeFolder['opcr_target_start'],
+                            'opcr_target_end'     => $activeFolder['opcr_target_end'],
+                            'opcr_eval_start'     => $activeFolder['opcr_eval_start'],
+                            'opcr_eval_end'       => $activeFolder['opcr_eval_end'],
+                            
+                            'iperf_target_start'  => $activeFolder['iperf_target_start'],
+                            'iperf_target_end'    => $activeFolder['iperf_target_end'],
+                            'iperf_eval_start'    => $activeFolder['iperf_eval_start'],
+                            'iperf_eval_end'      => $activeFolder['iperf_eval_end'],
+                            
+                            'status'              => \App\Enums\FolderStatus::DRAFT_TARGET->value
                         ]);
                     } else {
                         $newFolderId = $exists['id']; 
@@ -358,6 +386,8 @@ class Folder extends BaseController
             $folderModel->update($folderId, ['status' => FolderStatus::REEVALUATE->value]);
         } elseif ($allApproved) {
             $folderModel->update($folderId, ['status' => FolderStatus::APPROVED->value, 'rated_at' => date('Y-m-d H:i:s')]);
+        } else {
+            $folderModel->update($folderId, ['status' => FolderStatus::TO_EVALUATE->value, 'rated_at' => null]);
         }
     }
 
@@ -607,8 +637,9 @@ class Folder extends BaseController
             // "To Evaluate" instead of leaving it at "Submitted" for up to a minute
             // waiting on updateTimeBasedStatuses()'s cron sweep - keep this condition
             // in sync with that method's "Submitted -> To Evaluate" check.
-            $windowAlreadyOpen = !empty($folder['eval_date_start']) && !empty($folder['eval_date_end'])
-                && $folder['eval_date_start'] <= $now && $folder['eval_date_end'] >= $now;
+            $dates = $folderModel->getFolderDates($folder);
+            $windowAlreadyOpen = !empty($dates['eval_date_start']) && !empty($dates['eval_date_end'])
+                && $dates['eval_date_start'] <= $now && $dates['eval_date_end'] >= $now;
 
             $folderModel->update($folderId, [
                 'status'       => $windowAlreadyOpen ? FolderStatus::TO_EVALUATE->value : FolderStatus::SUBMITTED->value,
@@ -657,7 +688,8 @@ class Folder extends BaseController
 
             if (!$folder || $folder['user_id'] != $userId) return $this->respondError("Unauthorized.", 400);
 
-            if (!empty($folder['eval_date_end']) && date('Y-m-d H:i:s') > $folder['eval_date_end']) {
+            $dates = $folderModel->getFolderDates($folder);
+            if (!empty($dates['eval_date_end']) && date('Y-m-d H:i:s') > $dates['eval_date_end']) {
                 return $this->respondError("Cannot unsubmit: Evaluation window has closed.", 400);
             }
 
@@ -690,7 +722,7 @@ class Folder extends BaseController
 
             $folderModel->update($folderId, [
                 'status'       => FolderStatus::EVALUATED->value,
-                'final_rating' => (float) $finalRating,
+                'final_rating' => $finalRating !== '' && $finalRating !== null ? (float) $finalRating : null,
                 'rated_at'     => date('Y-m-d H:i:s')
             ]);
 
@@ -807,7 +839,9 @@ class Folder extends BaseController
             $folderModel = new DocumentFolderModel();
             
             $folder = $folderModel->find($folderId);
-            if (!empty($folder['target_date_end']) && date('Y-m-d H:i:s') > $folder['target_date_end']) {
+            $dates = $folderModel->getFolderDates($folder);
+            
+            if (!empty($dates['target_date_end']) && date('Y-m-d H:i:s') > $dates['target_date_end']) {
                 return $this->respondError("The target setting period has already ended.", 400);
             }
             
@@ -819,6 +853,31 @@ class Folder extends BaseController
             // Note: Email to subordinate can be sent here
             
             return $this->respond(['status' => 'success', 'message' => 'Targets approved.']);
+        });
+    }
+
+    public function unapproveTarget() {
+        return $this->tryOrFail(function() {
+            $folderId = $this->request->getPost('folder_id');
+            $folderModel = new DocumentFolderModel();
+            
+            $folder = $folderModel->find($folderId);
+            $dates = $folderModel->getFolderDates($folder);
+            
+            if (!empty($dates['target_date_end']) && date('Y-m-d H:i:s') > $dates['target_date_end']) {
+                return $this->respondError("Cannot remove approval: The target setting window has already closed.", 400);
+            }
+            
+            if ($folder['status'] !== FolderStatus::TARGET_APPROVED->value) {
+                return $this->respondError("This folder is not currently approved.", 400);
+            }
+            
+            $folderModel->update($folderId, [
+                'status' => FolderStatus::PENDING_TARGET_APPROVAL->value,
+                'target_approved_at' => null
+            ]);
+            
+            return $this->respond(['status' => 'success', 'message' => 'Approval removed.']);
         });
     }
 
@@ -882,6 +941,82 @@ class Folder extends BaseController
             }
 
             return $this->respond(['status' => 'success', 'message' => 'Approved!']);
+        });
+    }
+
+    /**
+     * POST /folder/unapprove - Reverts the current evaluator's approval back to TO_EVALUATE.
+     */
+    public function unapprove() {
+        return $this->tryOrFail(function() {
+            $folderId = $this->request->getPost('folder_id');
+            $routingModel = new EvaluationRoutingModel();
+            $folderModel = new DocumentFolderModel();
+            
+            $folder = $folderModel->find($folderId);
+            $dates = $folderModel->getFolderDates($folder);
+            
+            if (!empty($dates['eval_date_end']) && date('Y-m-d H:i:s') > $dates['eval_date_end']) {
+                return $this->respondError("Cannot remove approval: The evaluation window has already closed.", 400);
+            }
+
+            $isAdmin = (new UserModel())->hasRole(session()->get('user_id'), 'Admin');
+
+            if ($isAdmin) {
+                $routingModel->where('folder_id', $folderId)
+                    ->set(['status' => FolderStatus::TO_EVALUATE->value, 'updated_at' => date('Y-m-d H:i:s')])
+                    ->update();
+            } else {
+                // Check if actually approved by this user
+                $routing = $routingModel->where('folder_id', $folderId)->where('evaluator_id', session()->get('user_id'))->first();
+                if (!$routing || $routing['status'] !== FolderStatus::APPROVED->value) {
+                    return $this->respondError("You have not approved this folder.", 400);
+                }
+
+                $routingModel->where('folder_id', $folderId)
+                    ->where('evaluator_id', session()->get('user_id'))
+                    ->set(['status' => FolderStatus::TO_EVALUATE->value, 'updated_at' => date('Y-m-d H:i:s')])
+                    ->update();
+            }
+
+            $this->updateFolderConsensus($folderId);
+
+            return $this->respond(['status' => 'success', 'message' => 'Approval removed!']);
+        });
+    }
+
+    /**
+     * POST /folder/update_score - Admin or supervisor manually edits the final score
+     */
+    public function updateScore() {
+        return $this->tryOrFail(function() {
+            $folderId = $this->request->getPost('folder_id');
+            $score = $this->request->getPost('score');
+            $userId = session()->get('user_id');
+
+            $folderModel = new DocumentFolderModel();
+            $folder = $folderModel->find($folderId);
+            
+            if (!$folder) {
+                return $this->respondError("Folder not found.", 404);
+            }
+
+            $userModel = new UserModel();
+            $isAdmin = $userModel->hasRole($userId, 'Admin');
+
+            $routingModel = new EvaluationRoutingModel();
+            $isEvaluator = $routingModel->where('folder_id', $folderId)->where('evaluator_id', $userId)->countAllResults() > 0;
+
+            if (!$isAdmin && !$isEvaluator) {
+                return $this->respondError("Unauthorized to update this score.", 403);
+            }
+
+            $folderModel->update($folderId, [
+                'final_rating' => $score !== '' && $score !== null ? (float) $score : null,
+                'updated_at'   => date('Y-m-d H:i:s')
+            ]);
+
+            return $this->respond(['status' => 'success', 'message' => 'Score updated successfully.']);
         });
     }
 

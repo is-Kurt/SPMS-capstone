@@ -61,30 +61,39 @@
                 </button>
 
 
-                <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-4 lg:gap-6 mt-3 mb-1">
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
-                        <div class="flex items-center gap-2">
-                            <span class="w-1.5 h-1.5 rounded-full bg-accent shrink-0"></span>
-                            <span class="text-[10px] font-black uppercase tracking-widest text-text-muted shrink-0 whitespace-nowrap">Target Phase</span>
+                <?php if (session()->get('role') !== 'Admin' && !empty($ownerDocType)): ?>
+                    <?php
+                        $docTypeLower = strtolower($ownerDocType);
+                        $targetStartCol = $docTypeLower . '_target_start';
+                        $targetEndCol   = $docTypeLower . '_target_end';
+                        $evalStartCol   = $docTypeLower . '_eval_start';
+                        $evalEndCol     = $docTypeLower . '_eval_end';
+                    ?>
+                    <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-4 lg:gap-6 mt-3 mb-1">
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-accent shrink-0"></span>
+                                <span class="text-[10px] font-black uppercase tracking-widest text-text-muted shrink-0 whitespace-nowrap">Target Phase</span>
+                            </div>
+                            <div class="text-[11px] font-bold text-text flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 rounded-md sm:ml-1 w-fit">
+                                <span class="whitespace-nowrap"><?= !empty($activeFolder[$targetStartCol]) ? date('M j, Y g:ia', strtotime($activeFolder[$targetStartCol])) : 'Not Set' ?></span>
+                                <span class="text-text-muted font-normal shrink-0">&rarr;</span>
+                                <span class="whitespace-nowrap"><?= !empty($activeFolder[$targetEndCol]) ? date('M j, Y g:ia', strtotime($activeFolder[$targetEndCol])) : 'Not Set' ?></span>
+                            </div>
                         </div>
-                        <div class="text-[11px] font-bold text-text flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 rounded-md sm:ml-1 w-fit">
-                            <span class="whitespace-nowrap"><?= !empty($activeFolder['target_date_start']) ? date('M j, Y g:ia', strtotime($activeFolder['target_date_start'])) : 'Not Set' ?></span>
-                            <span class="text-text-muted font-normal shrink-0">&rarr;</span>
-                            <span class="whitespace-nowrap"><?= !empty($activeFolder['target_date_end']) ? date('M j, Y g:ia', strtotime($activeFolder['target_date_end'])) : 'Not Set' ?></span>
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"></span>
+                                <span class="text-[10px] font-black uppercase tracking-widest text-text-muted shrink-0 whitespace-nowrap">Eval Phase</span>
+                            </div>
+                            <div class="text-[11px] font-bold text-text flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 rounded-md sm:ml-1 w-fit">
+                                <span class="whitespace-nowrap"><?= !empty($activeFolder[$evalStartCol]) ? date('M j, Y g:ia', strtotime($activeFolder[$evalStartCol])) : 'Not Set' ?></span>
+                                <span class="text-text-muted font-normal shrink-0">&rarr;</span>
+                                <span class="whitespace-nowrap"><?= !empty($activeFolder[$evalEndCol]) ? date('M j, Y g:ia', strtotime($activeFolder[$evalEndCol])) : 'Not Set' ?></span>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
-                        <div class="flex items-center gap-2">
-                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"></span>
-                            <span class="text-[10px] font-black uppercase tracking-widest text-text-muted shrink-0 whitespace-nowrap">Eval Phase</span>
-                        </div>
-                        <div class="text-[11px] font-bold text-text flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-800/80 px-2 py-0.5 rounded-md sm:ml-1 w-fit">
-                            <span class="whitespace-nowrap"><?= !empty($activeFolder['eval_date_start']) ? date('M j, Y g:ia', strtotime($activeFolder['eval_date_start'])) : 'Not Set' ?></span>
-                            <span class="text-text-muted font-normal shrink-0">&rarr;</span>
-                            <span class="whitespace-nowrap"><?= !empty($activeFolder['eval_date_end']) ? date('M j, Y g:ia', strtotime($activeFolder['eval_date_end'])) : 'Not Set' ?></span>
-                        </div>
-                    </div>
-                </div>
+                <?php endif; ?>
 
             </div>
 
@@ -282,10 +291,26 @@
                     <?php if (!$isReadOnly): ?>
                         <div class="flex gap-3 lg:mt-1 lg:flex-col">
                             <?php if (session()->get('role') != 'Admin'): ?>
-                                <?php $isTargetPeriodEnded = !empty($activeFolder['target_date_end']) && date('Y-m-d H:i:s') > $activeFolder['target_date_end']; ?>
+                                <?php 
+                                    $targetStartColName = '';
+                                    $targetEndColName = '';
+                                    $targetStart = null;
+                                    $targetEnd = null;
+                                    if (!empty($ownerDocType)) {
+                                        $targetStartColName = strtolower($ownerDocType) . '_target_start';
+                                        $targetEndColName = strtolower($ownerDocType) . '_target_end';
+                                        $targetStart = $activeFolder[$targetStartColName] ?? null;
+                                        $targetEnd = $activeFolder[$targetEndColName] ?? null;
+                                    }
+                                    
+                                    $now = date('Y-m-d H:i:s');
+                                    $isTargetPeriodEnded = !empty($targetEnd) && $now > $targetEnd;
+                                    $isTargetPeriodNotStarted = !empty($targetStart) && $now < $targetStart;
+                                    $isSubmitDisabled = $isLocked || $isTargetPeriodEnded || $isTargetPeriodNotStarted;
+                                ?>
                                 <?php if (!$hasTargetBeenSubmitted || in_array($status, [\App\Enums\FolderStatus::DRAFT_TARGET->value, \App\Enums\FolderStatus::TARGET_RETURNED->value, \App\Enums\FolderStatus::TARGET_UNAPPROVED->value])): ?>
                                     <button onclick="submitTargetFolder('<?= $activeFolder['id'] ?>', this)" 
-                                        <?= ($isLocked || $isTargetPeriodEnded) ? 'disabled' : '' ?>
+                                        <?= $isSubmitDisabled ? 'disabled' : '' ?>
                                         class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-info-500 hover:bg-info-600 disabled:bg-zinc-300 disabled:dark:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed text-white rounded-xl font-black uppercase tracking-widest text-[10px] transition-all shadow-md active:scale-95 cursor-pointer">
                                         Submit Targets for Approval
                                     </button>

@@ -80,6 +80,15 @@
                 </div>
                 <h3 class="text-sm font-black tracking-tight text-highlight-900 dark:text-highlight-300">Administrator Setup</h3>
             </div>
+        <?php elseif (isset($isTwgInvite) && $isTwgInvite): ?>
+            <div class="border border-info-200 dark:border-info-500/20 p-6 rounded-2xl bg-info-50/50 dark:bg-info-500/5 shadow-sm text-center">
+                <div class="inline-flex p-3 rounded-full bg-info-100 dark:bg-info-500/20 text-info-600 dark:text-info-400 mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                </div>
+                <h3 class="text-sm font-black tracking-tight text-info-900 dark:text-info-300">TWG Account Setup</h3>
+            </div>
         <?php else: ?>
             <div class="border border-surface-border p-8 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm mb-6">
                 <h3 class="text-[10px] font-black uppercase tracking-widest text-text-muted mb-6 flex items-center justify-between">

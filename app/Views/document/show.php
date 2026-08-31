@@ -71,9 +71,27 @@
                             </button>
                         </div>
                     <?php else: ?>
-                        <button type="button" disabled class="bg-success-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
-                            <span class="hidden sm:inline">Folder </span><?= $status === FolderStatus::TWG_APPROVED->value ? 'TWG Approved' : ($status === FolderStatus::TWG_DISAPPROVED->value ? 'TWG Disapproved' : 'Approved ✓') ?>
-                        </button>
+                        <?php 
+                            $canRemoveEvalApproval = false;
+                            if (session()->get('role') === 'Admin' && $status === FolderStatus::APPROVED->value) $canRemoveEvalApproval = true;
+                            if (isset($routingStatus) && $routingStatus === FolderStatus::APPROVED->value && $status === FolderStatus::APPROVED->value) $canRemoveEvalApproval = true;
+                        ?>
+                        <?php if ($canRemoveEvalApproval): ?>
+                            <?php 
+                                $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
+                                $evalEndCol = $ownerDocType . '_eval_end';
+                                $isEvalPeriodEnded = !empty($doc[$evalEndCol]) && date('Y-m-d H:i:s') > $doc[$evalEndCol]; 
+                            ?>
+                            <button id="btn-unapprove-evaluation" type="button" 
+                                    <?= $isEvalPeriodEnded ? 'disabled' : 'onclick="saveWith({ after: () => unapproveFolderEvaluation() })"' ?>
+                                    class="<?= $isEvalPeriodEnded ? 'bg-warning-500/50 cursor-not-allowed opacity-80' : 'bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg transition-all">
+                                Remove<span class="hidden sm:inline"> Approval</span>
+                            </button>
+                        <?php else: ?>
+                            <button type="button" disabled class="bg-success-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
+                                <span class="hidden sm:inline">Folder </span><?= $status === FolderStatus::TWG_APPROVED->value ? 'TWG Approved' : ($status === FolderStatus::TWG_DISAPPROVED->value ? 'TWG Disapproved' : 'Approved ✓') ?>
+                            </button>
+                        <?php endif; ?>
                     <?php endif; ?>
                     
                 <?php elseif ($status === FolderStatus::EVALUATED->value): ?>
@@ -102,18 +120,33 @@
                                 </button>
                             </div>
                         <?php elseif (isset($routingStatus) && $routingStatus === FolderStatus::APPROVED->value): ?>
-                            <button type="button" disabled class="bg-success-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
-                                Approved ✓
+                            <?php 
+                                $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
+                                $evalEndCol = $ownerDocType . '_eval_end';
+                                $isEvalPeriodEnded = !empty($doc[$evalEndCol]) && date('Y-m-d H:i:s') > $doc[$evalEndCol]; 
+                            ?>
+                            <button id="btn-unapprove-evaluation" type="button" 
+                                    <?= $isEvalPeriodEnded ? 'disabled' : 'onclick="saveWith({ after: () => unapproveFolderEvaluation() })"' ?>
+                                    class="<?= $isEvalPeriodEnded ? 'bg-warning-500/50 cursor-not-allowed opacity-80' : 'bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg transition-all">
+                                Remove<span class="hidden sm:inline"> Approval</span>
                             </button>
                         <?php else: ?>
                             <div class="flex gap-1.5 sm:gap-2">
+                                <button type="button" 
+                                        onclick="rate()" 
+                                        class="flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1.5 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </svg>
+                                    Calculate
+                                </button>
                                 <button id="btn-return" type="button" 
                                         onclick="saveWith({ after: () => returnFolderRevision() })" 
                                         class="bg-revision-500 hover:bg-revision-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-revision-500/20 transition-all active:scale-[0.98] cursor-pointer">
                                     Return<span class="hidden sm:inline"> for Revision</span>
                                 </button>
                                 <button id="btn-approve" type="button" 
-                                        onclick="saveWith({ before: () => rate(), after: () => approveFolderEvaluation() })" 
+                                        onclick="saveWith({ after: () => approveFolderEvaluation() })" 
                                         class="bg-success-500 hover:bg-success-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-success-500/20 transition-all active:scale-[0.98] cursor-pointer">
                                     Approve<span class="hidden sm:inline"> Rating</span>
                                 </button>
@@ -124,11 +157,21 @@
 
                 <?php elseif ($status === FolderStatus::TO_EVALUATE->value || $status === FolderStatus::REEVALUATE->value): ?>
                     <?php if ($isOwner): ?>
-                        <button id="btn-submit" type="button" 
-                                onclick="saveWith({ before: () => rate(), after: () => lockFolderEvaluation() })" 
-                                class="bg-info-500 hover:bg-info-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-info-500/20 transition-all active:scale-[0.98] cursor-pointer">
-                            <?= $status === FolderStatus::REEVALUATE->value ? 'Submit Revision' : '<span class="sm:hidden">Self-Rate</span><span class="hidden sm:inline">Complete Self-Rating</span>' ?>
-                        </button>
+                        <div class="flex gap-1.5 sm:gap-2">
+                            <button type="button" 
+                                    onclick="rate()" 
+                                    class="flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1.5 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                                Calculate
+                            </button>
+                            <button id="btn-submit" type="button" 
+                                    onclick="saveWith({ after: () => lockFolderEvaluation() })" 
+                                    class="bg-info-500 hover:bg-info-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-info-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                <?= $status === FolderStatus::REEVALUATE->value ? 'Submit Revision' : '<span class="sm:hidden">Self-Rate</span><span class="hidden sm:inline">Complete Self-Rating</span>' ?>
+                            </button>
+                        </div>
                     <?php else: ?>
                         <button type="button" disabled class="bg-zinc-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
                             Wait<span class="hidden sm:inline">ing for Employee</span>
@@ -164,7 +207,11 @@
                                 Monitoring<span class="hidden sm:inline"> View</span>
                             </button>
                         <?php else: ?>
-                            <?php $isTargetPeriodEnded = !empty($doc['target_date_end']) && date('Y-m-d H:i:s') > $doc['target_date_end']; ?>
+                            <?php 
+                                $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
+                                $targetEndCol = $ownerDocType . '_target_end';
+                                $isTargetPeriodEnded = !empty($doc[$targetEndCol]) && date('Y-m-d H:i:s') > $doc[$targetEndCol]; 
+                            ?>
                             <div class="flex gap-1.5 sm:gap-2">
                                 <button id="btn-return-target" type="button" 
                                         <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="saveWith({ after: () => returnTargetRevision() })"' ?>
@@ -181,9 +228,22 @@
                     <?php endif; ?>
 
                 <?php elseif ($status === FolderStatus::TARGET_APPROVED->value || $status === FolderStatus::SUBMITTED->value): ?>
-                    <button type="button" disabled class="bg-highlight-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
-                        Awaiting Eval<span class="hidden sm:inline"> Window</span>
-                    </button>
+                    <?php if (!$isOwner && $status === FolderStatus::TARGET_APPROVED->value): ?>
+                        <?php 
+                            $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
+                            $targetEndCol = $ownerDocType . '_target_end';
+                            $isTargetPeriodEnded = !empty($doc[$targetEndCol]) && date('Y-m-d H:i:s') > $doc[$targetEndCol]; 
+                        ?>
+                        <button id="btn-unapprove-target" type="button" 
+                                <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="saveWith({ after: () => unapproveFolderTarget() })"' ?>
+                                class="<?= $isTargetPeriodEnded ? 'bg-warning-500/50 cursor-not-allowed opacity-80' : 'bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg transition-all">
+                            Remove<span class="hidden sm:inline"> Approval</span>
+                        </button>
+                    <?php else: ?>
+                        <button type="button" disabled class="bg-highlight-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
+                            Awaiting Eval<span class="hidden sm:inline"> Window</span>
+                        </button>
+                    <?php endif; ?>
                 <?php elseif ($status === \App\Enums\FolderStatus::TARGET_UNAPPROVED->value): ?>
                     <button type="button" disabled class="bg-revision-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
                         Target<span class="hidden sm:inline"> Unapproved</span>
@@ -418,12 +478,7 @@
 
     async function lockFolderEvaluation() {
         const editorBody = tinymce.get('editable-doc').getBody();
-        const finalScore = editorBody.getAttribute('data-final-score');
-
-        if (!finalScore || isNaN(parseFloat(finalScore))) {
-            await window.appAlert("Could not extract a valid final score. Please fill out the tables.");
-            return;
-        }
+        const finalScore = editorBody.getAttribute('data-final-score') || '';
 
         const formData = new FormData();
         formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
@@ -437,19 +492,30 @@
 
     async function approveFolderEvaluation() {
         const editorBody = tinymce.get('editable-doc').getBody();
-        const finalScore = editorBody.getAttribute('data-final-score');
+        const finalScore = editorBody.getAttribute('data-final-score') || '';
 
-        if (!finalScore || isNaN(parseFloat(finalScore))) {
-            await window.appAlert("Could not extract a valid final score.");
-            return;
-        }
+        const ok = await window.appConfirm("Complete and approve this evaluation?", { confirmText: 'Approve' });
+        if (!ok) return;
 
         const formData = new FormData();
         formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
-        formData.append('final_rating', finalScore);
+        formData.append('final_score', finalScore);
 
         document.getElementById('btn-approve').innerText = 'Approving...';
         apiPost('<?= site_url('folder/approve') ?>', formData, {
+            onSuccess: () => window.location.reload()
+        });
+    }
+
+    async function unapproveFolderEvaluation() {
+        const ok = await window.appConfirm("Remove your approval and revert to To Evaluate?", { confirmText: 'Remove Approval' });
+        if (!ok) return;
+
+        const formData = new FormData();
+        formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
+
+        document.getElementById('btn-unapprove-evaluation').innerText = 'Removing...';
+        apiPost('<?= site_url('folder/unapprove') ?>', formData, {
             onSuccess: () => window.location.reload()
         });
     }
@@ -503,6 +569,19 @@
 
         document.getElementById('btn-approve-target').innerText = 'Approving...';
         apiPost('<?= site_url('folder/approve_target') ?>', formData, {
+            onSuccess: () => window.location.reload()
+        });
+    }
+
+    async function unapproveFolderTarget() {
+        const ok = await window.appConfirm("Remove approval and revert to pending?", { confirmText: 'Remove Approval' });
+        if (!ok) return;
+
+        const formData = new FormData();
+        formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
+
+        document.getElementById('btn-unapprove-target').innerText = 'Removing...';
+        apiPost('<?= site_url('folder/unapprove_target') ?>', formData, {
             onSuccess: () => window.location.reload()
         });
     }

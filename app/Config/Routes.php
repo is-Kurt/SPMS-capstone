@@ -81,11 +81,14 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->post('folder/unsubmit', 'Folder::unsubmit');
     $routes->post('folder/evaluate', 'Folder::evaluate');
     $routes->post('folder/approve', 'Folder::approve');
+    $routes->post('folder/unapprove', 'Folder::unapprove');
+    $routes->post('folder/update_score', 'Folder::updateScore');
     $routes->post('folder/twg_approve', 'Folder::twgApprove');
     $routes->post('folder/return', 'Folder::returnRevision');
     $routes->post('folder/submit_target', 'Folder::submitTarget');
     $routes->post('folder/unsubmit_target', 'Folder::unsubmitTarget');
     $routes->post('folder/approve_target', 'Folder::approveTarget');
+    $routes->post('folder/unapprove_target', 'Folder::unapproveTarget');
     $routes->post('folder/return_target', 'Folder::returnTarget');
     $routes->post('folder/cascade-team', 'Folder::cascadeTeam', ['filter' => 'role:Admin,Supervisor']);
     $routes->post('folder/uncascade-team', 'Folder::uncascadeTeam', ['filter' => 'role:Admin,Supervisor']);

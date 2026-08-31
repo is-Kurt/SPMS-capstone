@@ -337,6 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
         options.forEach(opt => {
             opt.addEventListener('click', () => {
                 hiddenInput.value = opt.dataset.value;
+                hiddenInput.dispatchEvent(new Event('change'));
                 label.textContent = opt.dataset.label;
                 
                 options.forEach(o => o.classList.remove('bg-accent/10', 'text-accent'));

@@ -132,7 +132,7 @@ function calculateAllTables() {
         cell.innerText = getAdjectivalRating(grandTotalScore);
     });
 
-    editorBody.setAttribute('data-final-score', grandTotalScore.toFixed(4));
+    editorBody.setAttribute('data-final-score', grandTotalScore.toFixed(2));
     tinymce.get('editable-doc').save();
 }
 

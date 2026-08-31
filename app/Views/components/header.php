@@ -2,12 +2,15 @@
     $currentUri = uri_string();
     $role = session()->get('role');
 
-    $navItems = [
-        'folders' => 'Folders',
-    ];
+    $navItems = [];
 
-    // Roles that evaluate others get the Ratings tab
-    if (in_array($role, ['Admin', 'Supervisor', 'HR'])) {
+    // TWG only sees Ratings, they don't see Folders.
+    if ($role !== 'TWG') {
+        $navItems['folders'] = 'Folders';
+    }
+
+    // Roles that evaluate others or verify get the Ratings tab
+    if (in_array($role, ['Admin', 'Supervisor', 'HR', 'TWG'])) {
         $navItems['ratings'] = 'Ratings';
     }
 

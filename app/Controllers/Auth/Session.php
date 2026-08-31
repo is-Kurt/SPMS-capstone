@@ -254,6 +254,10 @@ class Session extends BaseController
             ]);
         }
 
+        if (session()->get('role') === 'TWG') {
+            return redirect()->to(site_url('ratings'));
+        }
+
         return redirect()->to(site_url('folders'));
     }
 

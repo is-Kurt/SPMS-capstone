@@ -337,6 +337,21 @@ class  DocumentFolderModel extends Model
         }
     }
 
+    public function getFolderDates($folder) {
+        if (empty($folder)) return null;
+
+        $userModel = new \App\Models\UserModel();
+        $owner = $userModel->find($folder['user_id']);
+        $docType = strtolower($owner['doc_type'] ?? 'ipcr');
+        
+        return [
+            'target_date_start' => $folder["{$docType}_target_start"] ?? null,
+            'target_date_end'   => $folder["{$docType}_target_end"] ?? null,
+            'eval_date_start'   => $folder["{$docType}_eval_start"] ?? null,
+            'eval_date_end'     => $folder["{$docType}_eval_end"] ?? null,
+        ];
+    }
+
     public function isFolderLocked($folder) {
         if (!$folder) return true; 
 
@@ -347,7 +362,8 @@ class  DocumentFolderModel extends Model
             FolderStatus::DRAFT->value
         ]);
         
-        $isPastDeadline = !empty($folder['eval_date_end']) && date('Y-m-d H:i:s') > $folder['eval_date_end'];
+        $dates = $this->getFolderDates($folder);
+        $isPastDeadline = !empty($dates['eval_date_end']) && date('Y-m-d H:i:s') > $dates['eval_date_end'];
         
         return ($isLocked || $isPastDeadline);
     }

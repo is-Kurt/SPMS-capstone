@@ -48,6 +48,7 @@ class Register extends BaseController
 
         $role = $invitation['role_id'] ? $roleModel->find($invitation['role_id']) : null;
         $isAdminInvite = $role && strtolower($role['name']) === 'admin';
+        $isTwgInvite = $role && strtolower($role['name']) === 'twg';
 
         $units = $unitModel->orderBy('name', 'ASC')->findAll();
         $positions = $positionModel->orderBy('title', 'ASC')->findAll();
@@ -56,7 +57,8 @@ class Register extends BaseController
             'invitation'    => $invitation,
             'units'         => $units,
             'positions'     => $positions,
-            'isAdminInvite' => $isAdminInvite
+            'isAdminInvite' => $isAdminInvite,
+            'isTwgInvite'   => $isTwgInvite
         ]);
     }
 
@@ -80,9 +82,11 @@ class Register extends BaseController
                                       
         if (!$invitation) return redirect()->to('/login');
 
-        // Determine if admin invite
+        // Determine if admin or twg invite
         $role = $invitation['role_id'] ? $roleModel->find($invitation['role_id']) : null;
         $isAdminInvite = $role && strtolower($role['name']) === 'admin';
+        $isTwgInvite = $role && strtolower($role['name']) === 'twg';
+        $skipDetails = $isAdminInvite || $isTwgInvite;
 
         $validation = \Config\Services::validation();
         $rules = [
@@ -92,7 +96,7 @@ class Register extends BaseController
             'confirm-password' => 'required|matches[password]'
         ];
 
-        if (!$isAdminInvite) {
+        if (!$skipDetails) {
             $rules['doc_type'] = [
                 'rules' => 'required|in_list[IPCR,DPCR,OPCR,IPERF]',
                 'errors' => [
@@ -141,7 +145,7 @@ class Register extends BaseController
             'is_active'  => 1
         ];
 
-        if (!$isAdminInvite) {
+        if (!$skipDetails) {
             $userData['doc_type'] = $this->request->getPost('doc_type');
         }
 
@@ -155,7 +159,7 @@ class Register extends BaseController
             ]);
         }
 
-        if (!$isAdminInvite) {
+        if (!$skipDetails) {
             $units = $this->request->getPost('units');
             $positions = $this->request->getPost('positions');
 

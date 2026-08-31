@@ -32,13 +32,15 @@ class Profile extends BaseController
         }
 
         $isAdmin = $userModel->hasRole($userId, 'Admin');
+        $isTwg = $userModel->hasRole($userId, 'TWG');
 
         $data = [
             'user'             => $userModel->find($userId),
             'units'            => $unitModel->orderBy('name', 'ASC')->findAll(),
             'positions'        => $positionModel->orderBy('title', 'ASC')->findAll(),
             'currentPlantilla' => $currentPlantilla,
-            'isAdmin'          => $isAdmin
+            'isAdmin'          => $isAdmin,
+            'isTwg'            => $isTwg
         ];
 
         return view('profile/index', $data);

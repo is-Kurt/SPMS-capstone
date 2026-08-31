@@ -15,12 +15,16 @@
         }
     }
 
-    if ($representativeFolder && isset($representativeFolder['target_date_end'])) {
-        $now = date('Y-m-d H:i:s');
-        if ($now <= $representativeFolder['target_date_end']) {
-            $firstPeriodKey = 'target';
-        } else {
-            $firstPeriodKey = 'evaluation';
+    if ($representativeFolder) {
+        $folderModel = new \App\Models\DocumentFolderModel();
+        $dates = $folderModel->getFolderDates($representativeFolder);
+        if ($dates && isset($dates['target_date_end'])) {
+            $now = date('Y-m-d H:i:s');
+            if ($now <= $dates['target_date_end']) {
+                $firstPeriodKey = 'target';
+            } else {
+                $firstPeriodKey = 'evaluation';
+            }
         }
     }
 
@@ -336,20 +340,20 @@
                                                     <div class="flex items-center lg:justify-center gap-3">
                                                         <span class="lg:hidden text-[10px] font-black text-text-muted uppercase tracking-widest">Score:</span>
                                                         
-                                                        <?php if (!is_null($row['final_rating'])): ?>
-                                                            <span class="text-sm font-black text-text">
-                                                                <?= number_format($row['final_rating'], 3) ?>
-                                                            </span>
-                                                        <?php else: ?>
-                                                            <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic">--</span>
-                                                        <?php endif; ?>
+                                                        <div class="relative group/score flex items-center">
+                                                            <input type="number" step="0.01" min="0" max="5" 
+                                                                   class="score-input bg-transparent hover:bg-surface-hover border border-transparent hover:border-surface-border focus:bg-surface focus:border-accent rounded px-2 py-1 text-sm font-black text-text w-20 text-center transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none <?= is_null($row['final_rating']) ? 'italic text-text-muted' : '' ?>" 
+                                                                   value="<?= !is_null($row['final_rating']) ? number_format($row['final_rating'], 2) : '' ?>"
+                                                                   placeholder="--"
+                                                                   data-folder-id="<?= $row['folder_id'] ?>"
+                                                                   onblur="updateFolderScore(this, <?= $row['folder_id'] ?>)"
+                                                                   onkeydown="if(event.key === 'Enter') this.blur();"
+                                                            >
+                                                        </div>
 
                                                         <div class="lg:hidden flex items-center gap-3 border-l border-surface-border pl-3">
-                                                            <?php if (!is_null($row['final_rating'])): ?>
-                                                                <span class="adjective-badge px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm border border-transparent" data-score="<?= $row['final_rating'] ?>"></span>
-                                                            <?php else: ?>
-                                                                <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic">N/A</span>
-                                                            <?php endif; ?>
+                                                            <span class="adjective-badge adj-badge-<?= $row['folder_id'] ?> px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm border border-transparent <?= is_null($row['final_rating']) ? 'hidden' : '' ?>" data-score="<?= $row['final_rating'] ?? 0 ?>"></span>
+                                                            <span class="adj-badge-null-<?= $row['folder_id'] ?> text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic <?= !is_null($row['final_rating']) ? 'hidden' : '' ?>">N/A</span>
                                                         </div>
                                                     </div>
                                                 </td>
@@ -357,11 +361,8 @@
 
                                             <?php if ($pKey !== 'target'): ?>
                                                 <td class="hidden lg:table-cell px-6 py-4 text-center lg:min-w-[70px]">
-                                                    <?php if (!is_null($row['final_rating'])): ?>
-                                                        <span class="adjective-badge px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm border border-transparent whitespace-nowrap" data-score="<?= $row['final_rating'] ?>"></span>
-                                                    <?php else: ?>
-                                                        <span class="text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic whitespace-nowrap">Not Rated</span>
-                                                    <?php endif; ?>
+                                                    <span class="adjective-badge adj-badge-<?= $row['folder_id'] ?> px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm border border-transparent whitespace-nowrap <?= is_null($row['final_rating']) ? 'hidden' : '' ?>" data-score="<?= $row['final_rating'] ?? 0 ?>"></span>
+                                                    <span class="adj-badge-null-<?= $row['folder_id'] ?> text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic whitespace-nowrap <?= !is_null($row['final_rating']) ? 'hidden' : '' ?>">Not Rated</span>
                                                 </td>
                                             <?php endif; ?>
 
@@ -463,6 +464,61 @@
         if (score >= 2.70) return 'S';  
         if (score >= 1.50) return 'US'; 
         return 'P';                     
+    }
+
+    async function updateFolderScore(inputElem, folderId) {
+        let score = inputElem.value;
+        if (score !== '' && isNaN(parseFloat(score))) {
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('folder_id', folderId);
+        formData.append('score', score);
+
+        try {
+            const response = await fetch('<?= site_url('folder/update_score') ?>', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                const nullBadges = document.querySelectorAll(`.adj-badge-null-${folderId}`);
+                const adjBadges = document.querySelectorAll(`.adj-badge-${folderId}`);
+
+                if (score === '') {
+                    inputElem.classList.add('italic', 'text-text-muted');
+                    nullBadges.forEach(b => b.classList.remove('hidden'));
+                    adjBadges.forEach(b => b.classList.add('hidden'));
+                } else {
+                    inputElem.classList.remove('italic', 'text-text-muted');
+                    inputElem.value = parseFloat(score).toFixed(3);
+                    
+                    const adj = getAdjectivalRating(parseFloat(score));
+                    const styles = {
+                        'O':  ['bg-info-100', 'text-info-700', 'border-info-200', 'dark:bg-info-500/20', 'dark:text-info-400'],
+                        'VS': ['bg-success-100', 'text-success-700', 'border-success-200', 'dark:bg-success-500/20', 'dark:text-success-400'],
+                        'S':  ['bg-warning-100', 'text-warning-700', 'border-warning-200', 'dark:bg-warning-500/20', 'dark:text-warning-400'],
+                        'US': ['bg-revision-100', 'text-revision-700', 'border-revision-200', 'dark:bg-revision-500/20', 'dark:text-revision-400'],
+                        'P':  ['bg-danger-100', 'text-danger-700', 'border-danger-200', 'dark:bg-danger-500/20', 'dark:text-danger-400']
+                    };
+
+                    nullBadges.forEach(b => b.classList.add('hidden'));
+                    adjBadges.forEach(b => {
+                        b.classList.remove('hidden');
+                        b.innerText = adj;
+                        b.className = `adjective-badge adj-badge-${folderId} ${b.classList.contains('px-3') ? 'px-3 py-1' : 'px-2 py-0.5'} rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm border border-transparent whitespace-nowrap`;
+                        b.classList.add(...styles[adj]);
+                    });
+                }
+            } else {
+                if (window.appAlert) window.appAlert(data.message || 'Error updating score');
+            }
+        } catch (e) {
+            console.error(e);
+        }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -693,64 +749,10 @@
         // Period Custom Dropdown Logic
         const periodSelect = document.getElementById('period-custom-select');
         if (periodSelect) {
-            const btn = periodSelect.querySelector('.js-select-button');
-            const dropdown = periodSelect.querySelector('.js-select-dropdown');
-            const label = periodSelect.querySelector('.js-select-label');
-            const input = document.getElementById('period-input');
-            const options = periodSelect.querySelectorAll('.js-select-option');
-            const svg = btn.querySelector('svg');
-
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const isOpen = !dropdown.classList.contains('hidden');
-                
-                if (isOpen) {
-                    closeDropdown();
-                } else {
-                    openDropdown();
-                }
-            });
-
-            function openDropdown() {
-                dropdown.classList.remove('hidden');
-                // trigger reflow
-                void dropdown.offsetWidth;
-                dropdown.classList.remove('scale-95', 'opacity-0');
-                dropdown.classList.add('scale-100', 'opacity-100');
-                svg.classList.add('rotate-180');
-            }
-
-            function closeDropdown() {
-                dropdown.classList.remove('scale-100', 'opacity-100');
-                dropdown.classList.add('scale-95', 'opacity-0');
-                svg.classList.remove('rotate-180');
-                setTimeout(() => {
-                    dropdown.classList.add('hidden');
-                }, 200);
-            }
-
-            options.forEach(opt => {
+            periodSelect.querySelectorAll('.js-select-option').forEach(opt => {
                 opt.addEventListener('click', () => {
-                    const val = opt.getAttribute('data-value');
-                    const text = opt.getAttribute('data-label');
-
-                    label.textContent = text;
-                    input.value = val;
-
-                    options.forEach(o => o.classList.remove('bg-accent/10', 'text-accent'));
-                    opt.classList.add('bg-accent/10', 'text-accent');
-
-                    closeDropdown();
-                    
-                    // Trigger the actual period switch
-                    switchPeriod(val);
+                    switchPeriod(opt.getAttribute('data-value'));
                 });
-            });
-
-            document.addEventListener('click', (e) => {
-                if (!periodSelect.contains(e.target)) {
-                    closeDropdown();
-                }
             });
         }
 
