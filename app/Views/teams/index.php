@@ -147,7 +147,7 @@
 
             <div id="teams-filter-sidebar" class="
                 fixed inset-y-0 left-0 z-[130] lg:z-0 w-80 transform -translate-x-full transition-transform duration-300 flex flex-col h-full bg-surface border-r border-surface-border shadow-2xl
-                lg:static lg:w-72 lg:translate-x-0 lg:transition-none lg:shadow-none lg:border border-surface-border lg:rounded-2xl lg:overflow-hidden lg:h-auto lg:flex lg:bg-zinc-50 lg:dark:bg-zinc-800/30 shrink-0
+                lg:static lg:w-72 lg:translate-x-0 lg:transition-none lg:shadow-none lg:border border-surface-border lg:rounded-2xl lg:overflow-hidden lg:h-full lg:flex lg:flex-col lg:bg-zinc-50 lg:dark:bg-zinc-800/30 shrink-0
             ">
                 <div class="px-6 py-4 border-b border-surface-border flex justify-between items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800 lg:rounded-t-2xl">
                     <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest">Filters</h2>
@@ -294,12 +294,13 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Desktop Save Button Location -->
-                    <div class="hidden lg:block shrink-0 mt-4">
-                        <button type="submit" id="btn-save-desktop" class="w-full py-2.5 rounded-xl bg-accent text-white text-sm font-bold shadow-lg shadow-accent/20 hover:bg-accent-hover transition-all active:scale-[0.98] cursor-pointer">
-                            Save Changes
-                        </button>
-                    </div>
+                </div>
+                
+                <!-- Desktop Save Button Location (Sticky Bottom) -->
+                <div class="hidden lg:block p-4 border-t border-surface-border shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800 lg:rounded-b-2xl">
+                    <button type="submit" id="btn-save-desktop" class="w-full py-2 bg-accent text-white rounded-lg text-sm font-bold shadow-sm hover:bg-accent-hover transition-all active:scale-[0.98] cursor-pointer">
+                        Save Changes
+                    </button>
                 </div>
             </div>
             

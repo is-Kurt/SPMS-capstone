@@ -202,9 +202,9 @@
                             const childId = child.dataset.id;
                             removeDescendants(childId);
                             
-                            // Remove from dropdown
-                            const opt = document.querySelector(`#select-unit-parent option[value="${childId}"]`);
-                            if (opt) opt.remove();
+                    // Remove from dropdown
+                    const opt1 = document.querySelector(`#parent-options-list li[data-value="${childId}"]`);
+                    if (opt1) opt1.remove();
                             
                             child.remove();
                         });
@@ -212,8 +212,8 @@
                     removeDescendants(unitId);
 
                     // Remove from dropdown
-                    const opt = document.querySelector(`#select-unit-parent option[value="${unitId}"]`);
-                    if (opt) opt.remove();
+                    const opt2 = document.querySelector(`#parent-options-list li[data-value="${unitId}"]`);
+                    if (opt2) opt2.remove();
 
                     li.remove();
 
@@ -359,12 +359,32 @@
                     }
                 }
 
-                const opt = document.createElement('option');
-                opt.value = item.id;
-                opt.textContent = item.name;
-                document.getElementById('select-unit-parent').appendChild(opt);
+                const ul = document.getElementById('parent-options-list');
+                if (ul) {
+                    const liOpt = document.createElement('li');
+                    liOpt.className = 'parent-option px-3 py-2 text-sm text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-lg cursor-pointer transition-colors truncate';
+                    liOpt.dataset.value = item.id;
+                    liOpt.textContent = item.name;
+                    ul.appendChild(liOpt);
+                    
+                    // Re-bind the click event to the newly added option
+                    liOpt.addEventListener('click', () => {
+                        const hiddenInput = document.getElementById('hidden-parent-id');
+                        const searchInput = document.getElementById('parent-search-input');
+                        if (hiddenInput) hiddenInput.value = item.id;
+                        if (searchInput) searchInput.value = item.name;
+                        
+                        const allOptions = ul.querySelectorAll('.parent-option');
+                        allOptions.forEach(o => {
+                            o.classList.remove('bg-accent/10', 'text-accent', 'font-bold');
+                            o.classList.add('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
+                        });
+                        liOpt.classList.remove('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
+                        liOpt.classList.add('bg-accent/10', 'text-accent', 'font-bold');
+                    });
+                }
 
-                form.reset();
+                form.querySelector('input[name="name"]').value = '';
                 const unitInput = document.getElementById('filter-units');
                 if (unitInput) unitInput.dispatchEvent(new Event('input'));
                 break;

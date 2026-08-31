@@ -51,7 +51,7 @@
     <div id="mobile-filter-overlay" class="fixed inset-0 z-[115] bg-black/50 hidden lg:hidden transition-opacity opacity-0" aria-hidden="true"></div>
 
     <!-- SIDEBAR FILTERS (Left on mobile, Right on desktop) -->
-    <div id="ratings-sidebar" class="fixed inset-y-0 left-0 z-[120] lg:z-0 w-72 bg-surface lg:bg-zinc-50 lg:dark:bg-zinc-800/30 lg:border border-surface-border shadow-2xl lg:shadow-none lg:rounded-2xl transform -translate-x-full lg:translate-x-0 transition-transform duration-300 lg:static shrink-0 flex flex-col h-full lg:h-auto">
+    <div id="ratings-sidebar" class="fixed inset-y-0 left-0 z-[120] lg:z-0 w-72 bg-surface lg:bg-zinc-50 lg:dark:bg-zinc-800/30 lg:border border-surface-border shadow-2xl lg:shadow-none lg:rounded-2xl transform -translate-x-full lg:translate-x-0 transition-transform duration-300 lg:static shrink-0 flex flex-col h-full">
         <div class="px-6 py-4 border-b border-surface-border flex justify-between items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800 lg:rounded-t-2xl">
             <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest">Filters</h2>
             <button type="button" id="close-mobile-filters" class="lg:hidden text-text-muted hover:text-text p-1 cursor-pointer">
@@ -153,13 +153,13 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Clear Filters Button -->
-            <div class="mt-auto shrink-0 pt-4">
-                <button type="button" id="clear-ratings-filters" class="w-full py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-xs font-bold text-text rounded-xl transition-colors cursor-pointer shadow-sm">
-                    Clear Filters
-                </button>
-            </div>
+        </div>
+        
+        <!-- Clear Filters Button (Sticky Bottom) -->
+        <div class="p-4 border-t border-surface-border shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800 lg:rounded-b-2xl">
+            <button type="button" id="clear-ratings-filters" class="w-full py-2 text-xs font-bold text-text-muted hover:text-text border border-surface-border rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
+                Clear Filters
+            </button>
         </div>
     </div>
 

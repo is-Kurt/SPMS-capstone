@@ -24,11 +24,20 @@
                     </div>
                 </a>
 
-                <!-- Replaced fixed w-64 with flex-1 min-w-0 and w-full so it shrinks gracefully -->
-                <input type="text" name="title" placeholder="Enter Template Title..."
+                <!-- Replaced fixed w-64 with min-w-[200px] and added autoResize to shrink gracefully to text -->
+                <input type="text" name="title" id="template-title" placeholder="Enter Template Title..."
                     value="<?= $template ? esc($template['title']) : '' ?>"
-                    class="bg-transparent border-none font-bold text-sm text-text focus:ring-0 px-2 py-1 flex-1 min-w-0 w-full md:w-96 placeholder:text-text-muted/50 truncate">
+                    oninput="autoResize(this)"
+                    onblur="autoResize(this)"
+                    class="bg-transparent border-none font-bold text-sm text-text focus:ring-0 px-2 py-1 min-w-[50px] placeholder:text-text-muted/50">
             </div>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    const templateTitleInput = document.getElementById('template-title');
+                    if (templateTitleInput) autoResize(templateTitleInput);
+                });
+            </script>
 
             <div class="flex items-center shrink-0">
                 <span id="save-status" class=""></span>
