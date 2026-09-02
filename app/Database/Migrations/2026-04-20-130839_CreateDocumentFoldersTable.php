@@ -39,9 +39,8 @@ class CreateDocumentFoldersTable extends Migration
                 'constraint' => 50,
             ],
             'routing_preset_id' => [
-                'type' => 'INT', 
+                'type' => 'VARCHAR', 
                 'constraint' => 11,
-                'unsigned' => true,
                 'null'     => true
             ],
             'ipcr_target_start' => ['type' => 'DATETIME', 'null' => true],

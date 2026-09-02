@@ -97,3 +97,81 @@ tinymce.PluginManager.add('disableBackgroundCloning', function(editor) {
 
         });
 });
+
+tinymce.PluginManager.add('addRowButton', function(editor) {
+    editor.on('init', function() {
+        // Use capture phase to intercept before TinyMCE does
+        editor.getBody().addEventListener('mousedown', function(e) {
+            const button = e.target.closest('.add-row-btn');
+            if (button) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, true);
+        
+        editor.getBody().addEventListener('dblclick', function(e) {
+            const button = e.target.closest('.add-row-btn');
+            if (button) {
+                e.preventDefault();
+                e.stopPropagation();
+                editor.windowManager.open({
+                    title: 'Rename Button',
+                    size: 'small',
+                    body: {
+                        type: 'panel',
+                        items: [{
+                            type: 'input',
+                            name: 'label',
+                            label: 'New Button Label'
+                        }]
+                    },
+                    initialData: {
+                        label: button.innerText
+                    },
+                    buttons: [
+                        { type: 'cancel', text: 'Cancel' },
+                        { type: 'submit', text: 'Rename', buttonType: 'primary' }
+                    ],
+                    onSubmit: function (api) {
+                        const data = api.getData();
+                        const newName = data.label.trim();
+                        if (newName) {
+                            const safeName = newName.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                            button.innerHTML = safeName;
+                            if (typeof AppState !== 'undefined') AppState.setDirty(true);
+                            editor.nodeChanged();
+                            api.close();
+                        } else {
+                            editor.windowManager.alert('Label cannot be empty.');
+                        }
+                    }
+                });
+            }
+        }, true);
+        
+        editor.getBody().addEventListener('click', function(e) {
+            const button = e.target.closest('.add-row-btn');
+            if (button) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const buttonRow = button.closest('tr');
+                if (buttonRow) {
+                    const previousRow = buttonRow.previousElementSibling;
+                    if (previousRow) {
+                        const newRow = previousRow.cloneNode(true);
+                        const cells = newRow.querySelectorAll('td, th');
+                        cells.forEach(cell => {
+                            cell.innerHTML = '&nbsp;';
+                        });
+                        
+                        buttonRow.parentNode.insertBefore(newRow, buttonRow);
+                        if (typeof AppState !== 'undefined') AppState.setDirty(true);
+                        
+                        editor.nodeChanged();
+                    }
+                }
+            }
+        }, true);
+    });
+});

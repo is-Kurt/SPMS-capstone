@@ -16,9 +16,9 @@ class CreateRoutingPresetMembersTable extends Migration
                 'auto_increment' => true
             ],
             'preset_id' => [
-                'type' => 'INT', 
+                'type' => 'VARCHAR', 
                 'constraint' => 11, 
-                'unsigned' => true, 
+                'null' => false,
             ],
             'user_id'   => [
                 'type' => 'INT', 

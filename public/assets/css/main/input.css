@@ -205,3 +205,36 @@ input[type="datetime-local"] {
 .dark .datetime-tight {
     color-scheme: dark;
 }
+
+.toast-enter-active {
+    animation: toast-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.toast-exit-active {
+    animation: toast-slide-out 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Add Row Button inside TinyMCE */
+.add-row-btn {
+    background-color: var(--color-accent);
+    color: var(--color-accent-text);
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border: none;
+    margin: 4px 0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.add-row-btn:hover {
+    background-color: var(--color-accent-hover);
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+}

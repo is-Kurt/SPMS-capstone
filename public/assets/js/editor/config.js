@@ -15,12 +15,13 @@ function initEditor() {
         font_family_formats: 'Roboto=Roboto, Helvetica, Arial, sans-serif; Sans Serif=sans-serif; Andale Mono=andale mono,times; Arial=arial,helvetica,sans-serif; Arial Black=arial black,avant garde; Book Antiqua=book antiqua,palatino; Comic Sans MS=comic sans ms,sans-serif; Courier New=courier new,courier; Georgia=georgia,palatino; Helvetica=helvetica; Impact=impact,chicago; Symbol=symbol; Tahoma=tahoma,arial,helvetica,sans-serif; Terminal=terminal,monaco; Times New Roman=times new roman,times; Trebuchet MS=trebuchet ms,geneva; Verdana=verdana,geneva;',
         line_height_formats: '1 1.15 1.5 2 2.5 3',
 
-        plugins: 'table lists advlist saveShortcut setDirty cellSelect disableBackgroundCloning pagebreak',
+        plugins: 'table lists advlist saveShortcut setDirty cellSelect disableBackgroundCloning pagebreak addRowButton',
         toolbar_mode: 'wrap',
         toolbar: [
             'print | undo redo | fontfamily fontsize blocks | bold italic underline strikethrough | forecolor backcolor tablecellbackgroundcolor',
             'alignleft aligncenter alignright alignjustify | lineheight | bullist numlist outdent indent | pagebreak',
-            'table tableinsertrowbefore tableinsertrowafter tabledeleterow | tablemergecells tablesplitcells | clearMarks toggleRemarks toggleRating toggleRowAvg toggleTotal toggleFinalRating toggleTarget toggleEval | toggleId toggleCellWeight | toggleScoreRange'
+            'table tableinsertrowbefore tableinsertrowafter tabledeleterow | tablemergecells tablesplitcells',
+            'clearMarks toggleRemarks toggleRating toggleRowAvg toggleTotal toggleFinalRating | toggleEval | toggleId toggleCellWeight | toggleScoreRange | insertAddRow'
         ],
 
         skin: isDark ? 'oxide-dark' : 'oxide',
@@ -50,31 +51,26 @@ function initEditor() {
 
             editor.ui.registry.addButton('toggleRating', {
                 text: '🎯 Rating',
-                tooltip: 'Select cells for input',
+                tooltip: 'Mark cells for evaluator rating',
                 onAction: () => tableTools.modifyCell('calc-rating', 'rgba(16, 185, 129, 0.25)')
             });
 
             editor.ui.registry.addButton('toggleRowAvg', {
                 text: '🟦 Row Avg',
-                tooltip: 'Displays the average of the Q, E, T ratings in this row',
-                onAction: () => tableTools.modifyCell('calc-row-avg', 'rgba(14, 165, 233, 0.25)')
+                tooltip: 'Calculate average for the current row',
+                onAction: () => tableTools.modifyCell('calc-row-avg', 'rgba(59, 130, 246, 0.25)')
             });
 
             editor.ui.registry.addButton('toggleTotal', {
                 text: '🧮 Mark as Total',
-                tooltip: 'Display the weighted total for this table',
-                onAction: () => tableTools.modifyCell('calc-total', 'rgba(245, 158, 11, 0.25)')
+                tooltip: 'Calculate total for the entire table',
+                onAction: () => tableTools.modifyCell('calc-total', 'rgba(249, 115, 22, 0.25)')
             });
 
             editor.ui.registry.addButton('toggleFinalRating', {
                 text: '🧮 Mark as Final Rating',
                 tooltip: 'Display the final rating for this table',
                 onAction: () => tableTools.modifyCell('calc-final-total', 'rgba(139, 92, 246, 0.25)')
-            });
-            editor.ui.registry.addButton('toggleTarget', {
-                text: '🎯 Target Content',
-                tooltip: 'Mark cells as Target Content (locked during eval)',
-                onAction: () => tableTools.modifyCell('col-target', 'rgba(234, 179, 8, 0.15)')
             });
             editor.ui.registry.addButton('toggleEval', {
                 text: '📝 Eval Content',
@@ -138,6 +134,51 @@ function initEditor() {
                     DEFAULT_SCORE_RANGE,
                     (val) => `💯 Score Range (${val})`
                 )
+            });
+
+            editor.ui.registry.addButton('insertAddRow', {
+                text: '➕ Insert Row Button',
+                tooltip: 'Insert a button into the current cell that automatically duplicates the row above it',
+                onAction: function () {
+                    const node = editor.selection.getNode();
+                    const cell = editor.dom.getParent(node, 'td,th');
+                    
+                    if (!cell) {
+                        return;
+                    }
+                    
+                    editor.windowManager.open({
+                        title: 'Insert Row Duplicator',
+                        size: 'small',
+                        body: {
+                            type: 'panel',
+                            items: [{
+                                type: 'input',
+                                name: 'label',
+                                label: 'Button Label',
+                                placeholder: '+ Add Function'
+                            }]
+                        },
+                        initialData: {
+                            label: '+ Add Function'
+                        },
+                        buttons: [
+                            { type: 'cancel', text: 'Cancel' },
+                            { type: 'submit', text: 'Insert', buttonType: 'primary' }
+                        ],
+                        onSubmit: function (api) {
+                            const data = api.getData();
+                            const name = data.label.trim();
+                            if (name) {
+                                const safeName = name.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                                editor.insertContent(`<button type="button" class="add-row-btn no-print" contenteditable="false" title="Double-click to rename">${safeName}</button>`);
+                                api.close();
+                            } else {
+                                editor.windowManager.alert('Please enter a label.');
+                            }
+                        }
+                    });
+                }
             });
 
             editor.ui.registry.addButton('toggleWeight', {
@@ -209,7 +250,7 @@ function initPlainEditor(evaluated) {
                 });
 
                 if (!evaluated) {
-                    const ratingCells = body.querySelectorAll('.calc-rating');
+                    const ratingCells = body.querySelectorAll('.calc-rating, .calc-row-avg, .calc-total, .calc-final-total');
                     ratingCells.forEach(cell => {
                         cell.setAttribute('contenteditable', 'true');
                         cell.style.backgroundColor = 'rgba(16, 185, 129, 0.25)';
@@ -222,15 +263,11 @@ function initPlainEditor(evaluated) {
                     });
 
                     // Unlock Eval Content columns during Evaluation drafting
-                    if (typeof window.status !== 'undefined' && typeof window.FolderStatus !== 'undefined') {
-                        if (window.status === window.FolderStatus.DRAFT) {
-                            const evalContentCells = body.querySelectorAll('.col-eval');
-                            evalContentCells.forEach(cell => {
-                                cell.setAttribute('contenteditable', 'true');
-                                cell.style.backgroundColor = 'rgba(59, 130, 246, 0.10)';
-                            });
-                        }
-                    }
+                    const evalContentCells = body.querySelectorAll('.col-eval');
+                    evalContentCells.forEach(cell => {
+                        cell.setAttribute('contenteditable', 'true');
+                        cell.style.backgroundColor = 'rgba(59, 130, 246, 0.10)';
+                    });
                 }
             });
         }

@@ -323,7 +323,7 @@ class MasterSeeder extends Seeder
 <tr style="height: 40.375px;">
 <td class="col-target">&nbsp;</td>
 <td class="col-target">&nbsp;</td>
-<td class="col-eval">&nbsp;</td>
+<td class="col-eval" style="background-color: rgba(59, 130, 246, 0.15);">\&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
@@ -331,22 +331,25 @@ class MasterSeeder extends Seeder
 <td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
 </tr>
 <tr style="height: 40.375px;">
-<td>&nbsp;</td>
-<td>&nbsp;</td>
-<td>&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-eval" style="background-color: rgba(59, 130, 246, 0.15);">\&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="1">&nbsp;</td>
 <td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr class="no-print" style="height: 40.375px; border: none; background: transparent;">
+<td colspan="8" style="border: none; text-align: right;"><button type="button" class="add-row-btn no-print" contenteditable="false">+ Add Core Function</button></td>
 </tr>
 <tr style="height: 40.375px;">
 <td colspan="8">STRATEGIC FUNCTIONS (20%)</td>
 </tr>
 <tr style="height: 40.375px;">
-<td>&nbsp;</td>
-<td>&nbsp;</td>
-<td>&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-eval" style="background-color: rgba(59, 130, 246, 0.15);">\&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
@@ -354,22 +357,25 @@ class MasterSeeder extends Seeder
 <td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
 </tr>
 <tr style="height: 40.375px;">
-<td>&nbsp;</td>
-<td>&nbsp;</td>
-<td>&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-eval" style="background-color: rgba(59, 130, 246, 0.15);">\&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="2">&nbsp;</td>
 <td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr class="no-print" style="height: 40.375px; border: none; background: transparent;">
+<td colspan="8" style="border: none; text-align: right;"><button type="button" class="add-row-btn no-print" contenteditable="false">+ Add Strategic Function</button></td>
 </tr>
 <tr style="height: 40.375px;">
 <td colspan="8">SUPPORT FUNCTIONS (10%)</td>
 </tr>
 <tr style="height: 40.375px;">
-<td>&nbsp;</td>
-<td>&nbsp;</td>
-<td>&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-eval" style="background-color: rgba(59, 130, 246, 0.15);">\&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
@@ -377,14 +383,17 @@ class MasterSeeder extends Seeder
 <td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
 </tr>
 <tr style="height: 40.375px;">
-<td>&nbsp;</td>
-<td>&nbsp;</td>
-<td>&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-eval" style="background-color: rgba(59, 130, 246, 0.15);">\&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="3">&nbsp;</td>
 <td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr class="no-print" style="height: 40.375px; border: none; background: transparent;">
+<td colspan="8" style="border: none; text-align: right;"><button type="button" class="add-row-btn no-print" contenteditable="false">+ Add Support Function</button></td>
 </tr>
 <tr style="height: 40.25px;">
 <td colspan="8">&nbsp;</td>
@@ -423,7 +432,7 @@ class MasterSeeder extends Seeder
 </tr>
 </tbody>
 </table>
-<p>&nbsp;</p>']])],
+<p>&nbsp;</p>'], ['id'=>'tab-rubrics','title'=>'Rubrics / Guide','content'=>'<table style="width: 100%; border-collapse: collapse;" border="1"><tbody><tr><td style="background-color: #f3f4f6; text-align: center; font-weight: bold; padding: 8px;">Rating</td><td style="background-color: #f3f4f6; text-align: center; font-weight: bold; padding: 8px;">Description</td></tr><tr><td style="text-align: center; padding: 8px;">5</td><td style="padding: 8px;">Outstanding</td></tr><tr><td style="text-align: center; padding: 8px;">4</td><td style="padding: 8px;">Very Satisfactory</td></tr><tr><td style="text-align: center; padding: 8px;">3</td><td style="padding: 8px;">Satisfactory</td></tr><tr><td style="text-align: center; padding: 8px;">2</td><td style="padding: 8px;">Unsatisfactory</td></tr><tr><td style="text-align: center; padding: 8px;">1</td><td style="padding: 8px;">Poor</td></tr></tbody></table><p>&nbsp;</p>']])],
             ['title' => 'DPCR', 'tabs' => json_encode([['id'=>'tab-target','title'=>'Target Form','content'=> '<table style="border-collapse: collapse; width: 100%; height: 1329.17px; margin-left: auto; margin-right: auto;" border="1" data-score-range="5"><colgroup><col style="width: 13.6857%;"><col style="width: 22.027%;"><col style="width: 17.8577%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 17.8745%;"></colgroup>
 <tbody>
 <tr style="height: 40.375px;">
@@ -596,9 +605,9 @@ class MasterSeeder extends Seeder
 <td colspan="8">CORE FUNCTIONS (70%)</td>
 </tr>
 <tr style="height: 40.375px;">
-<td>&nbsp;</td>
-<td>&nbsp;</td>
-<td>&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-eval" style="background-color: rgba(59, 130, 246, 0.15);">\&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
@@ -606,22 +615,25 @@ class MasterSeeder extends Seeder
 <td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
 </tr>
 <tr style="height: 40.375px;">
-<td>&nbsp;</td>
-<td>&nbsp;</td>
-<td>&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-eval" style="background-color: rgba(59, 130, 246, 0.15);">\&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="1">&nbsp;</td>
 <td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr class="no-print" style="height: 40.375px; border: none; background: transparent;">
+<td colspan="8" style="border: none; text-align: right;"><button type="button" class="add-row-btn no-print" contenteditable="false">+ Add Core Function</button></td>
 </tr>
 <tr style="height: 40.375px;">
 <td colspan="8">STRATEGIC FUNCTIONS (20%)</td>
 </tr>
 <tr style="height: 40.375px;">
-<td>&nbsp;</td>
-<td>&nbsp;</td>
-<td>&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-eval" style="background-color: rgba(59, 130, 246, 0.15);">\&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
@@ -629,22 +641,25 @@ class MasterSeeder extends Seeder
 <td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
 </tr>
 <tr style="height: 40.375px;">
-<td>&nbsp;</td>
-<td>&nbsp;</td>
-<td>&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-eval" style="background-color: rgba(59, 130, 246, 0.15);">\&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="2">&nbsp;</td>
 <td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr class="no-print" style="height: 40.375px; border: none; background: transparent;">
+<td colspan="8" style="border: none; text-align: right;"><button type="button" class="add-row-btn no-print" contenteditable="false">+ Add Strategic Function</button></td>
 </tr>
 <tr style="height: 40.375px;">
 <td colspan="8">SUPPORT FUNCTIONS (10%)</td>
 </tr>
 <tr style="height: 40.375px;">
-<td>&nbsp;</td>
-<td>&nbsp;</td>
-<td>&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-eval" style="background-color: rgba(59, 130, 246, 0.15);">\&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
@@ -652,14 +667,17 @@ class MasterSeeder extends Seeder
 <td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
 </tr>
 <tr style="height: 40.375px;">
-<td>&nbsp;</td>
-<td>&nbsp;</td>
-<td>&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-eval" style="background-color: rgba(59, 130, 246, 0.15);">\&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="3">&nbsp;</td>
 <td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr class="no-print" style="height: 40.375px; border: none; background: transparent;">
+<td colspan="8" style="border: none; text-align: right;"><button type="button" class="add-row-btn no-print" contenteditable="false">+ Add Support Function</button></td>
 </tr>
 <tr style="height: 40.25px;">
 <td colspan="8">&nbsp;</td>
@@ -698,7 +716,7 @@ class MasterSeeder extends Seeder
 </tr>
 </tbody>
 </table>
-<p>&nbsp;</p>']])],
+<p>&nbsp;</p>'], ['id'=>'tab-rubrics','title'=>'Rubrics / Guide','content'=>'<table style="width: 100%; border-collapse: collapse;" border="1"><tbody><tr><td style="background-color: #f3f4f6; text-align: center; font-weight: bold; padding: 8px;">Rating</td><td style="background-color: #f3f4f6; text-align: center; font-weight: bold; padding: 8px;">Description</td></tr><tr><td style="text-align: center; padding: 8px;">5</td><td style="padding: 8px;">Outstanding</td></tr><tr><td style="text-align: center; padding: 8px;">4</td><td style="padding: 8px;">Very Satisfactory</td></tr><tr><td style="text-align: center; padding: 8px;">3</td><td style="padding: 8px;">Satisfactory</td></tr><tr><td style="text-align: center; padding: 8px;">2</td><td style="padding: 8px;">Unsatisfactory</td></tr><tr><td style="text-align: center; padding: 8px;">1</td><td style="padding: 8px;">Poor</td></tr></tbody></table><p>&nbsp;</p>']])],
             ['title' => 'OPCR', 'tabs' => json_encode([['id'=>'tab-target','title'=>'Target Form','content'=> '<table style="border-collapse: collapse; width: 100%; height: 1329.17px; margin-left: auto; margin-right: auto;" border="1" data-score-range="5"><colgroup><col style="width: 13.6857%;"><col style="width: 22.027%;"><col style="width: 17.8577%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 7.13879%;"><col style="width: 17.8745%;"></colgroup>
 <tbody>
 <tr style="height: 40.375px;">
@@ -871,9 +889,9 @@ class MasterSeeder extends Seeder
 <td colspan="8">CORE FUNCTIONS (70%)</td>
 </tr>
 <tr style="height: 40.375px;">
-<td>&nbsp;</td>
-<td>&nbsp;</td>
-<td>&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-eval" style="background-color: rgba(59, 130, 246, 0.15);">\&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
@@ -881,22 +899,25 @@ class MasterSeeder extends Seeder
 <td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
 </tr>
 <tr style="height: 40.375px;">
-<td>&nbsp;</td>
-<td>&nbsp;</td>
-<td>&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-eval" style="background-color: rgba(59, 130, 246, 0.15);">\&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="1">&nbsp;</td>
 <td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr class="no-print" style="height: 40.375px; border: none; background: transparent;">
+<td colspan="8" style="border: none; text-align: right;"><button type="button" class="add-row-btn no-print" contenteditable="false">+ Add Core Function</button></td>
 </tr>
 <tr style="height: 40.375px;">
 <td colspan="8">STRATEGIC FUNCTIONS (20%)</td>
 </tr>
 <tr style="height: 40.375px;">
-<td>&nbsp;</td>
-<td>&nbsp;</td>
-<td>&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-eval" style="background-color: rgba(59, 130, 246, 0.15);">\&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
@@ -904,22 +925,25 @@ class MasterSeeder extends Seeder
 <td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
 </tr>
 <tr style="height: 40.375px;">
-<td>&nbsp;</td>
-<td>&nbsp;</td>
-<td>&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-eval" style="background-color: rgba(59, 130, 246, 0.15);">\&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="2">&nbsp;</td>
 <td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr class="no-print" style="height: 40.375px; border: none; background: transparent;">
+<td colspan="8" style="border: none; text-align: right;"><button type="button" class="add-row-btn no-print" contenteditable="false">+ Add Strategic Function</button></td>
 </tr>
 <tr style="height: 40.375px;">
 <td colspan="8">SUPPORT FUNCTIONS (10%)</td>
 </tr>
 <tr style="height: 40.375px;">
-<td>&nbsp;</td>
-<td>&nbsp;</td>
-<td>&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-eval" style="background-color: rgba(59, 130, 246, 0.15);">\&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
@@ -927,14 +951,17 @@ class MasterSeeder extends Seeder
 <td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
 </tr>
 <tr style="height: 40.375px;">
-<td>&nbsp;</td>
-<td>&nbsp;</td>
-<td>&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-eval" style="background-color: rgba(59, 130, 246, 0.15);">\&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-row-avg" style="background-color: rgba(14, 165, 233, 0.25);" data-group-id="3">&nbsp;</td>
 <td class="remarks" style="background-color: rgba(235, 49, 49, 0.25);">&nbsp;</td>
+</tr>
+<tr class="no-print" style="height: 40.375px; border: none; background: transparent;">
+<td colspan="8" style="border: none; text-align: right;"><button type="button" class="add-row-btn no-print" contenteditable="false">+ Add Support Function</button></td>
 </tr>
 <tr style="height: 40.25px;">
 <td colspan="8">&nbsp;</td>
@@ -973,7 +1000,7 @@ class MasterSeeder extends Seeder
 </tr>
 </tbody>
 </table>
-<p>&nbsp;</p>']])],
+<p>&nbsp;</p>'], ['id'=>'tab-rubrics','title'=>'Rubrics / Guide','content'=>'<table style="width: 100%; border-collapse: collapse;" border="1"><tbody><tr><td style="background-color: #f3f4f6; text-align: center; font-weight: bold; padding: 8px;">Rating</td><td style="background-color: #f3f4f6; text-align: center; font-weight: bold; padding: 8px;">Description</td></tr><tr><td style="text-align: center; padding: 8px;">5</td><td style="padding: 8px;">Outstanding</td></tr><tr><td style="text-align: center; padding: 8px;">4</td><td style="padding: 8px;">Very Satisfactory</td></tr><tr><td style="text-align: center; padding: 8px;">3</td><td style="padding: 8px;">Satisfactory</td></tr><tr><td style="text-align: center; padding: 8px;">2</td><td style="padding: 8px;">Unsatisfactory</td></tr><tr><td style="text-align: center; padding: 8px;">1</td><td style="padding: 8px;">Poor</td></tr></tbody></table><p>&nbsp;</p>']])],
             ['title' => 'IPERF', 'tabs' => json_encode([['id'=>'tab-target','title'=>'Target Form','content'=> '<table style="border-collapse: collapse; width: 100%; margin-left: auto; margin-right: auto; height: 1098.75px;" border="1" data-score-range="5"><colgroup><col style="width: 12.5%;"><col style="width: 12.5%;"><col style="width: 12.5%;"><col style="width: 5%;"><col style="width: 5%;"><col style="width: 5%;"><col style="width: 5%;"><col style="width: 12.5%;"></colgroup>
 <tbody>
 <tr style="height: 40.25px;">
@@ -1056,9 +1083,9 @@ class MasterSeeder extends Seeder
 <td class="calc-final-total" style="background-color: rgba(139, 92, 246, 0.25);">&nbsp;</td>
 </tr>
 <tr style="height: 40.25px;">
-<td>&nbsp;</td>
-<td>&nbsp;</td>
-<td>&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-eval" style="background-color: rgba(59, 130, 246, 0.15);">\&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
@@ -1066,9 +1093,9 @@ class MasterSeeder extends Seeder
 <td class="calc-final-total" style="background-color: rgba(139, 92, 246, 0.25);">&nbsp;</td>
 </tr>
 <tr style="height: 40.25px;">
-<td>&nbsp;</td>
-<td>&nbsp;</td>
-<td>&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-target">&nbsp;</td>
+<td class="col-eval" style="background-color: rgba(59, 130, 246, 0.15);">\&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
 <td class="calc-rating" style="background-color: rgba(16, 185, 129, 0.25);">&nbsp;</td>
@@ -1188,7 +1215,7 @@ class MasterSeeder extends Seeder
 </tr>
 </tbody>
 </table>
-<p>&nbsp;</p>']])],
+<p>&nbsp;</p>'], ['id'=>'tab-rubrics','title'=>'Rubrics / Guide','content'=>'<table style="width: 100%; border-collapse: collapse;" border="1"><tbody><tr><td style="background-color: #f3f4f6; text-align: center; font-weight: bold; padding: 8px;">Rating</td><td style="background-color: #f3f4f6; text-align: center; font-weight: bold; padding: 8px;">Description</td></tr><tr><td style="text-align: center; padding: 8px;">5</td><td style="padding: 8px;">Outstanding</td></tr><tr><td style="text-align: center; padding: 8px;">4</td><td style="padding: 8px;">Very Satisfactory</td></tr><tr><td style="text-align: center; padding: 8px;">3</td><td style="padding: 8px;">Satisfactory</td></tr><tr><td style="text-align: center; padding: 8px;">2</td><td style="padding: 8px;">Unsatisfactory</td></tr><tr><td style="text-align: center; padding: 8px;">1</td><td style="padding: 8px;">Poor</td></tr></tbody></table><p>&nbsp;</p>']])],
         ];
 
         $db->table('templates')->insertBatch($templatesData);

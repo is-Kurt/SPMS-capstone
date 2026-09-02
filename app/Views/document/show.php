@@ -24,9 +24,7 @@
                      theme-aware bg-bg header in both light and dark mode. -->
                 <div class="flex-shrink-0 flex items-center gap-1 mr-2 sm:mr-6 text-text hover:text-accent transition-colors">
                     <!-- Folder/document icon -->
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+                    <img src="<?= base_url('assets/images/spms-logo.svg') ?>" alt="SPMS Logo" class="h-6 w-auto sm:h-7 object-contain" />
                     <span class="hidden sm:block font-black tracking-tighter text-xl uppercase">SPMS</span>
                 </div>
             </a>
@@ -478,7 +476,13 @@
 
     async function lockFolderEvaluation() {
         const editorBody = tinymce.get('editable-doc').getBody();
-        const finalScore = editorBody.getAttribute('data-final-score') || '';
+        let finalScore = editorBody.getAttribute('data-final-score') || '';
+        
+        // Prioritize manually edited cell text if available
+        const finalCell = editorBody.querySelector('.calc-final-total');
+        if (finalCell && finalCell.innerText.trim() !== '') {
+            finalScore = finalCell.innerText.trim();
+        }
 
         const formData = new FormData();
         formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
@@ -492,7 +496,13 @@
 
     async function approveFolderEvaluation() {
         const editorBody = tinymce.get('editable-doc').getBody();
-        const finalScore = editorBody.getAttribute('data-final-score') || '';
+        let finalScore = editorBody.getAttribute('data-final-score') || '';
+        
+        // Prioritize manually edited cell text if available
+        const finalCell = editorBody.querySelector('.calc-final-total');
+        if (finalCell && finalCell.innerText.trim() !== '') {
+            finalScore = finalCell.innerText.trim();
+        }
 
         const ok = await window.appConfirm("Complete and approve this evaluation?", { confirmText: 'Approve' });
         if (!ok) return;

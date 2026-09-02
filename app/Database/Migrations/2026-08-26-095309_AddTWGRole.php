@@ -26,10 +26,8 @@ class AddTWGRole extends Migration
                 'email' => 'twg@test.com',
                 'first_name' => 'TWG',
                 'last_name' => 'Reviewer',
-                'password_hash' => password_hash('123', PASSWORD_BCRYPT),
-                'two_factor_enabled' => 0,
+                'password' => password_hash('123', PASSWORD_BCRYPT),
                 'is_active' => 1,
-                'doc_type' => null,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s')
             ]);

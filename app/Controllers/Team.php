@@ -128,12 +128,16 @@ class Team extends BaseController
 
         $name = resolve_unique_title($name, ['owner_id' => session()->get('user_id')], 'name', $presetModel);
 
-        $newId = $presetModel->insert([
+        $newId = create_unique_row($presetModel, [
             'owner_id'    => session()->get('user_id'),
             'name'        => $name,
             'description' => trim($this->request->getPost('description')) ?: null,
             'created_at'  => date('Y-m-d H:i:s')
         ]);
+
+        if (!$newId) {
+            return $this->respondError('Could not generate a unique ID.', 400);
+        }
 
         return $this->respond(['status' => 'success', 'id' => $newId]);
     }

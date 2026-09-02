@@ -26,6 +26,7 @@
     <meta name="csrf-token-name" content="<?= csrf_token() ?>">
     <meta name="csrf-token-hash" content="<?= csrf_hash() ?>">
 
+    <link rel="icon" type="image/svg+xml" href="<?= base_url('assets/images/spms-logo.svg') ?>">
     <title>SPMS</title>
 </head>
 <body class="h-full bg-surface text-text antialiased">

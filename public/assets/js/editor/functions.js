@@ -1,26 +1,34 @@
+function getAdjectivalRating(score) {
+    if (score >= 4.30) return 'O';
+    if (score >= 3.54) return 'VS';
+    if (score >= 2.70) return 'S';
+    if (score >= 1.50) return 'US';
+    return 'P';
+}
+
 function calculateAllTables() {
     const editorBody = tinymce.get('editable-doc').getBody();
     const tables = editorBody.querySelectorAll('table');
-    
-    let grandTotalScore = 0; 
+
+    let grandTotalScore = 0;
 
     if (tables.length === 0) {
         return;
     }
 
-    tables.forEach(function(table) {
+    tables.forEach(function (table) {
         // HORIZONTAL (Row Averages & Adjectival Ratings)
         const rows = table.querySelectorAll('tr');
-        
+
         rows.forEach(row => {
-            const inputs = row.querySelectorAll('.calc-rating'); 
-            const rowAvgCells = row.querySelectorAll('.calc-row-avg'); 
+            const inputs = row.querySelectorAll('.calc-rating');
+            const rowAvgCells = row.querySelectorAll('.calc-row-avg');
             const arCells = row.querySelectorAll('.calc-ar');
-            
+
             if (inputs.length > 0 && rowAvgCells.length > 0) {
                 let sum = 0;
                 let count = 0;
-                
+
                 inputs.forEach(input => {
                     const val = parseFloat(input.innerText.trim() || 0);
                     if (!isNaN(val)) {
@@ -28,7 +36,7 @@ function calculateAllTables() {
                         count++;
                     }
                 });
-                
+
                 if (count > 0) {
                     const avg = sum / count; // Row Average
 
@@ -40,7 +48,7 @@ function calculateAllTables() {
                     // Adjectival Rating for this specific row
                     arCells.forEach(cell => {
                         cell.innerText = getAdjectivalRating(avg);
-                        cell.style.fontWeight = 'bold'; 
+                        cell.style.fontWeight = 'bold';
                     });
                 }
             }
@@ -49,14 +57,14 @@ function calculateAllTables() {
         // VERTICAL (The Category Groupings)
         const rowAvgCells = Array.from(table.querySelectorAll('.calc-row-avg'));
         const totalCells = Array.from(table.querySelectorAll('.calc-total'));
-        
+
         let groupedData = {};
-        
+
         rowAvgCells.forEach(cell => {
             let groupId = cell.getAttribute('data-group-id') || 'no-id';
-            
+
             if (!groupedData[groupId]) {
-                groupedData[groupId] = { sumOfAvgs: 0, rowCount: 0};
+                groupedData[groupId] = { sumOfAvgs: 0, rowCount: 0 };
             }
 
             const rowAvg = parseFloat(cell.getAttribute('data-row-avg'));
@@ -78,14 +86,14 @@ function calculateAllTables() {
 
         // PHASE 3: CATEGORY AVERAGES & WEIGHTS (ABSOLUTE NUMBERS, NO PERCENTAGES)
         let totalWeight = 0;
-        
+
         for (const groupId in groupedData) {
             const group = groupedData[groupId];
-            
+
             if (group.rowCount > 0) {
                 // 1. Get Category Average: (Sum of row avgs / row avg length)
-                let categoryAvg = group.sumOfAvgs / group.rowCount; 
-                
+                let categoryAvg = group.sumOfAvgs / group.rowCount;
+
                 let groupWeight = 1; // Default to 1 (100% weight) if not specified
 
                 if (groupedTotals[groupId]) {
@@ -97,10 +105,10 @@ function calculateAllTables() {
                                 groupWeight = parsedWeight > 1 ? (parsedWeight / 100) : parsedWeight;
                             }
                         }
-                        
+
                         // 2. Calculation: Category Average * Weight
                         let weightedTotal = categoryAvg * groupWeight;
-                        
+
                         // Output numeric score (e.g., 2.500)
                         totalCell.innerText = weightedTotal.toFixed(2);
                     });
@@ -112,7 +120,7 @@ function calculateAllTables() {
                 totalWeight += groupWeight;
             }
         }
-        
+
         // Normalize the grand total if weights don't sum to exactly 1.0 (e.g., 100% each = 300% total)
         if (totalWeight > 0 && totalWeight !== 1) {
             grandTotalScore = grandTotalScore / totalWeight;
@@ -123,7 +131,7 @@ function calculateAllTables() {
     const finalTotalCells = editorBody.querySelectorAll('.calc-final-total');
     finalTotalCells.forEach(cell => {
         // Output max of 5.000 without any percentage sign
-        cell.innerText = grandTotalScore.toFixed(2); 
+        cell.innerText = grandTotalScore.toFixed(2);
     });
 
     // Populate the Grand Total Adjectival Rating (O, VS, S, etc.)
@@ -161,13 +169,13 @@ function clearMarks(editor, body) {
 }
 
 function cellInspector(editor) {
-    editor.on('click', function(e) {
+    editor.on('click', function (e) {
         const targetCell = editor.dom.getParent(e.target, 'td, th');
-        
+
         if (targetCell) {
             const parentRow = editor.dom.getParent(targetCell, 'tr');
-            
-            const rowIndex = parentRow.rowIndex; 
+
+            const rowIndex = parentRow.rowIndex;
             const colIndex = targetCell.cellIndex;
 
             const classNames = targetCell.className || 'None';
@@ -190,7 +198,7 @@ function cellInspector(editor) {
 
 function updateDisplayDate(input, spanId) {
     if (!input.value) return;
-    
+
     const date = new Date(input.value);
 
     let formatted = new Intl.DateTimeFormat('en-US', {
@@ -201,7 +209,7 @@ function updateDisplayDate(input, spanId) {
         minute: '2-digit',
         hour12: true
     }).format(date);
-    
+
     formatted = formatted.replace(' at ', ' ').toLowerCase();
     formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
 
@@ -209,7 +217,7 @@ function updateDisplayDate(input, spanId) {
 
     if (input.id === 'doc-date-start') {
         const endInput = document.getElementById('doc-date-end');
-        
+
         // FIX: Add safety check to ensure endInput actually exists in the DOM
         if (endInput) {
             endInput.min = input.value;
