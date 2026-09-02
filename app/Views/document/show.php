@@ -290,6 +290,7 @@
     // Set initial content for TinyMCE initialization
     document.getElementById('editable-doc').value = tabs[0].content;
 
+
     function getUniqueTitle(baseTitle, excludeTabId = null) {
         let title = baseTitle;
         let counter = 1;
@@ -452,7 +453,9 @@
 
     // Initialize tabs UI
     renderTabs();
-</script> <script src="<?= base_url('assets/js/editor/functions.js?v=' . time()) ?>"></script>
+</script>
+</div>
+<script src="<?= base_url('assets/js/editor/functions.js?v=' . time()) ?>"></script>
 <script src="<?= base_url('assets/js/editor/saveDocument.js') ?>"></script>
 
 <script>

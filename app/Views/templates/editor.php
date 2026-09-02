@@ -59,6 +59,7 @@
 
 </div>
 
+
 <script>
     <?php
     $tabsJson = '[]';
@@ -234,6 +235,7 @@
     // Initialize tabs UI
     renderTabs();
 </script>
+
 
 <script src="<?= base_url('assets/js/editor/functions.js?v=' . time()) ?>"></script>
 <script src="<?= base_url('assets/js/editor/plugins.js') ?>"></script>
