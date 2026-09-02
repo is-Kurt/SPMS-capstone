@@ -1,0 +1,159 @@
+<?php
+
+namespace App\Database\Migrations;
+
+use CodeIgniter\Database\Migration;
+
+class CreateUsersTable extends Migration
+{
+    public function up()
+    {
+        $this->forge->addField([
+            'id' => [
+                'type'           => 'INT',
+                'constraint'     => 11,
+                'unsigned'       => true,
+                'auto_increment' => true,
+            ],
+            'email' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '255',
+                'unique'     => true,
+                'null'       => false,
+            ],
+            'password' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '255',
+                'null'       => false,
+            ],
+            'first_name' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '255',
+                'null'       => false,
+            ],
+            'last_name' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '255',
+                'null'       => false,
+            ],
+            'reset_code' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '10',
+                'null'       => true,
+            ],
+            'reset_code_expires_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
+            'reset_attempts' => [
+                'type'           => 'INT',
+                'constraint'     => 11,
+                'default'        => 0,
+            ],
+            'reset_last_attempt_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
+            'remember_token' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '255',
+                'null'       => true,
+            ],
+            'remember_token_expiry' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
+            'doc_type' => [
+                'type'       => 'ENUM',
+                'constraint' => ['IPCR', 'DPCR', 'OPCR', 'IPERF'],
+                'null'       => true,
+                'default'    => null,
+            ],
+            'two_factor_code' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '10',
+                'null'       => true,
+            ],
+            'two_factor_expires_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
+            'email_change_code' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '10',
+                'null'       => true,
+            ],
+            'email_change_new_email' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '255',
+                'null'       => true,
+            ],
+            'email_change_expires_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
+            'email_change_attempts' => [
+                'type'       => 'INT',
+                'constraint' => 11,
+                'default'    => 0,
+                'null'       => false,
+            ],
+            'email_change_last_attempt_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
+            'password_change_attempts' => [
+                'type'       => 'INT',
+                'constraint' => 11,
+                'default'    => 0,
+                'null'       => false,
+            ],
+            'password_change_last_attempt_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
+            'is_active' => [
+                'type'       => 'TINYINT',
+                'constraint' => 1,
+                'default'    => 1,
+                'null'       => false,
+            ],
+            'avatar_image' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '255',
+                'null'       => true,
+            ],
+            'avatar_color' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '7',
+                'null'       => true,
+            ],
+            'avatar_letter' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '2',
+                'null'       => true,
+            ],
+            'created_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
+            'updated_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
+            'deleted_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
+        ]);
+
+        $this->forge->addKey('id', true);
+
+        $this->forge->createTable('users');
+    }
+
+    public function down()
+    {
+        $this->forge->dropTable('users');
+    }
+}

@@ -1,0 +1,93 @@
+@import "../global/fonts.css";
+
+html, body {
+    overflow-x: auto !important;
+}
+
+/* Custom Scrollbar for Editor */
+html {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(128, 128, 128, 0.4) transparent;
+}
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background-color: rgba(128, 128, 128, 0.4);
+    border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(128, 128, 128, 0.7);
+}
+
+body {
+    font-family: Helvetica, Arial, sans-serif, 'Roboto';
+    font-size: 14pt;
+    margin: 1in; 
+}
+
+/* 2. Standard Table Rules (Desktop) */
+table { 
+    border-collapse: collapse; 
+    max-width: 100%;
+    table-layout: fixed; 
+    word-wrap: break-word; 
+    box-sizing: border-box;
+}
+
+th, td { 
+    border: 1px solid #ccc; 
+    padding: 8px; 
+    overflow: hidden;
+}
+
+td.custom-selected, th.custom-selected { 
+    /* Mathematically dialed to hit #cae3ff on white and #a8d3da on green */
+    background-image: linear-gradient(rgba(0, 119, 255, 0.208), rgba(0, 119, 255, 0.208)) !important; 
+}
+
+/* 3. Mobile Overrides */
+@media screen and (max-width: 768px) {
+    body {
+        margin: 8px !important; 
+        font-size: 10pt !important; /* Smaller base font for mobile */
+        zoom: 0.8; /* Scales down the entire editor to fit more in the viewport */
+        /* Allow the editor body to scroll horizontally */
+        overflow-x: auto !important; 
+    }
+
+    /* Prevent tables from squishing text on small screens */
+    table {
+        table-layout: auto !important;
+        max-width: none !important;
+        width: max-content !important;
+    }
+
+    /* Guarantee cells have enough space to read words normally */
+    th, td {
+        padding: 4px !important; /* Less padding to save space */
+        min-width: 80px !important; /* Smaller minimum width for columns */
+    }
+}
+
+/* 4. Print Overrides */
+@page {
+    margin: 1in;
+}
+
+@media print {
+    body {
+        color: #000 !important;
+        background: #fff !important;
+        margin: 0 !important; /* Remove screen margin to avoid double margin with @page */
+    }
+    
+    /* Ensure borders are visible when printing */
+    th, td {
+        border: 1px solid #000 !important;
+    }
+}

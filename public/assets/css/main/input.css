@@ -1,0 +1,220 @@
+@import "tailwindcss";
+@import "../global/fonts.css";
+
+@source "../../../../app/Views";
+@source "../../../../public";
+
+@theme {
+    --font-sans: "Roboto", ui-sans-serif, system-ui, sans-serif;
+
+    /* Surfaces - Light Mode (Soft Sage Anti-Flashbang Canvas matching Frame2a.1) */
+    --color-bg:             #d7e4d8; /* Soothing muted sage green canvas */
+    --color-surface:        #ffffff; /* Clean crisp white card container */
+    --color-input:          #f4f8f4; /* Subtle sage-tinted input/inner surface */
+
+    /* Borders - Subtle separation */
+    --color-border:         #c2d4c4;
+    --color-surface-border: #c2d4c4;
+
+    /* Text - High contrast */
+    --color-text:           #0f172a; /* slate-900 */
+    --color-text-muted:     #4d6b56; /* sage-tinted slate for secondary text */
+
+    /* Accent - BSU Warm Gold Primary Interactive Color */
+    --color-accent:         #ffb800; /* BSU Warm Gold */
+    --color-accent-hover:   #e6a600;
+    --color-accent-text:    #000000;
+
+    /* ============================================================
+       STATUS COLORS
+       ------------------------------------------------------------
+       Semantic color ramps used for state/feedback UI: badges,
+       buttons, alerts, borders. Each ramp mirrors Tailwind's own
+       50 (lightest tint) -> 900 (darkest) shade scale, so existing
+       "dark:bg-danger-500/20 dark:text-danger-400" style patterns
+       in the views keep working exactly as before.
+
+       This is the ONE place to re-theme the app's status colors:
+       change the values below and every "bg-danger-500",
+       "text-warning-600", "border-info-200", etc. across every
+       view updates automatically - no view file needs to change.
+
+       Naming reflects MEANING, not hue, on purpose: if "danger"
+       is ever changed from red to something else, class names like
+       "bg-danger-500" in the views still make sense.
+    ============================================================ */
+
+    /* Danger - destructive/negative actions & errors.
+       Used by: delete buttons & confirmations, error alerts,
+       "Rejected"-style badges. */
+    --color-danger-50:  #fef2f2;
+    --color-danger-100: #fee2e2;
+    --color-danger-200: #fecaca;
+    --color-danger-400: #f87171;
+    --color-danger-500: #ef4444;
+    --color-danger-600: #dc2626;
+    --color-danger-700: #b91c1c;
+    --color-danger-800: #991b1b;
+
+    /* Success - approved / positive / completed states.
+       Used by: "Approved" badges, "Enable" buttons, success alerts. */
+    --color-success-50:  #ecfdf5;
+    --color-success-100: #d1fae5;
+    --color-success-200: #a7f3d0;
+    --color-success-400: #34d399;
+    --color-success-500: #10b981;
+    --color-success-600: #059669;
+    --color-success-700: #047857;
+    --color-success-800: #065f46;
+
+    /* Warning - pending / needs-attention states.
+       Used by: "To Evaluate" badges, "Disable" buttons, warning alerts. */
+    --color-warning-50:  #fffbeb;
+    --color-warning-100: #fef3c7;
+    --color-warning-200: #fde68a;
+    --color-warning-400: #fbbf24;
+    --color-warning-500: #f59e0b;
+    --color-warning-600: #d97706;
+    --color-warning-700: #b45309;
+
+    /* Info - informational / in-progress states.
+       Used by: "Submitted" badges, guide/notice panels. */
+    --color-info-50:  #eff6ff;
+    --color-info-100: #dbeafe;
+    --color-info-200: #bfdbfe;
+    --color-info-400: #60a5fa;
+    --color-info-500: #3b82f6;
+    --color-info-600: #2563eb;
+    --color-info-700: #1d4ed8;
+    --color-info-800: #1e40af;
+    --color-info-900: #1e3a8a;
+
+    /* Highlight - secondary tags, distinct from the main accent/status set.
+       Used by: "Teaching" badge, admin monitoring indicators, role picker. */
+    --color-highlight-50:  #eef2ff;
+    --color-highlight-100: #e0e7ff;
+    --color-highlight-200: #c7d2fe;
+    --color-highlight-300: #a5b4fc;
+    --color-highlight-400: #818cf8;
+    --color-highlight-500: #6366f1;
+    --color-highlight-600: #4f46e5;
+    --color-highlight-900: #312e81;
+
+    /* Revision - "sent back for changes" states, distinct from Warning.
+       Used by: "Reevaluate" folder status, "Return for Revision" button. */
+    --color-revision-100: #ffedd5;
+    --color-revision-200: #fed7aa;
+    --color-revision-400: #fb923c;
+    --color-revision-500: #f97316;
+    --color-revision-600: #ea580c;
+    --color-revision-700: #c2410c;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+.dark {
+    /* Canvas & Containers - Deep BSU Forest Green (Matches Dark Mockup) */
+    --color-bg:             #032115; /* Deep forest-green canvas */
+    --color-surface:        #052e1d; /* Deep evergreen card container */
+    --color-input:          #032316; /* Deep dark evergreen input/inner-card surface */
+
+    /* Subtle Card Separation - Dark, low-opacity borders (#0c4a33) */
+    --color-border:         #0c4a33;
+    --color-surface-border: #0c4a33;
+
+    /* Neutrals for Readability - Crisp high-contrast slates */
+    --color-text:           #f8fafc; /* Crisp cool white */
+    --color-text-muted:     #94a3b8; /* Crisp light grey / slate for labels & secondary metadata */
+
+    /* Primary Interactive Color - BSU Warm Gold (#FFB800) */
+    --color-accent:         #ffb800; /* BSU Warm Gold */
+    --color-accent-hover:   #e6a600;
+    --color-accent-text:    #000000;
+
+    /* Zinc & Slate Mapping to Deep Forest */
+    --color-zinc-700:       #154d37;
+    --color-zinc-800:       #0c4a33;
+    --color-zinc-900:       #032316;
+    --color-zinc-950:       #032115;
+    --color-slate-700:      #154d37;
+    --color-slate-800:      #0c4a33;
+    --color-slate-900:      #032316;
+    --color-slate-950:      #032115;
+}
+
+.tox.tox-tinymce {
+    border-radius: 0;
+}
+
+.datetime-tight::-webkit-calendar-picker-indicator {
+    display: none;
+}
+
+a {
+  @apply focus-visible:outline-2 focus-visible:outline-offset-2 
+         focus-visible:outline-accent focus-visible:rounded-md;
+}
+
+.input-field {
+  @apply block w-full rounded-md px-3 py-1.5 text-base 
+         outline-1 -outline-offset-1 outline-border
+         placeholder:text-text-muted focus:outline-2 
+         focus:-outline-offset-2 focus:outline-accent sm:text-sm/6;
+}
+
+.checkbox {
+  @apply h-4 w-4 rounded-full border-2 border-border
+         appearance-none checked:bg-accent cursor-pointer
+         focus-visible:outline-2 
+         focus-visible:-outline-offset-2 focus-visible:outline-accent;
+}
+
+.button {
+  @apply flex justify-center rounded-md bg-accent
+         px-3 py-1.5 text-sm/6 font-semibold text-white hover:bg-accent-hover
+         focus-visible:outline-2 focus-visible:outline-offset-2 
+         focus-visible:outline-accent cursor-pointer;
+}
+
+.custom-scrollbar {
+            scrollbar-width: thin; /* Firefox */
+            scrollbar-color: var(--color-surface-border) transparent; 
+            scrollbar-gutter: stable;
+        }
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: var(--color-surface-border);
+    border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-text-muted);
+}
+
+/* Suppress the browser's own native password-reveal icon (Edge's built-in eye
+   icon) so it doesn't double up with, or clash in color with, our own themed
+   toggle button injected by passwordToggle.js. */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+    display: none;
+}
+
+input[type="datetime-local"] {
+    color-scheme: light;
+}
+
+.dark input[type="datetime-local"] {
+    color-scheme: dark;
+}
+
+.datetime-tight {
+    color-scheme: light;
+}
+
+.dark .datetime-tight {
+    color-scheme: dark;
+}

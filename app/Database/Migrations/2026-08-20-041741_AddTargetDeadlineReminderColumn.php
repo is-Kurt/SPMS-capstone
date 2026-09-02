@@ -1,0 +1,24 @@
+<?php
+
+namespace App\Database\Migrations;
+
+use CodeIgniter\Database\Migration;
+
+class AddTargetDeadlineReminderColumn extends Migration
+{
+    public function up()
+    {
+        $this->forge->addColumn('document_folders', [
+            'target_deadline_reminder_sent_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+                // 'after' => 'target_approved_at'
+            ],
+        ]);
+    }
+
+    public function down()
+    {
+        $this->forge->dropColumn('document_folders', 'target_deadline_reminder_sent_at');
+    }
+}

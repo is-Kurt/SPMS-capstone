@@ -1,0 +1,14 @@
+{
+  "scripts": {
+    "dev": "npx @tailwindcss/cli -i ./public/assets/css/main/input.css -o ./public/assets/css/main/style.css --watch"
+  },
+  "dependencies": {
+    "@tailwindcss/cli": "^4.1.18",
+    "axios": "^1.15.0",
+    "tailwindcss": "^4.1.18",
+    "tinymce": "^8.3.2"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
