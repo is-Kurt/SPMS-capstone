@@ -447,15 +447,6 @@
                     
                 <?php elseif ($status === FolderStatus::DRAFT_TARGET->value || $status === FolderStatus::TARGET_RETURNED->value): ?>
                     <div class="flex items-center gap-1.5 sm:gap-2">
-                        <a href="<?= site_url('folders/' . ($doc['document_folder_id'] ?? '')) ?>" 
-                           onclick="if (window.history.length > 1) { history.back(); return false; }"
-                           class="inline-flex items-center justify-center bg-zinc-700/80 hover:bg-zinc-700 text-zinc-200 hover:text-white border border-zinc-600/60 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer"
-                           title="Return to Folder">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                            </svg>
-                            <span>Return</span>
-                        </a>
                         <?php if ($isOwner): ?>
                             <button id="btn-submit-target" type="button" 
                                     onclick="saveWith({ after: () => lockFolderTarget() })" 
