@@ -23,12 +23,16 @@
                 <?php $isActive = ($selectedFolderId == $folder['id']); ?>
                 
                 <a href="<?= site_url($currentBaseUrl . '/' . $folder['id']) ?>"
-                   class="px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center gap-2.5 group
+                   class="relative px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center gap-2.5 group
                     <?= $isActive ?
-                       'bg-white dark:bg-[#052e1d] text-slate-900 dark:text-white border-2 border-[#064e3b] dark:border-emerald-500 shadow-xs' : 
-                       'text-[#3d5a47] dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5' ?>">
+                       'bg-white dark:bg-[#121d17] text-slate-900 dark:text-white border border-slate-200 dark:border-[#1e382b] shadow-xs' : 
+                       'text-[#3d5a47] dark:text-[#8ea396] hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5' ?>">
                     
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0 <?= $isActive ? 'text-[#064e3b] dark:text-emerald-400' : 'text-[#5a7b65] dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white' ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <?php if ($isActive): ?>
+                        <span class="absolute left-0 inset-y-2.5 w-1 bg-emerald-500 rounded-r-full"></span>
+                    <?php endif; ?>
+
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0 <?= $isActive ? 'text-[#064e3b] dark:text-emerald-400' : 'text-[#5a7b65] dark:text-[#8ea396] group-hover:text-slate-900 dark:group-hover:text-white' ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                     </svg>
                     <span class="truncate"><?= esc($folder['title']) ?></span>

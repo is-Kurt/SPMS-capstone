@@ -112,33 +112,33 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 .dark {
-    /* Canvas & Containers - Deep BSU Forest Green (Matches Dark Mockup) */
-    --color-bg:             #032115; /* Deep forest-green canvas */
-    --color-surface:        #052e1d; /* Deep evergreen card container */
-    --color-input:          #032316; /* Deep dark evergreen input/inner-card surface */
+    /* Canvas & Containers - Modern Obsidian-Pine & Slate-Forest Palette */
+    --color-bg:             #0c1410; /* Deep obsidian-pine canvas */
+    --color-surface:        #121d17; /* Slate-forest card container */
+    --color-input:          #0c1510; /* Dark pine inner-card / recessed surface */
 
-    /* Subtle Card Separation - Dark, low-opacity borders (#0c4a33) */
-    --color-border:         #0c4a33;
-    --color-surface-border: #0c4a33;
+    /* Subtle Card Separation - Refined low-saturation borders */
+    --color-border:         #1a2b22;
+    --color-surface-border: #1a2b22;
 
-    /* Neutrals for Readability - Crisp high-contrast slates */
+    /* Neutrals for Readability */
     --color-text:           #f8fafc; /* Crisp cool white */
-    --color-text-muted:     #94a3b8; /* Crisp light grey / slate for labels & secondary metadata */
+    --color-text-muted:     #8ea396; /* Muted sage-slate for labels & secondary metadata */
 
-    /* Primary Interactive Color - BSU Warm Gold (#FFB800) */
-    --color-accent:         #ffb800; /* BSU Warm Gold */
-    --color-accent-hover:   #e6a600;
+    /* Primary Interactive Color - Warm Gold */
+    --color-accent:         #f59e0b; /* Warm Gold */
+    --color-accent-hover:   #d97706;
     --color-accent-text:    #000000;
 
-    /* Zinc & Slate Mapping to Deep Forest */
-    --color-zinc-700:       #154d37;
-    --color-zinc-800:       #0c4a33;
-    --color-zinc-900:       #032316;
-    --color-zinc-950:       #032115;
-    --color-slate-700:      #154d37;
-    --color-slate-800:      #0c4a33;
-    --color-slate-900:      #032316;
-    --color-slate-950:      #032115;
+    /* Zinc & Slate Mapping to Deep Obsidian-Forest */
+    --color-zinc-700:       #1e3328;
+    --color-zinc-800:       #16281f;
+    --color-zinc-900:       #0c1510;
+    --color-zinc-950:       #0c1410;
+    --color-slate-700:      #1e3328;
+    --color-slate-800:      #16281f;
+    --color-slate-900:      #0c1510;
+    --color-slate-950:      #0c1410;
 }
 
 .tox.tox-tinymce {

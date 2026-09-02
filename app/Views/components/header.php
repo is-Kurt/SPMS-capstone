@@ -42,14 +42,14 @@
     $avatarLetter = session('avatar_letter') ?? substr($displayName, 0, 1) ?: 'S';
 ?>
 
-<nav class="bg-[#042819] border-b border-[#0c4a33] antialiased relative z-[110]">
+<nav class="bg-[#042819] dark:bg-[#0c1410] border-b border-[#0c4a33] dark:border-[#1a2b22] antialiased relative z-[110]">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-16 items-center justify-between">
             
         <div class="flex items-center gap-3">
 
             <!-- Golden Hamburger Button (matches mockup) -->
-            <button type="button" id="mobile-menu-btn" class="w-9 h-9 rounded-xl bg-[#FFB800] text-emerald-950 flex items-center justify-center font-bold shadow-sm shrink-0 hover:bg-[#e6a600] transition-colors cursor-pointer" title="Menu">
+            <button type="button" id="mobile-menu-btn" class="w-9 h-9 rounded-xl bg-[#f59e0b] text-black flex items-center justify-center font-bold shadow-sm shrink-0 hover:bg-[#d97706] transition-colors cursor-pointer" title="Menu">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                 </svg>
@@ -63,7 +63,7 @@
                             <span class="font-heading font-black tracking-tight text-xl uppercase text-white">SPMS</span>
                             <span class="text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-1.5 py-0.5 rounded">BSU</span>
                         </div>
-                        <span class="text-[10px] text-emerald-200/60 font-medium leading-tight">Benguet State University</span>
+                        <span class="text-[10px] text-emerald-200/60 dark:text-[#8ea396] font-medium leading-tight">Benguet State University</span>
                     </div>
                 </a>
 
@@ -73,7 +73,7 @@
                     ?>
                         <a href="<?= site_url($uri) ?>"
                             class="px-4 py-2 transition-all rounded-xl <?= $isActive ?
-                            'bg-[#073824] text-white shadow-xs border border-emerald-700/30 font-bold' : 'text-emerald-100/70 hover:text-white hover:bg-white/5 font-medium'?>">
+                            'bg-[#073824] dark:bg-[#12241b] text-white shadow-xs border border-emerald-700/30 dark:border-[#1d3d2e] font-bold' : 'text-emerald-100/70 dark:text-[#8ea396] hover:text-white hover:bg-white/5 font-medium'?>">
                             <?= $label ?>
                         </a>
                     <?php endforeach; ?>
@@ -111,7 +111,7 @@
                         <?php if (session('avatar_image')): ?>
                             <img src="<?= base_url('uploads/avatars/' . session('avatar_image')) ?>" alt="User" class="w-6 h-6 rounded-full object-cover shrink-0" />
                         <?php else: ?>
-                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-emerald-950 font-black text-xs bg-[#FFB800] shrink-0">
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-black font-black text-xs bg-[#f59e0b] shrink-0">
                                 <?= esc($avatarLetter) ?>
                             </div>
                         <?php endif; ?>

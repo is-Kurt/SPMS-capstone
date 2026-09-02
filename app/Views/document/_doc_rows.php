@@ -147,7 +147,7 @@
                                 // Determine Status Pill
                                 if (in_array($folderStatus, [FolderStatus::APPROVED->value, FolderStatus::TWG_APPROVED->value])) {
                                     $statusLabel = 'APPROVED';
-                                    $statusClass = 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:border-emerald-800/80 dark:text-emerald-400';
+                                    $statusClass = 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-[#102a1e] dark:border-[#1b4330] dark:text-emerald-400';
                                     $dotClass = 'bg-emerald-500 dark:bg-emerald-400';
                                     $normStatus = 'approved';
                                 } elseif (in_array($folderStatus, [FolderStatus::SUBMITTED->value, FolderStatus::PENDING_TARGET_APPROVAL->value, FolderStatus::EVALUATED->value])) {
@@ -157,15 +157,15 @@
                                     $normStatus = 'in_review';
                                 } else {
                                     $statusLabel = 'DRAFT';
-                                    $statusClass = 'bg-zinc-100 text-zinc-600 border border-zinc-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400';
-                                    $dotClass = 'bg-zinc-400 dark:bg-slate-400';
+                                    $statusClass = 'bg-zinc-100 text-zinc-600 border border-zinc-200 dark:bg-[#121d17] dark:border-[#1e3126] dark:text-[#8ea396]';
+                                    $dotClass = 'bg-zinc-400 dark:bg-emerald-500';
                                     $normStatus = 'draft';
                                 }
 
                                 // Icon Box Color
-                                $iconBg = $isTarget ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-950/60 dark:border-blue-800/40 dark:text-blue-400' : 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950/60 dark:border-emerald-800/40 dark:text-emerald-400';
+                                $iconBg = $isTarget ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-950/60 dark:border-blue-800/40 dark:text-blue-400' : 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-[#12241b] dark:border-[#1a3829] dark:text-emerald-400';
                             ?>
-                            <div class="doc-row-item grid grid-cols-1 md:grid-cols-12 gap-3 px-5 py-3.5 items-start md:items-center bg-white dark:bg-[#063321] border border-slate-200 dark:border-[#0c4a33] hover:border-slate-300 dark:hover:border-[#0f543a] rounded-xl mb-3 shadow-xs transition-all group"
+                            <div class="doc-row-item grid grid-cols-1 md:grid-cols-12 gap-3 px-5 py-3.5 items-start md:items-center bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] hover:border-slate-300 dark:hover:border-[#233a2e] rounded-xl mb-3 shadow-xs transition-all group"
                                  data-title="<?= esc(strtolower($doc['title'])) ?>"
                                  data-status="<?= esc($normStatus) ?>">
                                 
@@ -180,7 +180,7 @@
                                         <a href="<?= site_url('document/' . $doc['id']) ?>" class="font-bold text-xs text-text group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors truncate">
                                             <?= esc($doc['title']) ?>
                                         </a>
-                                        <span class="text-[10px] text-slate-400 dark:text-[#94A3B8] font-medium">
+                                        <span class="text-[10px] text-slate-400 dark:text-[#8ea396] font-medium">
                                             DOC • <?= date('M d, Y', strtotime($doc['updated_at'] ?? $doc['created_at'])) ?>
                                         </span>
                                     </div>
@@ -196,13 +196,13 @@
 
                                 <!-- Last Activity -->
                                 <div class="col-span-1 md:col-span-3 flex flex-col">
-                                    <span class="text-xs font-semibold text-slate-200 dark:text-[#E2E8F0]"><?= date('M d, g:ia', strtotime($doc['updated_at'] ?? $doc['created_at'])) ?></span>
-                                    <span class="text-[10px] text-slate-400 dark:text-[#94A3B8]">by <?= esc($displayName) ?></span>
+                                    <span class="text-xs font-semibold text-slate-800 dark:text-[#f8fafc]"><?= date('M d, g:ia', strtotime($doc['updated_at'] ?? $doc['created_at'])) ?></span>
+                                    <span class="text-[10px] text-slate-400 dark:text-[#8ea396]">by <?= esc($displayName) ?></span>
                                 </div>
 
                                 <!-- Actions -->
                                 <div class="col-span-1 md:col-span-1 flex justify-end">
-                                    <a href="<?= site_url('document/' . $doc['id']) ?>" class="px-3.5 py-1.5 bg-[#FFB800] hover:bg-[#e6a600] text-emerald-950 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-xs active:scale-95">
+                                    <a href="<?= site_url('document/' . $doc['id']) ?>" class="px-3.5 py-1.5 bg-[#f59e0b] hover:bg-[#d97706] text-black rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-xs active:scale-95">
                                         Open
                                     </a>
                                 </div>
@@ -278,13 +278,13 @@
                     <div class="flex items-center justify-between">
                         <h4 class="text-[10px] font-black uppercase text-text-muted tracking-wider">Cascade Management</h4>
                         <?php if ($cascadedTeamId): ?>
-                            <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/40">Cascaded</span>
+                            <span class="text-[10px] font-bold text-emerald-600 dark:text-[#34d399] bg-emerald-50 dark:bg-[#102a1e] px-2 py-0.5 rounded-md border border-emerald-200 dark:border-[#1b4330]">Cascaded</span>
                         <?php endif; ?>
                     </div>
 
                     <?php if (!empty($presets)): ?>
                         <div class="relative w-full">
-                            <select id="team-cascade-select" <?= ($cascadedTeamId || $isLocked) ? 'disabled' : '' ?> class="w-full bg-zinc-50 dark:bg-[#1e2824] text-xs font-bold text-text outline-none pl-3.5 pr-8 py-2.5 rounded-xl appearance-none border border-surface-border <?= ($cascadedTeamId || $isLocked) ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer focus:border-emerald-500/50' ?>">
+                            <select id="team-cascade-select" <?= ($cascadedTeamId || $isLocked) ? 'disabled' : '' ?> class="w-full bg-zinc-50 dark:bg-[#0c1510] text-xs font-bold text-text outline-none pl-3.5 pr-8 py-2.5 rounded-xl appearance-none border border-surface-border <?= ($cascadedTeamId || $isLocked) ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer focus:border-emerald-500/50' ?>">
                                 <?php foreach($presets as $preset): ?>
                                     <option value="<?= $preset['id'] ?>" <?= ($cascadedTeamId == $preset['id']) ? 'selected' : '' ?> class="bg-surface text-text">
                                         <?= esc($preset['name']) ?>
@@ -296,18 +296,18 @@
                             </div>
                         </div>
                         <?php if ($cascadedTeamId): ?>
-                            <button onclick="triggerUncascade('<?= $activeFolder['id'] ?>')" class="w-full py-2.5 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-300 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-600 rounded-xl transition-colors cursor-pointer flex justify-center items-center gap-1.5 font-bold text-xs uppercase tracking-wider">
+                            <button onclick="triggerUncascade('<?= $activeFolder['id'] ?>')" class="w-full py-2.5 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-300 dark:border-[#361a1f] bg-rose-50 dark:bg-[#1c1214] hover:bg-rose-600 dark:hover:bg-[#261619] rounded-xl transition-colors cursor-pointer flex justify-center items-center gap-1.5 font-bold text-xs uppercase tracking-wider">
                                 Revoke Cascade
                             </button>
                         <?php elseif (!$isLocked): ?>
-                            <button onclick="triggerCascade('<?= $activeFolder['id'] ?>')" class="w-full py-3 bg-[#064e3b] hover:bg-[#085a3a] text-white dark:bg-[#FFB800] dark:hover:bg-[#e6a600] dark:text-black rounded-xl shadow-md transition-all cursor-pointer flex justify-center items-center gap-1.5 font-black text-xs uppercase tracking-wider active:scale-98">
+                            <button onclick="triggerCascade('<?= $activeFolder['id'] ?>')" class="w-full py-3 bg-[#064e3b] hover:bg-[#085a3a] text-white dark:bg-[#f59e0b] dark:hover:bg-[#d97706] dark:text-black rounded-xl shadow-md transition-all cursor-pointer flex justify-center items-center gap-1.5 font-black text-xs uppercase tracking-wider active:scale-98">
                                 Cascade to Team
                             </button>
                         <?php endif; ?>
                     <?php else: ?>
-                        <div class="p-3 text-center rounded-xl border border-dashed border-slate-200 dark:border-[#0c4a33] bg-slate-50/50 dark:bg-[#032316]/50">
-                            <p class="text-[11px] text-slate-400 dark:text-[#94A3B8] italic mb-1.5">No distribution teams available.</p>
-                            <a href="<?= site_url('teams') ?>" class="text-xs font-bold text-amber-500 dark:text-[#FFB800] hover:underline">
+                        <div class="p-3 text-center rounded-xl border border-dashed border-slate-200 dark:border-[#1a2b22] bg-slate-50/50 dark:bg-[#0c1510]/50">
+                            <p class="text-[11px] text-slate-400 dark:text-[#8ea396] italic mb-1.5">No distribution teams available.</p>
+                            <a href="<?= site_url('teams') ?>" class="text-xs font-bold text-amber-500 dark:text-[#f59e0b] hover:underline">
                                 + Create Team in My Teams
                             </a>
                         </div>
@@ -327,7 +327,7 @@
                             Restore Folder
                         </button>
                     <?php else: ?>
-                        <div class="grid grid-cols-3 gap-2">
+                        <div class="grid grid-cols-1 gap-2.5">
                             <button onclick='openEditFolderModal("<?= esc($activeFolder["id"]) ?>", "<?= esc(addslashes($activeFolder["title"])) ?>", {
                                 ipcr_target_start: "<?= esc($activeFolder["ipcr_target_start"] ?? "") ?>",
                                 ipcr_target_end: "<?= esc($activeFolder["ipcr_target_end"] ?? "") ?>",
@@ -346,16 +346,16 @@
                                 iperf_eval_start: "<?= esc($activeFolder["iperf_eval_start"] ?? "") ?>",
                                 iperf_eval_end: "<?= esc($activeFolder["iperf_eval_end"] ?? "") ?>"
                             })'
-                                    class="bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 dark:bg-[#073824] dark:hover:bg-[#0a4730] dark:text-emerald-300 dark:border-[#0d5236] py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs">
+                                    class="w-full bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 dark:bg-[#13271b] dark:hover:bg-[#1b3b29] dark:text-[#34d399] dark:border-[#1e422f] py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs">
                                 Edit
                             </button>
 
                             <button onclick='archiveFolder("<?= esc($activeFolder["id"]) ?>", "<?= esc(addslashes($activeFolder["title"])) ?>")'
-                                    class="bg-white hover:bg-amber-50 text-amber-700 border border-amber-300 dark:bg-[#2b2410] dark:hover:bg-[#3d3314] dark:text-amber-300 dark:border-[#524419] py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs">
+                                    class="w-full bg-white hover:bg-slate-100 text-amber-700 dark:text-[#b45309] border border-slate-200 dark:border-slate-300 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs">
                                 Archive
                             </button>
 
-                            <button class="btn-delete-modal bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 dark:bg-[#2d1217] dark:hover:bg-[#3d1820] dark:text-rose-400 dark:border-[#521c25] py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                            <button class="w-full btn-delete-modal bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 dark:bg-[#1c1214] dark:hover:bg-[#261619] dark:text-rose-400 dark:border-[#361a1f] py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs"
                                 data-id="<?= $activeFolder['id'] ?>" data-desc="<?= esc($activeFolder['title']) ?>" data-url="<?= site_url('folder') ?>" data-title="Delete Folder">
                                 Delete
                             </button>
@@ -392,8 +392,8 @@
                 <!-- Submission Summary Card -->
                 <div class="flex flex-col gap-3">
                     <div class="flex items-center justify-between">
-                        <h4 class="text-[10px] font-black uppercase text-slate-400 dark:text-[#94A3B8] tracking-wider">Submission Summary</h4>
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 dark:bg-[#032316] dark:border-[#0c4a33] dark:text-slate-300">
+                        <h4 class="text-[10px] font-black uppercase text-slate-400 dark:text-[#8ea396] tracking-wider">Submission Summary</h4>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 dark:bg-[#0c1510] dark:border-[#1a2b22] dark:text-slate-300">
                             <span class="w-1.5 h-1.5 rounded-full <?= $phaseDotColor ?> animate-pulse"></span>
                             <?= esc($currentPhaseLabel) ?>
                         </span>
@@ -401,30 +401,30 @@
 
                     <!-- 2 Compact Metric Tiles -->
                     <div class="grid grid-cols-2 gap-2.5">
-                        <div class="bg-slate-50 dark:bg-[#032316] border border-slate-200 dark:border-[#0c4a33] rounded-xl p-3 flex flex-col">
-                            <span class="text-[10px] font-medium text-slate-500 dark:text-[#94A3B8]">Total Files</span>
+                        <div class="bg-slate-50 dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] rounded-xl p-3 flex flex-col">
+                            <span class="text-[10px] font-medium text-slate-500 dark:text-[#8ea396]">Total Files</span>
                             <span class="text-lg font-black text-slate-900 dark:text-white mt-0.5"><?= count($myDocs) ?></span>
                         </div>
-                        <div class="bg-slate-50 dark:bg-[#032316] border border-slate-200 dark:border-[#0c4a33] rounded-xl p-3 flex flex-col">
-                            <span class="text-[10px] font-medium text-slate-500 dark:text-[#94A3B8]">Folder Status</span>
+                        <div class="bg-slate-50 dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] rounded-xl p-3 flex flex-col">
+                            <span class="text-[10px] font-medium text-slate-500 dark:text-[#8ea396]">Folder Status</span>
                             <span class="text-xs font-bold text-slate-800 dark:text-white mt-1.5 truncate"><?= esc($statusBadgeText) ?></span>
                         </div>
                     </div>
 
                     <!-- Form Commitment Tile -->
-                    <div class="bg-slate-50 dark:bg-[#032316] border border-slate-200 dark:border-[#0c4a33] rounded-xl px-3 py-2.5 flex items-center justify-between">
-                        <span class="text-[10px] font-medium text-slate-500 dark:text-[#94A3B8]">Commitment</span>
+                    <div class="bg-slate-50 dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] rounded-xl px-3 py-2.5 flex items-center justify-between">
+                        <span class="text-[10px] font-medium text-slate-500 dark:text-[#8ea396]">Commitment</span>
                         <span class="text-[11px] font-bold text-slate-800 dark:text-white truncate pl-2"><?= esc($formTypeName) ?> • <?= esc($formTypeDesc) ?></span>
                     </div>
                 </div>
 
                 <!-- Folder Details Block (Matching user's reference mockup) -->
-                <div class="flex flex-col gap-3 pt-5 border-t border-slate-200 dark:border-[#0c4a33] mt-auto">
-                    <h4 class="text-[10px] font-black uppercase text-slate-400 dark:text-[#94A3B8] tracking-wider">Folder Details</h4>
+                <div class="flex flex-col gap-3 pt-5 border-t border-slate-200 dark:border-[#1a2b22] mt-auto">
+                    <h4 class="text-[10px] font-black uppercase text-slate-400 dark:text-[#8ea396] tracking-wider">Folder Details</h4>
                     
                     <div class="flex flex-col gap-2">
                         <div class="flex items-center justify-between text-xs py-0.5">
-                            <span class="text-slate-500 dark:text-[#94A3B8] font-medium">Target Date</span>
+                            <span class="text-slate-500 dark:text-[#8ea396] font-medium">Target Date</span>
                             <span class="text-slate-800 dark:text-white font-semibold text-right truncate pl-2"><?= esc($targetDateStr) ?></span>
                         </div>
 
