@@ -324,6 +324,16 @@
                 <span class="hidden md:inline">Print / Export PDF</span>
                 <span class="md:hidden">Print</span>
             </button>
+            <!-- CSC Scoring Rubric Button -->
+            <button type="button" id="btn-toggle-rubric" onclick="toggleRubricDrawer()" 
+                    class="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 sm:py-2.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-[10px] sm:text-xs font-bold rounded-lg border border-surface-border transition-all cursor-pointer shadow-sm active:scale-[0.98] print-hide"
+                    title="View official CSC 5-point rating rubric for Quality, Timeliness, and Efficiency">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-500 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                <span class="hidden md:inline">Rubric Guide</span>
+                <span class="md:hidden">Rubric</span>
+            </button>
 
             <?php if (!$isGuide): ?>
                 <?php if ($doc['is_target'] == 0 && !in_array($status, [FolderStatus::DRAFT->value, FolderStatus::REEVALUATE->value])): ?>
@@ -600,7 +610,9 @@
         <!-- Tabs injected here via JS -->
     </div>
 
-    <div class="flex-1 min-h-0 w-full relative bg-[#031c12] dark:bg-[#031c12] overflow-x-auto" id="editor-container">
+    <!-- Main Workspace Split Container: Form (Left ~3/4) & Rubric (Right ~1/4) -->
+    <div class="flex-1 min-h-0 w-full relative flex flex-row overflow-hidden" id="workspace-split-container">
+        <div class="flex-1 min-h-0 h-full relative bg-[#031c12] dark:bg-[#031c12] overflow-x-auto transition-all duration-300 ease-out" id="editor-container">
         <?php if (!empty($basisDoc) && !$isGuide): ?>
         <!-- SUPERIOR BASIS STATIC FORM WORKSPACE -->
         <div id="spms-basis-workspace" class="hidden w-full h-full overflow-y-auto p-3 sm:p-6 lg:p-8 flex justify-center items-start custom-scrollbar print:p-0 print:bg-white print:overflow-visible">
@@ -1170,6 +1182,8 @@
             <textarea id="editable-doc" name="content"></textarea>
         </div>
     </div>
+    <?= view('document/_rubric_drawer') ?>
+</div>
 </div>
 
 <script>
