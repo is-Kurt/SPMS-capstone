@@ -113,6 +113,16 @@
         input.name = 'device_id';
         input.value = deviceId;
         form.appendChild(input);
+
+        // Prevent double submit and show loading feedback
+        form.addEventListener('submit', function () {
+            const btn = form.querySelector('button[type="submit"]');
+            if (btn) {
+                btn.disabled = true;
+                btn.classList.add('opacity-70', 'cursor-not-allowed');
+                btn.innerText = 'Logging in...';
+            }
+        });
       });
 </script>
 

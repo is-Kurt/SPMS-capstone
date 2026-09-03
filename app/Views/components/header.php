@@ -10,7 +10,12 @@
     }
 
     // Roles that evaluate others or verify get the Ratings tab
-    if (in_array($role, ['Admin', 'Supervisor', 'HR', 'TWG'])) {
+    $isEvaluator = false;
+    $sessUserId = session()->get('user_id');
+    if ($sessUserId) {
+        $isEvaluator = (new \App\Models\EvaluationRoutingModel())->where('evaluator_id', $sessUserId)->countAllResults() > 0;
+    }
+    if (in_array($role, ['Admin', 'Supervisor', 'HR', 'TWG']) || $isEvaluator) {
         $navItems['ratings'] = 'Ratings';
     }
 

@@ -81,6 +81,15 @@ class Folder extends BaseController
                 session()->remove('active_folder_id');
 
                 if ($activeFolder) {
+                    // If the viewer is an Admin, TWG, or routed evaluator, seamlessly route to ratings view
+                    $routingModel = new \App\Models\EvaluationRoutingModel();
+                    $isAuthorizedEvaluator = ($role === 'Admin' || $role === 'TWG') || 
+                        ($routingModel->where('folder_id', $activeFolder['id'])->where('evaluator_id', $userId)->countAllResults() > 0);
+
+                    if ($isAuthorizedEvaluator) {
+                        return redirect()->to(site_url('ratings/show/' . $activeFolder['id']));
+                    }
+
                     $owner = $userModel->find($activeFolder['user_id']);
                     if ($owner) {
                         session()->setFlashdata('mismatch_detected', true);

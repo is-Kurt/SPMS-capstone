@@ -137,4 +137,5 @@ app/Commands/SpmsTestCycle.php
 app/Services/SpmsLifecycleRunner.php
 app/Controllers/TestCycle.php
 writable/test_run.json
+writable/test_history.json
 

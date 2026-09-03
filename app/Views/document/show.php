@@ -258,20 +258,23 @@
     <div class="flex-none flex items-center justify-between py-2 px-3 sm:px-6 bg-bg gap-2 sm:gap-4 print-hide">
         
         <?php if (!($isEmbed ?? false)): ?>
+        <?php 
+            $returnUrl = $isOwner 
+                ? site_url('folders/' . ($doc['document_folder_id'] ?? ''))
+                : site_url('ratings/show/' . ($doc['document_folder_id'] ?? ''));
+        ?>
         <div class="flex items-center gap-1 sm:gap-3 min-w-0 flex-1">
             <!-- Return to Folder Button -->
-            <a href="<?= site_url('folders/' . ($doc['document_folder_id'] ?? '')) ?>" 
-               onclick="if (window.history.length > 1) { history.back(); return false; }"
+            <a href="<?= $returnUrl ?>" 
                class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-xs font-bold rounded-lg border border-surface-border transition-colors shrink-0 shadow-sm mr-1 sm:mr-2 cursor-pointer"
-               title="Return to Folder">
+               title="Return to <?= $isOwner ? 'Folder' : 'Ratings' ?>">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
                 <span class="font-extrabold uppercase text-[11px] tracking-wider">Return</span>
             </a>
 
-            <a href="<?= site_url('folders/' . ($doc['document_folder_id'] ?? '')) ?>" 
-               onclick="if (window.history.length > 1) { history.back(); return false; }"
+            <a href="<?= $returnUrl ?>" 
                class="cursor-pointer shrink-0">
                 <!-- Back-to-folders brand mark. text-text (not text-white) so it stays visible on the
                      theme-aware bg-bg header in both light and dark mode. -->

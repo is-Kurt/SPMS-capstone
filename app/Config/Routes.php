@@ -8,6 +8,7 @@ use CodeIgniter\Router\RouteCollection;
 
 $routes->get('/test', 'Test::index');
 $routes->get('test/full-cycle', 'TestCycle::run');
+$routes->get('test/check-db', 'TestCycle::checkData');
 $routes->post('/test/importWordTable', 'Test::importWordTable');
 
 $routes->group('', ['filter' => 'auth'], function($routes) {

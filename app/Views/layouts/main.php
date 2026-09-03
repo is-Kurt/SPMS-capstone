@@ -40,5 +40,6 @@
     <script src="<?= base_url('assets/js/main/customSelect.js') ?>"></script>
     <script type="module" src="<?= base_url('assets/js/main/modals/confirmModal.js') ?>"></script>
     <script src="<?= base_url('assets/js/main/passwordToggle.js') ?>"></script>
+    <script src="<?= base_url('assets/js/main/navigationGuards.js') ?>"></script>
 </body>
 </html>

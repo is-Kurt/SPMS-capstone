@@ -87,6 +87,10 @@ modal.onClose = () => settle(false);
  * Replaces the native confirm().
  */
 window.appConfirm = function (message, options = {}) {
+    if (typeof message === 'object' && message !== null) {
+        options = message;
+        message = options.message || '';
+    }
     return open({
         title: options.title || 'Are you sure?',
         message,
@@ -101,6 +105,10 @@ window.appConfirm = function (message, options = {}) {
  * Shows a single-button notice dialog. Replaces the native alert().
  */
 window.appAlert = function (message, options = {}) {
+    if (typeof message === 'object' && message !== null) {
+        options = message;
+        message = options.message || '';
+    }
     return open({
         title: options.title || 'Notice',
         message,

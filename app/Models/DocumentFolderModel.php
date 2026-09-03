@@ -32,7 +32,8 @@ class  DocumentFolderModel extends Model
         'target_period_open_sent_at',
         'eval_period_open_sent_at',
         'routing_preset_id',
-        'status'
+        'status',
+        'deleted_at'
     ];
 
     protected bool $allowEmptyInserts = false;
