@@ -286,7 +286,7 @@
                             </button>
                         </div>
                         <?= form_open('login', ['id' => 'hero-login-form', 'class' => 'space-y-3']) ?>
-                            <?php if (isset($_GET['logged_out']) && $_GET['logged_out'] == '1'): ?>
+                            <?php if (isset($_GET['logged_out']) && $_GET['logged_out'] == '1' && !session('errors.error') && !session('error')): ?>
                                 <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[#064e3b] text-xs font-bold mb-3 flex items-center gap-2">
                                     <svg class="w-4 h-4 shrink-0 text-[#064e3b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
@@ -816,6 +816,13 @@
 
             if (hasAuthError || isLogout || isLoginReq) {
                 toggleHeroLogin(true);
+            }
+
+            // Remove logged_out from URL so future failed logins don't retain the logged_out state
+            if (isLogout && window.history.replaceState) {
+                params.delete('logged_out');
+                const newQuery = params.toString() ? '?' + params.toString() : '';
+                window.history.replaceState({}, document.title, window.location.pathname + newQuery + window.location.hash);
             }
         });
     </script>

@@ -257,6 +257,7 @@
     
     <div class="flex-none flex items-center justify-between py-2 px-3 sm:px-6 bg-bg gap-2 sm:gap-4 print-hide">
         
+        <?php if (!($isEmbed ?? false)): ?>
         <div class="flex items-center gap-1 sm:gap-3 min-w-0 flex-1">
             <!-- Return to Folder Button -->
             <a href="<?= site_url('folders/' . ($doc['document_folder_id'] ?? '')) ?>" 
@@ -282,6 +283,14 @@
                     <span class="hidden sm:block font-black tracking-tighter text-xl uppercase">SPMS</span>
                 </div>
             </a>
+        <?php else: ?>
+        <div class="flex items-center gap-2 min-w-0 flex-1">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300 text-[11px] font-bold border border-sky-200 dark:border-sky-800">
+                📄 Reference Guide (Read-Only)
+            </span>
+            <span class="font-bold text-xs text-text truncate"><?= esc($doc['title']) ?></span>
+        </div>
+        <?php endif; ?>
 
             <input type="text" maxlength="100" id="doc-title" value="<?= esc($doc['title']) ?>"
                 class="bg-transparent border-none font-bold text-sm text-text focus:ring-0 px-1 sm:px-2 py-1 min-w-[50px]"
@@ -312,6 +321,7 @@
                 <span class="hidden md:inline">Print / Export PDF</span>
                 <span class="md:hidden">Print</span>
             </button>
+
             <?php if (!$isGuide): ?>
                 <?php if ($doc['is_target'] == 0 && !in_array($status, [FolderStatus::DRAFT->value, FolderStatus::REEVALUATE->value])): ?>
                     <button type="button" disabled class="bg-zinc-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
@@ -448,11 +458,29 @@
                 <?php elseif ($status === FolderStatus::DRAFT_TARGET->value || $status === FolderStatus::TARGET_RETURNED->value): ?>
                     <div class="flex items-center gap-1.5 sm:gap-2">
                         <?php if ($isOwner): ?>
-                            <button id="btn-submit-target" type="button" 
-                                    onclick="saveWith({ after: () => lockFolderTarget() })" 
-                                    class="bg-info-500 hover:bg-info-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-info-500/20 transition-all active:scale-[0.98] cursor-pointer">
-                                <span class="sm:hidden">Submit Target</span><span class="hidden sm:inline">Submit Targets</span>
-                            </button>
+                            <?php if (session()->get('role') === 'Admin'): ?>
+                                <div class="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-xs">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                    </svg>
+                                    <span>Master Cycle Template</span>
+                                </div>
+                            <?php elseif (isset($isParentTargetApproved) && !$isParentTargetApproved): ?>
+                                <button type="button" disabled 
+                                        class="bg-amber-500/70 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-sm cursor-not-allowed flex items-center gap-1.5" 
+                                        title="Waiting for Superior Target Approval. Under SPMS rules, individual commitments require approved superior targets as a basis.">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span class="hidden sm:inline">Waiting for Superior Approval</span><span class="sm:hidden">Waiting</span>
+                                </button>
+                            <?php else: ?>
+                                <button id="btn-submit-target" type="button" 
+                                        onclick="saveWith({ after: () => lockFolderTarget() })" 
+                                        class="bg-info-500 hover:bg-info-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-info-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                    <span class="sm:hidden">Submit Target</span><span class="hidden sm:inline">Submit Targets</span>
+                                </button>
+                            <?php endif; ?>
                         <?php else: ?>
                             <button type="button" disabled class="bg-zinc-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
                                 Wait<span class="hidden sm:inline">ing for Employee Targets</span>
@@ -462,33 +490,57 @@
 
                 <?php elseif ($status === FolderStatus::PENDING_TARGET_APPROVAL->value): ?>
                     <?php if ($isOwner): ?>
-                        <button type="button" disabled class="bg-warning-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
-                            <span class="hidden sm:inline">Awaiting </span>Target Approval
-                        </button>
-                    <?php else: ?>
-                        <?php if (session()->get('role') === 'Admin'): ?>
-                            <button type="button" disabled class="bg-highlight-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
-                                Monitoring<span class="hidden sm:inline"> View</span>
+                        <div class="flex items-center gap-1.5 sm:gap-2">
+                            <button type="button" disabled class="bg-amber-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-sm opacity-90 cursor-not-allowed flex items-center gap-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span class="hidden sm:inline">Awaiting Target Approval</span>
+                                <span class="sm:hidden">Awaiting Approval</span>
                             </button>
-                        <?php else: ?>
-                            <?php 
-                                $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
-                                $targetEndCol = $ownerDocType . '_target_end';
-                                $isTargetPeriodEnded = !empty($doc[$targetEndCol]) && date('Y-m-d H:i:s') > $doc[$targetEndCol]; 
-                            ?>
-                            <div class="flex gap-1.5 sm:gap-2">
-                                <button id="btn-return-target" type="button" 
-                                        <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="saveWith({ after: () => returnTargetRevision() })"' ?>
-                                        class="<?= $isTargetPeriodEnded ? 'bg-revision-500/50 cursor-not-allowed opacity-80' : 'bg-revision-500 hover:bg-revision-600 shadow-revision-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg transition-all">
-                                    Return<span class="hidden sm:inline"> Target for Revision</span>
+                            <button id="btn-unsubmit-target" type="button" 
+                                    onclick="unsubmitTargetDocument()" 
+                                    class="bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1"
+                                    title="Revoke your submission to make edits">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                </svg>
+                                <span>Revoke Submission</span>
+                            </button>
+                        </div>
+                    <?php else: ?>
+                        <?php 
+                            $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
+                            $targetEndCol = $ownerDocType . '_target_end';
+                            $isTargetPeriodEnded = !empty($doc[$targetEndCol]) && date('Y-m-d H:i:s') > $doc[$targetEndCol]; 
+                            $isAdmin = session()->get('role') === 'Admin';
+                            $isOpcr = strtolower($doc['title'] ?? '') === 'opcr' || $ownerDocType === 'opcr';
+                        ?>
+                        <div class="flex items-center gap-1.5 sm:gap-2">
+                            <button id="btn-return-target" type="button" 
+                                    <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="saveWith({ after: () => returnTargetRevision() })"' ?>
+                                    class="<?= $isTargetPeriodEnded ? 'bg-revision-500/50 cursor-not-allowed opacity-80' : 'bg-revision-500 hover:bg-revision-600 shadow-revision-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg transition-all">
+                                Return<span class="hidden sm:inline"> Target for Revision</span>
+                            </button>
+
+                            <?php if ($isAdmin && $isOpcr): ?>
+                                <button id="btn-approve-release-target" type="button" 
+                                        <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="saveWith({ after: () => approveFolderTarget(true) })"' ?>
+                                        class="<?= $isTargetPeriodEnded ? 'bg-emerald-600/50 cursor-not-allowed opacity-80' : 'bg-gradient-to-r from-emerald-600 to-[#064e3b] hover:from-emerald-700 hover:to-[#085a3a] shadow-emerald-600/30 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg transition-all flex items-center gap-1.5"
+                                        title="Approve this OPCR and automatically distribute it to all College Deans as their target basis">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                    </svg>
+                                    <span>Approve & Release<span class="hidden sm:inline"> to Deans</span></span>
                                 </button>
-                                <button id="btn-approve-target" type="button" 
-                                        <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="saveWith({ after: () => approveFolderTarget() })"' ?>
-                                        class="<?= $isTargetPeriodEnded ? 'bg-success-500/50 cursor-not-allowed opacity-80' : 'bg-success-500 hover:bg-success-600 shadow-success-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg transition-all">
-                                    Approve<span class="hidden sm:inline"> Target</span>
-                                </button>
-                            </div>
-                        <?php endif; ?>
+                            <?php endif; ?>
+
+                            <button id="btn-approve-target" type="button" 
+                                    <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="saveWith({ after: () => approveFolderTarget(false) })"' ?>
+                                    class="<?= $isTargetPeriodEnded ? 'bg-success-500/50 cursor-not-allowed opacity-80' : 'bg-success-500 hover:bg-success-600 shadow-success-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg transition-all">
+                                Approve<span class="hidden sm:inline"> Target</span>
+                            </button>
+                        </div>
                     <?php endif; ?>
 
                 <?php elseif ($status === FolderStatus::TARGET_APPROVED->value || $status === FolderStatus::SUBMITTED->value): ?>
@@ -498,11 +550,25 @@
                             $targetEndCol = $ownerDocType . '_target_end';
                             $isTargetPeriodEnded = !empty($doc[$targetEndCol]) && date('Y-m-d H:i:s') > $doc[$targetEndCol]; 
                         ?>
-                        <button id="btn-unapprove-target" type="button" 
-                                <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="saveWith({ after: () => unapproveFolderTarget() })"' ?>
-                                class="<?= $isTargetPeriodEnded ? 'bg-warning-500/50 cursor-not-allowed opacity-80' : 'bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg transition-all">
-                            Remove<span class="hidden sm:inline"> Approval</span>
-                        </button>
+                        <div class="flex items-center gap-1.5 sm:gap-2">
+                            <?php if (session()->get('role') === 'Admin' && (strtolower($doc['title'] ?? '') === 'opcr' || ($ownerDocType ?? '') === 'opcr')): ?>
+                                <button id="btn-release-deans" type="button" 
+                                        <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="saveWith({ after: () => approveFolderTarget(true) })"' ?>
+                                        class="<?= $isTargetPeriodEnded ? 'bg-emerald-600/50 cursor-not-allowed opacity-80' : 'bg-gradient-to-r from-emerald-600 to-[#064e3b] hover:from-emerald-700 hover:to-[#085a3a] shadow-emerald-600/30 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg transition-all flex items-center gap-1.5"
+                                        title="Distribute this approved OPCR to all College Deans as their target basis">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                    </svg>
+                                    <span>Release to Deans</span>
+                                </button>
+                            <?php endif; ?>
+
+                            <button id="btn-unapprove-target" type="button" 
+                                    <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="saveWith({ after: () => unapproveFolderTarget() })"' ?>
+                                    class="<?= $isTargetPeriodEnded ? 'bg-warning-500/50 cursor-not-allowed opacity-80' : 'bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg transition-all">
+                                Remove<span class="hidden sm:inline"> Approval</span>
+                            </button>
+                        </div>
                     <?php else: ?>
                         <button type="button" disabled class="bg-highlight-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
                             Awaiting Eval<span class="hidden sm:inline"> Window</span>
@@ -532,6 +598,143 @@
     </div>
 
     <div class="flex-1 min-h-0 w-full relative bg-[#031c12] dark:bg-[#031c12] overflow-x-auto" id="editor-container">
+        <?php if (!empty($basisDoc) && !$isGuide): ?>
+        <!-- SUPERIOR BASIS STATIC FORM WORKSPACE -->
+        <div id="spms-basis-workspace" class="hidden w-full h-full overflow-y-auto p-3 sm:p-6 lg:p-8 flex justify-center items-start custom-scrollbar print:p-0 print:bg-white print:overflow-visible">
+            <article id="basis-printable-sheet" class="spms-sheet-container block space-y-5">
+                <!-- Top Reference Bar inside Paper -->
+                <div class="flex items-center justify-between pb-2.5 border-b-2 border-sky-500 mb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-sky-100 text-sky-800 border border-sky-300">
+                            📄 Superior Basis Reference (Read-Only)
+                        </span>
+                        <span class="text-xs font-bold text-slate-800" id="basis-header-doc-title">
+                            <?= esc($basisDoc['title'] ?? '') ?>
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <?php if ($isParentTargetApproved): ?>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                Approved Targets ✓
+                            </span>
+                        <?php else: ?>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
+                                Pending Approval
+                            </span>
+                        <?php endif; ?>
+                        <a href="<?= site_url('document/' . $basisDoc['id']) ?>" target="_blank" 
+                           class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[10px] font-bold text-slate-600 hover:text-sky-600 border border-slate-300 hover:border-sky-300 transition-colors print:hidden"
+                           title="Open in new window or tab">
+                            <span>Open in New Tab ↗</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- INSTITUTIONAL FORM HEADER -->
+                <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px;">
+                    <h1 style="font-size: 15px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 6px 0;" id="basis-sheet-title">
+                        <?= esc($basisDoc['title'] ?? 'Performance Commitment and Review') ?>
+                    </h1>
+                    <p style="font-size: 11px; color: #334155; margin: 6px 0 0 0; line-height: 1.6;">
+                        I, <span id="basis-val-ratee-name" style="font-weight: bold; color: #0f172a; border-bottom: 1px solid #94a3b8; padding: 2px 6px;"></span>, 
+                        <span id="basis-val-ratee-pos" style="color: #0f172a; border-bottom: 1px solid #94a3b8; padding: 2px 6px;"></span> 
+                        of the <span id="basis-val-ratee-dept" style="color: #0f172a; border-bottom: 1px solid #94a3b8; padding: 2px 6px;"></span>, 
+                        commit to deliver and agree to be rated on the attainment of targets for 
+                        <span id="basis-val-ratee-period" style="font-weight: bold; color: #0f172a; border-bottom: 1px solid #94a3b8; padding: 2px 6px;"></span>.
+                    </p>
+                </div>
+
+                <!-- APPROVER, RATEE, AND RATING SCALE MATRIX -->
+                <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 11px;">
+                    <tr>
+                        <!-- Approver Block -->
+                        <td style="width: 35%; border: 1px solid #000; padding: 10px; vertical-align: top;">
+                            <div style="font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #0f172a; margin-bottom: 8px;">
+                                Approved by:
+                            </div>
+                            <table style="width: 100%; border-collapse: collapse; border: none; font-size: 11px;">
+                                <tr>
+                                    <td style="width: 60px; color: #64748b; font-weight: 600; padding: 3px 0;">Name:</td>
+                                    <td style="font-weight: bold; color: #0f172a; padding: 3px 0;" id="basis-val-approver-name">—</td>
+                                </tr>
+                                <tr>
+                                    <td style="color: #64748b; font-weight: 600; padding: 3px 0;">Position:</td>
+                                    <td style="color: #0f172a; padding: 3px 0;" id="basis-val-approver-pos">—</td>
+                                </tr>
+                                <tr>
+                                    <td style="color: #64748b; font-weight: 600; padding: 3px 0;">Date:</td>
+                                    <td style="color: #0f172a; padding: 3px 0;" id="basis-val-approver-date">—</td>
+                                </tr>
+                            </table>
+                        </td>
+
+                        <!-- Ratee Sign-off Block -->
+                        <td style="width: 35%; border: 1px solid #000; padding: 10px; text-align: center; vertical-align: middle;">
+                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                                <span id="basis-val-ratee-sign" style="font-weight: bold; color: #0f172a; font-size: 12px; border-bottom: 1px solid #94a3b8; width: 85%; padding-bottom: 2px;">—</span>
+                                <span style="color: #334155; font-size: 10px; font-weight: 600; margin-top: 4px;" id="basis-val-ratee-sign-pos">Supervisor / Ratee</span>
+                                <div style="margin-top: 8px; font-size: 11px; color: #64748b;">
+                                    Date: <span id="basis-val-ratee-sign-date" style="color: #0f172a;">—</span>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- CSC Rating Scale -->
+                        <td style="width: 30%; border: 1px solid #000; padding: 8px 12px; background: #f8fafc; vertical-align: top; font-size: 10px;">
+                            <div style="font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #0f172a; margin-bottom: 4px;">
+                                Rating Scale Guide:
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 2px; color: #334155;">
+                                <div style="display: flex; justify-content: space-between; font-weight: bold;"><span>5 — Outstanding</span> <span>(4.500 – 5.000)</span></div>
+                                <div style="display: flex; justify-content: space-between;"><span>4 — Very Satisfactory</span> <span>(3.500 – 4.499)</span></div>
+                                <div style="display: flex; justify-content: space-between;"><span>3 — Satisfactory</span> <span>(2.500 – 3.499)</span></div>
+                                <div style="display: flex; justify-content: space-between;"><span>2 — Unsatisfactory</span> <span>(1.500 – 2.499)</span></div>
+                                <div style="display: flex; justify-content: space-between;"><span>1 / 0 — Poor / Unmet</span> <span>(Below 1.499)</span></div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- MAIN TABLE OF DELIVERABLES & RATINGS (Static Read-Only) -->
+                <div style="width: 100%; overflow: visible; min-height: fit-content; display: block;">
+                    <table class="spms-table" style="width: 100%; border-collapse: collapse; border: 2px solid #000; font-size: 11px;">
+                        <colgroup>
+                            <col style="width: 25%;">
+                            <col style="width: 25%;">
+                            <col style="width: 24%;">
+                            <col style="width: 4%;">
+                            <col style="width: 4%;">
+                            <col style="width: 4%;">
+                            <col style="width: 5%;">
+                            <col style="width: 9%;">
+                        </colgroup>
+                        <thead>
+                            <tr style="background: #f1f5f9; text-align: center; font-weight: bold; border-bottom: 1px solid #000;">
+                                <th rowspan="2" style="padding: 8px; border: 1px solid #000;">ACADEMIC FUNCTION /<br>MAJOR FINAL OUTPUT</th>
+                                <th rowspan="2" style="padding: 8px; border: 1px solid #000;">SUCCESS INDICATORS<br><span style="font-size: 9px; font-weight: normal;">(Targets + Measures)</span></th>
+                                <th rowspan="2" style="padding: 8px; border: 1px solid #000;">ACTUAL ACCOMPLISHMENTS</th>
+                                <th colspan="4" style="padding: 4px; border: 1px solid #000;">RATING</th>
+                                <th rowspan="2" style="padding: 8px; border: 1px solid #000;">REMARKS</th>
+                            </tr>
+                            <tr style="background: #f1f5f9; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                                <th style="padding: 4px; border: 1px solid #000;">Q</th>
+                                <th style="padding: 4px; border: 1px solid #000;">T</th>
+                                <th style="padding: 4px; border: 1px solid #000;">E</th>
+                                <th style="padding: 4px; border: 1px solid #000;">Ave.</th>
+                            </tr>
+                        </thead>
+                        <tbody id="basis-tbody-core"></tbody>
+                        <tbody id="basis-tbody-strategic"></tbody>
+                        <tbody id="basis-tbody-support"></tbody>
+                    </table>
+                </div>
+
+                <!-- Custom HTML Container for older/TinyMCE templates if applicable -->
+                <div id="basis-html-fallback" class="hidden text-sm leading-relaxed p-4 bg-white text-slate-800"></div>
+            </article>
+        </div>
+        <?php endif; ?>
+
         <!-- SPMS Structured Form Builder Container -->
         <div id="spms-form-workspace" class="hidden w-full h-full overflow-y-auto p-3 sm:p-6 lg:p-8 flex justify-center items-start custom-scrollbar print:p-0 print:bg-white print:overflow-visible">
             <article id="printable-form" class="spms-sheet-container block space-y-5">
@@ -983,6 +1186,10 @@
 
     let activeTabId = tabs[0].id;
     
+    const basisFormData = <?= json_encode($basisFormData ?? null) ?>;
+    const basisDocContent = <?= json_encode($basisDocContent ?? '') ?>;
+    const superiorUserInfo = <?= json_encode($superiorUser ?? null) ?>;
+
     const canEditTargets = <?= json_encode($canEditTargets) ?>;
     const canEditEvaluation = <?= json_encode($canEditEvaluation) ?>;
     const isTargetPhase = <?= json_encode($isTargetPhase) ?>;
@@ -1053,6 +1260,24 @@
 
             tabBar.appendChild(btn);
         });
+
+        <?php if (!empty($basisDoc) && !$isGuide): ?>
+        const isBasisActive = (activeTabId === 'basis-tab');
+        const basisBtn = document.createElement('div');
+        basisBtn.className = `group flex items-center gap-1.5 pb-2 border-b-2 transition-colors select-none cursor-pointer ${isBasisActive ? 'border-sky-500 text-sky-500 dark:text-sky-400 font-bold' : 'border-transparent text-text-muted hover:text-text'}`;
+        basisBtn.onclick = () => switchEditorTab('basis-tab');
+        basisBtn.title = 'View Superior Basis Document';
+        basisBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 ${isBasisActive ? 'text-sky-500' : 'text-sky-500/70'} shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Basis: <?= esc($basisDoc['title']) ?></span>
+            <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold ${isBasisActive ? 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-300 dark:border-sky-700' : '<?= $isParentTargetApproved ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400' ?>'}">
+                <?= $isParentTargetApproved ? 'Approved ✓' : 'Pending' ?>
+            </span>
+        `;
+        tabBar.appendChild(basisBtn);
+        <?php endif; ?>
         
         <?php if ($isEditable): ?>
         const addBtn = document.createElement('button');
@@ -1067,13 +1292,15 @@
     function switchEditorTab(tabId) {
         if (tabId === activeTabId) return;
 
-        if (window.isSpmsFormActive && typeof window.syncSpmsActiveTab === 'function') {
-            window.syncSpmsActiveTab();
-        } else {
-            const editor = tinymce.get('editable-doc');
-            if (editor) {
-                const activeTab = tabs.find(t => t.id === activeTabId);
-                if (activeTab) activeTab.content = editor.getContent();
+        if (activeTabId !== 'basis-tab') {
+            if (window.isSpmsFormActive && typeof window.syncSpmsActiveTab === 'function') {
+                window.syncSpmsActiveTab();
+            } else {
+                const editor = tinymce.get('editable-doc');
+                if (editor) {
+                    const activeTab = tabs.find(t => t.id === activeTabId);
+                    if (activeTab) activeTab.content = editor.getContent();
+                }
             }
         }
         
@@ -1247,7 +1474,7 @@
     }
 
     async function returnFolderRevision() {
-        const ok = await window.appConfirm("Return this to the employee for revision?", { variant: 'warning', confirmText: 'Return' });
+        const ok = await window.appConfirm("Return this evaluation to the employee for revision?", { variant: 'warning', confirmText: 'Return' });
         if (!ok) return;
         
         const formData = new FormData();
@@ -1272,16 +1499,58 @@
         });
     }
 
-    async function approveFolderTarget() {
-        const ok = await window.appConfirm("Approve these targets?", { confirmText: 'Approve' });
+    async function unsubmitTargetDocument() {
+        const ok = await window.appConfirm("Are you sure you want to revoke your target submission? This will return your folder to Draft status so you can make edits and fixes to your commitments.", { 
+            variant: 'warning', 
+            confirmText: 'Revoke Submission' 
+        });
         if (!ok) return;
+
+        const btn = document.getElementById('btn-unsubmit-target');
+        if (btn) {
+            btn.innerText = 'Revoking...';
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
 
         const formData = new FormData();
         formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
 
-        document.getElementById('btn-approve-target').innerText = 'Approving...';
+        apiPost('<?= site_url('folder/unsubmit_target') ?>', formData, {
+            onSuccess: () => window.location.reload(),
+            onError: async (errMsg) => {
+                await window.appAlert(errMsg || "An error occurred.");
+                window.location.reload();
+            }
+        });
+    }
+
+    async function approveFolderTarget(releaseToDeans = false) {
+        const msg = releaseToDeans 
+            ? "Approve this OPCR and immediately distribute it to all College Deans as their target basis?"
+            : "Approve these targets?";
+        const ok = await window.appConfirm(msg, { confirmText: releaseToDeans ? 'Approve & Release' : 'Approve' });
+        if (!ok) return;
+
+        const formData = new FormData();
+        formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
+        if (releaseToDeans) {
+            formData.append('release_to_deans', '1');
+        }
+
+        const btn = document.getElementById(releaseToDeans ? 'btn-approve-release-target' : 'btn-approve-target');
+        if (btn) btn.innerText = releaseToDeans ? 'Releasing...' : 'Approving...';
+
         apiPost('<?= site_url('folder/approve_target') ?>', formData, {
-            onSuccess: () => window.location.reload()
+            onSuccess: async (res) => {
+                if (res && res.message) {
+                    await window.appAlert(res.message);
+                }
+                window.location.reload();
+            },
+            onError: async (errMsg) => {
+                await window.appAlert(errMsg || "An error occurred.");
+                window.location.reload();
+            }
         });
     }
 
@@ -1299,7 +1568,7 @@
     }
 
     async function returnTargetRevision() {
-        const ok = await window.appConfirm("Return targets to the employee for revision?", { variant: 'warning', confirmText: 'Return' });
+        const ok = await window.appConfirm("Return targets to the employee for revision? Any notes left in the Remarks column will be saved.", { variant: 'warning', confirmText: 'Return' });
         if (!ok) return;
         
         const formData = new FormData();
@@ -1309,6 +1578,19 @@
         apiPost('<?= site_url('folder/return_target') ?>', formData, {
             onSuccess: () => window.location.reload()
         });
+    }
+
+    function stampRoleTag(btn) {
+        const td = btn.closest('td');
+        if (!td) return;
+        const ta = td.querySelector('.field-remarks');
+        if (!ta) return;
+        const roleTag = `[${window.currentReviewerRole || 'Reviewer'}]: `;
+        if (!ta.value.includes(roleTag)) {
+            ta.value = ta.value ? `${ta.value.trim()}\n${roleTag}` : roleTag;
+        }
+        ta.focus();
+        AppState.setDirty(true);
     }
 </script>
 
@@ -1321,6 +1603,8 @@
     window.status = <?= json_encode($doc['folder_status']) ?>;
     window.isTarget = <?= json_encode($doc['is_target'] == 1) ?>;
     window.isOwner = <?= json_encode($doc['owner_id'] == session()->get('user_id')) ?>;
+    window.currentReviewerRole = <?= json_encode($currentReviewerRole ?? 'Reviewer') ?>;
+    window.currentReviewerName = <?= json_encode($currentReviewerName ?? '') ?>;
 
     // Enum values exported for JS use
     window.FolderStatus = <?= json_encode([
@@ -1396,6 +1680,23 @@
     };
 
     function initActiveTabView() {
+        const basisWorkspace = document.getElementById('spms-basis-workspace');
+
+        if (activeTabId === 'basis-tab') {
+            window.isSpmsFormActive = false;
+            document.getElementById('spms-form-workspace')?.classList.add('hidden');
+            document.getElementById('tinymce-wrapper')?.classList.add('hidden');
+            if (basisWorkspace) {
+                basisWorkspace.classList.remove('hidden');
+                renderBasisStaticSheet();
+            }
+            return;
+        }
+
+        if (basisWorkspace) {
+            basisWorkspace.classList.add('hidden');
+        }
+
         const activeTab = tabs.find(t => t.id === activeTabId);
         if (!activeTab) return;
 
@@ -1611,9 +1912,17 @@
                 </div>
             </td>
 
-            <!-- Remarks (Unlocked during evaluation phase) -->
+            <!-- Remarks -->
             <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : ''}>${escapeHtml(data.remarks)}</textarea>
+                <div class="flex items-center justify-between mb-1 print-hide">
+                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Remarks</span>
+                    ${!isOwner ? `
+                        <button type="button" onclick="stampRoleTag(this)" class="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-800 transition-colors cursor-pointer" title="Stamp your role tag into remarks">
+                            + Tag [${escapeHtml(window.currentReviewerRole || 'Reviewer')}]
+                        </button>
+                    ` : ''}
+                </div>
+                <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." ${isOwner && (status === FolderStatus.PENDING_TARGET_APPROVAL || status === FolderStatus.SUBMITTED || status === FolderStatus.TARGET_APPROVED || status === FolderStatus.APPROVED) ? 'disabled title="Locked while submitted or approved"' : ''}>${escapeHtml(data.remarks)}</textarea>
             </td>
 
             <!-- Delete Action (Only available during Target Phase) -->
@@ -1843,6 +2152,7 @@
         const getVal = (id) => document.getElementById(id)?.value || '';
 
         const formData = {
+            revisionHistory: activeTab.formData?.revisionHistory || [],
             title: document.getElementById('spms-doc-title')?.innerText || document.getElementById('doc-title')?.value || 'Individual Performance Commitment and Review (IPCR) — Faculty / Professors',
             ratee: {
                 name: getVal('ratee-name'),
@@ -1916,6 +2226,10 @@
     }
 
     function exportToPdf() {
+        if (activeTabId === 'basis-tab') {
+            window.print();
+            return;
+        }
         if (window.isSpmsFormActive) {
             // Auto-expand all textareas so multi-line text is never clipped during printing
             document.querySelectorAll('#printable-form textarea').forEach(ta => {
@@ -1931,6 +2245,136 @@
                 window.print();
             }
         }
+    }
+
+    function renderBasisStaticSheet() {
+        const sheet = document.getElementById('basis-printable-sheet');
+        if (!sheet) return;
+
+        const data = basisFormData || {};
+        const fallbackEl = document.getElementById('basis-html-fallback');
+
+        // If no structured categories, but has HTML content:
+        if ((!data.categories || Object.keys(data.categories).length === 0) && basisDocContent && basisDocContent.trim() !== '') {
+            if (fallbackEl) {
+                fallbackEl.innerHTML = basisDocContent;
+                fallbackEl.classList.remove('hidden');
+            }
+            return;
+        }
+
+        if (fallbackEl) fallbackEl.classList.add('hidden');
+
+        // Header info
+        const titleText = data.title || '<?= esc($basisDoc['title'] ?? '') ?>';
+        const sheetTitleEl = document.getElementById('basis-sheet-title');
+        if (sheetTitleEl) sheetTitleEl.innerText = titleText;
+
+        const setText = (id, val, fallback = '—') => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = (val !== undefined && val !== null && String(val).trim() !== '') ? val : fallback;
+        };
+
+        const supName = (superiorUserInfo?.first_name ? `${superiorUserInfo.first_name} ${superiorUserInfo.last_name}` : '');
+        const supPos = superiorUserInfo?.position || 'Supervisor';
+        const supDept = superiorUserInfo?.department || '';
+
+        setText('basis-val-ratee-name', data.ratee?.name || supName, supName || 'Higher Authority');
+        setText('basis-val-ratee-pos', data.ratee?.position || supPos, supPos);
+        setText('basis-val-ratee-dept', data.ratee?.dept || supDept, supDept || 'Office / Division');
+        setText('basis-val-ratee-period', data.ratee?.period, 'Current Rating Period');
+
+        setText('basis-val-approver-name', data.approver?.name);
+        setText('basis-val-approver-pos', data.approver?.position);
+        setText('basis-val-approver-date', data.approver?.date);
+
+        setText('basis-val-ratee-sign', data.rateeSign?.name || data.ratee?.name || supName, supName || 'Higher Authority');
+        setText('basis-val-ratee-sign-pos', data.ratee?.position || supPos, supPos);
+        setText('basis-val-ratee-sign-date', data.rateeSign?.date);
+
+        const isOpcr = titleText.toUpperCase().includes('OPCR') || titleText.toUpperCase().includes('OFFICE');
+        const isDpcr = titleText.toUpperCase().includes('DPCR') || titleText.toUpperCase().includes('DIVISION') || titleText.toUpperCase().includes('DEPARTMENT');
+
+        const catLabels = {
+            core: isOpcr ? "1. Core Office Mandate (60%)" : (isDpcr ? "1. Core Division Functions (60%)" : "1. Core Functions (70%)"),
+            strategic: isOpcr ? "2. Strategic Functions (25%)" : (isDpcr ? "2. Strategic Functions (25%)" : "2. Strategic Functions (20%)"),
+            support: isOpcr ? "3. Support Functions (15%)" : (isDpcr ? "3. Support Functions (15%)" : "3. Support Functions (10%)")
+        };
+
+        const escapeHtml = (str) => {
+            if (!str) return '—';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
+        ['core', 'strategic', 'support'].forEach(cat => {
+            const tbody = document.getElementById(`basis-tbody-${cat}`);
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            // Header row
+            const trHeader = document.createElement('tr');
+            trHeader.style.cssText = 'background: #f8fafc; border-top: 2px solid #000; border-bottom: 1px solid #000;';
+            trHeader.innerHTML = `
+                <td colspan="5" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a;">
+                    ${catLabels[cat]}
+                </td>
+                <td colspan="3" style="padding: 6px 12px; text-align: right;">
+                    <span style="display: inline-block; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 800; font-size: 10px; padding: 2px 6px; border-radius: 4px;">
+                        Cascaded Deliverables
+                    </span>
+                </td>
+            `;
+            tbody.appendChild(trHeader);
+
+            const rows = data.categories?.[cat] || [];
+            if (rows.length === 0 || rows.every(r => !r.mfo && !r.indicators)) {
+                const trEmpty = document.createElement('tr');
+                trEmpty.style.cssText = 'border-bottom: 1px solid #000;';
+                trEmpty.innerHTML = `
+                    <td colspan="8" style="padding: 12px; text-align: center; color: #94a3b8; font-style: italic; font-size: 11px;">
+                        No deliverables entered for this category.
+                    </td>
+                `;
+                tbody.appendChild(trEmpty);
+            } else {
+                rows.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.style.cssText = 'border-bottom: 1px solid #000;';
+                    tr.innerHTML = `
+                        <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; color: #0f172a; line-height: 1.5;">
+                            ${escapeHtml(r.mfo)}
+                        </td>
+                        <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; color: #0f172a; font-weight: 600; line-height: 1.5;">
+                            ${escapeHtml(r.indicators)}
+                        </td>
+                        <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; color: #334155; line-height: 1.5;">
+                            ${escapeHtml(r.accomplishments)}
+                        </td>
+                        <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: bold; font-size: 11px;">
+                            ${r.q || '—'}
+                        </td>
+                        <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: bold; font-size: 11px;">
+                            ${r.t || '—'}
+                        </td>
+                        <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: bold; font-size: 11px;">
+                            ${r.e || '—'}
+                        </td>
+                        <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: 900; color: #0369a1; background: #f0f9ff; font-size: 11px;">
+                            ${r.ave || '—'}
+                        </td>
+                        <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 10px; color: #475569;">
+                            ${escapeHtml(r.remarks)}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        });
     }
 
     // Launch active view on page load

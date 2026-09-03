@@ -86,7 +86,12 @@ class  DocumentFolderModel extends Model
             ->where('df.parent_folder_id IS NOT NULL');
 
         if ($parentFolderId) {
-            $builder->where('df.parent_folder_id', $parentFolderId);
+            $allDescendantIds = $this->getAllDescendantFolderIds($parentFolderId);
+            if (!empty($allDescendantIds)) {
+                $builder->whereIn('df.id', $allDescendantIds);
+            } else {
+                $builder->where('df.id', -1);
+            }
         }
 
         if ($sysRole !== 'Admin' && $sysRole !== 'TWG') {
@@ -96,6 +101,39 @@ class  DocumentFolderModel extends Model
 
         $builder->groupBy('df.id');
         return $builder->get()->getResultArray();
+    }
+
+    /**
+     * Recursively traverses and collects all descendant folder IDs under a given root folder.
+     */
+    public function getAllDescendantFolderIds(string|int $rootFolderId): array
+    {
+        $descendantIds = [];
+        $frontier = [$rootFolderId];
+
+        while (!empty($frontier)) {
+            $children = $this->select('id')
+                ->whereIn('parent_folder_id', $frontier)
+                ->where('deleted_at IS NULL')
+                ->findAll();
+
+            if (empty($children)) {
+                break;
+            }
+
+            $childIds = array_column($children, 'id');
+            $newIds = array_diff($childIds, $descendantIds);
+            if (empty($newIds)) {
+                break;
+            }
+
+            foreach ($newIds as $cid) {
+                $descendantIds[] = $cid;
+            }
+            $frontier = $newIds;
+        }
+
+        return $descendantIds;
     }
 
     /**
@@ -355,10 +393,11 @@ class  DocumentFolderModel extends Model
     public function isFolderLocked($folder) {
         if (!$folder) return true; 
 
-        // Allow structure/cascade changes only during the target drafting phase (or legacy draft)
+        // Allow structure/cascade changes during target drafting and target approved phases
         $isLocked = !in_array($folder['status'], [
             FolderStatus::DRAFT_TARGET->value,
             FolderStatus::TARGET_RETURNED->value,
+            FolderStatus::TARGET_APPROVED->value,
             FolderStatus::DRAFT->value
         ]);
         

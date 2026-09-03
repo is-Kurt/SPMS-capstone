@@ -282,9 +282,27 @@
                         <?php endif; ?>
                     </div>
 
-                    <?php if (!empty($presets)): ?>
+                    <?php 
+                        $isUserAdmin = (session()->get('role') === 'Admin');
+                        $isFolderTargetApproved = ($activeFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
+                        $canActuallyCascade = $isUserAdmin || $isFolderTargetApproved;
+                    ?>
+
+                    <?php if (!$canActuallyCascade && !$cascadedTeamId): ?>
+                        <div class="p-3 rounded-xl border border-amber-300 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 flex flex-col gap-1.5">
+                            <div class="flex items-center gap-1.5 font-extrabold text-[11px] uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                                <span>Cascade Locked</span>
+                            </div>
+                            <p class="text-[10px] leading-tight text-amber-700 dark:text-amber-400">
+                                Your target commitments must be approved by your higher-up first before cascading them as a basis for your subordinates.
+                            </p>
+                        </div>
+                    <?php elseif (!empty($presets)): ?>
                         <div class="relative w-full">
-                            <select id="team-cascade-select" <?= ($cascadedTeamId || $isLocked) ? 'disabled' : '' ?> class="w-full bg-zinc-50 dark:bg-[#0c1510] text-xs font-bold text-text outline-none pl-3.5 pr-8 py-2.5 rounded-xl appearance-none border border-surface-border <?= ($cascadedTeamId || $isLocked) ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer focus:border-emerald-500/50' ?>">
+                            <select id="team-cascade-select" <?= ($cascadedTeamId || $isLocked || !$canActuallyCascade) ? 'disabled' : '' ?> class="w-full bg-zinc-50 dark:bg-[#0c1510] text-xs font-bold text-text outline-none pl-3.5 pr-8 py-2.5 rounded-xl appearance-none border border-surface-border <?= ($cascadedTeamId || $isLocked || !$canActuallyCascade) ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer focus:border-emerald-500/50' ?>">
                                 <?php foreach($presets as $preset): ?>
                                     <option value="<?= $preset['id'] ?>" <?= ($cascadedTeamId == $preset['id']) ? 'selected' : '' ?> class="bg-surface text-text">
                                         <?= esc($preset['name']) ?>
@@ -299,7 +317,56 @@
                             <button onclick="triggerUncascade('<?= $activeFolder['id'] ?>')" class="w-full py-2.5 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-300 dark:border-[#361a1f] bg-rose-50 dark:bg-[#1c1214] hover:bg-rose-600 dark:hover:bg-[#261619] rounded-xl transition-colors cursor-pointer flex justify-center items-center gap-1.5 font-bold text-xs uppercase tracking-wider">
                                 Revoke Cascade
                             </button>
-                        <?php elseif (!$isLocked): ?>
+
+                            <?php if (!empty($cascadedChildren)): ?>
+                                <div class="mt-2 flex flex-col gap-2">
+                                    <div class="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-text-muted">
+                                        <span>Cascaded Subordinates</span>
+                                        <span><?= count($cascadedChildren) ?></span>
+                                    </div>
+                                    <div class="max-h-56 overflow-y-auto space-y-1.5 custom-scrollbar pr-0.5">
+                                        <?php foreach ($cascadedChildren as $child): ?>
+                                            <?php 
+                                                $isPending = ($child['status'] === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value);
+                                                $isApproved = ($child['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
+                                            ?>
+                                            <div class="p-2.5 rounded-xl border border-slate-200 dark:border-[#1e382b] bg-slate-50 dark:bg-[#0c1510] flex flex-col gap-1.5 text-xs">
+                                                <div class="flex items-start justify-between gap-1">
+                                                    <div>
+                                                        <span class="font-bold text-slate-800 dark:text-white block text-[11px] leading-tight">
+                                                            <?= esc($child['first_name'] . ' ' . $child['last_name']) ?>
+                                                        </span>
+                                                        <span class="text-[9px] text-slate-500 dark:text-slate-400">
+                                                            <?= esc($child['position'] ?: $child['email']) ?>
+                                                        </span>
+                                                    </div>
+                                                    <?php if ($isPending): ?>
+                                                        <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300 shrink-0">
+                                                            Awaiting Approval
+                                                        </span>
+                                                    <?php elseif ($isApproved): ?>
+                                                        <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 shrink-0">
+                                                            Target Approved
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 shrink-0">
+                                                            Drafting
+                                                        </span>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <?php if ($isPending): ?>
+                                                    <a href="<?= site_url('ratings/show/' . $child['id']) ?>" 
+                                                       class="w-full py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[10px] text-center flex items-center justify-center gap-1 shadow-xs transition-colors">
+                                                        <span>Review Targets</span>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                                                    </a>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                        <?php elseif (!$isLocked && $canActuallyCascade): ?>
                             <button onclick="triggerCascade('<?= $activeFolder['id'] ?>')" class="w-full py-3 bg-[#064e3b] hover:bg-[#085a3a] text-white dark:bg-[#f59e0b] dark:hover:bg-[#d97706] dark:text-black rounded-xl shadow-md transition-all cursor-pointer flex justify-center items-center gap-1.5 font-black text-xs uppercase tracking-wider active:scale-98">
                                 Cascade to Team
                             </button>
@@ -381,7 +448,20 @@
                         default => 'Draft'
                     };
 
-                    $formTypeName = strtoupper($ownerDocType ?: 'IPCR');
+                    // Derive official form type from the primary document inside the folder
+                    $primaryDoc = null;
+                    if (!empty($myDocs)) {
+                        foreach ($myDocs as $d) {
+                            if (!empty($d['is_target'])) { $primaryDoc = $d; break; }
+                        }
+                        if (!$primaryDoc) $primaryDoc = reset($myDocs);
+                    }
+
+                    $effectiveDocType = (!empty($primaryDoc['title']) && in_array(strtoupper($primaryDoc['title']), ['OPCR', 'DPCR', 'IPCR', 'IPERF']))
+                        ? strtoupper($primaryDoc['title'])
+                        : ($ownerDocType ?? ($subFolderOwner['doc_type'] ?? 'IPCR'));
+
+                    $formTypeName = strtoupper($effectiveDocType ?: 'IPCR');
                     $formTypeDesc = match($formTypeName) {
                         'OPCR' => 'Office Performance',
                         'DPCR' => 'Department Performance',
@@ -416,6 +496,75 @@
                         <span class="text-[10px] font-medium text-slate-500 dark:text-[#8ea396]">Commitment</span>
                         <span class="text-[11px] font-bold text-slate-800 dark:text-white truncate pl-2"><?= esc($formTypeName) ?> • <?= esc($formTypeDesc) ?></span>
                     </div>
+
+                    <?php if ($activeFolder['status'] === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value): ?>
+                        <?php if ($activeFolder['user_id'] == session()->get('user_id')): ?>
+                            <button onclick="unsubmitTargetFolder('<?= $activeFolder['id'] ?>', this)" 
+                                    class="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                </svg>
+                                Revoke Target Submission
+                            </button>
+                        <?php elseif (session()->get('role') === 'Admin'): ?>
+                            <?php $isOpcrFolder = ($formTypeName === 'OPCR'); ?>
+                            <div class="flex flex-col gap-2">
+                                <?php if ($isOpcrFolder): ?>
+                                    <button onclick="approveTargetFromFolder('<?= $activeFolder['id'] ?>', true, this)"
+                                            class="w-full py-2.5 px-3 bg-gradient-to-r from-emerald-600 to-[#064e3b] hover:from-emerald-700 hover:to-[#085a3a] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-[0.98]">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                        </svg>
+                                        Approve & Release to Deans
+                                    </button>
+                                <?php endif; ?>
+                                <button onclick="approveTargetFromFolder('<?= $activeFolder['id'] ?>', false, this)"
+                                        class="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-[0.98]">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Approve Target
+                                </button>
+                            </div>
+                        <?php endif; ?>
+                    <?php elseif ($activeFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value && session()->get('role') === 'Admin' && ($isOpcrFolder ?? false)): ?>
+                        <div class="flex flex-col gap-2">
+                            <button onclick="approveTargetFromFolder('<?= $activeFolder['id'] ?>', true, this)"
+                                    class="w-full py-2.5 px-3 bg-gradient-to-r from-emerald-600 to-[#064e3b] hover:from-emerald-700 hover:to-[#085a3a] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-[0.98]"
+                                    title="Distribute this approved OPCR to all College Deans as their target basis">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                Release OPCR to Deans
+                            </button>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($parentFolder)): ?>
+                        <!-- Superior Basis Cascade Status Tile (Strict SPMS Mode) -->
+                        <div class="bg-slate-50 dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] rounded-xl px-3 py-2.5 flex flex-col gap-1.5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-medium text-slate-500 dark:text-[#8ea396]">Superior Basis</span>
+                                <?php if ($isParentTargetApproved ?? false): ?>
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-[#102a1e] px-1.5 py-0.5 rounded border border-emerald-200 dark:border-[#1b4330]">
+                                        Approved ✓
+                                    </span>
+                                <?php else: ?>
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
+                                        Pending Approval
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+                            <span class="text-[11px] font-bold text-slate-800 dark:text-white truncate" title="<?= esc($parentFolder['title']) ?>">
+                                <?= esc($parentFolder['title']) ?>
+                            </span>
+                            <?php if (!($isParentTargetApproved ?? false)): ?>
+                                <p class="text-[9px] text-amber-600 dark:text-amber-400 leading-tight italic">
+                                    Target submission locked until superior targets are approved.
+                                </p>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Folder Details Block (Matching user's reference mockup) -->
@@ -695,6 +844,54 @@
                     activeBadge.classList.add('bg-emerald-500/10', 'text-emerald-600', 'dark:text-emerald-400');
                 }
             }
+        }
+
+        async function unsubmitTargetFolder(folderId, btn) {
+            const ok = await window.appConfirm("Revoke target submission and return this folder to draft?", {
+                variant: 'warning',
+                confirmText: 'Revoke Submission'
+            });
+            if (!ok) return;
+
+            if (btn) btn.disabled = true;
+            const formData = new FormData();
+            formData.append('folder_id', folderId);
+
+            apiPost('<?= site_url('folder/unsubmit_target') ?>', formData, {
+                onSuccess: () => window.location.reload(),
+                onError: async (errMsg) => {
+                    await window.appAlert(errMsg || "An error occurred.");
+                    if (btn) btn.disabled = false;
+                }
+            });
+        }
+
+        async function approveTargetFromFolder(folderId, releaseToDeans, btn) {
+            const msg = releaseToDeans 
+                ? "Approve this OPCR and automatically release it to all College Deans as their target basis?"
+                : "Approve these targets?";
+            const ok = await window.appConfirm(msg, { confirmText: releaseToDeans ? 'Approve & Release' : 'Approve' });
+            if (!ok) return;
+
+            if (btn) btn.disabled = true;
+            const formData = new FormData();
+            formData.append('folder_id', folderId);
+            if (releaseToDeans) {
+                formData.append('release_to_deans', '1');
+            }
+
+            apiPost('<?= site_url('folder/approve_target') ?>', formData, {
+                onSuccess: async (res) => {
+                    if (res && res.message) {
+                        await window.appAlert(res.message);
+                    }
+                    window.location.reload();
+                },
+                onError: async (errMsg) => {
+                    await window.appAlert(errMsg || "An error occurred.");
+                    if (btn) btn.disabled = false;
+                }
+            });
         }
     </script>
 <?php endif; ?>

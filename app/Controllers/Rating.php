@@ -212,17 +212,50 @@ class Rating extends BaseController
             }
         }
 
+        $parentFolder = null;
+        $isParentTargetApproved = true;
+        if (!empty($subFolder['parent_folder_id'])) {
+            $parentFolder = $folderModel->find($subFolder['parent_folder_id']);
+            if ($parentFolder) {
+                $isParentTargetApproved = ($parentFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
+            }
+        }
+
+        $myDocs = $documentModel->where('document_folder_id', $subFolderId)->findAll();
+
+        // Seamless Review UX: Open the employee's document directly instead of an extra intermediate screen
+        if (!empty($myDocs)) {
+            $targetDoc = null;
+            foreach ($myDocs as $d) {
+                if (!empty($d['is_target'])) {
+                    $targetDoc = $d;
+                    break;
+                }
+            }
+            if (!$targetDoc) {
+                $targetDoc = reset($myDocs);
+            }
+
+            if ($targetDoc && !empty($targetDoc['id'])) {
+                return redirect()->to(site_url('document/' . $targetDoc['id']));
+            }
+        }
+
         return view('components/app_shell', [
             'sidebarFolders'   => $folders, 
             'selectedFolderId' => session()->get('active_folder_id'), 
             'mainView'         => 'document/_doc_rows', 
             'mainData'         => [
-                'activeFolder'   => $subFolder,
-                'subFolderOwner' => $subFolderOwner,
-                'myDocs'         => $documentModel->where('document_folder_id', $subFolderId)->findAll(),
-                'isReadOnly'     => true, 
-                'presets'        => [],
-                'groupedGuides'  => $groupedGuides
+                'activeFolder'           => $subFolder,
+                'subFolderOwner'         => $subFolderOwner,
+                'ownerDocType'           => $subFolderOwner['doc_type'] ?? null,
+                'parentFolder'           => $parentFolder,
+                'isParentTargetApproved' => $isParentTargetApproved,
+                'myDocs'                 => $myDocs,
+                'isReadOnly'             => true, 
+                'presets'                => [],
+                'groupedGuides'          => $groupedGuides,
+                'cascadedChildren'       => []
             ]
         ]);
     }

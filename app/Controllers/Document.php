@@ -24,6 +24,7 @@ class Document extends BaseController
         if (!$docId) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
 
         $documentModel = new DocumentModel();
+        $userModel     = new \App\Models\UserModel();
         
         $docInfo = $documentModel->getDocumentWithFolderInfo($docId);
 
@@ -48,9 +49,74 @@ class Document extends BaseController
             }
         }
 
-        $data['routingStatus'] = $routingStatus;
-        $data['doc'] = $docInfo;
-        $data['isGuide'] = $isGuide; 
+        $parentFolder = null;
+        $isParentTargetApproved = true;
+        $basisDoc = null;
+        $superiorUser = null;
+
+        if (!empty($docInfo['parent_folder_id'])) {
+            $folderModel = new \App\Models\DocumentFolderModel();
+            $parentFolder = $folderModel->find($docInfo['parent_folder_id']);
+            if ($parentFolder) {
+                // Check if parent folder was created by Admin (HRDO institutional cycle container)
+                $parentRolePivot = (new \App\Models\UserRoleModel())->where('user_id', $parentFolder['user_id'])->first();
+                $parentRoleName = $parentRolePivot ? ((new \App\Models\RoleModel())->find($parentRolePivot['role_id'])['name'] ?? '') : '';
+                $isParentAdmin = ($parentRoleName === 'Admin');
+
+                $isMyDocOpcr = (strtoupper($docInfo['title'] ?? '') === 'OPCR');
+
+                if ($isParentAdmin || $isMyDocOpcr) {
+                    // Admin folder is an institutional cycle container, and OPCR is Stage 1 (Root Commitment).
+                    // They do NOT wait for superior approval because there are no superior targets above them!
+                    $isParentTargetApproved = true;
+                    $parentFolder = null;
+                    $basisDoc = null;
+                } else {
+                    $isParentTargetApproved = ($parentFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
+                    $basisDoc = $documentModel->where('document_folder_id', $parentFolder['id'])->where('is_target', 1)->first()
+                             ?? $documentModel->where('document_folder_id', $parentFolder['id'])->first();
+                    if ($basisDoc) {
+                        $superiorUser = $userModel->find($parentFolder['user_id']);
+                        if ($superiorUser) {
+                            $plantilla = $userModel->getActivePlantillaDetails($superiorUser['id']);
+                            $superiorUser['position'] = $plantilla['position'] ?? 'Supervisor';
+                            $superiorUser['department'] = $plantilla['department'] ?? '';
+                        }
+                    }
+                }
+            }
+        }
+
+        $basisFormData = null;
+        $basisDocContent = '';
+        if ($basisDoc) {
+            $basisDocContent = $basisDoc['content'] ?? '';
+            if (!empty($basisDoc['tabs'])) {
+                $bTabs = is_string($basisDoc['tabs']) ? json_decode($basisDoc['tabs'], true) : $basisDoc['tabs'];
+                if (!empty($bTabs) && is_array($bTabs)) {
+                    $basisFormData = $bTabs[0]['formData'] ?? null;
+                    if (empty($basisDocContent) && !empty($bTabs[0]['content'])) {
+                        $basisDocContent = $bTabs[0]['content'];
+                    }
+                }
+            }
+        }
+
+        $currentUser = $userModel->find($userId);
+        $currentPlantilla = $userModel->getActivePlantillaDetails($userId);
+        $data['currentReviewerRole']    = $currentPlantilla['position'] ?? (session()->get('role') ?: 'Reviewer');
+        $data['currentReviewerName']    = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
+
+        $data['routingStatus']          = $routingStatus;
+        $data['doc']                    = $docInfo;
+        $data['isGuide']                = $isGuide;
+        $data['parentFolder']           = $parentFolder;
+        $data['isParentTargetApproved'] = $isParentTargetApproved;
+        $data['basisDoc']               = $basisDoc;
+        $data['superiorUser']           = $superiorUser;
+        $data['basisFormData']          = $basisFormData;
+        $data['basisDocContent']        = $basisDocContent;
+        $data['isEmbed']                = (bool) $this->request->getGet('embed');
         
         return view('document/show', $data);
     }

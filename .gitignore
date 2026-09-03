@@ -128,3 +128,13 @@ _modules/*
 writable/spms_db*
 writable/database/*
 !writable/database/.gitkeep
+
+# Local Agent Configurations & Rules
+.agents/
+
+# Local SPMS Automated Test Runner
+app/Commands/SpmsTestCycle.php
+app/Services/SpmsLifecycleRunner.php
+app/Controllers/TestCycle.php
+writable/test_run.json
+

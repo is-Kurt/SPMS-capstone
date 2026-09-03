@@ -7,6 +7,7 @@ use CodeIgniter\Router\RouteCollection;
  */
 
 $routes->get('/test', 'Test::index');
+$routes->get('test/full-cycle', 'TestCycle::run');
 $routes->post('/test/importWordTable', 'Test::importWordTable');
 
 $routes->group('', ['filter' => 'auth'], function($routes) {
@@ -100,6 +101,7 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     // Document
     $routes->get('document', 'Document');
     $routes->get('document/(:segment)', 'Document::index/$1');
+    $routes->get('documents/(:segment)', 'Document::index/$1');
     $routes->post('document', 'Document::store');
     $routes->patch('document', 'Document::update');
     $routes->delete('document', 'Document::destroy');
