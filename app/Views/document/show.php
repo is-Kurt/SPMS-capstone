@@ -658,7 +658,7 @@
                                     <textarea class="spms-textarea field-mfo" rows="3" placeholder="Enter academic function / major final output..." <?= $canEditTargets ? '' : 'disabled title="Locked (Only modifiable during Target Phase)"' ?>></textarea>
                                 </td>
                                 <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                                    <textarea class="spms-textarea field-indicators" rows="3" placeholder="Enter success indicators (targets + measures)..." <?= $canEditEvaluation ? '' : 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' ?>></textarea>
+                                    <textarea class="spms-textarea field-indicators" rows="3" placeholder="Enter success indicators (targets + measures)..." <?= $canEditTargets ? '' : 'disabled title="Locked (Only modifiable during Target Phase)"' ?>></textarea>
                                 </td>
                                 <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
                                     <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishments..." <?= $canEditEvaluation ? '' : 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' ?>></textarea>
@@ -720,7 +720,7 @@
                                     <textarea class="spms-textarea field-mfo" rows="3" placeholder="Enter academic function / major final output..." <?= $canEditTargets ? '' : 'disabled title="Locked (Only modifiable during Target Phase)"' ?>></textarea>
                                 </td>
                                 <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                                    <textarea class="spms-textarea field-indicators" rows="3" placeholder="Enter success indicators (targets + measures)..." <?= $canEditEvaluation ? '' : 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' ?>></textarea>
+                                    <textarea class="spms-textarea field-indicators" rows="3" placeholder="Enter success indicators (targets + measures)..." <?= $canEditTargets ? '' : 'disabled title="Locked (Only modifiable during Target Phase)"' ?>></textarea>
                                 </td>
                                 <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
                                     <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishments..." <?= $canEditEvaluation ? '' : 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' ?>></textarea>
@@ -782,7 +782,7 @@
                                     <textarea class="spms-textarea field-mfo" rows="3" placeholder="Enter academic function / major final output..." <?= $canEditTargets ? '' : 'disabled title="Locked (Only modifiable during Target Phase)"' ?>></textarea>
                                 </td>
                                 <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                                    <textarea class="spms-textarea field-indicators" rows="3" placeholder="Enter success indicators (targets + measures)..." <?= $canEditEvaluation ? '' : 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' ?>></textarea>
+                                    <textarea class="spms-textarea field-indicators" rows="3" placeholder="Enter success indicators (targets + measures)..." <?= $canEditTargets ? '' : 'disabled title="Locked (Only modifiable during Target Phase)"' ?>></textarea>
                                 </td>
                                 <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
                                     <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishments..." <?= $canEditEvaluation ? '' : 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' ?>></textarea>
@@ -1570,9 +1570,9 @@
                 <textarea class="spms-textarea field-mfo" rows="3" placeholder="Enter academic function / major final output..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.mfo)}</textarea>
             </td>
 
-            <!-- Success Indicators (Unlocked during evaluation phase) -->
+            <!-- Success Indicators (Only modifiable during Target Phase) -->
             <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                <textarea class="spms-textarea field-indicators" rows="3" placeholder="Enter success indicators (targets + measures)..." ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : ''}>${escapeHtml(data.indicators)}</textarea>
+                <textarea class="spms-textarea field-indicators" rows="3" placeholder="Enter success indicators (targets + measures)..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.indicators)}</textarea>
             </td>
 
             <!-- Actual Accomplishments (Unlocked during evaluation phase) -->
