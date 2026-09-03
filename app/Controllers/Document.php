@@ -107,6 +107,24 @@ class Document extends BaseController
         $data['currentReviewerRole']    = $currentPlantilla['position'] ?? (session()->get('role') ?: 'Reviewer');
         $data['currentReviewerName']    = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
 
+        // Document Owner (Ratee) details for automatic commitment header prefilling
+        $ownerUser = $userModel->find($docOwnerId);
+        $ownerPlantilla = $userModel->getActivePlantillaDetails($docOwnerId);
+        $ownerRolePivot = (new \App\Models\UserRoleModel())->where('user_id', $docOwnerId)->first();
+        $ownerRoleName = $ownerRolePivot ? ((new \App\Models\RoleModel())->find($ownerRolePivot['role_id'])['name'] ?? '') : '';
+
+        $ownerName = trim(($ownerUser['first_name'] ?? '') . ' ' . ($ownerUser['last_name'] ?? ''));
+        $ownerPosition = $ownerPlantilla['position'] ?? ($ownerRoleName ?: 'Faculty');
+        $ownerDept = $ownerPlantilla['department'] ?? '';
+        $docPeriod = $docInfo['folder_title'] ?? '';
+
+        $data['ownerInfo'] = [
+            'name'     => $ownerName,
+            'position' => $ownerPosition,
+            'dept'     => $ownerDept,
+            'period'   => $docPeriod,
+        ];
+
         $data['routingStatus']          = $routingStatus;
         $data['doc']                    = $docInfo;
         $data['isGuide']                = $isGuide;

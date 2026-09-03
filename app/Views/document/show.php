@@ -760,11 +760,11 @@
                         Individual Performance Commitment and Review (IPCR) — Faculty / Professors
                     </h1>
                     <p style="font-size: 11px; color: #334155; margin: 6px 0 0 0; line-height: 1.6;">
-                        I, <input type="text" id="ratee-name" value="" placeholder="Full Name Here" style="font-weight: bold; color: #dc2626; border: none; border-bottom: 1px solid #f87171; text-align: center; min-width: 170px; outline: none; padding: 2px 4px;">, 
-                        <input type="text" id="ratee-position" value="" placeholder="Position & Designation" style="color: #dc2626; border: none; border-bottom: 1px solid #f87171; text-align: center; min-width: 170px; outline: none; padding: 2px 4px;"> 
-                        of the <input type="text" id="ratee-dept" value="" placeholder="Office / College Name" style="color: #dc2626; border: none; border-bottom: 1px solid #f87171; text-align: center; min-width: 170px; outline: none; padding: 2px 4px;">, 
+                        I, <input type="text" id="ratee-name" value="<?= esc($ownerInfo['name'] ?? '') ?>" placeholder="Full Name Here" style="font-weight: bold; color: <?= !empty($ownerInfo['name']) ? '#0f172a' : '#dc2626' ?>; border: none; border-bottom: 1px solid <?= !empty($ownerInfo['name']) ? '#94a3b8' : '#f87171' ?>; text-align: center; min-width: 170px; outline: none; padding: 2px 4px;">, 
+                        <input type="text" id="ratee-position" value="<?= esc($ownerInfo['position'] ?? '') ?>" placeholder="Position & Designation" style="color: <?= !empty($ownerInfo['position']) ? '#0f172a' : '#dc2626' ?>; border: none; border-bottom: 1px solid <?= !empty($ownerInfo['position']) ? '#94a3b8' : '#f87171' ?>; text-align: center; min-width: 170px; outline: none; padding: 2px 4px;"> 
+                        of the <input type="text" id="ratee-dept" value="<?= esc($ownerInfo['dept'] ?? '') ?>" placeholder="Office / College Name" style="color: <?= !empty($ownerInfo['dept']) ? '#0f172a' : '#dc2626' ?>; border: none; border-bottom: 1px solid <?= !empty($ownerInfo['dept']) ? '#94a3b8' : '#f87171' ?>; text-align: center; min-width: 170px; outline: none; padding: 2px 4px;">, 
                         commit to deliver and agree to be rated on the attainment of faculty targets for 
-                        <input type="text" id="ratee-period" value="" placeholder="Period (e.g. 1st Semester, AY 2026–2027)" style="font-weight: bold; color: #dc2626; border: none; border-bottom: 1px solid #f87171; text-align: center; min-width: 220px; outline: none; padding: 2px 4px;">.
+                        <input type="text" id="ratee-period" value="<?= esc($ownerInfo['period'] ?? '') ?>" placeholder="Period (e.g. 1st Semester, AY 2026–2027)" style="font-weight: bold; color: <?= !empty($ownerInfo['period']) ? '#0f172a' : '#dc2626' ?>; border: none; border-bottom: 1px solid <?= !empty($ownerInfo['period']) ? '#94a3b8' : '#f87171' ?>; text-align: center; min-width: 220px; outline: none; padding: 2px 4px;">.
                     </p>
                 </div>
 
@@ -1206,6 +1206,7 @@
     const basisFormData = <?= json_encode($basisFormData ?? null) ?>;
     const basisDocContent = <?= json_encode($basisDocContent ?? '') ?>;
     const superiorUserInfo = <?= json_encode($superiorUser ?? null) ?>;
+    const ownerAccountInfo = <?= json_encode($ownerInfo ?? []) ?>;
 
     const canEditTargets = <?= json_encode($canEditTargets) ?>;
     const canEditEvaluation = <?= json_encode($canEditEvaluation) ?>;
@@ -1808,26 +1809,40 @@
 
         const setVal = (id, val) => {
             const el = document.getElementById(id);
-            if (el) el.value = (val !== undefined && val !== null) ? val : '';
+            if (el) {
+                el.value = (val !== undefined && val !== null && val !== '') ? val : '';
+                if (el.value.trim() !== '') {
+                    el.style.color = '#0f172a';
+                    el.style.borderColor = '#94a3b8';
+                }
+            }
         };
 
-        setVal('ratee-name', data.ratee?.name || '');
-        setVal('ratee-position', data.ratee?.position || '');
-        setVal('ratee-dept', data.ratee?.dept || '');
-        setVal('ratee-period', data.ratee?.period || '');
+        const defaultRateeName = ownerAccountInfo.name || '';
+        const defaultRateePos  = ownerAccountInfo.position || '';
+        const defaultRateeDept = ownerAccountInfo.dept || '';
+        const defaultPeriod    = ownerAccountInfo.period || '';
 
-        setVal('approver-name', data.approver?.name || '');
-        setVal('approver-pos', data.approver?.position || '');
+        const defaultSupName = superiorUserInfo ? `${superiorUserInfo.first_name || ''} ${superiorUserInfo.last_name || ''}`.trim() : '';
+        const defaultSupPos  = superiorUserInfo ? (superiorUserInfo.position || '') : '';
+
+        setVal('ratee-name', data.ratee?.name || defaultRateeName);
+        setVal('ratee-position', data.ratee?.position || defaultRateePos);
+        setVal('ratee-dept', data.ratee?.dept || defaultRateeDept);
+        setVal('ratee-period', data.ratee?.period || defaultPeriod);
+
+        setVal('approver-name', data.approver?.name || defaultSupName);
+        setVal('approver-pos', data.approver?.position || defaultSupPos);
         setVal('approver-date', data.approver?.date || '');
 
-        setVal('ratee-sign-name', data.rateeSign?.name || '');
+        setVal('ratee-sign-name', data.rateeSign?.name || defaultRateeName);
         setVal('ratee-sign-date', data.rateeSign?.date || '');
 
         setVal('pmt-remarks', data.pmtRemarks || '');
 
-        setVal('sig-ratee-name', data.signatories?.ratee || '');
+        setVal('sig-ratee-name', data.signatories?.ratee || defaultRateeName);
         setVal('sig-ratee-date', data.signatories?.rateeDate || '');
-        setVal('sig-dean-name', data.signatories?.dean || '');
+        setVal('sig-dean-name', data.signatories?.dean || defaultSupName);
         setVal('sig-dean-date', data.signatories?.deanDate || '');
         setVal('sig-vp-name', data.signatories?.vp || '');
         setVal('sig-vp-date', data.signatories?.vpDate || '');
