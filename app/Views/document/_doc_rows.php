@@ -64,6 +64,17 @@
                             </h1>
                         </button>
                     </div>
+
+                    <div class="flex items-center gap-2 shrink-0">
+                        <a href="<?= site_url('folders/' . $activeFolder['id'] . '/accomplishment-report') ?>" 
+                           class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs transition-all shadow-sm active:scale-95 cursor-pointer"
+                           title="Generate Official Accomplishment Report (AR)">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span>Accomplishment Report</span>
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -195,13 +206,18 @@
                                 </div>
 
                                 <!-- Last Activity -->
-                                <div class="col-span-1 md:col-span-3 flex flex-col">
+                                <div class="col-span-1 md:col-span-2 flex flex-col">
                                     <span class="text-xs font-semibold text-slate-800 dark:text-[#f8fafc]"><?= date('M d, g:ia', strtotime($doc['updated_at'] ?? $doc['created_at'])) ?></span>
                                     <span class="text-[10px] text-slate-400 dark:text-[#8ea396]">by <?= esc($displayName) ?></span>
                                 </div>
 
                                 <!-- Actions -->
-                                <div class="col-span-1 md:col-span-1 flex justify-end">
+                                <div class="col-span-1 md:col-span-2 flex items-center justify-end gap-1.5">
+                                    <a href="<?= site_url('folders/' . $activeFolder['id'] . '/accomplishment-report') ?>" 
+                                       class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-[#152e21] dark:hover:bg-[#1d4230] dark:text-emerald-300 rounded-xl text-[11px] font-bold transition-all"
+                                       title="View Official Accomplishment Report">
+                                        AR
+                                    </a>
                                     <a href="<?= site_url('document/' . $doc['id']) ?>" class="px-3.5 py-1.5 bg-[#f59e0b] hover:bg-[#d97706] text-black rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-xs active:scale-95">
                                         Open
                                     </a>
@@ -394,25 +410,35 @@
                             Restore Folder
                         </button>
                     <?php else: ?>
-                        <div class="grid grid-cols-1 gap-2.5">
-                            <button onclick='openEditFolderModal("<?= esc($activeFolder["id"]) ?>", "<?= esc(addslashes($activeFolder["title"])) ?>", {
-                                ipcr_target_start: "<?= esc($activeFolder["ipcr_target_start"] ?? "") ?>",
-                                ipcr_target_end: "<?= esc($activeFolder["ipcr_target_end"] ?? "") ?>",
-                                ipcr_eval_start: "<?= esc($activeFolder["ipcr_eval_start"] ?? "") ?>",
-                                ipcr_eval_end: "<?= esc($activeFolder["ipcr_eval_end"] ?? "") ?>",
-                                dpcr_target_start: "<?= esc($activeFolder["dpcr_target_start"] ?? "") ?>",
-                                dpcr_target_end: "<?= esc($activeFolder["dpcr_target_end"] ?? "") ?>",
-                                dpcr_eval_start: "<?= esc($activeFolder["dpcr_eval_start"] ?? "") ?>",
-                                dpcr_eval_end: "<?= esc($activeFolder["dpcr_eval_end"] ?? "") ?>",
-                                opcr_target_start: "<?= esc($activeFolder["opcr_target_start"] ?? "") ?>",
-                                opcr_target_end: "<?= esc($activeFolder["opcr_target_end"] ?? "") ?>",
-                                opcr_eval_start: "<?= esc($activeFolder["opcr_eval_start"] ?? "") ?>",
-                                opcr_eval_end: "<?= esc($activeFolder["opcr_eval_end"] ?? "") ?>",
-                                iperf_target_start: "<?= esc($activeFolder["iperf_target_start"] ?? "") ?>",
-                                iperf_target_end: "<?= esc($activeFolder["iperf_target_end"] ?? "") ?>",
-                                iperf_eval_start: "<?= esc($activeFolder["iperf_eval_start"] ?? "") ?>",
-                                iperf_eval_end: "<?= esc($activeFolder["iperf_eval_end"] ?? "") ?>"
-                            })'
+                        <div class="grid grid-cols-3 gap-2">
+                            <a href="<?= site_url('folders/' . $activeFolder['id'] . '/accomplishment-report') ?>" 
+                               class="col-span-3 w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 py-2.5 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span>Accomplishment Report</span>
+                            </a>
+
+                            <button onclick='openEditFolderModal(<?= json_encode([
+                                "id"    => $activeFolder["id"],
+                                "title" => $activeFolder["title"],
+                                "ipcr_target_start" => $activeFolder["ipcr_target_start"] ?? "",
+                                "ipcr_target_end"   => $activeFolder["ipcr_target_end"] ?? "",
+                                "ipcr_eval_start"   => $activeFolder["ipcr_eval_start"] ?? "",
+                                "ipcr_eval_end"     => $activeFolder["ipcr_eval_end"] ?? "",
+                                "dpcr_target_start" => $activeFolder["dpcr_target_start"] ?? "",
+                                "dpcr_target_end"   => $activeFolder["dpcr_target_end"] ?? "",
+                                "dpcr_eval_start"   => $activeFolder["dpcr_eval_start"] ?? "",
+                                "dpcr_eval_end"     => $activeFolder["dpcr_eval_end"] ?? "",
+                                "opcr_target_start" => $activeFolder["opcr_target_start"] ?? "",
+                                "opcr_target_end"   => $activeFolder["opcr_target_end"] ?? "",
+                                "opcr_eval_start"   => $activeFolder["opcr_eval_start"] ?? "",
+                                "opcr_eval_end"     => $activeFolder["opcr_eval_end"] ?? "",
+                                "iperf_target_start" => $activeFolder["iperf_target_start"] ?? "",
+                                "iperf_target_end"  => $activeFolder["iperf_target_end"] ?? "",
+                                "iperf_eval_start"  => $activeFolder["iperf_eval_start"] ?? "",
+                                "iperf_eval_end"    => $activeFolder["iperf_eval_end"] ?? ""
+                            ]) ?>)'
                                     class="w-full bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 dark:bg-[#13271b] dark:hover:bg-[#1b3b29] dark:text-[#34d399] dark:border-[#1e422f] py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs">
                                 Edit
                             </button>
@@ -496,6 +522,15 @@
                         <span class="text-[10px] font-medium text-slate-500 dark:text-[#8ea396]">Commitment</span>
                         <span class="text-[11px] font-bold text-slate-800 dark:text-white truncate pl-2"><?= esc($formTypeName) ?> • <?= esc($formTypeDesc) ?></span>
                     </div>
+
+                    <!-- Accomplishment Report Button -->
+                    <a href="<?= site_url('folders/' . $activeFolder['id'] . '/accomplishment-report') ?>" 
+                       class="w-full py-2.5 px-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition-all shadow-sm active:scale-[0.98]">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>Accomplishment Report</span>
+                    </a>
 
                     <?php if ($activeFolder['status'] === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value): ?>
                         <?php if ($activeFolder['user_id'] == session()->get('user_id')): ?>
