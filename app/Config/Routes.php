@@ -12,6 +12,10 @@ $routes->get('test/check-db', 'TestCycle::checkData');
 $routes->post('/test/importWordTable', 'Test::importWordTable');
 
 $routes->group('', ['filter' => 'auth'], function($routes) {
+    // Executive Analytics Dashboard
+    $routes->get('dashboard', 'Dashboard::index');
+    $routes->get('dashboard/(:segment)', 'Dashboard::index/$1');
+
     // Ratings
     $routes->get('ratings', 'Rating::index');
     $routes->get('ratings/(:segment)', 'Rating::index/$1');

@@ -258,6 +258,10 @@ class Session extends BaseController
             return redirect()->to(site_url('ratings'));
         }
 
+        if (session()->get('role') === 'Admin') {
+            return redirect()->to(site_url('dashboard'));
+        }
+
         return redirect()->to(site_url('folders'));
     }
 

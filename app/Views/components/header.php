@@ -4,6 +4,9 @@
 
     $navItems = [];
 
+    // Executive Performance Dashboard
+    $navItems['dashboard'] = 'Dashboard';
+
     // TWG only sees Ratings, they don't see Folders.
     if ($role !== 'TWG') {
         $navItems['folders'] = 'Folders';

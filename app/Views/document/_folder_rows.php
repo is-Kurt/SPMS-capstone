@@ -1,7 +1,9 @@
 <?php   
     $isArchivedRoute = (service('uri')->getSegment(2) === 'archived');
-    $currentBaseUrl = (service('uri')->getSegment(1) === 'ratings') ? 'ratings' : 
-                      ($isArchivedRoute ? 'folders/archived' : 'folders');
+    $firstSegment = service('uri')->getSegment(1);
+    $currentBaseUrl = ($firstSegment === 'ratings') ? 'ratings' : 
+                      (($firstSegment === 'dashboard') ? 'dashboard' : 
+                      ($isArchivedRoute ? 'folders/archived' : 'folders'));
 ?>
 
 <nav id="sidebar-nav" class="flex flex-col gap-2 h-full justify-between">
