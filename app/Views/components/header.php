@@ -84,19 +84,12 @@
                     </div>
                 </div>
 
-                <!-- SPMS Institutional Brand Identity with Gold Monitor Badge -->
+                <!-- SPMS Institutional Brand Identity with Official Logo -->
                 <a href="<?= site_url(array_key_first($navItems) ?? 'folders') ?>" class="flex-shrink-0 flex items-center gap-2.5 text-white hover:opacity-95 transition-opacity group min-w-0">
-                    <!-- Warm Gold Rounded Square Badge with Dark Monitor Icon -->
-                    <div class="flex items-center justify-center shadow-xs shrink-0 group-hover:scale-105 transition-transform"
-                         style="width: 36px; height: 36px; min-width: 36px; min-height: 36px; max-width: 36px; max-height: 36px; background-color: #f59e0b; border-radius: 10px;">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" style="color: #061a10;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                            <line x1="8" y1="21" x2="16" y2="21"></line>
-                            <line x1="12" y1="17" x2="12" y2="21"></line>
-                            <line x1="6" y1="8" x2="18" y2="8" stroke-width="1.75"></line>
-                            <line x1="6" y1="12" x2="14" y2="12" stroke-width="1.75"></line>
-                        </svg>
-                    </div>
+                    <!-- SPMS Official Logo -->
+                    <img src="<?= base_url('assets/images/spms_logo.png') ?>" alt="SPMS Logo"
+                         class="w-9 h-9 rounded-full object-contain shrink-0 shadow-xs group-hover:scale-105 transition-transform"
+                         style="width: 36px; height: 36px; min-width: 36px; min-height: 36px; max-width: 36px; max-height: 36px; display: block;" />
                     <div class="flex flex-col min-w-0 leading-tight">
                         <div class="flex items-center gap-1.5 leading-none">
                             <span class="font-heading font-black tracking-tight text-base sm:text-lg uppercase text-white">SPMS</span>
