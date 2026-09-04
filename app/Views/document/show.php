@@ -54,12 +54,31 @@
         color: #000000;
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
         border: 1px solid #cbd5e1;
-        padding: 36px 40px;
+        padding: 16px 12px;
         box-sizing: border-box;
         font-family: inherit;
         display: block !important;
         height: auto !important;
         min-height: fit-content !important;
+        border-radius: 8px;
+    }
+    @media (min-width: 640px) {
+        .spms-sheet-container {
+            padding: 24px 28px;
+        }
+    }
+    @media (min-width: 1024px) {
+        .spms-sheet-container {
+            padding: 36px 40px;
+            border-radius: 4px;
+        }
+    }
+    .spms-table-responsive-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-bottom: 0.5rem;
+        position: relative;
     }
     .spms-table {
         width: 100%;
@@ -69,6 +88,11 @@
         height: auto !important;
         table-layout: auto !important;
         display: table !important;
+    }
+    @media screen and (max-width: 1023px) {
+        .spms-table {
+            min-width: 880px !important;
+        }
     }
     .spms-table tbody {
         display: table-row-group !important;
@@ -181,6 +205,94 @@
         border-top: 2px solid #000000;
         border-bottom: 1px solid #000000;
     }
+
+    /* Responsive Mobile Meta, Summary & Signatories Matrix Layouts */
+    @media screen and (max-width: 767px) {
+        .spms-meta-matrix,
+        .spms-meta-matrix > tbody,
+        .spms-meta-matrix > tbody > tr,
+        .spms-meta-matrix > tr {
+            display: block !important;
+            width: 100% !important;
+        }
+        .spms-meta-matrix > tbody > tr > td,
+        .spms-meta-matrix > tr > td {
+            display: block !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            border-left: none !important;
+            border-right: none !important;
+            border-top: none !important;
+            border-bottom: 1px solid #000 !important;
+        }
+        .spms-meta-matrix > tbody > tr > td:last-child,
+        .spms-meta-matrix > tr > td:last-child {
+            border-bottom: none !important;
+        }
+
+        .spms-summary-matrix,
+        .spms-summary-matrix > tbody,
+        .spms-summary-matrix > tbody > tr,
+        .spms-summary-matrix > tr {
+            display: block !important;
+            width: 100% !important;
+        }
+        .spms-summary-matrix > tbody > tr > td,
+        .spms-summary-matrix > tr > td {
+            display: block !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            border-left: none !important;
+            border-right: none !important;
+            border-top: none !important;
+            border-bottom: 1px solid #000 !important;
+        }
+        .spms-summary-matrix > tbody > tr > td:last-child,
+        .spms-summary-matrix > tr > td:last-child {
+            border-bottom: none !important;
+        }
+
+        .spms-signatories-matrix,
+        .spms-signatories-matrix > tbody,
+        .spms-signatories-matrix > tbody > tr,
+        .spms-signatories-matrix > tr {
+            display: block !important;
+            width: 100% !important;
+        }
+        .spms-signatories-matrix > tbody > tr > td,
+        .spms-signatories-matrix > tr > td {
+            display: block !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            border-left: none !important;
+            border-right: none !important;
+            border-top: none !important;
+            border-bottom: 1px solid #000 !important;
+        }
+        .spms-signatories-matrix > tbody > tr > td:last-child,
+        .spms-signatories-matrix > tr > td:last-child {
+            border-bottom: none !important;
+        }
+    }
+
+    @media screen and (max-width: 639px) {
+        .spms-navy-bar {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            text-align: center !important;
+            padding: 12px 10px !important;
+            gap: 8px !important;
+        }
+        .spms-navy-bar > td {
+            display: block !important;
+            width: 100% !important;
+            padding: 2px 0 !important;
+            text-align: center !important;
+            border: none !important;
+        }
+    }
+
     @media print {
         @page {
             size: letter landscape;
@@ -215,8 +327,13 @@
             margin: 0 !important;
             display: block !important;
         }
+        .spms-table-responsive-wrapper {
+            overflow: visible !important;
+            width: 100% !important;
+        }
         .spms-table {
             width: 100% !important;
+            min-width: 100% !important;
             border-collapse: collapse !important;
             font-size: 9.5px !important;
             page-break-inside: auto;
@@ -254,6 +371,7 @@
 </style>
 
 <div class="h-full flex flex-col bg-bg">
+    <?= view('components/govph_masthead') ?>
     
     <div class="flex-none flex items-center justify-between py-2 px-3 sm:px-6 bg-bg gap-2 sm:gap-4 print-hide">
         
@@ -271,14 +389,14 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                <span class="font-extrabold uppercase text-[11px] tracking-wider">Return</span>
+                <span class="font-extrabold uppercase text-[11px] tracking-wider hidden sm:inline">Return</span>
             </a>
 
             <a href="<?= $returnUrl ?>" 
                class="cursor-pointer shrink-0">
                 <!-- Back-to-folders brand mark. text-text (not text-white) so it stays visible on the
                      theme-aware bg-bg header in both light and dark mode. -->
-                <div class="flex-shrink-0 flex items-center gap-1 mr-2 sm:mr-4 text-text hover:text-accent transition-colors">
+                <div class="flex-shrink-0 flex items-center gap-1 mr-1 sm:mr-4 text-text hover:text-accent transition-colors">
                     <!-- Folder/document icon -->
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -316,23 +434,23 @@
         <div class="flex items-center gap-2 sm:gap-4 shrink-0">
             <!-- Print / Export PDF Button -->
             <button type="button" onclick="exportToPdf()" 
-                    class="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 sm:py-2.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-[10px] sm:text-xs font-bold rounded-lg border border-surface-border transition-all cursor-pointer shadow-sm print-hide"
+                    class="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-2.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-[10px] sm:text-xs font-bold rounded-lg border border-surface-border transition-all cursor-pointer shadow-sm print-hide"
                     title="Print Document or Export to PDF">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[#FFB800]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>
                 <span class="hidden md:inline">Print / Export PDF</span>
-                <span class="md:hidden">Print</span>
+                <span class="hidden sm:inline md:hidden">Print</span>
             </button>
             <!-- CSC Scoring Rubric Button -->
             <button type="button" id="btn-toggle-rubric" onclick="toggleRubricDrawer()" 
-                    class="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 sm:py-2.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-[10px] sm:text-xs font-bold rounded-lg border border-surface-border transition-all cursor-pointer shadow-sm active:scale-[0.98] print-hide"
+                    class="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-2.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-[10px] sm:text-xs font-bold rounded-lg border border-surface-border transition-all cursor-pointer shadow-sm active:scale-[0.98] print-hide"
                     title="View official CSC 5-point rating rubric for Quality, Timeliness, and Efficiency">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-500 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
                 <span class="hidden md:inline">Rubric Guide</span>
-                <span class="md:hidden">Rubric</span>
+                <span class="hidden sm:inline md:hidden">Rubric</span>
             </button>
 
             <?php if (!$isGuide): ?>
@@ -615,7 +733,7 @@
         <div class="flex-1 min-h-0 h-full relative bg-[#031c12] dark:bg-[#031c12] overflow-x-auto transition-all duration-300 ease-out" id="editor-container">
         <?php if (!empty($basisDoc) && !$isGuide): ?>
         <!-- SUPERIOR BASIS STATIC FORM WORKSPACE -->
-        <div id="spms-basis-workspace" class="hidden w-full h-full overflow-y-auto p-3 sm:p-6 lg:p-8 flex justify-center items-start custom-scrollbar print:p-0 print:bg-white print:overflow-visible">
+        <div id="spms-basis-workspace" class="hidden w-full h-full overflow-y-auto p-2 sm:p-6 lg:p-8 flex justify-center items-start custom-scrollbar print:p-0 print:bg-white print:overflow-visible">
             <article id="basis-printable-sheet" class="spms-sheet-container block space-y-5">
                 <!-- Top Reference Bar inside Paper -->
                 <div class="flex items-center justify-between pb-2.5 border-b-2 border-sky-500 mb-2">
@@ -660,7 +778,7 @@
                 </div>
 
                 <!-- APPROVER, RATEE, AND RATING SCALE MATRIX -->
-                <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 11px;">
+                <table class="spms-meta-matrix" style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 11px;">
                     <tr>
                         <!-- Approver Block -->
                         <td style="width: 35%; border: 1px solid #000; padding: 10px; vertical-align: top;">
@@ -669,7 +787,7 @@
                             </div>
                             <table style="width: 100%; border-collapse: collapse; border: none; font-size: 11px;">
                                 <tr>
-                                    <td style="width: 60px; color: #64748b; font-weight: 600; padding: 3px 0;">Name:</td>
+                                     <td style="width: 60px; color: #64748b; font-weight: 600; padding: 3px 0;">Name:</td>
                                     <td style="font-weight: bold; color: #0f172a; padding: 3px 0;" id="basis-val-approver-name">—</td>
                                 </tr>
                                 <tr>
@@ -711,7 +829,11 @@
                 </table>
 
                 <!-- MAIN TABLE OF DELIVERABLES & RATINGS (Static Read-Only) -->
-                <div style="width: 100%; overflow: visible; min-height: fit-content; display: block;">
+                <div class="spms-table-responsive-wrapper">
+                    <div class="lg:hidden flex items-center justify-between text-[11px] text-slate-500 bg-slate-100 dark:bg-slate-800/40 px-3 py-1.5 rounded border border-slate-200 dark:border-slate-700 mb-2 print-hide">
+                        <span class="flex items-center gap-1 font-medium">↔ Swipe matrix horizontally to view all cascaded targets</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">8 Columns</span>
+                    </div>
                     <table class="spms-table" style="width: 100%; border-collapse: collapse; border: 2px solid #000; font-size: 11px;">
                         <colgroup>
                             <col style="width: 25%;">
@@ -751,7 +873,7 @@
         <?php endif; ?>
 
         <!-- SPMS Structured Form Builder Container -->
-        <div id="spms-form-workspace" class="hidden w-full h-full overflow-y-auto p-3 sm:p-6 lg:p-8 flex justify-center items-start custom-scrollbar print:p-0 print:bg-white print:overflow-visible">
+        <div id="spms-form-workspace" class="hidden w-full h-full overflow-y-auto p-2 sm:p-6 lg:p-8 flex justify-center items-start custom-scrollbar print:p-0 print:bg-white print:overflow-visible">
             <article id="printable-form" class="spms-sheet-container block space-y-5">
                 
                 <!-- INSTITUTIONAL FORM HEADER -->
@@ -760,16 +882,16 @@
                         Individual Performance Commitment and Review (IPCR) — Faculty / Professors
                     </h1>
                     <p style="font-size: 11px; color: #334155; margin: 6px 0 0 0; line-height: 1.6;">
-                        I, <input type="text" id="ratee-name" value="<?= esc($ownerInfo['name'] ?? '') ?>" placeholder="Full Name Here" style="font-weight: bold; color: <?= !empty($ownerInfo['name']) ? '#0f172a' : '#dc2626' ?>; border: none; border-bottom: 1px solid <?= !empty($ownerInfo['name']) ? '#94a3b8' : '#f87171' ?>; text-align: center; min-width: 170px; outline: none; padding: 2px 4px;">, 
-                        <input type="text" id="ratee-position" value="<?= esc($ownerInfo['position'] ?? '') ?>" placeholder="Position & Designation" style="color: <?= !empty($ownerInfo['position']) ? '#0f172a' : '#dc2626' ?>; border: none; border-bottom: 1px solid <?= !empty($ownerInfo['position']) ? '#94a3b8' : '#f87171' ?>; text-align: center; min-width: 170px; outline: none; padding: 2px 4px;"> 
-                        of the <input type="text" id="ratee-dept" value="<?= esc($ownerInfo['dept'] ?? '') ?>" placeholder="Office / College Name" style="color: <?= !empty($ownerInfo['dept']) ? '#0f172a' : '#dc2626' ?>; border: none; border-bottom: 1px solid <?= !empty($ownerInfo['dept']) ? '#94a3b8' : '#f87171' ?>; text-align: center; min-width: 170px; outline: none; padding: 2px 4px;">, 
+                        I, <input type="text" id="ratee-name" value="<?= esc($ownerInfo['name'] ?? '') ?>" placeholder="Full Name Here" style="font-weight: bold; color: <?= !empty($ownerInfo['name']) ? '#0f172a' : '#dc2626' ?>; border: none; border-bottom: 1px solid <?= !empty($ownerInfo['name']) ? '#94a3b8' : '#f87171' ?>; text-align: center; min-width: 170px; max-width: 100%; outline: none; padding: 2px 4px;">, 
+                        <input type="text" id="ratee-position" value="<?= esc($ownerInfo['position'] ?? '') ?>" placeholder="Position & Designation" style="color: <?= !empty($ownerInfo['position']) ? '#0f172a' : '#dc2626' ?>; border: none; border-bottom: 1px solid <?= !empty($ownerInfo['position']) ? '#94a3b8' : '#f87171' ?>; text-align: center; min-width: 170px; max-width: 100%; outline: none; padding: 2px 4px;"> 
+                        of the <input type="text" id="ratee-dept" value="<?= esc($ownerInfo['dept'] ?? '') ?>" placeholder="Office / College Name" style="color: <?= !empty($ownerInfo['dept']) ? '#0f172a' : '#dc2626' ?>; border: none; border-bottom: 1px solid <?= !empty($ownerInfo['dept']) ? '#94a3b8' : '#f87171' ?>; text-align: center; min-width: 170px; max-width: 100%; outline: none; padding: 2px 4px;">, 
                         commit to deliver and agree to be rated on the attainment of faculty targets for 
-                        <input type="text" id="ratee-period" value="<?= esc($ownerInfo['period'] ?? '') ?>" placeholder="Period (e.g. 1st Semester, AY 2026–2027)" style="font-weight: bold; color: <?= !empty($ownerInfo['period']) ? '#0f172a' : '#dc2626' ?>; border: none; border-bottom: 1px solid <?= !empty($ownerInfo['period']) ? '#94a3b8' : '#f87171' ?>; text-align: center; min-width: 220px; outline: none; padding: 2px 4px;">.
+                        <input type="text" id="ratee-period" value="<?= esc($ownerInfo['period'] ?? '') ?>" placeholder="Period (e.g. 1st Semester, AY 2026–2027)" style="font-weight: bold; color: <?= !empty($ownerInfo['period']) ? '#0f172a' : '#dc2626' ?>; border: none; border-bottom: 1px solid <?= !empty($ownerInfo['period']) ? '#94a3b8' : '#f87171' ?>; text-align: center; min-width: 200px; max-width: 100%; outline: none; padding: 2px 4px;">.
                     </p>
                 </div>
 
                 <!-- APPROVER, RATEE, AND RATING SCALE MATRIX -->
-                <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 11px;">
+                <table class="spms-meta-matrix" style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 11px;">
                     <tr>
                         <!-- Approver Block -->
                         <td style="width: 35%; border: 1px solid #000; padding: 10px; vertical-align: top;">
@@ -826,7 +948,11 @@
                 </table>
 
                 <!-- MAIN TABLE OF DELIVERABLES & RATINGS -->
-                <div style="width: 100%; overflow: visible; min-height: fit-content; display: block;">
+                <div class="spms-table-responsive-wrapper">
+                    <div class="lg:hidden flex items-center justify-between text-[11px] text-slate-500 bg-slate-100 dark:bg-slate-800/40 px-3 py-1.5 rounded border border-slate-200 dark:border-slate-700 mb-2 print-hide">
+                        <span class="flex items-center gap-1 font-medium">↔ Swipe matrix horizontally to view ratings & remarks</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">9 Columns</span>
+                    </div>
                     <table class="spms-table">
                         <!-- Column Widths (9 total columns matching BSU Annex B IPCR) -->
                         <colgroup>
@@ -1048,7 +1174,7 @@
                 </div>
 
                 <!-- GRAND SUMMARY & NAVY RATING BAR (BULLETPROOF TABLE LAYOUT) -->
-                <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 11px;">
+                <table class="spms-summary-matrix" style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 11px;">
                     <tr>
                         <!-- Left: Formula Explanation -->
                         <td style="width: 35%; padding: 12px; border: 1px solid #000; vertical-align: top; background: #fafafa;">
@@ -1104,7 +1230,7 @@
                                 </tr>
 
                                 <!-- Dark Navy Grand Total Banner (Matching Reference Mockup) -->
-                                <tr style="background: #0a192f; color: #ffffff;">
+                                <tr class="spms-navy-bar" style="background: #0a192f; color: #ffffff;">
                                     <td style="padding: 12px 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px; color: #e2e8f0;">
                                         FINAL AVERAGE RATING
                                     </td>
@@ -1134,7 +1260,7 @@
                 </div>
 
                 <!-- 3 BOTTOM SIGNATORIES -->
-                <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 11px; text-align: center;">
+                <table class="spms-signatories-matrix" style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 11px; text-align: center;">
                     <tr>
                         <!-- Discussed with (Ratee) -->
                         <td style="width: 33.33%; border: 1px solid #000; padding: 12px; vertical-align: top;">

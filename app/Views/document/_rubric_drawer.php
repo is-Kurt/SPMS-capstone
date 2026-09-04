@@ -1,6 +1,28 @@
+<!-- Mobile Drawer Backdrop Overlay -->
+<div id="rubric-backdrop" onclick="toggleRubricDrawer(false)" 
+     class="fixed inset-0 bg-black/60 z-40 transition-opacity lg:hidden print-hide" 
+     style="display: none;"></div>
+
+<style>
+    @media screen and (max-width: 1023px) {
+        #rubric-drawer {
+            position: fixed !important;
+            top: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            left: auto !important;
+            width: 100% !important;
+            max-width: 390px !important;
+            min-width: 0 !important;
+            z-index: 50 !important;
+            box-shadow: -8px 0 25px rgba(0, 0, 0, 0.6) !important;
+        }
+    }
+</style>
+
 <!-- Eye-Friendly Minimalist CSC Scoring Rubric Reference Panel -->
 <aside id="rubric-drawer" 
-       class="h-full flex flex-col shrink-0 border-l border-emerald-900/30 transition-all duration-200 ease-out print-hide z-20 select-none"
+       class="h-full flex flex-col shrink-0 border-l border-emerald-900/30 transition-all duration-200 ease-out print-hide z-50 select-none"
        style="width: 420px; min-width: 340px; max-width: 32vw; background-color: #121c17; color: #cbd5e1; display: none;">
     
     <!-- Gentle Header -->
@@ -264,6 +286,7 @@
 <script>
     function toggleRubricDrawer(forceState) {
         const drawer = document.getElementById('rubric-drawer');
+        const backdrop = document.getElementById('rubric-backdrop');
         const btn = document.getElementById('btn-toggle-rubric');
         if (!drawer) return;
 
@@ -272,12 +295,31 @@
 
         if (shouldOpen) {
             drawer.style.display = 'flex';
+            if (backdrop && window.innerWidth < 1024) {
+                backdrop.style.display = 'block';
+            }
             btn?.classList.add('ring-1', 'ring-emerald-400', 'bg-emerald-600/30');
         } else {
             drawer.style.display = 'none';
+            if (backdrop) {
+                backdrop.style.display = 'none';
+            }
             btn?.classList.remove('ring-1', 'ring-emerald-400', 'bg-emerald-600/30');
         }
     }
+
+    // Keep mobile backdrop in sync on window resize
+    window.addEventListener('resize', () => {
+        const backdrop = document.getElementById('rubric-backdrop');
+        const drawer = document.getElementById('rubric-drawer');
+        if (backdrop && drawer) {
+            if (window.innerWidth >= 1024 || drawer.style.display !== 'flex') {
+                backdrop.style.display = 'none';
+            } else if (drawer.style.display === 'flex') {
+                backdrop.style.display = 'block';
+            }
+        }
+    });
 
     function scrollToRubricSection(id) {
         const container = document.getElementById('rubric-content-scroll');

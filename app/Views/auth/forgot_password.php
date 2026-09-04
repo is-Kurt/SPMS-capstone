@@ -1,7 +1,10 @@
 <?= $this->extend('layouts/main') ?>
 <?= $this->section('content') ?>
 
-<main class="flex min-h-screen flex-col justify-center px-6 py-12 lg:px-8 bg-gradient-to-br from-[#06442b] via-[#053823] to-[#042819] relative overflow-hidden">
+<div class="min-h-screen flex flex-col bg-gradient-to-br from-[#06442b] via-[#053823] to-[#042819] relative overflow-hidden">
+    <?= view('components/govph_masthead') ?>
+
+    <main class="flex-1 flex flex-col justify-center px-6 py-12 lg:px-8 relative">
     
     <div class="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -39,4 +42,5 @@
         <?= form_close() ?>
     </div>
 </main>
+</div>
 <?= $this->endSection() ?>

@@ -1,7 +1,10 @@
 <?= $this->extend('layouts/main') ?>
 <?= $this->section('content') ?>
 
-<main class="flex min-h-screen flex-col justify-center px-6 py-12 lg:px-8 bg-gray-50 dark:bg-zinc-950">
+<div class="min-h-screen flex flex-col bg-gray-50 dark:bg-zinc-950">
+    <?= view('components/govph_masthead') ?>
+
+    <main class="flex-1 flex flex-col justify-center px-6 py-12 lg:px-8">
     <div class="mx-auto w-full max-w-md border border-zinc-200 dark:border-zinc-800 p-10 rounded-2xl bg-white dark:bg-zinc-900 shadow-xl shadow-zinc-200/50 dark:shadow-none">
 
         <div class="sm:mx-auto sm:w-full sm:max-w-sm">
@@ -39,5 +42,6 @@
 
     </div>
 </main>
+</div>
 
 <?= $this->endSection() ?>

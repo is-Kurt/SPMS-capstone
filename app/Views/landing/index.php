@@ -86,6 +86,8 @@
 </head>
 <body class="bg-[#f8fafc] text-slate-800 antialiased selection:bg-[#064e3b] selection:text-white">
 
+    <?= view('components/govph_masthead') ?>
+
     <!-- 1. HERO SECTION WITH SEAMLESS HEADER -->
     <div class="relative bg-gradient-to-br from-[#06442b] via-[#053823] to-[#042819] text-white overflow-hidden">
         

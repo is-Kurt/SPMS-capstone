@@ -1,7 +1,10 @@
 <?= $this->extend('layouts/main') ?>
 <?= $this->section('content') ?>
 
-<main class="flex min-h-screen flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8 bg-zinc-50 dark:bg-zinc-950">
+<div class="min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950">
+    <?= view('components/govph_masthead') ?>
+
+    <main class="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
     
     <div class="w-full max-w-2xl mb-6 text-center">
         <h2 class="text-3xl font-black tracking-tight text-text">Account Setup</h2>
@@ -209,6 +212,7 @@
         </button>
     <?= form_close() ?>
 </main>
+</div>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
