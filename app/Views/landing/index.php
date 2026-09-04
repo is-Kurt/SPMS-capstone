@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SPMS - Strategic Performance Management System | Benguet State University</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="<?= base_url('assets/images/spms_logo.png') ?>">
+    <link rel="shortcut icon" type="image/x-icon" href="<?= base_url('favicon.ico') ?>">
+    <link rel="apple-touch-icon" href="<?= base_url('assets/images/spms_logo.png') ?>">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
