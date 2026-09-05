@@ -64,17 +64,6 @@
                             </h1>
                         </button>
                     </div>
-
-                    <div class="flex items-center gap-2 shrink-0">
-                        <a href="<?= site_url('folders/' . $activeFolder['id'] . '/accomplishment-report') ?>" 
-                           class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs transition-all shadow-sm active:scale-95 cursor-pointer"
-                           title="Generate Official Accomplishment Report (AR)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <span>Accomplishment Report</span>
-                        </a>
-                    </div>
                 </div>
             </div>
 
@@ -206,18 +195,13 @@
                                 </div>
 
                                 <!-- Last Activity -->
-                                <div class="col-span-1 md:col-span-2 flex flex-col">
+                                <div class="col-span-1 md:col-span-3 flex flex-col">
                                     <span class="text-xs font-semibold text-slate-800 dark:text-[#f8fafc]"><?= date('M d, g:ia', strtotime($doc['updated_at'] ?? $doc['created_at'])) ?></span>
                                     <span class="text-[10px] text-slate-400 dark:text-[#8ea396]">by <?= esc($displayName) ?></span>
                                 </div>
 
                                 <!-- Actions -->
-                                <div class="col-span-1 md:col-span-2 flex items-center justify-end gap-1.5">
-                                    <a href="<?= site_url('folders/' . $activeFolder['id'] . '/accomplishment-report') ?>" 
-                                       class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-[#152e21] dark:hover:bg-[#1d4230] dark:text-emerald-300 rounded-xl text-[11px] font-bold transition-all"
-                                       title="View Official Accomplishment Report">
-                                        AR
-                                    </a>
+                                <div class="col-span-1 md:col-span-1 flex justify-end">
                                     <a href="<?= site_url('document/' . $doc['id']) ?>" class="px-3.5 py-1.5 bg-[#f59e0b] hover:bg-[#d97706] text-black rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-xs active:scale-95">
                                         Open
                                     </a>
@@ -411,14 +395,6 @@
                         </button>
                     <?php else: ?>
                         <div class="grid grid-cols-3 gap-2">
-                            <a href="<?= site_url('folders/' . $activeFolder['id'] . '/accomplishment-report') ?>" 
-                               class="col-span-3 w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 py-2.5 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                                <span>Accomplishment Report</span>
-                            </a>
-
                             <button onclick='openEditFolderModal(<?= json_encode([
                                 "id"    => $activeFolder["id"],
                                 "title" => $activeFolder["title"],
@@ -523,14 +499,6 @@
                         <span class="text-[11px] font-bold text-slate-800 dark:text-white truncate pl-2"><?= esc($formTypeName) ?> • <?= esc($formTypeDesc) ?></span>
                     </div>
 
-                    <!-- Accomplishment Report Button -->
-                    <a href="<?= site_url('folders/' . $activeFolder['id'] . '/accomplishment-report') ?>" 
-                       class="w-full py-2.5 px-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition-all shadow-sm active:scale-[0.98]">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span>Accomplishment Report</span>
-                    </a>
 
                     <?php if ($activeFolder['status'] === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value): ?>
                         <?php if ($activeFolder['user_id'] == session()->get('user_id')): ?>

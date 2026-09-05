@@ -18,7 +18,39 @@
                 </button>
             </div>
 
-            <div class="flex items-center gap-2 shrink-0">
+            <div class="flex items-center gap-3 shrink-0 flex-wrap">
+                <!-- College / Department Filter -->
+                <div class="flex items-center gap-2">
+                    <label for="college-filter" class="text-xs font-bold text-slate-500 dark:text-slate-400 hidden sm:inline-flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        <span>Filter:</span>
+                    </label>
+                    <select id="college-filter" onchange="applyCollegeFilter(this.value)"
+                            class="text-xs font-semibold px-3 py-2 rounded-xl bg-white dark:bg-[#032316] border border-slate-200 dark:border-[#0c4a33] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer shadow-2xs">
+                        <option value="">🏛️ All Colleges & Offices</option>
+                        <?php if (!empty($allUnits)): ?>
+                            <?php foreach ($allUnits as $u): ?>
+                                <option value="<?= $u['id'] ?>" <?= (!empty($selectedUnitId) && (int)$selectedUnitId === (int)$u['id']) ? 'selected' : '' ?>>
+                                    <?= esc($u['name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </select>
+                </div>
+
+                <?php if (!empty($selectedUnitId)): ?>
+                    <button onclick="applyCollegeFilter('')"
+                            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-amber-700 dark:text-amber-400 bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/10 dark:hover:bg-amber-500/20 border border-amber-200 dark:border-amber-500/30 transition-colors shadow-2xs"
+                            title="Reset college filter">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                        <span><?= esc($selectedUnitName ?? 'Filtered') ?> &times;</span>
+                    </button>
+                <?php endif; ?>
+
                 <a href="<?= site_url('ratings') ?>" 
                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 dark:border-emerald-500/30 transition-colors shadow-2xs">
                     <span>Evaluator Queue</span>
@@ -228,18 +260,20 @@
 
         <!-- 3. COLLEGE & DEPARTMENT COMPLIANCE LEADERBOARD -->
         <div class="p-6 rounded-xl bg-slate-50/70 dark:bg-[#0c1510]/50 border border-slate-200 dark:border-[#1a2b22] shadow-xs">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                <div>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                <div class="min-w-0 flex-1">
                     <h2 class="text-base font-bold text-slate-900 dark:text-white">Department Compliance Leaderboard</h2>
                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Target compliance and final evaluation completion per academic and admin unit</p>
                 </div>
-                <div class="relative w-full sm:w-64">
+                <div class="relative shrink-0" style="width: 260px; max-width: 100%;">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 dark:text-slate-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
                     <input type="text" id="leaderboard-search" onkeyup="filterLeaderboard()"
                            placeholder="Search department..." 
-                           class="w-full text-xs font-medium px-3 py-2 pl-9 rounded-xl bg-white dark:bg-[#032316] border border-slate-200 dark:border-[#0c4a33] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#94A3B8] focus:outline-none focus:border-emerald-500 transition-colors shadow-2xs" />
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 dark:text-[#94A3B8] absolute left-3 top-2.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
+                           class="w-full text-xs font-medium py-2 pl-9 pr-4 rounded-xl bg-white dark:bg-[#032316] border border-slate-200 dark:border-[#0c4a33] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-2xs" />
                 </div>
             </div>
 
@@ -281,19 +315,9 @@
                                         <?= $dept['average_rating'] > 0 ? number_format($dept['average_rating'], 2) : '--' ?>
                                     </td>
                                     <td class="py-3 px-4 text-right">
-                                        <?php if ($dept['compliance_pct'] >= 100): ?>
-                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30">
-                                                100% Compliant
-                                            </span>
-                                        <?php elseif ($dept['compliance_pct'] >= 50): ?>
-                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-blue-50 text-blue-700 border border-blue-200 dark:bg-info-500/15 dark:text-blue-400 dark:border-info-500/30">
-                                                On Track
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-amber-50 text-amber-700 border border-amber-200 dark:bg-warning-500/15 dark:text-amber-400 dark:border-warning-500/30">
-                                                Action Needed
-                                            </span>
-                                        <?php endif; ?>
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase border <?= $dept['badge_class'] ?? 'bg-blue-50 text-blue-700 border-blue-200' ?>">
+                                            <?= esc($dept['status_badge']) ?>
+                                        </span>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -345,8 +369,27 @@
                                     </td>
                                     <td class="py-3 px-4 text-slate-600 dark:text-slate-300 truncate max-w-[220px]"><?= esc($rf['department']) ?></td>
                                     <td class="py-3 px-4 text-center">
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold uppercase bg-slate-100 dark:bg-[#032316] text-slate-800 dark:text-slate-300 border border-slate-200 dark:border-[#0c4a33] shadow-2xs">
-                                            <?= esc(str_replace('_', ' ', $rf['folder_status'])) ?>
+                                        <?php
+                                            $st = $rf['folder_status'];
+                                            $stBadgeClass = 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-[#032316] dark:text-slate-300 dark:border-[#0c4a33]';
+                                            $stLabel = str_replace('_', ' ', $st);
+
+                                            if (in_array($st, ['approved', 'twg_approved'])) {
+                                                $stBadgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30';
+                                                $stLabel = 'Approved';
+                                            } elseif (in_array($st, ['target_returned', 'reevaluate', 'target_unapproved'])) {
+                                                $stBadgeClass = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30';
+                                                $stLabel = 'Needs Revision';
+                                            } elseif (in_array($st, ['pending_target_approval', 'submitted'])) {
+                                                $stBadgeClass = 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-info-500/15 dark:text-blue-400 dark:border-info-500/30';
+                                                $stLabel = $st === 'pending_target_approval' ? 'Target Submitted' : 'Submitted';
+                                            } elseif ($st === 'to evaluate') {
+                                                $stBadgeClass = 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-highlight-500/20 dark:text-highlight-400 dark:border-highlight-500/30';
+                                                $stLabel = 'In Evaluation';
+                                            }
+                                        ?>
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold uppercase border <?= $stBadgeClass ?> shadow-2xs">
+                                            <?= esc($stLabel) ?>
                                         </span>
                                     </td>
                                     <td class="py-3 px-4 text-center font-black text-slate-900 dark:text-white">
@@ -354,7 +397,7 @@
                                     </td>
                                     <td class="py-3 px-4 text-right whitespace-nowrap">
                                         <a href="<?= site_url('ratings/show/' . $rf['folder_id']) ?>" 
-                                           class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors shadow-2xs">
+                                            class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors shadow-2xs">
                                             Inspect
                                         </a>
                                     </td>
@@ -383,5 +426,15 @@ function filterLeaderboard() {
             row.style.display = 'none';
         }
     });
+}
+
+function applyCollegeFilter(unitId) {
+    const url = new URL(window.location.href);
+    if (unitId) {
+        url.searchParams.set('unit_id', unitId);
+    } else {
+        url.searchParams.delete('unit_id');
+    }
+    window.location.href = url.toString();
 }
 </script>

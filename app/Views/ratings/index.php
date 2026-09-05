@@ -366,19 +366,11 @@
                                                 </td>
                                             <?php endif; ?>
 
-                                            <td class="block lg:table-cell px-0 lg:px-6 pt-1 pb-0 lg:py-4 text-right lg:min-w-[180px]">
-                                                <div class="flex items-center justify-end gap-1.5 w-full">
-                                                    <a href="<?= site_url('folders/' . $row['folder_id'] . '/accomplishment-report') ?>" 
-                                                       target="_blank"
-                                                       class="inline-flex items-center justify-center px-2.5 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 rounded-xl font-bold text-xs transition-all border border-surface-border whitespace-nowrap shadow-xs"
-                                                       title="View Official Accomplishment Report (AR)">
-                                                        AR Report
-                                                    </a>
-                                                    <a href="<?= site_url('ratings/show/' . $row['folder_id']) ?>" 
-                                                       class="w-full lg:w-auto inline-flex items-center justify-center gap-2 px-3.5 py-2 bg-accent hover:bg-accent-hover text-white rounded-xl font-bold text-xs transition-all shadow-md active:scale-95 cursor-pointer whitespace-nowrap">
-                                                        Open Evaluation
-                                                    </a>
-                                                </div>
+                                            <td class="block lg:table-cell px-0 lg:px-6 pt-1 pb-0 lg:py-4 text-right lg:min-w-[135px]">
+                                                <a href="<?= site_url('ratings/show/' . $row['folder_id']) ?>" 
+                                                class="w-full lg:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 lg:py-2 bg-accent hover:bg-accent-hover text-white rounded-xl font-bold text-xs transition-all shadow-md active:scale-95 cursor-pointer whitespace-nowrap">
+                                                    Open Evaluation
+                                                </a>
                                             </td>
 
                                         </tr>

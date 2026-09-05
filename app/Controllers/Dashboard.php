@@ -64,6 +64,23 @@ class Dashboard extends BaseController
             $activeCycle = $rootFolders[0];
         }
 
+        // College / Department Filtering for Oversight Roles
+        $selectedUnitId = $this->request->getGet('unit_id');
+        $selectedUnitId = (!empty($selectedUnitId) && is_numeric($selectedUnitId)) ? (int)$selectedUnitId : null;
+        $selectedUnitName = null;
+
+        $allUnits = $db->table('units u')
+            ->select('u.id, u.name, u.parent_id, COUNT(p.id) as headcount')
+            ->join('plantillas p', 'p.unit_id = u.id AND p.ended_at IS NULL', 'inner')
+            ->groupBy('u.id')
+            ->orderBy('u.name', 'ASC')
+            ->get()->getResultArray();
+
+        if ($selectedUnitId) {
+            $unitRow = $db->table('units')->where('id', $selectedUnitId)->get()->getRowArray();
+            $selectedUnitName = $unitRow['name'] ?? null;
+        }
+
         // 2. Fetch all ratee folders in this cycle
         $cycleFolders = [];
         if ($activeCycle) {
@@ -81,6 +98,13 @@ class Dashboard extends BaseController
                 ->join('units un', 'un.id = p.unit_id', 'left')
                 ->whereIn('df.id', $targetFolderIds)
                 ->where('df.deleted_at IS NULL');
+
+            // Apply selected college filter if requested
+            if ($selectedUnitId) {
+                $filteredUnitIds = $unitModel->getDescendantIds([$selectedUnitId]);
+                $filteredUnitIds[] = $selectedUnitId;
+                $builder->whereIn('un.id', array_unique($filteredUnitIds));
+            }
 
             // Role Scoping:
             if ($sysRole === 'Supervisor') {
@@ -245,14 +269,16 @@ class Dashboard extends BaseController
             $dept = $f['department'];
             if (!isset($deptLeaderboard[$dept])) {
                 $deptLeaderboard[$dept] = [
-                    'name'            => $dept,
-                    'headcount'       => 0,
-                    'target_approved' => 0,
-                    'eval_completed'  => 0,
-                    'ratings'         => [],
-                    'average_rating'  => 0,
-                    'compliance_pct'  => 0,
-                    'status_badge'    => 'In Progress'
+                    'name'             => $dept,
+                    'headcount'        => 0,
+                    'target_approved'  => 0,
+                    'revisions_needed' => 0,
+                    'eval_completed'   => 0,
+                    'ratings'          => [],
+                    'average_rating'   => 0,
+                    'compliance_pct'   => 0,
+                    'status_badge'     => 'In Progress',
+                    'badge_class'      => 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-info-500/15 dark:text-blue-400 dark:border-info-500/30'
                 ];
             }
             $deptLeaderboard[$dept]['headcount']++;
@@ -268,6 +294,14 @@ class Dashboard extends BaseController
                 $deptLeaderboard[$dept]['target_approved']++;
             }
 
+            if (in_array($f['folder_status'], [
+                FolderStatus::TARGET_RETURNED->value,
+                FolderStatus::TARGET_UNAPPROVED->value,
+                FolderStatus::REEVALUATE->value
+            ])) {
+                $deptLeaderboard[$dept]['revisions_needed']++;
+            }
+
             if (in_array($f['folder_status'], [FolderStatus::APPROVED->value, FolderStatus::TWG_APPROVED->value])) {
                 $deptLeaderboard[$dept]['eval_completed']++;
             }
@@ -281,12 +315,18 @@ class Dashboard extends BaseController
             $d['compliance_pct'] = $d['headcount'] > 0 ? round(($d['eval_completed'] / $d['headcount']) * 100) : 0;
             $d['average_rating'] = !empty($d['ratings']) ? round(array_sum($d['ratings']) / count($d['ratings']), 2) : 0;
 
-            if ($d['compliance_pct'] >= 100) {
+            if ($d['revisions_needed'] > 0) {
+                $d['status_badge'] = $d['revisions_needed'] . ' Revision' . ($d['revisions_needed'] > 1 ? 's' : '');
+                $d['badge_class']  = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30';
+            } elseif ($d['compliance_pct'] >= 100) {
                 $d['status_badge'] = '100% Compliant';
+                $d['badge_class']  = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30';
             } elseif ($d['compliance_pct'] >= 50) {
                 $d['status_badge'] = 'On Track';
+                $d['badge_class']  = 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-info-500/15 dark:text-blue-400 dark:border-info-500/30';
             } else {
                 $d['status_badge'] = 'Action Needed';
+                $d['badge_class']  = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/15 dark:text-rose-400 dark:border-rose-500/30';
             }
         }
         unset($d);
@@ -315,6 +355,9 @@ class Dashboard extends BaseController
                 'sysRole'              => $sysRole,
                 'rootFolders'          => $rootFolders,
                 'activeCycle'          => $activeCycle,
+                'selectedUnitId'       => $selectedUnitId,
+                'selectedUnitName'     => $selectedUnitName,
+                'allUnits'             => $allUnits,
                 'totalPersonnel'       => $totalPersonnel,
                 'totalRated'           => $totalRated,
                 'overallAverage'       => $overallAverage,

@@ -112,9 +112,6 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->delete('document', 'Document::destroy');
     $routes->post('document/target', 'Document::setTarget');
 
-    // Accomplishment Reports
-    $routes->get('folders/(:segment)/accomplishment-report', 'Report::accomplishmentReport/$1');
-    $routes->get('document/(:segment)/accomplishment-report', 'Report::documentAccomplishmentReport/$1');
 
     // Auth
     $routes->delete('login', 'Auth\Session::destroy');
