@@ -137,17 +137,62 @@
                     </svg>
                 </button>
 
-                <!-- Notification Bell Button -->
-                <button type="button" 
-                        class="relative w-8 h-8 rounded-xl text-slate-300 hover:text-white shadow-xs flex items-center justify-center transition-all cursor-pointer shrink-0"
-                        style="background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(16, 185, 129, 0.25);"
-                        title="Notifications">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                    </svg>
-                    <!-- Notification Badge Dot -->
-                    <span class="w-2 h-2 rounded-full bg-amber-400 absolute top-1.5 right-1.5" style="border: 1px solid #061a10;"></span>
-                </button>
+                <!-- Notification Bell Dropdown Container -->
+                <div class="relative" id="notification-container">
+                    <button type="button" id="notification-btn"
+                            class="relative w-8 h-8 rounded-xl text-slate-300 hover:text-white shadow-xs flex items-center justify-center transition-all cursor-pointer shrink-0"
+                            style="background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(16, 185, 129, 0.25);"
+                            title="Notifications"
+                            aria-label="View Notifications">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                        <!-- Dynamic Notification Badge -->
+                        <span id="notification-badge" 
+                              class="hidden absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 bg-rose-500 text-white font-black text-[9px] rounded-full flex items-center justify-center shadow-xs border border-[#061a10] animate-pulse">
+                            0
+                        </span>
+                    </button>
+
+                    <!-- Notifications Dropdown Tray -->
+                    <div id="notification-menu" 
+                         class="hidden absolute right-0 mt-3 w-80 sm:w-96 origin-top-right rounded-2xl bg-white dark:bg-[#0c1510] p-0 shadow-2xl border border-slate-200 dark:border-[#1a2b22] ring-1 ring-black/5 z-[120] overflow-hidden">
+                        
+                        <!-- Header -->
+                        <div class="px-4 py-3 border-b border-slate-200 dark:border-[#1a2b22] flex items-center justify-between bg-slate-50/80 dark:bg-[#122019]/80">
+                            <div class="flex items-center gap-2">
+                                <span class="font-black text-xs text-slate-900 dark:text-white uppercase tracking-wider">Notifications</span>
+                                <span id="notification-header-count" class="hidden px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 text-[10px] font-black">
+                                    0 New
+                                </span>
+                            </div>
+                            <button type="button" id="btn-mark-all-read"
+                                    class="text-[11px] font-bold text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 transition-colors cursor-pointer flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span>Mark all read</span>
+                            </button>
+                        </div>
+
+                        <!-- Notification List (Scrollable) -->
+                        <div id="notification-list" class="max-h-[380px] overflow-y-auto custom-scrollbar divide-y divide-slate-100 dark:divide-[#15271d]">
+                            <!-- Loading / Empty / Dynamic Items injected here -->
+                            <div id="notification-loading" class="p-8 text-center text-slate-400 dark:text-slate-500 text-xs">
+                                <svg class="animate-spin h-5 w-5 mx-auto mb-2 text-emerald-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                                </svg>
+                                Loading notifications...
+                            </div>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="px-4 py-2 bg-slate-50/50 dark:bg-[#080e0b] border-t border-slate-200/60 dark:border-[#1a2b22] text-center">
+                            <span class="text-[10px] text-slate-400 dark:text-slate-500 font-medium">BSU-SPMS Activity Center</span>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Profile Dropdown Button Capsule (Matching GovHeader4 with Fully Visible Name) -->
                 <div class="relative">
@@ -298,5 +343,250 @@
                 mobileMenu.classList.add('hidden');
             }
         });
+
+        // --- In-App Notifications Client ---
+        (function() {
+            const notifBtn = document.getElementById('notification-btn');
+            const notifMenu = document.getElementById('notification-menu');
+            const notifBadge = document.getElementById('notification-badge');
+            const notifHeaderCount = document.getElementById('notification-header-count');
+            const notifList = document.getElementById('notification-list');
+            const markAllBtn = document.getElementById('btn-mark-all-read');
+
+            let notificationsCache = [];
+            let isFetching = false;
+
+            function getCsrfToken() {
+                return document.querySelector('meta[name="csrf-token-hash"]')?.content || '';
+            }
+
+            function getCsrfName() {
+                return document.querySelector('meta[name="csrf-token-name"]')?.content || 'csrf_test_name';
+            }
+
+            async function fetchNotifications() {
+                if (isFetching) return;
+                isFetching = true;
+                try {
+                    const res = await fetch('<?= site_url("notifications") ?>', {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.status === 'success') {
+                            notificationsCache = data.notifications || [];
+                            updateBadge(data.unread_count || 0);
+                            renderNotificationList(notificationsCache);
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Failed to fetch notifications', e);
+                } finally {
+                    isFetching = false;
+                }
+            }
+
+            function updateBadge(count) {
+                if (!notifBadge) return;
+                if (count > 0) {
+                    notifBadge.textContent = count > 99 ? '99+' : count;
+                    notifBadge.classList.remove('hidden');
+                    if (notifHeaderCount) {
+                        notifHeaderCount.textContent = `${count} New`;
+                        notifHeaderCount.classList.remove('hidden');
+                    }
+                } else {
+                    notifBadge.classList.add('hidden');
+                    if (notifHeaderCount) {
+                        notifHeaderCount.classList.add('hidden');
+                    }
+                }
+            }
+
+            function getIconSvg(type) {
+                switch (type) {
+                    case 'target_approved':
+                    case 'eval_approved':
+                        return `<svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`;
+                    case 'target_returned':
+                    case 'eval_returned':
+                    case 'twg_disapproved':
+                        return `<svg class="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`;
+                    case 'target_submitted':
+                    case 'eval_submitted':
+                        return `<svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`;
+                    case 'twg_approved':
+                        return `<svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>`;
+                    default:
+                        return `<svg class="w-4 h-4 text-slate-600 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>`;
+                }
+            }
+
+            function getIconBgClass(type) {
+                switch (type) {
+                    case 'target_approved':
+                    case 'eval_approved':
+                        return 'bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900';
+                    case 'target_returned':
+                    case 'eval_returned':
+                    case 'twg_disapproved':
+                        return 'bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900';
+                    case 'target_submitted':
+                    case 'eval_submitted':
+                        return 'bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900';
+                    case 'twg_approved':
+                        return 'bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-900';
+                    default:
+                        return 'bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700';
+                }
+            }
+
+            function escapeHtml(str) {
+                if (!str) return '';
+                return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+            }
+
+            function renderNotificationList(items) {
+                if (!notifList) return;
+                if (!items || items.length === 0) {
+                    notifList.innerHTML = `
+                        <div class="p-8 text-center">
+                            <div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-[#13271b] text-slate-400 dark:text-emerald-400 mx-auto flex items-center justify-center mb-2.5">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                </svg>
+                            </div>
+                            <p class="text-xs font-bold text-slate-800 dark:text-white">All caught up!</p>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">No new notifications at this time.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                notifList.innerHTML = items.map(item => {
+                    const isUnread = !item.is_read;
+                    const bgHover = isUnread 
+                        ? 'bg-emerald-50/50 dark:bg-[#10241a]/60 hover:bg-emerald-50/80 dark:hover:bg-[#132b20]' 
+                        : 'hover:bg-slate-50 dark:hover:bg-white/5';
+                    const iconSvg = getIconSvg(item.type);
+                    const iconBg = getIconBgClass(item.type);
+
+                    return `
+                        <div class="notification-item flex items-start gap-3 p-3.5 transition-colors cursor-pointer relative group ${bgHover}"
+                             data-id="${item.id}"
+                             data-link="${item.link || ''}">
+                            
+                            <!-- Icon Tile -->
+                            <div class="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center ${iconBg}">
+                                ${iconSvg}
+                            </div>
+
+                            <!-- Content -->
+                            <div class="flex-1 min-w-0 pr-1">
+                                <div class="flex items-center justify-between gap-1 mb-0.5">
+                                    <h5 class="text-xs text-slate-900 dark:text-white truncate ${isUnread ? 'font-black text-emerald-950 dark:text-emerald-300' : 'font-bold'}">${escapeHtml(item.title)}</h5>
+                                    <span class="text-[10px] text-slate-400 dark:text-slate-500 shrink-0 whitespace-nowrap">${item.time_ago}</span>
+                                </div>
+                                <p class="text-[11px] text-slate-600 dark:text-slate-300 leading-snug line-clamp-2">${escapeHtml(item.message)}</p>
+                            </div>
+
+                            <!-- Unread Indicator Dot -->
+                            ${isUnread ? '<span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0 mt-1.5 shadow-xs"></span>' : ''}
+                        </div>
+                    `;
+                }).join('');
+
+                // Attach click listeners on each row
+                notifList.querySelectorAll('.notification-item').forEach(el => {
+                    el.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        const notifId = el.getAttribute('data-id');
+                        const targetLink = el.getAttribute('data-link');
+
+                        try {
+                            const formData = new FormData();
+                            formData.append(getCsrfName(), getCsrfToken());
+                            fetch(`<?= site_url('notifications/read/') ?>${notifId}`, {
+                                method: 'POST',
+                                body: formData,
+                                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                            });
+                        } catch (err) {
+                            console.warn(err);
+                        }
+
+                        if (targetLink) {
+                            window.location.href = targetLink;
+                        } else {
+                            fetchNotifications();
+                        }
+                    });
+                });
+            }
+
+            // Toggle Notification Tray
+            if (notifBtn && notifMenu) {
+                notifBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const willOpen = notifMenu.classList.contains('hidden');
+                    notifMenu.classList.toggle('hidden');
+
+                    // Close profile menu if open
+                    if (profileMenu && !profileMenu.classList.contains('hidden')) {
+                        profileMenu.classList.add('hidden');
+                    }
+                    if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
+                        mobileMenu.classList.add('hidden');
+                    }
+
+                    if (willOpen) {
+                        fetchNotifications();
+                    }
+                });
+            }
+
+            // Mark All Read button
+            if (markAllBtn) {
+                markAllBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    try {
+                        const formData = new FormData();
+                        formData.append(getCsrfName(), getCsrfToken());
+                        const res = await fetch('<?= site_url("notifications/read-all") ?>', {
+                            method: 'POST',
+                            body: formData,
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        });
+                        if (res.ok) {
+                            updateBadge(0);
+                            notificationsCache.forEach(n => n.is_read = true);
+                            renderNotificationList(notificationsCache);
+                        }
+                    } catch (err) {
+                        console.warn(err);
+                    }
+                });
+            }
+
+            // Close notification tray on outside click
+            document.addEventListener('click', (e) => {
+                if (notifMenu && !notifMenu.classList.contains('hidden') && !notifMenu.contains(e.target) && !notifBtn.contains(e.target)) {
+                    notifMenu.classList.add('hidden');
+                }
+            });
+
+            // Close on Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    if (notifMenu && !notifMenu.classList.contains('hidden')) {
+                        notifMenu.classList.add('hidden');
+                    }
+                }
+            });
+
+            // Initial fetch & polling every 45s
+            fetchNotifications();
+            setInterval(fetchNotifications, 45000);
+        })();
     });
 </script>

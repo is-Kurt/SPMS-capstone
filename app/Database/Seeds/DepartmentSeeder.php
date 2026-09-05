@@ -585,9 +585,165 @@ class DepartmentSeeder extends Seeder
             }
         }
 
+        // --- SEED SAMPLE IN-APP NOTIFICATIONS ---
+        $notifTable = $db->table('notifications');
+        $notifTable->emptyTable();
+
+        $usersByEmail = [];
+        $allUsers = $db->table('users')->get()->getResultArray();
+        foreach ($allUsers as $usr) {
+            $usersByEmail[$usr['email']] = $usr;
+        }
+
+        $sampleNotifications = [
+            // Admin Notifications
+            [
+                'to'         => 'admin@test.com',
+                'from'       => 'faculty.agri2@test.com', // Maricel Flores
+                'type'       => 'target_submitted',
+                'title'      => 'Targets Submitted for Approval',
+                'message'    => 'Maricel Flores submitted DPCR target commitments for approval.',
+                'link'       => 'ratings',
+                'icon'       => 'file',
+                'read_at'    => null,
+                'created_at' => date('Y-m-d H:i:s', strtotime('-15 minutes'))
+            ],
+            [
+                'to'         => 'admin@test.com',
+                'from'       => 'faculty.cis2@test.com', // Stephanie Reyes
+                'type'       => 'eval_submitted',
+                'title'      => 'Accomplishments Submitted',
+                'message'    => 'Stephanie Reyes submitted accomplishments and MOVs for evaluation.',
+                'link'       => 'ratings',
+                'icon'       => 'file',
+                'read_at'    => null,
+                'created_at' => date('Y-m-d H:i:s', strtotime('-1 hour'))
+            ],
+            [
+                'to'         => 'admin@test.com',
+                'from'       => 'dean.agri@test.com', // Julian Ramos
+                'type'       => 'target_submitted',
+                'title'      => 'College Target Submission',
+                'message'    => 'College of Agriculture submitted updated targets for 1st Semester 2026.',
+                'link'       => 'ratings',
+                'icon'       => 'file',
+                'read_at'    => date('Y-m-d H:i:s', strtotime('-2 days')),
+                'created_at' => date('Y-m-d H:i:s', strtotime('-2 days'))
+            ],
+
+            // Danilo Castillo (Faculty CTE) Notifications
+            [
+                'to'         => 'faculty.cte2@test.com', // Danilo Castillo
+                'from'       => 'chair.cte@test.com',   // Arthur Perez
+                'type'       => 'target_returned',
+                'title'      => 'Action Required: Targets Returned',
+                'message'    => 'Your IPCR targets were returned for revision: [Chair Arthur Perez]: Please specify concrete expected outputs for curriculum modules.',
+                'link'       => 'folders',
+                'icon'       => 'alert',
+                'read_at'    => null,
+                'created_at' => date('Y-m-d H:i:s', strtotime('-25 minutes'))
+            ],
+            [
+                'to'         => 'faculty.cte2@test.com',
+                'from'       => 'dean.cte@test.com',
+                'type'       => 'target_approved',
+                'title'      => 'Department Target Basis Released',
+                'message'    => 'College of Teacher Education DPCR basis targets have been approved and released.',
+                'link'       => 'folders',
+                'icon'       => 'check',
+                'read_at'    => date('Y-m-d H:i:s', strtotime('-2 days')),
+                'created_at' => date('Y-m-d H:i:s', strtotime('-2 days'))
+            ],
+
+            // Lilibeth Torres (CAS Faculty) Notifications
+            [
+                'to'         => 'faculty.cas2@test.com', // Lilibeth Torres
+                'from'       => 'dean.cas@test.com',    // Gabriel Morales
+                'type'       => 'target_returned',
+                'title'      => 'Action Required: Targets Returned',
+                'message'    => 'Your IPCR targets were returned for revision: [Dean Gabriel Morales]: Target indicators for extension deliverables need measurable proof.',
+                'link'       => 'folders',
+                'icon'       => 'alert',
+                'read_at'    => null,
+                'created_at' => date('Y-m-d H:i:s', strtotime('-40 minutes'))
+            ],
+
+            // Leonora Villar (GSO Staff) Notifications
+            [
+                'to'         => 'staff.gso2@test.com', // Leonora Villar
+                'from'       => 'head.gso@test.com',   // Rodrigo Estrada
+                'type'       => 'target_returned',
+                'title'      => 'Action Required: Targets Returned',
+                'message'    => 'Your IPERF targets were returned: [Unit Head Rodrigo Estrada]: Please clarify preventive maintenance schedule targets for university campus facilities.',
+                'link'       => 'folders',
+                'icon'       => 'alert',
+                'read_at'    => null,
+                'created_at' => date('Y-m-d H:i:s', strtotime('-50 minutes'))
+            ],
+
+            // Julian Ramos (Dean Agri) Notifications
+            [
+                'to'         => 'dean.agri@test.com',
+                'from'       => 'chair.agri@test.com',
+                'type'       => 'target_submitted',
+                'title'      => 'Department Targets Submitted',
+                'message'    => 'Lorna Mendoza submitted DPCR targets for Agronomy & Soil Science.',
+                'link'       => 'ratings',
+                'icon'       => 'file',
+                'read_at'    => null,
+                'created_at' => date('Y-m-d H:i:s', strtotime('-2 hours'))
+            ],
+
+            // Clarissa Diaz (CIS Chair) Notifications
+            [
+                'to'         => 'chair.cis@test.com',
+                'from'       => 'dean.cis@test.com',
+                'type'       => 'target_approved',
+                'title'      => 'Target Commitments Approved',
+                'message'    => 'Your target commitments for 1st Semester 2026 have been approved by the Dean.',
+                'link'       => 'folders',
+                'icon'       => 'check',
+                'read_at'    => null,
+                'created_at' => date('Y-m-d H:i:s', strtotime('-3 hours'))
+            ],
+            [
+                'to'         => 'chair.cis@test.com',
+                'from'       => 'admin@test.com',
+                'type'       => 'twg_approved',
+                'title'      => 'SPMS Rating Verified by TWG',
+                'message'    => 'Official SPMS performance ratings have been verified and finalized by the Technical Working Group.',
+                'link'       => 'folders',
+                'icon'       => 'award',
+                'read_at'    => date('Y-m-d H:i:s', strtotime('-3 days')),
+                'created_at' => date('Y-m-d H:i:s', strtotime('-3 days'))
+            ],
+        ];
+
+        $seededNotifCount = 0;
+        foreach ($sampleNotifications as $sn) {
+            $toUser = $usersByEmail[$sn['to']] ?? null;
+            $fromUser = $usersByEmail[$sn['from']] ?? null;
+            if ($toUser) {
+                $notifTable->insert([
+                    'user_id'    => $toUser['id'],
+                    'sender_id'  => $fromUser['id'] ?? null,
+                    'type'       => $sn['type'],
+                    'title'      => $sn['title'],
+                    'message'    => $sn['message'],
+                    'link'       => $sn['link'],
+                    'icon'       => $sn['icon'],
+                    'read_at'    => $sn['read_at'],
+                    'created_at' => $sn['created_at'],
+                    'updated_at' => $sn['created_at'],
+                ]);
+                $seededNotifCount++;
+            }
+        }
+
         echo ">>> [SPMS] Seeder complete!\n";
         echo "    - Total Users Configured: 19\n";
         echo "    - Total Documents Created/Verified: {$createdDocCount}\n";
+        echo "    - In-App Notifications Seeded: {$seededNotifCount}\n";
         echo "    - Revisions Injected: 3 (Danilo Castillo, Lilibeth Torres, Leonora Villar)\n";
         echo "    - Pending Targets Injected: 1 (Maricel Flores)\n";
         echo "    - In-Evaluation / Submitted: 2 (Stephanie Reyes, Nestor Pascual)\n";

@@ -1005,6 +1005,16 @@ class Folder extends BaseController
                 'submitted_at' => $now
             ]);
 
+            $subUser = (new UserModel())->find($userId);
+            $subName = trim(($subUser['first_name'] ?? '') . ' ' . ($subUser['last_name'] ?? '')) ?: 'Employee';
+            $this->notifyFolderEvaluators(
+                $folder,
+                'Accomplishments Submitted for Evaluation',
+                "{$subName} submitted actual accomplishments for \"{$folder['title']}\" for your rating and evaluation.",
+                'eval_submitted',
+                'file'
+            );
+
             $message = $windowAlreadyOpen
                 ? 'Folder submitted - the evaluation period is already open, so it has moved straight to evaluation.'
                 : 'Folder submitted for evaluation.';
@@ -1172,6 +1182,16 @@ class Folder extends BaseController
                 'target_submitted_at' => date('Y-m-d H:i:s')
             ]);
             
+            $user = (new UserModel())->find($userId);
+            $name = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: 'Employee';
+            $this->notifyFolderEvaluators(
+                $folder,
+                'Targets Submitted for Approval',
+                "{$name} submitted target commitments for \"{$folder['title']}\" for your approval.",
+                'target_submitted',
+                'file'
+            );
+
             return $this->respond(['status' => 'success', 'message' => 'Targets submitted for approval.']);
         });
     }
@@ -1310,6 +1330,16 @@ class Folder extends BaseController
                 }
             }
 
+            // In-app notification to the employee whose target was approved
+            notify_user((int) $folder['user_id'], [
+                'sender_id' => session()->get('user_id'),
+                'type'      => 'target_approved',
+                'title'     => 'Target Commitments Approved',
+                'message'   => "Your target commitments for \"{$folder['title']}\" have been approved.",
+                'link'      => 'folders/' . $folderId,
+                'icon'      => 'check',
+            ]);
+
             $msg = $releaseToDeans 
                 ? "OPCR targets approved and successfully released to {$releasedCount} College Dean(s)." 
                 : "Targets approved successfully.";
@@ -1364,6 +1394,18 @@ class Folder extends BaseController
             if (!empty($reason)) {
                 $this->appendDocumentRevisionTrail($folderId, $reason, 'target');
             }
+
+            $revMsg = !empty($reason)
+                ? "Your target commitments for \"{$folder['title']}\" were returned for revision: {$reason}"
+                : "Your target commitments for \"{$folder['title']}\" were returned for revision.";
+            notify_user((int) $folder['user_id'], [
+                'sender_id' => session()->get('user_id'),
+                'type'      => 'target_returned',
+                'title'     => 'Action Required: Targets Returned',
+                'message'   => $revMsg,
+                'link'      => 'folders/' . $folderId,
+                'icon'      => 'alert',
+            ]);
             
             return $this->respond(['status' => 'success', 'message' => 'Targets returned for revision.']);
         });
@@ -1404,6 +1446,17 @@ class Folder extends BaseController
                     'link'                => $link,
                 ]));
             }
+
+            // In-app notification to the employee
+            $supName = trim(($supervisor['first_name'] ?? '') . ' ' . ($supervisor['last_name'] ?? '')) ?: 'Your supervisor';
+            notify_user((int) $folder['user_id'], [
+                'sender_id' => session()->get('user_id'),
+                'type'      => 'eval_approved',
+                'title'     => 'Evaluation Approved',
+                'message'   => "Your performance evaluation for \"{$folder['title']}\" has been rated and approved by {$supName}.",
+                'link'      => 'folders/' . $folderId,
+                'icon'      => 'check',
+            ]);
 
             return $this->respond(['status' => 'success', 'message' => 'Approved!']);
         });
@@ -1504,6 +1557,19 @@ class Folder extends BaseController
                 'updated_at' => date('Y-m-d H:i:s')
             ]);
             
+            $folder = $folderModel->find($folderId);
+            $isApproved = ($status === FolderStatus::TWG_APPROVED->value);
+            notify_user((int) $folder['user_id'], [
+                'sender_id' => session()->get('user_id'),
+                'type'      => $isApproved ? 'twg_approved' : 'twg_disapproved',
+                'title'     => $isApproved ? 'SPMS Rating Verified by TWG' : 'SPMS Rating Disapproved by TWG',
+                'message'   => $isApproved 
+                    ? "Official SPMS performance ratings for \"{$folder['title']}\" have been verified and finalized by the Technical Working Group."
+                    : "Official SPMS performance ratings for \"{$folder['title']}\" were not approved by the Technical Working Group.",
+                'link'      => 'folders/' . $folderId,
+                'icon'      => $isApproved ? 'award' : 'alert',
+            ]);
+
             return $this->respond(['status' => 'success', 'message' => 'Status updated successfully!']);
         });
     }
@@ -1549,6 +1615,20 @@ class Folder extends BaseController
                 ]));
             }
 
+            // In-app notification to the subordinate
+            $supName = trim(($supervisor['first_name'] ?? '') . ' ' . ($supervisor['last_name'] ?? '')) ?: 'Your supervisor';
+            $revMsg = !empty($reason) 
+                ? "Your evaluation for \"{$folder['title']}\" was returned for revision by {$supName}: {$reason}"
+                : "Your evaluation for \"{$folder['title']}\" was returned for revision by {$supName}.";
+            notify_user((int) $folder['user_id'], [
+                'sender_id' => session()->get('user_id'),
+                'type'      => 'eval_returned',
+                'title'     => 'Action Required: Evaluation Returned',
+                'message'   => $revMsg,
+                'link'      => 'folders/' . $folderId,
+                'icon'      => 'alert',
+            ]);
+
             return $this->respond(['status' => 'success', 'message' => 'Returned for revision.']);
         });
     }
@@ -1589,6 +1669,75 @@ class Folder extends BaseController
                 ];
 
                 $documentModel->update($doc['id'], ['tabs' => $tabs]);
+            }
+        }
+    }
+
+    /**
+     * Helper to send an in-app notification to evaluators/supervisors of a folder.
+     */
+    private function notifyFolderEvaluators($folder, $title, $message, $type, $icon = 'bell') {
+        $routingModel = new EvaluationRoutingModel();
+        $routings = $routingModel->where('folder_id', $folder['id'])->findAll();
+        $senderId = session()->get('user_id');
+
+        $notifiedIds = [];
+        foreach ($routings as $r) {
+            $evalId = (int) $r['evaluator_id'];
+            if (!in_array($evalId, $notifiedIds)) {
+                notify_user($evalId, [
+                    'sender_id' => $senderId,
+                    'type'      => $type,
+                    'title'     => $title,
+                    'message'   => $message,
+                    'link'      => 'ratings/show/' . $folder['id'],
+                    'icon'      => $icon,
+                ]);
+                $notifiedIds[] = $evalId;
+            }
+        }
+
+        // If parent folder exists and owner is not yet notified
+        if (!empty($folder['parent_folder_id'])) {
+            $folderModel = new DocumentFolderModel();
+            $parentFolder = $folderModel->find($folder['parent_folder_id']);
+            if ($parentFolder && !empty($parentFolder['user_id'])) {
+                $pUserId = (int) $parentFolder['user_id'];
+                if (!in_array($pUserId, $notifiedIds)) {
+                    notify_user($pUserId, [
+                        'sender_id' => $senderId,
+                        'type'      => $type,
+                        'title'     => $title,
+                        'message'   => $message,
+                        'link'      => 'ratings/show/' . $folder['id'],
+                        'icon'      => $icon,
+                    ]);
+                    $notifiedIds[] = $pUserId;
+                }
+            }
+        }
+
+        // If no evaluators or parents found, notify Admins
+        if (empty($notifiedIds)) {
+            $userRoleModel = new \App\Models\UserRoleModel();
+            $roleModel = new \App\Models\RoleModel();
+            $adminRole = $roleModel->where('name', 'Admin')->first();
+            if ($adminRole) {
+                $adminUsers = $userRoleModel->where('role_id', $adminRole['id'])->findAll();
+                foreach ($adminUsers as $au) {
+                    $adminId = (int) $au['user_id'];
+                    if (!in_array($adminId, $notifiedIds)) {
+                        notify_user($adminId, [
+                            'sender_id' => $senderId,
+                            'type'      => $type,
+                            'title'     => $title,
+                            'message'   => $message,
+                            'link'      => 'ratings/show/' . $folder['id'],
+                            'icon'      => $icon,
+                        ]);
+                        $notifiedIds[] = $adminId;
+                    }
+                }
             }
         }
     }

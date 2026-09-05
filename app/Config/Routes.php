@@ -112,6 +112,10 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->delete('document', 'Document::destroy');
     $routes->post('document/target', 'Document::setTarget');
 
+    // In-App Notifications
+    $routes->get('notifications', 'Notification::index');
+    $routes->post('notifications/read/(:num)', 'Notification::markAsRead/$1');
+    $routes->post('notifications/read-all', 'Notification::markAllAsRead');
 
     // Auth
     $routes->delete('login', 'Auth\Session::destroy');
