@@ -28,7 +28,8 @@ class RoleFilter implements FilterInterface
         $role = session()->get('role');
 
         if (!$role || !in_array($role, $arguments)) {
-            return redirect()->to(site_url('folders'))->with('error', 'Unauthorized access.');
+            $dest = ($role === 'TWG') ? 'ratings' : 'folders';
+            return redirect()->to(site_url($dest))->with('error', 'Unauthorized access.');
         }
     }
 

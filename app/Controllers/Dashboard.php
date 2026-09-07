@@ -107,9 +107,16 @@ class Dashboard extends BaseController
             }
 
             // Role Scoping:
+            $supervisorCollegeName = null;
+            $scopedUnitIds = [];
             if ($sysRole === 'Supervisor') {
                 $ownPlantilla  = $userModel->getActivePlantillaDetails($userId);
-                $scopedUnitIds = $ownPlantilla ? $unitModel->getDescendantIds([$ownPlantilla['unit_id']]) : [];
+                if ($ownPlantilla) {
+                    $scopedUnitIds = $unitModel->getDescendantIds([$ownPlantilla['unit_id']]);
+                    $scopedUnitIds[] = (int)$ownPlantilla['unit_id'];
+                    $supervisorCollegeName = $ownPlantilla['department'] ?? 'College / Department';
+                }
+                $scopedUnitIds = array_unique(array_filter($scopedUnitIds));
                 if (!empty($scopedUnitIds)) {
                     $builder->whereIn('un.id', $scopedUnitIds);
                 } else {
@@ -123,6 +130,43 @@ class Dashboard extends BaseController
 
             $builder->groupBy('df.id');
             $cycleFolders = $builder->get()->getResultArray();
+
+            // For Supervisors: also discover any active college employees who have not even created a folder yet
+            if ($sysRole === 'Supervisor' && !empty($scopedUnitIds)) {
+                $existingUserIds = array_column($cycleFolders, 'user_id');
+                $collegeEmployees = $db->table('users u')
+                    ->select("u.id as user_id, u.first_name, u.last_name, u.email,
+                              pos.title as position, pos.is_teaching,
+                              un.id as unit_id, un.name as department")
+                    ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'inner')
+                    ->join('positions pos', 'pos.id = p.position_id', 'left')
+                    ->join('units un', 'un.id = p.unit_id', 'left')
+                    ->whereIn('un.id', $scopedUnitIds)
+                    ->where('u.is_active', 1)
+                    ->get()->getResultArray();
+
+                foreach ($collegeEmployees as $ce) {
+                    if (!in_array($ce['user_id'], $existingUserIds)) {
+                        $cycleFolders[] = [
+                            'folder_id'     => null,
+                            'user_id'       => $ce['user_id'],
+                            'folder_title'  => 'No Folder Created',
+                            'final_rating'  => null,
+                            'folder_status' => 'unstarted',
+                            'updated_at'    => null,
+                            'created_at'    => null,
+                            'first_name'    => $ce['first_name'],
+                            'last_name'     => $ce['last_name'],
+                            'email'         => $ce['email'],
+                            'doc_type'      => null,
+                            'position'      => $ce['position'] ?? 'Faculty / Staff',
+                            'is_teaching'   => $ce['is_teaching'] ?? 0,
+                            'unit_id'       => $ce['unit_id'],
+                            'department'    => $ce['department'] ?? ($supervisorCollegeName ?? 'General')
+                        ];
+                    }
+                }
+            }
         }
 
         // 3. Compute Metrics
@@ -139,33 +183,96 @@ class Dashboard extends BaseController
         $evalSubmittedCount    = 0;
         $evalPendingCount      = 0; // draft, reevaluate
 
+        $collegeDepartments = [];
+
         foreach ($cycleFolders as &$f) {
             $f['full_name'] = trim(($f['first_name'] ?? '') . ' ' . ($f['last_name'] ?? '')) ?: 'User #' . $f['user_id'];
             $f['department'] = !empty($f['department']) ? $f['department'] : 'General Administration / Unassigned';
             $f['position']   = !empty($f['position']) ? $f['position'] : 'Faculty / Staff';
 
-            $status = $f['folder_status'];
-
-            // Target stage tracking
-            if (in_array($status, [FolderStatus::TARGET_APPROVED->value, FolderStatus::SUBMITTED->value, FolderStatus::TO_EVALUATE->value, FolderStatus::EVALUATED->value, FolderStatus::APPROVED->value, FolderStatus::TWG_APPROVED->value])) {
-                $targetApprovedCount++;
-            } elseif ($status === FolderStatus::PENDING_TARGET_APPROVAL->value) {
-                $targetPendingCount++;
-            } elseif ($status === FolderStatus::DRAFT_TARGET->value) {
-                $targetDraftCount++;
-            } elseif (in_array($status, [FolderStatus::TARGET_RETURNED->value, FolderStatus::TARGET_UNAPPROVED->value])) {
-                $targetReturnedCount++;
+            if (!empty($f['department'])) {
+                $collegeDepartments[$f['department']] = $f['department'];
             }
 
-            // Evaluation stage tracking
+            $status = $f['folder_status'];
+
+            // Target stage tracking & tagging
+            if (in_array($status, [FolderStatus::TARGET_APPROVED->value, FolderStatus::SUBMITTED->value, FolderStatus::TO_EVALUATE->value, FolderStatus::EVALUATED->value, FolderStatus::APPROVED->value, FolderStatus::TWG_APPROVED->value])) {
+                $targetApprovedCount++;
+                $f['target_state'] = 'approved';
+                $f['target_label'] = 'Approved';
+                $f['target_badge'] = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30';
+            } elseif ($status === FolderStatus::PENDING_TARGET_APPROVAL->value) {
+                $targetPendingCount++;
+                $f['target_state'] = 'submitted';
+                $f['target_label'] = 'Submitted (Pending Review)';
+                $f['target_badge'] = 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-info-500/15 dark:text-blue-400 dark:border-info-500/30';
+            } elseif ($status === FolderStatus::DRAFT_TARGET->value) {
+                $targetDraftCount++;
+                $f['target_state'] = 'draft';
+                $f['target_label'] = 'Not Submitted (Draft)';
+                $f['target_badge'] = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/15 dark:text-rose-400 dark:border-rose-500/30';
+            } elseif (in_array($status, [FolderStatus::TARGET_RETURNED->value, FolderStatus::TARGET_UNAPPROVED->value])) {
+                $targetReturnedCount++;
+                $f['target_state'] = 'returned';
+                $f['target_label'] = 'Needs Revision';
+                $f['target_badge'] = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30';
+            } else {
+                $targetDraftCount++;
+                $f['target_state'] = 'draft';
+                $f['target_label'] = 'Not Started (No Folder)';
+                $f['target_badge'] = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/15 dark:text-rose-400 dark:border-rose-500/30';
+            }
+
+            // Evaluation stage tracking & tagging
             if (in_array($status, [FolderStatus::APPROVED->value, FolderStatus::TWG_APPROVED->value])) {
                 $evalCompletedCount++;
+                $f['eval_state'] = 'approved';
+                $f['eval_label'] = 'Completed & Approved';
+                $f['eval_badge'] = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30';
             } elseif (in_array($status, [FolderStatus::TO_EVALUATE->value, FolderStatus::EVALUATED->value])) {
                 $evalActionCount++;
+                $f['eval_state'] = 'evaluating';
+                $f['eval_label'] = 'Submitted (Evaluating)';
+                $f['eval_badge'] = 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-highlight-500/20 dark:text-highlight-400 dark:border-highlight-500/30';
             } elseif ($status === FolderStatus::SUBMITTED->value) {
                 $evalSubmittedCount++;
+                $f['eval_state'] = 'submitted';
+                $f['eval_label'] = 'Submitted';
+                $f['eval_badge'] = 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-info-500/15 dark:text-blue-400 dark:border-info-500/30';
             } elseif (in_array($status, [FolderStatus::DRAFT->value, FolderStatus::REEVALUATE->value])) {
                 $evalPendingCount++;
+                if ($status === FolderStatus::REEVALUATE->value) {
+                    $f['eval_state'] = 'returned';
+                    $f['eval_label'] = 'Needs Revision';
+                    $f['eval_badge'] = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30';
+                } else {
+                    $f['eval_state'] = 'draft';
+                    $f['eval_label'] = 'Not Submitted (Draft)';
+                    $f['eval_badge'] = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/15 dark:text-rose-400 dark:border-rose-500/30';
+                }
+            } else {
+                $evalPendingCount++;
+                $f['eval_state'] = 'draft';
+                $f['eval_label'] = 'Pending Target Phase';
+                $f['eval_badge'] = 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-zinc-800 dark:text-zinc-400';
+            }
+
+            // High-level filter tag for Dean's quick buttons:
+            // 'missing'  -> target is draft OR (target approved but eval is draft)
+            // 'review'   -> target is submitted (in review) OR eval is submitted/evaluating
+            // 'revision' -> target returned OR eval returned
+            // 'completed'-> eval completed/approved
+            if ($f['target_state'] === 'draft' || ($f['target_state'] === 'approved' && $f['eval_state'] === 'draft')) {
+                $f['submission_filter'] = 'missing';
+            } elseif ($f['target_state'] === 'submitted' || $f['eval_state'] === 'submitted' || $f['eval_state'] === 'evaluating') {
+                $f['submission_filter'] = 'review';
+            } elseif ($f['target_state'] === 'returned' || $f['eval_state'] === 'returned') {
+                $f['submission_filter'] = 'revision';
+            } elseif ($f['eval_state'] === 'approved') {
+                $f['submission_filter'] = 'completed';
+            } else {
+                $f['submission_filter'] = 'all';
             }
 
             // Rating capture
@@ -178,6 +285,7 @@ class Dashboard extends BaseController
             }
         }
         unset($f);
+        ksort($collegeDepartments);
 
         // 4. CSC Adjectival Rating Breakdown (CSC MC No. 6, s. 2012)
         $cscDistribution = [
@@ -366,8 +474,10 @@ class Dashboard extends BaseController
                 'targetComplianceRate' => $targetComplianceRate,
                 'evalCompletionRate'   => $evalCompletionRate,
                 'cscDistribution'      => $cscDistribution,
-                'deptLeaderboard'      => $deptLeaderboard,
-                'recentFolders'        => $recentFolders,
+                'supervisorCollegeName' => $supervisorCollegeName,
+                'collegeDepartments'    => $collegeDepartments,
+                'cycleFolders'          => $cycleFolders,
+                'recentFolders'         => $recentFolders,
                 'pipeline'             => [
                     'target' => [
                         'approved' => $targetApprovedCount,

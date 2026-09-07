@@ -28,7 +28,14 @@ class GuestFilter implements FilterInterface
         helper('functions');
 
         if (session()->get('user_id') || restore_session_from_cookie()) {
-            $dest = (session()->get('role') === 'TWG') ? 'ratings' : 'folders';
+            $role = session()->get('role');
+            if ($role === 'TWG') {
+                $dest = 'ratings';
+            } elseif ($role === 'Admin') {
+                $dest = 'dashboard';
+            } else {
+                $dest = 'folders';
+            }
             return redirect()->to(site_url($dest));
         }
     }

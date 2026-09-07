@@ -4,8 +4,10 @@
 
     $navItems = [];
 
-    // Executive Performance Dashboard
-    $navItems['dashboard'] = 'Dashboard';
+    // Executive Analytics Dashboard (Admin) / College Submission Monitor (Supervisor)
+    if (in_array($role, ['Admin', 'Supervisor'])) {
+        $navItems['dashboard'] = 'Dashboard';
+    }
 
     // TWG only sees Ratings, they don't see Folders.
     if ($role !== 'TWG') {

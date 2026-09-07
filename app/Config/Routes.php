@@ -12,9 +12,9 @@ $routes->get('test/check-db', 'TestCycle::checkData');
 $routes->post('/test/importWordTable', 'Test::importWordTable');
 
 $routes->group('', ['filter' => 'auth'], function($routes) {
-    // Executive Analytics Dashboard
-    $routes->get('dashboard', 'Dashboard::index');
-    $routes->get('dashboard/(:segment)', 'Dashboard::index/$1');
+    // Executive Analytics Dashboard (Admin) / College Submission Monitor (Supervisor)
+    $routes->get('dashboard', 'Dashboard::index', ['filter' => 'role:Admin,Supervisor']);
+    $routes->get('dashboard/(:segment)', 'Dashboard::index/$1', ['filter' => 'role:Admin,Supervisor']);
 
     // Ratings
     $routes->get('ratings', 'Rating::index');
