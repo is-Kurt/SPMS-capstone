@@ -107,7 +107,7 @@ class MasterSeeder extends Seeder
         }
 
         // ==========================================
-        // 5. SEED UNITS (The Org Chart)
+        // 5. SEED UNITS (The Org Chart - Top Level)
         // ==========================================
         $db->table('units')->insert(['name' => 'OVPAA', 'parent_id' => null]);
         $ovpaaId = $db->insertID();
@@ -118,13 +118,13 @@ class MasterSeeder extends Seeder
         $db->table('units')->insert(['name' => 'HRDO', 'parent_id' => null]);
         $hrdoId = $db->insertID();
 
-        $db->table('units')->insert(['name' => 'College of Engineering', 'parent_id' => $ovpaaId]);
+        $db->table('units')->insert(['name' => 'College of Nursing', 'parent_id' => null]);
         $coeId = $db->insertID();
 
-        $db->table('units')->insert(['name' => "Registrar's Office", 'parent_id' => $ovpaaId]);
+        $db->table('units')->insert(['name' => "Registrar's Office", 'parent_id' => null]);
         $regId = $db->insertID();
 
-        $db->table('units')->insert(['name' => 'Accounting Office', 'parent_id' => $ovpafId]);
+        $db->table('units')->insert(['name' => 'Accounting Office', 'parent_id' => null]);
         $accId = $db->insertID();
 
         // ==========================================

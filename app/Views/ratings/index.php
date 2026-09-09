@@ -185,6 +185,11 @@
                     <h1 class="text-3xl font-black tracking-tight text-text truncate group-hover:text-accent lg:group-hover:text-text transition-colors">
                         <?= esc($activeFolder['title']) ?>
                     </h1>
+                    <?php if (!empty($activeFolder['deleted_at'])): ?>
+                        <span class="ml-2 px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                            Archived & Frozen
+                        </span>
+                    <?php endif; ?>
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 shrink-0 text-text-muted transition-colors group-hover:text-accent lg:hidden ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
@@ -211,6 +216,30 @@
                 </div>
             </div>
         </div>
+
+        <!-- QUICK STATUS FILTER PILLS -->
+        <div class="px-6 lg:px-8 pb-3 pt-1 flex items-center gap-2 overflow-x-auto custom-scrollbar shrink-0" id="quick-status-pills-container">
+            <span class="text-[10px] font-black uppercase tracking-wider text-text-muted shrink-0 mr-1 flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+                Filter:
+            </span>
+            <button type="button" class="quick-status-pill active-pill px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer bg-emerald-600 text-white shadow-2xs" data-status-filter="all">
+                All
+            </button>
+            <button type="button" class="quick-status-pill px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer bg-surface-border/20 text-text hover:bg-surface-border/40 hover:text-accent" data-status-filter="needs_eval">
+                Needs My Evaluation
+            </button>
+            <button type="button" class="quick-status-pill px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer bg-surface-border/20 text-text hover:bg-surface-border/40 hover:text-accent" data-status-filter="pending_twg">
+                Pending TWG Review
+            </button>
+            <button type="button" class="quick-status-pill px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer bg-surface-border/20 text-text hover:bg-surface-border/40 hover:text-accent" data-status-filter="approved_completed">
+                Approved / Completed
+            </button>
+            <button type="button" class="quick-status-pill px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer bg-surface-border/20 text-text hover:bg-surface-border/40 hover:text-accent" data-status-filter="revision">
+                Revision Needed
+            </button>
+        </div>
+
         <!-- QUEUE TABS -->
         <div class="flex px-6 lg:px-8 border-b border-surface-border shrink-0 overflow-x-auto custom-scrollbar">
             <?php foreach ($periods as $pKey => $period): ?>
@@ -285,7 +314,8 @@
                                             data-name="<?= esc($row['username']) ?>" 
                                             data-unit="<?= esc($row['department'] ?? '') ?>" 
                                             data-pos="<?= esc($row['position'] ?? '') ?>"
-                                            data-teaching="<?= esc($row['is_teaching'] ?? 0) ?>"> 
+                                            data-teaching="<?= esc($row['is_teaching'] ?? 0) ?>"
+                                            data-status="<?= strtolower(esc($row['folder_status'])) ?>"> 
                                             
                                             <td class="block lg:table-cell px-0 lg:px-6 py-1 lg:py-4">
                                                 <div class="flex justify-between items-start lg:items-center">
@@ -657,6 +687,21 @@
             return Array.from(checked).map(cb => cb.value.toLowerCase());
         }
         
+        let activeStatusPill = 'all';
+        const pillButtons = document.querySelectorAll('.quick-status-pill');
+        pillButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                pillButtons.forEach(b => {
+                    b.classList.remove('active-pill', 'bg-emerald-600', 'text-white');
+                    b.classList.add('bg-surface-border/20', 'text-text');
+                });
+                btn.classList.remove('bg-surface-border/20', 'text-text');
+                btn.classList.add('active-pill', 'bg-emerald-600', 'text-white');
+                activeStatusPill = btn.getAttribute('data-status-filter') || 'all';
+                filterRatings();
+            });
+        });
+        
         function filterRatings() {
             const searchTerm   = searchInput ? searchInput.value.toLowerCase() : '';
             const checkedTypes = getCheckedValues('filter_type[]');
@@ -664,17 +709,29 @@
             const checkedPos   = getCheckedValues('filter_pos[]');
             
             document.querySelectorAll('.rating-card').forEach(card => {
-                const name = (card.getAttribute('data-name') || '').toLowerCase();
-                const unit = (card.getAttribute('data-unit') || '').toLowerCase();
-                const pos  = (card.getAttribute('data-pos') || '').toLowerCase();
-                const type = card.getAttribute('data-teaching') || '0';
+                const name   = (card.getAttribute('data-name') || '').toLowerCase();
+                const unit   = (card.getAttribute('data-unit') || '').toLowerCase();
+                const pos    = (card.getAttribute('data-pos') || '').toLowerCase();
+                const type   = card.getAttribute('data-teaching') || '0';
+                const status = (card.getAttribute('data-status') || '').toLowerCase();
                 
                 const matchesSearch = name.includes(searchTerm);
                 const matchesUnit   = checkedUnits.length === 0 || checkedUnits.includes(unit);
                 const matchesPos    = checkedPos.length === 0 || checkedPos.includes(pos);
                 const matchesType   = checkedTypes.length === 0 || checkedTypes.includes(type);
+
+                let matchesStatus = true;
+                if (activeStatusPill === 'needs_eval') {
+                    matchesStatus = ['pending_target_approval', 'submitted', 'to evaluate', 'to_evaluate'].includes(status);
+                } else if (activeStatusPill === 'pending_twg') {
+                    matchesStatus = ['approved'].includes(status);
+                } else if (activeStatusPill === 'approved_completed') {
+                    matchesStatus = ['target_approved', 'twg_approved'].includes(status);
+                } else if (activeStatusPill === 'revision') {
+                    matchesStatus = ['target_returned', 'target_unapproved', 'reevaluate', 'twg_disapproved'].includes(status);
+                }
                 
-                if (matchesSearch && matchesUnit && matchesPos && matchesType) {
+                if (matchesSearch && matchesUnit && matchesPos && matchesType && matchesStatus) {
                     card.style.display = ''; 
                 } else {
                     card.style.display = 'none'; 
@@ -691,6 +748,16 @@
             clearBtn.addEventListener('click', () => {
                 if (searchInput) searchInput.value = '';
                 checkboxes.forEach(cb => cb.checked = false);
+                const allPill = document.querySelector('.quick-status-pill[data-status-filter="all"]');
+                if (allPill) {
+                    pillButtons.forEach(b => {
+                        b.classList.remove('active-pill', 'bg-emerald-600', 'text-white');
+                        b.classList.add('bg-surface-border/20', 'text-text');
+                    });
+                    allPill.classList.remove('bg-surface-border/20', 'text-text');
+                    allPill.classList.add('active-pill', 'bg-emerald-600', 'text-white');
+                    activeStatusPill = 'all';
+                }
                 filterRatings();
                 
                 // Also reset sidebar mini-searches

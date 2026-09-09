@@ -6,10 +6,6 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 
-$routes->get('/test', 'Test::index');
-$routes->get('test/full-cycle', 'TestCycle::run');
-$routes->get('test/check-db', 'TestCycle::checkData');
-$routes->post('/test/importWordTable', 'Test::importWordTable');
 
 $routes->group('', ['filter' => 'auth'], function($routes) {
     // Executive Analytics Dashboard (Admin) / College Submission Monitor (Supervisor)
@@ -48,6 +44,7 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->post('account/position/delete', 'AccountManagement::deletePosition', ['filter' => 'role:Admin']);
 
     $routes->post('account/unit/add', 'AccountManagement::addUnit', ['filter' => 'role:Admin']);
+    $routes->post('account/unit/update', 'AccountManagement::updateUnit', ['filter' => 'role:Admin']);
     $routes->post('account/unit/delete', 'AccountManagement::deleteUnit', ['filter' => 'role:Admin']);
 
     // Template Management
@@ -105,6 +102,7 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
 
     // Document
     $routes->get('document', 'Document');
+    $routes->get('document/(:segment)/export-excel', 'Document::exportExcel/$1');
     $routes->get('document/(:segment)', 'Document::index/$1');
     $routes->get('documents/(:segment)', 'Document::index/$1');
     $routes->post('document', 'Document::store');
@@ -112,10 +110,21 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->delete('document', 'Document::destroy');
     $routes->post('document/target', 'Document::setTarget');
 
+    // Document Attachments (Means of Verification / MOV)
+    $routes->post('attachments/upload', 'Attachment::upload');
+    $routes->delete('attachments/(:num)', 'Attachment::delete/$1');
+    $routes->get('attachments/view/(:num)', 'Attachment::view/$1');
+    $routes->get('attachments/download/(:num)', 'Attachment::download/$1');
+    $routes->get('attachments/row/(:num)/(:segment)', 'Attachment::listByRow/$1/$2');
+
     // In-App Notifications
     $routes->get('notifications', 'Notification::index');
     $routes->post('notifications/read/(:num)', 'Notification::markAsRead/$1');
     $routes->post('notifications/read-all', 'Notification::markAllAsRead');
+
+    // Institutional Audit Trail & Activity Logging (Admin Only)
+    $routes->get('audit-logs', 'AuditLog::index', ['filter' => 'role:Admin']);
+    $routes->get('audit-logs/export-csv', 'AuditLog::exportCsv', ['filter' => 'role:Admin']);
 
     // Auth
     $routes->delete('login', 'Auth\Session::destroy');
@@ -127,6 +136,14 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     // and switch instead of silently landing on their own, unrelated data.
     $routes->get('account-mismatch', 'Auth\Session::accountMismatch');
     $routes->post('account-mismatch/switch', 'Auth\Session::switchAccount');
+
+    // Development-Only Testing Routes (Admin Only)
+    if (ENVIRONMENT === 'development') {
+        $routes->group('test', ['filter' => 'role:Admin'], function($routes) {
+            $routes->get('full-cycle', 'TestCycle::run');
+            $routes->get('check-db', 'TestCycle::checkData');
+        });
+    }
 });
 
 // Signup is deliberately outside the guest filter: an invite link must always be

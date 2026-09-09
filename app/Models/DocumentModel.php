@@ -17,7 +17,6 @@ class DocumentModel extends Model
         'title', 
         'tabs',
         'document_folder_id', 
-        'parent_doc_id',
         'is_target'
     ];
 
@@ -59,7 +58,7 @@ class DocumentModel extends Model
     public function getDocumentWithFolderInfo(string $docId): ?array
     {
         return $this->db->table('documents d')
-            ->select('d.*, df.user_id as owner_id, df.status as folder_status, df.parent_folder_id, df.title as folder_title,
+            ->select('d.*, df.user_id as owner_id, df.status as folder_status, df.parent_folder_id, df.title as folder_title, df.deleted_at as folder_deleted_at,
                       df.ipcr_target_start, df.ipcr_target_end, df.ipcr_eval_start, df.ipcr_eval_end,
                       df.dpcr_target_start, df.dpcr_target_end, df.dpcr_eval_start, df.dpcr_eval_end,
                       df.opcr_target_start, df.opcr_target_end, df.opcr_eval_start, df.opcr_eval_end,

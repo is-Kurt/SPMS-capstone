@@ -6,8 +6,8 @@
         <?= form_open('account/unit/add', ['id' => 'form-create-unit', 'data-ajax' => 'add-unit']) ?>
             <div class="space-y-4">
                 <div>
-                    <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Unit Name</label>
-                    <input type="text" name="name" required placeholder="e.g. IT Department" class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none text-text transition-all" />
+                    <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Unit / College Name</label>
+                    <input type="text" name="name" required placeholder="e.g. College of Forestry, Department of Biology, HRDO" class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none text-text transition-all" />
                 </div>
                 <div class="relative">
                     <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Parent Unit</label>

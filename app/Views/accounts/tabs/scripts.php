@@ -243,6 +243,17 @@
                 break;
             }
 
+            case 'update-unit': {
+                const modal = document.getElementById('modal-edit-unit');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+                await window.appAlert('Unit updated successfully!', { title: 'Unit Updated', variant: 'success' });
+                window.location.reload();
+                break;
+            }
+
             case 'add-position': {
                 const li = document.createElement('li');
                 li.className = 'position-item block lg:table-row bg-surface hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors group';

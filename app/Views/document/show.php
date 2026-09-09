@@ -44,6 +44,12 @@
         FolderStatus::TARGET_RETURNED->value
     ];
     $isEditable = ($canEditTargets || $canEditEvaluation);
+
+    if (!empty($isCycleArchived)) {
+        $canEditTargets = false;
+        $canEditEvaluation = false;
+        $isEditable = false;
+    }
 ?>
 
 <style>
@@ -342,6 +348,10 @@
             page-break-inside: avoid !important;
             break-inside: avoid !important;
         }
+        .spms-meta-matrix, .spms-navy-bar, .spms-signatories-matrix, .spms-sheet-container > div, .spms-table-responsive-wrapper {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
         .spms-table thead {
             display: table-header-group !important;
         }
@@ -377,23 +387,26 @@
         
         <?php if (!($isEmbed ?? false)): ?>
         <?php 
+            $sysRole = session()->get('role');
+            $homeUrl = ($sysRole === 'TWG') ? site_url('ratings') : site_url('folders');
             $returnUrl = $isOwner 
                 ? site_url('folders/' . ($doc['document_folder_id'] ?? ''))
-                : site_url('ratings/show/' . ($doc['document_folder_id'] ?? ''));
+                : site_url('ratings' . (!empty($rootFolderId) ? '/' . $rootFolderId : ''));
         ?>
         <div class="flex items-center gap-1 sm:gap-3 min-w-0 flex-1">
             <!-- Return to Folder Button -->
             <a href="<?= $returnUrl ?>" 
                class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-xs font-bold rounded-lg border border-surface-border transition-colors shrink-0 shadow-sm mr-1 sm:mr-2 cursor-pointer"
-               title="Return to <?= $isOwner ? 'Folder' : 'Ratings' ?>">
+               title="Return to <?= $isOwner ? 'Folder' : 'Ratings Dashboard' ?>">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
                 <span class="font-extrabold uppercase text-[11px] tracking-wider hidden sm:inline">Return</span>
             </a>
 
-            <a href="<?= $returnUrl ?>" 
-               class="cursor-pointer shrink-0">
+            <a href="<?= $homeUrl ?>" 
+               class="cursor-pointer shrink-0"
+               title="Return to SPMS Home">
                 <!-- Back-to-folders brand mark. text-text (not text-white) so it stays visible on the
                      theme-aware bg-bg header in both light and dark mode. -->
                 <div class="flex-shrink-0 flex items-center gap-1 mr-1 sm:mr-4 text-text hover:text-accent transition-colors">
@@ -404,10 +417,58 @@
                     <span class="hidden sm:block font-black tracking-tighter text-xl uppercase">SPMS</span>
                 </div>
             </a>
+
+            <?php if (!empty($rateeNav)): ?>
+                <!-- Quick Ratee Navigator Widget for Evaluators/Supervisors -->
+                <div class="flex items-center bg-surface-border/25 border border-surface-border rounded-lg p-0.5 text-xs font-bold shadow-2xs shrink-0 mr-1 sm:mr-3">
+                    <?php if (!empty($rateeNav['prev'])): ?>
+                        <a href="<?= site_url('ratings/show/' . $rateeNav['prev']['folder_id']) ?>" 
+                           class="flex items-center gap-1 px-2 py-1 hover:bg-surface-border/50 text-text rounded-md transition-colors cursor-pointer"
+                           title="Previous Ratee: <?= esc($rateeNav['prev']['name']) ?><?= !empty($rateeNav['prev']['position']) ? ' (' . esc($rateeNav['prev']['position']) . ')' : '' ?>">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                            </svg>
+                            <span class="hidden md:inline text-[11px]">Prev</span>
+                        </a>
+                    <?php else: ?>
+                        <span class="flex items-center gap-1 px-2 py-1 text-text-muted/30 rounded-md cursor-not-allowed">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                            </svg>
+                            <span class="hidden md:inline text-[11px]">Prev</span>
+                        </span>
+                    <?php endif; ?>
+
+                    <span class="px-2 py-0.5 text-[11px] font-black text-text border-x border-surface-border/50 whitespace-nowrap"
+                          title="Reviewing Ratee <?= $rateeNav['currentIndex'] ?> of <?= $rateeNav['totalRatees'] ?>">
+                        <span class="text-accent font-extrabold"><?= $rateeNav['currentIndex'] ?></span>
+                        <span class="text-text-muted font-normal">/</span>
+                        <span><?= $rateeNav['totalRatees'] ?></span>
+                    </span>
+
+                    <?php if (!empty($rateeNav['next'])): ?>
+                        <a href="<?= site_url('ratings/show/' . $rateeNav['next']['folder_id']) ?>" 
+                           class="flex items-center gap-1 px-2 py-1 hover:bg-surface-border/50 text-text rounded-md transition-colors cursor-pointer"
+                           title="Next Ratee: <?= esc($rateeNav['next']['name']) ?><?= !empty($rateeNav['next']['position']) ? ' (' . esc($rateeNav['next']['position']) . ')' : '' ?>">
+                            <span class="hidden md:inline text-[11px]">Next</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </a>
+                    <?php else: ?>
+                        <span class="flex items-center gap-1 px-2 py-1 text-text-muted/30 rounded-md cursor-not-allowed">
+                            <span class="hidden md:inline text-[11px]">Next</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </span>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
         <?php else: ?>
         <div class="flex items-center gap-2 min-w-0 flex-1">
             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300 text-[11px] font-bold border border-sky-200 dark:border-sky-800">
-                📄 Reference Guide (Read-Only)
+                Reference Guide (Read-Only)
             </span>
             <span class="font-bold text-xs text-text truncate"><?= esc($doc['title']) ?></span>
         </div>
@@ -432,6 +493,7 @@
         </script>
         
         <div class="flex items-center gap-2 sm:gap-4 shrink-0">
+            <?php if ($isOwner || session()->get('role') === 'Admin'): ?>
             <!-- Print / Export PDF Button -->
             <button type="button" onclick="exportToPdf()" 
                     class="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-2.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-[10px] sm:text-xs font-bold rounded-lg border border-surface-border transition-all cursor-pointer shadow-sm print-hide"
@@ -442,6 +504,19 @@
                 <span class="hidden md:inline">Print / Export PDF</span>
                 <span class="hidden sm:inline md:hidden">Print</span>
             </button>
+
+            <!-- Export to Excel Button -->
+            <button type="button" onclick="exportToExcel()" 
+                    class="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[10px] sm:text-xs font-bold rounded-lg border border-emerald-500/30 hover:border-emerald-500/50 transition-all cursor-pointer shadow-sm active:scale-[0.98] print-hide"
+                    title="Export document to official Civil Service Commission Excel spreadsheet (.xlsx)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span class="hidden md:inline">Export Excel</span>
+                <span class="hidden sm:inline md:hidden">Excel</span>
+            </button>
+            <?php endif; ?>
+
             <!-- CSC Scoring Rubric Button -->
             <button type="button" id="btn-toggle-rubric" onclick="toggleRubricDrawer()" 
                     class="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-2.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-[10px] sm:text-xs font-bold rounded-lg border border-surface-border transition-all cursor-pointer shadow-sm active:scale-[0.98] print-hide"
@@ -492,7 +567,7 @@
                             </button>
                         <?php else: ?>
                             <button type="button" disabled class="bg-success-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
-                                <span class="hidden sm:inline">Folder </span><?= $status === FolderStatus::TWG_APPROVED->value ? 'TWG Approved' : ($status === FolderStatus::TWG_DISAPPROVED->value ? 'TWG Disapproved' : 'Approved ✓') ?>
+                                <span class="hidden sm:inline">Folder </span><?= $status === FolderStatus::TWG_APPROVED->value ? 'TWG Approved' : ($status === FolderStatus::TWG_DISAPPROVED->value ? 'TWG Disapproved' : 'Approved') ?>
                             </button>
                         <?php endif; ?>
                     <?php endif; ?>
@@ -645,7 +720,43 @@
                             $targetEndCol = $ownerDocType . '_target_end';
                             $isTargetPeriodEnded = !empty($doc[$targetEndCol]) && date('Y-m-d H:i:s') > $doc[$targetEndCol]; 
                             $isAdmin = session()->get('role') === 'Admin';
-                            $isOpcr = strtolower($doc['title'] ?? '') === 'opcr' || $ownerDocType === 'opcr';
+                            $isSupervisor = session()->get('role') === 'Supervisor';
+                            $docTitleUpper = strtoupper(trim($doc['title'] ?? ''));
+                            $isTrueOpcr = ($docTitleUpper === 'OPCR');
+                            $isTrueDpcr = ($docTitleUpper === 'DPCR');
+
+                            $ownerPos = strtolower($ownerInfo['position'] ?? '');
+                            $isOwnerDean = str_contains($ownerPos, 'dean');
+                            $isOwnerChair = str_contains($ownerPos, 'chair') || str_contains($ownerPos, 'head');
+
+                            $canRelease = false;
+                            $releaseScope = null;
+                            $releaseLabel = '';
+                            $releaseTitle = '';
+
+                            if ($isTrueOpcr && $isAdmin) {
+                                $canRelease = true;
+                                $releaseScope = 'deans';
+                                $releaseLabel = 'to Deans';
+                                $releaseTitle = 'Approve this OPCR and automatically distribute it to all College Deans as their target basis';
+                            } elseif ($isTrueDpcr && ($isAdmin || $isSupervisor)) {
+                                if ($isOwnerDean) {
+                                    $canRelease = true;
+                                    $releaseScope = 'chairs';
+                                    $releaseLabel = 'to Department Chairs';
+                                    $releaseTitle = 'Approve this collegiate DPCR and automatically distribute it to Department Chairs as their target basis';
+                                } elseif ($isOwnerChair) {
+                                    $canRelease = true;
+                                    $releaseScope = 'faculty';
+                                    $releaseLabel = 'to Faculty';
+                                    $releaseTitle = 'Approve this department DPCR and automatically distribute it to department faculty members as their target basis';
+                                } else {
+                                    $canRelease = true;
+                                    $releaseScope = 'faculty';
+                                    $releaseLabel = 'to Subordinates';
+                                    $releaseTitle = 'Approve this DPCR and automatically distribute it to subordinates as their target basis';
+                                }
+                            }
                         ?>
                         <div class="flex items-center gap-1.5 sm:gap-2">
                             <button id="btn-return-target" type="button" 
@@ -654,20 +765,20 @@
                                 Return<span class="hidden sm:inline"> Target for Revision</span>
                             </button>
 
-                            <?php if ($isAdmin && $isOpcr): ?>
+                            <?php if ($canRelease): ?>
                                 <button id="btn-approve-release-target" type="button" 
-                                        <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="saveWith({ after: () => approveFolderTarget(true) })"' ?>
+                                        <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="saveWith({ after: () => approveFolderTarget(\'' . $releaseScope . '\') })"' ?>
                                         class="<?= $isTargetPeriodEnded ? 'bg-emerald-600/50 cursor-not-allowed opacity-80' : 'bg-gradient-to-r from-emerald-600 to-[#064e3b] hover:from-emerald-700 hover:to-[#085a3a] shadow-emerald-600/30 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg transition-all flex items-center gap-1.5"
-                                        title="Approve this OPCR and automatically distribute it to all College Deans as their target basis">
+                                        title="<?= esc($releaseTitle) ?>">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                                     </svg>
-                                    <span>Approve & Release<span class="hidden sm:inline"> to Deans</span></span>
+                                    <span>Approve & Release<span class="hidden sm:inline"> <?= esc($releaseLabel) ?></span></span>
                                 </button>
                             <?php endif; ?>
 
                             <button id="btn-approve-target" type="button" 
-                                    <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="saveWith({ after: () => approveFolderTarget(false) })"' ?>
+                                    <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="saveWith({ after: () => approveFolderTarget(null) })"' ?>
                                     class="<?= $isTargetPeriodEnded ? 'bg-success-500/50 cursor-not-allowed opacity-80' : 'bg-success-500 hover:bg-success-600 shadow-success-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg transition-all">
                                 Approve<span class="hidden sm:inline"> Target</span>
                             </button>
@@ -680,23 +791,61 @@
                             $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
                             $targetEndCol = $ownerDocType . '_target_end';
                             $isTargetPeriodEnded = !empty($doc[$targetEndCol]) && date('Y-m-d H:i:s') > $doc[$targetEndCol]; 
+                            $isAdmin = session()->get('role') === 'Admin';
+                            $isSupervisor = session()->get('role') === 'Supervisor';
+                            $docTitleUpper = strtoupper(trim($doc['title'] ?? ''));
+                            $isTrueOpcr = ($docTitleUpper === 'OPCR');
+                            $isTrueDpcr = ($docTitleUpper === 'DPCR');
+
+                            $ownerPos = strtolower($ownerInfo['position'] ?? '');
+                            $isOwnerDean = str_contains($ownerPos, 'dean');
+                            $isOwnerChair = str_contains($ownerPos, 'chair') || str_contains($ownerPos, 'head');
+
+                            $canRelease = false;
+                            $releaseScope = null;
+                            $releaseLabel = '';
+                            $releaseTitle = '';
+
+                            if ($isTrueOpcr && $isAdmin) {
+                                $canRelease = true;
+                                $releaseScope = 'deans';
+                                $releaseLabel = 'to Deans';
+                                $releaseTitle = 'Distribute this approved OPCR to all College Deans as their target basis';
+                            } elseif ($isTrueDpcr && ($isAdmin || $isSupervisor)) {
+                                if ($isOwnerDean) {
+                                    $canRelease = true;
+                                    $releaseScope = 'chairs';
+                                    $releaseLabel = 'to Department Chairs';
+                                    $releaseTitle = 'Distribute this approved collegiate DPCR to Department Chairs as their target basis';
+                                } elseif ($isOwnerChair) {
+                                    $canRelease = true;
+                                    $releaseScope = 'faculty';
+                                    $releaseLabel = 'to Faculty';
+                                    $releaseTitle = 'Distribute this approved department DPCR to department faculty members as their target basis';
+                                } else {
+                                    $canRelease = true;
+                                    $releaseScope = 'faculty';
+                                    $releaseLabel = 'to Subordinates';
+                                    $releaseTitle = 'Distribute this approved DPCR to subordinates as their target basis';
+                                }
+                            }
                         ?>
                         <div class="flex items-center gap-1.5 sm:gap-2">
-                            <?php if (session()->get('role') === 'Admin' && (strtolower($doc['title'] ?? '') === 'opcr' || ($ownerDocType ?? '') === 'opcr')): ?>
-                                <button id="btn-release-deans" type="button" 
-                                        <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="saveWith({ after: () => approveFolderTarget(true) })"' ?>
+                            <?php if ($canRelease): ?>
+                                <button id="btn-release-subordinates" type="button" 
+                                        <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="saveWith({ after: () => approveFolderTarget(\'' . $releaseScope . '\') })"' ?>
                                         class="<?= $isTargetPeriodEnded ? 'bg-emerald-600/50 cursor-not-allowed opacity-80' : 'bg-gradient-to-r from-emerald-600 to-[#064e3b] hover:from-emerald-700 hover:to-[#085a3a] shadow-emerald-600/30 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg transition-all flex items-center gap-1.5"
-                                        title="Distribute this approved OPCR to all College Deans as their target basis">
+                                        title="<?= esc($releaseTitle) ?>">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                                     </svg>
-                                    <span>Release to Deans</span>
+                                    <span>Release<span class="hidden sm:inline"> <?= esc($releaseLabel) ?></span></span>
                                 </button>
                             <?php endif; ?>
 
                             <button id="btn-unapprove-target" type="button" 
                                     <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="saveWith({ after: () => unapproveFolderTarget() })"' ?>
-                                    class="<?= $isTargetPeriodEnded ? 'bg-warning-500/50 cursor-not-allowed opacity-80' : 'bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg transition-all">
+                                    class="<?= $isTargetPeriodEnded ? 'bg-warning-500/50 cursor-not-allowed opacity-80' : 'bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg transition-all">
                                 Remove<span class="hidden sm:inline"> Approval</span>
                             </button>
                         </div>
@@ -739,7 +888,7 @@
                 <div class="flex items-center justify-between pb-2.5 border-b-2 border-sky-500 mb-2">
                     <div class="flex items-center gap-2">
                         <span class="px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-sky-100 text-sky-800 border border-sky-300">
-                            📄 Superior Basis Reference (Read-Only)
+                            Superior Basis Reference (Read-Only)
                         </span>
                         <span class="text-xs font-bold text-slate-800" id="basis-header-doc-title">
                             <?= esc($basisDoc['title'] ?? '') ?>
@@ -748,7 +897,7 @@
                     <div class="flex items-center gap-2">
                         <?php if ($isParentTargetApproved): ?>
                             <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                                Approved Targets ✓
+                                Approved Targets
                             </span>
                         <?php else: ?>
                             <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
@@ -876,6 +1025,21 @@
         <div id="spms-form-workspace" class="hidden w-full h-full overflow-y-auto p-2 sm:p-6 lg:p-8 flex justify-center items-start custom-scrollbar print:p-0 print:bg-white print:overflow-visible">
             <article id="printable-form" class="spms-sheet-container block space-y-5">
                 
+                <?php if (!empty($isCycleArchived)): ?>
+                    <!-- Archived & Frozen Cycle Warning Banner -->
+                    <div class="p-3.5 bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-300 rounded-xl text-xs font-bold flex items-center justify-between gap-3 shadow-xs print-hide">
+                        <div class="flex items-center gap-2.5">
+                            <div class="p-1 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                            </div>
+                            <span>This evaluation cycle has been closed and archived. Ratings, accomplishments, and targets are permanently frozen in read-only mode.</span>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-md bg-amber-500/20 text-[10px] uppercase tracking-wider font-extrabold shrink-0 border border-amber-500/30">Cycle Closed</span>
+                    </div>
+                <?php endif; ?>
+
                 <!-- INSTITUTIONAL FORM HEADER -->
                 <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px;">
                     <h1 style="font-size: 15px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 6px 0;" id="spms-doc-title">
@@ -1264,11 +1428,11 @@
                     <tr>
                         <!-- Discussed with (Ratee) -->
                         <td style="width: 33.33%; border: 1px solid #000; padding: 12px; vertical-align: top;">
-                            <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #475569; text-align: left; margin-bottom: 16px;">
-                                Discussed with (Faculty Ratee):
+                            <div id="sig-label-ratee" style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #475569; text-align: left; margin-bottom: 16px;">
+                                Discussed with (Ratee):
                             </div>
-                            <input type="text" id="sig-ratee-name" value="" placeholder="Name of Faculty Ratee" style="font-weight: 900; color: #dc2626; border: none; border-bottom: 1px solid #94a3b8; text-align: center; width: 85%; outline: none; font-size: 11px; padding: 2px 0;">
-                            <div style="font-size: 10px; color: #475569; margin-top: 3px;">Faculty Member / Professor</div>
+                            <input type="text" id="sig-ratee-name" value="" placeholder="Name of Ratee" style="font-weight: 900; color: #dc2626; border: none; border-bottom: 1px solid #94a3b8; text-align: center; width: 85%; outline: none; font-size: 11px; padding: 2px 0;">
+                            <div id="sig-role-ratee" style="font-size: 10px; color: #475569; margin-top: 3px;">Faculty Member / Professor</div>
                             <div style="font-size: 10px; color: #64748b; margin-top: 3px;">
                                 Date: <input type="text" id="sig-ratee-date" placeholder="Date" style="border: none; border-bottom: 1px solid #cbd5e1; text-align: center; width: 85px; outline: none; font-size: 10px;">
                             </div>
@@ -1276,11 +1440,11 @@
 
                         <!-- Assessed by (Dean) -->
                         <td style="width: 33.33%; border: 1px solid #000; padding: 12px; vertical-align: top;">
-                            <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #475569; text-align: left; margin-bottom: 16px;">
-                                Assessed by (College Dean):
+                            <div id="sig-label-dean" style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #475569; text-align: left; margin-bottom: 16px;">
+                                Assessed by (Immediate Supervisor / Dean):
                             </div>
                             <input type="text" id="sig-dean-name" value="" placeholder="Name of Dean / Supervisor" style="font-weight: 900; color: #dc2626; border: none; border-bottom: 1px solid #94a3b8; text-align: center; width: 85%; outline: none; font-size: 11px; padding: 2px 0;">
-                            <div style="font-size: 10px; color: #475569; margin-top: 3px;">College Dean / Unit Head</div>
+                            <div id="sig-role-dean" style="font-size: 10px; color: #475569; margin-top: 3px;">College Dean / Unit Head</div>
                             <div style="font-size: 10px; color: #64748b; margin-top: 3px;">
                                 Date: <input type="text" id="sig-dean-date" placeholder="Date" style="border: none; border-bottom: 1px solid #cbd5e1; text-align: center; width: 85px; outline: none; font-size: 10px;">
                             </div>
@@ -1288,11 +1452,11 @@
 
                         <!-- Final Approval (VP) -->
                         <td style="width: 33.33%; border: 1px solid #000; padding: 12px; vertical-align: top;">
-                            <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #475569; text-align: left; margin-bottom: 16px;">
-                                Final Approval (VP for Academic Affairs):
+                            <div id="sig-label-vp" style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #475569; text-align: left; margin-bottom: 16px;">
+                                Final Approval (PMT Chair / Head of Agency):
                             </div>
                             <input type="text" id="sig-vp-name" value="" placeholder="Name of Approving Authority" style="font-weight: 900; color: #dc2626; border: none; border-bottom: 1px solid #94a3b8; text-align: center; width: 85%; outline: none; font-size: 11px; padding: 2px 0;">
-                            <div style="font-size: 10px; color: #475569; margin-top: 3px;">Vice President for Academic Affairs</div>
+                            <div id="sig-role-vp" style="font-size: 10px; color: #475569; margin-top: 3px;">Vice President for Academic Affairs</div>
                             <div style="font-size: 10px; color: #64748b; margin-top: 3px;">
                                 Date: <input type="text" id="sig-vp-date" placeholder="Date" style="border: none; border-bottom: 1px solid #cbd5e1; text-align: center; width: 85px; outline: none; font-size: 10px;">
                             </div>
@@ -1417,7 +1581,7 @@
             </svg>
             <span>Basis: <?= esc($basisDoc['title']) ?></span>
             <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold ${isBasisActive ? 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-300 dark:border-sky-700' : '<?= $isParentTargetApproved ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400' ?>'}">
-                <?= $isParentTargetApproved ? 'Approved ✓' : 'Pending' ?>
+                <?= $isParentTargetApproved ? 'Approved' : 'Pending' ?>
             </span>
         `;
         tabBar.appendChild(basisBtn);
@@ -1668,21 +1832,36 @@
         });
     }
 
-    async function approveFolderTarget(releaseToDeans = false) {
-        const msg = releaseToDeans 
-            ? "Approve this OPCR and immediately distribute it to all College Deans as their target basis?"
-            : "Approve these targets?";
-        const ok = await window.appConfirm(msg, { confirmText: releaseToDeans ? 'Approve & Release' : 'Approve' });
+    async function approveFolderTarget(releaseScope = null) {
+        let msg = "Approve these targets?";
+        let confirmBtnText = 'Approve';
+
+        if (releaseScope === 'deans') {
+            msg = "Approve this OPCR and immediately distribute it to all College Deans as their target basis?";
+            confirmBtnText = 'Approve & Release to Deans';
+        } else if (releaseScope === 'chairs') {
+            msg = "Approve this collegiate DPCR and immediately distribute it to all Department Chairs as their target basis?";
+            confirmBtnText = 'Approve & Release to Chairs';
+        } else if (releaseScope === 'faculty' || releaseScope === 'subordinates') {
+            msg = "Approve this department DPCR and immediately distribute it to all faculty members as their target basis?";
+            confirmBtnText = 'Approve & Release to Faculty';
+        }
+
+        const ok = await window.appConfirm(msg, { confirmText: confirmBtnText });
         if (!ok) return;
 
         const formData = new FormData();
         formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
-        if (releaseToDeans) {
-            formData.append('release_to_deans', '1');
+        if (releaseScope) {
+            formData.append('release_scope', releaseScope);
+            if (releaseScope === 'deans') {
+                formData.append('release_to_deans', '1');
+            }
         }
 
-        const btn = document.getElementById(releaseToDeans ? 'btn-approve-release-target' : 'btn-approve-target');
-        if (btn) btn.innerText = releaseToDeans ? 'Releasing...' : 'Approving...';
+        const btn = document.getElementById(releaseScope ? 'btn-approve-release-target' : 'btn-approve-target')
+                 || document.getElementById('btn-release-subordinates');
+        if (btn) btn.innerText = releaseScope ? 'Releasing...' : 'Approving...';
 
         apiPost('<?= site_url('folder/approve_target') ?>', formData, {
             onSuccess: async (res) => {
@@ -1807,13 +1986,13 @@
     // Default Seed Blueprint (Clean empty rows upon creation)
     const DEFAULT_BLUEPRINT = {
         core: [
-            { mfo: "", indicators: "", accomplishments: "", q: "", t: "", e: "", remarks: "" }
+            { row_id: "row_core_1", mfo: "", indicators: "", accomplishments: "", q: "", t: "", e: "", remarks: "" }
         ],
         strategic: [
-            { mfo: "", indicators: "", accomplishments: "", q: "", t: "", e: "", remarks: "" }
+            { row_id: "row_strat_1", mfo: "", indicators: "", accomplishments: "", q: "", t: "", e: "", remarks: "" }
         ],
         support: [
-            { mfo: "", indicators: "", accomplishments: "", q: "", t: "", e: "", remarks: "" }
+            { row_id: "row_supp_1", mfo: "", indicators: "", accomplishments: "", q: "", t: "", e: "", remarks: "" }
         ]
     };
 
@@ -1872,15 +2051,23 @@
     function populateSpmsForm(formData) {
         const data = formData || {};
 
-        const titleText = (data.title || '<?= esc($doc['title'] ?? '') ?>').toUpperCase();
-        const isOpcr = titleText.includes('OPCR') || titleText.includes('OFFICE');
-        const isDpcr = titleText.includes('DPCR') || titleText.includes('DIVISION') || titleText.includes('DEPARTMENT');
+        const explicitDocTitle = '<?= strtoupper(trim($doc['title'] ?? '')) ?>';
+        const titleText = (data.title || explicitDocTitle).toUpperCase();
+        const docType = '<?= strtolower($doc['doc_type'] ?? 'ipcr') ?>';
+        
+        // Prioritize explicit document title: A DPCR is always a DPCR regardless of user default doc_type
+        const isDpcr = explicitDocTitle === 'DPCR' || titleText.includes('DPCR') || titleText.includes('DIVISION') || (docType === 'dpcr' && !titleText.includes('OPCR'));
+        const isOpcr = !isDpcr && (explicitDocTitle === 'OPCR' || titleText.includes('OPCR') || titleText.includes('OFFICE') || docType === 'opcr');
+        const isIperf = !isDpcr && !isOpcr && (titleText.includes('IPERF') || titleText.includes('NON-TEACHING') || docType === 'iperf');
 
         let coreW = 0.70, stratW = 0.20, suppW = 0.10;
-        let defaultDocTitle = 'Individual Performance Commitment and Review (IPCR) — Faculty / Staff';
+        let defaultDocTitle = 'Individual Performance Commitment and Review (IPCR) — Faculty / Professors';
         let coreTitle = "1. Core Functions — Instruction & Teaching Load (70%)";
         let stratTitle = "2. Strategic Functions — Research, Citations & Extension Services (20%)";
         let suppTitle = "3. Support Functions — Committee Work, Thesis Advising & Governance (10%)";
+        let rateeRole = "Faculty Member / Professor";
+        let deanRole = "College Dean / Unit Head";
+        let vpRole = "Vice President for Academic Affairs";
 
         if (isOpcr) {
             coreW = 0.60;
@@ -1890,6 +2077,9 @@
             coreTitle = "1. Core Office Mandate (60%)";
             stratTitle = "2. Strategic Functions — Research, Citations & Extension Services (25%)";
             suppTitle = "3. Support Functions — Institutional Governance & Operations (15%)";
+            rateeRole = "College Dean / Executive";
+            deanRole = "Vice President / PMT Chair";
+            vpRole = "University President";
             if (!data.title || data.title.includes('IPCR')) {
                 data.title = defaultDocTitle;
             }
@@ -1901,6 +2091,24 @@
             coreTitle = "1. Core Division Functions (60%)";
             stratTitle = "2. Strategic Functions — Division Extension & Research (25%)";
             suppTitle = "3. Support Functions — Governance & Admin Support (15%)";
+            const posLower = (ownerAccountInfo.position || '').toLowerCase();
+            rateeRole = posLower.includes('dean') ? "College Dean / Supervisor" : "Department Chairperson / Unit Head";
+            deanRole = posLower.includes('dean') ? "Vice President for Academic Affairs" : "College Dean / Supervisor";
+            vpRole = "Vice President for Academic Affairs";
+            if (!data.title || data.title.includes('IPCR') || data.title.includes('OPCR')) {
+                data.title = defaultDocTitle;
+            }
+        } else if (isIperf) {
+            coreW = 0.70;
+            stratW = 0.20;
+            suppW = 0.10;
+            defaultDocTitle = "Individual Performance Evaluation and Review Form (IPERF) — Administrative / Non-Teaching Staff";
+            coreTitle = "1. Core Functions — Administrative & Technical Mandate (70%)";
+            stratTitle = "2. Strategic Functions — Process Improvement & Special Projects (20%)";
+            suppTitle = "3. Support Functions — Office Support & Cross-Functional Services (10%)";
+            rateeRole = "Administrative Staff / Employee";
+            deanRole = "Administrative Unit Head / Supervisor";
+            vpRole = "Vice President for Administration / Head of Agency";
             if (!data.title || data.title.includes('IPCR')) {
                 data.title = defaultDocTitle;
             }
@@ -1922,6 +2130,13 @@
         if (elStrat) elStrat.innerText = stratTitle;
         const elSupp = document.getElementById('label-cat-support');
         if (elSupp) elSupp.innerText = suppTitle;
+
+        const elRoleRatee = document.getElementById('sig-role-ratee');
+        if (elRoleRatee) elRoleRatee.innerText = rateeRole;
+        const elRoleDean = document.getElementById('sig-role-dean');
+        if (elRoleDean) elRoleDean.innerText = deanRole;
+        const elRoleVp = document.getElementById('sig-role-vp');
+        if (elRoleVp) elRoleVp.innerText = vpRole;
 
         const elFDesc = document.getElementById('formula-desc-text');
         if (elFDesc) elFDesc.innerText = `Core Function (${(coreW * 100).toFixed(0)}%) + Strategic Function (${(stratW * 100).toFixed(0)}%) + Support Functions (${(suppW * 100).toFixed(0)}%).`;
@@ -2009,6 +2224,7 @@
         if (!tbody) return;
 
         const data = rowData || {
+            row_id: 'row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7),
             mfo: "",
             indicators: "",
             accomplishments: "",
@@ -2016,11 +2232,17 @@
             remarks: ""
         };
 
+        const rowId = data.row_id || ('row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7));
+        const rowFiles = (window.documentAttachments && window.documentAttachments[rowId]) || [];
+        const fileCount = rowFiles.length;
+        const hasFiles = fileCount > 0;
+
         const mfoDisabled = !canEditTargets;
         const evalDisabled = !canEditEvaluation;
 
         const tr = document.createElement('tr');
         tr.className = `table-row-${category}`;
+        tr.dataset.rowId = rowId;
         tr.style.borderBottom = '1px solid #000000';
 
         tr.innerHTML = `
@@ -2037,6 +2259,34 @@
             <!-- Actual Accomplishments (Unlocked during evaluation phase) -->
             <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
                 <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishments..." ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : ''}>${escapeHtml(data.accomplishments)}</textarea>
+                
+                <!-- MOV Evidence Toolbar (Only visible during Evaluation Phase) -->
+                ${isEvaluationPhase ? `
+                <div class="mov-toolbar flex items-center justify-between mt-1 pt-1 border-t border-slate-200 dark:border-slate-800 text-[10px] print-hide">
+                    ${hasFiles ? `
+                    <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
+                            class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25" 
+                            title="View Means of Verification (MOV) evidence proof for this accomplishment">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                        </svg>
+                        <span class="mov-btn-text">MOV (${fileCount})</span>
+                    </button>
+                    ` : (canEditEvaluation ? `
+                    <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
+                            class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700" 
+                            title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                        </svg>
+                        <span class="mov-btn-text">Attach MOV</span>
+                    </button>
+                    ` : `
+                    <span class="text-[9px] text-slate-400 italic">No MOV</span>
+                    `)}
+                    <span class="text-[9px] text-slate-400 font-medium italic">Evidence</span>
+                </div>
+                ` : ''}
             </td>
 
             <!-- Rating Q, T, E Inputs (Unlocked during evaluation phase) -->
@@ -2289,6 +2539,7 @@
             const e = parseWholeScore(row.querySelector('.field-e')?.value);
 
             result.push({
+                row_id: row.dataset.rowId || ('row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7)),
                 mfo: row.querySelector('.field-mfo')?.value || '',
                 indicators: row.querySelector('.field-indicators')?.value || '',
                 accomplishments: row.querySelector('.field-accomplishments')?.value || '',
@@ -2383,6 +2634,19 @@
         }
     }
 
+    function exportToExcel() {
+        const exportUrl = '<?= site_url("document/" . $doc["id"] . "/export-excel") ?>';
+        if (window.isSpmsFormActive && AppState.dirty) {
+            saveWith({
+                after: () => {
+                    window.location.href = exportUrl;
+                }
+            });
+        } else {
+            window.location.href = exportUrl;
+        }
+    }
+
     function exportToPdf() {
         if (activeTabId === 'basis-tab') {
             window.print();
@@ -2404,6 +2668,14 @@
             }
         }
     }
+
+    // Auto-expand textareas before printing when triggered via browser Ctrl+P
+    window.addEventListener('beforeprint', () => {
+        document.querySelectorAll('#printable-form textarea, #basis-printable-sheet textarea').forEach(ta => {
+            ta.style.height = 'auto';
+            ta.style.height = Math.max(ta.scrollHeight, 38) + 'px';
+        });
+    });
 
     function renderBasisStaticSheet() {
         const sheet = document.getElementById('basis-printable-sheet');
@@ -2540,5 +2812,14 @@
         initActiveTabView();
     });
 </script>
+
+<?= view('document/_mov_modal', [
+    'isOwner'           => $isOwner ?? false,
+    'isCycleArchived'   => $isCycleArchived ?? false,
+    'attachmentsByRow'  => $attachmentsByRow ?? [],
+    'doc'               => $doc ?? [],
+    'isEvaluationPhase' => $isEvaluationPhase ?? false,
+    'canEditEvaluation' => $canEditEvaluation ?? false,
+]) ?>
 
 <?= $this->endSection() ?>

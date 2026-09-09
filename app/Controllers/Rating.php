@@ -27,7 +27,16 @@ class Rating extends BaseController
 
         $folderModel = new DocumentFolderModel();
 
-        $folders = $folderModel->where('user_id', $userId)->orderBy('created_at', 'DESC')->findAll();
+        // For TWG (who do not author personal folders) or Admins without personal folders,
+        // display institutional root evaluation cycle folders in the sidebar.
+        if ($sysRole === 'TWG' || ($sysRole === 'Admin' && empty($folderModel->where('user_id', $userId)->first()))) {
+            $folders = $folderModel->where('parent_folder_id IS NULL')
+                                   ->where('deleted_at IS NULL')
+                                   ->orderBy('created_at', 'DESC')
+                                   ->findAll();
+        } else {
+            $folders = $folderModel->where('user_id', $userId)->orderBy('created_at', 'DESC')->findAll();
+        }
 
         if (!$folderId) {
             $lastId = session()->get('active_folder_id');
@@ -167,7 +176,14 @@ class Rating extends BaseController
             return redirect()->to('account-mismatch');
         }
 
-        $folders = $folderModel->where('user_id', $userId)->orderBy('created_at', 'DESC')->findAll();
+        if ($sysRole === 'TWG' || ($sysRole === 'Admin' && empty($folderModel->where('user_id', $userId)->first()))) {
+            $folders = $folderModel->where('parent_folder_id IS NULL')
+                                   ->where('deleted_at IS NULL')
+                                   ->orderBy('created_at', 'DESC')
+                                   ->findAll();
+        } else {
+            $folders = $folderModel->where('user_id', $userId)->orderBy('created_at', 'DESC')->findAll();
+        }
 
         $groupedGuides = [];
         $cascadedRoutes = $routingModel->getEvaluatorsForFolder($subFolderId);

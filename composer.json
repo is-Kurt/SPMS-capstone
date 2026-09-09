@@ -12,6 +12,7 @@
     "require": {
         "php": "^8.2",
         "codeigniter4/framework": "^4.7",
+        "phpoffice/phpspreadsheet": "^5.9",
         "phpoffice/phpword": "^1.4"
     },
     "require-dev": {

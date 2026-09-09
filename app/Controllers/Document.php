@@ -42,7 +42,7 @@ class Document extends BaseController
             
             if ($routing) {
                 $routingStatus = is_object($routing) ? $routing->status : $routing['status'];
-            } elseif ($sysRole === 'Admin') {
+            } elseif ($sysRole === 'Admin' || $sysRole === 'TWG') {
                 $routingStatus = null;
             } else {
                 $isGuide = true;
@@ -58,30 +58,31 @@ class Document extends BaseController
             $folderModel = new \App\Models\DocumentFolderModel();
             $parentFolder = $folderModel->find($docInfo['parent_folder_id']);
             if ($parentFolder) {
-                // Check if parent folder was created by Admin (HRDO institutional cycle container)
-                $parentRolePivot = (new \App\Models\UserRoleModel())->where('user_id', $parentFolder['user_id'])->first();
-                $parentRoleName = $parentRolePivot ? ((new \App\Models\RoleModel())->find($parentRolePivot['role_id'])['name'] ?? '') : '';
-                $isParentAdmin = ($parentRoleName === 'Admin');
-
                 $isMyDocOpcr = (strtoupper($docInfo['title'] ?? '') === 'OPCR');
 
-                if ($isParentAdmin || $isMyDocOpcr) {
-                    // Admin folder is an institutional cycle container, and OPCR is Stage 1 (Root Commitment).
-                    // They do NOT wait for superior approval because there are no superior targets above them!
+                if ($isMyDocOpcr) {
+                    // OPCR is Stage 1 (Apex Root Commitment). There are no superior targets above it.
                     $isParentTargetApproved = true;
                     $parentFolder = null;
                     $basisDoc = null;
                 } else {
-                    $isParentTargetApproved = ($parentFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
-                    $basisDoc = $documentModel->where('document_folder_id', $parentFolder['id'])->where('is_target', 1)->first()
-                             ?? $documentModel->where('document_folder_id', $parentFolder['id'])->first();
-                    if ($basisDoc) {
+                    $candidateBasis = $documentModel->where('document_folder_id', $parentFolder['id'])->where('is_target', 1)->first()
+                                   ?? $documentModel->where('document_folder_id', $parentFolder['id'])->first();
+
+                    if ($candidateBasis) {
+                        $isParentTargetApproved = ($parentFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
+                        $basisDoc = $candidateBasis;
                         $superiorUser = $userModel->find($parentFolder['user_id']);
                         if ($superiorUser) {
                             $plantilla = $userModel->getActivePlantillaDetails($superiorUser['id']);
                             $superiorUser['position'] = $plantilla['position'] ?? 'Supervisor';
                             $superiorUser['department'] = $plantilla['department'] ?? '';
                         }
+                    } else {
+                        // Parent folder has no documents (pure cycle container)
+                        $isParentTargetApproved = true;
+                        $parentFolder = null;
+                        $basisDoc = null;
                     }
                 }
             }
@@ -125,6 +126,56 @@ class Document extends BaseController
             'period'   => $docPeriod,
         ];
 
+        $isCycleArchived = !empty($docInfo['folder_deleted_at']) || (!empty($parentFolder) && !empty($parentFolder['deleted_at']));
+
+        // Resolve root evaluation cycle folder ID
+        $folderModel = new \App\Models\DocumentFolderModel();
+        $rootFolderId = $docInfo['parent_folder_id'] ?? $docInfo['document_folder_id'];
+        if (!empty($docInfo['parent_folder_id'])) {
+            $pObj = $folderModel->find($docInfo['parent_folder_id']);
+            while ($pObj && !empty($pObj['parent_folder_id'])) {
+                $rootFolderId = $pObj['parent_folder_id'];
+                $pObj = $folderModel->find($rootFolderId);
+            }
+        }
+        $data['rootFolderId'] = $rootFolderId;
+
+        // Seamless Ratee Navigation for Evaluators/Supervisors/TWG
+        $rateeNav = null;
+        if ($docOwnerId !== $userId && !$isGuide) {
+            $siblingFolders = $folderModel->getRatingDashboardFolders($userId, $sysRole, $rootFolderId);
+            $currentIndex = -1;
+            foreach ($siblingFolders as $idx => $sFolder) {
+                if ($sFolder['folder_id'] == $docInfo['document_folder_id']) {
+                    $currentIndex = $idx;
+                    break;
+                }
+            }
+
+            if ($currentIndex !== -1 && count($siblingFolders) > 1) {
+                $totalRatees = count($siblingFolders);
+                $prevFolder = ($currentIndex > 0) ? $siblingFolders[$currentIndex - 1] : null;
+                $nextFolder = ($currentIndex < $totalRatees - 1) ? $siblingFolders[$currentIndex + 1] : null;
+                $rateeNav = [
+                    'currentIndex' => $currentIndex + 1,
+                    'totalRatees'  => $totalRatees,
+                    'prev'         => $prevFolder ? [
+                        'folder_id' => $prevFolder['folder_id'],
+                        'name'      => $prevFolder['username'],
+                        'position'  => $prevFolder['position'] ?? ''
+                    ] : null,
+                    'next'         => $nextFolder ? [
+                        'folder_id' => $nextFolder['folder_id'],
+                        'name'      => $nextFolder['username'],
+                        'position'  => $nextFolder['position'] ?? ''
+                    ] : null,
+                ];
+            }
+        }
+
+        $data['isCycleArchived']        = $isCycleArchived;
+        $data['isOwner']                = ($docOwnerId == $userId);
+        $data['rateeNav']               = $rateeNav;
         $data['routingStatus']          = $routingStatus;
         $data['doc']                    = $docInfo;
         $data['isGuide']                = $isGuide;
@@ -135,6 +186,9 @@ class Document extends BaseController
         $data['basisFormData']          = $basisFormData;
         $data['basisDocContent']        = $basisDocContent;
         $data['isEmbed']                = (bool) $this->request->getGet('embed');
+
+        $attachmentModel                = new \App\Models\DocumentAttachmentModel();
+        $data['attachmentsByRow']       = $attachmentModel->getAttachmentsGroupedByRow((int)$docId);
         
         return view('document/show', $data);
     }
@@ -201,11 +255,23 @@ class Document extends BaseController
         $documentModel = new DocumentModel();
 
         $docOwnerInfo = $documentModel->db->table('documents d')
-            ->select('df.user_id as owner_id, df.id as folder_id')
+            ->select('df.user_id as owner_id, df.id as folder_id, df.deleted_at as folder_deleted_at, df.parent_folder_id')
             ->join('document_folders df', 'df.id = d.document_folder_id')
             ->where('d.id', $docId)->get()->getRowArray();
 
         if (!$docOwnerInfo) return $this->response->setJSON(['status' => 'error', 'message' => 'Document not found']);
+
+        // Check if cycle or folder is archived / frozen
+        if (!empty($docOwnerInfo['folder_deleted_at'])) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'This evaluation cycle is closed and archived. Alterations are frozen.']);
+        }
+        if (!empty($docOwnerInfo['parent_folder_id'])) {
+            $folderModel = new DocumentFolderModel();
+            $pFolder = $folderModel->find($docOwnerInfo['parent_folder_id']);
+            if ($pFolder && !empty($pFolder['deleted_at'])) {
+                return $this->response->setJSON(['status' => 'error', 'message' => 'This evaluation cycle is closed and archived. Alterations are frozen.']);
+            }
+        }
 
         $isAuthorized = false;
 
@@ -240,7 +306,7 @@ class Document extends BaseController
     }
     
     /**
-     * POST /document/set-target - Marks one document (the ★) in a folder as the
+     * POST /document/set-target - Marks one document (the basis target) in a folder as the
      * basis for the final rating. Clears the flag on every other document in the
      * same folder first, since only one document can be the target at a time.
      */
@@ -249,6 +315,27 @@ class Document extends BaseController
             $docId = $this->request->getPost('doc_id');
             $folderId = $this->request->getPost('folder_id');
             $isTarget = $this->request->getPost('is_target') !== null ? (int)$this->request->getPost('is_target') : 1;
+            $userId = session()->get('user_id');
+            $role   = session()->get('role');
+
+            $folderModel = new \App\Models\DocumentFolderModel();
+            $folder = $folderModel->find($folderId);
+
+            if (!$folder) {
+                return $this->respondError('Folder not found.', 404);
+            }
+
+            // Must be the folder owner, or an Admin/routed evaluator
+            $isOwner = ($folder['user_id'] == $userId);
+            $isAdmin = ($role === 'Admin');
+            $isEvaluator = (new \App\Models\EvaluationRoutingModel())
+                ->where('folder_id', $folderId)
+                ->where('evaluator_id', $userId)
+                ->countAllResults() > 0;
+
+            if (!$isOwner && !$isAdmin && !$isEvaluator) {
+                return $this->respondError('Unauthorized to modify targets for this folder.', 403);
+            }
 
             $documentModel = new DocumentModel();
 
@@ -256,7 +343,7 @@ class Document extends BaseController
             $documentModel->where('document_folder_id', $folderId)->set(['is_target' => 0])->update();
             
             if ($isTarget === 1) {
-                $documentModel->where('id', $docId)->set(['is_target' => 1])->update();
+                $documentModel->where('id', $docId)->where('document_folder_id', $folderId)->set(['is_target' => 1])->update();
             }
 
             return $this->respond(['status' => 'success', 'message' => 'Target document updated.']);
@@ -277,5 +364,70 @@ class Document extends BaseController
         $documentModel->delete($docId);
 
         return $this->response->setJSON(['status' => 'success']);
+    }
+
+    /** GET /document/{id}/export-excel - Exports document to official CSC Excel spreadsheet */
+    public function exportExcel($docId = null) {
+        $userId  = session()->get('user_id');
+        $sysRole = session()->get('role');
+
+        if (!$docId || !$userId) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $documentModel = new DocumentModel();
+        $userModel     = new \App\Models\UserModel();
+
+        $docInfo = $documentModel->getDocumentWithFolderInfo($docId);
+        if (!$docInfo) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        }
+
+        $docOwnerId = $docInfo['owner_id'];
+
+        // Authorization check: Only Document Owner and Admin can export
+        if ($docOwnerId !== $userId && $sysRole !== 'Admin') {
+            return redirect()->back()->with('error', 'Only the document owner and Admin can export this document.');
+        }
+
+        // Parse form data from tabs
+        $formData = null;
+        if (!empty($docInfo['tabs'])) {
+            $tabs = is_string($docInfo['tabs']) ? json_decode($docInfo['tabs'], true) : $docInfo['tabs'];
+            if (!empty($tabs) && is_array($tabs)) {
+                $formData = $tabs[0]['formData'] ?? null;
+            }
+        }
+
+        // Owner Account Details
+        $ownerUser = $userModel->find($docOwnerId);
+        $ownerPlantilla = $userModel->getActivePlantillaDetails($docOwnerId);
+        $ownerRolePivot = (new \App\Models\UserRoleModel())->where('user_id', $docOwnerId)->first();
+        $ownerRoleName = $ownerRolePivot ? ((new \App\Models\RoleModel())->find($ownerRolePivot['role_id'])['name'] ?? '') : '';
+
+        $ownerInfo = [
+            'name'     => trim(($ownerUser['first_name'] ?? '') . ' ' . ($ownerUser['last_name'] ?? '')),
+            'position' => $ownerPlantilla['position'] ?? ($ownerRoleName ?: 'Faculty'),
+            'dept'     => $ownerPlantilla['department'] ?? '',
+            'period'   => $docInfo['folder_title'] ?? '',
+        ];
+
+        // Superior / Supervisor Account Details
+        $superiorInfo = null;
+        if (!empty($docInfo['parent_folder_id'])) {
+            $folderModel = new \App\Models\DocumentFolderModel();
+            $parentFolder = $folderModel->find($docInfo['parent_folder_id']);
+            if ($parentFolder && !empty($parentFolder['user_id'])) {
+                $superiorUser = $userModel->find($parentFolder['user_id']);
+                if ($superiorUser) {
+                    $plantilla = $userModel->getActivePlantillaDetails($superiorUser['id']);
+                    $superiorUser['position'] = $plantilla['position'] ?? 'Supervisor';
+                    $superiorUser['department'] = $plantilla['department'] ?? '';
+                    $superiorInfo = $superiorUser;
+                }
+            }
+        }
+
+        \App\Libraries\CscExcelExporter::export($docInfo, $formData, $ownerInfo, $superiorInfo);
     }
 }

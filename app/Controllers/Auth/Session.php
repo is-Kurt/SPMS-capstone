@@ -110,6 +110,8 @@ class Session extends BaseController
                 'pending_remember_me' => $rememberMe
             ]);
             
+            audit_log('2FA_CHALLENGE', 'AUTH', 'user', (int) $user['id'], '2FA login code generated for ' . $user['email'], (int) $user['id']);
+
             return dispatch_email_now(redirect()->to(site_url('login/2fa')));
         }
 
@@ -128,6 +130,8 @@ class Session extends BaseController
                 'last_attempt_at' => date('Y-m-d H:i:s')
             ]);
         }
+
+        audit_log('FAILED_LOGIN', 'AUTH', 'user', isset($user['id']) ? (int) $user['id'] : null, 'Failed login attempt for ' . $email);
 
         return redirect()->back()->withInput()->with('errors', ['error' => 'Invalid email or password.']);
     }
@@ -186,6 +190,8 @@ class Session extends BaseController
         $rememberMe = session()->get('pending_remember_me');
         session()->remove(['pending_2fa_user_id', 'pending_remember_me']);
 
+        audit_log('2FA_VERIFIED', 'AUTH', 'user', (int) $userId, '2FA authentication verified successfully', (int) $userId);
+
         return $this->finalizeLogin($user, $rememberMe);
     }
 
@@ -210,23 +216,8 @@ class Session extends BaseController
         $department = $plantillaData ? $plantillaData['department'] : null;
         $position   = $plantillaData ? $plantillaData['position'] : null;
 
-        $targetUserId = $user['id'];
-        if ($systemRole === 'Admin') {
-            // Make secondary admins share data with the primary admin for demonstration purposes
-            $mainAdmin = $userModel->db->table('user_roles ur')
-                ->select('ur.user_id')
-                ->join('roles r', 'r.id = ur.role_id')
-                ->where('r.name', 'Admin')
-                ->orderBy('ur.user_id', 'ASC')
-                ->limit(1)
-                ->get()->getRowArray();
-            if ($mainAdmin) {
-                $targetUserId = $mainAdmin['user_id'];
-            }
-        }
-
         session()->set([
-            'user_id'    => $targetUserId,
+            'user_id'    => $user['id'],
             'email'      => $user['email'],
             'role'       => $systemRole, 
             'department' => $department,
@@ -237,6 +228,8 @@ class Session extends BaseController
             'avatar_color'  => $user['avatar_color'] ?? '#' . substr(md5($user['email']), 0, 6),
             'avatar_letter' => $user['avatar_letter'] ?? strtoupper(substr($user['first_name'], 0, 1)),
         ]);
+
+        audit_log('LOGIN', 'AUTH', 'user', (int) $user['id'], 'User logged in successfully as ' . $systemRole, (int) $user['id']);
 
         if ($rememberMe) {
             $token = bin2hex(random_bytes(32));
@@ -321,6 +314,8 @@ class Session extends BaseController
         $userId = session()->get('user_id');
 
         if ($userId) {
+            audit_log('LOGOUT', 'AUTH', 'user', (int) $userId, 'User logged out', (int) $userId);
+
             $userModel = new UserModel();
             $userModel->update($userId, [
                 'remember_token'        => null,

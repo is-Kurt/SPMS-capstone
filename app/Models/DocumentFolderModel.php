@@ -209,8 +209,8 @@ class  DocumentFolderModel extends Model
         $docTypes = ['ipcr', 'dpcr', 'opcr', 'iperf'];
         foreach ($docTypes as $type) {
             if (empty($data['data']["{$type}_eval_start"]) && empty($data['data']["{$type}_eval_end"])) {
-                $data['data']["{$type}_eval_start"] = $today . ' 24:00:00';
-                $data['data']["{$type}_eval_end"] = $tomorrow . ' 24:00:00';
+                $data['data']["{$type}_eval_start"] = $today . ' 23:59:59';
+                $data['data']["{$type}_eval_end"] = $tomorrow . ' 23:59:59';
             }
         }
 
@@ -349,6 +349,8 @@ class  DocumentFolderModel extends Model
             ->join('users u', 'u.id = df.user_id')
             ->whereNotIn('df.status', [
                 \App\Enums\FolderStatus::APPROVED->value,
+                \App\Enums\FolderStatus::TWG_APPROVED->value,
+                \App\Enums\FolderStatus::TWG_DISAPPROVED->value,
                 \App\Enums\FolderStatus::UNEVALUATED->value
             ])
             ->groupStart()
@@ -393,6 +395,11 @@ class  DocumentFolderModel extends Model
 
     public function isFolderLocked($folder) {
         if (!$folder) return true; 
+
+        // Archived/closed cycles are permanently frozen
+        if (!empty($folder['deleted_at'])) {
+            return true;
+        }
 
         // Allow structure/cascade changes during target drafting and target approved phases
         $isLocked = !in_array($folder['status'], [

@@ -230,7 +230,7 @@
                                                     <div class="w-4 shrink-0"></div>
                                                 <?php endif; ?>
                                                 <label class="flex-1 flex items-center gap-2 cursor-pointer overflow-hidden">
-                                                    <input type="checkbox" name="filter_unit[]" value="<?= esc($unit['id']) ?>" class="checkbox team-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
+                                                    <input type="checkbox" name="filter_unit[]" value="<?= esc($unit['id']) ?>" class="w-4 h-4 rounded border border-surface-border bg-surface text-emerald-600 focus:ring-emerald-500 accent-emerald-600 cursor-pointer shrink-0 team-filter-checkbox">
                                                     <span class="truncate"><?= esc($unit['name']) ?></span>
                                                 </label>
                                             </div>

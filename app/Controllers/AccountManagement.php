@@ -243,6 +243,9 @@ class AccountManagement extends BaseController
             $newStatus = $user['is_active'] == 1 ? 0 : 1;
             $userModel->update($targetId, ['is_active' => $newStatus]);
 
+            $action = ($newStatus === 1) ? 'ACCOUNT_ACTIVATED' : 'ACCOUNT_DEACTIVATED';
+            audit_log($action, 'ACCOUNT', 'user', (int) $targetId, "User account {$user['email']} set to " . ($newStatus === 1 ? 'Active' : 'Disabled'));
+
             return $this->respond(['status' => 'success', 'is_active' => $newStatus]);
         });
     }
@@ -268,6 +271,8 @@ class AccountManagement extends BaseController
             $db->table('user_roles')->where('user_id', $targetId)->delete();
             $db->table('user_roles')->insert(['user_id' => $targetId, 'role_id' => $roleId]);
 
+            audit_log('ROLE_CHANGED', 'ACCOUNT', 'user', (int) $targetId, "Role for {$user['email']} changed to {$role['name']}");
+
             return $this->respond(['status' => 'success', 'role_name' => $role['name']]);
         });
     }
@@ -281,7 +286,11 @@ class AccountManagement extends BaseController
             }
 
             $userModel = new UserModel();
+            $targetUser = $userModel->find($targetId);
+            $targetEmail = $targetUser ? $targetUser['email'] : "ID #{$targetId}";
             $userModel->delete($targetId);
+
+            audit_log('ACCOUNT_DELETED', 'ACCOUNT', 'user', (int) $targetId, "User account deleted: {$targetEmail}");
 
             return $this->respond(['status' => 'success']);
         });
@@ -342,7 +351,67 @@ class AccountManagement extends BaseController
             $parentName = $parent['name'] ?? null;
         }
 
+        audit_log('UNIT_CREATED', 'ACCOUNT', 'unit', (int) $id, "Created new unit / college: {$name}" . ($parentName ? " (under {$parentName})" : ""));
+
         return $this->respond(['status' => 'success', 'item' => ['id' => $id, 'name' => $name, 'parent_id' => $parentId, 'parent_name' => $parentName]]);
+    }
+
+    /**
+     * POST /account/unit/update - Edits a unit's name or changes its parent_id (transferring
+     * a department to another college/unit). Prevents cyclic loops (a unit cannot be its own parent
+     * or parented to its own descendants).
+     */
+    public function updateUnit() {
+        $unitId = (int) $this->request->getPost('id');
+        $name = trim($this->request->getPost('name'));
+        $parentId = $this->request->getPost('parent_id');
+        $parentId = ($parentId !== '' && $parentId !== null && $parentId !== '0') ? (int) $parentId : null;
+
+        if (!$unitId) return $this->respondError('Invalid unit ID.');
+        if (empty($name)) return $this->respondError('Unit name is required.');
+
+        $unitModel = new UnitModel();
+        $unit = $unitModel->find($unitId);
+        if (!$unit) return $this->respondError('Unit not found.');
+
+        // Prevent self-parenting
+        if ($parentId && $parentId === $unitId) {
+            return $this->respondError('A unit cannot be its own parent.');
+        }
+
+        // Prevent circular parenting (cannot set parent to one of its own descendants)
+        if ($parentId) {
+            $descendants = $unitModel->getDescendantIds([$unitId]);
+            if (in_array($parentId, $descendants, true)) {
+                return $this->respondError('Cannot set parent to a descendant unit.');
+            }
+        }
+
+        $oldParentId = $unit['parent_id'] ? (int) $unit['parent_id'] : null;
+        $oldParentName = $oldParentId ? ($unitModel->find($oldParentId)['name'] ?? "Unit #{$oldParentId}") : 'Top Level Node';
+        $newParentName = $parentId ? ($unitModel->find($parentId)['name'] ?? "Unit #{$parentId}") : 'Top Level Node';
+
+        $unitModel->update($unitId, [
+            'name'      => $name,
+            'parent_id' => $parentId,
+            'updated_at'=> date('Y-m-d H:i:s')
+        ]);
+
+        $logMsg = "Updated unit #{$unitId} ({$name})";
+        if ($oldParentId !== $parentId) {
+            $logMsg = "Transferred unit {$name} from {$oldParentName} to {$newParentName}";
+        }
+        audit_log('UNIT_UPDATED', 'ACCOUNT', 'unit', $unitId, $logMsg);
+
+        return $this->respond([
+            'status' => 'success',
+            'item'   => [
+                'id'          => $unitId,
+                'name'        => $name,
+                'parent_id'   => $parentId,
+                'parent_name' => $parentId ? $newParentName : null
+            ]
+        ]);
     }
 
     /**
@@ -355,7 +424,14 @@ class AccountManagement extends BaseController
     public function deleteUnit() {
         try {
             $unitModel = new UnitModel();
-            $unitModel->delete($this->request->getPost('id'));
+            $unitId = $this->request->getPost('id');
+            $unit = $unitModel->find($unitId);
+            $unitName = $unit['name'] ?? "ID #{$unitId}";
+            
+            $unitModel->delete($unitId);
+
+            audit_log('UNIT_DELETED', 'ACCOUNT', 'unit', (int) $unitId, "Deleted unit / college: {$unitName}");
+
             return $this->respond(['status' => 'success']);
         } catch (\Exception $e) {
             return $this->respondError('Could not delete this unit.');

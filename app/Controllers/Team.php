@@ -40,13 +40,36 @@ class Team extends BaseController
         // (e.g. a VP only sees/builds teams from their colleges/offices); Admins see everyone.
         if ($role === 'Supervisor') {
             $ownPlantilla  = $userModel->getActivePlantillaDetails($userId);
-            $scopedUnitIds = $ownPlantilla ? $unitModel->getDescendantIds([$ownPlantilla['unit_id']]) : [];
+            $posTitle      = strtolower($ownPlantilla['position'] ?? '');
+            $userEmail     = strtolower($ownPlantilla['email'] ?? '');
+            $isDean        = str_contains($posTitle, 'dean') || str_contains($userEmail, 'dean');
 
-            $units = array_values(array_filter($units, fn ($u) => in_array($u['id'], $scopedUnitIds)));
-            $users = array_values(array_filter($users, function ($u) use ($scopedUnitIds) {
-                if (empty($u['unit_id'])) return false;
-                return count(array_intersect(explode(',', $u['unit_id']), $scopedUnitIds)) > 0;
-            }));
+            if ($isDean && $ownPlantilla) {
+                $descendants = $unitModel->getDescendantIds([$ownPlantilla['unit_id']]);
+                $scopedUnitIds = array_unique(array_merge([$ownPlantilla['unit_id']], $descendants));
+
+                $units = array_values(array_filter($units, fn ($u) => in_array($u['id'], $scopedUnitIds)));
+                $users = array_values(array_filter($users, function ($u) use ($scopedUnitIds) {
+                    if (empty($u['unit_id'])) return false;
+                    $inUnit = count(array_intersect(explode(',', $u['unit_id']), $scopedUnitIds)) > 0;
+                    if (!$inUnit) return false;
+                    $pos = strtolower($u['position'] ?? '');
+                    $email = strtolower($u['email'] ?? '');
+                    return str_contains($pos, 'chair') || str_contains($pos, 'head') || str_contains($email, 'chair');
+                }));
+            } elseif ($ownPlantilla) {
+                $descendants = $unitModel->getDescendantIds([$ownPlantilla['unit_id']]);
+                $scopedUnitIds = !empty($descendants) ? array_unique(array_merge([$ownPlantilla['unit_id']], $descendants)) : [(int)$ownPlantilla['unit_id']];
+
+                $units = array_values(array_filter($units, fn ($u) => in_array($u['id'], $scopedUnitIds)));
+                $users = array_values(array_filter($users, function ($u) use ($scopedUnitIds) {
+                    if (empty($u['unit_id'])) return false;
+                    return count(array_intersect(explode(',', $u['unit_id']), $scopedUnitIds)) > 0;
+                }));
+            } else {
+                $units = [];
+                $users = [];
+            }
         }
 
         foreach ($users as &$u) {
@@ -157,12 +180,33 @@ class Team extends BaseController
             $userModel     = new UserModel();
             $unitModel     = new UnitModel();
             $ownPlantilla  = $userModel->getActivePlantillaDetails($userId);
-            $scopedUnitIds = $ownPlantilla ? $unitModel->getDescendantIds([$ownPlantilla['unit_id']]) : [];
+            $posTitle      = strtolower($ownPlantilla['position'] ?? '');
+            $userEmail     = strtolower($ownPlantilla['email'] ?? '');
+            $isDean        = str_contains($posTitle, 'dean') || str_contains($userEmail, 'dean');
 
-            $eligible = array_filter($userModel->getEligibleTeamMembers($userId), function ($u) use ($scopedUnitIds) {
-                if (empty($u['unit_id'])) return false;
-                return count(array_intersect(explode(',', $u['unit_id']), $scopedUnitIds)) > 0;
-            });
+            if ($isDean && $ownPlantilla) {
+                $descendants = $unitModel->getDescendantIds([$ownPlantilla['unit_id']]);
+                $scopedUnitIds = array_unique(array_merge([$ownPlantilla['unit_id']], $descendants));
+
+                $eligible = array_filter($userModel->getEligibleTeamMembers($userId), function ($u) use ($scopedUnitIds) {
+                    if (empty($u['unit_id'])) return false;
+                    $inUnit = count(array_intersect(explode(',', $u['unit_id']), $scopedUnitIds)) > 0;
+                    if (!$inUnit) return false;
+                    $pos = strtolower($u['position'] ?? '');
+                    $email = strtolower($u['email'] ?? '');
+                    return str_contains($pos, 'chair') || str_contains($pos, 'head') || str_contains($email, 'chair');
+                });
+            } elseif ($ownPlantilla) {
+                $descendants = $unitModel->getDescendantIds([$ownPlantilla['unit_id']]);
+                $scopedUnitIds = !empty($descendants) ? array_unique(array_merge([$ownPlantilla['unit_id']], $descendants)) : [(int)$ownPlantilla['unit_id']];
+
+                $eligible = array_filter($userModel->getEligibleTeamMembers($userId), function ($u) use ($scopedUnitIds) {
+                    if (empty($u['unit_id'])) return false;
+                    return count(array_intersect(explode(',', $u['unit_id']), $scopedUnitIds)) > 0;
+                });
+            } else {
+                $eligible = [];
+            }
             $allowedUserIds = array_map('strval', array_column($eligible, 'user_id'));
 
             $userIds = array_values(array_intersect($userIds, $allowedUserIds));

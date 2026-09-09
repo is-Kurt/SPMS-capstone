@@ -32,6 +32,7 @@
     if ($role === 'Admin') {
         $navItems['accounts'] = 'Accounts';
         $navItems['templates'] = 'Templates';
+        $navItems['audit-logs'] = 'Audit Trail';
     }
 
     // Check if we need a hamburger menu (more than 1 tab available)

@@ -18,6 +18,9 @@ class PlantillaModel extends Model
         'unit_id',
         'started_at',
         'ended_at',
+        'created_at',
+        'updated_at',
+        'deleted_at',
     ];
 
     protected bool $allowEmptyInserts = false;
@@ -27,7 +30,7 @@ class PlantillaModel extends Model
     protected array $castHandlers = [];
 
     // Dates
-    protected $useTimestamps = false;
+    protected $useTimestamps = true;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';

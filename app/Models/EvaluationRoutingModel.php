@@ -16,7 +16,10 @@ class EvaluationRoutingModel extends Model
         'folder_id',
         'evaluator_id',
         'status',
-        'evaluator_folder_id'
+        'evaluator_folder_id',
+        'created_at',
+        'updated_at',
+        'deleted_at',
     ];
 
     protected bool $allowEmptyInserts = false;
@@ -26,7 +29,7 @@ class EvaluationRoutingModel extends Model
     protected array $castHandlers = [];
 
     // Dates
-    protected $useTimestamps = false;
+    protected $useTimestamps = true;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';

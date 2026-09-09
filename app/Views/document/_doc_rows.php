@@ -82,8 +82,8 @@
                 <?php endif; ?>
             </div>
 
-            <?php if ($isArchived): ?>
-                <!-- SEARCH AND FILTER BAR (Archived Folders Only) -->
+            <?php if (!empty($myDocs)): ?>
+                <!-- SEARCH AND FILTER BAR -->
                 <div class="px-6 lg:px-8 py-3.5 flex flex-col sm:flex-row items-center gap-3 shrink-0">
                     <!-- Search Input -->
                     <div class="relative flex-1 w-full">
@@ -92,7 +92,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </div>
-                        <input type="text" id="doc-search-input" oninput="filterDocuments()" placeholder="Search archived documents by name or status..."
+                        <input type="text" id="doc-search-input" oninput="filterDocuments()" placeholder="Search documents by name or status..."
                                class="w-full bg-slate-50 dark:bg-[#032316] border border-slate-200 dark:border-[#0c4a33] text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#94A3B8] rounded-xl pl-9 pr-4 py-2.5 focus:border-[#FFB800]/70 focus:outline-none transition-colors" />
                     </div>
 
@@ -102,7 +102,8 @@
                             <select id="doc-filter-status" onchange="filterDocuments()" class="w-full sm:w-auto appearance-none bg-slate-50 dark:bg-[#032316] border border-slate-200 dark:border-[#0c4a33] text-xs font-medium text-slate-800 dark:text-white rounded-xl pl-3.5 pr-8 py-2.5 outline-none cursor-pointer focus:border-[#FFB800]/70 transition-colors">
                                 <option value="all">Status: All</option>
                                 <option value="approved">Approved</option>
-                                <option value="in_review">In Review</option>
+                                <option value="submitted">Submitted</option>
+                                <option value="target">Target</option>
                                 <option value="draft">Draft</option>
                             </select>
                             <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-text-muted">
@@ -286,6 +287,8 @@
                         $isUserAdmin = (session()->get('role') === 'Admin');
                         $isFolderTargetApproved = ($activeFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
                         $canActuallyCascade = $isUserAdmin || $isFolderTargetApproved;
+                        $hasOrgTarget = !empty($orgTarget) && !empty($orgTarget['members']);
+                        $hasPresets = !empty($presets);
                     ?>
 
                     <?php if (!$canActuallyCascade && !$cascadedTeamId): ?>
@@ -300,9 +303,9 @@
                                 Your target commitments must be approved by your higher-up first before cascading them as a basis for your subordinates.
                             </p>
                         </div>
-                    <?php elseif (!empty($presets)): ?>
+                    <?php elseif ($cascadedTeamId): ?>
                         <div class="relative w-full">
-                            <select id="team-cascade-select" <?= ($cascadedTeamId || $isLocked || !$canActuallyCascade) ? 'disabled' : '' ?> class="w-full bg-zinc-50 dark:bg-[#0c1510] text-xs font-bold text-text outline-none pl-3.5 pr-8 py-2.5 rounded-xl appearance-none border border-surface-border <?= ($cascadedTeamId || $isLocked || !$canActuallyCascade) ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer focus:border-emerald-500/50' ?>">
+                            <select id="team-cascade-select" disabled class="w-full bg-zinc-50 dark:bg-[#0c1510] text-xs font-bold text-text outline-none pl-3.5 pr-8 py-2.5 rounded-xl appearance-none border border-surface-border opacity-60 cursor-not-allowed">
                                 <?php foreach($presets as $preset): ?>
                                     <option value="<?= $preset['id'] ?>" <?= ($cascadedTeamId == $preset['id']) ? 'selected' : '' ?> class="bg-surface text-text">
                                         <?= esc($preset['name']) ?>
@@ -313,67 +316,116 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
                             </div>
                         </div>
-                        <?php if ($cascadedTeamId): ?>
-                            <button onclick="triggerUncascade('<?= $activeFolder['id'] ?>')" class="w-full py-2.5 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-300 dark:border-[#361a1f] bg-rose-50 dark:bg-[#1c1214] hover:bg-rose-600 dark:hover:bg-[#261619] rounded-xl transition-colors cursor-pointer flex justify-center items-center gap-1.5 font-bold text-xs uppercase tracking-wider">
-                                Revoke Cascade
-                            </button>
+                        <button onclick="triggerUncascade('<?= $activeFolder['id'] ?>')" class="w-full py-2.5 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-300 dark:border-[#361a1f] bg-rose-50 dark:bg-[#1c1214] hover:bg-rose-600 dark:hover:bg-[#261619] rounded-xl transition-colors cursor-pointer flex justify-center items-center gap-1.5 font-bold text-xs uppercase tracking-wider">
+                            Revoke Cascade
+                        </button>
 
-                            <?php if (!empty($cascadedChildren)): ?>
-                                <div class="mt-2 flex flex-col gap-2">
-                                    <div class="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-text-muted">
-                                        <span>Cascaded Subordinates</span>
-                                        <span><?= count($cascadedChildren) ?></span>
-                                    </div>
-                                    <div class="max-h-56 overflow-y-auto space-y-1.5 custom-scrollbar pr-0.5">
-                                        <?php foreach ($cascadedChildren as $child): ?>
-                                            <?php 
-                                                $isPending = ($child['status'] === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value);
-                                                $isApproved = ($child['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
-                                            ?>
-                                            <div class="p-2.5 rounded-xl border border-slate-200 dark:border-[#1e382b] bg-slate-50 dark:bg-[#0c1510] flex flex-col gap-1.5 text-xs">
-                                                <div class="flex items-start justify-between gap-1">
-                                                    <div>
-                                                        <span class="font-bold text-slate-800 dark:text-white block text-[11px] leading-tight">
-                                                            <?= esc($child['first_name'] . ' ' . $child['last_name']) ?>
-                                                        </span>
-                                                        <span class="text-[9px] text-slate-500 dark:text-slate-400">
-                                                            <?= esc($child['position'] ?: $child['email']) ?>
-                                                        </span>
-                                                    </div>
-                                                    <?php if ($isPending): ?>
-                                                        <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300 shrink-0">
-                                                            Awaiting Approval
-                                                        </span>
-                                                    <?php elseif ($isApproved): ?>
-                                                        <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 shrink-0">
-                                                            Target Approved
-                                                        </span>
-                                                    <?php else: ?>
-                                                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 shrink-0">
-                                                            Drafting
-                                                        </span>
-                                                    <?php endif; ?>
+                        <?php if (!empty($cascadedChildren)): ?>
+                            <div class="mt-2 flex flex-col gap-2">
+                                <div class="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-text-muted">
+                                    <span>Cascaded Subordinates</span>
+                                    <span><?= count($cascadedChildren) ?></span>
+                                </div>
+                                <div class="max-h-56 overflow-y-auto space-y-1.5 custom-scrollbar pr-0.5">
+                                    <?php foreach ($cascadedChildren as $child): ?>
+                                        <?php 
+                                            $isPending = ($child['status'] === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value);
+                                            $isApproved = ($child['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
+                                        ?>
+                                        <div class="p-2.5 rounded-xl border border-slate-200 dark:border-[#1e382b] bg-slate-50 dark:bg-[#0c1510] flex flex-col gap-1.5 text-xs">
+                                            <div class="flex items-start justify-between gap-1">
+                                                <div>
+                                                    <span class="font-bold text-slate-800 dark:text-white block text-[11px] leading-tight">
+                                                        <?= esc($child['first_name'] . ' ' . $child['last_name']) ?>
+                                                    </span>
+                                                    <span class="text-[9px] text-slate-500 dark:text-slate-400">
+                                                        <?= esc($child['position'] ?: $child['email']) ?>
+                                                    </span>
                                                 </div>
                                                 <?php if ($isPending): ?>
-                                                    <a href="<?= site_url('ratings/show/' . $child['id']) ?>" 
-                                                       class="w-full py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[10px] text-center flex items-center justify-center gap-1 shadow-xs transition-colors">
-                                                        <span>Review Targets</span>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
-                                                    </a>
+                                                    <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300 shrink-0">
+                                                        Awaiting Approval
+                                                    </span>
+                                                <?php elseif ($isApproved): ?>
+                                                    <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 shrink-0">
+                                                        Target Approved
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 shrink-0">
+                                                        Drafting
+                                                    </span>
                                                 <?php endif; ?>
                                             </div>
-                                        <?php endforeach; ?>
-                                    </div>
+                                            <?php if ($isPending): ?>
+                                                <a href="<?= site_url('ratings/show/' . $child['id']) ?>" 
+                                                   class="w-full py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[10px] text-center flex items-center justify-center gap-1 shadow-xs transition-colors">
+                                                    <span>Review Targets</span>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                                                </a>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endforeach; ?>
                                 </div>
-                            <?php endif; ?>
-                        <?php elseif (!$isLocked && $canActuallyCascade): ?>
+                            </div>
+                        <?php endif; ?>
+                    <?php elseif ($hasOrgTarget || $hasPresets): ?>
+                        <?php if ($hasOrgTarget): ?>
+                            <div class="p-3 rounded-xl border border-emerald-300 dark:border-[#1b4330] bg-emerald-50/70 dark:bg-[#0c1c14] text-xs flex flex-col gap-1.5">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[10px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                                        <?= esc($orgTarget['tier_name']) ?>
+                                    </span>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-[#102a1e] text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-[#1b4330]">
+                                        <?= esc($orgTarget['member_count']) ?> <?= esc($orgTarget['subordinate_role']) ?>
+                                    </span>
+                                </div>
+                                <div class="font-bold text-slate-900 dark:text-white text-xs leading-tight">
+                                    <?= esc($orgTarget['unit_name']) ?>
+                                </div>
+                                <div class="text-[10px] text-slate-600 dark:text-slate-400 leading-tight">
+                                    Targets will be automatically distributed to active <?= strtolower(esc($orgTarget['subordinate_role'])) ?> in this unit.
+                                </div>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if ($hasPresets): ?>
+                            <div class="relative w-full">
+                                <select id="team-cascade-select" <?= ($isLocked || !$canActuallyCascade) ? 'disabled' : '' ?> class="w-full bg-zinc-50 dark:bg-[#0c1510] text-xs font-bold text-text outline-none pl-3.5 pr-8 py-2.5 rounded-xl appearance-none border border-surface-border <?= ($isLocked || !$canActuallyCascade) ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer focus:border-emerald-500/50' ?>">
+                                    <?php if ($hasOrgTarget): ?>
+                                        <option value="org" selected class="bg-surface text-text font-bold">
+                                            Official: <?= esc($orgTarget['unit_name']) ?> (<?= esc($orgTarget['member_count']) ?> <?= esc($orgTarget['subordinate_role']) ?>)
+                                        </option>
+                                        <optgroup label="Custom Saved Teams">
+                                            <?php foreach($presets as $preset): ?>
+                                                <option value="<?= $preset['id'] ?>" class="bg-surface text-text">
+                                                    <?= esc($preset['name']) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </optgroup>
+                                    <?php else: ?>
+                                        <?php foreach($presets as $preset): ?>
+                                            <option value="<?= $preset['id'] ?>" class="bg-surface text-text">
+                                                <?= esc($preset['name']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-text-muted">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <input type="hidden" id="team-cascade-select" value="org">
+                        <?php endif; ?>
+
+                        <?php if (!$isLocked && $canActuallyCascade): ?>
                             <button onclick="triggerCascade('<?= $activeFolder['id'] ?>')" class="w-full py-3 bg-[#064e3b] hover:bg-[#085a3a] text-white dark:bg-[#f59e0b] dark:hover:bg-[#d97706] dark:text-black rounded-xl shadow-md transition-all cursor-pointer flex justify-center items-center gap-1.5 font-black text-xs uppercase tracking-wider active:scale-98">
-                                Cascade to Team
+                                <?= esc($orgTarget['button_label'] ?? 'Cascade to Team') ?>
                             </button>
                         <?php endif; ?>
                     <?php else: ?>
                         <div class="p-3 text-center rounded-xl border border-dashed border-slate-200 dark:border-[#1a2b22] bg-slate-50/50 dark:bg-[#0c1510]/50">
-                            <p class="text-[11px] text-slate-400 dark:text-[#8ea396] italic mb-1.5">No distribution teams available.</p>
+                            <p class="text-[11px] text-slate-400 dark:text-[#8ea396] italic mb-1.5">No distribution teams or subordinates available in your unit.</p>
                             <a href="<?= site_url('teams') ?>" class="text-xs font-bold text-amber-500 dark:text-[#f59e0b] hover:underline">
                                 + Create Team in My Teams
                             </a>
@@ -420,8 +472,9 @@
                             </button>
 
                             <button onclick='archiveFolder("<?= esc($activeFolder["id"]) ?>", "<?= esc(addslashes($activeFolder["title"])) ?>")'
-                                    class="w-full bg-white hover:bg-slate-100 text-amber-700 dark:text-[#b45309] border border-slate-200 dark:border-slate-300 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs">
-                                Archive
+                                    class="w-full bg-white hover:bg-slate-100 text-amber-700 dark:text-[#b45309] border border-slate-200 dark:border-slate-300 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                                    title="Close and archive this evaluation cycle (freezes all scores)">
+                                Close & Archive
                             </button>
 
                             <button class="w-full btn-delete-modal bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 dark:bg-[#1c1214] dark:hover:bg-[#261619] dark:text-rose-400 dark:border-[#361a1f] py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs"
@@ -444,9 +497,15 @@
                     $rawStatus = $activeFolder['status'] ?? 'draft';
                     $statusBadgeText = match($rawStatus) {
                         'approved', 'twg_approved' => 'Approved',
-                        'to_evaluate', 'submitted' => 'Submitted',
+                        'twg_disapproved' => 'TWG Disapproved',
+                        'to evaluate', 'submitted' => 'Submitted',
+                        'evaluated' => 'Evaluated',
                         'draft_target' => 'Target Phase',
+                        'pending_target_approval' => 'Target Submitted',
+                        'target_approved' => 'Target Approved',
+                        'target_returned', 'target_unapproved' => 'Target Revision',
                         'reevaluate' => 'Revision',
+                        'unevaluated' => 'Unevaluated',
                         default => 'Draft'
                     };
 
@@ -469,6 +528,7 @@
                         'DPCR' => 'Department Performance',
                         default => 'Individual Performance'
                     };
+                    $isOpcrFolder = ($formTypeName === 'OPCR');
                 ?>
 
                 <!-- Submission Summary Card -->
@@ -550,7 +610,7 @@
                                 <span class="text-[10px] font-medium text-slate-500 dark:text-[#8ea396]">Superior Basis</span>
                                 <?php if ($isParentTargetApproved ?? false): ?>
                                     <span class="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-[#102a1e] px-1.5 py-0.5 rounded border border-emerald-200 dark:border-[#1b4330]">
-                                        Approved ✓
+                                        Approved
                                     </span>
                                 <?php else: ?>
                                     <span class="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
@@ -693,23 +753,6 @@
             });
         }
 
-        async function unsubmitTargetFolder(folderId, btn) {
-            const ok = await window.appConfirm("Are you sure you want to revoke your submission?", { variant: 'warning', confirmText: 'Revoke' });
-            if (!ok) return;
-
-            btn.innerText = 'Unsubmitting...';
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
-            const formData = new FormData();
-            formData.append('folder_id', folderId);
-            apiPost('<?= site_url('folder/unsubmit_target') ?>', formData, {
-                onSuccess: () => window.location.reload(),
-                onError: async (errMsg) => {
-                    await window.appAlert(errMsg || "An error occurred.");
-                    window.location.reload();
-                }
-            });
-        }
-
         function setTargetDocument(docId, folderId, targetState) {
             const formData = new FormData();
             formData.append('doc_id', docId);
@@ -726,7 +769,8 @@
             if (sending) return;
             sending = true;
 
-            const teamId = document.getElementById('team-cascade-select').value;
+            const selectEl = document.getElementById('team-cascade-select');
+            const teamId = selectEl ? selectEl.value : 'org';
             if (!teamId) {
                 sending = false;
                 return;
@@ -735,6 +779,9 @@
             const formData = new FormData();
             formData.append('folder_id', folderId);
             formData.append('team_id', teamId);
+            if (teamId === 'org') {
+                formData.append('use_org_target', '1');
+            }
 
             apiPost('<?= site_url('folder/cascade-team') ?>', formData, {
                 onSuccess: () => window.location.reload(),
@@ -766,9 +813,9 @@
         function archiveFolder(folderId, folderTitle) {
             if (sending) return;
             window.appConfirm({
-                title: 'Archive Folder',
-                message: `Are you sure you want to archive "${folderTitle}"? You can view and restore it anytime from Archived Folders.`,
-                confirmText: 'Archive Folder',
+                title: 'Close & Archive Evaluation Cycle',
+                message: `Are you sure you want to close and archive "${folderTitle}"? This will archive the cycle and all subordinate ratee folders, freezing all scores and ratings against further edits.`,
+                confirmText: 'Close & Archive Cycle',
                 variant: 'warning'
             }).then(ok => {
                 if (!ok) return;

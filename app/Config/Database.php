@@ -30,7 +30,7 @@ class Database extends Config
         'username'     => '',
         'password'     => '',
         'database'     => WRITEPATH . 'database/spms_db.sqlite3',
-        'DBDriver'     => 'MySQLi',
+        'DBDriver'     => 'SQLite3',
         'DBPrefix'     => '',
         'pConnect'     => false,
         'DBDebug'      => true,

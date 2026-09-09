@@ -231,6 +231,9 @@ class Folder extends BaseController
                 ->findAll();
         }
 
+        $unitModel = new \App\Models\UnitModel();
+        $orgTarget = $unitModel->getOrganizationalCascadeTarget($userId, $role);
+
         $templateModel = new TemplateModel();
         
         return view('components/app_shell', [
@@ -248,6 +251,7 @@ class Folder extends BaseController
                 'groupedGuides'          => $groupedGuides,
                 'isReadOnly'             => $isReadOnly,
                 'presets'                => $presets,
+                'orgTarget'              => $orgTarget,
                 'cascadedChildren'       => $cascadedChildren
             ]
         ]);
@@ -290,6 +294,40 @@ class Folder extends BaseController
                 if (!in_array($activeFolder['status'], $allowedStatuses)) {
                     return $this->respondError("You cannot cascade this folder because it has already moved past the target setting phase.", 400);
                 }
+            }
+
+            $presetModel = new RoutingPresetModel();
+            $unitModel   = new \App\Models\UnitModel();
+            $useOrg      = (bool) $this->request->getPost('use_org_target') || empty($teamId) || $teamId === 'org';
+            $orgTarget   = null;
+
+            if ($useOrg) {
+                $orgTarget = $unitModel->getOrganizationalCascadeTarget($userId, $role);
+                if (empty($orgTarget['members'])) {
+                    return $this->respondError("No active subordinates found in {$orgTarget['unit_name']}.", 400);
+                }
+
+                $presetName = $orgTarget['unit_name'] . ' (' . $orgTarget['subordinate_role'] . ')';
+                $orgPreset = $presetModel->where('owner_id', $userId)->where('name', $presetName)->first();
+                if (!$orgPreset) {
+                    $pId = $presetModel->insert([
+                        'owner_id'    => $userId,
+                        'name'        => $presetName,
+                        'description' => "Official system-synced {$orgTarget['subordinate_role']} roster for {$orgTarget['unit_name']}."
+                    ]);
+                    $orgPreset = $presetModel->find($pId);
+                }
+
+                $presetMemberModel->where('preset_id', $orgPreset['id'])->delete();
+                foreach ($orgTarget['members'] as $m) {
+                    $mUserId = $m['user_id'] ?? $m['id'];
+                    $presetMemberModel->insert([
+                        'preset_id' => $orgPreset['id'],
+                        'user_id'   => $mUserId
+                    ]);
+                }
+
+                $teamId = $orgPreset['id'];
             }
 
             $members = $presetMemberModel->where('preset_id', $teamId)->findAll();
@@ -396,6 +434,23 @@ class Folder extends BaseController
                                 'evaluator_folder_id' => $folderId,
                                 'status'              => FolderStatus::DRAFT->value
                             ]);
+                        }
+
+                        // Next-in-Rank Calibrator (e.g. Dean if Chair cascades to faculty)
+                        if (!empty($activeFolder['parent_folder_id'])) {
+                            $parentFolder = $folderModel->find($activeFolder['parent_folder_id']);
+                            if ($parentFolder && !empty($parentFolder['user_id']) && $parentFolder['user_id'] != $userId) {
+                                $parentExists = $routingModel->where('folder_id', $subFolder['id'])
+                                                             ->where('evaluator_id', $parentFolder['user_id'])->first();
+                                if (!$parentExists) {
+                                    $routingModel->insert([
+                                        'folder_id'           => $subFolder['id'],
+                                        'evaluator_id'        => $parentFolder['user_id'],
+                                        'evaluator_folder_id' => $parentFolder['id'],
+                                        'status'              => FolderStatus::DRAFT->value
+                                    ]);
+                                }
+                            }
                         }
                     }
                 }
@@ -525,7 +580,7 @@ class Folder extends BaseController
         $user = $userModel->find($userId);
         $role = session()->get('role');
 
-        // Check if user is an Executive (VPAA, VP, President) or Dean
+        // Check if user is an Executive (VPAA, VP, President), Dean, or Department Chair
         $plantilla = $userModel->getActivePlantillaDetails($userId);
         $posTitle = strtolower($plantilla['position'] ?? '');
         $userEmail = strtolower($user['email'] ?? '');
@@ -534,11 +589,14 @@ class Folder extends BaseController
                     || str_contains($posTitle, 'president')
                     || str_contains($userEmail, 'vpaa');
         $isDean = str_contains($posTitle, 'dean') || str_contains($userEmail, 'dean');
+        $isChair = str_contains($posTitle, 'chair') 
+                || str_contains($posTitle, 'head')
+                || str_contains($userEmail, 'chair');
 
         $defaultDoc = 'IPCR';
         if ($role === 'Admin' || $isExecutive) {
             $defaultDoc = 'OPCR';
-        } elseif ($isDean) {
+        } elseif ($isDean || $isChair) {
             $defaultDoc = 'DPCR';
         }
 
@@ -557,6 +615,13 @@ class Folder extends BaseController
                 $documentModel->update($existing['id'], [
                     'title' => 'OPCR',
                     'tabs'  => !empty($opcrTabs) ? $opcrTabs : $existing['tabs']
+                ]);
+            } elseif (($isDean || $isChair) && strtoupper($existing['title']) === 'IPCR') {
+                $dpcrTemplate = $templateModel->where('title', 'DPCR')->first() ?? $templateModel->first();
+                $dpcrTabs = !empty($dpcrTemplate['tabs']) ? (is_string($dpcrTemplate['tabs']) ? json_decode($dpcrTemplate['tabs'], true) : $dpcrTemplate['tabs']) : [];
+                $documentModel->update($existing['id'], [
+                    'title' => 'DPCR',
+                    'tabs'  => !empty($dpcrTabs) ? $dpcrTabs : $existing['tabs']
                 ]);
             }
             return $existing['id'];
@@ -644,7 +709,11 @@ class Folder extends BaseController
 
         $folder = $folderModel->find($folderId);
 
-        if (!$folder || $folder['user_id'] != $userId) {
+        if (!$folder) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Folder not found']);
+        }
+
+        if ($role !== 'Admin' && $folder['user_id'] != $userId) {
             return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized']);
         }
 
@@ -798,7 +867,7 @@ class Folder extends BaseController
 
             return $this->respond([
                 'status'  => 'success',
-                'message' => 'Folder archived successfully.'
+                'message' => 'Evaluation cycle successfully closed and archived. All ratings and scores are now frozen.'
             ]);
         });
     }
@@ -986,7 +1055,7 @@ class Folder extends BaseController
                                        ->countAllResults();
             
             if ($hasTarget == 0) {
-                return $this->respondError("Submission Failed: You must set at least one document as the Basis Target (★) before submitting.", 400);
+                return $this->respondError("Submission Failed: You must set at least one document as the Basis Target before submitting.", 400);
             }
             // ---------------------------------------
 
@@ -1004,6 +1073,8 @@ class Folder extends BaseController
                 'status'       => $windowAlreadyOpen ? FolderStatus::TO_EVALUATE->value : FolderStatus::SUBMITTED->value,
                 'submitted_at' => $now
             ]);
+
+            audit_log('ACCOMPLISHMENT_SUBMITTED', 'RATING', 'document_folder', (int) $folderId, "Actual accomplishments submitted for evaluation: {$folder['title']}");
 
             $subUser = (new UserModel())->find($userId);
             $subName = trim(($subUser['first_name'] ?? '') . ' ' . ($subUser['last_name'] ?? '')) ?: 'Employee';
@@ -1063,6 +1134,7 @@ class Folder extends BaseController
             }
 
             $folderModel->update($folderId, ['status' => FolderStatus::DRAFT->value, 'submitted_at' => null]);
+            audit_log('ACCOMPLISHMENT_REVOKED', 'RATING', 'document_folder', (int) $folderId, "Accomplishment submission revoked back to draft: {$folder['title']}");
             return $this->respond(['status' => 'success', 'message' => 'Submission revoked.']);
         });
     }
@@ -1143,25 +1215,26 @@ class Folder extends BaseController
                 return $this->respondError("Unauthorized to submit targets for this folder.", 400);
             }
 
-            if (!empty($folder['target_date_end']) && date('Y-m-d H:i:s') > $folder['target_date_end']) {
+            $dates = $folderModel->getFolderDates($folder);
+
+            if (!empty($dates['target_date_end']) && date('Y-m-d H:i:s') > $dates['target_date_end']) {
                 return $this->respondError("The target setting period has already ended.", 400);
             }
 
             // --- STRICT SPMS MODE: Parent Basis Target Validation ---
             if (!empty($folder['parent_folder_id'])) {
                 $parentFolder = $folderModel->find($folder['parent_folder_id']);
-                $parentRolePivot = (new \App\Models\UserRoleModel())->where('user_id', $parentFolder['user_id'])->first();
-                $parentRoleName = $parentRolePivot ? ((new \App\Models\RoleModel())->find($parentRolePivot['role_id'])['name'] ?? '') : '';
-                $isParentAdmin = ($parentRoleName === 'Admin');
+                if ($parentFolder) {
+                    $parentDoc = (new \App\Models\DocumentModel())->where('document_folder_id', $parentFolder['id'])->first();
+                    $myDoc = (new \App\Models\DocumentModel())->where('document_folder_id', $folderId)->where('is_target', 1)->first()
+                          ?? (new \App\Models\DocumentModel())->where('document_folder_id', $folderId)->first();
+                    $isMyDocOpcr = (strtoupper($myDoc['title'] ?? '') === 'OPCR');
 
-                $myDoc = (new \App\Models\DocumentModel())->where('document_folder_id', $folderId)->where('is_target', 1)->first()
-                      ?? (new \App\Models\DocumentModel())->where('document_folder_id', $folderId)->first();
-                $isMyDocOpcr = (strtoupper($myDoc['title'] ?? '') === 'OPCR');
-
-                if (!$isParentAdmin && !$isMyDocOpcr) {
-                    if ($parentFolder && $parentFolder['status'] !== FolderStatus::TARGET_APPROVED->value) {
-                        $parentTitle = $parentFolder['title'] ?? 'Superior';
-                        return $this->respondError("Cannot submit targets yet: The superior basis commitments (\"{$parentTitle}\") have not been approved by the higher-up yet. Under SPMS cascading rules, individual commitments require approved superior targets as a basis.", 400);
+                    if ($parentDoc && !$isMyDocOpcr) {
+                        if ($parentFolder['status'] !== FolderStatus::TARGET_APPROVED->value) {
+                            $parentTitle = $parentFolder['title'] ?? 'Superior';
+                            return $this->respondError("Cannot submit targets yet: The superior basis commitments (\"{$parentTitle}\") have not been approved by the higher-up yet. Under SPMS cascading rules, individual commitments require approved superior targets as a basis.", 400);
+                        }
                     }
                 }
             }
@@ -1173,7 +1246,7 @@ class Folder extends BaseController
                                        ->countAllResults();
             
             if ($hasTarget == 0) {
-                return $this->respondError("Submission Failed: You must set at least one document as the Basis Target (★) before submitting targets.", 400);
+                return $this->respondError("Submission Failed: You must set at least one document as the Basis Target before submitting targets.", 400);
             }
             // ---------------------------------------
 
@@ -1182,6 +1255,8 @@ class Folder extends BaseController
                 'target_submitted_at' => date('Y-m-d H:i:s')
             ]);
             
+            audit_log('TARGET_SUBMITTED', 'TARGET', 'document_folder', (int) $folderId, "Targets submitted for approval: {$folder['title']}");
+
             $user = (new UserModel())->find($userId);
             $name = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: 'Employee';
             $this->notifyFolderEvaluators(
@@ -1211,7 +1286,9 @@ class Folder extends BaseController
                 return $this->respondError("Unauthorized to unsubmit targets for this folder.", 400);
             }
 
-            if (!empty($folder['target_date_end']) && date('Y-m-d H:i:s') > $folder['target_date_end']) {
+            $dates = $folderModel->getFolderDates($folder);
+
+            if (!empty($dates['target_date_end']) && date('Y-m-d H:i:s') > $dates['target_date_end']) {
                 return $this->respondError("The target setting period has already ended.", 400);
             }
 
@@ -1223,6 +1300,23 @@ class Folder extends BaseController
                 'status' => FolderStatus::DRAFT_TARGET->value,
                 'target_submitted_at' => null
             ]);
+
+            audit_log('TARGET_REVOKED', 'TARGET', 'document_folder', (int) $folderId, "Target submission revoked back to draft: {$folder['title']}");
+
+            // Notify routed evaluators that submission was withdrawn
+            $evaluators = (new \App\Models\EvaluationRoutingModel())->where('folder_id', $folderId)->findAll();
+            $sender = (new UserModel())->find($userId);
+            $senderName = $sender ? trim(($sender['first_name'] ?? '') . ' ' . ($sender['last_name'] ?? '')) : 'The employee';
+            foreach ($evaluators as $ev) {
+                notify_user((int) $ev['evaluator_id'], [
+                    'sender_id' => $userId,
+                    'type'      => 'target_unsubmitted',
+                    'title'     => 'Target Submission Revoked',
+                    'message'   => "{$senderName} revoked their target submission for \"{$folder['title']}\" and returned it to draft.",
+                    'link'      => 'ratings/' . $folderId,
+                    'icon'      => 'file',
+                ]);
+            }
             
             return $this->respond(['status' => 'success', 'message' => 'Targets unsubmitted successfully.']);
         });
@@ -1235,7 +1329,10 @@ class Folder extends BaseController
     public function approveTarget() {
         return $this->tryOrFail(function() {
             $folderId = $this->request->getPost('folder_id');
-            $releaseToDeans = (bool) $this->request->getPost('release_to_deans');
+            $releaseScope = $this->request->getPost('release_scope');
+            $releaseToDeans = (bool) $this->request->getPost('release_to_deans') || ($releaseScope === 'deans');
+            $releaseToChairs = ($releaseScope === 'chairs');
+            $releaseToFaculty = ($releaseScope === 'faculty') || ($releaseScope === 'subordinates');
             $folderModel = new DocumentFolderModel();
             
             $folder = $folderModel->find($folderId);
@@ -1278,11 +1375,13 @@ class Folder extends BaseController
                 }
             }
             
-            // --- AUTOMATIC "APPROVE & RELEASE" TO ALL COLLEGE DEANS ---
+            $userModel = new \App\Models\UserModel();
+            $unitModel = new \App\Models\UnitModel();
+            $routingModel = new \App\Models\EvaluationRoutingModel();
             $releasedCount = 0;
+
+            // --- TIER 1 -> TIER 2: APPROVE & RELEASE TO COLLEGE DEANS (FROM OPCR) ---
             if ($releaseToDeans) {
-                $userModel = new \App\Models\UserModel();
-                
                 // Find all active accounts holding a Dean position (or dean test accounts)
                 $deanUsers = $userModel
                     ->select('users.id, users.first_name, users.last_name, users.doc_type')
@@ -1325,6 +1424,244 @@ class Folder extends BaseController
                         
                         // Force DPCR paper generation for the Dean
                         $this->ensureUserDocumentExists($newFolderId, $dean['id'], $folder['title'], 'DPCR');
+
+                        // Route Dean to VPAA / Root authority
+                        $rExists = $routingModel->where('folder_id', $newFolderId)->where('evaluator_id', $folder['user_id'])->first();
+                        if (!$rExists) {
+                            $routingModel->insert([
+                                'folder_id'           => $newFolderId,
+                                'evaluator_id'        => $folder['user_id'],
+                                'evaluator_folder_id' => $folder['id'],
+                                'status'              => FolderStatus::DRAFT->value
+                            ]);
+                        }
+
+                        notify_user((int) $dean['id'], [
+                            'sender_id' => session()->get('user_id'),
+                            'type'      => 'target_released',
+                            'title'     => 'Institutional OPCR Basis Released',
+                            'message'   => "Institutional OPCR targets for \"{$folder['title']}\" have been approved and released to all colleges as basis for your collegiate DPCR.",
+                            'link'      => 'folders/' . $newFolderId,
+                            'icon'      => 'file',
+                        ]);
+
+                        $releasedCount++;
+                    }
+                }
+            }
+
+            // --- TIER 2 -> TIER 3: APPROVE & RELEASE TO DEPARTMENT CHAIRS (FROM DEAN DPCR) ---
+            if ($releaseToChairs) {
+                $deanPlantilla = $userModel->getActivePlantillaDetails($folder['user_id']);
+                $collegeUnitId = $deanPlantilla['unit_id'] ?? null;
+                $chairs = $collegeUnitId ? $unitModel->getChairsForCollege((int) $collegeUnitId) : [];
+
+                foreach ($chairs as $chair) {
+                    $existing = $folderModel->where('parent_folder_id', $folder['id'])
+                                            ->where('user_id', $chair['user_id'])->first();
+                    if (!$existing) {
+                        $newFolderId = create_unique_row($folderModel, [
+                            'title'               => $folder['title'],
+                            'user_id'             => $chair['user_id'],
+                            'parent_folder_id'    => $folder['id'],
+                            'status'              => FolderStatus::DRAFT_TARGET->value,
+                            'ipcr_target_start'   => $folder['ipcr_target_start'],
+                            'ipcr_target_end'     => $folder['ipcr_target_end'],
+                            'ipcr_eval_start'     => $folder['ipcr_eval_start'],
+                            'ipcr_eval_end'       => $folder['ipcr_eval_end'],
+                            'dpcr_target_start'   => $folder['dpcr_target_start'],
+                            'dpcr_target_end'     => $folder['dpcr_target_end'],
+                            'dpcr_eval_start'     => $folder['dpcr_eval_start'],
+                            'dpcr_eval_end'       => $folder['dpcr_eval_end'],
+                            'opcr_target_start'   => $folder['opcr_target_start'],
+                            'opcr_target_end'     => $folder['opcr_target_end'],
+                            'opcr_eval_start'     => $folder['opcr_eval_start'],
+                            'opcr_eval_end'       => $folder['opcr_eval_end'],
+                            'iperf_target_start'  => $folder['iperf_target_start'],
+                            'iperf_target_end'    => $folder['iperf_target_end'],
+                            'iperf_eval_start'    => $folder['iperf_eval_start'],
+                            'iperf_eval_end'      => $folder['iperf_eval_end'],
+                        ]);
+
+                        // Force DPCR paper generation for the Department Chair
+                        $this->ensureUserDocumentExists($newFolderId, $chair['user_id'], $folder['title'], 'DPCR');
+
+                        // Immediate Evaluator: College Dean
+                        $r1 = $routingModel->where('folder_id', $newFolderId)->where('evaluator_id', $folder['user_id'])->first();
+                        if (!$r1) {
+                            $routingModel->insert([
+                                'folder_id'           => $newFolderId,
+                                'evaluator_id'        => $folder['user_id'],
+                                'evaluator_folder_id' => $folder['id'],
+                                'status'              => FolderStatus::DRAFT->value
+                            ]);
+                        }
+
+                        // Next-in-Rank Calibrator: VPAA (parent folder owner)
+                        if (!empty($folder['parent_folder_id'])) {
+                            $vpaaFolder = $folderModel->find($folder['parent_folder_id']);
+                            if ($vpaaFolder && !empty($vpaaFolder['user_id']) && $vpaaFolder['user_id'] != $folder['user_id']) {
+                                $r2 = $routingModel->where('folder_id', $newFolderId)->where('evaluator_id', $vpaaFolder['user_id'])->first();
+                                if (!$r2) {
+                                    $routingModel->insert([
+                                        'folder_id'           => $newFolderId,
+                                        'evaluator_id'        => $vpaaFolder['user_id'],
+                                        'evaluator_folder_id' => $vpaaFolder['id'],
+                                        'status'              => FolderStatus::DRAFT->value
+                                    ]);
+                                }
+                            }
+                        }
+
+                        notify_user((int) $chair['user_id'], [
+                            'sender_id' => session()->get('user_id'),
+                            'type'      => 'target_released',
+                            'title'     => 'Collegiate DPCR Basis Released',
+                            'message'   => "Collegiate DPCR targets for \"{$folder['title']}\" have been approved and released to your department as basis for your DPCR.",
+                            'link'      => 'folders/' . $newFolderId,
+                            'icon'      => 'file',
+                        ]);
+
+                        $releasedCount++;
+                    }
+                }
+
+                // Skip-level: personnel directly assigned to the college (not under any department with a chair)
+                $chairUserIds = array_column($chairs, 'user_id');
+                $directPersonnel = $collegeUnitId ? $unitModel->getPersonnelForDepartment((int) $collegeUnitId, (int) $folder['user_id']) : [];
+                foreach ($directPersonnel as $dp) {
+                    if (in_array($dp['user_id'], $chairUserIds)) continue;
+                    $existing = $folderModel->where('parent_folder_id', $folder['id'])->where('user_id', $dp['user_id'])->first();
+                    if (!$existing) {
+                        $newFolderId = create_unique_row($folderModel, [
+                            'title'               => $folder['title'],
+                            'user_id'             => $dp['user_id'],
+                            'parent_folder_id'    => $folder['id'],
+                            'status'              => FolderStatus::DRAFT_TARGET->value,
+                            'ipcr_target_start'   => $folder['ipcr_target_start'],
+                            'ipcr_target_end'     => $folder['ipcr_target_end'],
+                            'ipcr_eval_start'     => $folder['ipcr_eval_start'],
+                            'ipcr_eval_end'       => $folder['ipcr_eval_end'],
+                            'dpcr_target_start'   => $folder['dpcr_target_start'],
+                            'dpcr_target_end'     => $folder['dpcr_target_end'],
+                            'dpcr_eval_start'     => $folder['dpcr_eval_start'],
+                            'dpcr_eval_end'       => $folder['dpcr_eval_end'],
+                            'opcr_target_start'   => $folder['opcr_target_start'],
+                            'opcr_target_end'     => $folder['opcr_target_end'],
+                            'opcr_eval_start'     => $folder['opcr_eval_start'],
+                            'opcr_eval_end'       => $folder['opcr_eval_end'],
+                            'iperf_target_start'  => $folder['iperf_target_start'],
+                            'iperf_target_end'    => $folder['iperf_target_end'],
+                            'iperf_eval_start'    => $folder['iperf_eval_start'],
+                            'iperf_eval_end'      => $folder['iperf_eval_end'],
+                        ]);
+                        $this->ensureUserDocumentExists($newFolderId, $dp['user_id'], $folder['title'], 'IPCR');
+
+                        $r = $routingModel->where('folder_id', $newFolderId)->where('evaluator_id', $folder['user_id'])->first();
+                        if (!$r) {
+                            $routingModel->insert([
+                                'folder_id'           => $newFolderId,
+                                'evaluator_id'        => $folder['user_id'],
+                                'evaluator_folder_id' => $folder['id'],
+                                'status'              => FolderStatus::DRAFT->value
+                            ]);
+                        }
+                        $releasedCount++;
+                    }
+                }
+            }
+
+            // --- TIER 3 -> TIER 4: APPROVE & RELEASE TO FACULTY/STAFF (FROM CHAIR DPCR) ---
+            if ($releaseToFaculty) {
+                $chairPlantilla = $userModel->getActivePlantillaDetails($folder['user_id']);
+                $deptUnitId = $chairPlantilla['unit_id'] ?? null;
+                $facultyList = $deptUnitId ? $unitModel->getPersonnelForDepartment((int) $deptUnitId, (int) $folder['user_id']) : [];
+
+                // Also include any team members if this folder was cascaded to a team preset
+                if (!empty($folder['routing_preset_id'])) {
+                    $teamMembers = (new \App\Models\RoutingPresetMemberModel())->where('preset_id', $folder['routing_preset_id'])->findAll();
+                    $existingFacultyUserIds = array_column($facultyList, 'user_id');
+                    foreach ($teamMembers as $tm) {
+                        if ($tm['user_id'] != $folder['user_id'] && !in_array($tm['user_id'], $existingFacultyUserIds)) {
+                            $facultyList[] = ['user_id' => $tm['user_id']];
+                        }
+                    }
+                }
+
+                // Resolve Dean for Secondary Evaluator / Next-in-Rank Calibrator
+                $deanUserId = null;
+                $deanFolderId = null;
+                if (!empty($folder['parent_folder_id'])) {
+                    $parentFolder = $folderModel->find($folder['parent_folder_id']);
+                    if ($parentFolder && !empty($parentFolder['user_id'])) {
+                        $deanUserId = $parentFolder['user_id'];
+                        $deanFolderId = $parentFolder['id'];
+                    }
+                }
+
+                foreach ($facultyList as $faculty) {
+                    $existing = $folderModel->where('parent_folder_id', $folder['id'])
+                                            ->where('user_id', $faculty['user_id'])->first();
+                    if (!$existing) {
+                        $newFolderId = create_unique_row($folderModel, [
+                            'title'               => $folder['title'],
+                            'user_id'             => $faculty['user_id'],
+                            'parent_folder_id'    => $folder['id'],
+                            'status'              => FolderStatus::DRAFT_TARGET->value,
+                            'ipcr_target_start'   => $folder['ipcr_target_start'],
+                            'ipcr_target_end'     => $folder['ipcr_target_end'],
+                            'ipcr_eval_start'     => $folder['ipcr_eval_start'],
+                            'ipcr_eval_end'       => $folder['ipcr_eval_end'],
+                            'dpcr_target_start'   => $folder['dpcr_target_start'],
+                            'dpcr_target_end'     => $folder['dpcr_target_end'],
+                            'dpcr_eval_start'     => $folder['dpcr_eval_start'],
+                            'dpcr_eval_end'       => $folder['dpcr_eval_end'],
+                            'opcr_target_start'   => $folder['opcr_target_start'],
+                            'opcr_target_end'     => $folder['opcr_target_end'],
+                            'opcr_eval_start'     => $folder['opcr_eval_start'],
+                            'opcr_eval_end'       => $folder['opcr_eval_end'],
+                            'iperf_target_start'  => $folder['iperf_target_start'],
+                            'iperf_target_end'    => $folder['iperf_target_end'],
+                            'iperf_eval_start'    => $folder['iperf_eval_start'],
+                            'iperf_eval_end'      => $folder['iperf_eval_end'],
+                        ]);
+
+                        // Ensure IPCR paper exists for Faculty
+                        $this->ensureUserDocumentExists($newFolderId, $faculty['user_id'], $folder['title'], 'IPCR');
+
+                        // Immediate Evaluator: Department Chair
+                        $r1 = $routingModel->where('folder_id', $newFolderId)->where('evaluator_id', $folder['user_id'])->first();
+                        if (!$r1) {
+                            $routingModel->insert([
+                                'folder_id'           => $newFolderId,
+                                'evaluator_id'        => $folder['user_id'],
+                                'evaluator_folder_id' => $folder['id'],
+                                'status'              => FolderStatus::DRAFT->value
+                            ]);
+                        }
+
+                        // Secondary Evaluator: College Dean
+                        if ($deanUserId && $deanUserId != $folder['user_id']) {
+                            $r2 = $routingModel->where('folder_id', $newFolderId)->where('evaluator_id', $deanUserId)->first();
+                            if (!$r2) {
+                                $routingModel->insert([
+                                    'folder_id'           => $newFolderId,
+                                    'evaluator_id'        => $deanUserId,
+                                    'evaluator_folder_id' => $deanFolderId,
+                                    'status'              => FolderStatus::DRAFT->value
+                                ]);
+                            }
+                        }
+
+                        notify_user((int) $faculty['user_id'], [
+                            'sender_id' => session()->get('user_id'),
+                            'type'      => 'target_released',
+                            'title'     => 'Department Targets Released',
+                            'message'   => "Department targets for \"{$folder['title']}\" have been approved and released. You may now craft and submit your IPCR.",
+                            'link'      => 'folders/' . $newFolderId,
+                            'icon'      => 'file',
+                        ]);
+
                         $releasedCount++;
                     }
                 }
@@ -1340,9 +1677,24 @@ class Folder extends BaseController
                 'icon'      => 'check',
             ]);
 
-            $msg = $releaseToDeans 
-                ? "OPCR targets approved and successfully released to {$releasedCount} College Dean(s)." 
-                : "Targets approved successfully.";
+            $logAction = $releaseToDeans 
+                ? " and released to Deans: " 
+                : ($releaseToChairs 
+                    ? " and released to Department Chairs: " 
+                    : ($releaseToFaculty 
+                        ? " and released to Faculty: " 
+                        : ": "));
+            audit_log('TARGET_APPROVED', 'TARGET', 'document_folder', (int) $folderId, "Target commitments approved" . $logAction . $folder['title']);
+
+            if ($releaseToDeans) {
+                $msg = "OPCR targets approved and successfully released to {$releasedCount} College Dean(s).";
+            } elseif ($releaseToChairs) {
+                $msg = "Collegiate DPCR targets approved and successfully released to {$releasedCount} Department Chair(s).";
+            } elseif ($releaseToFaculty) {
+                $msg = "Department DPCR targets approved and successfully released to {$releasedCount} Faculty member(s).";
+            } else {
+                $msg = "Targets approved successfully.";
+            }
             
             return $this->respond(['status' => 'success', 'message' => $msg]);
         });
@@ -1369,6 +1721,17 @@ class Folder extends BaseController
                 'target_approved_at' => null
             ]);
             
+            notify_user((int) $folder['user_id'], [
+                'sender_id' => session()->get('user_id'),
+                'type'      => 'target_unapproved',
+                'title'     => 'Target Approval Revoked',
+                'message'   => "Target commitment approval for \"{$folder['title']}\" was revoked and returned to pending review.",
+                'link'      => 'folders/' . $folderId,
+                'icon'      => 'alert',
+            ]);
+
+            audit_log('TARGET_UNAPPROVED', 'TARGET', 'document_folder', (int) $folderId, "Target commitment approval revoked: {$folder['title']}");
+
             return $this->respond(['status' => 'success', 'message' => 'Approval removed.']);
         });
     }
@@ -1383,7 +1746,8 @@ class Folder extends BaseController
             $folderModel = new DocumentFolderModel();
             
             $folder = $folderModel->find($folderId);
-            if (!empty($folder['target_date_end']) && date('Y-m-d H:i:s') > $folder['target_date_end']) {
+            $dates = $folderModel->getFolderDates($folder);
+            if (!empty($dates['target_date_end']) && date('Y-m-d H:i:s') > $dates['target_date_end']) {
                 return $this->respondError("The target setting period has already ended.", 400);
             }
             
@@ -1407,6 +1771,8 @@ class Folder extends BaseController
                 'icon'      => 'alert',
             ]);
             
+            audit_log('TARGET_RETURNED', 'TARGET', 'document_folder', (int) $folderId, "Target commitments returned for revision: " . (!empty($reason) ? $reason : 'No remarks specified'));
+
             return $this->respond(['status' => 'success', 'message' => 'Targets returned for revision.']);
         });
     }
@@ -1419,13 +1785,30 @@ class Folder extends BaseController
         return $this->tryOrFail(function() {
             $folderId = $this->request->getPost('folder_id');
             $routingModel = new EvaluationRoutingModel();
+            $folderModel = new DocumentFolderModel();
+            
+            $folder = $folderModel->find($folderId);
+            if (!$folder || !empty($folder['deleted_at'])) {
+                return $this->respondError("Cannot approve: This evaluation cycle is closed/archived.", 400);
+            }
 
-            $routingModel->where('folder_id', $folderId)
-                ->where('evaluator_id', session()->get('user_id'))
-                ->set(['status' => FolderStatus::APPROVED->value, 'updated_at' => date('Y-m-d H:i:s')])
-                ->update();
+            $isAdmin = (new UserModel())->hasRole(session()->get('user_id'), 'Admin');
 
-            $this->updateFolderConsensus($folderId);
+            if ($isAdmin) {
+                $routingModel->where('folder_id', $folderId)
+                    ->set(['status' => FolderStatus::APPROVED->value, 'updated_at' => date('Y-m-d H:i:s')])
+                    ->update();
+                $folderModel->update($folderId, [
+                    'status'   => FolderStatus::APPROVED->value,
+                    'rated_at' => date('Y-m-d H:i:s')
+                ]);
+            } else {
+                $routingModel->where('folder_id', $folderId)
+                    ->where('evaluator_id', session()->get('user_id'))
+                    ->set(['status' => FolderStatus::APPROVED->value, 'updated_at' => date('Y-m-d H:i:s')])
+                    ->update();
+                $this->updateFolderConsensus($folderId);
+            }
 
             $userModel = new UserModel();
             $folderModel = new DocumentFolderModel();
@@ -1457,6 +1840,8 @@ class Folder extends BaseController
                 'link'      => 'folders/' . $folderId,
                 'icon'      => 'check',
             ]);
+
+            audit_log('EVALUATION_APPROVED', 'RATING', 'document_folder', (int) $folderId, "Performance evaluation rated and approved: {$folder['title']}");
 
             return $this->respond(['status' => 'success', 'message' => 'Approved!']);
         });
@@ -1499,6 +1884,8 @@ class Folder extends BaseController
 
             $this->updateFolderConsensus($folderId);
 
+            audit_log('EVALUATION_UNAPPROVED', 'RATING', 'document_folder', (int) $folderId, "Performance evaluation approval revoked: {$folder['title']}");
+
             return $this->respond(['status' => 'success', 'message' => 'Approval removed!']);
         });
     }
@@ -1519,6 +1906,10 @@ class Folder extends BaseController
                 return $this->respondError("Folder not found.", 404);
             }
 
+            if (!empty($folder['deleted_at']) || $folderModel->isFolderLocked($folder)) {
+                return $this->respondError("This evaluation cycle has been closed/archived. Scores are frozen.", 403);
+            }
+
             $userModel = new UserModel();
             $isAdmin = $userModel->hasRole($userId, 'Admin');
 
@@ -1534,6 +1925,8 @@ class Folder extends BaseController
                 'updated_at'   => date('Y-m-d H:i:s')
             ]);
 
+            audit_log('SCORE_UPDATED', 'RATING', 'document_folder', (int) $folderId, "Final rating score manually updated to {$score} for {$folder['title']}");
+
             return $this->respond(['status' => 'success', 'message' => 'Score updated successfully.']);
         });
     }
@@ -1543,6 +1936,11 @@ class Folder extends BaseController
      */
     public function twgApprove() {
         return $this->tryOrFail(function() {
+            $role = session()->get('role');
+            if (!in_array($role, ['TWG', 'Admin'])) {
+                return $this->respondError('Unauthorized. Only Technical Working Group (TWG) members or Administrators can perform this action.', 403);
+            }
+
             $folderId = $this->request->getPost('folder_id');
             $status = $this->request->getPost('status');
             
@@ -1551,6 +1949,10 @@ class Folder extends BaseController
             }
             
             $folderModel = new DocumentFolderModel();
+            $folder = $folderModel->find($folderId);
+            if (!$folder || !empty($folder['deleted_at'])) {
+                return $this->respondError("Cannot perform TWG review: This evaluation cycle is closed/archived.", 400);
+            }
             
             $folderModel->update($folderId, [
                 'status' => $status, 
@@ -1569,6 +1971,8 @@ class Folder extends BaseController
                 'link'      => 'folders/' . $folderId,
                 'icon'      => $isApproved ? 'award' : 'alert',
             ]);
+
+            audit_log($isApproved ? 'TWG_APPROVED' : 'TWG_DISAPPROVED', 'RATING', 'document_folder', (int) $folderId, "Official SPMS rating " . ($isApproved ? 'verified and approved' : 'disapproved') . " by TWG for {$folder['title']}");
 
             return $this->respond(['status' => 'success', 'message' => 'Status updated successfully!']);
         });
@@ -1628,6 +2032,8 @@ class Folder extends BaseController
                 'link'      => 'folders/' . $folderId,
                 'icon'      => 'alert',
             ]);
+
+            audit_log('EVALUATION_RETURNED', 'RATING', 'document_folder', (int) $folderId, "Evaluation returned for revision: " . (!empty($reason) ? $reason : 'No remarks specified'));
 
             return $this->respond(['status' => 'success', 'message' => 'Returned for revision.']);
         });

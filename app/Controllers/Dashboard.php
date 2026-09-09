@@ -109,12 +109,23 @@ class Dashboard extends BaseController
             // Role Scoping:
             $supervisorCollegeName = null;
             $scopedUnitIds = [];
+            $isChairScope = false;
             if ($sysRole === 'Supervisor') {
                 $ownPlantilla  = $userModel->getActivePlantillaDetails($userId);
                 if ($ownPlantilla) {
-                    $scopedUnitIds = $unitModel->getDescendantIds([$ownPlantilla['unit_id']]);
-                    $scopedUnitIds[] = (int)$ownPlantilla['unit_id'];
-                    $supervisorCollegeName = $ownPlantilla['department'] ?? 'College / Department';
+                    $posTitle = strtolower($ownPlantilla['position'] ?? '');
+                    $isChairScope = str_contains($posTitle, 'chair') || str_contains($posTitle, 'head');
+                    
+                    if ($isChairScope) {
+                        // Department Chair: Scope strictly to own department
+                        $scopedUnitIds = [(int)$ownPlantilla['unit_id']];
+                        $supervisorCollegeName = $ownPlantilla['department'] ?? 'Department';
+                    } else {
+                        // College Dean: Scope to college and all sub-departments
+                        $scopedUnitIds = $unitModel->getDescendantIds([$ownPlantilla['unit_id']]);
+                        $scopedUnitIds[] = (int)$ownPlantilla['unit_id'];
+                        $supervisorCollegeName = $ownPlantilla['department'] ?? 'College';
+                    }
                 }
                 $scopedUnitIds = array_unique(array_filter($scopedUnitIds));
                 if (!empty($scopedUnitIds)) {
@@ -197,31 +208,31 @@ class Dashboard extends BaseController
             $status = $f['folder_status'];
 
             // Target stage tracking & tagging
-            if (in_array($status, [FolderStatus::TARGET_APPROVED->value, FolderStatus::SUBMITTED->value, FolderStatus::TO_EVALUATE->value, FolderStatus::EVALUATED->value, FolderStatus::APPROVED->value, FolderStatus::TWG_APPROVED->value])) {
+            if (in_array($status, [FolderStatus::TARGET_APPROVED->value, FolderStatus::SUBMITTED->value, FolderStatus::TO_EVALUATE->value, FolderStatus::EVALUATED->value, FolderStatus::APPROVED->value, FolderStatus::TWG_APPROVED->value, FolderStatus::TWG_DISAPPROVED->value])) {
                 $targetApprovedCount++;
                 $f['target_state'] = 'approved';
                 $f['target_label'] = 'Approved';
-                $f['target_badge'] = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30';
+                $f['target_badge'] = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-[#102a1e] dark:text-emerald-400 dark:border-[#1b4330]';
             } elseif ($status === FolderStatus::PENDING_TARGET_APPROVAL->value) {
                 $targetPendingCount++;
                 $f['target_state'] = 'submitted';
                 $f['target_label'] = 'Submitted (Pending Review)';
-                $f['target_badge'] = 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-info-500/15 dark:text-blue-400 dark:border-info-500/30';
+                $f['target_badge'] = 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-info-500/10 dark:text-blue-400 dark:border-info-500/20';
             } elseif ($status === FolderStatus::DRAFT_TARGET->value) {
                 $targetDraftCount++;
                 $f['target_state'] = 'draft';
                 $f['target_label'] = 'Not Submitted (Draft)';
-                $f['target_badge'] = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/15 dark:text-rose-400 dark:border-rose-500/30';
+                $f['target_badge'] = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-danger-500/10 dark:text-rose-400 dark:border-danger-500/20';
             } elseif (in_array($status, [FolderStatus::TARGET_RETURNED->value, FolderStatus::TARGET_UNAPPROVED->value])) {
                 $targetReturnedCount++;
                 $f['target_state'] = 'returned';
                 $f['target_label'] = 'Needs Revision';
-                $f['target_badge'] = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30';
+                $f['target_badge'] = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800/80';
             } else {
                 $targetDraftCount++;
                 $f['target_state'] = 'draft';
                 $f['target_label'] = 'Not Started (No Folder)';
-                $f['target_badge'] = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/15 dark:text-rose-400 dark:border-rose-500/30';
+                $f['target_badge'] = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-danger-500/10 dark:text-rose-400 dark:border-danger-500/20';
             }
 
             // Evaluation stage tracking & tagging
@@ -229,33 +240,38 @@ class Dashboard extends BaseController
                 $evalCompletedCount++;
                 $f['eval_state'] = 'approved';
                 $f['eval_label'] = 'Completed & Approved';
-                $f['eval_badge'] = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30';
+                $f['eval_badge'] = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-[#102a1e] dark:text-emerald-400 dark:border-[#1b4330]';
+            } elseif ($status === FolderStatus::TWG_DISAPPROVED->value) {
+                $evalPendingCount++;
+                $f['eval_state'] = 'returned';
+                $f['eval_label'] = 'Disapproved by TWG';
+                $f['eval_badge'] = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-danger-500/10 dark:text-rose-400 dark:border-danger-500/20';
             } elseif (in_array($status, [FolderStatus::TO_EVALUATE->value, FolderStatus::EVALUATED->value])) {
                 $evalActionCount++;
                 $f['eval_state'] = 'evaluating';
                 $f['eval_label'] = 'Submitted (Evaluating)';
-                $f['eval_badge'] = 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-highlight-500/20 dark:text-highlight-400 dark:border-highlight-500/30';
+                $f['eval_badge'] = 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-highlight-500/20 dark:text-highlight-400 dark:border-highlight-500/20';
             } elseif ($status === FolderStatus::SUBMITTED->value) {
                 $evalSubmittedCount++;
                 $f['eval_state'] = 'submitted';
                 $f['eval_label'] = 'Submitted';
-                $f['eval_badge'] = 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-info-500/15 dark:text-blue-400 dark:border-info-500/30';
+                $f['eval_badge'] = 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-info-500/10 dark:text-blue-400 dark:border-info-500/20';
             } elseif (in_array($status, [FolderStatus::DRAFT->value, FolderStatus::REEVALUATE->value])) {
                 $evalPendingCount++;
                 if ($status === FolderStatus::REEVALUATE->value) {
                     $f['eval_state'] = 'returned';
                     $f['eval_label'] = 'Needs Revision';
-                    $f['eval_badge'] = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30';
+                    $f['eval_badge'] = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800/80';
                 } else {
                     $f['eval_state'] = 'draft';
                     $f['eval_label'] = 'Not Submitted (Draft)';
-                    $f['eval_badge'] = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/15 dark:text-rose-400 dark:border-rose-500/30';
+                    $f['eval_badge'] = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-danger-500/10 dark:text-rose-400 dark:border-danger-500/20';
                 }
             } else {
                 $evalPendingCount++;
                 $f['eval_state'] = 'draft';
                 $f['eval_label'] = 'Pending Target Phase';
-                $f['eval_badge'] = 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-zinc-800 dark:text-zinc-400';
+                $f['eval_badge'] = 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-zinc-800/50 dark:text-zinc-400 dark:border-zinc-700';
             }
 
             // High-level filter tag for Dean's quick buttons:
@@ -386,7 +402,7 @@ class Dashboard extends BaseController
                     'average_rating'   => 0,
                     'compliance_pct'   => 0,
                     'status_badge'     => 'In Progress',
-                    'badge_class'      => 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-info-500/15 dark:text-blue-400 dark:border-info-500/30'
+                    'badge_class'      => 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-info-500/10 dark:text-blue-400 dark:border-info-500/20'
                 ];
             }
             $deptLeaderboard[$dept]['headcount']++;
@@ -397,7 +413,8 @@ class Dashboard extends BaseController
                 FolderStatus::TO_EVALUATE->value,
                 FolderStatus::EVALUATED->value,
                 FolderStatus::APPROVED->value,
-                FolderStatus::TWG_APPROVED->value
+                FolderStatus::TWG_APPROVED->value,
+                FolderStatus::TWG_DISAPPROVED->value
             ])) {
                 $deptLeaderboard[$dept]['target_approved']++;
             }
@@ -405,7 +422,8 @@ class Dashboard extends BaseController
             if (in_array($f['folder_status'], [
                 FolderStatus::TARGET_RETURNED->value,
                 FolderStatus::TARGET_UNAPPROVED->value,
-                FolderStatus::REEVALUATE->value
+                FolderStatus::REEVALUATE->value,
+                FolderStatus::TWG_DISAPPROVED->value
             ])) {
                 $deptLeaderboard[$dept]['revisions_needed']++;
             }
@@ -425,16 +443,16 @@ class Dashboard extends BaseController
 
             if ($d['revisions_needed'] > 0) {
                 $d['status_badge'] = $d['revisions_needed'] . ' Revision' . ($d['revisions_needed'] > 1 ? 's' : '');
-                $d['badge_class']  = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30';
+                $d['badge_class']  = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800/80';
             } elseif ($d['compliance_pct'] >= 100) {
                 $d['status_badge'] = '100% Compliant';
-                $d['badge_class']  = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30';
+                $d['badge_class']  = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-[#102a1e] dark:text-emerald-400 dark:border-[#1b4330]';
             } elseif ($d['compliance_pct'] >= 50) {
                 $d['status_badge'] = 'On Track';
-                $d['badge_class']  = 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-info-500/15 dark:text-blue-400 dark:border-info-500/30';
+                $d['badge_class']  = 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-info-500/10 dark:text-blue-400 dark:border-info-500/20';
             } else {
                 $d['status_badge'] = 'Action Needed';
-                $d['badge_class']  = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/15 dark:text-rose-400 dark:border-rose-500/30';
+                $d['badge_class']  = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-danger-500/10 dark:text-rose-400 dark:border-danger-500/20';
             }
         }
         unset($d);
@@ -474,6 +492,7 @@ class Dashboard extends BaseController
                 'targetComplianceRate' => $targetComplianceRate,
                 'evalCompletionRate'   => $evalCompletionRate,
                 'cscDistribution'      => $cscDistribution,
+                'isChairScope'          => $isChairScope,
                 'supervisorCollegeName' => $supervisorCollegeName,
                 'collegeDepartments'    => $collegeDepartments,
                 'cycleFolders'          => $cycleFolders,

@@ -14,7 +14,7 @@ class DepartmentSeeder extends Seeder
         $db = \Config\Database::connect();
         $folderModel = new DocumentFolderModel();
 
-        echo ">>> [SPMS] Starting Department & Multi-Account Seeder (With Returns & Form Submissions)...\n";
+        echo ">>> [SPMS] Seeding BSU La Trinidad 4-Tier College & Department Hierarchy...\n";
 
         // ==========================================
         // 1. ROLES LOOKUP
@@ -30,16 +30,16 @@ class DepartmentSeeder extends Seeder
         // ==========================================
         $ovpaa = $db->table('units')->where('name', 'OVPAA')->get()->getRowArray();
         if (!$ovpaa) {
-            $db->table('units')->insert(['name' => 'OVPAA', 'parent_id' => null]);
-            $ovpaaId = $db->insertID();
+            $db->table('units')->insert(['name' => 'OVPAA', 'parent_id' => null, 'created_at' => date('Y-m-d H:i:s')]);
+            $ovpaaId = (int)$db->insertID();
         } else {
             $ovpaaId = (int)$ovpaa['id'];
         }
 
         $ovpaf = $db->table('units')->where('name', 'OVPAF')->get()->getRowArray();
         if (!$ovpaf) {
-            $db->table('units')->insert(['name' => 'OVPAF', 'parent_id' => null]);
-            $ovpafId = $db->insertID();
+            $db->table('units')->insert(['name' => 'OVPAF', 'parent_id' => null, 'created_at' => date('Y-m-d H:i:s')]);
+            $ovpafId = (int)$db->insertID();
         } else {
             $ovpafId = (int)$ovpaf['id'];
         }
@@ -81,179 +81,153 @@ class DepartmentSeeder extends Seeder
         }
 
         // ==========================================
-        // 4. DEFINE UNITS & REALISTIC ROSTER
+        // 4. BSU LA TRINIDAD COLLEGES & DEPARTMENTS
+        // ==========================================
+        $bsuHierarchy = [
+            'College of Agriculture' => [
+                'Department of Agricultural Economics & Agribusiness',
+                'Department of Agronomy',
+                'Department of Horticulture',
+                'Department of Animal Science',
+                'Department of Entomology',
+                'Department of Plant Pathology',
+                'Department of Soil Science',
+                'Department of Extension Education',
+            ],
+            'College of Arts and Humanities' => [
+                'Department of Communication',
+                'Department of English Language',
+                'Department of Filipino Language',
+            ],
+            'College of Engineering' => [
+                'Department of Agricultural and Biosystems Engineering',
+                'Department of Civil Engineering',
+                'Department of Electrical Engineering',
+                'Department of Industrial Engineering',
+            ],
+            'College of Forestry' => [
+                'Department of Forest Science',
+                'Department of Agroforestry',
+            ],
+            'College of Human Ecology' => [
+                'Department of Hospitality Management',
+                'Department of Nutrition and Dietetics',
+                'Department of Entrepreneurship',
+                'Department of Food Technology',
+                'Department of Tourism Management',
+            ],
+            'College of Human Kinetics' => [
+                'Department of Physical Education',
+                'Department of Exercise and Sports Sciences',
+            ],
+            'College of Information Sciences' => [
+                'Department of Information Technology',
+                'Department of Development Communication',
+                'Department of Library and Information Science',
+            ],
+            'College of Medicine' => [
+                'Department of Basic Medical Sciences',
+                'Department of Clinical Practice',
+            ],
+            'College of Natural Sciences' => [
+                'Department of Biology',
+                'Department of Chemistry',
+                'Department of Environmental Science',
+            ],
+            'College of Numeracy and Applied Sciences' => [
+                'Department of Mathematics',
+                'Department of Statistics',
+                'Department of Physics',
+            ],
+            'College of Nursing' => [
+                'Department of Nursing',
+            ],
+            'College of Public Administration and Governance' => [
+                'Department of Public Administration',
+            ],
+            'College of Social Sciences' => [
+                'Department of Psychology',
+                'Department of History and Social Studies',
+            ],
+            'College of Teacher Education' => [
+                'Department of Early Childhood & Elementary Education',
+                'Department of Secondary Education',
+                'Department of Technology and Livelihood Education',
+            ],
+            'College of Veterinary Medicine' => [
+                'Department of Veterinary Medicine',
+            ],
+        ];
+
+        $unitIdMap = [];
+        $now = date('Y-m-d H:i:s');
+
+        // Seed 15 Colleges under OVPAA
+        foreach ($bsuHierarchy as $collegeName => $departments) {
+            $existingCollege = $db->table('units')->where('name', $collegeName)->get()->getRowArray();
+            if ($existingCollege) {
+                $collegeId = (int)$existingCollege['id'];
+                if ($existingCollege['parent_id'] != $ovpaaId) {
+                    $db->table('units')->where('id', $collegeId)->update(['parent_id' => $ovpaaId]);
+                }
+            } else {
+                $db->table('units')->insert([
+                    'name'       => $collegeName,
+                    'parent_id'  => $ovpaaId,
+                    'created_at' => $now
+                ]);
+                $collegeId = (int)$db->insertID();
+            }
+            $unitIdMap[$collegeName] = $collegeId;
+
+            // Seed Constituent Departments under this College
+            foreach ($departments as $deptName) {
+                $existingDept = $db->table('units')->where('name', $deptName)->get()->getRowArray();
+                if ($existingDept) {
+                    $deptId = (int)$existingDept['id'];
+                    // Ensure linked to this college if not assigned
+                    if (empty($existingDept['parent_id'])) {
+                        $db->table('units')->where('id', $deptId)->update(['parent_id' => $collegeId]);
+                    }
+                } else {
+                    $db->table('units')->insert([
+                        'name'       => $deptName,
+                        'parent_id'  => $collegeId,
+                        'created_at' => $now
+                    ]);
+                    $deptId = (int)$db->insertID();
+                }
+                $unitIdMap[$deptName] = $deptId;
+            }
+        }
+
+        // Seed Non-Teaching Administrative Offices under OVPAF
+        $gso = $db->table('units')->where('name', 'General Services Office')->get()->getRowArray();
+        if (!$gso) {
+            $db->table('units')->insert([
+                'name'       => 'General Services Office',
+                'parent_id'  => $ovpafId,
+                'created_at' => $now
+            ]);
+            $gsoId = (int)$db->insertID();
+        } else {
+            $gsoId = (int)$gso['id'];
+            if ($gso['parent_id'] != $ovpafId) {
+                $db->table('units')->where('id', $gsoId)->update(['parent_id' => $ovpafId]);
+            }
+        }
+        $unitIdMap['General Services Office'] = $gsoId;
+
+        // ==========================================
+        // 5. DEFINE REALISTIC 4-TIER ROSTERS
         // ==========================================
         $password = password_hash('123', PASSWORD_DEFAULT);
 
-        $roster = [
-            // --- College of Agriculture ---
+        $rosterGroups = [
+            // --- College of Information Sciences (Showcase) ---
             [
-                'unit' => ['name' => 'College of Agriculture', 'parent_id' => $ovpaaId],
-                'users' => [
-                    [
-                        'email'      => 'dean.agri@test.com',
-                        'first_name' => 'Julian',
-                        'last_name'  => 'Ramos',
-                        'role'       => 'Supervisor',
-                        'position'   => 'Dean',
-                        'doc_type'   => 'OPCR',
-                        'tier'       => 'dean',
-                        'rating'     => 4.88,
-                        'status'     => FolderStatus::APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'chair.agri@test.com',
-                        'first_name' => 'Lorna',
-                        'last_name'  => 'Mendoza',
-                        'role'       => 'Supervisor',
-                        'position'   => 'Department Chair',
-                        'doc_type'   => 'DPCR',
-                        'tier'       => 'chair',
-                        'rating'     => 4.75,
-                        'status'     => FolderStatus::APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'faculty.agri1@test.com',
-                        'first_name' => 'Edgar',
-                        'last_name'  => 'Santos',
-                        'role'       => 'Employee',
-                        'position'   => 'Assistant Professor',
-                        'doc_type'   => 'IPCR',
-                        'tier'       => 'faculty',
-                        'rating'     => 4.82,
-                        'status'     => FolderStatus::APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'faculty.agri2@test.com',
-                        'first_name' => 'Maricel',
-                        'last_name'  => 'Flores',
-                        'role'       => 'Employee',
-                        'position'   => 'Instructor II',
-                        'doc_type'   => 'IPCR',
-                        'tier'       => 'faculty',
-                        'rating'     => null,
-                        'status'     => FolderStatus::PENDING_TARGET_APPROVAL->value,
-                        'remark'     => 'Targets submitted; pending immediate supervisor approval.'
-                    ],
-                ]
-            ],
-
-            // --- College of Teacher Education ---
-            [
-                'unit' => ['name' => 'College of Teacher Education', 'parent_id' => $ovpaaId],
-                'users' => [
-                    [
-                        'email'      => 'dean.cte@test.com',
-                        'first_name' => 'Victoria',
-                        'last_name'  => 'Salazar',
-                        'role'       => 'Supervisor',
-                        'position'   => 'Dean',
-                        'doc_type'   => 'OPCR',
-                        'tier'       => 'dean',
-                        'rating'     => 4.92,
-                        'status'     => FolderStatus::APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'chair.cte@test.com',
-                        'first_name' => 'Arthur',
-                        'last_name'  => 'Perez',
-                        'role'       => 'Supervisor',
-                        'position'   => 'Department Chair',
-                        'doc_type'   => 'DPCR',
-                        'tier'       => 'chair',
-                        'rating'     => 4.79,
-                        'status'     => FolderStatus::APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'faculty.cte1@test.com',
-                        'first_name' => 'Rowena',
-                        'last_name'  => 'Gomez',
-                        'role'       => 'Employee',
-                        'position'   => 'Associate Professor',
-                        'doc_type'   => 'IPCR',
-                        'tier'       => 'faculty',
-                        'rating'     => 4.86,
-                        'status'     => FolderStatus::APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'faculty.cte2@test.com',
-                        'first_name' => 'Danilo',
-                        'last_name'  => 'Castillo',
-                        'role'       => 'Employee',
-                        'position'   => 'Instructor I',
-                        'doc_type'   => 'IPCR',
-                        'tier'       => 'faculty',
-                        'rating'     => null,
-                        'status'     => FolderStatus::TARGET_RETURNED->value,
-                        'remark'     => '[Chair Arthur Perez]: Module production target needs to be at least 3 instructional modules per academic guidelines.'
-                    ],
-                ]
-            ],
-
-            // --- College of Arts and Sciences ---
-            [
-                'unit' => ['name' => 'College of Arts and Sciences', 'parent_id' => $ovpaaId],
-                'users' => [
-                    [
-                        'email'      => 'dean.cas@test.com',
-                        'first_name' => 'Gabriel',
-                        'last_name'  => 'Morales',
-                        'role'       => 'Supervisor',
-                        'position'   => 'Dean',
-                        'doc_type'   => 'OPCR',
-                        'tier'       => 'dean',
-                        'rating'     => 4.80,
-                        'status'     => FolderStatus::APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'chair.cas@test.com',
-                        'first_name' => 'Corazon',
-                        'last_name'  => 'Villanueva',
-                        'role'       => 'Supervisor',
-                        'position'   => 'Department Chair',
-                        'doc_type'   => 'DPCR',
-                        'tier'       => 'chair',
-                        'rating'     => 4.65,
-                        'status'     => FolderStatus::APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'faculty.cas1@test.com',
-                        'first_name' => 'Ferdinand',
-                        'last_name'  => 'Aquino',
-                        'role'       => 'Employee',
-                        'position'   => 'Professor',
-                        'doc_type'   => 'IPCR',
-                        'tier'       => 'faculty',
-                        'rating'     => 4.70,
-                        'status'     => FolderStatus::APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'faculty.cas2@test.com',
-                        'first_name' => 'Lilibeth',
-                        'last_name'  => 'Torres',
-                        'role'       => 'Employee',
-                        'position'   => 'Instructor I',
-                        'doc_type'   => 'IPCR',
-                        'tier'       => 'faculty',
-                        'rating'     => null,
-                        'status'     => FolderStatus::TARGET_RETURNED->value,
-                        'remark'     => '[Chair Corazon Villanueva]: Please revise research commitments and specify target submission dates for indexed journal publication.'
-                    ],
-                ]
-            ],
-
-            // --- College of Information Sciences ---
-            [
-                'unit' => ['name' => 'College of Information Sciences', 'parent_id' => $ovpaaId],
+                'college_name' => 'College of Information Sciences',
+                'dept_name'    => 'Department of Information Technology',
                 'users' => [
                     [
                         'email'      => 'dean.cis@test.com',
@@ -261,8 +235,9 @@ class DepartmentSeeder extends Seeder
                         'last_name'  => 'Mercado',
                         'role'       => 'Supervisor',
                         'position'   => 'Dean',
-                        'doc_type'   => 'OPCR',
+                        'doc_type'   => 'DPCR',
                         'tier'       => 'dean',
+                        'unit_level' => 'college',
                         'rating'     => 4.95,
                         'status'     => FolderStatus::APPROVED->value,
                         'remark'     => null
@@ -275,6 +250,7 @@ class DepartmentSeeder extends Seeder
                         'position'   => 'Department Chair',
                         'doc_type'   => 'DPCR',
                         'tier'       => 'chair',
+                        'unit_level' => 'department',
                         'rating'     => 4.83,
                         'status'     => FolderStatus::APPROVED->value,
                         'remark'     => null
@@ -287,6 +263,7 @@ class DepartmentSeeder extends Seeder
                         'position'   => 'Assistant Professor',
                         'doc_type'   => 'IPCR',
                         'tier'       => 'faculty',
+                        'unit_level' => 'department',
                         'rating'     => 4.90,
                         'status'     => FolderStatus::APPROVED->value,
                         'remark'     => null
@@ -299,6 +276,7 @@ class DepartmentSeeder extends Seeder
                         'position'   => 'Instructor II',
                         'doc_type'   => 'IPCR',
                         'tier'       => 'faculty',
+                        'unit_level' => 'department',
                         'rating'     => null,
                         'status'     => FolderStatus::TO_EVALUATE->value,
                         'remark'     => 'Targets approved; currently self-rating accomplishments.'
@@ -306,9 +284,237 @@ class DepartmentSeeder extends Seeder
                 ]
             ],
 
+            // --- College of Nursing (Used in End-to-End Automated Test Cycle) ---
+            [
+                'college_name' => 'College of Nursing',
+                'dept_name'    => 'Department of Nursing',
+                'users' => [
+                    [
+                        'email'      => 'dean@test.com',
+                        'first_name' => 'Roberto',
+                        'last_name'  => 'Reyes',
+                        'role'       => 'Supervisor',
+                        'position'   => 'Dean',
+                        'doc_type'   => 'DPCR',
+                        'tier'       => 'dean',
+                        'unit_level' => 'college',
+                        'rating'     => 4.85,
+                        'status'     => FolderStatus::TARGET_APPROVED->value,
+                        'remark'     => null
+                    ],
+                    [
+                        'email'      => 'chair@test.com',
+                        'first_name' => 'Miguel',
+                        'last_name'  => 'Cruz',
+                        'role'       => 'Supervisor',
+                        'position'   => 'Department Chair',
+                        'doc_type'   => 'DPCR',
+                        'tier'       => 'chair',
+                        'unit_level' => 'department',
+                        'rating'     => 4.75,
+                        'status'     => FolderStatus::TARGET_APPROVED->value,
+                        'remark'     => null
+                    ],
+                    [
+                        'email'      => 'faculty@test.com',
+                        'first_name' => 'Carlos',
+                        'last_name'  => 'Lim',
+                        'role'       => 'Employee',
+                        'position'   => 'Assistant Professor',
+                        'doc_type'   => 'IPCR',
+                        'tier'       => 'faculty',
+                        'unit_level' => 'department',
+                        'rating'     => 4.80,
+                        'status'     => FolderStatus::TARGET_APPROVED->value,
+                        'remark'     => null
+                    ],
+                ]
+            ],
+
+            // --- College of Agriculture ---
+            [
+                'college_name' => 'College of Agriculture',
+                'dept_name'    => 'Department of Agronomy',
+                'users' => [
+                    [
+                        'email'      => 'dean.agri@test.com',
+                        'first_name' => 'Julian',
+                        'last_name'  => 'Ramos',
+                        'role'       => 'Supervisor',
+                        'position'   => 'Dean',
+                        'doc_type'   => 'DPCR',
+                        'tier'       => 'dean',
+                        'unit_level' => 'college',
+                        'rating'     => 4.88,
+                        'status'     => FolderStatus::APPROVED->value,
+                        'remark'     => null
+                    ],
+                    [
+                        'email'      => 'chair.agri@test.com',
+                        'first_name' => 'Lorna',
+                        'last_name'  => 'Mendoza',
+                        'role'       => 'Supervisor',
+                        'position'   => 'Department Chair',
+                        'doc_type'   => 'DPCR',
+                        'tier'       => 'chair',
+                        'unit_level' => 'department',
+                        'rating'     => 4.75,
+                        'status'     => FolderStatus::APPROVED->value,
+                        'remark'     => null
+                    ],
+                    [
+                        'email'      => 'faculty.agri1@test.com',
+                        'first_name' => 'Edgar',
+                        'last_name'  => 'Santos',
+                        'role'       => 'Employee',
+                        'position'   => 'Assistant Professor',
+                        'doc_type'   => 'IPCR',
+                        'tier'       => 'faculty',
+                        'unit_level' => 'department',
+                        'rating'     => 4.82,
+                        'status'     => FolderStatus::APPROVED->value,
+                        'remark'     => null
+                    ],
+                    [
+                        'email'      => 'faculty.agri2@test.com',
+                        'first_name' => 'Maricel',
+                        'last_name'  => 'Flores',
+                        'role'       => 'Employee',
+                        'position'   => 'Instructor II',
+                        'doc_type'   => 'IPCR',
+                        'tier'       => 'faculty',
+                        'unit_level' => 'department',
+                        'rating'     => null,
+                        'status'     => FolderStatus::PENDING_TARGET_APPROVAL->value,
+                        'remark'     => 'Targets submitted; pending immediate supervisor approval.'
+                    ],
+                ]
+            ],
+
+            // --- College of Teacher Education ---
+            [
+                'college_name' => 'College of Teacher Education',
+                'dept_name'    => 'Department of Secondary Education',
+                'users' => [
+                    [
+                        'email'      => 'dean.cte@test.com',
+                        'first_name' => 'Victoria',
+                        'last_name'  => 'Salazar',
+                        'role'       => 'Supervisor',
+                        'position'   => 'Dean',
+                        'doc_type'   => 'DPCR',
+                        'tier'       => 'dean',
+                        'unit_level' => 'college',
+                        'rating'     => 4.92,
+                        'status'     => FolderStatus::APPROVED->value,
+                        'remark'     => null
+                    ],
+                    [
+                        'email'      => 'chair.cte@test.com',
+                        'first_name' => 'Arthur',
+                        'last_name'  => 'Perez',
+                        'role'       => 'Supervisor',
+                        'position'   => 'Department Chair',
+                        'doc_type'   => 'DPCR',
+                        'tier'       => 'chair',
+                        'unit_level' => 'department',
+                        'rating'     => 4.79,
+                        'status'     => FolderStatus::APPROVED->value,
+                        'remark'     => null
+                    ],
+                    [
+                        'email'      => 'faculty.cte1@test.com',
+                        'first_name' => 'Rowena',
+                        'last_name'  => 'Gomez',
+                        'role'       => 'Employee',
+                        'position'   => 'Associate Professor',
+                        'doc_type'   => 'IPCR',
+                        'tier'       => 'faculty',
+                        'unit_level' => 'department',
+                        'rating'     => 4.86,
+                        'status'     => FolderStatus::APPROVED->value,
+                        'remark'     => null
+                    ],
+                    [
+                        'email'      => 'faculty.cte2@test.com',
+                        'first_name' => 'Danilo',
+                        'last_name'  => 'Castillo',
+                        'role'       => 'Employee',
+                        'position'   => 'Instructor I',
+                        'doc_type'   => 'IPCR',
+                        'tier'       => 'faculty',
+                        'unit_level' => 'department',
+                        'rating'     => null,
+                        'status'     => FolderStatus::TARGET_RETURNED->value,
+                        'remark'     => '[Chair Arthur Perez]: Module production target needs to be at least 3 instructional modules per academic guidelines.'
+                    ],
+                ]
+            ],
+
+            // --- College of Natural Sciences ---
+            [
+                'college_name' => 'College of Natural Sciences',
+                'dept_name'    => 'Department of Biology',
+                'users' => [
+                    [
+                        'email'      => 'dean.cns@test.com',
+                        'first_name' => 'Gabriel',
+                        'last_name'  => 'Morales',
+                        'role'       => 'Supervisor',
+                        'position'   => 'Dean',
+                        'doc_type'   => 'DPCR',
+                        'tier'       => 'dean',
+                        'unit_level' => 'college',
+                        'rating'     => 4.80,
+                        'status'     => FolderStatus::APPROVED->value,
+                        'remark'     => null
+                    ],
+                    [
+                        'email'      => 'chair.cns@test.com',
+                        'first_name' => 'Corazon',
+                        'last_name'  => 'Villanueva',
+                        'role'       => 'Supervisor',
+                        'position'   => 'Department Chair',
+                        'doc_type'   => 'DPCR',
+                        'tier'       => 'chair',
+                        'unit_level' => 'department',
+                        'rating'     => 4.65,
+                        'status'     => FolderStatus::APPROVED->value,
+                        'remark'     => null
+                    ],
+                    [
+                        'email'      => 'faculty.cns1@test.com',
+                        'first_name' => 'Ferdinand',
+                        'last_name'  => 'Aquino',
+                        'role'       => 'Employee',
+                        'position'   => 'Professor',
+                        'doc_type'   => 'IPCR',
+                        'tier'       => 'faculty',
+                        'unit_level' => 'department',
+                        'rating'     => 4.70,
+                        'status'     => FolderStatus::APPROVED->value,
+                        'remark'     => null
+                    ],
+                    [
+                        'email'      => 'faculty.cns2@test.com',
+                        'first_name' => 'Lilibeth',
+                        'last_name'  => 'Torres',
+                        'role'       => 'Employee',
+                        'position'   => 'Instructor I',
+                        'doc_type'   => 'IPCR',
+                        'tier'       => 'faculty',
+                        'unit_level' => 'department',
+                        'rating'     => null,
+                        'status'     => FolderStatus::TARGET_RETURNED->value,
+                        'remark'     => '[Chair Corazon Villanueva]: Please revise research commitments and specify target submission dates for indexed journal publication.'
+                    ],
+                ]
+            ],
+
             // --- General Services Office (Non-Teaching Admin Unit) ---
             [
-                'unit' => ['name' => 'General Services Office', 'parent_id' => $ovpafId],
+                'college_name' => 'General Services Office',
+                'dept_name'    => 'General Services Office',
                 'users' => [
                     [
                         'email'      => 'head.gso@test.com',
@@ -318,6 +524,7 @@ class DepartmentSeeder extends Seeder
                         'position'   => 'Unit Head',
                         'doc_type'   => 'DPCR',
                         'tier'       => 'chair',
+                        'unit_level' => 'college',
                         'rating'     => 4.60,
                         'status'     => FolderStatus::APPROVED->value,
                         'remark'     => null
@@ -330,6 +537,7 @@ class DepartmentSeeder extends Seeder
                         'position'   => 'Administrative Aide',
                         'doc_type'   => 'IPERF',
                         'tier'       => 'faculty',
+                        'unit_level' => 'college',
                         'rating'     => null,
                         'status'     => FolderStatus::SUBMITTED->value,
                         'remark'     => 'Accomplishments and MOVs submitted for head rating.'
@@ -342,6 +550,7 @@ class DepartmentSeeder extends Seeder
                         'position'   => 'Administrative Assistant',
                         'doc_type'   => 'IPERF',
                         'tier'       => 'faculty',
+                        'unit_level' => 'college',
                         'rating'     => null,
                         'status'     => FolderStatus::TARGET_RETURNED->value,
                         'remark'     => '[Unit Head Rodrigo Estrada]: Please clarify preventive maintenance schedule targets for university campus facilities.'
@@ -371,32 +580,20 @@ class DepartmentSeeder extends Seeder
             }
         }
 
-        $now = date('Y-m-d H:i:s');
         $createdUserCount = 0;
         $createdDocCount = 0;
 
-        foreach ($roster as $group) {
-            // A. Ensure Unit exists
-            $unitName = $group['unit']['name'];
-            $existingUnit = $db->table('units')->where('name', $unitName)->get()->getRowArray();
-            if ($existingUnit) {
-                $unitId = (int)$existingUnit['id'];
-            } else {
-                $db->table('units')->insert([
-                    'name'      => $unitName,
-                    'parent_id' => $group['unit']['parent_id']
-                ]);
-                $unitId = (int)$db->insertID();
-                echo "  + Created Unit: {$unitName} (ID: {$unitId})\n";
-            }
+        foreach ($rosterGroups as $group) {
+            $collegeUnitId = $unitIdMap[$group['college_name']] ?? $ovpaaId;
+            $deptUnitId    = $unitIdMap[$group['dept_name']] ?? $collegeUnitId;
 
-            $deanFolderId = null;
+            $deanFolderId  = null;
             $chairFolderId = null;
-            $deanUserId = null;
-            $chairUserId = null;
+            $deanUserId    = null;
+            $chairUserId   = null;
 
             foreach ($group['users'] as $u) {
-                // B. Ensure User exists
+                // A. Ensure User exists
                 $existingUser = $db->table('users')->where('email', $u['email'])->get()->getRowArray();
                 if ($existingUser) {
                     $userId = (int)$existingUser['id'];
@@ -418,11 +615,10 @@ class DepartmentSeeder extends Seeder
                     ]);
                     $userId = (int)$db->insertID();
                     $createdUserCount++;
-                    echo "  + Created User: {$u['first_name']} {$u['last_name']} ({$u['email']})\n";
                 }
 
-                // C. Assign Role
-                $roleId = $roleMap[$u['role']] ?? 4; // default Employee
+                // B. Assign Role
+                $roleId = $roleMap[$u['role']] ?? 4;
                 $existingUserRole = $db->table('user_roles')->where('user_id', $userId)->get()->getRowArray();
                 if ($existingUserRole) {
                     $db->table('user_roles')->where('user_id', $userId)->update(['role_id' => $roleId]);
@@ -433,7 +629,10 @@ class DepartmentSeeder extends Seeder
                     ]);
                 }
 
-                // D. Assign Plantilla
+                // C. Assign Plantilla with authentic Unit level
+                // Deans belong to the College unit; Chairs and Faculty belong to their constituent Department unit!
+                $userUnitId = ($u['unit_level'] === 'college') ? $collegeUnitId : $deptUnitId;
+
                 $posId = $posMap[$u['position']] ?? 4;
                 $existingPlantilla = $db->table('plantillas')
                     ->where('user_id', $userId)
@@ -442,13 +641,13 @@ class DepartmentSeeder extends Seeder
                 if ($existingPlantilla) {
                     $db->table('plantillas')->where('id', $existingPlantilla['id'])->update([
                         'position_id' => $posId,
-                        'unit_id'     => $unitId,
+                        'unit_id'     => $userUnitId,
                     ]);
                 } else {
                     $db->table('plantillas')->insert([
                         'user_id'     => $userId,
                         'position_id' => $posId,
-                        'unit_id'     => $unitId,
+                        'unit_id'     => $userUnitId,
                         'started_at'  => '2023-01-01',
                         'ended_at'    => null,
                     ]);
@@ -461,7 +660,7 @@ class DepartmentSeeder extends Seeder
                     $chairUserId = $userId;
                 }
 
-                // E. Hook into Active Evaluation Cycle if present
+                // D. Hook into Active Evaluation Cycle if present
                 if ($activeCycle) {
                     $parentFolderId = null;
                     if ($u['tier'] === 'dean') {
@@ -472,7 +671,6 @@ class DepartmentSeeder extends Seeder
                         $parentFolderId = $chairFolderId ?? $deanFolderId ?? ($vpaaFolder ? $vpaaFolder['id'] : $activeCycle['id']);
                     }
 
-                    // Check if folder already exists in this cycle
                     $existingFolder = $db->table('document_folders')
                         ->where('user_id', $userId)
                         ->where('title', $activeCycle['title'])
@@ -545,13 +743,12 @@ class DepartmentSeeder extends Seeder
                         $chairFolderId = $folderId;
                     }
 
-                    // F. Ensure Form Document exists in this folder
+                    // E. Form Document in Folder
                     $existingDoc = $db->table('documents')->where('document_folder_id', $folderId)->get()->getRowArray();
                     if (!$existingDoc) {
                         $tpl = $templatesByTitle[$u['doc_type']] ?? null;
                         $tabsData = $tpl ? json_decode($tpl['tabs'] ?? '[]', true) : [];
 
-                        // If user has remarks / return review notes, inject into first category
                         if (!empty($u['remark']) && !empty($tabsData[0]['formData']['categories']['core'][0])) {
                             $tabsData[0]['formData']['categories']['core'][0]['remarks'] = $u['remark'];
                         }
@@ -567,186 +764,25 @@ class DepartmentSeeder extends Seeder
                             'updated_at'         => $now
                         ]);
                         $createdDocCount++;
-                    } else {
-                        // Update doc title and remarks if returned
-                        if (!empty($u['remark'])) {
-                            $tabsData = json_decode($existingDoc['tabs'] ?? '[]', true);
-                            if (!empty($tabsData[0]['formData']['categories']['core'][0])) {
-                                $tabsData[0]['formData']['categories']['core'][0]['remarks'] = $u['remark'];
-                                $db->table('documents')->where('id', $existingDoc['id'])->update([
-                                    'tabs'       => json_encode($tabsData),
-                                    'is_target'  => $isTargetPhase ? 1 : 0,
-                                    'updated_at' => $now
-                                ]);
-                            }
-                        }
                     }
                 }
             }
         }
 
-        // --- SEED SAMPLE IN-APP NOTIFICATIONS ---
-        $notifTable = $db->table('notifications');
-        $notifTable->emptyTable();
-
-        $usersByEmail = [];
-        $allUsers = $db->table('users')->get()->getResultArray();
-        foreach ($allUsers as $usr) {
-            $usersByEmail[$usr['email']] = $usr;
-        }
-
-        $sampleNotifications = [
-            // Admin Notifications
-            [
-                'to'         => 'admin@test.com',
-                'from'       => 'faculty.agri2@test.com', // Maricel Flores
-                'type'       => 'target_submitted',
-                'title'      => 'Targets Submitted for Approval',
-                'message'    => 'Maricel Flores submitted DPCR target commitments for approval.',
-                'link'       => 'ratings',
-                'icon'       => 'file',
-                'read_at'    => null,
-                'created_at' => date('Y-m-d H:i:s', strtotime('-15 minutes'))
-            ],
-            [
-                'to'         => 'admin@test.com',
-                'from'       => 'faculty.cis2@test.com', // Stephanie Reyes
-                'type'       => 'eval_submitted',
-                'title'      => 'Accomplishments Submitted',
-                'message'    => 'Stephanie Reyes submitted accomplishments and MOVs for evaluation.',
-                'link'       => 'ratings',
-                'icon'       => 'file',
-                'read_at'    => null,
-                'created_at' => date('Y-m-d H:i:s', strtotime('-1 hour'))
-            ],
-            [
-                'to'         => 'admin@test.com',
-                'from'       => 'dean.agri@test.com', // Julian Ramos
-                'type'       => 'target_submitted',
-                'title'      => 'College Target Submission',
-                'message'    => 'College of Agriculture submitted updated targets for 1st Semester 2026.',
-                'link'       => 'ratings',
-                'icon'       => 'file',
-                'read_at'    => date('Y-m-d H:i:s', strtotime('-2 days')),
-                'created_at' => date('Y-m-d H:i:s', strtotime('-2 days'))
-            ],
-
-            // Danilo Castillo (Faculty CTE) Notifications
-            [
-                'to'         => 'faculty.cte2@test.com', // Danilo Castillo
-                'from'       => 'chair.cte@test.com',   // Arthur Perez
-                'type'       => 'target_returned',
-                'title'      => 'Action Required: Targets Returned',
-                'message'    => 'Your IPCR targets were returned for revision: [Chair Arthur Perez]: Please specify concrete expected outputs for curriculum modules.',
-                'link'       => 'folders',
-                'icon'       => 'alert',
-                'read_at'    => null,
-                'created_at' => date('Y-m-d H:i:s', strtotime('-25 minutes'))
-            ],
-            [
-                'to'         => 'faculty.cte2@test.com',
-                'from'       => 'dean.cte@test.com',
-                'type'       => 'target_approved',
-                'title'      => 'Department Target Basis Released',
-                'message'    => 'College of Teacher Education DPCR basis targets have been approved and released.',
-                'link'       => 'folders',
-                'icon'       => 'check',
-                'read_at'    => date('Y-m-d H:i:s', strtotime('-2 days')),
-                'created_at' => date('Y-m-d H:i:s', strtotime('-2 days'))
-            ],
-
-            // Lilibeth Torres (CAS Faculty) Notifications
-            [
-                'to'         => 'faculty.cas2@test.com', // Lilibeth Torres
-                'from'       => 'dean.cas@test.com',    // Gabriel Morales
-                'type'       => 'target_returned',
-                'title'      => 'Action Required: Targets Returned',
-                'message'    => 'Your IPCR targets were returned for revision: [Dean Gabriel Morales]: Target indicators for extension deliverables need measurable proof.',
-                'link'       => 'folders',
-                'icon'       => 'alert',
-                'read_at'    => null,
-                'created_at' => date('Y-m-d H:i:s', strtotime('-40 minutes'))
-            ],
-
-            // Leonora Villar (GSO Staff) Notifications
-            [
-                'to'         => 'staff.gso2@test.com', // Leonora Villar
-                'from'       => 'head.gso@test.com',   // Rodrigo Estrada
-                'type'       => 'target_returned',
-                'title'      => 'Action Required: Targets Returned',
-                'message'    => 'Your IPERF targets were returned: [Unit Head Rodrigo Estrada]: Please clarify preventive maintenance schedule targets for university campus facilities.',
-                'link'       => 'folders',
-                'icon'       => 'alert',
-                'read_at'    => null,
-                'created_at' => date('Y-m-d H:i:s', strtotime('-50 minutes'))
-            ],
-
-            // Julian Ramos (Dean Agri) Notifications
-            [
-                'to'         => 'dean.agri@test.com',
-                'from'       => 'chair.agri@test.com',
-                'type'       => 'target_submitted',
-                'title'      => 'Department Targets Submitted',
-                'message'    => 'Lorna Mendoza submitted DPCR targets for Agronomy & Soil Science.',
-                'link'       => 'ratings',
-                'icon'       => 'file',
-                'read_at'    => null,
-                'created_at' => date('Y-m-d H:i:s', strtotime('-2 hours'))
-            ],
-
-            // Clarissa Diaz (CIS Chair) Notifications
-            [
-                'to'         => 'chair.cis@test.com',
-                'from'       => 'dean.cis@test.com',
-                'type'       => 'target_approved',
-                'title'      => 'Target Commitments Approved',
-                'message'    => 'Your target commitments for 1st Semester 2026 have been approved by the Dean.',
-                'link'       => 'folders',
-                'icon'       => 'check',
-                'read_at'    => null,
-                'created_at' => date('Y-m-d H:i:s', strtotime('-3 hours'))
-            ],
-            [
-                'to'         => 'chair.cis@test.com',
-                'from'       => 'admin@test.com',
-                'type'       => 'twg_approved',
-                'title'      => 'SPMS Rating Verified by TWG',
-                'message'    => 'Official SPMS performance ratings have been verified and finalized by the Technical Working Group.',
-                'link'       => 'folders',
-                'icon'       => 'award',
-                'read_at'    => date('Y-m-d H:i:s', strtotime('-3 days')),
-                'created_at' => date('Y-m-d H:i:s', strtotime('-3 days'))
-            ],
-        ];
-
-        $seededNotifCount = 0;
-        foreach ($sampleNotifications as $sn) {
-            $toUser = $usersByEmail[$sn['to']] ?? null;
-            $fromUser = $usersByEmail[$sn['from']] ?? null;
-            if ($toUser) {
-                $notifTable->insert([
-                    'user_id'    => $toUser['id'],
-                    'sender_id'  => $fromUser['id'] ?? null,
-                    'type'       => $sn['type'],
-                    'title'      => $sn['title'],
-                    'message'    => $sn['message'],
-                    'link'       => $sn['link'],
-                    'icon'       => $sn['icon'],
-                    'read_at'    => $sn['read_at'],
-                    'created_at' => $sn['created_at'],
-                    'updated_at' => $sn['created_at'],
-                ]);
-                $seededNotifCount++;
+        // Clean up old CAS if present and transfer any unlinked rows
+        $cas = $db->table('units')->where('name', 'College of Arts and Sciences')->get()->getRowArray();
+        if ($cas) {
+            $cahId = $unitIdMap['College of Arts and Humanities'] ?? null;
+            if ($cahId) {
+                // Point any sub-units of CAS to CAH
+                $db->table('units')->where('parent_id', $cas['id'])->update(['parent_id' => $cahId]);
+                $db->table('units')->where('id', $cas['id'])->delete();
             }
         }
 
         echo ">>> [SPMS] Seeder complete!\n";
-        echo "    - Total Users Configured: 19\n";
-        echo "    - Total Documents Created/Verified: {$createdDocCount}\n";
-        echo "    - In-App Notifications Seeded: {$seededNotifCount}\n";
-        echo "    - Revisions Injected: 3 (Danilo Castillo, Lilibeth Torres, Leonora Villar)\n";
-        echo "    - Pending Targets Injected: 1 (Maricel Flores)\n";
-        echo "    - In-Evaluation / Submitted: 2 (Stephanie Reyes, Nestor Pascual)\n";
+        echo "    - 15 BSU Colleges & Constituent Departments Seeded\n";
+        echo "    - 4-Tier Rosters Initialized\n";
         echo "    - Default Password: 123\n";
     }
 }
