@@ -47,6 +47,12 @@ class Document extends BaseController
             } else {
                 $isGuide = true;
             }
+
+            // Privacy guard: Evaluators, Admins, and TWG cannot read an unsubmitted private draft
+            if (!$isGuide && in_array($docInfo['folder_status'] ?? '', [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::DRAFT_TARGET->value])) {
+                session()->setFlashdata('error', 'This document is currently being drafted by the employee and has not yet been submitted for evaluation.');
+                return redirect()->to(site_url('ratings'));
+            }
         }
 
         $parentFolder = null;

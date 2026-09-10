@@ -218,9 +218,9 @@
         </div>
 
         <!-- QUEUE NAVIGATION TABS -->
-        <div class="px-6 lg:px-8 pb-3.5 pt-1 border-b border-surface-border shrink-0 overflow-x-auto custom-scrollbar">
+        <div class="px-6 lg:px-8 pt-3 pb-5 border-b border-surface-border shrink-0 overflow-x-auto custom-scrollbar">
             <?php foreach ($periods as $pKey => $period): ?>
-                <div id="period-subtabs-<?= $pKey ?>" class="period-subtabs flex items-center gap-2 <?= ($pKey === $firstPeriodKey) ? 'flex' : 'hidden' ?>">
+                <div id="period-subtabs-<?= $pKey ?>" class="period-subtabs flex items-center gap-3 <?= ($pKey === $firstPeriodKey) ? 'flex' : 'hidden' ?>">
                     <?php foreach ($period['tabs'] as $key => $group): ?>
                         <?php 
                             $isActive = ($pKey === $firstPeriodKey && $key === $firstTabKey);
@@ -228,46 +228,40 @@
                             
                             $defaultColor = match($key) {
                                 'action', 'target_approval' => 'text-amber-500',
-                                'pending' => 'text-sky-500',
+                                'pending', 'target_returned' => 'text-rose-500',
                                 'completed', 'target_approved' => 'text-emerald-500',
-                                'target_draft' => 'text-zinc-400',
-                                'target_returned' => 'text-rose-500',
                                 default => 'text-text-muted'
                             };
 
                             $defaultBadgeClass = ($count > 0 && in_array($key, ['action', 'target_approval']))
-                                ? 'px-2 py-0.5 rounded-full text-[10px] font-black transition-colors bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                                : 'px-2 py-0.5 rounded-full text-[10px] font-black transition-colors bg-surface-border/50 text-text-muted group-hover:text-text';
+                                ? 'px-2.5 py-0.5 rounded-full text-[10px] font-black transition-colors bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                                : 'px-2.5 py-0.5 rounded-full text-[10px] font-black transition-colors bg-surface-border/50 text-text-muted group-hover:text-text';
                         ?>
                         <button id="tab-btn-<?= $key ?>" 
                                 type="button"
-                                class="tab-btn group relative inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer whitespace-nowrap <?= $isActive ? 'active-tab bg-accent text-white shadow-md shadow-accent/20 border border-accent' : 'bg-surface-border/20 dark:bg-zinc-800/60 text-text-muted hover:text-text hover:bg-surface-border/40 border border-surface-border/50' ?>"
+                                class="tab-btn group relative inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer whitespace-nowrap <?= $isActive ? 'active-tab bg-accent text-white shadow-md shadow-accent/20 border border-accent' : 'bg-surface-border/20 dark:bg-zinc-800/60 text-text-muted hover:text-text hover:bg-surface-border/40 border border-surface-border/50' ?>"
                                 onclick="switchTab('<?= $key ?>', this)">
                             
                             <!-- Icon -->
                             <span class="tab-icon">
                                 <?php if ($key === 'action'): ?>
-                                    <svg class="w-3.5 h-3.5 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-amber-500' ?>" data-default-color="text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-amber-500' ?>" data-default-color="text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                     </svg>
                                 <?php elseif ($key === 'pending'): ?>
-                                    <svg class="w-3.5 h-3.5 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-sky-500' ?>" data-default-color="text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-rose-500' ?>" data-default-color="text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                     </svg>
                                 <?php elseif ($key === 'completed' || $key === 'target_approved'): ?>
-                                    <svg class="w-3.5 h-3.5 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-emerald-500' ?>" data-default-color="text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-emerald-500' ?>" data-default-color="text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 <?php elseif ($key === 'target_approval'): ?>
-                                    <svg class="w-3.5 h-3.5 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-amber-500' ?>" data-default-color="text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-amber-500' ?>" data-default-color="text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                     </svg>
-                                <?php elseif ($key === 'target_draft'): ?>
-                                    <svg class="w-3.5 h-3.5 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-zinc-400' ?>" data-default-color="text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
                                 <?php elseif ($key === 'target_returned'): ?>
-                                    <svg class="w-3.5 h-3.5 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-rose-500' ?>" data-default-color="text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-rose-500' ?>" data-default-color="text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                                     </svg>
                                 <?php endif; ?>
@@ -276,7 +270,7 @@
                             <span><?= esc($group['label']) ?></span>
 
                             <!-- Badge -->
-                            <span class="tab-badge <?= $isActive ? 'px-2 py-0.5 rounded-full text-[10px] font-black transition-colors bg-white/20 text-white' : $defaultBadgeClass ?>" data-default-badge="<?= esc($defaultBadgeClass) ?>">
+                            <span class="tab-badge ml-1 <?= $isActive ? 'px-2.5 py-0.5 rounded-full text-[10px] font-black transition-colors bg-white/20 text-white' : $defaultBadgeClass ?>" data-default-badge="<?= esc($defaultBadgeClass) ?>">
                                 <?= $count ?>
                             </span>
                         </button>
@@ -669,7 +663,7 @@
 
             const activeBadge = btnElement.querySelector('.tab-badge');
             if (activeBadge) {
-                activeBadge.className = 'tab-badge px-2 py-0.5 rounded-full text-[10px] font-black transition-colors bg-white/20 text-white';
+                activeBadge.className = 'tab-badge ml-1 px-2.5 py-0.5 rounded-full text-[10px] font-black transition-colors bg-white/20 text-white';
             }
         }
     }

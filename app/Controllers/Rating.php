@@ -69,8 +69,7 @@ class Rating extends BaseController
             'target' => [
                 'label' => 'Target Approval Period',
                 'tabs' => [
-                    'target_approval' => ['label' => 'Pending', 'folders' => []],
-                    'target_draft'    => ['label' => 'Draft', 'folders' => []],
+                    'target_approval' => ['label' => 'Pending Approval', 'folders' => []],
                     'target_returned' => ['label' => 'Returned', 'folders' => []],
                     'target_approved' => ['label' => 'Approved', 'folders' => []]
                 ]
@@ -79,7 +78,7 @@ class Rating extends BaseController
                 'label' => 'Evaluation Period',
                 'tabs' => [
                     'action'    => ['label' => 'Action Required', 'folders' => []],
-                    'pending'   => ['label' => 'Pending Subordinate', 'folders' => []],
+                    'pending'   => ['label' => 'Returned for Revision', 'folders' => []],
                     'completed' => ['label' => 'Completed', 'folders' => []]
                 ]
             ]
@@ -87,17 +86,21 @@ class Rating extends BaseController
 
         foreach ($rawFolders as $f) {
             $status = $f['folder_status'];
+
+            // Skip unsubmitted drafts for privacy - they are monitored on the Dashboard roster, not the review queue
+            if (in_array($status, [\App\Enums\FolderStatus::DRAFT_TARGET->value, \App\Enums\FolderStatus::DRAFT->value])) {
+                continue;
+            }
+
             if (in_array($status, [\App\Enums\FolderStatus::APPROVED->value, \App\Enums\FolderStatus::TWG_APPROVED->value, \App\Enums\FolderStatus::TWG_DISAPPROVED->value])) {
                 $periods['evaluation']['tabs']['completed']['folders'][] = $f;
             } elseif ($status === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value) {
                 $periods['target']['tabs']['target_approval']['folders'][] = $f;
-            } elseif ($status === \App\Enums\FolderStatus::DRAFT_TARGET->value) {
-                $periods['target']['tabs']['target_draft']['folders'][] = $f;
             } elseif ($status === \App\Enums\FolderStatus::TARGET_RETURNED->value || $status === \App\Enums\FolderStatus::TARGET_UNAPPROVED->value) {
                 $periods['target']['tabs']['target_returned']['folders'][] = $f;
             } elseif ($status === \App\Enums\FolderStatus::TARGET_APPROVED->value) {
                 $periods['target']['tabs']['target_approved']['folders'][] = $f;
-            } elseif (in_array($status, [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::REEVALUATE->value])) {
+            } elseif ($status === \App\Enums\FolderStatus::REEVALUATE->value) {
                 $periods['evaluation']['tabs']['pending']['folders'][] = $f;
             } else {
                 $periods['evaluation']['tabs']['action']['folders'][] = $f;
@@ -154,6 +157,12 @@ class Rating extends BaseController
 
         $subFolder = $folderModel->find($subFolderId);
         if (!$subFolder) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+
+        // Privacy guard: Unsubmitted work-in-progress drafts cannot be viewed for evaluation
+        if (in_array($subFolder['status'], [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::DRAFT_TARGET->value])) {
+            session()->setFlashdata('error', 'This folder is currently being drafted by the employee and has not yet been submitted for evaluation.');
+            return redirect()->to(site_url('ratings'));
+        }
 
         $isAuthorized = false;
 
