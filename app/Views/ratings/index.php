@@ -217,39 +217,67 @@
             </div>
         </div>
 
-        <!-- QUICK STATUS FILTER PILLS -->
-        <div class="px-6 lg:px-8 pb-3 pt-1 flex items-center gap-2 overflow-x-auto custom-scrollbar shrink-0" id="quick-status-pills-container">
-            <span class="text-[10px] font-black uppercase tracking-wider text-text-muted shrink-0 mr-1 flex items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
-                Filter:
-            </span>
-            <button type="button" class="quick-status-pill active-pill px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer bg-emerald-600 text-white shadow-2xs" data-status-filter="all">
-                All
-            </button>
-            <button type="button" class="quick-status-pill px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer bg-surface-border/20 text-text hover:bg-surface-border/40 hover:text-accent" data-status-filter="needs_eval">
-                Needs My Evaluation
-            </button>
-            <button type="button" class="quick-status-pill px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer bg-surface-border/20 text-text hover:bg-surface-border/40 hover:text-accent" data-status-filter="pending_twg">
-                Pending TWG Review
-            </button>
-            <button type="button" class="quick-status-pill px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer bg-surface-border/20 text-text hover:bg-surface-border/40 hover:text-accent" data-status-filter="approved_completed">
-                Approved / Completed
-            </button>
-            <button type="button" class="quick-status-pill px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer bg-surface-border/20 text-text hover:bg-surface-border/40 hover:text-accent" data-status-filter="revision">
-                Revision Needed
-            </button>
-        </div>
-
-        <!-- QUEUE TABS -->
-        <div class="flex px-6 lg:px-8 border-b border-surface-border shrink-0 overflow-x-auto custom-scrollbar">
+        <!-- QUEUE NAVIGATION TABS -->
+        <div class="px-6 lg:px-8 pb-3.5 pt-1 border-b border-surface-border shrink-0 overflow-x-auto custom-scrollbar">
             <?php foreach ($periods as $pKey => $period): ?>
-                <div id="period-subtabs-<?= $pKey ?>" class="gap-6 period-subtabs <?= ($pKey === $firstPeriodKey) ? 'flex' : 'hidden' ?>">
+                <div id="period-subtabs-<?= $pKey ?>" class="period-subtabs flex items-center gap-2 <?= ($pKey === $firstPeriodKey) ? 'flex' : 'hidden' ?>">
                     <?php foreach ($period['tabs'] as $key => $group): ?>
-                        <button id="tab-btn-<?= $key ?>" class="tab-btn pb-3 text-sm font-bold border-b-2 transition-all whitespace-nowrap <?= ($pKey === $firstPeriodKey && $key === $firstTabKey) ? 'border-accent text-accent' : 'border-transparent text-text-muted hover:text-text hover:border-surface-border' ?> cursor-pointer"
+                        <?php 
+                            $isActive = ($pKey === $firstPeriodKey && $key === $firstTabKey);
+                            $count = count($group['folders']);
+                            
+                            $defaultColor = match($key) {
+                                'action', 'target_approval' => 'text-amber-500',
+                                'pending' => 'text-sky-500',
+                                'completed', 'target_approved' => 'text-emerald-500',
+                                'target_draft' => 'text-zinc-400',
+                                'target_returned' => 'text-rose-500',
+                                default => 'text-text-muted'
+                            };
+
+                            $defaultBadgeClass = ($count > 0 && in_array($key, ['action', 'target_approval']))
+                                ? 'px-2 py-0.5 rounded-full text-[10px] font-black transition-colors bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                                : 'px-2 py-0.5 rounded-full text-[10px] font-black transition-colors bg-surface-border/50 text-text-muted group-hover:text-text';
+                        ?>
+                        <button id="tab-btn-<?= $key ?>" 
+                                type="button"
+                                class="tab-btn group relative inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer whitespace-nowrap <?= $isActive ? 'active-tab bg-accent text-white shadow-md shadow-accent/20 border border-accent' : 'bg-surface-border/20 dark:bg-zinc-800/60 text-text-muted hover:text-text hover:bg-surface-border/40 border border-surface-border/50' ?>"
                                 onclick="switchTab('<?= $key ?>', this)">
-                            <?= esc($group['label']) ?>
-                            <span class="ml-1.5 px-2 py-0.5 rounded-full <?= ($pKey === $firstPeriodKey && $key === $firstTabKey) ? 'bg-accent/10 text-accent' : 'bg-zinc-100 dark:bg-zinc-800 text-text-muted' ?> text-[10px] tab-badge transition-colors">
-                                <?= count($group['folders']) ?>
+                            
+                            <!-- Icon -->
+                            <span class="tab-icon">
+                                <?php if ($key === 'action'): ?>
+                                    <svg class="w-3.5 h-3.5 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-amber-500' ?>" data-default-color="text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                <?php elseif ($key === 'pending'): ?>
+                                    <svg class="w-3.5 h-3.5 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-sky-500' ?>" data-default-color="text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                <?php elseif ($key === 'completed' || $key === 'target_approved'): ?>
+                                    <svg class="w-3.5 h-3.5 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-emerald-500' ?>" data-default-color="text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                <?php elseif ($key === 'target_approval'): ?>
+                                    <svg class="w-3.5 h-3.5 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-amber-500' ?>" data-default-color="text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                <?php elseif ($key === 'target_draft'): ?>
+                                    <svg class="w-3.5 h-3.5 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-zinc-400' ?>" data-default-color="text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                <?php elseif ($key === 'target_returned'): ?>
+                                    <svg class="w-3.5 h-3.5 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-rose-500' ?>" data-default-color="text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                    </svg>
+                                <?php endif; ?>
+                            </span>
+
+                            <span><?= esc($group['label']) ?></span>
+
+                            <!-- Badge -->
+                            <span class="tab-badge <?= $isActive ? 'px-2 py-0.5 rounded-full text-[10px] font-black transition-colors bg-white/20 text-white' : $defaultBadgeClass ?>" data-default-badge="<?= esc($defaultBadgeClass) ?>">
+                                <?= $count ?>
                             </span>
                         </button>
                     <?php endforeach; ?>
@@ -600,12 +628,25 @@
         });
         
         document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.remove('border-accent', 'text-accent');
-            btn.classList.add('border-transparent', 'text-text-muted');
+            btn.classList.remove('active-tab', 'bg-accent', 'text-white', 'shadow-md', 'shadow-accent/20', 'border-accent');
+            btn.classList.add('bg-surface-border/20', 'dark:bg-zinc-800/60', 'text-text-muted', 'border', 'border-surface-border/50');
+            
+            const iconSvg = btn.querySelector('.tab-icon svg');
+            if (iconSvg) {
+                iconSvg.classList.remove('text-white');
+                const defaultColor = iconSvg.getAttribute('data-default-color');
+                if (defaultColor) iconSvg.classList.add(defaultColor);
+            }
+
             const badge = btn.querySelector('.tab-badge');
-            if(badge) {
-                badge.classList.remove('bg-accent/10', 'text-accent');
-                badge.classList.add('bg-zinc-100', 'dark:bg-zinc-800', 'text-text-muted');
+            if (badge) {
+                badge.classList.remove('bg-white/20', 'text-white');
+                const defaultBadgeClass = badge.getAttribute('data-default-badge');
+                if (defaultBadgeClass) {
+                    badge.className = 'tab-badge ' + defaultBadgeClass;
+                } else {
+                    badge.className = 'tab-badge px-2 py-0.5 rounded-full text-[10px] font-black transition-colors bg-surface-border/50 text-text-muted group-hover:text-text';
+                }
             }
         });
 
@@ -616,12 +657,19 @@
         }
 
         if (btnElement) {
-            btnElement.classList.remove('border-transparent', 'text-text-muted');
-            btnElement.classList.add('border-accent', 'text-accent');
+            btnElement.classList.remove('bg-surface-border/20', 'dark:bg-zinc-800/60', 'text-text-muted', 'border-surface-border/50');
+            btnElement.classList.add('active-tab', 'bg-accent', 'text-white', 'shadow-md', 'shadow-accent/20', 'border', 'border-accent');
+            
+            const iconSvg = btnElement.querySelector('.tab-icon svg');
+            if (iconSvg) {
+                const defaultColor = iconSvg.getAttribute('data-default-color');
+                if (defaultColor) iconSvg.classList.remove(defaultColor);
+                iconSvg.classList.add('text-white');
+            }
+
             const activeBadge = btnElement.querySelector('.tab-badge');
-            if(activeBadge) {
-                activeBadge.classList.remove('bg-zinc-100', 'dark:bg-zinc-800', 'text-text-muted');
-                activeBadge.classList.add('bg-accent/10', 'text-accent');
+            if (activeBadge) {
+                activeBadge.className = 'tab-badge px-2 py-0.5 rounded-full text-[10px] font-black transition-colors bg-white/20 text-white';
             }
         }
     }
@@ -687,21 +735,6 @@
             return Array.from(checked).map(cb => cb.value.toLowerCase());
         }
         
-        let activeStatusPill = 'all';
-        const pillButtons = document.querySelectorAll('.quick-status-pill');
-        pillButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                pillButtons.forEach(b => {
-                    b.classList.remove('active-pill', 'bg-emerald-600', 'text-white');
-                    b.classList.add('bg-surface-border/20', 'text-text');
-                });
-                btn.classList.remove('bg-surface-border/20', 'text-text');
-                btn.classList.add('active-pill', 'bg-emerald-600', 'text-white');
-                activeStatusPill = btn.getAttribute('data-status-filter') || 'all';
-                filterRatings();
-            });
-        });
-        
         function filterRatings() {
             const searchTerm   = searchInput ? searchInput.value.toLowerCase() : '';
             const checkedTypes = getCheckedValues('filter_type[]');
@@ -713,25 +746,13 @@
                 const unit   = (card.getAttribute('data-unit') || '').toLowerCase();
                 const pos    = (card.getAttribute('data-pos') || '').toLowerCase();
                 const type   = card.getAttribute('data-teaching') || '0';
-                const status = (card.getAttribute('data-status') || '').toLowerCase();
                 
                 const matchesSearch = name.includes(searchTerm);
                 const matchesUnit   = checkedUnits.length === 0 || checkedUnits.includes(unit);
                 const matchesPos    = checkedPos.length === 0 || checkedPos.includes(pos);
                 const matchesType   = checkedTypes.length === 0 || checkedTypes.includes(type);
-
-                let matchesStatus = true;
-                if (activeStatusPill === 'needs_eval') {
-                    matchesStatus = ['pending_target_approval', 'submitted', 'to evaluate', 'to_evaluate'].includes(status);
-                } else if (activeStatusPill === 'pending_twg') {
-                    matchesStatus = ['approved'].includes(status);
-                } else if (activeStatusPill === 'approved_completed') {
-                    matchesStatus = ['target_approved', 'twg_approved'].includes(status);
-                } else if (activeStatusPill === 'revision') {
-                    matchesStatus = ['target_returned', 'target_unapproved', 'reevaluate', 'twg_disapproved'].includes(status);
-                }
                 
-                if (matchesSearch && matchesUnit && matchesPos && matchesType && matchesStatus) {
+                if (matchesSearch && matchesUnit && matchesPos && matchesType) {
                     card.style.display = ''; 
                 } else {
                     card.style.display = 'none'; 
@@ -748,16 +769,6 @@
             clearBtn.addEventListener('click', () => {
                 if (searchInput) searchInput.value = '';
                 checkboxes.forEach(cb => cb.checked = false);
-                const allPill = document.querySelector('.quick-status-pill[data-status-filter="all"]');
-                if (allPill) {
-                    pillButtons.forEach(b => {
-                        b.classList.remove('active-pill', 'bg-emerald-600', 'text-white');
-                        b.classList.add('bg-surface-border/20', 'text-text');
-                    });
-                    allPill.classList.remove('bg-surface-border/20', 'text-text');
-                    allPill.classList.add('active-pill', 'bg-emerald-600', 'text-white');
-                    activeStatusPill = 'all';
-                }
                 filterRatings();
                 
                 // Also reset sidebar mini-searches
