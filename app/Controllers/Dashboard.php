@@ -83,6 +83,31 @@ class Dashboard extends BaseController
 
         // 2. Fetch all ratee folders in this cycle
         $cycleFolders = [];
+        $supervisorCollegeName = null;
+        $scopedUnitIds = [];
+        $isChairScope = false;
+
+        // Role Scoping for Supervisors:
+        if ($sysRole === 'Supervisor') {
+            $ownPlantilla  = $userModel->getActivePlantillaDetails($userId);
+            if ($ownPlantilla) {
+                $posTitle = strtolower($ownPlantilla['position'] ?? '');
+                $isChairScope = str_contains($posTitle, 'chair') || str_contains($posTitle, 'head');
+                
+                if ($isChairScope) {
+                    // Department Chair: Scope strictly to own department
+                    $scopedUnitIds = [(int)$ownPlantilla['unit_id']];
+                    $supervisorCollegeName = $ownPlantilla['department'] ?? 'Department';
+                } else {
+                    // College Dean: Scope to college and all sub-departments
+                    $scopedUnitIds = $unitModel->getDescendantIds([$ownPlantilla['unit_id']]);
+                    $scopedUnitIds[] = (int)$ownPlantilla['unit_id'];
+                    $supervisorCollegeName = $ownPlantilla['department'] ?? 'College';
+                }
+            }
+            $scopedUnitIds = array_unique(array_filter($scopedUnitIds));
+        }
+
         if ($activeCycle) {
             $descendantIds = $folderModel->getAllDescendantFolderIds($activeCycle['id']);
             $targetFolderIds = !empty($descendantIds) ? $descendantIds : [$activeCycle['id']];
@@ -106,28 +131,7 @@ class Dashboard extends BaseController
                 $builder->whereIn('un.id', array_unique($filteredUnitIds));
             }
 
-            // Role Scoping:
-            $supervisorCollegeName = null;
-            $scopedUnitIds = [];
-            $isChairScope = false;
             if ($sysRole === 'Supervisor') {
-                $ownPlantilla  = $userModel->getActivePlantillaDetails($userId);
-                if ($ownPlantilla) {
-                    $posTitle = strtolower($ownPlantilla['position'] ?? '');
-                    $isChairScope = str_contains($posTitle, 'chair') || str_contains($posTitle, 'head');
-                    
-                    if ($isChairScope) {
-                        // Department Chair: Scope strictly to own department
-                        $scopedUnitIds = [(int)$ownPlantilla['unit_id']];
-                        $supervisorCollegeName = $ownPlantilla['department'] ?? 'Department';
-                    } else {
-                        // College Dean: Scope to college and all sub-departments
-                        $scopedUnitIds = $unitModel->getDescendantIds([$ownPlantilla['unit_id']]);
-                        $scopedUnitIds[] = (int)$ownPlantilla['unit_id'];
-                        $supervisorCollegeName = $ownPlantilla['department'] ?? 'College';
-                    }
-                }
-                $scopedUnitIds = array_unique(array_filter($scopedUnitIds));
                 if (!empty($scopedUnitIds)) {
                     $builder->whereIn('un.id', $scopedUnitIds);
                 } else {
@@ -141,41 +145,41 @@ class Dashboard extends BaseController
 
             $builder->groupBy('df.id');
             $cycleFolders = $builder->get()->getResultArray();
+        }
 
-            // For Supervisors: also discover any active college employees who have not even created a folder yet
-            if ($sysRole === 'Supervisor' && !empty($scopedUnitIds)) {
-                $existingUserIds = array_column($cycleFolders, 'user_id');
-                $collegeEmployees = $db->table('users u')
-                    ->select("u.id as user_id, u.first_name, u.last_name, u.email,
-                              pos.title as position, pos.is_teaching,
-                              un.id as unit_id, un.name as department")
-                    ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'inner')
-                    ->join('positions pos', 'pos.id = p.position_id', 'left')
-                    ->join('units un', 'un.id = p.unit_id', 'left')
-                    ->whereIn('un.id', $scopedUnitIds)
-                    ->where('u.is_active', 1)
-                    ->get()->getResultArray();
+        // For Supervisors: also discover any active college employees who have not even created a folder yet
+        if ($sysRole === 'Supervisor' && !empty($scopedUnitIds)) {
+            $existingUserIds = array_column($cycleFolders, 'user_id');
+            $collegeEmployees = $db->table('users u')
+                ->select("u.id as user_id, u.first_name, u.last_name, u.email,
+                          pos.title as position, pos.is_teaching,
+                          un.id as unit_id, un.name as department")
+                ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'inner')
+                ->join('positions pos', 'pos.id = p.position_id', 'left')
+                ->join('units un', 'un.id = p.unit_id', 'left')
+                ->whereIn('un.id', $scopedUnitIds)
+                ->where('u.is_active', 1)
+                ->get()->getResultArray();
 
-                foreach ($collegeEmployees as $ce) {
-                    if (!in_array($ce['user_id'], $existingUserIds)) {
-                        $cycleFolders[] = [
-                            'folder_id'     => null,
-                            'user_id'       => $ce['user_id'],
-                            'folder_title'  => 'No Folder Created',
-                            'final_rating'  => null,
-                            'folder_status' => 'unstarted',
-                            'updated_at'    => null,
-                            'created_at'    => null,
-                            'first_name'    => $ce['first_name'],
-                            'last_name'     => $ce['last_name'],
-                            'email'         => $ce['email'],
-                            'doc_type'      => null,
-                            'position'      => $ce['position'] ?? 'Faculty / Staff',
-                            'is_teaching'   => $ce['is_teaching'] ?? 0,
-                            'unit_id'       => $ce['unit_id'],
-                            'department'    => $ce['department'] ?? ($supervisorCollegeName ?? 'General')
-                        ];
-                    }
+            foreach ($collegeEmployees as $ce) {
+                if (!in_array($ce['user_id'], $existingUserIds)) {
+                    $cycleFolders[] = [
+                        'folder_id'     => null,
+                        'user_id'       => $ce['user_id'],
+                        'folder_title'  => 'No Folder Created',
+                        'final_rating'  => null,
+                        'folder_status' => 'unstarted',
+                        'updated_at'    => null,
+                        'created_at'    => null,
+                        'first_name'    => $ce['first_name'],
+                        'last_name'     => $ce['last_name'],
+                        'email'         => $ce['email'],
+                        'doc_type'      => null,
+                        'position'      => $ce['position'] ?? 'Faculty / Staff',
+                        'is_teaching'   => $ce['is_teaching'] ?? 0,
+                        'unit_id'       => $ce['unit_id'],
+                        'department'    => $ce['department'] ?? ($supervisorCollegeName ?? 'General')
+                    ];
                 }
             }
         }
@@ -192,7 +196,8 @@ class Dashboard extends BaseController
         $evalCompletedCount    = 0;
         $evalActionCount       = 0; // to evaluate, evaluated
         $evalSubmittedCount    = 0;
-        $evalPendingCount      = 0; // draft, reevaluate
+        $evalDraftCount        = 0; // draft, pending target phase
+        $evalReturnedCount     = 0; // reevaluate, twg_disapproved
 
         $collegeDepartments = [];
 
@@ -208,7 +213,7 @@ class Dashboard extends BaseController
             $status = $f['folder_status'];
 
             // Target stage tracking & tagging
-            if (in_array($status, [FolderStatus::TARGET_APPROVED->value, FolderStatus::SUBMITTED->value, FolderStatus::TO_EVALUATE->value, FolderStatus::EVALUATED->value, FolderStatus::APPROVED->value, FolderStatus::TWG_APPROVED->value, FolderStatus::TWG_DISAPPROVED->value])) {
+            if (in_array($status, [FolderStatus::TARGET_APPROVED->value, FolderStatus::SUBMITTED->value, FolderStatus::TO_EVALUATE->value, FolderStatus::EVALUATED->value, FolderStatus::APPROVED->value, FolderStatus::TWG_APPROVED->value, FolderStatus::TWG_DISAPPROVED->value, FolderStatus::UNEVALUATED->value])) {
                 $targetApprovedCount++;
                 $f['target_state'] = 'approved';
                 $f['target_label'] = 'Approved';
@@ -241,8 +246,13 @@ class Dashboard extends BaseController
                 $f['eval_state'] = 'approved';
                 $f['eval_label'] = 'Completed & Approved';
                 $f['eval_badge'] = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-[#102a1e] dark:text-emerald-400 dark:border-[#1b4330]';
+            } elseif ($status === FolderStatus::UNEVALUATED->value) {
+                $evalCompletedCount++;
+                $f['eval_state'] = 'completed';
+                $f['eval_label'] = 'Unevaluated';
+                $f['eval_badge'] = 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-zinc-800/50 dark:text-zinc-400 dark:border-zinc-700';
             } elseif ($status === FolderStatus::TWG_DISAPPROVED->value) {
-                $evalPendingCount++;
+                $evalReturnedCount++;
                 $f['eval_state'] = 'returned';
                 $f['eval_label'] = 'Disapproved by TWG';
                 $f['eval_badge'] = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-danger-500/10 dark:text-rose-400 dark:border-danger-500/20';
@@ -256,19 +266,18 @@ class Dashboard extends BaseController
                 $f['eval_state'] = 'submitted';
                 $f['eval_label'] = 'Submitted';
                 $f['eval_badge'] = 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-info-500/10 dark:text-blue-400 dark:border-info-500/20';
-            } elseif (in_array($status, [FolderStatus::DRAFT->value, FolderStatus::REEVALUATE->value])) {
-                $evalPendingCount++;
-                if ($status === FolderStatus::REEVALUATE->value) {
-                    $f['eval_state'] = 'returned';
-                    $f['eval_label'] = 'Needs Revision';
-                    $f['eval_badge'] = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800/80';
-                } else {
-                    $f['eval_state'] = 'draft';
-                    $f['eval_label'] = 'Not Submitted (Draft)';
-                    $f['eval_badge'] = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-danger-500/10 dark:text-rose-400 dark:border-danger-500/20';
-                }
+            } elseif ($status === FolderStatus::REEVALUATE->value) {
+                $evalReturnedCount++;
+                $f['eval_state'] = 'returned';
+                $f['eval_label'] = 'Needs Revision';
+                $f['eval_badge'] = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800/80';
+            } elseif ($status === FolderStatus::DRAFT->value) {
+                $evalDraftCount++;
+                $f['eval_state'] = 'draft';
+                $f['eval_label'] = 'Not Submitted (Draft)';
+                $f['eval_badge'] = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-danger-500/10 dark:text-rose-400 dark:border-danger-500/20';
             } else {
-                $evalPendingCount++;
+                $evalDraftCount++;
                 $f['eval_state'] = 'draft';
                 $f['eval_label'] = 'Pending Target Phase';
                 $f['eval_badge'] = 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-zinc-800/50 dark:text-zinc-400 dark:border-zinc-700';
@@ -285,7 +294,7 @@ class Dashboard extends BaseController
                 $f['submission_filter'] = 'review';
             } elseif ($f['target_state'] === 'returned' || $f['eval_state'] === 'returned') {
                 $f['submission_filter'] = 'revision';
-            } elseif ($f['eval_state'] === 'approved') {
+            } elseif ($f['eval_state'] === 'approved' || $f['eval_state'] === 'completed') {
                 $f['submission_filter'] = 'completed';
             } else {
                 $f['submission_filter'] = 'all';
@@ -508,7 +517,9 @@ class Dashboard extends BaseController
                         'completed' => $evalCompletedCount,
                         'action'    => $evalActionCount,
                         'submitted' => $evalSubmittedCount,
-                        'pending'   => $evalPendingCount
+                        'draft'     => $evalDraftCount,
+                        'returned'  => $evalReturnedCount,
+                        'pending'   => $evalDraftCount
                     ]
                 ]
             ]

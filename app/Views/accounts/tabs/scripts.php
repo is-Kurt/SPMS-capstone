@@ -4,41 +4,91 @@
 <script>
     class ClientPaginator {
         constructor(config) {
-            this.pageSize = config.pageSize || 20;
+            this.pageSize = config.pageSize || 10;
             this.currentPage = 1;
-            this.container = document.getElementById(config.containerId);
+            this.containerId = config.containerId;
+            this.scrollTargetSelector = config.scrollTargetSelector || null;
+            this.items = [];
+            this.allRows = [];
+            this.initContainer();
+        }
+
+        initContainer() {
+            if (!this.container || !this.container.isConnected) {
+                this.container = document.getElementById(this.containerId);
+            }
             if (!this.container) return;
             
+            this.btnFirst = this.container.querySelector('.js-page-first');
             this.btnPrev = this.container.querySelector('.js-page-prev');
             this.btnNext = this.container.querySelector('.js-page-next');
+            this.btnLast = this.container.querySelector('.js-page-last');
+            this.pageNumbersContainer = this.container.querySelector('.js-page-numbers');
+            this.pageSizeSelect = this.container.querySelector('.js-page-size');
+
             this.lblStart = this.container.querySelector('[id$="-page-start"]');
             this.lblEnd = this.container.querySelector('[id$="-page-end"]');
             this.lblTotal = this.container.querySelector('[id$="-page-total"]');
             
-            if (this.btnPrev) this.btnPrev.addEventListener('click', () => this.goToPage(this.currentPage - 1));
-            if (this.btnNext) this.btnNext.addEventListener('click', () => this.goToPage(this.currentPage + 1));
-            
-            this.items = [];
-            this.allRows = []; // To easily hide everything before showing slice
+            if (this.btnFirst && !this.btnFirst._paginatorBound) {
+                this.btnFirst._paginatorBound = true;
+                this.btnFirst.addEventListener('click', () => this.goToPage(1));
+            }
+            if (this.btnPrev && !this.btnPrev._paginatorBound) {
+                this.btnPrev._paginatorBound = true;
+                this.btnPrev.addEventListener('click', () => this.goToPage(this.currentPage - 1));
+            }
+            if (this.btnNext && !this.btnNext._paginatorBound) {
+                this.btnNext._paginatorBound = true;
+                this.btnNext.addEventListener('click', () => this.goToPage(this.currentPage + 1));
+            }
+            if (this.btnLast && !this.btnLast._paginatorBound) {
+                this.btnLast._paginatorBound = true;
+                this.btnLast.addEventListener('click', () => {
+                    const totalPages = Math.ceil(this.items.length / this.pageSize) || 1;
+                    this.goToPage(totalPages);
+                });
+            }
+            if (this.pageSizeSelect && !this.pageSizeSelect._paginatorBound) {
+                this.pageSizeSelect._paginatorBound = true;
+                this.pageSizeSelect.addEventListener('change', (e) => {
+                    const val = e.target.value;
+                    this.pageSize = val === 'all' ? 999999 : (parseInt(val, 10) || 10);
+                    this.currentPage = 1;
+                    this.render();
+                });
+            }
         }
         
         init(allRows) {
-            this.allRows = allRows;
+            this.allRows = allRows || [];
+            this.initContainer();
         }
 
         updateItems(newItems) {
-            this.items = newItems;
+            this.items = newItems || [];
             this.currentPage = 1;
             this.render();
         }
         
         goToPage(page) {
+            const total = this.items.length;
+            const totalPages = Math.ceil(total / this.pageSize) || 1;
+            if (page < 1) page = 1;
+            if (page > totalPages) page = totalPages;
             this.currentPage = page;
             this.render();
+
+            if (this.scrollTargetSelector) {
+                const scrollEl = document.querySelector(this.scrollTargetSelector);
+                if (scrollEl) {
+                    scrollEl.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }
         }
         
         render() {
-            if (!this.container) return;
+            this.initContainer();
             const total = this.items.length;
             const totalPages = Math.ceil(total / this.pageSize) || 1;
             
@@ -48,34 +98,108 @@
             const startIdx = (this.currentPage - 1) * this.pageSize;
             const endIdx = Math.min(startIdx + this.pageSize, total);
             
-            // Hide all rows in this list
-            this.allRows.forEach(el => el.classList.add('page-hidden'));
-            
-            // Show current page items
-            for(let i = startIdx; i < endIdx; i++) {
-                this.items[i].classList.remove('page-hidden');
+            // Hide all rows in this list using both CSS class and direct inline style
+            if (this.allRows && this.allRows.length > 0) {
+                this.allRows.forEach(el => {
+                    if (el) {
+                        el.classList.add('page-hidden');
+                        el.style.display = 'none';
+                    }
+                });
             }
             
-            if (this.lblStart) this.lblStart.textContent = total === 0 ? 0 : startIdx + 1;
-            if (this.lblEnd) this.lblEnd.textContent = endIdx;
-            if (this.lblTotal) this.lblTotal.textContent = total + (total === 1 ? ' entry' : ' entries');
+            // Show current page items
+            for (let i = startIdx; i < endIdx; i++) {
+                if (this.items[i]) {
+                    this.items[i].classList.remove('page-hidden');
+                    this.items[i].style.display = '';
+                }
+            }
             
-            if (this.btnPrev) this.btnPrev.disabled = this.currentPage === 1;
-            if (this.btnNext) this.btnNext.disabled = this.currentPage === totalPages;
-            
-            this.container.classList.toggle('hidden', total === 0);
+            if (this.container) {
+                if (this.lblStart) this.lblStart.textContent = total === 0 ? 0 : startIdx + 1;
+                if (this.lblEnd) this.lblEnd.textContent = endIdx;
+                if (this.lblTotal) {
+                    if (this.lblTotal.id && this.lblTotal.id.startsWith('f-')) {
+                        this.lblTotal.textContent = total;
+                    } else if (this.containerId === 'invitations-pagination') {
+                        this.lblTotal.textContent = total + (total === 1 ? ' invitation' : ' invitations');
+                    } else if (this.containerId === 'directory-pagination') {
+                        this.lblTotal.textContent = total + (total === 1 ? ' user' : ' users');
+                    } else {
+                        this.lblTotal.textContent = total + (total === 1 ? ' entry' : ' entries');
+                    }
+                }
+                
+                if (this.btnFirst) this.btnFirst.disabled = this.currentPage <= 1;
+                if (this.btnPrev) this.btnPrev.disabled = this.currentPage <= 1;
+                if (this.btnNext) this.btnNext.disabled = this.currentPage >= totalPages;
+                if (this.btnLast) this.btnLast.disabled = this.currentPage >= totalPages;
+                
+                if (this.pageNumbersContainer) {
+                    this.renderPageNumbers(totalPages);
+                }
+
+                this.container.classList.toggle('hidden', total === 0);
+            }
+        }
+
+        renderPageNumbers(totalPages) {
+            this.pageNumbersContainer.innerHTML = '';
+            if (totalPages <= 1) return;
+
+            const pages = [];
+            if (totalPages <= 7) {
+                for (let i = 1; i <= totalPages; i++) pages.push(i);
+            } else {
+                pages.push(1);
+                let left = Math.max(2, this.currentPage - 1);
+                let right = Math.min(totalPages - 1, this.currentPage + 1);
+
+                if (this.currentPage <= 3) {
+                    left = 2;
+                    right = 4;
+                } else if (this.currentPage >= totalPages - 2) {
+                    left = totalPages - 3;
+                    right = totalPages - 1;
+                }
+
+                if (left > 2) pages.push('...');
+                for (let i = left; i <= right; i++) pages.push(i);
+                if (right < totalPages - 1) pages.push('...');
+                pages.push(totalPages);
+            }
+
+            pages.forEach(p => {
+                if (p === '...') {
+                    const span = document.createElement('span');
+                    span.className = 'w-6 text-center text-xs text-text-muted font-bold select-none';
+                    span.textContent = '...';
+                    this.pageNumbersContainer.appendChild(span);
+                } else {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    const isActive = p === this.currentPage;
+                    btn.className = isActive
+                        ? 'min-w-[32px] h-8 px-2.5 rounded-lg bg-emerald-600 text-white font-black text-xs shadow-sm flex items-center justify-center cursor-default'
+                        : 'min-w-[32px] h-8 px-2.5 rounded-lg border border-surface-border bg-surface text-text hover:bg-zinc-100 dark:hover:bg-zinc-800 font-bold text-xs transition-colors flex items-center justify-center cursor-pointer shadow-sm';
+                    btn.textContent = p;
+                    if (!isActive) {
+                        btn.addEventListener('click', () => this.goToPage(p));
+                    }
+                    this.pageNumbersContainer.appendChild(btn);
+                }
+            });
         }
     }
     
     // Global paginator instances
-    const dirPaginator = new ClientPaginator({ containerId: 'directory-pagination', pageSize: 15 });
-    const invPaginator = new ClientPaginator({ containerId: 'invitations-pagination', pageSize: 15 });
+    const dirPaginator = new ClientPaginator({ containerId: 'directory-pagination', pageSize: 10 });
+    const invPaginator = new ClientPaginator({ containerId: 'invitations-pagination', pageSize: 10 });
     const posPaginator = new ClientPaginator({ containerId: 'positions-pagination', pageSize: 10 });
     const uniPaginator = new ClientPaginator({ containerId: 'units-pagination', pageSize: 15 });
-    
-    // Directory Sidebar Filters
-    const filterUnitsPaginator = new ClientPaginator({ containerId: 'filter-units-pagination', pageSize: 6 });
-    const filterPosPaginator = new ClientPaginator({ containerId: 'filter-pos-pagination', pageSize: 6 });
+    window.dirPaginator = dirPaginator;
+    window.invPaginator = invPaginator;
 
     // ==========================================
     // AJAX FORM HANDLING (no more full-page reloads for accounts actions)
@@ -140,7 +264,7 @@
         return div.innerHTML;
     }
 
-    function handleAccountsAjaxSuccess(action, form, data) {
+    async function handleAccountsAjaxSuccess(action, form, data) {
         if (['add-position', 'delete-position', 'add-unit', 'delete-unit', 'add-role', 'delete-role'].includes(action)) {
             window.systemDataChanged = true;
         }
@@ -172,7 +296,11 @@
 
             case 'delete-user': {
                 form.closest('.user-dir-row').remove();
-                document.getElementById('directory-count').textContent = document.querySelectorAll('.user-dir-row').length;
+                const dirTableBody = document.getElementById('user-table-body');
+                if (dirTableBody) {
+                    dirPaginator.init(Array.from(dirTableBody.querySelectorAll('.user-dir-row')));
+                }
+                if (typeof filterUsers === 'function') filterUsers();
                 break;
             }
 
@@ -490,6 +618,80 @@
     // default directory tab) so a refresh lands back on the same tab instead of
     // always resetting to User Directory.
     const ACCOUNTS_BASE_URL = "<?= site_url('accounts') ?>";
+    window.SPMS_UNITS_MAP = <?= json_encode(array_map(function($u) {
+        return [
+            'id' => (int)$u['id'],
+            'name' => $u['name'],
+            'parent_id' => $u['parent_id'] ? (int)$u['parent_id'] : 0
+        ];
+    }, $units ?? [])) ?>;
+
+    // Build descendants lookup: given checked unit names, return a Set of those units plus all their child/descendant units
+    function getExpandedUnitNames(checkedNames) {
+        if (!checkedNames || checkedNames.length === 0) return new Set();
+        const units = window.SPMS_UNITS_MAP || [];
+        const nameToIds = new Map();
+        const childrenMap = new Map();
+
+        units.forEach(u => {
+            const lower = (u.name || '').trim().toLowerCase();
+            if (!nameToIds.has(lower)) nameToIds.set(lower, []);
+            nameToIds.get(lower).push(u.id);
+            const pid = u.parent_id || 0;
+            if (!childrenMap.has(pid)) childrenMap.set(pid, []);
+            childrenMap.get(pid).push(u);
+        });
+
+        const result = new Set();
+
+        function addDescendants(unitId) {
+            const children = childrenMap.get(unitId) || [];
+            children.forEach(child => {
+                result.add((child.name || '').trim().toLowerCase());
+                addDescendants(child.id);
+            });
+        }
+
+        checkedNames.forEach(name => {
+            const lower = (name || '').trim().toLowerCase();
+            result.add(lower);
+            const ids = nameToIds.get(lower) || [];
+            ids.forEach(uId => {
+                addDescendants(uId);
+            });
+        });
+
+        return result;
+    }
+    window.getExpandedUnitNames = getExpandedUnitNames;
+
+    // Tree checkbox synchronization: when checking a parent college or unit, cascade checked state to its child departments
+    function handleUnitCheckboxChange(checkbox) {
+        if (!checkbox) return;
+        const unitNode = checkbox.closest('.unit-node');
+        if (unitNode) {
+            // Cascade down: check/uncheck all descendants
+            const childrenContainer = unitNode.querySelector(':scope > .unit-children');
+            if (childrenContainer) {
+                const childCheckboxes = childrenContainer.querySelectorAll('.js-unit-checkbox');
+                childCheckboxes.forEach(childCb => {
+                    childCb.checked = checkbox.checked;
+                });
+            }
+        }
+        // Cascade up: if this checkbox was unchecked, uncheck ancestor checkboxes
+        if (!checkbox.checked && unitNode) {
+            let parentNode = unitNode.parentElement.closest('.unit-node');
+            while (parentNode) {
+                const parentCb = parentNode.querySelector(':scope > div .js-unit-checkbox');
+                if (parentCb) {
+                    parentCb.checked = false;
+                }
+                parentNode = parentNode.parentElement.closest('.unit-node');
+            }
+        }
+    }
+    window.handleUnitCheckboxChange = handleUnitCheckboxChange;
 
     function switchUserTab(tabId, pushUrl = true) {
         if (tabId === 'directory' && window.systemDataChanged) {
@@ -507,24 +709,33 @@
             btn.classList.add('border-transparent', 'text-text-muted');
         });
 
-        document.getElementById('tab-content-' + tabId).classList.remove('hidden');
-        document.getElementById('tab-content-' + tabId).classList.add('flex', 'lg:absolute', 'lg:inset-0');
+        const targetContent = document.getElementById('tab-content-' + tabId);
+        if (targetContent) {
+            targetContent.classList.remove('hidden');
+            targetContent.classList.add('flex', 'lg:absolute', 'lg:inset-0');
+        }
 
-        document.getElementById('tab-btn-' + tabId).classList.remove('border-transparent', 'text-text-muted');
-        document.getElementById('tab-btn-' + tabId).classList.add('border-accent', 'text-accent');
+        const targetBtn = document.getElementById('tab-btn-' + tabId);
+        if (targetBtn) {
+            targetBtn.classList.remove('border-transparent', 'text-text-muted');
+            targetBtn.classList.add('border-accent', 'text-accent');
+        }
 
-        if (pushUrl) {
+        if (pushUrl && window.history && window.history.pushState) {
             const url = tabId === 'directory' ? ACCOUNTS_BASE_URL : ACCOUNTS_BASE_URL + '/' + tabId;
-            history.pushState({ tab: tabId }, '', url);
+            history.pushState({ tab: tabId, spmsRoot: true }, '', url);
         }
     }
+    window.switchUserTab = switchUserTab;
 
-    // The initial page load's history entry has no pushState-set state yet - give
-    // it one so navigating back to it (after switching tabs) restores the right tab.
-    history.replaceState({ tab: '<?= $activeTab ?>' }, '', window.location.href);
+    // The initial page load's history entry
+    try {
+        history.replaceState({ tab: '<?= $activeTab ?>', spmsRoot: true }, '', window.location.href);
+    } catch (e) {}
 
     window.addEventListener('popstate', (e) => {
-        switchUserTab((e.state && e.state.tab) || 'directory', false);
+        const tab = (e.state && e.state.tab) || '<?= $activeTab ?>' || 'directory';
+        switchUserTab(tab, false);
     });
 
     // --- SYSTEM DATA SUB-TABS ---
@@ -551,95 +762,468 @@
             activePanel.classList.add('flex');
         }
     }
+    window.switchSystemTab = switchSystemTab;
 
     // Get checked values for a specific name
     function getCheckedValues(name) {
-        // Fallback for both name[] and just name
         const checkboxes = document.querySelectorAll(`input[name="${name}[]"]:checked, input[name="${name}"]:checked`);
         return Array.from(checkboxes).map(cb => cb.value);
     }
+    window.getCheckedValues = getCheckedValues;
 
-    // --- SEARCH AND FILTER LOGIC (Updated for Sidebar Checkboxes & Mobile Overlay) ---
-    document.addEventListener('DOMContentLoaded', () => {
-        const searchInput = document.getElementById('filter-search');
-        const rows        = Array.from(document.querySelectorAll('.user-dir-row'));
-        dirPaginator.init(rows);
-        const emptyState  = document.getElementById('empty-filter-state');
-        const countBadge  = document.getElementById('directory-count');
-        const mobileCountBadge = document.getElementById('mobile-directory-count');
-        const checkboxes  = document.querySelectorAll('.directory-filter-checkbox');
-        const clearBtn    = document.getElementById('clear-directory-filters');
+    // --- CASCADING COLLEGE & SUB-DEPARTMENT HANDLERS ---
+    function onCollegeFilterChange(collegeId) {
+        const deptSelect = document.getElementById('filter-dept-select');
+        const countPill = document.getElementById('subdept-count-pill');
+        if (!deptSelect) return;
 
-        // Sidebar Toggle for Mobile
-        const sidebar = document.getElementById('directory-sidebar');
-        const overlay = document.getElementById('mobile-filter-overlay');
-        const openBtn = document.getElementById('open-mobile-filters');
-        const closeBtn = document.getElementById('close-mobile-filters');
+        if (!collegeId) {
+            deptSelect.innerHTML = '<option value="">All Departments</option>';
+            deptSelect.value = '';
+            deptSelect.disabled = true;
+            deptSelect.classList.add('opacity-60');
+            deptSelect.classList.remove('border-amber-500', 'text-amber-600', 'dark:text-amber-400');
+            if (countPill) countPill.textContent = '(All)';
+            filterUsers();
+            return;
+        }
 
-        function toggleMobileSidebar(show) {
-            if (show) {
-                overlay.classList.remove('hidden');
-                // Small delay to allow display block to apply before opacity transition
-                requestAnimationFrame(() => {
-                    overlay.classList.remove('opacity-0');
-                    sidebar.classList.remove('-translate-x-full');
-                });
-                document.body.style.overflow = 'hidden';
+        const numericCollegeId = parseInt(collegeId, 10);
+        const units = window.SPMS_UNITS_MAP || [];
+        const college = units.find(u => u.id === numericCollegeId);
+        const collegeName = college ? college.name : '';
+
+        // Find children of this college
+        const children = units.filter(u => u.parent_id === numericCollegeId);
+
+        // Form college-specific label
+        let shortName = collegeName.replace(/^College of\s+/i, '').trim();
+        let allLabel = shortName ? `All ${shortName} Departments` : 'All Departments';
+
+        let html = `<option value="">${allLabel}</option>`;
+        children.forEach(child => {
+            html += `<option value="${escapeHtml(child.name)}">${escapeHtml(child.name)}</option>`;
+        });
+
+        deptSelect.innerHTML = html;
+        deptSelect.value = '';
+        deptSelect.disabled = false;
+        deptSelect.classList.remove('opacity-60');
+        deptSelect.classList.remove('border-amber-500', 'text-amber-600', 'dark:text-amber-400');
+
+        if (countPill) {
+            countPill.textContent = `(${children.length} options)`;
+        }
+
+        filterUsers();
+    }
+    window.onCollegeFilterChange = onCollegeFilterChange;
+
+    function onDeptFilterChange(deptName) {
+        const deptSelect = document.getElementById('filter-dept-select');
+        if (deptSelect) {
+            if (deptName) {
+                deptSelect.classList.add('border-amber-500', 'text-amber-600', 'dark:text-amber-400');
             } else {
-                overlay.classList.add('opacity-0');
-                sidebar.classList.add('-translate-x-full');
-                setTimeout(() => {
-                    overlay.classList.add('hidden');
-                }, 300); // match transition duration
-                document.body.style.overflow = '';
+                deptSelect.classList.remove('border-amber-500', 'text-amber-600', 'dark:text-amber-400');
+            }
+        }
+        filterUsers();
+    }
+    window.onDeptFilterChange = onDeptFilterChange;
+
+    // --- USER DIRECTORY FILTERING ---
+    function filterUsers() {
+        const searchInput = document.getElementById('filter-search');
+        const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+        const checkedRoles  = getCheckedValues('filter_role');
+        const checkedPos    = getCheckedValues('filter_pos');
+
+        // Cascading College & Sub-department dropdown filters
+        const collegeSelect = document.getElementById('filter-college-select');
+        const deptSelect    = document.getElementById('filter-dept-select');
+
+        const selectedCollegeId = collegeSelect ? collegeSelect.value : '';
+        const selectedDept      = (deptSelect ? deptSelect.value : '').trim();
+
+        let filterByUnit = false;
+        let allowedUnitNames = new Set();
+
+        if (selectedDept) {
+            // Specific department chosen
+            filterByUnit = true;
+            allowedUnitNames.add(selectedDept.toLowerCase());
+            const descendants = getExpandedUnitNames([selectedDept]);
+            descendants.forEach(d => allowedUnitNames.add(d.toLowerCase()));
+        } else if (selectedCollegeId) {
+            // College chosen with "Show All" sub-departments
+            filterByUnit = true;
+            const numericCollegeId = parseInt(selectedCollegeId, 10);
+            const units = window.SPMS_UNITS_MAP || [];
+            const college = units.find(u => u.id === numericCollegeId);
+            if (college) {
+                allowedUnitNames.add((college.name || '').trim().toLowerCase());
+                units.filter(u => u.parent_id === numericCollegeId).forEach(child => {
+                    allowedUnitNames.add((child.name || '').trim().toLowerCase());
+                    const childDesc = getExpandedUnitNames([child.name]);
+                    childDesc.forEach(cd => allowedUnitNames.add(cd.toLowerCase()));
+                });
             }
         }
 
-        if (openBtn) openBtn.addEventListener('click', () => toggleMobileSidebar(true));
-        if (closeBtn) closeBtn.addEventListener('click', () => toggleMobileSidebar(false));
-        if (overlay) overlay.addEventListener('click', () => toggleMobileSidebar(false));
+        // Active filters counter & Reset all toggle
+        let activeCount = 0;
+        if (query) activeCount++;
+        if (checkedRoles.length > 0) activeCount += checkedRoles.length;
+        if (selectedCollegeId) activeCount++;
+        if (selectedDept) activeCount++;
+        if (checkedPos.length > 0) activeCount += checkedPos.length;
 
-        function filterUsers() {
-            const query = searchInput ? searchInput.value.toLowerCase() : '';
-            const checkedRoles = getCheckedValues('filter_role');
-            const checkedDepts = getCheckedValues('filter_dept');
-            const checkedPos   = getCheckedValues('filter_pos');
-            const checkedStatus = getCheckedValues('filter_status');
-            
-            let visibleCount = 0;
-
-            const matchedRows = [];
-            rows.forEach(row => {
-                const rowName   = row.getAttribute('data-name');
-                const rowEmail  = row.getAttribute('data-email');
-                const rowRole   = row.getAttribute('data-role');
-                const rowDept   = row.getAttribute('data-dept');
-                const rowPos    = row.getAttribute('data-position');
-                const rowStatus = row.getAttribute('data-status');
-
-                const matchesSearch = rowName.includes(query) || rowEmail.includes(query);
-                const matchesRole   = checkedRoles.length === 0 || checkedRoles.includes(rowRole);
-                const matchesDept   = checkedDepts.length === 0 || checkedDepts.includes(rowDept);
-                const matchesPos    = checkedPos.length === 0 || checkedPos.includes(rowPos);
-                const matchesStatus = checkedStatus.length === 0 || checkedStatus.includes(rowStatus);
-
-                if (matchesSearch && matchesRole && matchesDept && matchesPos && matchesStatus) {
-                    matchedRows.push(row);
-                    visibleCount++;
-                }
-            });
-            dirPaginator.updateItems(matchedRows);
-
-            if (countBadge) countBadge.textContent = visibleCount;
-            if (mobileCountBadge) mobileCountBadge.textContent = visibleCount;
-            if (emptyState) emptyState.style.display = visibleCount === 0 ? '' : 'none';
+        const countBadge = document.getElementById('active-filter-count-badge');
+        const resetBtn   = document.getElementById('reset-all-filters-btn');
+        if (countBadge) {
+            countBadge.textContent = activeCount;
+            countBadge.classList.toggle('hidden', activeCount === 0);
+        }
+        if (resetBtn) {
+            resetBtn.classList.toggle('hidden', activeCount === 0);
         }
 
+        const rows = document.querySelectorAll('.user-dir-row');
+        const matchedRows = [];
+
+        rows.forEach(row => {
+            const rowName   = (row.dataset.name || row.getAttribute('data-name') || '').toLowerCase();
+            const rowEmail  = (row.dataset.email || row.getAttribute('data-email') || '').toLowerCase();
+            const rowRole   = (row.dataset.role || row.getAttribute('data-role') || '').toLowerCase();
+            const rowDept   = (row.dataset.dept || row.getAttribute('data-dept') || '').toLowerCase();
+            const rowPos    = (row.dataset.position || row.getAttribute('data-position') || '').toLowerCase();
+
+            const matchesSearch = !query || rowName.includes(query) || rowEmail.includes(query);
+            const matchesRole   = checkedRoles.length === 0 || checkedRoles.some(r => rowRole.includes(r.toLowerCase()));
+            
+            let matchesDept = true;
+            if (filterByUnit) {
+                const userDepts = rowDept.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+                matchesDept = userDepts.some(ud => {
+                    if (allowedUnitNames.has(ud)) return true;
+                    for (const allowed of allowedUnitNames) {
+                        if (ud.includes(allowed) || allowed.includes(ud)) return true;
+                    }
+                    return false;
+                });
+            }
+
+            const matchesPos = checkedPos.length === 0 || checkedPos.some(p => rowPos.includes(p.toLowerCase()));
+
+            if (matchesSearch && matchesRole && matchesDept && matchesPos) {
+                matchedRows.push(row);
+            } else {
+                row.classList.add('page-hidden');
+                row.style.display = 'none';
+            }
+        });
+
+        dirPaginator.updateItems(matchedRows);
+
+        const dirCountBadge = document.getElementById('directory-count');
+        const mobileCountBadge = document.getElementById('mobile-directory-count');
+        const emptyState = document.getElementById('empty-filter-state');
+
+        if (dirCountBadge) dirCountBadge.textContent = matchedRows.length;
+        if (mobileCountBadge) mobileCountBadge.textContent = matchedRows.length;
+        if (emptyState) {
+            emptyState.style.display = (matchedRows.length === 0 ? '' : 'none');
+        }
+    }
+    window.filterUsers = filterUsers;
+
+    // --- DIRECTORY SIDEBAR: UNITS FILTER ---
+    function filterSidebarUnits() {
+        const input = document.getElementById('mini-search-units');
+        const query = (input ? input.value : '').trim().toLowerCase();
+        const list = document.getElementById('units-checkbox-list');
+        if (!list) return;
+
+        const allUnitNodes = Array.from(list.querySelectorAll('.unit-node'));
+
+        if (query === '') {
+            allUnitNodes.forEach(node => {
+                node.classList.remove('page-hidden');
+                node.style.display = '';
+                const children = node.querySelector(':scope > .unit-children');
+                if (children) children.classList.add('hidden');
+                const toggleBtn = node.querySelector(':scope > div .unit-toggle');
+                if (toggleBtn) toggleBtn.classList.add('-rotate-90');
+            });
+        } else {
+            allUnitNodes.forEach(node => {
+                node.classList.add('page-hidden');
+                node.style.display = 'none';
+            });
+
+            allUnitNodes.forEach(node => {
+                const name = (node.dataset.name || '').toLowerCase();
+                if (name.includes(query)) {
+                    node.classList.remove('page-hidden');
+                    node.style.display = '';
+
+                    let parent = node.parentElement;
+                    while (parent && parent !== list) {
+                        if (parent.classList.contains('unit-children')) {
+                            parent.classList.remove('hidden');
+                        }
+                        if (parent.classList.contains('unit-node')) {
+                            parent.classList.remove('page-hidden');
+                            parent.style.display = '';
+                            const toggleBtn = parent.querySelector(':scope > div .unit-toggle');
+                            if (toggleBtn) toggleBtn.classList.remove('-rotate-90');
+                        }
+                        parent = parent.parentElement;
+                    }
+                }
+            });
+        }
+    }
+    window.filterSidebarUnits = filterSidebarUnits;
+
+    // --- DIRECTORY SIDEBAR: POSITIONS FILTER ---
+    function filterSidebarPositions() {
+        const input = document.getElementById('mini-search-positions');
+        const query = (input ? input.value : '').trim().toLowerCase();
+        const list = document.getElementById('positions-checkbox-list');
+        if (!list) return;
+
+        const allRows = Array.from(list.querySelectorAll('.position-filter-label'));
+        allRows.forEach(row => {
+            const title = (row.dataset.title || row.textContent || '').trim().toLowerCase();
+            const matches = !query || title.includes(query);
+            row.classList.toggle('page-hidden', !matches);
+            row.style.display = matches ? '' : 'none';
+        });
+    }
+    window.filterSidebarPositions = filterSidebarPositions;
+
+    // --- INVITATIONS TAB FILTERING ---
+    function filterInvitations() {
+        const searchInput = document.getElementById('invite-filter-search');
+        const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+        const checkedRoles = getCheckedValues('invite_filter_role');
+        const checkedStatus = getCheckedValues('invite_filter_status');
+        const checkedExpiry = getCheckedValues('invite_filter_expiry');
+
+        const rows = document.querySelectorAll('.invite-row');
+        const matchedRows = [];
+
+        rows.forEach(row => {
+            const email = (row.dataset.email || '').toLowerCase();
+            const role = (row.dataset.role || '').toLowerCase();
+            const status = (row.dataset.status || '').toLowerCase();
+            const isExpired = row.dataset.expired === '1';
+
+            const matchesSearch = !query || email.includes(query);
+            const matchesRole = checkedRoles.length === 0 || checkedRoles.some(r => role.includes(r.toLowerCase()));
+            const matchesStatus = checkedStatus.length === 0 || checkedStatus.includes(status);
+
+            let matchesExpiry = true;
+            if (checkedExpiry.length > 0) {
+                if (isExpired && !checkedExpiry.includes('expired')) matchesExpiry = false;
+                if (!isExpired && !checkedExpiry.includes('not-expired')) matchesExpiry = false;
+            }
+
+            if (matchesSearch && matchesRole && matchesStatus && matchesExpiry) {
+                matchedRows.push(row);
+            } else {
+                row.classList.add('page-hidden');
+                row.style.display = 'none';
+            }
+        });
+
+        invPaginator.updateItems(matchedRows);
+
+        const countBadge = document.getElementById('invitations-count');
+        if (countBadge) countBadge.textContent = matchedRows.length;
+
+        const mobileCountBadge = document.getElementById('mobile-invitations-count');
+        if (mobileCountBadge) mobileCountBadge.textContent = matchedRows.length;
+
+        const filteredCountLabel = document.getElementById('invite-filtered-count');
+        if (filteredCountLabel) filteredCountLabel.textContent = matchedRows.length;
+
+        const filterEmptyState = document.getElementById('invitations-filter-empty-state');
+        if (filterEmptyState) {
+            filterEmptyState.style.display = (matchedRows.length === 0 && rows.length > 0) ? '' : 'none';
+        }
+    }
+    window.filterInvitations = filterInvitations;
+
+    // --- SYSTEM DATA: JOB POSITIONS PAGINATION & SEARCH ---
+    function filterPositions() {
+        const input = document.getElementById('filter-positions');
+        const query = (input ? input.value : '').trim().toLowerCase();
+        const list = document.getElementById('positions-list');
+        if (!list) return;
+
+        const allRows = Array.from(list.querySelectorAll('li.position-item'));
+        posPaginator.init(allRows);
+
+        const matchedRows = allRows.filter(row => {
+            const title = (row.dataset.title || row.textContent || '').trim().toLowerCase();
+            return !query || title.includes(query);
+        });
+
+        posPaginator.updateItems(matchedRows);
+
+        const emptyState = document.getElementById('positions-empty-state');
+        if (emptyState) emptyState.style.display = matchedRows.length === 0 ? '' : 'none';
+    }
+    window.filterPositions = filterPositions;
+
+    // --- SYSTEM DATA: DEPARTMENTS & UNITS TREE VIEW ---
+    function toggleUnitTree(btn, parentId) {
+        if (!btn) return;
+        const isCollapsed = btn.classList.contains('-rotate-90');
+        if (isCollapsed) {
+            btn.classList.remove('-rotate-90');
+            document.querySelectorAll(`.unit-item[data-parent="${parentId}"]`).forEach(li => {
+                li.style.display = '';
+            });
+        } else {
+            btn.classList.add('-rotate-90');
+            hideDescendants(parentId);
+        }
+    }
+    window.toggleUnitTree = toggleUnitTree;
+
+    function hideDescendants(parentId) {
+        document.querySelectorAll(`.unit-item[data-parent="${parentId}"]`).forEach(li => {
+            li.style.display = 'none';
+            const childId = li.dataset.id;
+            const btn = li.querySelector('.js-tree-toggle');
+            if (btn) btn.classList.add('-rotate-90');
+            hideDescendants(childId);
+        });
+    }
+    window.hideDescendants = hideDescendants;
+
+    function filterUnits() {
+        const input = document.getElementById('filter-units');
+        const query = (input ? input.value : '').trim().toLowerCase();
+        const list = document.getElementById('units-list');
+        if (!list) return;
+
+        let visibleCount = 0;
+
+        if (query === '') {
+            list.querySelectorAll('.unit-item').forEach(li => {
+                li.style.display = li.dataset.parent === "0" ? '' : 'none';
+                const btn = li.querySelector('.js-tree-toggle');
+                if (btn) {
+                    btn.classList.add('-rotate-90');
+                    btn.style.visibility = '';
+                }
+                visibleCount++;
+            });
+        } else {
+            list.querySelectorAll('.unit-item').forEach(li => li.style.display = 'none');
+            list.querySelectorAll('.unit-item').forEach(li => {
+                const name = (li.dataset.name || li.textContent || '').toLowerCase();
+                if (name.includes(query)) {
+                    li.style.display = '';
+                    visibleCount++;
+                    let pId = li.dataset.parent;
+                    while (pId !== "0" && pId !== "" && pId !== null && pId !== undefined) {
+                        const parentLi = document.querySelector(`.unit-item[data-id="${pId}"]`);
+                        if (parentLi) {
+                            parentLi.style.display = '';
+                            const pBtn = parentLi.querySelector('.js-tree-toggle');
+                            if (pBtn) pBtn.classList.remove('-rotate-90');
+                            pId = parentLi.dataset.parent;
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                const btn = li.querySelector('.js-tree-toggle');
+                if (btn) btn.style.visibility = 'hidden';
+            });
+        }
+        const emptyState = document.getElementById('units-empty-state');
+        if (emptyState) emptyState.style.display = query !== '' && visibleCount === 0 ? '' : 'none';
+    }
+    window.filterUnits = filterUnits;
+
+    // --- SYSTEM SIDEBAR & MODALS ---
+    function openSystemSidebar() {
+        const sysMobileOverlay = document.getElementById('mobile-system-filter-overlay');
+        if (sysMobileOverlay) {
+            sysMobileOverlay.classList.remove('hidden');
+            setTimeout(() => sysMobileOverlay.classList.remove('opacity-0'), 10);
+        }
+        const activeSidebar = document.querySelector('.system-panel:not(.hidden) .system-sidebar');
+        if (activeSidebar) {
+            activeSidebar.classList.remove('-translate-x-full');
+            activeSidebar.classList.add('translate-x-0');
+        }
+    }
+    window.openSystemSidebar = openSystemSidebar;
+
+    function closeSystemSidebar() {
+        const sysMobileOverlay = document.getElementById('mobile-system-filter-overlay');
+        if (sysMobileOverlay) {
+            sysMobileOverlay.classList.add('opacity-0');
+            setTimeout(() => sysMobileOverlay.classList.add('hidden'), 300);
+        }
+        document.querySelectorAll('.system-sidebar').forEach(sidebar => {
+            sidebar.classList.remove('translate-x-0');
+            sidebar.classList.add('-translate-x-full');
+        });
+    }
+    window.closeSystemSidebar = closeSystemSidebar;
+
+    // --- DIRECTORY FILTER: CLEAR ALL ---
+    function clearAllDirectoryFilters() {
+        const sInput = document.getElementById('filter-search');
+        if (sInput) sInput.value = '';
+        document.querySelectorAll('.directory-filter-checkbox').forEach(cb => {
+            cb.checked = false;
+        });
+
+        const collegeSelect = document.getElementById('filter-college-select');
+        if (collegeSelect) collegeSelect.value = '';
+
+        const deptSelect = document.getElementById('filter-dept-select');
+        if (deptSelect) {
+            deptSelect.innerHTML = '<option value="">All Departments</option>';
+            deptSelect.value = '';
+            deptSelect.disabled = true;
+            deptSelect.classList.add('opacity-60');
+            deptSelect.classList.remove('border-amber-500', 'text-amber-600', 'dark:text-amber-400');
+        }
+
+        const countPill = document.getElementById('subdept-count-pill');
+        if (countPill) countPill.textContent = '(All)';
+
+        const msPos = document.getElementById('mini-search-positions');
+        if (msPos) msPos.value = '';
+        filterSidebarPositions();
+
+        filterUsers();
+    }
+    window.clearAllDirectoryFilters = clearAllDirectoryFilters;
+
+    // ==========================================
+    // UNIFIED PAGE INITIALIZATION
+    // ==========================================
+    function initAccountsPage() {
+        // --- 1. Directory Filter Listeners ---
+        const searchInput = document.getElementById('filter-search');
         if (searchInput) searchInput.addEventListener('input', filterUsers);
-        checkboxes.forEach(cb => {
+
+        document.querySelectorAll('.directory-filter-checkbox').forEach(cb => {
             cb.addEventListener('change', (e) => {
                 const name = e.target.name;
-                if (name === 'filter_role[]' || name === 'filter_status[]') {
+                if (name === 'filter_role[]') {
                     if (e.target.checked) {
                         document.querySelectorAll(`input[name="${name}"]`).forEach(otherCb => {
                             if (otherCb !== e.target) otherCb.checked = false;
@@ -650,167 +1234,67 @@
             });
         });
 
+        const clearBtn = document.getElementById('clear-directory-filters');
         if (clearBtn) {
-            clearBtn.addEventListener('click', () => {
-                if (searchInput) searchInput.value = '';
-                checkboxes.forEach(cb => cb.checked = false);
-                filterUsers();
-            });
-        }
-        
-        filterUsers(); // Call once on load to initialize the paginator
-
-        // --- DIRECTORY SIDEBAR FILTERS PAGINATION & SEARCH ---
-        function filterSidebarUnits() {
-            const input = document.getElementById('mini-search-units');
-            const query = input ? input.value.trim().toLowerCase() : '';
-            const list = document.getElementById('units-checkbox-list');
-            if (!list) return;
-            const allRows = Array.from(list.querySelectorAll(':scope > div > .unit-node'));
-            
-            if (filterUnitsPaginator.allRows.length === 0) filterUnitsPaginator.init(allRows);
-            
-            const matchedRows = allRows.filter(row => row.dataset.name && row.dataset.name.includes(query));
-            filterUnitsPaginator.updateItems(matchedRows);
+            clearBtn.addEventListener('click', clearAllDirectoryFilters);
         }
 
+        // Mobile Directory Sidebar
+        const dirSidebar = document.getElementById('directory-sidebar');
+        const dirOverlay = document.getElementById('mobile-filter-overlay');
+        const openDirBtn = document.getElementById('open-mobile-filters');
+        const closeDirBtn = document.getElementById('close-mobile-filters');
+
+        function toggleMobileDirSidebar(show) {
+            if (!dirSidebar || !dirOverlay) return;
+            if (show) {
+                dirOverlay.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    dirOverlay.classList.remove('opacity-0');
+                    dirSidebar.classList.remove('-translate-x-full');
+                });
+                document.body.style.overflow = 'hidden';
+            } else {
+                dirOverlay.classList.add('opacity-0');
+                dirSidebar.classList.add('-translate-x-full');
+                setTimeout(() => {
+                    dirOverlay.classList.add('hidden');
+                }, 300);
+                document.body.style.overflow = '';
+            }
+        }
+        if (openDirBtn) openDirBtn.addEventListener('click', () => toggleMobileDirSidebar(true));
+        if (closeDirBtn) closeDirBtn.addEventListener('click', () => toggleMobileDirSidebar(false));
+        if (dirOverlay) dirOverlay.addEventListener('click', () => toggleMobileDirSidebar(false));
+
+        // Directory sidebar mini-searches
         const msUnits = document.getElementById('mini-search-units');
         if (msUnits) msUnits.addEventListener('input', filterSidebarUnits);
-        
-        const cbUnitsList = document.getElementById('units-checkbox-list');
-        if (cbUnitsList) {
-            filterUnitsPaginator.init(Array.from(cbUnitsList.querySelectorAll(':scope > div > .unit-node')));
-            filterSidebarUnits();
-        }
-
-        function filterSidebarPositions() {
-            const input = document.getElementById('mini-search-positions');
-            const query = input ? input.value.trim().toLowerCase() : '';
-            const list = document.getElementById('positions-checkbox-list');
-            if (!list) return;
-            const allRows = Array.from(list.querySelectorAll('.position-filter-label'));
-            
-            if (filterPosPaginator.allRows.length === 0) filterPosPaginator.init(allRows);
-            
-            const matchedRows = allRows.filter(row => row.dataset.title && row.dataset.title.includes(query));
-            filterPosPaginator.updateItems(matchedRows);
-        }
 
         const msPos = document.getElementById('mini-search-positions');
         if (msPos) msPos.addEventListener('input', filterSidebarPositions);
-        
-        const cbPosList = document.getElementById('positions-checkbox-list');
-        if (cbPosList) {
-            filterPosPaginator.init(Array.from(cbPosList.querySelectorAll('.position-filter-label')));
-            filterSidebarPositions();
+
+        // Initialize paginators
+        const dirTableBody = document.getElementById('user-table-body');
+        if (dirTableBody) {
+            dirPaginator.init(Array.from(dirTableBody.querySelectorAll('.user-dir-row')));
         }
 
-        // --- SYSTEM DATA TAB: UNITS PAGINATION & SEARCH ---
-        function filterUnits() {
-            const input = document.getElementById('filter-units');
-            const query = input ? input.value.trim().toLowerCase() : '';
-            const list = document.getElementById('units-list');
-            if (!list) return;
-            const allRows = Array.from(list.querySelectorAll('li.unit-item'));
-            
-            if (uniPaginator.allRows.length === 0) uniPaginator.init(allRows);
-            
-            const matchedRows = allRows.filter(row => row.dataset.name && row.dataset.name.includes(query));
-            uniPaginator.updateItems(matchedRows);
-            
-            const emptyState = document.getElementById('units-empty-state');
-            if (emptyState) emptyState.style.display = matchedRows.length === 0 ? '' : 'none';
+        const invTableBody = document.getElementById('invitations-table-body');
+        if (invTableBody) {
+            invPaginator.init(Array.from(invTableBody.querySelectorAll('.invite-row')));
         }
 
-        const uniInput = document.getElementById('filter-units');
-        if (uniInput) uniInput.addEventListener('input', filterUnits);
+        // Run directory filter initializations
+        filterUsers();
+        filterSidebarUnits();
+        filterSidebarPositions();
 
-        const unitsList = document.getElementById('units-list');
-        if (unitsList) {
-            uniPaginator.init(Array.from(unitsList.querySelectorAll('li.unit-item')));
-            filterUnits();
-        }
-
-        // --- SYSTEM DATA TAB: POSITIONS PAGINATION & SEARCH ---
-        function filterPositions() {
-            const input = document.getElementById('filter-positions');
-            const query = input ? input.value.trim().toLowerCase() : '';
-            const list = document.getElementById('positions-list');
-            if (!list) return;
-            const allRows = Array.from(list.querySelectorAll('li.position-item'));
-            
-            if (posPaginator.allRows.length === 0) posPaginator.init(allRows);
-            
-            const matchedRows = allRows.filter(row => row.dataset.title && row.dataset.title.includes(query));
-            posPaginator.updateItems(matchedRows);
-            
-            const emptyState = document.getElementById('positions-empty-state');
-            if (emptyState) emptyState.style.display = matchedRows.length === 0 ? '' : 'none';
-        }
-
-        const posInput = document.getElementById('filter-positions');
-        if (posInput) posInput.addEventListener('input', filterPositions);
-
-        const positionsList = document.getElementById('positions-list');
-        if (positionsList) {
-            posPaginator.init(Array.from(positionsList.querySelectorAll('li.position-item')));
-            filterPositions();
-        }
-    });
-
-    // --- INVITATIONS TAB: SEARCH, STATUS/EXPIRY/ROLE FILTERS, AND "DELETE FILTERED" ---
-    function filterInvitations() {
-        const searchInput = document.getElementById('invite-filter-search');
-        const query = searchInput ? searchInput.value.toLowerCase() : '';
-        const checkedRoles = getCheckedValues('invite_filter_role');
-        const checkedStatus = getCheckedValues('invite_filter_status');
-        const checkedExpiry = getCheckedValues('invite_filter_expiry');
-
-        const rows = Array.from(document.querySelectorAll('.invite-row'));
-        if (invPaginator.allRows.length === 0) invPaginator.init(rows);
-        let visibleCount = 0;
-        const matchedRows = [];
-
-        rows.forEach(row => {
-            const matchesSearch = row.dataset.email.includes(query);
-            const matchesRole = checkedRoles.length === 0 || checkedRoles.includes(row.dataset.role);
-            const matchesStatus = checkedStatus.length === 0 || checkedStatus.includes(row.dataset.status);
-            
-            const isExpired = row.dataset.expired === '1';
-            let matchesExpiry = true;
-            if (checkedExpiry.length > 0) {
-                if (isExpired && !checkedExpiry.includes('expired')) matchesExpiry = false;
-                if (!isExpired && !checkedExpiry.includes('not-expired')) matchesExpiry = false;
-            }
-
-            if (matchesSearch && matchesRole && matchesStatus && matchesExpiry) {
-                matchedRows.push(row);
-                visibleCount++;
-            }
-        });
-        invPaginator.updateItems(matchedRows);
-
-        const countBadge = document.getElementById('invitations-count');
-        if (countBadge) countBadge.textContent = visibleCount;
-        
-        const mobileCountBadge = document.getElementById('mobile-invitations-count');
-        if (mobileCountBadge) mobileCountBadge.textContent = visibleCount;
-
-        const filteredCountLabel = document.getElementById('invite-filtered-count');
-        if (filteredCountLabel) filteredCountLabel.textContent = visibleCount;
-
-        const filterEmptyState = document.getElementById('invitations-filter-empty-state');
-        if (filterEmptyState) {
-            filterEmptyState.style.display = (visibleCount === 0 && rows.length > 0) ? '' : 'none';
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
+        // --- 2. Invitations Filter Listeners ---
         const inviteSearch = document.getElementById('invite-filter-search');
         if (inviteSearch) inviteSearch.addEventListener('input', filterInvitations);
 
-        const inviteCheckboxes = document.querySelectorAll('.invite-filter-checkbox');
-        inviteCheckboxes.forEach(cb => {
+        document.querySelectorAll('.invite-filter-checkbox').forEach(cb => {
             cb.addEventListener('change', (e) => {
                 const name = e.target.name;
                 if (name === 'invite_filter_role[]' || name === 'invite_filter_status[]' || name === 'invite_filter_expiry[]') {
@@ -824,10 +1308,6 @@
             });
         });
 
-        const btnDeleteFiltered = document.getElementById('btn-delete-filtered');
-        // Delete filtered logic ... (we will keep the old event listener below)
-        
-        // --- MOBILE INVITE FILTERS TOGGLE ---
         const openMobileInviteFilters = document.getElementById('open-mobile-invite-filters');
         const closeMobileInviteFilters = document.getElementById('close-mobile-invite-filters');
         const inviteSidebar = document.getElementById('invitations-sidebar');
@@ -837,7 +1317,6 @@
             if (!inviteSidebar || !mobileInviteOverlay) return;
             if (show) {
                 mobileInviteOverlay.classList.remove('hidden');
-                // trigger reflow
                 void mobileInviteOverlay.offsetWidth;
                 mobileInviteOverlay.classList.add('opacity-100');
                 inviteSidebar.classList.remove('-translate-x-full');
@@ -849,20 +1328,14 @@
                 }, 300);
             }
         }
+        if (openMobileInviteFilters) openMobileInviteFilters.addEventListener('click', () => toggleMobileInviteFilters(true));
+        if (closeMobileInviteFilters) closeMobileInviteFilters.addEventListener('click', () => toggleMobileInviteFilters(false));
+        if (mobileInviteOverlay) mobileInviteOverlay.addEventListener('click', () => toggleMobileInviteFilters(false));
 
-        if (openMobileInviteFilters) {
-            openMobileInviteFilters.addEventListener('click', () => toggleMobileInviteFilters(true));
-        }
-        if (closeMobileInviteFilters) {
-            closeMobileInviteFilters.addEventListener('click', () => toggleMobileInviteFilters(false));
-        }
-        if (mobileInviteOverlay) {
-            mobileInviteOverlay.addEventListener('click', () => toggleMobileInviteFilters(false));
-        }
-
+        const btnDeleteFiltered = document.getElementById('btn-delete-filtered');
         if (btnDeleteFiltered) {
             btnDeleteFiltered.addEventListener('click', async () => {
-                const visibleRows = Array.from(document.querySelectorAll('.invite-row')).filter(row => row.style.display !== 'none');
+                const visibleRows = Array.from(document.querySelectorAll('.invite-row')).filter(row => row.style.display !== 'none' && !row.classList.contains('page-hidden'));
                 if (visibleRows.length === 0) {
                     window.appAlert('No invitations match the current filter.', { variant: 'warning' });
                     return;
@@ -895,174 +1368,69 @@
         }
 
         filterInvitations();
-    });
 
-    // --- SYSTEM DATA TAB: JOB POSITIONS PAGINATION & SEARCH ---
-    function filterPositions() {
-        const input = document.getElementById('filter-positions');
-        if (!input) return;
-        const query = input.value.trim().toLowerCase();
-        const list = document.getElementById('positions-list');
-        const allRows = Array.from(list.querySelectorAll('li.position-item'));
-        
-        if (posPaginator.allRows.length === 0) posPaginator.init(allRows);
-        
-        const matchedRows = allRows.filter(row => row.dataset.title.includes(query));
-        posPaginator.updateItems(matchedRows);
-        
-        const emptyState = document.getElementById('positions-empty-state');
-        if (emptyState) emptyState.style.display = matchedRows.length === 0 ? '' : 'none';
-    }
+        // --- 3. System Data Tab Listeners ---
+        const sysUnitInput = document.getElementById('filter-units');
+        if (sysUnitInput) sysUnitInput.addEventListener('input', filterUnits);
 
-    const posInput = document.getElementById('filter-positions');
-    if (posInput) posInput.addEventListener('input', filterPositions);
+        const sysPosInput = document.getElementById('filter-positions');
+        if (sysPosInput) sysPosInput.addEventListener('input', filterPositions);
 
-    const positionsList = document.getElementById('positions-list');
-    if (positionsList) {
-        posPaginator.init(Array.from(positionsList.querySelectorAll('li.position-item')));
+        filterUnits();
         filterPositions();
-    }
 
-    // --- SYSTEM DATA TAB: DEPARTMENTS & UNITS TREE VIEW ---
-    function toggleUnitTree(btn, parentId) {
-        const isCollapsed = btn.classList.contains('-rotate-90');
-        if (isCollapsed) {
-            btn.classList.remove('-rotate-90');
-            document.querySelectorAll(`.unit-item[data-parent="${parentId}"]`).forEach(li => {
-                li.style.display = '';
+        // --- 4. Modals & System Mobile Sidebar ---
+        document.querySelectorAll('.btn-open-modal').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.dataset.target;
+                const modal = document.getElementById(targetId);
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                }
             });
-        } else {
-            btn.classList.add('-rotate-90');
-            hideDescendants(parentId);
-        }
-    }
-
-    function hideDescendants(parentId) {
-        document.querySelectorAll(`.unit-item[data-parent="${parentId}"]`).forEach(li => {
-            li.style.display = 'none';
-            const childId = li.dataset.id;
-            const btn = li.querySelector('.js-tree-toggle');
-            if (btn) btn.classList.add('-rotate-90');
-            hideDescendants(childId);
         });
-    }
 
-    const unitInput = document.getElementById('filter-units');
-    if (unitInput) {
-        unitInput.addEventListener('input', () => {
-            const query = unitInput.value.trim().toLowerCase();
-            const list = document.getElementById('units-list');
-            let visibleCount = 0;
-
-            if (query === '') {
-                list.querySelectorAll('.unit-item').forEach(li => {
-                    li.style.display = li.dataset.parent === "0" ? '' : 'none';
-                    const btn = li.querySelector('.js-tree-toggle');
-                    if (btn) {
-                        btn.classList.add('-rotate-90');
-                        btn.style.visibility = ''; 
-                    }
-                });
-            } else {
-                list.querySelectorAll('.unit-item').forEach(li => li.style.display = 'none');
-                list.querySelectorAll('.unit-item').forEach(li => {
-                    if (li.dataset.name.includes(query)) {
-                        li.style.display = '';
-                        visibleCount++;
-                        let pId = li.dataset.parent;
-                        while (pId !== "0" && pId !== "") {
-                            const parentLi = document.querySelector(`.unit-item[data-id="${pId}"]`);
-                            if (parentLi) {
-                                parentLi.style.display = '';
-                                const pBtn = parentLi.querySelector('.js-tree-toggle');
-                                if (pBtn) pBtn.classList.remove('-rotate-90'); 
-                                pId = parentLi.dataset.parent;
-                            } else {
-                                break;
-                            }
-                        }
-                    }
-                    const btn = li.querySelector('.js-tree-toggle');
-                    if (btn) btn.style.visibility = 'hidden'; 
-                });
-            }
-            const emptyState = document.getElementById('units-empty-state');
-            if (emptyState) emptyState.style.display = query !== '' && visibleCount === 0 ? '' : 'none';
-        });
-    }
-
-    // --- SYSTEM MODALS & MOBILE SIDEBAR ---
-    document.querySelectorAll('.btn-open-modal').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const targetId = btn.dataset.target;
-            const modal = document.getElementById(targetId);
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            }
-        });
-    });
-
-    document.querySelectorAll('.btn-close-modal').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const targetId = btn.dataset.target;
-            const modal = document.getElementById(targetId);
-            if (modal) {
-                modal.classList.remove('flex');
-                modal.classList.add('hidden');
-            }
-        });
-    });
-
-    // Close modals when clicking on the backdrop overlay
-    const allModals = [document.getElementById('modal-create-position'), document.getElementById('modal-create-unit')];
-    allModals.forEach(modal => {
-        if (modal) {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
+        document.querySelectorAll('.btn-close-modal').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.dataset.target;
+                const modal = document.getElementById(targetId);
+                if (modal) {
                     modal.classList.remove('flex');
                     modal.classList.add('hidden');
                 }
             });
-        }
-    });
-
-    const sysMobileOverlay = document.getElementById('mobile-system-filter-overlay');
-    function openSystemSidebar() {
-        if (sysMobileOverlay) {
-            sysMobileOverlay.classList.remove('hidden');
-            // small delay to allow display block to apply before opacity transition
-            setTimeout(() => sysMobileOverlay.classList.remove('opacity-0'), 10);
-        }
-        // There are two sidebars (one in each sub-tab panel), we open the one in the currently active panel
-        const activeSidebar = document.querySelector('.system-panel:not(.hidden) .system-sidebar');
-        if (activeSidebar) {
-            activeSidebar.classList.remove('-translate-x-full');
-            activeSidebar.classList.add('translate-x-0');
-        }
-    }
-
-    function closeSystemSidebar() {
-        if (sysMobileOverlay) {
-            sysMobileOverlay.classList.add('opacity-0');
-            setTimeout(() => sysMobileOverlay.classList.add('hidden'), 300);
-        }
-        document.querySelectorAll('.system-sidebar').forEach(sidebar => {
-            sidebar.classList.remove('translate-x-0');
-            sidebar.classList.add('-translate-x-full');
         });
+
+        [document.getElementById('modal-create-position'), document.getElementById('modal-create-unit')].forEach(modal => {
+            if (modal) {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.remove('flex');
+                        modal.classList.add('hidden');
+                    }
+                });
+            }
+        });
+
+        document.querySelectorAll('.btn-open-system-mobile').forEach(btn => {
+            btn.addEventListener('click', openSystemSidebar);
+        });
+
+        document.querySelectorAll('.btn-close-system-mobile').forEach(btn => {
+            btn.addEventListener('click', closeSystemSidebar);
+        });
+
+        const sysMobileOverlay = document.getElementById('mobile-system-filter-overlay');
+        if (sysMobileOverlay) {
+            sysMobileOverlay.addEventListener('click', closeSystemSidebar);
+        }
     }
 
-    document.querySelectorAll('.btn-open-system-mobile').forEach(btn => {
-        btn.addEventListener('click', openSystemSidebar);
-    });
-
-    document.querySelectorAll('.btn-close-system-mobile').forEach(btn => {
-        btn.addEventListener('click', closeSystemSidebar);
-    });
-
-    if (sysMobileOverlay) {
-        sysMobileOverlay.addEventListener('click', closeSystemSidebar);
+    if (document.readyState !== 'loading') {
+        initAccountsPage();
+    } else {
+        document.addEventListener('DOMContentLoaded', initAccountsPage);
     }
 
 

@@ -84,7 +84,9 @@ class  DocumentFolderModel extends Model
             ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
             ->join('positions pos', 'pos.id = p.position_id', 'left')
             ->join('units un', 'un.id = p.unit_id', 'left')
-            ->where('df.parent_folder_id IS NOT NULL');
+            ->where('df.parent_folder_id IS NOT NULL')
+            ->where('df.deleted_at IS NULL')
+            ->whereNotIn('df.status', [FolderStatus::DRAFT->value, FolderStatus::DRAFT_TARGET->value]);
 
         if ($parentFolderId) {
             $allDescendantIds = $this->getAllDescendantFolderIds($parentFolderId);
@@ -158,6 +160,7 @@ class  DocumentFolderModel extends Model
             ->join('users u', 'u.id = df.user_id')
             ->join('user_roles ur', 'ur.user_id = u.id', 'left')
             ->join('roles r', 'r.id = ur.role_id', 'left')
+            ->where('df.deleted_at IS NULL')
             ->where('df.status', FolderStatus::DRAFT->value)
             ->where('df.deadline_reminder_sent_at IS NULL')
             ->groupStart()
@@ -187,6 +190,7 @@ class  DocumentFolderModel extends Model
             ->join('users u', 'u.id = df.user_id')
             ->join('user_roles ur', 'ur.user_id = u.id', 'left')
             ->join('roles r', 'r.id = ur.role_id', 'left')
+            ->where('df.deleted_at IS NULL')
             ->where('df.status', FolderStatus::DRAFT_TARGET->value)
             ->where('df.target_deadline_reminder_sent_at IS NULL')
             ->groupStart()
@@ -228,6 +232,7 @@ class  DocumentFolderModel extends Model
         $startingTargetFolders = $db->table($this->table . ' df')
             ->select('df.id, df.user_id, df.title, u.email, u.first_name')
             ->join('users u', 'u.id = df.user_id')
+            ->where('df.deleted_at IS NULL')
             ->where('df.status', \App\Enums\FolderStatus::DRAFT_TARGET->value)
             ->where('df.target_period_open_sent_at IS NULL')
             ->groupStart()
@@ -262,6 +267,7 @@ class  DocumentFolderModel extends Model
         $unapprovedFolders = $db->table($this->table . ' df')
             ->select('df.id, df.user_id, u.email, u.first_name')
             ->join('users u', 'u.id = df.user_id')
+            ->where('df.deleted_at IS NULL')
             ->whereIn('df.status', [
                 \App\Enums\FolderStatus::DRAFT_TARGET->value,
                 \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
@@ -299,6 +305,7 @@ class  DocumentFolderModel extends Model
         $startingFolders = $db->table($this->table . ' df')
             ->select('df.id, df.user_id, df.title, u.email, u.first_name')
             ->join('users u', 'u.id = df.user_id')
+            ->where('df.deleted_at IS NULL')
             ->whereIn('df.status', [
                 \App\Enums\FolderStatus::TARGET_APPROVED->value,
                 \App\Enums\FolderStatus::SUBMITTED->value,
@@ -347,6 +354,7 @@ class  DocumentFolderModel extends Model
         $expiringFolders = $db->table($this->table . ' df')
             ->select('df.id, df.user_id, u.email, u.first_name')
             ->join('users u', 'u.id = df.user_id')
+            ->where('df.deleted_at IS NULL')
             ->whereNotIn('df.status', [
                 \App\Enums\FolderStatus::APPROVED->value,
                 \App\Enums\FolderStatus::TWG_APPROVED->value,
@@ -382,15 +390,46 @@ class  DocumentFolderModel extends Model
         if (empty($folder)) return null;
 
         $userModel = new \App\Models\UserModel();
-        $owner = $userModel->find($folder['user_id']);
-        $docType = strtolower($owner['doc_type'] ?? 'ipcr');
+        $owner = !empty($folder['user_id']) ? $userModel->find($folder['user_id']) : null;
         
-        return [
+        $docType = null;
+        if ($owner) {
+            $docType = !empty($owner['doc_type']) ? strtolower($owner['doc_type']) : null;
+            if (!$docType) {
+                $plantilla = $userModel->getActivePlantillaDetails($owner['id']);
+                $pos = strtolower($plantilla['position'] ?? '');
+                if (str_contains($pos, 'dean') || str_contains($pos, 'chair') || str_contains($pos, 'head')) {
+                    $docType = 'dpcr';
+                } elseif (str_contains($pos, 'president') || str_contains($pos, 'vpaa') || str_contains(strtolower($owner['email'] ?? ''), 'vpaa')) {
+                    $docType = 'opcr';
+                }
+            }
+        }
+        $docType = $docType ?: 'ipcr';
+
+        $dates = [
             'target_date_start' => $folder["{$docType}_target_start"] ?? null,
             'target_date_end'   => $folder["{$docType}_target_end"] ?? null,
             'eval_date_start'   => $folder["{$docType}_eval_start"] ?? null,
             'eval_date_end'     => $folder["{$docType}_eval_end"] ?? null,
         ];
+
+        // Fallback: If this docType's dates are all null, find any populated dates from the other form types
+        if (empty($dates['target_date_start']) && empty($dates['target_date_end']) && empty($dates['eval_date_start']) && empty($dates['eval_date_end'])) {
+            foreach (['opcr', 'dpcr', 'ipcr', 'iperf'] as $altType) {
+                if (!empty($folder["{$altType}_target_end"]) || !empty($folder["{$altType}_eval_end"])) {
+                    $dates = [
+                        'target_date_start' => $folder["{$altType}_target_start"] ?? null,
+                        'target_date_end'   => $folder["{$altType}_target_end"] ?? null,
+                        'eval_date_start'   => $folder["{$altType}_eval_start"] ?? null,
+                        'eval_date_end'     => $folder["{$altType}_eval_end"] ?? null,
+                    ];
+                    break;
+                }
+            }
+        }
+
+        return $dates;
     }
 
     public function isFolderLocked($folder) {

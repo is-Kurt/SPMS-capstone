@@ -518,9 +518,18 @@
                         if (!$primaryDoc) $primaryDoc = reset($myDocs);
                     }
 
-                    $effectiveDocType = (!empty($primaryDoc['title']) && in_array(strtoupper($primaryDoc['title']), ['OPCR', 'DPCR', 'IPCR', 'IPERF']))
-                        ? strtoupper($primaryDoc['title'])
-                        : ($ownerDocType ?? ($subFolderOwner['doc_type'] ?? 'IPCR'));
+                    $pTitleUpper = strtoupper($primaryDoc['title'] ?? '');
+                    if (str_contains($pTitleUpper, 'OPCR') || str_contains($pTitleUpper, 'OFFICE')) {
+                        $effectiveDocType = 'OPCR';
+                    } elseif (str_contains($pTitleUpper, 'DPCR') || str_contains($pTitleUpper, 'DIVISION') || str_contains($pTitleUpper, 'DEPARTMENT')) {
+                        $effectiveDocType = 'DPCR';
+                    } elseif (str_contains($pTitleUpper, 'IPERF') || str_contains($pTitleUpper, 'NON-TEACHING')) {
+                        $effectiveDocType = 'IPERF';
+                    } elseif (str_contains($pTitleUpper, 'IPCR')) {
+                        $effectiveDocType = 'IPCR';
+                    } else {
+                        $effectiveDocType = $ownerDocType ?? ($subFolderOwner['doc_type'] ?? 'IPCR');
+                    }
 
                     $formTypeName = strtoupper($effectiveDocType ?: 'IPCR');
                     $formTypeDesc = match($formTypeName) {

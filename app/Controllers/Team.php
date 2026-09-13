@@ -34,6 +34,7 @@ class Team extends BaseController
         $folderModel   = new DocumentFolderModel();
 
         $users = $userModel->getEligibleTeamMembers($userId);
+        $unitModel->unnestCollegesFromOvpaa();
         $units = $unitModel->orderBy('name', 'ASC')->findAll();
 
         // Supervisors are scoped to their own unit and everything nested under it
@@ -251,7 +252,7 @@ class Team extends BaseController
         $role = session()->get('role');
         if (!in_array($role, ['Admin', 'Supervisor'])) return $this->respondError('Unauthorized.', 403);
 
-        $presetId = $this->request->getPost('preset_id');
+        $presetId = $this->request->getVar('preset_id') ?? $this->request->getPost('preset_id');
         $presetModel = new RoutingPresetModel();
 
         $preset = $presetModel->where('id', $presetId)->where('owner_id', session()->get('user_id'))->first();

@@ -35,7 +35,7 @@
     ]) && !$isPastTargetDate && !$isGuide);
 
     $canEditEvaluation = ($isEvaluationPhase && (
-        ($isOwner && in_array($status, [FolderStatus::TO_EVALUATE->value, FolderStatus::REEVALUATE->value])) ||
+        ($isOwner && in_array($status, [FolderStatus::DRAFT->value, FolderStatus::TARGET_APPROVED->value, FolderStatus::TO_EVALUATE->value, FolderStatus::REEVALUATE->value])) ||
         (!$isOwner && isset($routingStatus) && in_array($status, [FolderStatus::SUBMITTED->value, FolderStatus::EVALUATED->value]))
     ) && !$isGuide);
 
@@ -722,8 +722,8 @@
                             $isAdmin = session()->get('role') === 'Admin';
                             $isSupervisor = session()->get('role') === 'Supervisor';
                             $docTitleUpper = strtoupper(trim($doc['title'] ?? ''));
-                            $isTrueOpcr = ($docTitleUpper === 'OPCR');
-                            $isTrueDpcr = ($docTitleUpper === 'DPCR');
+                            $isTrueOpcr = str_contains($docTitleUpper, 'OPCR') || str_contains($docTitleUpper, 'OFFICE') || (strtoupper($doc['doc_type'] ?? '') === 'OPCR');
+                            $isTrueDpcr = str_contains($docTitleUpper, 'DPCR') || str_contains($docTitleUpper, 'DIVISION') || str_contains($docTitleUpper, 'DEPARTMENT') || (strtoupper($doc['doc_type'] ?? '') === 'DPCR');
 
                             $ownerPos = strtolower($ownerInfo['position'] ?? '');
                             $isOwnerDean = str_contains($ownerPos, 'dean');
@@ -794,8 +794,8 @@
                             $isAdmin = session()->get('role') === 'Admin';
                             $isSupervisor = session()->get('role') === 'Supervisor';
                             $docTitleUpper = strtoupper(trim($doc['title'] ?? ''));
-                            $isTrueOpcr = ($docTitleUpper === 'OPCR');
-                            $isTrueDpcr = ($docTitleUpper === 'DPCR');
+                            $isTrueOpcr = str_contains($docTitleUpper, 'OPCR') || str_contains($docTitleUpper, 'OFFICE') || (strtoupper($doc['doc_type'] ?? '') === 'OPCR');
+                            $isTrueDpcr = str_contains($docTitleUpper, 'DPCR') || str_contains($docTitleUpper, 'DIVISION') || str_contains($docTitleUpper, 'DEPARTMENT') || (strtoupper($doc['doc_type'] ?? '') === 'DPCR');
 
                             $ownerPos = strtolower($ownerInfo['position'] ?? '');
                             $isOwnerDean = str_contains($ownerPos, 'dean');
@@ -2510,13 +2510,16 @@
         };
     }
 
-    function getAdjectivalRating(score, totalRated = 0) {
-        if (totalRated === 0) return { text: 'PENDING EVALUATION', color: '#64748b' };
-        if (score >= 4.500) return { text: 'OUTSTANDING', color: '#059669' };
-        if (score >= 3.500) return { text: 'VERY SATISFACTORY', color: '#2563eb' };
-        if (score >= 2.500) return { text: 'SATISFACTORY', color: '#d97706' };
-        if (score >= 1.500) return { text: 'UNSATISFACTORY', color: '#ea580c' };
-        return { text: 'POOR', color: '#dc2626' };
+    function getAdjectivalRating(score, totalRated = 1) {
+        let res;
+        if (totalRated === 0) res = { text: 'PENDING EVALUATION', color: '#64748b' };
+        else if (score >= 4.500) res = { text: 'OUTSTANDING', color: '#059669' };
+        else if (score >= 3.500) res = { text: 'VERY SATISFACTORY', color: '#2563eb' };
+        else if (score >= 2.500) res = { text: 'SATISFACTORY', color: '#d97706' };
+        else if (score >= 1.500) res = { text: 'UNSATISFACTORY', color: '#ea580c' };
+        else res = { text: 'POOR', color: '#dc2626' };
+        res.toString = function() { return this.text; };
+        return res;
     }
 
     function escapeHtml(str) {

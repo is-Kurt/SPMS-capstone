@@ -50,6 +50,8 @@ class Attachment extends BaseController
         // Check if folder is in the Evaluation Phase
         $status = $doc['folder_status'] ?? '';
         $evalPhaseStatuses = [
+            FolderStatus::DRAFT->value,
+            FolderStatus::TARGET_APPROVED->value,
             FolderStatus::SUBMITTED->value,
             FolderStatus::TO_EVALUATE->value,
             FolderStatus::REEVALUATE->value,
@@ -75,7 +77,7 @@ class Attachment extends BaseController
             ]);
         }
 
-        if ($sysRole !== 'Admin' && !in_array($status, [FolderStatus::TO_EVALUATE->value, FolderStatus::REEVALUATE->value]) && !$isPastTargetDate) {
+        if ($sysRole !== 'Admin' && !in_array($status, [FolderStatus::DRAFT->value, FolderStatus::TARGET_APPROVED->value, FolderStatus::TO_EVALUATE->value, FolderStatus::REEVALUATE->value]) && !$isPastTargetDate) {
             return $this->response->setStatusCode(403)->setJSON([
                 'status'  => 'error',
                 'message' => 'Evidence attachments can only be uploaded while evaluating accomplishments.'

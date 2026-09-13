@@ -64,7 +64,8 @@ class Document extends BaseController
             $folderModel = new \App\Models\DocumentFolderModel();
             $parentFolder = $folderModel->find($docInfo['parent_folder_id']);
             if ($parentFolder) {
-                $isMyDocOpcr = (strtoupper($docInfo['title'] ?? '') === 'OPCR');
+                $docTitleUpper = strtoupper($docInfo['title'] ?? '');
+                $isMyDocOpcr = str_contains($docTitleUpper, 'OPCR') || str_contains($docTitleUpper, 'OFFICE') || (strtoupper($docInfo['doc_type'] ?? '') === 'OPCR');
 
                 if ($isMyDocOpcr) {
                     // OPCR is Stage 1 (Apex Root Commitment). There are no superior targets above it.
@@ -236,11 +237,9 @@ class Document extends BaseController
             $docs = $documentModel->getUserDocuments($userId);
             $payload = [
                 'title'              => resolve_unique_title($title, $docs),
-                'user_id'            => $userId,
                 'document_folder_id' => $folderId,
                 'tabs'               => $initialTabs,
-                'is_target'          => $isTarget,
-                'status'             => 'draft'
+                'is_target'          => $isTarget
             ];
             $newId = create_unique_row($documentModel, $payload);
 
@@ -356,14 +355,15 @@ class Document extends BaseController
         });
     }
 
-    /** POST /document/delete - Deletes a document after confirming the requester owns its folder. */
+    /** POST /document/delete - Deletes a document after confirming the requester owns its folder or is Admin. */
     public function destroy() {
-        $docId = $this->request->getPost('doc_id');
+        $docId = $this->request->getVar('doc_id') ?? $this->request->getPost('doc_id');
         $userId = session()->get('user_id');
+        $isAdmin = (session()->get('role') === 'Admin');
         $documentModel = new DocumentModel();
 
         // Verify ownership via folder join since documents no longer have user_id
-        if (!$documentModel->getUserDocuments($userId, $docId)) {
+        if (!$isAdmin && !$documentModel->getUserDocuments($userId, $docId)) {
             return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized']);
         }
 

@@ -85,95 +85,87 @@ class DepartmentSeeder extends Seeder
         // ==========================================
         $bsuHierarchy = [
             'College of Agriculture' => [
-                'Department of Agricultural Economics & Agribusiness',
-                'Department of Agronomy',
-                'Department of Horticulture',
-                'Department of Animal Science',
-                'Department of Entomology',
-                'Department of Plant Pathology',
-                'Department of Soil Science',
-                'Department of Extension Education',
+                'Bachelor of Science in Agriculture',
+                'Bachelor of Science in Agribusiness',
             ],
             'College of Arts and Humanities' => [
-                'Department of Communication',
-                'Department of English Language',
-                'Department of Filipino Language',
+                'Bachelor of Arts in Communication',
+                'Bachelor of Arts in English Language',
+                'Bachelor of Arts in Filipino Language',
             ],
             'College of Engineering' => [
-                'Department of Agricultural and Biosystems Engineering',
-                'Department of Civil Engineering',
-                'Department of Electrical Engineering',
-                'Department of Industrial Engineering',
+                'Bachelor of Science in Agricultural and Biosystems Engineering',
+                'Bachelor of Science in Civil Engineering',
+                'Bachelor of Science in Electrical Engineering',
+                'Bachelor of Science in Industrial Engineering',
             ],
             'College of Forestry' => [
-                'Department of Forest Science',
-                'Department of Agroforestry',
+                'Bachelor of Science in Forestry',
             ],
             'College of Human Ecology' => [
-                'Department of Hospitality Management',
-                'Department of Nutrition and Dietetics',
-                'Department of Entrepreneurship',
-                'Department of Food Technology',
-                'Department of Tourism Management',
+                'Bachelor of Science in Hospitality Management (BSHM)',
+                'Bachelor of Science in Nutrition and Dietetics (BSND)',
+                'Bachelor of Science in Entrepreneurship (BS Entrep)',
+                'Bachelor of Science in Food Technology (BSFT)',
+                'Bachelor of Science in Tourism Management (BSTM)',
             ],
             'College of Human Kinetics' => [
-                'Department of Physical Education',
-                'Department of Exercise and Sports Sciences',
+                'Bachelor of Science in Physical Education',
+                'Bachelor of Science in Exercise and Sports Sciences (BSESS)',
             ],
             'College of Information Sciences' => [
-                'Department of Information Technology',
-                'Department of Development Communication',
-                'Department of Library and Information Science',
+                'Bachelor of Science in Development Communication (BSDC)',
+                'Bachelor of Science in Information Technology (BSIT)',
+                'Bachelor of Library and Information Science (BLIS)',
             ],
             'College of Medicine' => [
-                'Department of Basic Medical Sciences',
-                'Department of Clinical Practice',
+                'Doctor of Medicine',
             ],
             'College of Natural Sciences' => [
-                'Department of Biology',
-                'Department of Chemistry',
-                'Department of Environmental Science',
+                'Bachelor of Science in Biology',
+                'Bachelor of Science in Chemistry',
+                'Bachelor of Science in Environmental Science',
             ],
             'College of Numeracy and Applied Sciences' => [
-                'Department of Mathematics',
-                'Department of Statistics',
-                'Department of Physics',
+                'Bachelor of Science in Statistics',
+                'Bachelor of Science in Mathematics',
             ],
             'College of Nursing' => [
-                'Department of Nursing',
+                'Bachelor of Science in Nursing (BSN)',
             ],
             'College of Public Administration and Governance' => [
-                'Department of Public Administration',
+                'Bachelor of Public Administration',
             ],
             'College of Social Sciences' => [
-                'Department of Psychology',
-                'Department of History and Social Studies',
+                'Bachelor of Science in Psychology',
+                'Bachelor of Arts in History',
             ],
             'College of Teacher Education' => [
-                'Department of Early Childhood & Elementary Education',
-                'Department of Secondary Education',
-                'Department of Technology and Livelihood Education',
+                'Bachelor of Early Childhood Education',
+                'Bachelor of Elementary Education',
+                'Bachelor of Secondary Education',
+                'Bachelor of Technology and Livelihood Education',
             ],
             'College of Veterinary Medicine' => [
-                'Department of Veterinary Medicine',
+                'Doctor of Veterinary Medicine',
             ],
         ];
 
         $unitIdMap = [];
         $now = date('Y-m-d H:i:s');
 
-        // Seed 15 Colleges under OVPAA
+        // Seed 15 Colleges as Top-Level Units
         foreach ($bsuHierarchy as $collegeName => $departments) {
             $existingCollege = $db->table('units')->where('name', $collegeName)->get()->getRowArray();
             if ($existingCollege) {
                 $collegeId = (int)$existingCollege['id'];
-                if ($existingCollege['parent_id'] != $ovpaaId) {
-                    $db->table('units')->where('id', $collegeId)->update(['parent_id' => $ovpaaId]);
+                if ($existingCollege['parent_id'] !== null) {
+                    $db->table('units')->where('id', $collegeId)->update(['parent_id' => null]);
                 }
             } else {
                 $db->table('units')->insert([
                     'name'       => $collegeName,
-                    'parent_id'  => $ovpaaId,
+                    'parent_id'  => null,
                     'created_at' => $now
                 ]);
                 $collegeId = (int)$db->insertID();
@@ -227,7 +219,7 @@ class DepartmentSeeder extends Seeder
             // --- College of Information Sciences (Showcase) ---
             [
                 'college_name' => 'College of Information Sciences',
-                'dept_name'    => 'Department of Information Technology',
+                'dept_name'    => 'Bachelor of Science in Information Technology (BSIT)',
                 'users' => [
                     [
                         'email'      => 'dean.cis@test.com',
@@ -287,7 +279,7 @@ class DepartmentSeeder extends Seeder
             // --- College of Nursing (Used in End-to-End Automated Test Cycle) ---
             [
                 'college_name' => 'College of Nursing',
-                'dept_name'    => 'Department of Nursing',
+                'dept_name'    => 'Bachelor of Science in Nursing (BSN)',
                 'users' => [
                     [
                         'email'      => 'dean@test.com',
@@ -334,7 +326,7 @@ class DepartmentSeeder extends Seeder
             // --- College of Agriculture ---
             [
                 'college_name' => 'College of Agriculture',
-                'dept_name'    => 'Department of Agronomy',
+                'dept_name'    => 'Bachelor of Science in Agriculture',
                 'users' => [
                     [
                         'email'      => 'dean.agri@test.com',
@@ -394,7 +386,7 @@ class DepartmentSeeder extends Seeder
             // --- College of Teacher Education ---
             [
                 'college_name' => 'College of Teacher Education',
-                'dept_name'    => 'Department of Secondary Education',
+                'dept_name'    => 'Bachelor of Secondary Education',
                 'users' => [
                     [
                         'email'      => 'dean.cte@test.com',
@@ -454,7 +446,7 @@ class DepartmentSeeder extends Seeder
             // --- College of Natural Sciences ---
             [
                 'college_name' => 'College of Natural Sciences',
-                'dept_name'    => 'Department of Biology',
+                'dept_name'    => 'Bachelor of Science in Biology',
                 'users' => [
                     [
                         'email'      => 'dean.cns@test.com',

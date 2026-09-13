@@ -39,6 +39,7 @@ class AccountManagement extends BaseController
 
         $roles       = $roleModel->where('name !=', 'Admin')->orderBy('name', 'ASC')->findAll();
         $positions   = $positionModel->orderBy('title', 'ASC')->findAll();
+        $unitModel->unnestCollegesFromOvpaa();
         $units       = $unitModel->orderBy('name', 'ASC')->findAll();
         $invitations = $invitationModel->getAllWithRoleNames();
 
@@ -280,7 +281,7 @@ class AccountManagement extends BaseController
     /** POST /account (DELETE) - Permanently deletes a user account. Can't target yourself. */
     public function destroy() {
         return $this->tryOrFail(function() {
-            $targetId = $this->request->getPost('user_id');
+            $targetId = $this->request->getVar('user_id') ?? $this->request->getPost('user_id');
             if ($targetId == session()->get('user_id')) {
                 return $this->respondError('Cannot delete yourself.', 400);
             }

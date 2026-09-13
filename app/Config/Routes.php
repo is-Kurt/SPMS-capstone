@@ -25,7 +25,7 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->get('teams', 'Team::index', ['filter' => 'role:Admin,Supervisor']);
     $routes->post('teams/create-shell', 'Team::createShell', ['filter' => 'role:Admin,Supervisor']);
     $routes->post('teams/store', 'Team::store', ['filter' => 'role:Admin,Supervisor']);
-    $routes->delete('teams/delete', 'Team::delete', ['filter' => 'role:Admin,Supervisor']);
+    $routes->match(['POST', 'DELETE'], 'teams/delete', 'Team::delete', ['filter' => 'role:Admin,Supervisor']);
 
     // Accounts
     $routes->get('accounts', 'AccountManagement::index', ['filter' => 'role:Admin']);
@@ -37,12 +37,13 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->post('account/toggle', 'AccountManagement::toggleStatus', ['filter' => 'role:Admin']);
     $routes->post('account/update-role', 'AccountManagement::updateRole', ['filter' => 'role:Admin']);
     $routes->post('account/process-queue', 'AccountManagement::processQueueAjax');
-    $routes->delete('account', 'AccountManagement::destroy', ['filter' => 'role:Admin']);
+    $routes->match(['POST', 'DELETE'], 'account', 'AccountManagement::destroy', ['filter' => 'role:Admin']);
 
     // System Data Management Routes
     $routes->post('account/position/add', 'AccountManagement::addPosition', ['filter' => 'role:Admin']);
     $routes->post('account/position/delete', 'AccountManagement::deletePosition', ['filter' => 'role:Admin']);
 
+    // ...
     $routes->post('account/unit/add', 'AccountManagement::addUnit', ['filter' => 'role:Admin']);
     $routes->post('account/unit/update', 'AccountManagement::updateUnit', ['filter' => 'role:Admin']);
     $routes->post('account/unit/delete', 'AccountManagement::deleteUnit', ['filter' => 'role:Admin']);
@@ -81,7 +82,7 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->get('folders/(:segment)', 'Folder::index/$1');
     $routes->post('folder', 'Folder::store', ['filter' => 'role:Admin']);
     $routes->post('folder/update', 'Folder::update', ['filter' => 'role:Admin']);
-    $routes->delete('folder', 'Folder::destroy', ['filter' => 'role:Admin']);
+    $routes->match(['post', 'delete'], 'folder', 'Folder::destroy', ['filter' => 'role:Admin']);
     $routes->post('folder/archive', 'Folder::archive', ['filter' => 'role:Admin,Supervisor']);
     $routes->post('folder/unarchive', 'Folder::unarchive', ['filter' => 'role:Admin,Supervisor']);
     $routes->post('folder/submit', 'Folder::submit');
@@ -107,12 +108,13 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->get('documents/(:segment)', 'Document::index/$1');
     $routes->post('document', 'Document::store');
     $routes->patch('document', 'Document::update');
-    $routes->delete('document', 'Document::destroy');
+    $routes->match(['POST', 'PATCH'], 'document/update', 'Document::update');
+    $routes->match(['POST', 'DELETE'], 'document', 'Document::destroy');
     $routes->post('document/target', 'Document::setTarget');
 
     // Document Attachments (Means of Verification / MOV)
     $routes->post('attachments/upload', 'Attachment::upload');
-    $routes->delete('attachments/(:num)', 'Attachment::delete/$1');
+    $routes->match(['POST', 'DELETE'], 'attachments/(:num)', 'Attachment::delete/$1');
     $routes->get('attachments/view/(:num)', 'Attachment::view/$1');
     $routes->get('attachments/download/(:num)', 'Attachment::download/$1');
     $routes->get('attachments/row/(:num)/(:segment)', 'Attachment::listByRow/$1/$2');

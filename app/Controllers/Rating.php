@@ -7,6 +7,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 use App\Models\DocumentFolderModel;
 use App\Models\EvaluationRoutingModel;
 use App\Models\DocumentModel;
+use App\Models\UnitModel;
 
 /**
  * The "Ratings" dashboard: lets evaluators (Admins, Supervisors, HR) see every
@@ -29,13 +30,13 @@ class Rating extends BaseController
 
         // For TWG (who do not author personal folders) or Admins without personal folders,
         // display institutional root evaluation cycle folders in the sidebar.
-        if ($sysRole === 'TWG' || ($sysRole === 'Admin' && empty($folderModel->where('user_id', $userId)->first()))) {
+        if ($sysRole === 'TWG' || ($sysRole === 'Admin' && empty($folderModel->where('user_id', $userId)->where('deleted_at IS NULL')->first()))) {
             $folders = $folderModel->where('parent_folder_id IS NULL')
                                    ->where('deleted_at IS NULL')
                                    ->orderBy('created_at', 'DESC')
                                    ->findAll();
         } else {
-            $folders = $folderModel->where('user_id', $userId)->orderBy('created_at', 'DESC')->findAll();
+            $folders = $folderModel->where('user_id', $userId)->where('deleted_at IS NULL')->orderBy('created_at', 'DESC')->findAll();
         }
 
         if (!$folderId) {
@@ -92,7 +93,7 @@ class Rating extends BaseController
                 continue;
             }
 
-            if (in_array($status, [\App\Enums\FolderStatus::APPROVED->value, \App\Enums\FolderStatus::TWG_APPROVED->value, \App\Enums\FolderStatus::TWG_DISAPPROVED->value])) {
+            if (in_array($status, [\App\Enums\FolderStatus::APPROVED->value, \App\Enums\FolderStatus::TWG_APPROVED->value, \App\Enums\FolderStatus::TWG_DISAPPROVED->value, \App\Enums\FolderStatus::UNEVALUATED->value])) {
                 $periods['evaluation']['tabs']['completed']['folders'][] = $f;
             } elseif ($status === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value) {
                 $periods['target']['tabs']['target_approval']['folders'][] = $f;
@@ -120,16 +121,21 @@ class Rating extends BaseController
         sort($filterUnits);
         sort($filterPositions);
 
+        $unitModel = new UnitModel();
+        $unitModel->unnestCollegesFromOvpaa();
+        $allUnits = $unitModel->orderBy('name', 'ASC')->findAll();
+
         return view('components/app_shell', [
             'sidebarFolders'   => $folders,
             'selectedFolderId' => $folderId, 
             'mainView'         => 'ratings/index',
             'mainData'         => [
-                'activeFolder'  => $activeFolder ?? null,
-                'periods' => $periods,
-                'sysRole' => $sysRole,
+                'activeFolder'    => $activeFolder ?? null,
+                'periods'         => $periods,
+                'sysRole'         => $sysRole,
                 'filterUnits'     => $filterUnits,
-                'filterPositions' => $filterPositions
+                'filterPositions' => $filterPositions,
+                'allUnits'        => $allUnits
             ]
         ]);
     }
@@ -185,13 +191,13 @@ class Rating extends BaseController
             return redirect()->to('account-mismatch');
         }
 
-        if ($sysRole === 'TWG' || ($sysRole === 'Admin' && empty($folderModel->where('user_id', $userId)->first()))) {
+        if ($sysRole === 'TWG' || ($sysRole === 'Admin' && empty($folderModel->where('user_id', $userId)->where('deleted_at IS NULL')->first()))) {
             $folders = $folderModel->where('parent_folder_id IS NULL')
                                    ->where('deleted_at IS NULL')
                                    ->orderBy('created_at', 'DESC')
                                    ->findAll();
         } else {
-            $folders = $folderModel->where('user_id', $userId)->orderBy('created_at', 'DESC')->findAll();
+            $folders = $folderModel->where('user_id', $userId)->where('deleted_at IS NULL')->orderBy('created_at', 'DESC')->findAll();
         }
 
         $groupedGuides = [];
@@ -199,7 +205,7 @@ class Rating extends BaseController
 
         foreach ($cascadedRoutes as $route) {
             $guideFolder = $folderModel->find($route['evaluator_folder_id']);
-            if ($guideFolder) {
+            if ($guideFolder && empty($guideFolder['deleted_at'])) {
                 $docs = $documentModel->where('document_folder_id', $guideFolder['id'])->findAll();
                 $groupedGuides[] = [
                     'superior' => [

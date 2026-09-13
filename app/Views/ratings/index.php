@@ -57,10 +57,18 @@
     <!-- SIDEBAR FILTERS (Left on mobile, Right on desktop) -->
     <div id="ratings-sidebar" class="fixed inset-y-0 left-0 z-[120] lg:z-0 w-72 bg-surface lg:bg-zinc-50 lg:dark:bg-zinc-800/30 lg:border border-surface-border shadow-2xl lg:shadow-none lg:rounded-2xl transform -translate-x-full lg:translate-x-0 transition-transform duration-300 lg:static shrink-0 flex flex-col h-full">
         <div class="px-6 py-4 border-b border-surface-border flex justify-between items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800 lg:rounded-t-2xl">
-            <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest">Filters</h2>
-            <button type="button" id="close-mobile-filters" class="lg:hidden text-text-muted hover:text-text p-1 cursor-pointer">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
+            <div class="flex items-center gap-2">
+                <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest">Filters</h2>
+                <span id="active-ratings-filter-badge" class="hidden px-1.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">0</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <button type="button" id="reset-ratings-filters-btn" onclick="clearAllRatingsFilters()" class="text-[10px] font-bold text-text-muted hover:text-text transition-colors cursor-pointer hidden">
+                    Reset all
+                </button>
+                <button type="button" id="close-mobile-filters" class="lg:hidden text-text-muted hover:text-text p-1 cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
         </div>
         
         <div class="p-4 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4">
@@ -90,35 +98,68 @@
                 </div>
             </div>
 
-            <!-- Units Filter -->
-            <div class="shrink-0 pb-4 border-b border-surface-border/50">
-                <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group" onclick="
-                    this.nextElementSibling.classList.toggle('hidden');
-                    this.querySelector('svg').classList.toggle('-rotate-180');
-                ">
-                    <span>Departments / Units</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                </button>
-                <div class="flex flex-col">
-                    <div class="relative mb-3 shrink-0">
-                        <input type="text" id="mini-search-units" placeholder="Find unit..." class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-lg pl-7 pr-2 py-1.5 text-[10px] focus:border-accent outline-none text-text">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 absolute left-2.5 top-2 text-text-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                    </div>
-                    <div id="units-checkbox-list" class="space-y-0.5 mt-0.5 pr-1">
-                        <?php foreach ($filterUnits as $unit): ?>
-                            <label class="unit-filter-label flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors group" data-name="<?= strtolower(esc($unit)) ?>">
-                                <input type="checkbox" name="filter_unit[]" value="<?= esc($unit) ?>" class="checkbox ratings-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
-                                <span class="truncate"><?= esc($unit) ?></span>
-                            </label>
-                        <?php endforeach; ?>
-                    </div>
-                    <div class="pt-2 flex justify-between items-center bg-transparent shrink-0 hidden" id="filter-units-pagination">
-                        <div class="text-[9px] font-bold text-text-muted uppercase tracking-widest">
-                            <span id="r-units-page-start">0</span>-<span id="r-units-page-end">0</span> of <span id="r-units-page-total">0</span>
+            <!-- College & Department Cascading Filter -->
+            <div class="shrink-0 pb-4 border-b border-surface-border/50 space-y-3">
+                <!-- STEP 1: COLLEGE / DIVISION -->
+                <div class="space-y-1.5">
+                    <label for="filter-college-select" class="block text-[10px] font-black uppercase tracking-wider text-text-muted">
+                        1. COLLEGE / DIVISION
+                    </label>
+                    <div class="relative w-full">
+                        <select id="filter-college-select" onchange="onRatingCollegeFilterChange(this.value)"
+                            class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border focus:border-sky-500 dark:focus:border-sky-400 focus:ring-1 focus:ring-sky-500/30 rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
+                            <option value="">All Colleges &amp; Divisions</option>
+                            <?php
+                            $colleges = [];
+                            $adminOffices = [];
+                            foreach (($allUnits ?? []) as $u) {
+                                if (empty($u['parent_id'])) {
+                                    if (stripos($u['name'], 'College of') !== false || stripos($u['name'], 'Graduate School') !== false) {
+                                        $colleges[] = $u;
+                                    } else {
+                                        $adminOffices[] = $u;
+                                    }
+                                }
+                            }
+                            ?>
+                            <optgroup label="Colleges">
+                                <?php foreach ($colleges as $c): ?>
+                                    <option value="<?= esc($c['id']) ?>" data-name="<?= esc($c['name']) ?>"><?= esc($c['name']) ?></option>
+                                <?php endforeach; ?>
+                            </optgroup>
+                            <?php if (!empty($adminOffices)): ?>
+                            <optgroup label="Administrative Offices / Divisions">
+                                <?php foreach ($adminOffices as $ao): ?>
+                                    <option value="<?= esc($ao['id']) ?>" data-name="<?= esc($ao['name']) ?>"><?= esc($ao['name']) ?></option>
+                                <?php endforeach; ?>
+                            </optgroup>
+                            <?php endif; ?>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 flex items-center text-text-muted" style="right: 10px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
                         </div>
-                        <div class="flex gap-1">
-                            <button type="button" class="js-page-prev p-1 rounded border border-surface-border text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg></button>
-                            <button type="button" class="js-page-next p-1 rounded border border-surface-border text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg></button>
+                    </div>
+                </div>
+
+                <!-- STEP 2: DEPARTMENT / PROGRAM (Connected by dashed connector line) -->
+                <div id="subdepartment-container" class="relative pl-3.5 ml-2.5 border-l-2 border-dashed border-emerald-500/50 dark:border-emerald-500/40 space-y-1.5 transition-all">
+                    <div class="flex items-center justify-between">
+                        <label for="filter-dept-select" class="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                            <span>2. DEPARTMENT / PROGRAM</span>
+                        </label>
+                        <span id="subdept-count-pill" class="text-[10px] font-medium text-text-muted italic">(All)</span>
+                    </div>
+                    <div class="relative w-full">
+                        <select id="filter-dept-select" onchange="onRatingDeptFilterChange(this.value)" disabled
+                            class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs opacity-60 [color-scheme:light] dark:[color-scheme:dark]">
+                            <option value="">All Departments</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 flex items-center text-text-muted" style="right: 10px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
                         </div>
                     </div>
                 </div>
@@ -359,14 +400,23 @@
                                                         <?php 
                                                             $s = strtolower($row['folder_status']);
                                                             $badgeColors = [
-                                                                'approved'    => 'bg-success-100 text-success-700 border-success-200 dark:bg-success-500/20 dark:text-success-400',
-                                                                'submitted'   => 'bg-info-100 text-info-700 border-info-200 dark:bg-info-500/20 dark:text-info-400',
-                                                                'reevaluate'  => 'bg-revision-100 text-revision-700 border-revision-200 dark:bg-revision-500/20 dark:text-revision-400',
-                                                                'to evaluate' => 'bg-warning-100 text-warning-700 border-warning-200 dark:bg-warning-500/20 dark:text-warning-400',
-                                                                'draft'       => 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400'
+                                                                'approved'                => 'bg-success-100 text-success-700 border-success-200 dark:bg-success-500/20 dark:text-success-400',
+                                                                'target_approved'         => 'bg-success-100 text-success-700 border-success-200 dark:bg-success-500/20 dark:text-success-400',
+                                                                'twg_approved'            => 'bg-success-100 text-success-700 border-success-200 dark:bg-success-500/20 dark:text-success-400',
+                                                                'submitted'               => 'bg-info-100 text-info-700 border-info-200 dark:bg-info-500/20 dark:text-info-400',
+                                                                'evaluated'               => 'bg-info-100 text-info-700 border-info-200 dark:bg-info-500/20 dark:text-info-400',
+                                                                'pending_target_approval' => 'bg-warning-100 text-warning-700 border-warning-200 dark:bg-warning-500/20 dark:text-warning-400',
+                                                                'to evaluate'             => 'bg-warning-100 text-warning-700 border-warning-200 dark:bg-warning-500/20 dark:text-warning-400',
+                                                                'reevaluate'              => 'bg-revision-100 text-revision-700 border-revision-200 dark:bg-revision-500/20 dark:text-revision-400',
+                                                                'target_returned'         => 'bg-revision-100 text-revision-700 border-revision-200 dark:bg-revision-500/20 dark:text-revision-400',
+                                                                'target_unapproved'       => 'bg-revision-100 text-revision-700 border-revision-200 dark:bg-revision-500/20 dark:text-revision-400',
+                                                                'twg_disapproved'         => 'bg-danger-100 text-danger-700 border-danger-200 dark:bg-danger-500/20 dark:text-danger-400',
+                                                                'unevaluated'             => 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400',
+                                                                'draft'                   => 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400',
+                                                                'draft_target'            => 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400'
                                                             ];
-                                                            $c = $badgeColors[$s] ?? $badgeColors['draft'];
-                                                            $displayStatus = str_replace('_', ' ', $row['folder_status']);
+                                                            $c = $badgeColors[$s] ?? 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400';
+                                                            $displayStatus = ucwords(str_replace('_', ' ', $row['folder_status']));
                                                         ?>
                                                         <span class="px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border <?= $c ?> whitespace-nowrap">
                                                             <?= esc($displayStatus) ?>
@@ -421,12 +471,17 @@
                                             <td class="block lg:table-cell px-0 lg:px-6 pt-1 pb-0 lg:py-4 text-right lg:min-w-[135px]">
                                                 <a href="<?= site_url('ratings/show/' . $row['folder_id']) ?>" 
                                                 class="w-full lg:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 lg:py-2 bg-accent hover:bg-accent-hover text-white rounded-xl font-bold text-xs transition-all shadow-md active:scale-95 cursor-pointer whitespace-nowrap">
-                                                    Open Evaluation
+                                                    <?= ($pKey === 'target') ? 'Review Targets' : 'Open Evaluation' ?>
                                                 </a>
                                             </td>
 
                                         </tr>
                                     <?php endforeach; ?>
+                                    <tr class="ratings-empty-filter hidden block lg:table-row">
+                                        <td colspan="100%" class="block lg:table-cell px-6 py-12 text-center text-sm font-bold text-text-muted italic">
+                                            No employees found matching the selected filter.
+                                        </td>
+                                    </tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
@@ -502,7 +557,7 @@
             if (this.btnPrev) this.btnPrev.disabled = this.currentPage === 1;
             if (this.btnNext) this.btnNext.disabled = this.currentPage === totalPages;
             
-            this.container.classList.toggle('hidden', total === 0);
+            this.container.classList.toggle('hidden', totalPages <= 1);
         }
     }
 
@@ -511,9 +566,9 @@
 
     // System Adjectival Logic
     function getAdjectivalRating(score) {
-        if (score >= 4.30) return 'O';  
-        if (score >= 3.54) return 'VS'; 
-        if (score >= 2.70) return 'S';  
+        if (score >= 4.50) return 'O';  
+        if (score >= 3.50) return 'VS'; 
+        if (score >= 2.50) return 'S';  
         if (score >= 1.50) return 'US'; 
         return 'P';                     
     }
@@ -550,8 +605,8 @@
                     
                     const adj = getAdjectivalRating(parseFloat(score));
                     const styles = {
-                        'O':  ['bg-info-100', 'text-info-700', 'border-info-200', 'dark:bg-info-500/20', 'dark:text-info-400'],
-                        'VS': ['bg-success-100', 'text-success-700', 'border-success-200', 'dark:bg-success-500/20', 'dark:text-success-400'],
+                        'O':  ['bg-success-100', 'text-success-700', 'border-success-200', 'dark:bg-success-500/20', 'dark:text-success-400'],
+                        'VS': ['bg-info-100', 'text-info-700', 'border-info-200', 'dark:bg-info-500/20', 'dark:text-info-400'],
                         'S':  ['bg-warning-100', 'text-warning-700', 'border-warning-200', 'dark:bg-warning-500/20', 'dark:text-warning-400'],
                         'US': ['bg-revision-100', 'text-revision-700', 'border-revision-200', 'dark:bg-revision-500/20', 'dark:text-revision-400'],
                         'P':  ['bg-danger-100', 'text-danger-700', 'border-danger-200', 'dark:bg-danger-500/20', 'dark:text-danger-400']
@@ -581,10 +636,10 @@
                 const adj = getAdjectivalRating(score);
                 badge.innerText = adj;
                 
-                // Apply specific colors based on the adjective
+                // Apply specific colors based on the adjective (CSC MC No. 6, s. 2012)
                 const styles = {
-                    'O':  ['bg-info-100', 'text-info-700', 'border-info-200', 'dark:bg-info-500/20', 'dark:text-info-400'],
-                    'VS': ['bg-success-100', 'text-success-700', 'border-success-200', 'dark:bg-success-500/20', 'dark:text-success-400'],
+                    'O':  ['bg-success-100', 'text-success-700', 'border-success-200', 'dark:bg-success-500/20', 'dark:text-success-400'],
+                    'VS': ['bg-info-100', 'text-info-700', 'border-info-200', 'dark:bg-info-500/20', 'dark:text-info-400'],
                     'S':  ['bg-warning-100', 'text-warning-700', 'border-warning-200', 'dark:bg-warning-500/20', 'dark:text-warning-400'],
                     'US': ['bg-revision-100', 'text-revision-700', 'border-revision-200', 'dark:bg-revision-500/20', 'dark:text-revision-400'],
                     'P':  ['bg-danger-100', 'text-danger-700', 'border-danger-200', 'dark:bg-danger-500/20', 'dark:text-danger-400']
@@ -620,10 +675,13 @@
             el.classList.add('hidden');
             el.classList.remove('flex', 'flex-col', 'flex-1', 'min-w-0', 'min-h-0', 'h-full');
         });
+
+        const activeClasses = ['active-tab', 'bg-accent', 'text-white', 'shadow-md', 'shadow-accent/20', 'border-accent'];
+        const inactiveClasses = ['bg-surface-border/20', 'dark:bg-zinc-800/60', 'text-text-muted', 'hover:text-text', 'hover:bg-surface-border/40', 'border-surface-border/50'];
         
         document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.remove('active-tab', 'bg-accent', 'text-white', 'shadow-md', 'shadow-accent/20', 'border-accent');
-            btn.classList.add('bg-surface-border/20', 'dark:bg-zinc-800/60', 'text-text-muted', 'border', 'border-surface-border/50');
+            btn.classList.remove(...activeClasses);
+            btn.classList.add(...inactiveClasses);
             
             const iconSvg = btn.querySelector('.tab-icon svg');
             if (iconSvg) {
@@ -639,7 +697,7 @@
                 if (defaultBadgeClass) {
                     badge.className = 'tab-badge ' + defaultBadgeClass;
                 } else {
-                    badge.className = 'tab-badge px-2 py-0.5 rounded-full text-[10px] font-black transition-colors bg-surface-border/50 text-text-muted group-hover:text-text';
+                    badge.className = 'tab-badge ml-1 px-2.5 py-0.5 rounded-full text-[10px] font-black transition-colors bg-surface-border/50 text-text-muted group-hover:text-text';
                 }
             }
         });
@@ -651,8 +709,8 @@
         }
 
         if (btnElement) {
-            btnElement.classList.remove('bg-surface-border/20', 'dark:bg-zinc-800/60', 'text-text-muted', 'border-surface-border/50');
-            btnElement.classList.add('active-tab', 'bg-accent', 'text-white', 'shadow-md', 'shadow-accent/20', 'border', 'border-accent');
+            btnElement.classList.remove(...inactiveClasses);
+            btnElement.classList.add(...activeClasses);
             
             const iconSvg = btnElement.querySelector('.tab-icon svg');
             if (iconSvg) {
@@ -665,6 +723,10 @@
             if (activeBadge) {
                 activeBadge.className = 'tab-badge ml-1 px-2.5 py-0.5 rounded-full text-[10px] font-black transition-colors bg-white/20 text-white';
             }
+        }
+
+        if (typeof filterRatings === 'function') {
+            filterRatings();
         }
     }
 
@@ -718,6 +780,100 @@
         if (overlay) overlay.addEventListener('click', closeFilters);
     });
 
+    window.SPMS_RATINGS_UNITS = <?= json_encode(array_map(fn($u) => ['id' => (int)$u['id'], 'name' => $u['name'], 'parent_id' => $u['parent_id'] ? (int)$u['parent_id'] : 0], $allUnits ?? [])) ?>;
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function onRatingCollegeFilterChange(collegeId) {
+        const deptSelect = document.getElementById('filter-dept-select');
+        const countPill = document.getElementById('subdept-count-pill');
+        if (!deptSelect) return;
+
+        if (!collegeId) {
+            deptSelect.innerHTML = '<option value="">All Departments</option>';
+            deptSelect.value = '';
+            deptSelect.disabled = true;
+            deptSelect.classList.add('opacity-60');
+            deptSelect.classList.remove('border-amber-500', 'text-amber-600', 'dark:text-amber-400');
+            if (countPill) countPill.textContent = '(All)';
+            if (typeof filterRatings === 'function') filterRatings();
+            return;
+        }
+
+        const numericCollegeId = parseInt(collegeId, 10);
+        const units = window.SPMS_RATINGS_UNITS || [];
+        const college = units.find(u => u.id === numericCollegeId);
+        const collegeName = college ? college.name : '';
+
+        // Find children of this college
+        const children = units.filter(u => u.parent_id === numericCollegeId);
+
+        let shortName = collegeName.replace(/^College of\s+/i, '').trim();
+        let allLabel = shortName ? `All ${shortName} Departments` : 'All Departments';
+
+        let html = `<option value="">${allLabel}</option>`;
+        children.forEach(child => {
+            html += `<option value="${escapeHtml(child.name)}">${escapeHtml(child.name)}</option>`;
+        });
+
+        deptSelect.innerHTML = html;
+        deptSelect.value = '';
+        deptSelect.disabled = false;
+        deptSelect.classList.remove('opacity-60');
+        deptSelect.classList.remove('border-amber-500', 'text-amber-600', 'dark:text-amber-400');
+
+        if (countPill) {
+            countPill.textContent = `(${children.length} options)`;
+        }
+
+        if (typeof filterRatings === 'function') filterRatings();
+    }
+    window.onRatingCollegeFilterChange = onRatingCollegeFilterChange;
+
+    function onRatingDeptFilterChange(deptName) {
+        const deptSelect = document.getElementById('filter-dept-select');
+        if (deptSelect) {
+            if (deptName) {
+                deptSelect.classList.add('border-amber-500', 'text-amber-600', 'dark:text-amber-400');
+            } else {
+                deptSelect.classList.remove('border-amber-500', 'text-amber-600', 'dark:text-amber-400');
+            }
+        }
+        if (typeof filterRatings === 'function') filterRatings();
+    }
+    window.onRatingDeptFilterChange = onRatingDeptFilterChange;
+
+    function clearAllRatingsFilters() {
+        const searchInput = document.getElementById('search-rating');
+        if (searchInput) searchInput.value = '';
+        document.querySelectorAll('.ratings-filter-checkbox').forEach(cb => cb.checked = false);
+
+        const collegeSelect = document.getElementById('filter-college-select');
+        if (collegeSelect) collegeSelect.value = '';
+        const deptSelect = document.getElementById('filter-dept-select');
+        if (deptSelect) {
+            deptSelect.innerHTML = '<option value="">All Departments</option>';
+            deptSelect.value = '';
+            deptSelect.disabled = true;
+            deptSelect.classList.add('opacity-60');
+            deptSelect.classList.remove('border-amber-500', 'text-amber-600', 'dark:text-amber-400');
+        }
+        const countPill = document.getElementById('subdept-count-pill');
+        if (countPill) countPill.textContent = '(All)';
+
+        const msPos = document.getElementById('mini-search-positions');
+        if (msPos) { msPos.value = ''; msPos.dispatchEvent(new Event('input')); }
+
+        if (typeof filterRatings === 'function') filterRatings();
+    }
+    window.clearAllRatingsFilters = clearAllRatingsFilters;
+
     // REAL-TIME SEARCH AND FILTER LOGIC
     document.addEventListener('DOMContentLoaded', () => {
         const searchInput = document.getElementById('search-rating');
@@ -732,27 +888,92 @@
         function filterRatings() {
             const searchTerm   = searchInput ? searchInput.value.toLowerCase() : '';
             const checkedTypes = getCheckedValues('filter_type[]');
-            const checkedUnits = getCheckedValues('filter_unit[]');
             const checkedPos   = getCheckedValues('filter_pos[]');
+
+            const collegeSelect = document.getElementById('filter-college-select');
+            const deptSelect = document.getElementById('filter-dept-select');
+            const selectedCollegeId = collegeSelect ? collegeSelect.value : '';
+            const selectedDept = (deptSelect ? deptSelect.value : '').trim();
+
+            let filterByUnit = false;
+            let allowedUnitNames = new Set();
+            if (selectedDept) {
+                filterByUnit = true;
+                allowedUnitNames.add(selectedDept.toLowerCase());
+            } else if (selectedCollegeId) {
+                filterByUnit = true;
+                const numericCollegeId = parseInt(selectedCollegeId, 10);
+                const units = window.SPMS_RATINGS_UNITS || [];
+                const college = units.find(u => u.id === numericCollegeId);
+                if (college) {
+                    allowedUnitNames.add((college.name || '').trim().toLowerCase());
+                    units.filter(u => u.parent_id === numericCollegeId).forEach(child => {
+                        allowedUnitNames.add((child.name || '').trim().toLowerCase());
+                    });
+                }
+            }
+
+            // Active filters count badge & Reset button
+            let activeCount = 0;
+            if (searchTerm) activeCount++;
+            if (checkedTypes.length > 0) activeCount += checkedTypes.length;
+            if (selectedCollegeId) activeCount++;
+            if (selectedDept) activeCount++;
+            if (checkedPos.length > 0) activeCount += checkedPos.length;
+
+            const countBadge = document.getElementById('active-ratings-filter-badge');
+            const resetBtn = document.getElementById('reset-ratings-filters-btn');
+            if (countBadge) {
+                countBadge.textContent = activeCount;
+                countBadge.classList.toggle('hidden', activeCount === 0);
+            }
+            if (resetBtn) {
+                resetBtn.classList.toggle('hidden', activeCount === 0);
+            }
             
-            document.querySelectorAll('.rating-card').forEach(card => {
-                const name   = (card.getAttribute('data-name') || '').toLowerCase();
-                const unit   = (card.getAttribute('data-unit') || '').toLowerCase();
-                const pos    = (card.getAttribute('data-pos') || '').toLowerCase();
-                const type   = card.getAttribute('data-teaching') || '0';
-                
-                const matchesSearch = name.includes(searchTerm);
-                const matchesUnit   = checkedUnits.length === 0 || checkedUnits.includes(unit);
-                const matchesPos    = checkedPos.length === 0 || checkedPos.includes(pos);
-                const matchesType   = checkedTypes.length === 0 || checkedTypes.includes(type);
-                
-                if (matchesSearch && matchesUnit && matchesPos && matchesType) {
-                    card.style.display = ''; 
-                } else {
-                    card.style.display = 'none'; 
+            document.querySelectorAll('.tab-content').forEach(tabContent => {
+                const cards = tabContent.querySelectorAll('.rating-card');
+                if (cards.length === 0) return;
+                let visibleCards = 0;
+
+                cards.forEach(card => {
+                    const name   = (card.getAttribute('data-name') || '').toLowerCase();
+                    const unit   = (card.getAttribute('data-unit') || '').toLowerCase();
+                    const pos    = (card.getAttribute('data-pos') || '').toLowerCase();
+                    const type   = card.getAttribute('data-teaching') || '0';
+                    
+                    const matchesSearch = name.includes(searchTerm);
+                    const matchesPos    = checkedPos.length === 0 || checkedPos.some(p => pos.includes(p));
+                    const matchesType   = checkedTypes.length === 0 || checkedTypes.includes(type);
+                    
+                    let matchesUnit = true;
+                    if (filterByUnit) {
+                        const cardDepts = unit.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+                        matchesUnit = cardDepts.some(cd => {
+                            if (allowedUnitNames.has(cd)) return true;
+                            for (const allowed of allowedUnitNames) {
+                                if (cd.includes(allowed) || allowed.includes(cd)) return true;
+                            }
+                            return false;
+                        });
+                    }
+                    
+                    if (matchesSearch && matchesUnit && matchesPos && matchesType) {
+                        card.style.display = ''; 
+                        visibleCards++;
+                    } else {
+                        card.style.display = 'none'; 
+                    }
+                });
+
+                const emptyRow = tabContent.querySelector('.ratings-empty-filter');
+                if (emptyRow) {
+                    emptyRow.classList.toggle('hidden', visibleCards > 0);
                 }
             });
         }
+        
+        window.filterRatings = filterRatings;
         
         if (searchInput) searchInput.addEventListener('input', filterRatings);
         checkboxes.forEach(cb => {
@@ -760,40 +981,7 @@
         });
 
         if (clearBtn) {
-            clearBtn.addEventListener('click', () => {
-                if (searchInput) searchInput.value = '';
-                checkboxes.forEach(cb => cb.checked = false);
-                filterRatings();
-                
-                // Also reset sidebar mini-searches
-                const msUnits = document.getElementById('mini-search-units');
-                const msPos = document.getElementById('mini-search-positions');
-                if (msUnits) { msUnits.value = ''; msUnits.dispatchEvent(new Event('input')); }
-                if (msPos) { msPos.value = ''; msPos.dispatchEvent(new Event('input')); }
-            });
-        }
-
-        // Initialize Pagination and Mini-search for sidebar filters
-        function filterSidebarUnits() {
-            const input = document.getElementById('mini-search-units');
-            const query = input ? input.value.trim().toLowerCase() : '';
-            const list = document.getElementById('units-checkbox-list');
-            if (!list) return;
-            const allRows = Array.from(list.querySelectorAll('.unit-filter-label'));
-            
-            if (ratingsUnitsPaginator.allRows.length === 0) ratingsUnitsPaginator.init(allRows);
-            
-            const matchedRows = allRows.filter(row => row.dataset.name && row.dataset.name.includes(query));
-            ratingsUnitsPaginator.updateItems(matchedRows);
-        }
-
-        const msUnits = document.getElementById('mini-search-units');
-        if (msUnits) msUnits.addEventListener('input', filterSidebarUnits);
-        
-        const cbUnitsList = document.getElementById('units-checkbox-list');
-        if (cbUnitsList) {
-            ratingsUnitsPaginator.init(Array.from(cbUnitsList.querySelectorAll('.unit-filter-label')));
-            filterSidebarUnits();
+            clearBtn.addEventListener('click', clearAllRatingsFilters);
         }
 
         function filterSidebarPositions() {

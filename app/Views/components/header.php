@@ -414,9 +414,13 @@
                     case 'target_returned':
                     case 'eval_returned':
                     case 'twg_disapproved':
+                    case 'target_unapproved':
+                    case 'target_unsubmitted':
+                    case 'eval_unsubmitted':
                         return `<svg class="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`;
                     case 'target_submitted':
                     case 'eval_submitted':
+                    case 'target_released':
                         return `<svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`;
                     case 'twg_approved':
                         return `<svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>`;
@@ -433,9 +437,13 @@
                     case 'target_returned':
                     case 'eval_returned':
                     case 'twg_disapproved':
+                    case 'target_unapproved':
+                    case 'target_unsubmitted':
+                    case 'eval_unsubmitted':
                         return 'bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900';
                     case 'target_submitted':
                     case 'eval_submitted':
+                    case 'target_released':
                         return 'bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900';
                     case 'twg_approved':
                         return 'bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-900';

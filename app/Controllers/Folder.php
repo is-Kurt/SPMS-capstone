@@ -87,6 +87,10 @@ class Folder extends BaseController
                         ($routingModel->where('folder_id', $activeFolder['id'])->where('evaluator_id', $userId)->countAllResults() > 0);
 
                     if ($isAuthorizedEvaluator) {
+                        if (in_array($activeFolder['status'], [FolderStatus::DRAFT->value, FolderStatus::DRAFT_TARGET->value])) {
+                            session()->setFlashdata('error', 'This folder is currently being drafted by the employee and has not yet been submitted for evaluation.');
+                            return redirect()->to(site_url('ratings'));
+                        }
                         return redirect()->to(site_url('ratings/show/' . $activeFolder['id']));
                     }
 
@@ -207,7 +211,8 @@ class Folder extends BaseController
 
                 $myPrimaryDoc = $documentModel->where('document_folder_id', $activeFolder['id'])->where('is_target', 1)->first()
                              ?? $documentModel->where('document_folder_id', $activeFolder['id'])->first();
-                $isMyDocOpcr = (strtoupper($myPrimaryDoc['title'] ?? '') === 'OPCR');
+                $myDocTitleUpper = strtoupper($myPrimaryDoc['title'] ?? '');
+                $isMyDocOpcr = str_contains($myDocTitleUpper, 'OPCR') || str_contains($myDocTitleUpper, 'OFFICE') || (strtoupper($myPrimaryDoc['doc_type'] ?? '') === 'OPCR');
 
                 if ($isParentAdmin || $isMyDocOpcr) {
                     $isParentTargetApproved = true;
@@ -222,8 +227,9 @@ class Folder extends BaseController
         }
 
         $cascadedChildren = [];
-        if ($activeFolder && $role === 'Admin') {
+        if ($activeFolder && in_array($role, ['Admin', 'Supervisor'])) {
             $cascadedChildren = $folderModel->where('parent_folder_id', $activeFolder['id'])
+                ->where('document_folders.deleted_at IS NULL')
                 ->select("document_folders.id, document_folders.status, document_folders.target_submitted_at, users.first_name, users.last_name, users.email, pos.title as position")
                 ->join('users', 'users.id = document_folders.user_id')
                 ->join('plantillas p', 'p.user_id = users.id AND p.ended_at IS NULL', 'left')
@@ -340,7 +346,8 @@ class Folder extends BaseController
             if ($role === 'Admin') {
                 foreach ($members as $member) {
                     $exists = $folderModel->where('user_id', $member['user_id'])
-                                          ->where('parent_folder_id', $activeFolder['id'])->first();
+                                          ->where('parent_folder_id', $activeFolder['id'])
+                                          ->where('deleted_at IS NULL')->first();
                     
                     if (!$exists) {
                         $newFolderId = create_unique_row($folderModel, [
@@ -377,17 +384,39 @@ class Folder extends BaseController
                     // Pre-generate the member's official evaluation paper based on profile doc_type
                     $this->ensureUserDocumentExists($newFolderId, $member['user_id'], $activeFolder['title']);
 
+                    // Register evaluator routing so member's OPCR submission routes to Admin for review
+                    $routingExists = $routingModel->where('folder_id', $newFolderId)
+                                                  ->where('evaluator_id', $userId)->first();
+                    if (!$routingExists) {
+                        $routingModel->insert([
+                            'folder_id'           => $newFolderId,
+                            'evaluator_id'        => $userId,
+                            'evaluator_folder_id' => $folderId,
+                            'status'              => FolderStatus::DRAFT->value
+                        ]);
+                    }
+
                     if (!$exists) {
-                        $memberInfo = $userModel->find($member['user_id']);
+                        notify_user((int) $member['user_id'], [
+                            'sender_id' => $userId,
+                            'type'      => 'target_assigned',
+                            'title'     => 'Evaluation Target Assigned',
+                            'message'   => "You have been assigned to prepare the institutional OPCR for \"{$activeFolder['title']}\".",
+                            'link'      => 'folders/' . $newFolderId,
+                            'icon'      => 'file'
+                        ]);
                     }
                 }
-                $message = "Batch evaluation distributed to team members.";
+                $message = (count($members) === 1)
+                    ? "Evaluation cycle successfully cascaded to the Vice President for Academic Affairs (VPAA)."
+                    : "Evaluation cycle successfully cascaded to team members.";
             } else {
                 $batchId = $activeFolder['id'];
 
                 foreach ($members as $member) {
                     $subFolder = $folderModel->where('user_id', $member['user_id'])
-                                             ->where('parent_folder_id', $batchId)->first();
+                                             ->where('parent_folder_id', $batchId)
+                                             ->where('deleted_at IS NULL')->first();
                     
                     if (!$subFolder) {
                         $newFolderId = create_unique_row($folderModel, [
@@ -433,6 +462,15 @@ class Folder extends BaseController
                                 'evaluator_id'        => $userId,
                                 'evaluator_folder_id' => $folderId,
                                 'status'              => FolderStatus::DRAFT->value
+                            ]);
+
+                            notify_user((int) $member['user_id'], [
+                                'sender_id' => $userId,
+                                'type'      => 'target_assigned',
+                                'title'     => 'Evaluation Target Assigned',
+                                'message'   => "You have been assigned to prepare target commitments for \"{$activeFolder['title']}\".",
+                                'link'      => 'folders/' . $subFolder['id'],
+                                'icon'      => 'file'
                             ]);
                         }
 
@@ -701,7 +739,7 @@ class Folder extends BaseController
 
     /** POST /folder/delete - Deletes a folder. Only the owning Admin can actually remove it. */
     public function destroy() {
-        $folderId = $this->request->getPost('doc_id');
+        $folderId = $this->request->getVar('doc_id') ?? $this->request->getVar('folder_id') ?? $this->request->getPost('doc_id');
         $folderModel = new DocumentFolderModel();
         
         $userId = session()->get('user_id');
@@ -960,14 +998,28 @@ class Folder extends BaseController
             $masterFolder = $folderModel->find($folderId);
             $folderModel->update($folderId, $folderData);
 
-            // 2. Fetch and Process Cascaded Child Folders
-            // We join users to get the child's doc_type
+            // 2. Fetch and Process All Descendant Cascaded Folders (all tiers: Deans, Chairs, Faculty)
             $db = \Config\Database::connect();
-            $childFolders = $db->table('document_folders df')
-                ->select('df.*, u.doc_type')
-                ->join('users u', 'u.id = df.user_id')
-                ->where('df.parent_folder_id', $folderId)
-                ->get()->getResultArray();
+            $allDescendantIds = [];
+            $toVisit = [$folderId];
+            while (!empty($toVisit)) {
+                $curr = array_pop($toVisit);
+                $children = $folderModel->where('parent_folder_id', $curr)->where('deleted_at IS NULL')->findAll();
+                foreach ($children as $c) {
+                    $allDescendantIds[] = $c['id'];
+                    $toVisit[] = $c['id'];
+                }
+            }
+
+            $childFolders = [];
+            if (!empty($allDescendantIds)) {
+                $childFolders = $db->table('document_folders df')
+                    ->select('df.*, u.doc_type')
+                    ->join('users u', 'u.id = df.user_id')
+                    ->whereIn('df.id', array_unique($allDescendantIds))
+                    ->where('df.deleted_at IS NULL')
+                    ->get()->getResultArray();
+            }
 
             if (!empty($childFolders)) {
                 foreach ($childFolders as $child) {
@@ -1135,6 +1187,17 @@ class Folder extends BaseController
 
             $folderModel->update($folderId, ['status' => FolderStatus::DRAFT->value, 'submitted_at' => null]);
             audit_log('ACCOMPLISHMENT_REVOKED', 'RATING', 'document_folder', (int) $folderId, "Accomplishment submission revoked back to draft: {$folder['title']}");
+
+            $subUser = (new UserModel())->find($userId);
+            $subName = trim(($subUser['first_name'] ?? '') . ' ' . ($subUser['last_name'] ?? '')) ?: 'Employee';
+            $this->notifyFolderEvaluators(
+                $folder,
+                'Evaluation Submission Revoked',
+                "{$subName} revoked their accomplishment submission for \"{$folder['title']}\" and returned it to draft.",
+                'eval_unsubmitted',
+                'file'
+            );
+
             return $this->respond(['status' => 'success', 'message' => 'Submission revoked.']);
         });
     }
@@ -1228,7 +1291,8 @@ class Folder extends BaseController
                     $parentDoc = (new \App\Models\DocumentModel())->where('document_folder_id', $parentFolder['id'])->first();
                     $myDoc = (new \App\Models\DocumentModel())->where('document_folder_id', $folderId)->where('is_target', 1)->first()
                           ?? (new \App\Models\DocumentModel())->where('document_folder_id', $folderId)->first();
-                    $isMyDocOpcr = (strtoupper($myDoc['title'] ?? '') === 'OPCR');
+                    $myDocTitleUpper = strtoupper($myDoc['title'] ?? '');
+                    $isMyDocOpcr = str_contains($myDocTitleUpper, 'OPCR') || str_contains($myDocTitleUpper, 'OFFICE') || (strtoupper($myDoc['doc_type'] ?? '') === 'OPCR');
 
                     if ($parentDoc && !$isMyDocOpcr) {
                         if ($parentFolder['status'] !== FolderStatus::TARGET_APPROVED->value) {
@@ -1303,20 +1367,15 @@ class Folder extends BaseController
 
             audit_log('TARGET_REVOKED', 'TARGET', 'document_folder', (int) $folderId, "Target submission revoked back to draft: {$folder['title']}");
 
-            // Notify routed evaluators that submission was withdrawn
-            $evaluators = (new \App\Models\EvaluationRoutingModel())->where('folder_id', $folderId)->findAll();
             $sender = (new UserModel())->find($userId);
             $senderName = $sender ? trim(($sender['first_name'] ?? '') . ' ' . ($sender['last_name'] ?? '')) : 'The employee';
-            foreach ($evaluators as $ev) {
-                notify_user((int) $ev['evaluator_id'], [
-                    'sender_id' => $userId,
-                    'type'      => 'target_unsubmitted',
-                    'title'     => 'Target Submission Revoked',
-                    'message'   => "{$senderName} revoked their target submission for \"{$folder['title']}\" and returned it to draft.",
-                    'link'      => 'ratings/' . $folderId,
-                    'icon'      => 'file',
-                ]);
-            }
+            $this->notifyFolderEvaluators(
+                $folder,
+                'Target Submission Revoked',
+                "{$senderName} revoked their target submission for \"{$folder['title']}\" and returned it to draft.",
+                'target_unsubmitted',
+                'file'
+            );
             
             return $this->respond(['status' => 'success', 'message' => 'Targets unsubmitted successfully.']);
         });
@@ -1397,7 +1456,8 @@ class Folder extends BaseController
 
                 foreach ($deanUsers as $dean) {
                     $existing = $folderModel->where('parent_folder_id', $folder['id'])
-                                            ->where('user_id', $dean['id'])->first();
+                                            ->where('user_id', $dean['id'])
+                                            ->where('deleted_at IS NULL')->first();
                     if (!$existing) {
                         $newFolderId = create_unique_row($folderModel, [
                             'title'               => $folder['title'],
@@ -1458,7 +1518,8 @@ class Folder extends BaseController
 
                 foreach ($chairs as $chair) {
                     $existing = $folderModel->where('parent_folder_id', $folder['id'])
-                                            ->where('user_id', $chair['user_id'])->first();
+                                            ->where('user_id', $chair['user_id'])
+                                            ->where('deleted_at IS NULL')->first();
                     if (!$existing) {
                         $newFolderId = create_unique_row($folderModel, [
                             'title'               => $folder['title'],
@@ -1531,7 +1592,9 @@ class Folder extends BaseController
                 $directPersonnel = $collegeUnitId ? $unitModel->getPersonnelForDepartment((int) $collegeUnitId, (int) $folder['user_id']) : [];
                 foreach ($directPersonnel as $dp) {
                     if (in_array($dp['user_id'], $chairUserIds)) continue;
-                    $existing = $folderModel->where('parent_folder_id', $folder['id'])->where('user_id', $dp['user_id'])->first();
+                    $existing = $folderModel->where('parent_folder_id', $folder['id'])
+                                            ->where('user_id', $dp['user_id'])
+                                            ->where('deleted_at IS NULL')->first();
                     if (!$existing) {
                         $newFolderId = create_unique_row($folderModel, [
                             'title'               => $folder['title'],
@@ -1601,7 +1664,8 @@ class Folder extends BaseController
 
                 foreach ($facultyList as $faculty) {
                     $existing = $folderModel->where('parent_folder_id', $folder['id'])
-                                            ->where('user_id', $faculty['user_id'])->first();
+                                            ->where('user_id', $faculty['user_id'])
+                                            ->where('deleted_at IS NULL')->first();
                     if (!$existing) {
                         $newFolderId = create_unique_row($folderModel, [
                             'title'               => $folder['title'],
@@ -1793,20 +1857,28 @@ class Folder extends BaseController
             }
 
             $isAdmin = (new UserModel())->hasRole(session()->get('user_id'), 'Admin');
+            $finalScore = $this->request->getPost('final_score') ?? $this->request->getPost('final_rating');
 
             if ($isAdmin) {
                 $routingModel->where('folder_id', $folderId)
                     ->set(['status' => FolderStatus::APPROVED->value, 'updated_at' => date('Y-m-d H:i:s')])
                     ->update();
-                $folderModel->update($folderId, [
+                $updateData = [
                     'status'   => FolderStatus::APPROVED->value,
                     'rated_at' => date('Y-m-d H:i:s')
-                ]);
+                ];
+                if ($finalScore !== null && $finalScore !== '' && is_numeric($finalScore)) {
+                    $updateData['final_rating'] = (float) $finalScore;
+                }
+                $folderModel->update($folderId, $updateData);
             } else {
                 $routingModel->where('folder_id', $folderId)
                     ->where('evaluator_id', session()->get('user_id'))
                     ->set(['status' => FolderStatus::APPROVED->value, 'updated_at' => date('Y-m-d H:i:s')])
                     ->update();
+                if ($finalScore !== null && $finalScore !== '' && is_numeric($finalScore)) {
+                    $folderModel->update($folderId, ['final_rating' => (float) $finalScore]);
+                }
                 $this->updateFolderConsensus($folderId);
             }
 
@@ -2087,6 +2159,8 @@ class Folder extends BaseController
         $routings = $routingModel->where('folder_id', $folder['id'])->findAll();
         $senderId = session()->get('user_id');
 
+        $targetLink = in_array($type, ['target_unsubmitted', 'eval_unsubmitted']) ? 'ratings' : 'ratings/show/' . $folder['id'];
+
         $notifiedIds = [];
         foreach ($routings as $r) {
             $evalId = (int) $r['evaluator_id'];
@@ -2096,7 +2170,7 @@ class Folder extends BaseController
                     'type'      => $type,
                     'title'     => $title,
                     'message'   => $message,
-                    'link'      => 'ratings/show/' . $folder['id'],
+                    'link'      => $targetLink,
                     'icon'      => $icon,
                 ]);
                 $notifiedIds[] = $evalId;
@@ -2115,7 +2189,7 @@ class Folder extends BaseController
                         'type'      => $type,
                         'title'     => $title,
                         'message'   => $message,
-                        'link'      => 'ratings/show/' . $folder['id'],
+                        'link'      => $targetLink,
                         'icon'      => $icon,
                     ]);
                     $notifiedIds[] = $pUserId;
@@ -2138,7 +2212,7 @@ class Folder extends BaseController
                             'type'      => $type,
                             'title'     => $title,
                             'message'   => $message,
-                            'link'      => 'ratings/show/' . $folder['id'],
+                            'link'      => $targetLink,
                             'icon'      => $icon,
                         ]);
                         $notifiedIds[] = $adminId;
