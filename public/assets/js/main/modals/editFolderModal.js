@@ -58,15 +58,26 @@ docTypes.forEach(type => {
     });
 });
 
-window.openEditFolderModal = function(id, title, dates = {}) {
-    idInput.value = id;
-    titleInput.value = title;
+window.openEditFolderModal = function(idOrData, maybeTitle, maybeDates = {}) {
+    let id = idOrData;
+    let title = maybeTitle;
+    let dates = maybeDates;
+
+    if (typeof idOrData === 'object' && idOrData !== null) {
+        id = idOrData.id;
+        title = idOrData.title || '';
+        dates = idOrData;
+    }
+
+    idInput.value = id || '';
+    titleInput.value = title || '';
 
     docTypes.forEach(type => {
         ['target_start', 'target_end', 'eval_start', 'eval_end'].forEach(phase => {
             const rawDate = dates[`${type}_${phase}`];
             const safeDate = rawDate ? String(rawDate).replace(' ', 'T').slice(0, 16).replace('T24:00', 'T23:59') : '';
-            const inputField = inputs[type][phase.replace(/_([a-z])/g, (g) => g[1].toUpperCase())];
+            const propName = phase.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+            const inputField = inputs[type]?.[propName];
             if (inputField) {
                 inputField.value = safeDate;
             }

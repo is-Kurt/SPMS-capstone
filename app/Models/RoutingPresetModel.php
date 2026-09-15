@@ -8,11 +8,12 @@ class RoutingPresetModel extends Model
 {
     protected $table            = 'routing_presets';
     protected $primaryKey       = 'id';
-    protected $useAutoIncrement = true;
+    protected $useAutoIncrement = false;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = true;
     protected $protectFields    = true;
     protected $allowedFields    = [
+        'id',
         'owner_id',
         'name',
         'description',

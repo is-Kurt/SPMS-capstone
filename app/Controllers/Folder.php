@@ -59,7 +59,7 @@ class Folder extends BaseController
         $groupedGuides = []; 
         $isReadOnly = true; 
 
-        $presets = $presetModel->where('owner_id', $userId)->orderBy('name', 'ASC')->findAll();
+        $presets = $presetModel->getPresetsWithDetails($userId);
 
         if ($folderId) {
             $activeFolder = $folderModel->find($folderId);
@@ -115,17 +115,20 @@ class Folder extends BaseController
             if ($activeFolder['routing_preset_id'] && !in_array($activeFolder['routing_preset_id'], array_column($presets, 'id'))) {
                 $archivedPreset = $presetModel->withDeleted()->find($activeFolder['routing_preset_id']);
                 if ($archivedPreset) {
+                    $rpmModel = new \App\Models\RoutingPresetMemberModel();
+                    $archivedPreset['member_count'] = $rpmModel->where('preset_id', $archivedPreset['id'])->countAllResults();
                     $presets[] = $archivedPreset;
                 }
             }
 
-            // If the folder belongs to Admin, it is the master institutional cycle and is auto-approved
-            if ($activeFolder && $role === 'Admin' && $activeFolder['status'] === FolderStatus::DRAFT_TARGET->value) {
+
+            // Reconcile unsubmitted folders that were previously auto-approved for Admin
+            if ($activeFolder && $activeFolder['status'] === FolderStatus::TARGET_APPROVED->value && empty($activeFolder['target_submitted_at'])) {
                 $folderModel->update($folderId, [
-                    'status' => FolderStatus::TARGET_APPROVED->value,
-                    'target_approved_at' => date('Y-m-d H:i:s')
+                    'status' => FolderStatus::DRAFT_TARGET->value,
+                    'target_approved_at' => null
                 ]);
-                $activeFolder['status'] = FolderStatus::TARGET_APPROVED->value;
+                $activeFolder['status'] = FolderStatus::DRAFT_TARGET->value;
             }
 
             // Ensure the user's official performance paper exists automatically based on their profile doc_type
@@ -237,9 +240,6 @@ class Folder extends BaseController
                 ->findAll();
         }
 
-        $unitModel = new \App\Models\UnitModel();
-        $orgTarget = $unitModel->getOrganizationalCascadeTarget($userId, $role);
-
         $templateModel = new TemplateModel();
         
         return view('components/app_shell', [
@@ -257,7 +257,6 @@ class Folder extends BaseController
                 'groupedGuides'          => $groupedGuides,
                 'isReadOnly'             => $isReadOnly,
                 'presets'                => $presets,
-                'orgTarget'              => $orgTarget,
                 'cascadedChildren'       => $cascadedChildren
             ]
         ]);
@@ -303,41 +302,24 @@ class Folder extends BaseController
             }
 
             $presetModel = new RoutingPresetModel();
-            $unitModel   = new \App\Models\UnitModel();
-            $useOrg      = (bool) $this->request->getPost('use_org_target') || empty($teamId) || $teamId === 'org';
-            $orgTarget   = null;
 
-            if ($useOrg) {
-                $orgTarget = $unitModel->getOrganizationalCascadeTarget($userId, $role);
-                if (empty($orgTarget['members'])) {
-                    return $this->respondError("No active subordinates found in {$orgTarget['unit_name']}.", 400);
-                }
+            if (empty($teamId) || $teamId === 'org') {
+                return $this->respondError("Please select a team to cascade to.", 400);
+            }
 
-                $presetName = $orgTarget['unit_name'] . ' (' . $orgTarget['subordinate_role'] . ')';
-                $orgPreset = $presetModel->where('owner_id', $userId)->where('name', $presetName)->first();
-                if (!$orgPreset) {
-                    $pId = $presetModel->insert([
-                        'owner_id'    => $userId,
-                        'name'        => $presetName,
-                        'description' => "Official system-synced {$orgTarget['subordinate_role']} roster for {$orgTarget['unit_name']}."
-                    ]);
-                    $orgPreset = $presetModel->find($pId);
-                }
-
-                $presetMemberModel->where('preset_id', $orgPreset['id'])->delete();
-                foreach ($orgTarget['members'] as $m) {
-                    $mUserId = $m['user_id'] ?? $m['id'];
-                    $presetMemberModel->insert([
-                        'preset_id' => $orgPreset['id'],
-                        'user_id'   => $mUserId
-                    ]);
-                }
-
-                $teamId = $orgPreset['id'];
+            // Verify team exists and is accessible
+            $preset = $presetModel->where('id', $teamId)->first();
+            if (!$preset) {
+                return $this->respondError("The selected team was not found.", 404);
+            }
+            if ($preset['owner_id'] != $userId && $role !== 'Admin') {
+                return $this->respondError("You do not have permission to cascade using this team.", 403);
             }
 
             $members = $presetMemberModel->where('preset_id', $teamId)->findAll();
-            if (empty($members)) return $this->respondError("The selected team has no members.", 400);
+            if (empty($members)) {
+                return $this->respondError("The selected team has no members. Please add members to this team in the Teams tab first.", 400);
+            }
 
             $folderModel->db->transStart();
 
@@ -544,7 +526,7 @@ class Folder extends BaseController
             $folderModel->update($folderId, ['routing_preset_id' => null]);
 
             if (!empty($members)) {
-                $batchId = $activeFolder['parent_folder_id'] ?? $activeFolder['id'];
+                $batchId = $activeFolder['id'];
                 $subFolders = $folderModel->whereIn('user_id', $memberIds)
                                           ->where('parent_folder_id', $batchId)->findAll();
                 $subFolderIds = array_column($subFolders, 'id');
@@ -704,14 +686,11 @@ class Folder extends BaseController
             $userId = session()->get('user_id');
             $title = trim($this->request->getPost('title')) ?: 'Untitled Evaluation';
 
-            $role = session()->get('role');
-            $status = ($role === 'Admin') ? FolderStatus::TARGET_APPROVED->value : FolderStatus::DRAFT_TARGET->value;
-
             $payload = [
                 'title'              => resolve_unique_title($title, ['user_id' => $userId], 'title', $documentFolderModel),
                 'user_id'            => $userId,
-                'status'             => $status,
-                'target_approved_at' => ($role === 'Admin') ? date('Y-m-d H:i:s') : null,
+                'status'             => FolderStatus::DRAFT_TARGET->value,
+                'target_approved_at' => null,
             ];
 
             $docTypes = ['ipcr', 'dpcr', 'opcr', 'iperf'];
@@ -751,8 +730,18 @@ class Folder extends BaseController
             return $this->response->setJSON(['status' => 'error', 'message' => 'Folder not found']);
         }
 
-        if ($role !== 'Admin' && $folder['user_id'] != $userId) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized']);
+        if ($role !== 'Admin') {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized: Only Administrators can permanently dispose of evaluation records.']);
+        }
+
+        if (empty($folder['deleted_at'])) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Active evaluation cycles cannot be deleted. Please close and archive the cycle first.']);
+        }
+
+        $retentionDate = strtotime($folder['deleted_at']);
+        $fiveYearsAgo = strtotime('-5 years');
+        if (ENVIRONMENT !== 'development' && $retentionDate > $fiveYearsAgo) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Under CSC and National Archives policies, this record is still within its mandatory 5-year retention period and cannot be destroyed yet.']);
         }
 
         if ($role === 'Admin') {
@@ -966,7 +955,18 @@ class Folder extends BaseController
             $folderId = $this->request->getPost('folder_id');
             $folderModel = new DocumentFolderModel();
 
-            if (session()->get('role') !== 'Admin') return $this->respondError("Unauthorized to edit folders.", 400);
+            $masterFolder = $folderModel->find($folderId);
+            if (!$masterFolder) {
+                return $this->respondError("Folder not found.", 404);
+            }
+
+            $userRole = session()->get('role');
+            $userId   = session()->get('user_id');
+
+            // Admins can edit any master folder; Supervisors can edit folders they own
+            if ($userRole !== 'Admin' && $masterFolder['user_id'] != $userId) {
+                return $this->respondError("Unauthorized to edit this folder.", 403);
+            }
 
             $title = $this->request->getPost('title');
             
@@ -994,8 +994,7 @@ class Folder extends BaseController
 
             $didResetAny = false;
 
-            // 1. Update the Admin's Master Folder
-            $masterFolder = $folderModel->find($folderId);
+            // 1. Update the Master Folder
             $folderModel->update($folderId, $folderData);
 
             // 2. Fetch and Process All Descendant Cascaded Folders (all tiers: Deans, Chairs, Faculty)

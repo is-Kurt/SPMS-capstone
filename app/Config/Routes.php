@@ -81,7 +81,7 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->get('folders/archived/(:segment)', 'Folder::archived/$1');
     $routes->get('folders/(:segment)', 'Folder::index/$1');
     $routes->post('folder', 'Folder::store', ['filter' => 'role:Admin']);
-    $routes->post('folder/update', 'Folder::update', ['filter' => 'role:Admin']);
+    $routes->post('folder/update', 'Folder::update', ['filter' => 'role:Admin,Supervisor']);
     $routes->match(['post', 'delete'], 'folder', 'Folder::destroy', ['filter' => 'role:Admin']);
     $routes->post('folder/archive', 'Folder::archive', ['filter' => 'role:Admin,Supervisor']);
     $routes->post('folder/unarchive', 'Folder::unarchive', ['filter' => 'role:Admin,Supervisor']);

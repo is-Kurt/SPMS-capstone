@@ -2813,6 +2813,9 @@
     // Launch active view on page load
     document.addEventListener('DOMContentLoaded', () => {
         initActiveTabView();
+        if (new URLSearchParams(window.location.search).get('print') === '1') {
+            setTimeout(() => exportToPdf(), 700);
+        }
     });
 </script>
 

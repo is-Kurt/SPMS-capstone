@@ -10,10 +10,9 @@ class CreateRoutingPresetsTable extends Migration
     {
         $this->forge->addField([
             'id'          => [
-                'type' => 'INT', 
+                'type' => 'VARCHAR', 
                 'constraint' => 11, 
-                'unsigned' => true, 
-                'auto_increment' => true
+                'null' => false,
             ],
             'owner_id' => [
                 'type' => 'INT', 
