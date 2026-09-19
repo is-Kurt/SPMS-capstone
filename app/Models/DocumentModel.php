@@ -60,6 +60,7 @@ class DocumentModel extends Model
         return $this->db->table('documents d')
             ->select('d.*, df.user_id as owner_id, df.status as folder_status, df.parent_folder_id, df.title as folder_title, df.deleted_at as folder_deleted_at,
                       df.ipcr_target_start, df.ipcr_target_end, df.ipcr_eval_start, df.ipcr_eval_end,
+                      df.cdpcr_target_start, df.cdpcr_target_end, df.cdpcr_eval_start, df.cdpcr_eval_end,
                       df.dpcr_target_start, df.dpcr_target_end, df.dpcr_eval_start, df.dpcr_eval_end,
                       df.opcr_target_start, df.opcr_target_end, df.opcr_eval_start, df.opcr_eval_end,
                       df.iperf_target_start, df.iperf_target_end, df.iperf_eval_start, df.iperf_eval_end,

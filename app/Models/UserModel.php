@@ -151,7 +151,7 @@ class UserModel extends Model
     public function getActivePlantillaDetails(int $userId): ?array
     {
         return $this->db->table('plantillas p')
-            ->select('pos.title as position, un.id as unit_id, un.name as department')
+            ->select('pos.title as position, pos.is_teaching, un.id as unit_id, un.name as department')
             ->join('positions pos', 'pos.id = p.position_id')
             ->join('units un', 'un.id = p.unit_id')
             ->where('p.user_id', $userId)

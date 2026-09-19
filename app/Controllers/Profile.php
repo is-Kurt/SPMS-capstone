@@ -69,17 +69,20 @@ class Profile extends BaseController
 
             $plantillaModel->where('user_id', $userId)->where('ended_at IS NULL')->delete();
 
-            $units     = $this->request->getPost('units');
-            $positions = $this->request->getPost('positions');
+            $units              = $this->request->getPost('units');
+            $positions          = $this->request->getPost('positions');
+            $employmentStatuses = $this->request->getPost('employment_statuses');
 
             if (!empty($units) && !empty($positions)) {
                 for ($i = 0; $i < count($units); $i++) {
                     if (!empty($units[$i]) && !empty($positions[$i])) {
+                        $empStatus = !empty($employmentStatuses[$i]) ? trim($employmentStatuses[$i]) : 'Permanent';
                         $plantillaModel->insert([
-                            'user_id'     => $userId,
-                            'unit_id'     => $units[$i],
-                            'position_id' => $positions[$i],
-                            'created_at'  => date('Y-m-d H:i:s')
+                            'user_id'           => $userId,
+                            'unit_id'           => $units[$i],
+                            'position_id'       => $positions[$i],
+                            'employment_status' => $empStatus,
+                            'created_at'        => date('Y-m-d H:i:s')
                         ]);
                     }
                 }

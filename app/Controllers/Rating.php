@@ -162,7 +162,18 @@ class Rating extends BaseController
         $documentModel = new DocumentModel();
 
         $subFolder = $folderModel->find($subFolderId);
-        if (!$subFolder) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        if (!$subFolder || !empty($subFolder['deleted_at'])) {
+            // Delete any stale notifications referencing this non-existent or deleted folder
+            (new \App\Models\NotificationModel())
+                ->groupStart()
+                    ->like('link', 'ratings/show/' . $subFolderId)
+                    ->orLike('link', 'folders/' . $subFolderId)
+                ->groupEnd()
+                ->delete();
+
+            session()->setFlashdata('error', 'The evaluation folder you tried to access has been revoked or removed by the supervisor.');
+            return redirect()->to(site_url('ratings'));
+        }
 
         // Privacy guard: Unsubmitted work-in-progress drafts cannot be viewed for evaluation
         if (in_array($subFolder['status'], [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::DRAFT_TARGET->value])) {
@@ -248,7 +259,13 @@ class Rating extends BaseController
         if (!empty($subFolder['parent_folder_id'])) {
             $parentFolder = $folderModel->find($subFolder['parent_folder_id']);
             if ($parentFolder) {
-                $isParentTargetApproved = ($parentFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
+                $candidateBasis = $documentModel->where('document_folder_id', $parentFolder['id'])->where('is_target', 1)->first()
+                               ?? $documentModel->where('document_folder_id', $parentFolder['id'])->first();
+                $candidateTitleUpper = strtoupper($candidateBasis['title'] ?? '');
+                $isParentDocOpcr = str_contains($candidateTitleUpper, 'OPCR') || str_contains($candidateTitleUpper, 'OFFICE') || (strtoupper($candidateBasis['doc_type'] ?? '') === 'OPCR');
+
+                // Under CSC SPMS guidelines, OPCR is the apex institutional commitment and does not require superior target approval
+                $isParentTargetApproved = $isParentDocOpcr || ($parentFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
             }
         }
 

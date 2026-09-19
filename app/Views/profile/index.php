@@ -135,7 +135,7 @@
                         </button>
                     </h3>
                     
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
                         <div class="col-span-1">
                             <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Department / Unit</label>
                             <div class="relative">
@@ -169,6 +169,21 @@
                                     <option value="" disabled <?= empty($plantilla['position_id']) ? 'selected' : '' ?>>Select Position...</option>
                                     <?php foreach($positions as $pos): ?>
                                         <option value="<?= $pos['id'] ?>" <?= (isset($plantilla['position_id']) && $plantilla['position_id'] == $pos['id']) ? 'selected' : '' ?>><?= esc($pos['title']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-span-1">
+                            <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Employment Status</label>
+                            <div class="relative">
+                                <select name="employment_statuses[]" required data-custom-select class="w-full bg-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border-2 border-dashed border-surface-border hover:border-accent hover:text-accent rounded-xl px-4 py-3 text-sm focus:outline-none text-text cursor-pointer font-bold transition-all">
+                                    <?php 
+                                        $curStatus = $plantilla['employment_status'] ?? 'Permanent';
+                                        $statuses = ['Permanent', 'Temporary', 'Casual', 'Contractual', 'Coterminous'];
+                                    ?>
+                                    <?php foreach ($statuses as $st): ?>
+                                        <option value="<?= $st ?>" <?= (strcasecmp($curStatus, $st) === 0) ? 'selected' : '' ?>><?= $st ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -402,7 +417,11 @@
                 
                 // Reset values for the new clone
                 clone.querySelectorAll('select').forEach(select => {
-                    select.value = "";
+                    if (select.name === 'employment_statuses[]') {
+                        select.value = "Permanent";
+                    } else {
+                        select.value = "";
+                    }
                     select.style.display = ''; // unhide it for the custom select script
                 });
                 

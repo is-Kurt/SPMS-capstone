@@ -10,29 +10,45 @@ function saveDocument(manualSave = true) {
 
     savePromise = new Promise((resolve, reject) => {
         const editor = tinymce.get('editable-doc');
-        if (!editor && !window.isSpmsFormActive) return resolve(); // Fail gracefully if neither editor is ready
+        const isRubricsActive = (typeof activeTabId !== 'undefined' && activeTabId === 'rubrics-tab');
+        const hasTabs = (typeof tabs !== 'undefined' && Array.isArray(tabs) && tabs.length > 0);
+        if (!editor && !window.isSpmsFormActive && !isRubricsActive && !hasTabs) return resolve(); // Fail gracefully if neither editor is ready
 
-        if (typeof tabs !== 'undefined' && typeof activeTabId !== 'undefined') {
-            const activeTab = tabs.find(t => t.id === activeTabId);
-            if (activeTab) {
-                if (window.isSpmsFormActive && typeof window.syncSpmsActiveTab === 'function') {
-                    window.syncSpmsActiveTab();
-                } else if (editor) {
-                    activeTab.content = editor.getContent();
-                }
+        if (hasTabs) {
+            if (typeof window.syncSpmsActiveTab === 'function') {
+                window.syncSpmsActiveTab();
+            }
+            if (typeof window.syncDigitalRubricsData === 'function') {
+                window.syncDigitalRubricsData();
+            }
+            if (editor && typeof activeTabId !== 'undefined') {
+                const activeTab = tabs.find(t => t.id === activeTabId);
+                if (activeTab) activeTab.content = editor.getContent();
             }
         }
 
         const title = document.getElementById('doc-title')?.value?.trim() || 'Untitled Document';
 
         const saveStatus = document.getElementById('save-status');
-        if (saveStatus && manualSave) {
+        const rubricsSaveStatus = document.getElementById('rubrics-save-status');
+        const rubricsSaveBtnText = document.getElementById('btn-rubrics-save-text');
+
+        if (manualSave) {
             if (saveStatusTimeout) {
                 clearTimeout(saveStatusTimeout);
                 saveStatusTimeout = null;
             }
-            saveStatus.innerText = '● Saving...';
-            saveStatus.className = 'ml-3 text-[10px] uppercase tracking-widest font-bold transition-all text-info-500 animate-pulse';
+            if (saveStatus) {
+                saveStatus.innerText = '● Saving...';
+                saveStatus.className = 'ml-3 text-[10px] uppercase tracking-widest font-bold transition-all text-info-500 animate-pulse';
+            }
+            if (rubricsSaveStatus) {
+                rubricsSaveStatus.innerText = '● Saving...';
+                rubricsSaveStatus.className = 'text-[10px] uppercase tracking-widest font-bold transition-all text-emerald-600 dark:text-emerald-400 animate-pulse';
+            }
+            if (rubricsSaveBtnText) {
+                rubricsSaveBtnText.innerText = 'Saving...';
+            }
         }
 
         const formData = new FormData();
@@ -49,26 +65,65 @@ function saveDocument(manualSave = true) {
         formData.append('is_rating_mode', AppConfig.isRatingMode);
         formData.append('_method', 'PATCH');
 
-        apiPost('/document', formData, {
+        const saveUrl = (typeof AppConfig !== 'undefined' && AppConfig.baseUrl) ? AppConfig.baseUrl : '/document';
+        apiPost(saveUrl, formData, {
             onSuccess: (data) => { 
                 AppState.setDirty(false); 
 
-                if (saveStatus && manualSave) {
-                    saveStatus.innerText = '✓ Saved';
-                    saveStatus.className = 'ml-3 text-[10px] uppercase tracking-widest font-bold transition-all text-success-500';
+                if (manualSave) {
+                    if (saveStatus) {
+                        saveStatus.innerText = '✓ Saved';
+                        saveStatus.className = 'ml-3 text-[10px] uppercase tracking-widest font-bold transition-all text-success-500';
+                    }
+                    if (rubricsSaveStatus) {
+                        rubricsSaveStatus.innerText = '✓ Saved';
+                        rubricsSaveStatus.className = 'text-[10px] uppercase tracking-widest font-bold transition-all text-emerald-600 dark:text-emerald-400';
+                    }
+                    if (rubricsSaveBtnText) {
+                        rubricsSaveBtnText.innerText = 'Saved';
+                    }
 
                     saveStatusTimeout = setTimeout(() => {
-                        saveStatus.innerText = '';
-                        saveStatus.className = '';
+                        if (saveStatus) {
+                            saveStatus.innerText = '';
+                            saveStatus.className = '';
+                        }
+                        if (rubricsSaveStatus) {
+                            rubricsSaveStatus.innerText = '';
+                            rubricsSaveStatus.className = '';
+                        }
+                        if (rubricsSaveBtnText) {
+                            rubricsSaveBtnText.innerText = 'Save';
+                        }
                         saveStatusTimeout = null;
                     }, 2000);
+                } else {
+                    if (rubricsSaveStatus && rubricsSaveStatus.innerText === '') {
+                        rubricsSaveStatus.innerText = '✓ Saved';
+                        rubricsSaveStatus.className = 'text-[10px] uppercase tracking-widest font-bold transition-all text-emerald-600/70 dark:text-emerald-400/70';
+                        setTimeout(() => {
+                            if (rubricsSaveStatus.innerText === '✓ Saved') {
+                                rubricsSaveStatus.innerText = '';
+                                rubricsSaveStatus.className = '';
+                            }
+                        }, 1500);
+                    }
                 }
                 resolve(data);
             },
             onError: (errorMessage) => {
-                if (saveStatus && manualSave) {
-                    saveStatus.innerText = '✗ Save Failed';
-                    saveStatus.className = 'ml-3 text-[10px] uppercase tracking-widest font-bold transition-all text-danger-500';
+                if (manualSave) {
+                    if (saveStatus) {
+                        saveStatus.innerText = '✗ Save Failed';
+                        saveStatus.className = 'ml-3 text-[10px] uppercase tracking-widest font-bold transition-all text-danger-500';
+                    }
+                    if (rubricsSaveStatus) {
+                        rubricsSaveStatus.innerText = '✗ Save Failed';
+                        rubricsSaveStatus.className = 'text-[10px] uppercase tracking-widest font-bold transition-all text-danger-500';
+                    }
+                    if (rubricsSaveBtnText) {
+                        rubricsSaveBtnText.innerText = 'Save';
+                    }
                 }
                 reject(new Error(errorMessage));
             },
@@ -99,9 +154,9 @@ function autoSave() {
 
 // Keyboard shortcut (Ctrl+S / Cmd+S)
 window.addEventListener('keydown', function(e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    if ((e.ctrlKey || e.metaKey) && e.key && e.key.toLowerCase() === 's') {
         e.preventDefault();
-        saveDocument();
+        saveDocument(true);
     }
 });
 
@@ -128,14 +183,15 @@ async function saveWith({before, after}) {
     if (result === 'hasError') return;
 
     try {
-        // 2. Save the document (This grabs the newly calculated totals from TinyMCE!)
-        if (AppState.isDirty || savePromise === null) {
-            await saveDocument();
-        }
+        // 2. Save the document (persists latest form/editor contents)
+        await saveDocument(false);
         // 3. Finally, trigger the POST request to Submit or Rate
-        if (after) after();
+        if (after) await after();
     } catch (error) {
         console.error("Submission halted: Could not save the latest changes.", error);
+        if (typeof window.appAlert === 'function') {
+            await window.appAlert(error.message || "Failed to save document before proceeding. Please try again.");
+        }
     }
 }
 

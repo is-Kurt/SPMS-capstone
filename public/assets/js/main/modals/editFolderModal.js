@@ -7,7 +7,7 @@ const submitBtn = document.getElementById('btn-submit-edit-folder');
 const idInput = document.getElementById('edit-folder-id');
 const titleInput = document.getElementById('edit-folder-title');
 
-const docTypes = ['ipcr', 'dpcr', 'opcr', 'iperf'];
+const docTypes = ['ipcr', 'cdpcr', 'dpcr', 'opcr', 'iperf'];
 const inputs = {};
 
 docTypes.forEach(type => {
@@ -74,7 +74,10 @@ window.openEditFolderModal = function(idOrData, maybeTitle, maybeDates = {}) {
 
     docTypes.forEach(type => {
         ['target_start', 'target_end', 'eval_start', 'eval_end'].forEach(phase => {
-            const rawDate = dates[`${type}_${phase}`];
+            let rawDate = dates[`${type}_${phase}`];
+            if (!rawDate && type === 'cdpcr' && dates[`dpcr_${phase}`]) {
+                rawDate = dates[`dpcr_${phase}`];
+            }
             const safeDate = rawDate ? String(rawDate).replace(' ', 'T').slice(0, 16).replace('T24:00', 'T23:59') : '';
             const propName = phase.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
             const inputField = inputs[type]?.[propName];

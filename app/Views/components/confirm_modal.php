@@ -6,6 +6,18 @@
 -->
 <div id="confirm-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
 
+    <style>
+        #confirm-modal-icon {
+            transform-origin: center center;
+            transform-box: fill-box;
+            will-change: transform, opacity;
+        }
+        #confirm-modal-icon-wrap {
+            transform-origin: center center;
+            will-change: transform, opacity;
+        }
+    </style>
+
     <div class="bg-surface rounded-2xl shadow-2xl w-full max-w-[380px] p-8 border border-surface-border">
 
         <div class="text-center mb-6">

@@ -5,7 +5,7 @@ let isCreatingFolder = false;
 
 const submitBtn = document.getElementById('btn-submit-create-folder');
 const titleInput = document.getElementById('create-folder-title');
-const docTypes = ['ipcr', 'dpcr', 'opcr', 'iperf'];
+const docTypes = ['opcr', 'cdpcr', 'dpcr', 'ipcr', 'iperf'];
 
 // Helper to correctly format JS dates for <input type="datetime-local">
 function formatForDateTimeLocal(dateObj) {

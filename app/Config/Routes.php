@@ -9,17 +9,16 @@ use CodeIgniter\Router\RouteCollection;
 
 $routes->group('', ['filter' => 'auth'], function($routes) {
     // Executive Analytics Dashboard (Admin) / College Submission Monitor (Supervisor)
+    $routes->get('dashboard/export-masterlist', 'Dashboard::exportMasterlist', ['filter' => 'role:Admin,Supervisor']);
+    $routes->get('dashboard/export-masterlist/(:segment)', 'Dashboard::exportMasterlist/$1', ['filter' => 'role:Admin,Supervisor']);
     $routes->get('dashboard', 'Dashboard::index', ['filter' => 'role:Admin,Supervisor']);
     $routes->get('dashboard/(:segment)', 'Dashboard::index/$1', ['filter' => 'role:Admin,Supervisor']);
 
     // Ratings
     $routes->get('ratings', 'Rating::index');
-    $routes->get('ratings/(:segment)', 'Rating::index/$1');
-    // No role filter here on purpose: Rating::show() enforces Admin-or-routed-evaluator
-    // itself, and unlike this filter, it can redirect a wrong-account visitor (e.g.
-    // someone clicking a "Pending Review" email link addressed to their evaluator)
-    // to the account-mismatch screen instead of a silent, contextless bounce.
+    // Specific sub-route must come before catch-all segment
     $routes->get('ratings/show/(:segment)', 'Rating::show/$1');
+    $routes->get('ratings/(:segment)', 'Rating::index/$1');
 
     // Routing Presets (My Teams)
     $routes->get('teams', 'Team::index', ['filter' => 'role:Admin,Supervisor']);
@@ -77,14 +76,14 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
 
     // Folder
     $routes->get('folders', 'Folder');
-    $routes->get('folders/archived', 'Folder::archived');
-    $routes->get('folders/archived/(:segment)', 'Folder::archived/$1');
+    $routes->get('folders/archived', 'Folder::archived', ['filter' => 'role:Admin']);
+    $routes->get('folders/archived/(:segment)', 'Folder::archived/$1', ['filter' => 'role:Admin']);
     $routes->get('folders/(:segment)', 'Folder::index/$1');
     $routes->post('folder', 'Folder::store', ['filter' => 'role:Admin']);
-    $routes->post('folder/update', 'Folder::update', ['filter' => 'role:Admin,Supervisor']);
+    $routes->post('folder/update', 'Folder::update', ['filter' => 'role:Admin']);
     $routes->match(['post', 'delete'], 'folder', 'Folder::destroy', ['filter' => 'role:Admin']);
-    $routes->post('folder/archive', 'Folder::archive', ['filter' => 'role:Admin,Supervisor']);
-    $routes->post('folder/unarchive', 'Folder::unarchive', ['filter' => 'role:Admin,Supervisor']);
+    $routes->post('folder/archive', 'Folder::archive', ['filter' => 'role:Admin']);
+    $routes->post('folder/unarchive', 'Folder::unarchive', ['filter' => 'role:Admin']);
     $routes->post('folder/submit', 'Folder::submit');
     $routes->post('folder/unsubmit', 'Folder::unsubmit');
     $routes->post('folder/evaluate', 'Folder::evaluate');
@@ -100,16 +99,19 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->post('folder/return_target', 'Folder::returnTarget');
     $routes->post('folder/cascade-team', 'Folder::cascadeTeam', ['filter' => 'role:Admin,Supervisor']);
     $routes->post('folder/uncascade-team', 'Folder::uncascadeTeam', ['filter' => 'role:Admin,Supervisor']);
+    $routes->post('folder/sync-team-cascade', 'Folder::syncTeamCascade', ['filter' => 'role:Admin,Supervisor']);
+    $routes->post('folder/remove-subordinate-cascade', 'Folder::removeSubordinateCascade', ['filter' => 'role:Admin,Supervisor']);
 
     // Document
     $routes->get('document', 'Document');
     $routes->get('document/(:segment)/export-excel', 'Document::exportExcel/$1');
+    $routes->get('document/(:segment)/export-rubric', 'Document::exportRubric/$1');
     $routes->get('document/(:segment)', 'Document::index/$1');
     $routes->get('documents/(:segment)', 'Document::index/$1');
     $routes->post('document', 'Document::store');
     $routes->patch('document', 'Document::update');
     $routes->match(['POST', 'PATCH'], 'document/update', 'Document::update');
-    $routes->match(['POST', 'DELETE'], 'document', 'Document::destroy');
+    $routes->match(['POST', 'DELETE'], 'document', 'Document::destroy', ['filter' => 'role:Admin']);
     $routes->post('document/target', 'Document::setTarget');
 
     // Document Attachments (Means of Verification / MOV)
@@ -123,6 +125,8 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->get('notifications', 'Notification::index');
     $routes->post('notifications/read/(:num)', 'Notification::markAsRead/$1');
     $routes->post('notifications/read-all', 'Notification::markAllAsRead');
+    $routes->post('notifications/clear-all', 'Notification::clearAll');
+    $routes->post('notifications/delete/(:num)', 'Notification::deleteNotification/$1');
 
     // Institutional Audit Trail & Activity Logging (Admin Only)
     $routes->get('audit-logs', 'AuditLog::index', ['filter' => 'role:Admin']);

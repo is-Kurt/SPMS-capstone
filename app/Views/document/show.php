@@ -8,8 +8,17 @@
     $isOwner = ($doc['owner_id'] == session()->get('user_id'));
     
     $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
+    $isDocDpcr = in_array($ownerDocType, ['dpcr', 'cdpcr']) || stripos($doc['title'] ?? '', 'dpcr') !== false;
+    $ownerPos = strtolower($ownerInfo['position'] ?? '');
+    $isOwnerDean = str_contains($ownerPos, 'dean');
+    $isDocOpcr = (!$isDocDpcr) && ($ownerDocType === 'opcr' || stripos($doc['title'] ?? '', 'opcr') !== false || str_contains($ownerPos, 'vice president'));
+    $isDocIperf = (!$isDocDpcr && !$isDocOpcr) && ($ownerDocType === 'iperf' || stripos($doc['title'] ?? '', 'iperf') !== false);
+    if (($ownerDocType === 'dpcr' || $ownerDocType === 'cdpcr') && $isOwnerDean) {
+        $targetEndCol = (!empty($doc['cdpcr_target_end'])) ? 'cdpcr_target_end' : 'dpcr_target_end';
+    } else {
+        $targetEndCol = $ownerDocType . '_target_end';
+    }
     $now = date('Y-m-d H:i:s');
-    $targetEndCol = $ownerDocType . '_target_end';
     $tEnd = $doc[$targetEndCol] ?? null;
     $isPastTargetDate = (!empty($tEnd) && $now > $tEnd);
 
@@ -34,6 +43,11 @@
         FolderStatus::DRAFT->value
     ]) && !$isPastTargetDate && !$isGuide);
 
+    $canEditApprover = ($canEditTargets || (!$isOwner && in_array($status, [
+        FolderStatus::PENDING_TARGET_APPROVAL->value,
+        FolderStatus::TARGET_APPROVED->value
+    ]) && !$isGuide && empty($isCycleArchived)));
+
     $canEditEvaluation = ($isEvaluationPhase && (
         ($isOwner && in_array($status, [FolderStatus::DRAFT->value, FolderStatus::TARGET_APPROVED->value, FolderStatus::TO_EVALUATE->value, FolderStatus::REEVALUATE->value])) ||
         (!$isOwner && isset($routingStatus) && in_array($status, [FolderStatus::SUBMITTED->value, FolderStatus::EVALUATED->value]))
@@ -48,6 +62,7 @@
     if (!empty($isCycleArchived)) {
         $canEditTargets = false;
         $canEditEvaluation = false;
+        $canEditApprover = false;
         $isEditable = false;
     }
 ?>
@@ -55,7 +70,7 @@
 <style>
     .spms-sheet-container {
         width: 100%;
-        max-width: 1280px;
+        max-width: <?= $isDocDpcr ? '1400px' : ($isDocOpcr ? '1350px' : ($isDocIperf ? '1280px' : '1280px')) ?>;
         background: #ffffff;
         color: #000000;
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
@@ -97,7 +112,15 @@
     }
     @media screen and (max-width: 1023px) {
         .spms-table {
-            min-width: 880px !important;
+            min-width: <?= $isDocDpcr ? '1180px' : ($isDocOpcr ? '1050px' : ($isDocIperf ? '850px' : '880px')) ?> !important;
+        }
+    }
+    @media print {
+        .spms-sheet-container {
+            max-width: 100% !important;
+            width: 100% !important;
+            min-width: <?= $isDocDpcr ? '1180px' : ($isDocOpcr ? '1050px' : ($isDocIperf ? '850px' : '880px')) ?> !important;
+            box-shadow: none !important;
         }
     }
     .spms-table tbody {
@@ -163,6 +186,68 @@
         border-color: #e2e8f0;
         color: #94a3b8;
         cursor: not-allowed;
+    }
+    .budget-input-wrapper {
+        display: flex;
+        align-items: center;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        background: #ffffff;
+        padding: 1px 3px;
+        gap: 2px;
+        box-sizing: border-box;
+        transition: border-color 0.15s ease, background-color 0.15s ease;
+        overflow: hidden;
+    }
+    .budget-input-wrapper:hover:not(:has(:disabled)) {
+        border-color: #94a3b8;
+    }
+    .budget-input-wrapper:focus-within {
+        border-color: #0284c7;
+        box-shadow: 0 0 0 1px #0284c7;
+        background: #f0f9ff;
+    }
+    .budget-input-wrapper:has(:disabled) {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+        cursor: not-allowed;
+    }
+    .header-budget-currency {
+        border: none;
+        border-bottom: 1px dashed #0284c7;
+        background: transparent;
+        color: #ba372a;
+        outline: none;
+        font-size: 9.5px;
+        text-align: center;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    .header-budget-currency:focus {
+        border-bottom-style: solid;
+        color: #0284c7;
+    }
+    @media print {
+        .budget-input-wrapper {
+            border: none !important;
+            padding: 0 !important;
+            background: transparent !important;
+        }
+        .header-budget-currency {
+            border: none !important;
+        }
+        .field-budget-currency {
+            border-right: none !important;
+            font-size: 8.5px !important;
+            font-weight: 700 !important;
+        }
+        .field-budget {
+            font-size: 8.5px !important;
+            letter-spacing: -0.2px !important;
+            text-align: right !important;
+            font-weight: 600 !important;
+            width: 100% !important;
+        }
     }
     .btn-add-dashed {
         display: block;
@@ -493,6 +578,24 @@
         </script>
         
         <div class="flex items-center gap-2 sm:gap-4 shrink-0">
+            <?php if ($canEditTargets || $canEditEvaluation): ?>
+            <!-- Save Button with hover (Ctrl + S) -->
+            <div class="relative group inline-flex items-center print-hide">
+                <button type="button" onclick="saveDocument(true)" title="Save (Ctrl + S)"
+                        class="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] sm:text-xs font-bold rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    <span class="hidden sm:inline">Save</span>
+                </button>
+                <div class="absolute top-full left-1/2 -translate-x-1/2 mt-2 hidden group-hover:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-900 text-white shadow-xl pointer-events-none whitespace-nowrap z-50">
+                    <span>Save</span>
+                    <span class="text-slate-400 font-mono text-[9px] bg-slate-800 px-1 py-0.5 rounded border border-slate-700">(Ctrl + S)</span>
+                    <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <?php if ($isOwner || session()->get('role') === 'Admin'): ?>
             <!-- Print / Export PDF Button -->
             <button type="button" onclick="exportToPdf()" 
@@ -717,17 +820,20 @@
                     <?php else: ?>
                         <?php 
                             $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
-                            $targetEndCol = $ownerDocType . '_target_end';
+                            $ownerPos = strtolower($ownerInfo['position'] ?? '');
+                            $isOwnerDean = str_contains($ownerPos, 'dean');
+                            $isOwnerChair = str_contains($ownerPos, 'chair') || str_contains($ownerPos, 'head');
+                            if (($ownerDocType === 'dpcr' || $ownerDocType === 'cdpcr') && $isOwnerDean) {
+                                $targetEndCol = (!empty($doc['cdpcr_target_end'])) ? 'cdpcr_target_end' : 'dpcr_target_end';
+                            } else {
+                                $targetEndCol = $ownerDocType . '_target_end';
+                            }
                             $isTargetPeriodEnded = !empty($doc[$targetEndCol]) && date('Y-m-d H:i:s') > $doc[$targetEndCol]; 
                             $isAdmin = session()->get('role') === 'Admin';
                             $isSupervisor = session()->get('role') === 'Supervisor';
                             $docTitleUpper = strtoupper(trim($doc['title'] ?? ''));
                             $isTrueOpcr = str_contains($docTitleUpper, 'OPCR') || str_contains($docTitleUpper, 'OFFICE') || (strtoupper($doc['doc_type'] ?? '') === 'OPCR');
                             $isTrueDpcr = str_contains($docTitleUpper, 'DPCR') || str_contains($docTitleUpper, 'DIVISION') || str_contains($docTitleUpper, 'DEPARTMENT') || (strtoupper($doc['doc_type'] ?? '') === 'DPCR');
-
-                            $ownerPos = strtolower($ownerInfo['position'] ?? '');
-                            $isOwnerDean = str_contains($ownerPos, 'dean');
-                            $isOwnerChair = str_contains($ownerPos, 'chair') || str_contains($ownerPos, 'head');
 
                             $canRelease = false;
                             $releaseScope = null;
@@ -740,22 +846,7 @@
                                 $releaseLabel = 'to Deans';
                                 $releaseTitle = 'Approve this OPCR and automatically distribute it to all College Deans as their target basis';
                             } elseif ($isTrueDpcr && ($isAdmin || $isSupervisor)) {
-                                if ($isOwnerDean) {
-                                    $canRelease = true;
-                                    $releaseScope = 'chairs';
-                                    $releaseLabel = 'to Department Chairs';
-                                    $releaseTitle = 'Approve this collegiate DPCR and automatically distribute it to Department Chairs as their target basis';
-                                } elseif ($isOwnerChair) {
-                                    $canRelease = true;
-                                    $releaseScope = 'faculty';
-                                    $releaseLabel = 'to Faculty';
-                                    $releaseTitle = 'Approve this department DPCR and automatically distribute it to department faculty members as their target basis';
-                                } else {
-                                    $canRelease = true;
-                                    $releaseScope = 'faculty';
-                                    $releaseLabel = 'to Subordinates';
-                                    $releaseTitle = 'Approve this DPCR and automatically distribute it to subordinates as their target basis';
-                                }
+                                $canRelease = false;
                             }
                         ?>
                         <div class="flex items-center gap-1.5 sm:gap-2">
@@ -789,17 +880,20 @@
                     <?php if (!$isOwner && $status === FolderStatus::TARGET_APPROVED->value): ?>
                         <?php 
                             $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
-                            $targetEndCol = $ownerDocType . '_target_end';
+                            $ownerPos = strtolower($ownerInfo['position'] ?? '');
+                            $isOwnerDean = str_contains($ownerPos, 'dean');
+                            $isOwnerChair = str_contains($ownerPos, 'chair') || str_contains($ownerPos, 'head');
+                            if (($ownerDocType === 'dpcr' || $ownerDocType === 'cdpcr') && $isOwnerDean) {
+                                $targetEndCol = (!empty($doc['cdpcr_target_end'])) ? 'cdpcr_target_end' : 'dpcr_target_end';
+                            } else {
+                                $targetEndCol = $ownerDocType . '_target_end';
+                            }
                             $isTargetPeriodEnded = !empty($doc[$targetEndCol]) && date('Y-m-d H:i:s') > $doc[$targetEndCol]; 
                             $isAdmin = session()->get('role') === 'Admin';
                             $isSupervisor = session()->get('role') === 'Supervisor';
                             $docTitleUpper = strtoupper(trim($doc['title'] ?? ''));
                             $isTrueOpcr = str_contains($docTitleUpper, 'OPCR') || str_contains($docTitleUpper, 'OFFICE') || (strtoupper($doc['doc_type'] ?? '') === 'OPCR');
                             $isTrueDpcr = str_contains($docTitleUpper, 'DPCR') || str_contains($docTitleUpper, 'DIVISION') || str_contains($docTitleUpper, 'DEPARTMENT') || (strtoupper($doc['doc_type'] ?? '') === 'DPCR');
-
-                            $ownerPos = strtolower($ownerInfo['position'] ?? '');
-                            $isOwnerDean = str_contains($ownerPos, 'dean');
-                            $isOwnerChair = str_contains($ownerPos, 'chair') || str_contains($ownerPos, 'head');
 
                             $canRelease = false;
                             $releaseScope = null;
@@ -812,22 +906,7 @@
                                 $releaseLabel = 'to Deans';
                                 $releaseTitle = 'Distribute this approved OPCR to all College Deans as their target basis';
                             } elseif ($isTrueDpcr && ($isAdmin || $isSupervisor)) {
-                                if ($isOwnerDean) {
-                                    $canRelease = true;
-                                    $releaseScope = 'chairs';
-                                    $releaseLabel = 'to Department Chairs';
-                                    $releaseTitle = 'Distribute this approved collegiate DPCR to Department Chairs as their target basis';
-                                } elseif ($isOwnerChair) {
-                                    $canRelease = true;
-                                    $releaseScope = 'faculty';
-                                    $releaseLabel = 'to Faculty';
-                                    $releaseTitle = 'Distribute this approved department DPCR to department faculty members as their target basis';
-                                } else {
-                                    $canRelease = true;
-                                    $releaseScope = 'faculty';
-                                    $releaseLabel = 'to Subordinates';
-                                    $releaseTitle = 'Distribute this approved DPCR to subordinates as their target basis';
-                                }
+                                $canRelease = false;
                             }
                         ?>
                         <div class="flex items-center gap-1.5 sm:gap-2">
@@ -850,7 +929,7 @@
                             </button>
                         </div>
                     <?php else: ?>
-                        <button type="button" disabled class="bg-highlight-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
+                        <button type="button" disabled class="bg-highlight-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
                             Awaiting Eval<span class="hidden sm:inline"> Window</span>
                         </button>
                     <?php endif; ?>
@@ -895,9 +974,15 @@
                         </span>
                     </div>
                     <div class="flex items-center gap-2">
+                        <?php 
+                            $basisTitleUpper = strtoupper($basisDoc['title'] ?? '');
+                            $basisTypeUpper  = strtoupper($basisDoc['doc_type'] ?? '');
+                            $isBasisOpcr = !empty($isParentDocOpcr) || str_contains($basisTitleUpper, 'OPCR') || ($basisTypeUpper === 'OPCR');
+                            $isBasisDpcr = !empty($isParentDocDpcr) || str_contains($basisTitleUpper, 'DPCR') || str_contains($basisTitleUpper, 'DEPARTMENT') || str_contains($basisTitleUpper, 'DIVISION') || ($basisTypeUpper === 'DPCR');
+                        ?>
                         <?php if ($isParentTargetApproved): ?>
                             <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                                Approved Targets
+                                <?= $isBasisOpcr ? 'Institutional Basis' : 'Approved Targets' ?>
                             </span>
                         <?php else: ?>
                             <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
@@ -912,66 +997,80 @@
                     </div>
                 </div>
 
-                <!-- INSTITUTIONAL FORM HEADER -->
-                <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px;">
-                    <h1 style="font-size: 15px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 6px 0;" id="basis-sheet-title">
-                        <?= esc($basisDoc['title'] ?? 'Performance Commitment and Review') ?>
+                <!-- FORM TITLE -->
+                <div style="text-align: center; margin-bottom: 14px;">
+                    <h1 style="font-size: 16px; font-weight: bold; margin: 0 0 4px 0; text-transform: uppercase; color: #000000;" id="basis-sheet-title">
+                        <?= esc($basisDoc['title'] ?? 'Office Performance Commitment and Review (OPCR)') ?>
                     </h1>
-                    <p style="font-size: 11px; color: #334155; margin: 6px 0 0 0; line-height: 1.6;">
-                        I, <span id="basis-val-ratee-name" style="font-weight: bold; color: #0f172a; border-bottom: 1px solid #94a3b8; padding: 2px 6px;"></span>, 
-                        <span id="basis-val-ratee-pos" style="color: #0f172a; border-bottom: 1px solid #94a3b8; padding: 2px 6px;"></span> 
-                        of the <span id="basis-val-ratee-dept" style="color: #0f172a; border-bottom: 1px solid #94a3b8; padding: 2px 6px;"></span>, 
-                        commit to deliver and agree to be rated on the attainment of targets for 
-                        <span id="basis-val-ratee-period" style="font-weight: bold; color: #0f172a; border-bottom: 1px solid #94a3b8; padding: 2px 6px;"></span>.
-                    </p>
                 </div>
 
-                <!-- APPROVER, RATEE, AND RATING SCALE MATRIX -->
-                <table class="spms-meta-matrix" style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 11px;">
-                    <tr>
-                        <!-- Approver Block -->
-                        <td style="width: 35%; border: 1px solid #000; padding: 10px; vertical-align: top;">
-                            <div style="font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #0f172a; margin-bottom: 8px;">
-                                Approved by:
-                            </div>
-                            <table style="width: 100%; border-collapse: collapse; border: none; font-size: 11px;">
-                                <tr>
-                                     <td style="width: 60px; color: #64748b; font-weight: 600; padding: 3px 0;">Name:</td>
-                                    <td style="font-weight: bold; color: #0f172a; padding: 3px 0;" id="basis-val-approver-name">—</td>
-                                </tr>
-                                <tr>
-                                    <td style="color: #64748b; font-weight: 600; padding: 3px 0;">Position:</td>
-                                    <td style="color: #0f172a; padding: 3px 0;" id="basis-val-approver-pos">—</td>
-                                </tr>
-                                <tr>
-                                    <td style="color: #64748b; font-weight: 600; padding: 3px 0;">Date:</td>
-                                    <td style="color: #0f172a; padding: 3px 0;" id="basis-val-approver-date">—</td>
-                                </tr>
-                            </table>
-                        </td>
+                <!-- PREAMBLE (Filled Version of Template) -->
+                <div style="margin-bottom: 18px; font-size: 11px; line-height: 1.6; text-align: justify; color: #000000;">
+                    I, <input type="text" id="basis-val-ratee-name" readonly value="" style="font-weight: bold; color: #000000; border: none; border-bottom: 1px solid #94a3b8; text-align: center; min-width: 170px; outline: none; padding: 2px 4px; background: transparent; font-family: inherit; font-size: 11px;">, 
+                    <input type="text" id="basis-val-ratee-pos" readonly value="" style="color: #000000; border: none; border-bottom: 1px solid #94a3b8; text-align: center; min-width: 200px; outline: none; padding: 2px 4px; background: transparent; font-family: inherit; font-size: 11px;"> of the 
+                    <input type="text" id="basis-val-ratee-dept" readonly value="" style="color: #000000; border: none; border-bottom: 1px solid #94a3b8; text-align: center; min-width: 170px; outline: none; padding: 2px 4px; background: transparent; font-family: inherit; font-size: 11px;">, commit to deliver and agree to be rated on the attainment of the following targets in accordance with the indicated measure for the period 
+                    <input type="text" id="basis-val-ratee-period" readonly value="" style="font-weight: bold; color: #000000; border: none; border-bottom: 1px solid #94a3b8; text-align: center; min-width: 320px; outline: none; padding: 2px 4px; background: transparent; font-family: inherit; font-size: 11px;">.
+                </div>
 
-                        <!-- Ratee Sign-off Block -->
-                        <td style="width: 35%; border: 1px solid #000; padding: 10px; text-align: center; vertical-align: middle;">
-                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
-                                <span id="basis-val-ratee-sign" style="font-weight: bold; color: #0f172a; font-size: 12px; border-bottom: 1px solid #94a3b8; width: 85%; padding-bottom: 2px;">—</span>
-                                <span style="color: #334155; font-size: 10px; font-weight: 600; margin-top: 4px;" id="basis-val-ratee-sign-pos">Supervisor / Ratee</span>
-                                <div style="margin-top: 8px; font-size: 11px; color: #64748b;">
-                                    Date: <span id="basis-val-ratee-sign-date" style="color: #0f172a;">—</span>
+                <!-- APPROVER, RATEE, AND RATING SCALE MATRIX (Filled Version of Template) -->
+                <table class="spms-meta-matrix" style="width: 100%; border-collapse: collapse; border: none; margin-bottom: 18px; font-size: 11px;">
+                    <tr>
+                        <!-- Left: Approved By (Extreme Left-most) -->
+                        <td style="vertical-align: top; border: none; padding: 0 20px 0 0; text-align: left;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <div style="font-weight: bold; color: #000000;">APPROVED BY:</div>
+                            </div>
+                            <div id="basis-approvers-container" style="display: flex; flex-direction: column; gap: 8px;">
+                                <div class="approver-item" style="position: relative;">
+                                    <table style="width: 100%; border-collapse: collapse; border: none; font-size: 11px;">
+                                        <tr>
+                                            <td style="width: 65px; border: none; padding: 3px 0; font-weight: bold; color: #000000;">Name:</td>
+                                            <td style="border: none; padding: 3px 0;">
+                                                <input type="text" id="basis-val-approver-name" readonly value="" style="font-weight: bold; color: #000000; border: none; border-bottom: 1px solid #94a3b8; outline: none; font-size: 11px; width: 60%; background: transparent; font-family: inherit;">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: none; padding: 3px 0; font-weight: bold; color: #000000;">Position:</td>
+                                            <td style="border: none; padding: 3px 0;">
+                                                <input type="text" id="basis-val-approver-pos" readonly value="" style="color: #000000; border: none; border-bottom: 1px solid #94a3b8; outline: none; font-size: 11px; width: 80%; background: transparent; font-family: inherit;">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: none; padding: 3px 0; font-weight: bold; color: #000000;">Date:</td>
+                                            <td style="border: none; padding: 3px 0;">
+                                                <input type="text" id="basis-val-approver-date" readonly value="" style="color: #000000; border: none; border-bottom: 1px solid #94a3b8; outline: none; font-size: 11px; width: 130px; background: transparent; font-family: inherit;">
+                                            </td>
+                                        </tr>
+                                    </table>
                                 </div>
                             </div>
                         </td>
 
-                        <!-- CSC Rating Scale -->
-                        <td style="width: 30%; border: 1px solid #000; padding: 8px 12px; background: #f8fafc; vertical-align: top; font-size: 10px;">
-                            <div style="font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #0f172a; margin-bottom: 4px;">
-                                Rating Scale Guide:
-                            </div>
-                            <div style="display: flex; flex-direction: column; gap: 2px; color: #334155;">
-                                <div style="display: flex; justify-content: space-between; font-weight: bold;"><span>5 — Outstanding</span> <span>(4.500 – 5.000)</span></div>
-                                <div style="display: flex; justify-content: space-between;"><span>4 — Very Satisfactory</span> <span>(3.500 – 4.499)</span></div>
-                                <div style="display: flex; justify-content: space-between;"><span>3 — Satisfactory</span> <span>(2.500 – 3.499)</span></div>
-                                <div style="display: flex; justify-content: space-between;"><span>2 — Unsatisfactory</span> <span>(1.500 – 2.499)</span></div>
-                                <div style="display: flex; justify-content: space-between;"><span>1 / 0 — Poor / Unmet</span> <span>(Below 1.499)</span></div>
+                        <!-- Right: Name of Employee & Rating Scale (Extreme Right-most) -->
+                        <td style="vertical-align: top; border: none; padding: 0; text-align: right; width: 1%; white-space: nowrap;">
+                            <div style="display: inline-block; text-align: left; min-width: 240px;">
+                                <!-- Name of Employee Block -->
+                                <div style="margin-bottom: 14px;">
+                                    <div>
+                                        <input type="text" id="basis-val-ratee-sign" readonly value="" style="color: #000000; font-weight: bold; border: none; border-bottom: 1px solid #94a3b8; text-align: left; width: 240px; outline: none; font-size: 11px; padding: 2px 0; background: transparent; font-family: inherit;">
+                                    </div>
+                                    <div style="font-size: 11px; color: #000000; margin-top: 3px;" id="basis-val-ratee-sign-pos">Name of Employee</div>
+                                    <div style="margin-top: 4px; font-size: 11px; color: #000000;">
+                                        Date: <input type="text" id="basis-val-ratee-sign-date" readonly value="" style="border: none; border-bottom: 1px solid #94a3b8; width: 130px; outline: none; font-size: 11px; color: #000000; background: transparent; font-family: inherit;">
+                                    </div>
+                                </div>
+
+                                <!-- Rating Scale -->
+                                <div style="font-size: 10px; color: #000000;">
+                                    <div style="font-weight: bold; margin-bottom: 3px;">Rating Scale:</div>
+                                    <div style="display: flex; flex-direction: column; gap: 2px; line-height: 1.35;">
+                                        <div>5 – Outstanding</div>
+                                        <div>4 – Very Satisfactory</div>
+                                        <div>3 – Satisfactory</div>
+                                        <div>2 – Unsatisfactory</div>
+                                        <div>1 – Poor</div>
+                                    </div>
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -981,10 +1080,22 @@
                 <div class="spms-table-responsive-wrapper">
                     <div class="lg:hidden flex items-center justify-between text-[11px] text-slate-500 bg-slate-100 dark:bg-slate-800/40 px-3 py-1.5 rounded border border-slate-200 dark:border-slate-700 mb-2 print-hide">
                         <span class="flex items-center gap-1 font-medium">↔ Swipe matrix horizontally to view all cascaded targets</span>
-                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">8 Columns</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider" id="basis-col-count-badge"><?= ($isBasisOpcr || $isBasisDpcr) ? '10 Columns' : '8 Columns' ?></span>
                     </div>
                     <table class="spms-table" style="width: 100%; border-collapse: collapse; border: 2px solid #000; font-size: 11px;">
-                        <colgroup>
+                        <colgroup id="basis-table-colgroup">
+                            <?php if ($isBasisOpcr || $isBasisDpcr): ?>
+                            <col style="width: 15%;">
+                            <col style="width: 17%;">
+                            <col style="width: 11%;">
+                            <col style="width: 13%;">
+                            <col style="width: 18%;">
+                            <col style="width: 3.5%;">
+                            <col style="width: 3.5%;">
+                            <col style="width: 3.5%;">
+                            <col style="width: 4.5%;">
+                            <col style="width: 11%;">
+                            <?php else: ?>
                             <col style="width: 25%;">
                             <col style="width: 25%;">
                             <col style="width: 24%;">
@@ -993,8 +1104,42 @@
                             <col style="width: 4%;">
                             <col style="width: 5%;">
                             <col style="width: 9%;">
+                            <?php endif; ?>
                         </colgroup>
-                        <thead>
+                        <thead id="basis-table-thead">
+                            <?php if ($isBasisOpcr): ?>
+                            <tr style="background-color: #fff2cc; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">PROJECT / PROGRAM / ACTIVITIES</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">SUCCESS INDICATORS<br><span style="font-weight: normal; font-size: 9px;">(TARGETS + MEASURES)</span></th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ALLOTTED BUDGET</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">DIVISIONS ACCOUNTABLE</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENTS</th>
+                                <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
+                            </tr>
+                            <tr style="background-color: #fff2cc; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                                <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
+                                <th style="border: 1px solid #000; padding: 4px 2px;">T</th>
+                                <th style="border: 1px solid #000; padding: 4px 2px;">E</th>
+                                <th style="border: 1px solid #000; padding: 4px 2px;">Ave.</th>
+                            </tr>
+                            <?php elseif ($isBasisDpcr): ?>
+                            <tr style="background-color: #cfe2f3; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">PROGRAMS, PROJECTS, ACTIVITIES</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">SUCCESS INDICATORS<br><span style="font-weight: normal; font-size: 9px;">(TARGETS + MEASURES)</span></th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ALLOTTED BUDGET</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">INDIVIDUALS / OFFICES ACCOUNTABLE</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENTS</th>
+                                <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
+                            </tr>
+                            <tr style="background-color: #cfe2f3; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                                <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
+                                <th style="border: 1px solid #000; padding: 4px 2px;">T</th>
+                                <th style="border: 1px solid #000; padding: 4px 2px;">E</th>
+                                <th style="border: 1px solid #000; padding: 4px 2px;">Ave.</th>
+                            </tr>
+                            <?php else: ?>
                             <tr style="background: #f1f5f9; text-align: center; font-weight: bold; border-bottom: 1px solid #000;">
                                 <th rowspan="2" style="padding: 8px; border: 1px solid #000;">ACADEMIC FUNCTION /<br>MAJOR FINAL OUTPUT</th>
                                 <th rowspan="2" style="padding: 8px; border: 1px solid #000;">SUCCESS INDICATORS<br><span style="font-size: 9px; font-weight: normal;">(Targets + Measures)</span></th>
@@ -1008,6 +1153,7 @@
                                 <th style="padding: 4px; border: 1px solid #000;">E</th>
                                 <th style="padding: 4px; border: 1px solid #000;">Ave.</th>
                             </tr>
+                            <?php endif; ?>
                         </thead>
                         <tbody id="basis-tbody-core"></tbody>
                         <tbody id="basis-tbody-strategic"></tbody>
@@ -1022,8 +1168,9 @@
         <?php endif; ?>
 
         <!-- SPMS Structured Form Builder Container -->
-        <div id="spms-form-workspace" class="hidden w-full h-full overflow-y-auto p-2 sm:p-6 lg:p-8 flex justify-center items-start custom-scrollbar print:p-0 print:bg-white print:overflow-visible">
-            <article id="printable-form" class="spms-sheet-container block space-y-5">
+        <div id="spms-form-workspace" class="hidden w-full h-full overflow-y-auto p-2 sm:p-6 lg:p-8 flex flex-col items-center custom-scrollbar print:p-0 print:bg-white print:overflow-visible">
+            <div class="w-full max-w-[1280px] flex flex-col gap-4 print:w-full print:block">
+                <article id="printable-form" class="spms-sheet-container block space-y-5">
                 
                 <?php if (!empty($isCycleArchived)): ?>
                     <!-- Archived & Frozen Cycle Warning Banner -->
@@ -1041,83 +1188,265 @@
                 <?php endif; ?>
 
                 <!-- INSTITUTIONAL FORM HEADER -->
-                <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px;">
-                    <h1 style="font-size: 15px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 6px 0;" id="spms-doc-title">
-                        Individual Performance Commitment and Review (IPCR) — Faculty / Professors
-                    </h1>
-                    <p style="font-size: 11px; color: #334155; margin: 6px 0 0 0; line-height: 1.6;">
-                        I, <input type="text" id="ratee-name" value="<?= esc($ownerInfo['name'] ?? '') ?>" placeholder="Full Name Here" style="font-weight: bold; color: <?= !empty($ownerInfo['name']) ? '#0f172a' : '#dc2626' ?>; border: none; border-bottom: 1px solid <?= !empty($ownerInfo['name']) ? '#94a3b8' : '#f87171' ?>; text-align: center; min-width: 170px; max-width: 100%; outline: none; padding: 2px 4px;">, 
-                        <input type="text" id="ratee-position" value="<?= esc($ownerInfo['position'] ?? '') ?>" placeholder="Position & Designation" style="color: <?= !empty($ownerInfo['position']) ? '#0f172a' : '#dc2626' ?>; border: none; border-bottom: 1px solid <?= !empty($ownerInfo['position']) ? '#94a3b8' : '#f87171' ?>; text-align: center; min-width: 170px; max-width: 100%; outline: none; padding: 2px 4px;"> 
-                        of the <input type="text" id="ratee-dept" value="<?= esc($ownerInfo['dept'] ?? '') ?>" placeholder="Office / College Name" style="color: <?= !empty($ownerInfo['dept']) ? '#0f172a' : '#dc2626' ?>; border: none; border-bottom: 1px solid <?= !empty($ownerInfo['dept']) ? '#94a3b8' : '#f87171' ?>; text-align: center; min-width: 170px; max-width: 100%; outline: none; padding: 2px 4px;">, 
-                        commit to deliver and agree to be rated on the attainment of faculty targets for 
-                        <input type="text" id="ratee-period" value="<?= esc($ownerInfo['period'] ?? '') ?>" placeholder="Period (e.g. 1st Semester, AY 2026–2027)" style="font-weight: bold; color: <?= !empty($ownerInfo['period']) ? '#0f172a' : '#dc2626' ?>; border: none; border-bottom: 1px solid <?= !empty($ownerInfo['period']) ? '#94a3b8' : '#f87171' ?>; text-align: center; min-width: 200px; max-width: 100%; outline: none; padding: 2px 4px;">.
-                    </p>
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h2 style="font-size: 15px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: 0.05em; color: #000000; line-height: 1.4;" id="spms-doc-title">
+                        <?= $isDocIperf 
+                            ? 'INDIVIDUAL PERFORMANCE EVALUATION RATING FORM FOR CONTRACT OF SERVICE AND JOB ORDER PERSONNEL' 
+                            : ($isDocDpcr ? 'DEPARTMENT PERFORMANCE COMMITMENT AND REVIEW (DPCR)' : ($isDocOpcr ? 'OFFICE PERFORMANCE COMMITMENT AND REVIEW (OPCR)' : 'INDIVIDUAL PERFORMANCE COMMITMENT AND REVIEW (IPCR)')) ?>
+                    </h2>
+                    <?php if ($isDocIperf): ?>
+                    <div style="font-size: 11px; font-style: italic; color: #000000; margin-top: 4px;">
+                        (attach rubrics for the rating of actual accomplishments vis-à-vis expected outputs)
+                    </div>
+                    <?php endif; ?>
                 </div>
 
-                <!-- APPROVER, RATEE, AND RATING SCALE MATRIX -->
-                <table class="spms-meta-matrix" style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 11px;">
-                    <tr>
-                        <!-- Approver Block -->
-                        <td style="width: 35%; border: 1px solid #000; padding: 10px; vertical-align: top;">
-                            <div style="font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #0f172a; margin-bottom: 8px;">
-                                Approved by (Dean / Chair):
-                            </div>
-                            <table style="width: 100%; border-collapse: collapse; border: none; font-size: 11px;">
-                                <tr>
-                                    <td style="width: 60px; color: #64748b; font-weight: 600; border: none; padding: 3px 0;">Name:</td>
-                                    <td style="border: none; padding: 3px 0;">
-                                        <input type="text" id="approver-name" value="" placeholder="Name of Approving Authority" style="width: 100%; font-weight: bold; color: #dc2626; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px;">
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="color: #64748b; font-weight: 600; border: none; padding: 3px 0;">Position:</td>
-                                    <td style="border: none; padding: 3px 0;">
-                                        <input type="text" id="approver-pos" value="" placeholder="Official Designation" style="width: 100%; color: #1e293b; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px;">
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="color: #64748b; font-weight: 600; border: none; padding: 3px 0;">Date:</td>
-                                    <td style="border: none; padding: 3px 0;">
-                                        <input type="text" id="approver-date" value="" placeholder="Date Approved" style="width: 100%; color: #1e293b; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px;">
-                                    </td>
-                                </tr>
-                            </table>
+                <?php if ($isDocIperf): ?>
+                <!-- IPERF 3-ROW METADATA MATRIX (EXACT REPLICA OF PHOTO) -->
+                <table class="spms-meta-matrix" style="width: 100%; border-collapse: collapse; border: 1px solid #000000; margin-bottom: 18px; font-size: 11px;">
+                    <tr style="border-bottom: 1px solid #000000;">
+                        <td style="width: 18%; padding: 6px 8px; font-weight: bold; border-right: 1px solid #000000; background: #fafafa;">Name of Employee:</td>
+                        <td style="width: 42%; padding: 6px 8px; border-right: 1px solid #000000;">
+                            <input type="text" id="ratee-name" value="" placeholder="indicate full name (First Name Middle Initial Last Name, Extension; e.g., Juan D. Cruz III)" style="width: 100%; border: none; outline: none; font-size: 11px; color: #ba372a; font-weight: bold;" <?= $canEditTargets ? '' : 'disabled' ?>>
                         </td>
+                        <td style="width: 15%; padding: 6px 8px; font-weight: bold; border-right: 1px solid #000000; background: #fafafa;">Classification:</td>
+                        <td style="width: 25%; padding: 6px 8px;">
+                            <select id="ratee-classification" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 3px; padding: 2px 4px; font-size: 11px; color: #000; font-weight: bold; background: #ffffff;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                <option value="Contract of Service (COS)">Contract of Service (COS)</option>
+                                <option value="Job Order">Job Order</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #000000;">
+                        <td style="padding: 6px 8px; font-weight: bold; border-right: 1px solid #000000; background: #fafafa;">Position:</td>
+                        <td style="padding: 6px 8px; border-right: 1px solid #000000;">
+                            <input type="text" id="ratee-position" value="" placeholder="indicate the full position title specified in the contract/job order" style="width: 100%; border: none; outline: none; font-size: 11px; color: #ba372a;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                        </td>
+                        <td style="padding: 6px 8px; font-weight: bold; border-right: 1px solid #000000; background: #fafafa;">Rating Period:</td>
+                        <td style="padding: 6px 8px;">
+                            <input type="text" id="ratee-period" value="" placeholder="e.g., July - December 2024" style="width: 100%; border: none; outline: none; font-size: 11px; color: #ba372a; font-weight: bold;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px 8px; font-weight: bold; border-right: 1px solid #000000; background: #fafafa;">Office:</td>
+                        <td colspan="3" style="padding: 6px 8px;">
+                            <input type="text" id="ratee-dept" value="" placeholder="indicate in full the specific area of assignment (e.g., CIS - Department of Development Communication)" style="width: 100%; border: none; outline: none; font-size: 11px; color: #ba372a;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                        </td>
+                    </tr>
+                </table>
+                <!-- Hidden compatibility elements for IPERF -->
+                <input type="hidden" id="ratee-sign-name" value="">
+                <input type="hidden" id="ratee-sign-date" value="">
+                <div id="approvers-container" style="display: none;">
+                    <div class="approver-item">
+                        <input type="hidden" class="field-approver-name" id="approver-name" value="">
+                        <input type="hidden" class="field-approver-pos" id="approver-pos" value="">
+                        <input type="hidden" class="field-approver-date" id="approver-date" value="">
+                    </div>
+                </div>
+                <?php else: ?>
+                <!-- Preamble with Red Hint Placeholders -->
+                <div style="margin-bottom: 18px; font-size: 11px; line-height: 1.6; text-align: justify; color: #000000;">
+                    I, <input type="text" id="ratee-name" value="" placeholder="FULL NAME HERE" style="font-weight: bold; color: #ba372a; border: none; border-bottom: 1px solid #ba372a; text-align: center; min-width: 170px; outline: none; padding: 2px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>>, 
+                    <input type="text" id="ratee-position" value="" placeholder="Position and Official Designation" style="color: #ba372a; border: none; border-bottom: 1px solid #ba372a; text-align: center; min-width: 200px; outline: none; padding: 2px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>> of the 
+                    <input type="text" id="ratee-dept" value="" placeholder="Office Name" style="color: #ba372a; border: none; border-bottom: 1px solid #ba372a; text-align: center; min-width: 170px; outline: none; padding: 2px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>>, commit to deliver and agree to be rated on the attainment of the following targets in accordance with the indicated measure for the period 
+                    <input type="text" id="ratee-period" value="" placeholder="January - June or July - December and Year; e.g., July - December 2024" style="font-weight: bold; color: #ba372a; border: none; border-bottom: 1px solid #ba372a; text-align: center; min-width: 320px; outline: none; padding: 2px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>>.
+                </div>
 
-                        <!-- Ratee Sign-off Block -->
-                        <td style="width: 35%; border: 1px solid #000; padding: 10px; text-align: center; vertical-align: middle;">
-                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
-                                <input type="text" id="ratee-sign-name" value="" placeholder="Name of Employee" style="font-weight: bold; color: #dc2626; border: none; border-bottom: 1px solid #94a3b8; text-align: center; width: 85%; outline: none; font-size: 11px; padding: 2px 0;">
-                                <span style="color: #334155; font-size: 10px; font-weight: 600; margin-top: 4px;">Faculty Member / Professor</span>
-                                <div style="margin-top: 10px; font-size: 11px; color: #64748b;">
-                                    Date: <input type="text" id="ratee-sign-date" value="" placeholder="Date" style="border: none; border-bottom: 1px solid #cbd5e1; text-align: center; width: 100px; outline: none; font-size: 11px;">
+                <!-- Approver, Ratee, and Rating Scale Matrix -->
+                <table class="spms-meta-matrix" style="width: 100%; border-collapse: collapse; border: none; margin-bottom: 18px; font-size: 11px;">
+                    <tr>
+                        <!-- Left: Approved By (Extreme Left-most) -->
+                        <td style="vertical-align: top; border: none; padding: 0 20px 0 0; text-align: left;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <div style="font-weight: bold; color: #000000;">APPROVED BY:</div>
+                                <button type="button" id="btn-add-approver" onclick="addApproverBlock()" class="print-hide" style="display: <?= $canEditApprover ? 'inline-flex' : 'none' ?>; align-items: center; gap: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: #0284c7; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 4px; cursor: pointer;" title="Add another approving signatory">
+                                    + Add Signatory
+                                </button>
+                            </div>
+                            <div id="approvers-container" style="display: flex; flex-direction: column; gap: 8px;">
+                                <div class="approver-item" style="position: relative;">
+                                    <table style="width: 100%; border-collapse: collapse; border: none; font-size: 11px;">
+                                        <tr>
+                                            <td style="width: 65px; border: none; padding: 3px 0; font-weight: bold; color: #000000;">Name:</td>
+                                            <td style="border: none; padding: 3px 0;">
+                                                <input type="text" class="field-approver-name" id="approver-name" value="" placeholder="<?= $isDocOpcr ? '(name of head of office / approving authority)' : ($isDocDpcr ? '(name of office head)' : 'Name of Approving Authority') ?>" style="font-weight: bold; color: #ba372a; border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; width: 60%;" <?= $canEditApprover ? '' : 'disabled' ?>>
+                                                <span style="color: #ba372a; font-style: italic; font-size: 10px; margin-left: 6px;">(may add signatories depending on position)</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: none; padding: 3px 0; font-weight: bold; color: #000000;">Position:</td>
+                                            <td style="border: none; padding: 3px 0;">
+                                                <input type="text" class="field-approver-pos" id="approver-pos" value="" placeholder="<?= $isDocOpcr ? '(position / designation)' : ($isDocDpcr ? '(position of office head)' : 'Official Designation') ?>" style="color: #ba372a; border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; width: 80%;" <?= $canEditApprover ? '' : 'disabled' ?>>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: none; padding: 3px 0; font-weight: bold; color: #000000;">Date:</td>
+                                            <td style="border: none; padding: 3px 0;">
+                                                <input type="date" class="field-approver-date" id="approver-date" value="" onclick="this.showPicker && this.showPicker()" style="color: #ba372a; border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; width: 130px; background: transparent; font-family: inherit; cursor: pointer;" <?= $canEditApprover ? '' : 'disabled' ?>>
+                                            </td>
+                                        </tr>
+                                    </table>
                                 </div>
                             </div>
                         </td>
 
-                        <!-- CHED / CSC / BSU Rating Scale -->
-                        <td style="width: 30%; border: 1px solid #000; padding: 8px 12px; background: #f8fafc; vertical-align: top; font-size: 10px;">
-                            <div style="font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #0f172a; margin-bottom: 4px;">
-                                BSU / CSC Faculty Rating Scale:
-                            </div>
-                            <div style="display: flex; flex-direction: column; gap: 2px; color: #334155;">
-                                <div style="display: flex; justify-content: space-between; font-weight: bold;"><span>5 — Outstanding</span> <span>(4.500 – 5.000)</span></div>
-                                <div style="display: flex; justify-content: space-between;"><span>4 — Very Satisfactory</span> <span>(3.500 – 4.499)</span></div>
-                                <div style="display: flex; justify-content: space-between;"><span>3 — Satisfactory</span> <span>(2.500 – 3.499)</span></div>
-                                <div style="display: flex; justify-content: space-between;"><span>2 — Unsatisfactory</span> <span>(1.500 – 2.499)</span></div>
-                                <div style="display: flex; justify-content: space-between;"><span>1 / 0 — Poor / Unmet</span> <span>(Below 1.499)</span></div>
+                        <!-- Right: Name of Employee & Rating Scale (Extreme Right-most) -->
+                        <td style="vertical-align: top; border: none; padding: 0; text-align: right; width: 1%; white-space: nowrap;">
+                            <div style="display: inline-block; text-align: left; min-width: 240px;">
+                                <!-- Name of Employee Block -->
+                                <div style="margin-bottom: 14px;">
+                                    <div>
+                                        <input type="text" id="ratee-sign-name" value="" placeholder="(full name here)" style="color: #ba372a; font-weight: bold; border: none; border-bottom: 1px solid #ba372a; text-align: left; width: 240px; outline: none; font-size: 11px; padding: 2px 0;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                    </div>
+                                    <div style="font-size: 11px; color: #000000; margin-top: 3px;">Name of Employee</div>
+                                    <div style="margin-top: 4px; font-size: 11px; color: #000000;">
+                                        Date: <input type="date" id="ratee-sign-date" value="" onclick="this.showPicker && this.showPicker()" style="border: none; border-bottom: 1px solid #ba372a; width: 130px; outline: none; font-size: 11px; color: #ba372a; background: transparent; font-family: inherit; cursor: pointer;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                    </div>
+                                </div>
+
+                                <!-- Rating Scale -->
+                                <div style="font-size: 10px; color: #000000;">
+                                    <div style="font-weight: bold; margin-bottom: 3px;">Rating Scale:</div>
+                                    <div style="display: flex; flex-direction: column; gap: 2px; line-height: 1.35;">
+                                        <div>5 – Outstanding</div>
+                                        <div>4 – Very Satisfactory</div>
+                                        <div>3 – Satisfactory</div>
+                                        <div>2 – Unsatisfactory</div>
+                                        <div>1 – Poor</div>
+                                    </div>
+                                </div>
                             </div>
                         </td>
                     </tr>
                 </table>
+                <?php endif; ?>
 
                 <!-- MAIN TABLE OF DELIVERABLES & RATINGS -->
                 <div class="spms-table-responsive-wrapper">
                     <div class="lg:hidden flex items-center justify-between text-[11px] text-slate-500 bg-slate-100 dark:bg-slate-800/40 px-3 py-1.5 rounded border border-slate-200 dark:border-slate-700 mb-2 print-hide">
                         <span class="flex items-center gap-1 font-medium">↔ Swipe matrix horizontally to view ratings & remarks</span>
-                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">9 Columns</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider"><?= ($isDocDpcr || $isDocOpcr) ? '10 Columns' : ($isDocIperf ? '8 Columns' : '9 Columns') ?></span>
                     </div>
                     <table class="spms-table">
+                        <?php if ($isDocDpcr): ?>
+                        <!-- Column Widths (10 columns matching standard DPCR Sheet) -->
+                        <colgroup>
+                            <col style="width: 14%;"> <!-- PROGRAMS, PROJECTS, ACTIVITIES -->
+                            <col style="width: 17%;"> <!-- SUCCESS INDICATORS -->
+                            <col style="width: 10%;"> <!-- ALLOTTED BUDGET -->
+                            <col style="width: 13%;"> <!-- INDIVIDUALS / OFFICES ACCOUNTABLE -->
+                            <col style="width: 18%;"> <!-- ACTUAL ACCOMPLISHMENTS -->
+                            <col style="width: 3.5%;"> <!-- Q -->
+                            <col style="width: 3.5%;"> <!-- T -->
+                            <col style="width: 3.5%;"> <!-- E -->
+                            <col style="width: 4.5%;"> <!-- Ave. -->
+                            <col style="width: 13%;"> <!-- REMARKS -->
+                            <col style="width: 3%;">  <!-- ACT -->
+                        </colgroup>
+
+                        <!-- Two-Row Header with Light Blue #cfe2f3 Background -->
+                        <thead>
+                            <tr style="background-color: #cfe2f3; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">PROGRAMS, PROJECTS, ACTIVITIES</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">SUCCESS INDICATORS<br><span style="font-weight: normal; font-size: 9px;">(TARGETS + MEASURES)</span></th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">
+                                    ALLOTTED BUDGET
+                                    <div style="font-weight: normal; font-size: 9px; margin-top: 2px; display: inline-flex; align-items: center; justify-content: center; gap: 2px;">
+                                        (<input type="text" id="header-budget-currency" class="header-budget-currency" value="₱" placeholder="₱" title="Currency (editable, defaults to ₱)" style="width: 18px;">)
+                                    </div>
+                                </th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">INDIVIDUALS /<br>OFFICES ACCOUNTABLE</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENTS</th>
+                                <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 4px;" class="print-hide">ACT</th>
+                            </tr>
+                            <tr style="background-color: #cfe2f3; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                                <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
+                                <th style="border: 1px solid #000; padding: 4px 2px;">T</th>
+                                <th style="border: 1px solid #000; padding: 4px 2px;">E</th>
+                                <th style="border: 1px solid #000; padding: 4px 2px;">Ave.</th>
+                            </tr>
+                        </thead>
+                        <?php elseif ($isDocOpcr): ?>
+                        <!-- Column Widths (10 columns matching Vice President OPCR Sheet) -->
+                        <colgroup>
+                            <col style="width: 14%;"> <!-- PROJECT/ PROGRAM/ ACTIVITIES -->
+                            <col style="width: 17%;"> <!-- SUCCESS INDICATORS (TARGETS + MEASURES) PERFORMANCE -->
+                            <col style="width: 10%;"> <!-- ALLOTTED BUDGET -->
+                            <col style="width: 13%;"> <!-- DIVISIONS ACCOUNTABLE -->
+                            <col style="width: 18%;"> <!-- ACTUAL ACCOMPLISHMENT -->
+                            <col style="width: 3.5%;"> <!-- Q -->
+                            <col style="width: 3.5%;"> <!-- T -->
+                            <col style="width: 3.5%;"> <!-- E -->
+                            <col style="width: 4.5%;"> <!-- AVE -->
+                            <col style="width: 13%;"> <!-- REMARKS -->
+                            <col style="width: 3%;">  <!-- ACT -->
+                        </colgroup>
+
+                        <!-- Two-Row Header with Soft Yellow/Amber #fff2cc Background -->
+                        <thead>
+                            <tr style="background-color: #fff2cc; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">PROJECT/<br>PROGRAM/<br>ACTIVITIES</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">SUCCESS INDICATORS (TARGETS +<br>MEASURES) PERFORMANCE</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">
+                                    ALLOTTED<br>BUDGET
+                                    <div style="font-weight: normal; font-size: 9px; margin-top: 2px; display: inline-flex; align-items: center; justify-content: center; gap: 2px;">
+                                        (<input type="text" id="header-budget-currency-opcr" class="header-budget-currency" value="₱" placeholder="₱" title="Currency (editable, defaults to ₱)" style="width: 18px;">)
+                                    </div>
+                                </th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">DIVISIONS<br>ACCOUNTABLE</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENT</th>
+                                <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATINGS</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 4px;" class="print-hide">ACT</th>
+                            </tr>
+                            <tr style="background-color: #fff2cc; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                                <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
+                                <th style="border: 1px solid #000; padding: 4px 2px;">T</th>
+                                <th style="border: 1px solid #000; padding: 4px 2px;">E</th>
+                                <th style="border: 1px solid #000; padding: 4px 2px;">AVE</th>
+                            </tr>
+                        </thead>
+                        <?php elseif ($isDocIperf): ?>
+                        <!-- IPERF 8-Column Layout (+ Action column in web view) Matching COS & Job Order Sheet -->
+                        <colgroup>
+                            <col style="width: 24%;"> <!-- OFFICE PPA -->
+                            <col style="width: 24%;"> <!-- EXPECTED OUTPUTS -->
+                            <col style="width: 24%;"> <!-- ACTUAL ACCOMPLISHMENTS -->
+                            <col style="width: 4%;">  <!-- Q -->
+                            <col style="width: 4%;">  <!-- T -->
+                            <col style="width: 4%;">  <!-- E -->
+                            <col style="width: 5%;">  <!-- Ave. -->
+                            <col style="width: 12%;"> <!-- REMARKS -->
+                            <col style="width: 3%;">  <!-- ACT -->
+                        </colgroup>
+
+                        <!-- Two-Row Header with Soft Neutral #f1f5f9 Background -->
+                        <thead>
+                            <tr style="background-color: #f1f5f9; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">
+                                    OFFICE PPA<br><span style="font-size: 9px; font-weight: normal;">(PROGRAMS, PROJECTS, ACTIVITIES)</span><br>
+                                    <span style="color: #ba372a; font-size: 8.5px; font-style: italic; font-weight: normal;">(aligned with the deliverables of the office)</span>
+                                </th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">
+                                    EXPECTED OUTPUTS<br>
+                                    <span style="color: #ba372a; font-size: 8.5px; font-style: italic; font-weight: normal;">(based on contract or duties and responsibilities in the request to hire personnel)</span>
+                                </th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENTS</th>
+                                <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 4px;" class="print-hide">ACT</th>
+                            </tr>
+                            <tr style="background-color: #f1f5f9; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                                <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
+                                <th style="border: 1px solid #000; padding: 4px 2px;">T</th>
+                                <th style="border: 1px solid #000; padding: 4px 2px;">E</th>
+                                <th style="border: 1px solid #000; padding: 4px 2px;">Ave.</th>
+                            </tr>
+                        </thead>
+                        <?php else: ?>
                         <!-- Column Widths (9 total columns matching BSU Annex B IPCR) -->
                         <colgroup>
                             <col style="width: 24%;">
@@ -1131,79 +1460,100 @@
                             <col style="width: 3%;">
                         </colgroup>
 
-                        <!-- Two-Row Header: Q, T, E, Ave side-by-side -->
+                        <!-- Two-Row Header: Q, T, E, Ave side-by-side with Light Blue #cfe2f3 Background -->
                         <thead>
-                            <tr style="background: #f1f5f9; text-align: center; font-weight: bold; border-bottom: 1px solid #000;">
-                                <th rowspan="2" style="padding: 8px;">ACADEMIC FUNCTION /<br>MAJOR FINAL OUTPUT</th>
-                                <th rowspan="2" style="padding: 8px;">SUCCESS INDICATORS<br><span style="font-size: 9px; font-weight: normal; text-transform: none;">(Targets + Measures)</span></th>
-                                <th rowspan="2" style="padding: 8px;">ACTUAL ACCOMPLISHMENTS<br><span style="font-size: 9px; font-weight: normal; text-transform: none;">(Grades submitted, Papers published)</span></th>
-                                <th colspan="4" style="padding: 4px;">RATING</th>
-                                <th rowspan="2" style="padding: 8px;">REMARKS</th>
-                                <th rowspan="2" style="padding: 4px;" class="print-hide">ACT</th>
+                            <tr style="background-color: #cfe2f3; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">MAJOR FINAL OUTPUT</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">SUCCESS INDICATORS<br><span style="font-size: 9px; font-weight: normal; text-transform: none;">(TARGETS + MEASURES)</span></th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENTS</th>
+                                <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 4px;" class="print-hide">ACT</th>
                             </tr>
-                            <tr style="background: #f1f5f9; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
-                                <th style="padding: 4px;">Q</th>
-                                <th style="padding: 4px;">T</th>
-                                <th style="padding: 4px;">E</th>
-                                <th style="padding: 4px;">Ave.</th>
+                            <tr style="background-color: #cfe2f3; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                                <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
+                                <th style="border: 1px solid #000; padding: 4px 2px;">T</th>
+                                <th style="border: 1px solid #000; padding: 4px 2px;">E</th>
+                                <th style="border: 1px solid #000; padding: 4px 2px;">Ave.</th>
                             </tr>
                         </thead>
+                        <?php endif; ?>
 
+                        <?php if ($isDocIperf): ?>
+                        <!-- IPERF FLAT DELIVERABLES LIST (NO CATEGORIES) -->
+                        <tbody id="tbody-core">
+                        </tbody>
+                        <!-- Add Row Footer for IPERF -->
+                        <tbody class="print-hide" id="tfoot-add-core" style="<?= $canEditTargets ? '' : 'display: none;' ?>">
+                            <tr>
+                                <td colspan="9" style="padding: 6px; background: #fafafa; text-align: center; border: 1px solid #000;">
+                                    <button type="button" onclick="addTableRow('core')" class="btn-add-dashed">
+                                        + Add Deliverable / Office PPA Row
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+
+                        <!-- OVERALL AVERAGE RATING ROW (EXACT REPLICA OF PHOTO) -->
+                        <tfoot>
+                            <tr style="background-color: #f8fafc; font-weight: bold; border-top: 2px solid #000; border-bottom: 2px solid #000;">
+                                <td colspan="6" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #000000; border: 1px solid #000; text-align: left;">
+                                    OVERALL AVERAGE RATING
+                                </td>
+                                <td style="padding: 8px 4px; text-align: center; font-weight: 900; color: #0284c7; font-size: 12px; border: 1px solid #000;" id="iperf-overall-average">
+                                    0.000
+                                </td>
+                                <td style="padding: 6px 8px; text-align: center; border: 1px solid #000;">
+                                    <span id="iperf-adjectival-badge" style="display: inline-block; background: #475569; color: #ffffff; font-weight: 900; font-size: 10px; text-transform: uppercase; padding: 2px 8px; border-radius: 4px;">
+                                        PENDING EVALUATION
+                                    </span>
+                                </td>
+                                <td style="border: 1px solid #000;" class="print-hide"></td>
+                            </tr>
+                        </tfoot>
+
+                        <!-- Hidden strategic and support containers for JS compatibility -->
+                        <tbody id="tbody-strategic" style="display: none;"></tbody>
+                        <tbody id="tbody-support" style="display: none;"></tbody>
+
+                        <?php else: ?>
                         <!-- 1. CORE FUNCTIONS -->
                         <tbody id="tbody-core">
-                            <tr style="background: #f8fafc; border-top: 2px solid #000; border-bottom: 1px solid #000;">
-                                <td colspan="6" id="label-cat-core" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a;">
-                                    1. Core Functions — Instruction & Teaching Load (70%)
+                            <tr style="background-color: #fce5cd; border-top: 2px solid #000; border-bottom: 1px solid #000; font-weight: bold;">
+                                <?php if ($isDocDpcr): ?>
+                                <td colspan="5" id="label-cat-core" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
+                                    CORE FUNCTIONS (60%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
                                 </td>
-                                <td colspan="3" style="padding: 6px 12px; text-align: right;">
+                                <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
                                     <span style="display: inline-block; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
                                         Core Subtotal: <span id="badge-core-subtotal">0.000</span>
                                     </span>
                                 </td>
-                            </tr>
-                            <tr class="table-row-core" style="border-bottom: 1px solid #000000;">
-                                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                                    <textarea class="spms-textarea field-mfo" rows="3" placeholder="Enter academic function / major final output..." <?= $canEditTargets ? '' : 'disabled title="Locked (Only modifiable during Target Phase)"' ?>></textarea>
+                                <?php elseif ($isDocOpcr): ?>
+                                <td colspan="5" id="label-cat-core" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
+                                    CORE MANDATE (60%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
                                 </td>
-                                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                                    <textarea class="spms-textarea field-indicators" rows="3" placeholder="Enter success indicators (targets + measures)..." <?= $canEditTargets ? '' : 'disabled title="Locked (Only modifiable during Target Phase)"' ?>></textarea>
+                                <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
+                                    <span style="display: inline-block; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
+                                        Core Subtotal: <span id="badge-core-subtotal">0.000</span>
+                                    </span>
                                 </td>
-                                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                                    <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishments..." <?= $canEditEvaluation ? '' : 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' ?>></textarea>
+                                <?php else: ?>
+                                <td colspan="5" id="label-cat-core" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
+                                    CORE FUNCTIONS (70%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
                                 </td>
-                                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                                    <input type="number" min="0" max="5" step="1" value="" placeholder="—" <?= $canEditEvaluation ? 'oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"' : 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' ?> class="spms-score-input field-q">
+                                <td colspan="4" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
+                                    <span style="display: inline-block; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
+                                        Core Subtotal: <span id="badge-core-subtotal">0.000</span>
+                                    </span>
                                 </td>
-                                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                                    <input type="number" min="0" max="5" step="1" value="" placeholder="—" <?= $canEditEvaluation ? 'oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"' : 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' ?> class="spms-score-input field-t">
-                                </td>
-                                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                                    <input type="number" min="0" max="5" step="1" value="" placeholder="—" <?= $canEditEvaluation ? 'oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"' : 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' ?> class="spms-score-input field-e">
-                                </td>
-                                <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f0f9ff; border: 1px solid #000;">
-                                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                                        <span class="field-row-avg" style="font-weight: 900; color: #0369a1; font-size: 11px;">—</span>
-                                        <span style="font-size: 8px; font-weight: 800; color: #0284c7; text-transform: uppercase;">auto</span>
-                                    </div>
-                                </td>
-                                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." <?= $canEditEvaluation ? '' : 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' ?>></textarea>
-                                </td>
-                                <td style="padding: 2px; text-align: center; vertical-align: middle; border: 1px solid #000;" class="print-hide">
-                                    <?php if ($canEditTargets): ?>
-                                    <button type="button" onclick="deleteTableRow(this)" title="Delete Row" class="btn-del-row">
-                                        <svg xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
-                                    <?php endif; ?>
-                                </td>
+                                <?php endif; ?>
                             </tr>
                         </tbody>
                         <!-- Add Row Footer for Core -->
                         <tbody class="print-hide" id="tfoot-add-core" style="<?= $canEditTargets ? '' : 'display: none;' ?>">
                             <tr>
-                                <td colspan="9" style="padding: 6px; background: #fafafa; text-align: center; border: 1px solid #000;">
+                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? 11 : 9 ?>" style="padding: 6px; background: #fafafa; text-align: center; border: 1px solid #000;">
                                     <button type="button" onclick="addTableRow('core')" class="btn-add-dashed">
                                         + Add Deliverable Row to Core Functions
                                     </button>
@@ -1213,59 +1563,41 @@
 
                         <!-- 2. STRATEGIC FUNCTIONS -->
                         <tbody id="tbody-strategic">
-                            <tr style="background: #f8fafc; border-top: 2px solid #000; border-bottom: 1px solid #000;">
-                                <td colspan="6" id="label-cat-strategic" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a;">
-                                    2. Strategic Functions — Research, Citations & Extension Services (20%)
+                            <tr style="background-color: #fce5cd; border-top: 2px solid #000; border-bottom: 1px solid #000; font-weight: bold;">
+                                <?php if ($isDocDpcr): ?>
+                                <td colspan="5" id="label-cat-strategic" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
+                                    STRATEGIC FUNCTIONS (30%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
                                 </td>
-                                <td colspan="3" style="padding: 6px 12px; text-align: right;">
+                                <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
                                     <span style="display: inline-block; background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
                                         Strategic Subtotal: <span id="badge-strategic-subtotal">0.000</span>
                                     </span>
                                 </td>
-                            </tr>
-                            <tr class="table-row-strategic" style="border-bottom: 1px solid #000000;">
-                                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                                    <textarea class="spms-textarea field-mfo" rows="3" placeholder="Enter academic function / major final output..." <?= $canEditTargets ? '' : 'disabled title="Locked (Only modifiable during Target Phase)"' ?>></textarea>
+                                <?php elseif ($isDocOpcr): ?>
+                                <td colspan="5" id="label-cat-strategic" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
+                                    STRATEGIC FUNCTIONS (25%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
                                 </td>
-                                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                                    <textarea class="spms-textarea field-indicators" rows="3" placeholder="Enter success indicators (targets + measures)..." <?= $canEditTargets ? '' : 'disabled title="Locked (Only modifiable during Target Phase)"' ?>></textarea>
+                                <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
+                                    <span style="display: inline-block; background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
+                                        Strategic Subtotal: <span id="badge-strategic-subtotal">0.000</span>
+                                    </span>
                                 </td>
-                                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                                    <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishments..." <?= $canEditEvaluation ? '' : 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' ?>></textarea>
+                                <?php else: ?>
+                                <td colspan="5" id="label-cat-strategic" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
+                                    STRATEGIC FUNCTIONS (20%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
                                 </td>
-                                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                                    <input type="number" min="0" max="5" step="1" value="" placeholder="—" <?= $canEditEvaluation ? 'oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"' : 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' ?> class="spms-score-input field-q">
+                                <td colspan="4" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
+                                    <span style="display: inline-block; background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
+                                        Strategic Subtotal: <span id="badge-strategic-subtotal">0.000</span>
+                                    </span>
                                 </td>
-                                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                                    <input type="number" min="0" max="5" step="1" value="" placeholder="—" <?= $canEditEvaluation ? 'oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"' : 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' ?> class="spms-score-input field-t">
-                                </td>
-                                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                                    <input type="number" min="0" max="5" step="1" value="" placeholder="—" <?= $canEditEvaluation ? 'oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"' : 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' ?> class="spms-score-input field-e">
-                                </td>
-                                <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f0f9ff; border: 1px solid #000;">
-                                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                                        <span class="field-row-avg" style="font-weight: 900; color: #0369a1; font-size: 11px;">—</span>
-                                        <span style="font-size: 8px; font-weight: 800; color: #0284c7; text-transform: uppercase;">auto</span>
-                                    </div>
-                                </td>
-                                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." <?= $canEditEvaluation ? '' : 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' ?>></textarea>
-                                </td>
-                                <td style="padding: 2px; text-align: center; vertical-align: middle; border: 1px solid #000;" class="print-hide">
-                                    <?php if ($canEditTargets): ?>
-                                    <button type="button" onclick="deleteTableRow(this)" title="Delete Row" class="btn-del-row">
-                                        <svg xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
-                                    <?php endif; ?>
-                                </td>
+                                <?php endif; ?>
                             </tr>
                         </tbody>
                         <!-- Add Row Footer for Strategic -->
                         <tbody class="print-hide" id="tfoot-add-strategic" style="<?= $canEditTargets ? '' : 'display: none;' ?>">
                             <tr>
-                                <td colspan="9" style="padding: 6px; background: #fafafa; text-align: center; border: 1px solid #000;">
+                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? 11 : 9 ?>" style="padding: 6px; background: #fafafa; text-align: center; border: 1px solid #000;">
                                     <button type="button" onclick="addTableRow('strategic')" class="btn-add-dashed">
                                         + Add Deliverable Row to Strategic Functions
                                     </button>
@@ -1275,76 +1607,64 @@
 
                         <!-- 3. SUPPORT FUNCTIONS -->
                         <tbody id="tbody-support">
-                            <tr style="background: #f8fafc; border-top: 2px solid #000; border-bottom: 1px solid #000;">
-                                <td colspan="6" id="label-cat-support" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a;">
-                                    3. Support Functions — Committee Work, Thesis Advising & Governance (10%)
+                            <tr style="background-color: #fce5cd; border-top: 2px solid #000; border-bottom: 1px solid #000; font-weight: bold;">
+                                <?php if ($isDocDpcr): ?>
+                                <td colspan="5" id="label-cat-support" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
+                                    SUPPORT FUNCTIONS (10%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
                                 </td>
-                                <td colspan="3" style="padding: 6px 12px; text-align: right;">
+                                <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
                                     <span style="display: inline-block; background: #fffbeb; color: #92400e; border: 1px solid #fde68a; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
                                         Support Subtotal: <span id="badge-support-subtotal">0.000</span>
                                     </span>
                                 </td>
-                            </tr>
-                            <tr class="table-row-support" style="border-bottom: 1px solid #000000;">
-                                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                                    <textarea class="spms-textarea field-mfo" rows="3" placeholder="Enter academic function / major final output..." <?= $canEditTargets ? '' : 'disabled title="Locked (Only modifiable during Target Phase)"' ?>></textarea>
+                                <?php elseif ($isDocOpcr): ?>
+                                <td colspan="5" id="label-cat-support" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
+                                    SUPPORT FUNCTIONS (15%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
                                 </td>
-                                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                                    <textarea class="spms-textarea field-indicators" rows="3" placeholder="Enter success indicators (targets + measures)..." <?= $canEditTargets ? '' : 'disabled title="Locked (Only modifiable during Target Phase)"' ?>></textarea>
+                                <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
+                                    <span style="display: inline-block; background: #fffbeb; color: #92400e; border: 1px solid #fde68a; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
+                                        Support Subtotal: <span id="badge-support-subtotal">0.000</span>
+                                    </span>
                                 </td>
-                                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                                    <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishments..." <?= $canEditEvaluation ? '' : 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' ?>></textarea>
+                                <?php else: ?>
+                                <td colspan="5" id="label-cat-support" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
+                                    SUPPORT FUNCTIONS (10%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
                                 </td>
-                                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                                    <input type="number" min="0" max="5" step="1" value="" placeholder="—" <?= $canEditEvaluation ? 'oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"' : 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' ?> class="spms-score-input field-q">
+                                <td colspan="4" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
+                                    <span style="display: inline-block; background: #fffbeb; color: #92400e; border: 1px solid #fde68a; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
+                                        Support Subtotal: <span id="badge-support-subtotal">0.000</span>
+                                    </span>
                                 </td>
-                                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                                    <input type="number" min="0" max="5" step="1" value="" placeholder="—" <?= $canEditEvaluation ? 'oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"' : 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' ?> class="spms-score-input field-t">
-                                </td>
-                                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                                    <input type="number" min="0" max="5" step="1" value="" placeholder="—" <?= $canEditEvaluation ? 'oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"' : 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' ?> class="spms-score-input field-e">
-                                </td>
-                                <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f0f9ff; border: 1px solid #000;">
-                                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                                        <span class="field-row-avg" style="font-weight: 900; color: #0369a1; font-size: 11px;">—</span>
-                                        <span style="font-size: 8px; font-weight: 800; color: #0284c7; text-transform: uppercase;">auto</span>
-                                    </div>
-                                </td>
-                                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." <?= $canEditEvaluation ? '' : 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' ?>></textarea>
-                                </td>
-                                <td style="padding: 2px; text-align: center; vertical-align: middle; border: 1px solid #000;" class="print-hide">
-                                    <?php if ($canEditTargets): ?>
-                                    <button type="button" onclick="deleteTableRow(this)" title="Delete Row" class="btn-del-row">
-                                        <svg xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
-                                    <?php endif; ?>
-                                </td>
+                                <?php endif; ?>
                             </tr>
                         </tbody>
                         <!-- Add Row Footer for Support -->
                         <tbody class="print-hide" id="tfoot-add-support" style="<?= $canEditTargets ? '' : 'display: none;' ?>">
                             <tr>
-                                <td colspan="9" style="padding: 6px; background: #fafafa; text-align: center; border: 1px solid #000;">
+                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? 11 : 9 ?>" style="padding: 6px; background: #fafafa; text-align: center; border: 1px solid #000;">
                                     <button type="button" onclick="addTableRow('support')" class="btn-add-dashed">
                                         + Add Deliverable Row to Support Functions
                                     </button>
                                 </td>
                             </tr>
                         </tbody>
+                        <?php endif; ?>
                     </table>
                 </div>
 
-                <!-- GRAND SUMMARY & NAVY RATING BAR (BULLETPROOF TABLE LAYOUT) -->
+                <?php if (!$isDocIperf): ?>
+                <!-- GRAND SUMMARY & NAVY RATING BAR (BULLETPROOF TABLE LAYOUT FOR BOTH DPCR AND IPCR) -->
                 <table class="spms-summary-matrix" style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 11px;">
                     <tr>
                         <!-- Left: Formula Explanation -->
                         <td style="width: 35%; padding: 12px; border: 1px solid #000; vertical-align: top; background: #fafafa;">
                             <div style="font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Formula Weights:</div>
                             <div id="formula-desc-text" style="font-size: 11px; color: #334155; margin-top: 6px; line-height: 1.5;">
-                                Core Function (70%) + Strategic Function (20%) + Support Functions (10%).
+                                <?= $isDocDpcr 
+                                    ? 'Core Functions (60%) + Strategic Functions (30%) + Support Functions (10%).' 
+                                    : ($isDocOpcr 
+                                        ? 'Core Mandate (60%) + Strategic Functions (25%) + Support Functions (15%).'
+                                        : 'Core Functions (70%) + Strategic Functions (20%) + Support Functions (10%).') ?>
                             </div>
                             <div style="font-size: 10px; color: #94a3b8; font-style: italic; margin-top: 14px; border-top: 1px solid #e2e8f0; padding-top: 6px;">
                                 Validated against standard Civil Service Commission SPMS Guidelines.
@@ -1363,7 +1683,7 @@
                                         0.000
                                     </td>
                                     <td style="padding: 8px 12px; font-size: 11px; color: #64748b; text-align: right; width: 35%;">
-                                        (Average: <span id="sum-core-avg">0.000</span> × <span id="mult-core-val">0.70</span>)
+                                        (Average: <span id="sum-core-avg">0.000</span> × <span id="mult-core-val"><?= ($isDocDpcr || $isDocOpcr) ? '0.60' : '0.70' ?></span>)
                                     </td>
                                 </tr>
 
@@ -1376,7 +1696,7 @@
                                         0.000
                                     </td>
                                     <td style="padding: 8px 12px; font-size: 11px; color: #64748b; text-align: right;">
-                                        (Average: <span id="sum-strategic-avg">0.000</span> × <span id="mult-strategic-val">0.20</span>)
+                                        (Average: <span id="sum-strategic-avg">0.000</span> × <span id="mult-strategic-val"><?= $isDocDpcr ? '0.30' : ($isDocOpcr ? '0.25' : '0.20') ?></span>)
                                     </td>
                                 </tr>
 
@@ -1389,7 +1709,7 @@
                                         0.000
                                     </td>
                                     <td style="padding: 8px 12px; font-size: 11px; color: #64748b; text-align: right;">
-                                        (Average: <span id="sum-support-avg">0.000</span> × <span id="mult-support-val">0.10</span>)
+                                        (Average: <span id="sum-support-avg">0.000</span> × <span id="mult-support-val"><?= $isDocOpcr ? '0.15' : '0.10' ?></span>)
                                     </td>
                                 </tr>
 
@@ -1414,57 +1734,409 @@
                         </td>
                     </tr>
                 </table>
+                <?php else: ?>
+                <!-- Hidden elements to preserve JS compatibility for IPERF -->
+                <div style="display: none;">
+                    <span id="badge-core-subtotal">0.000</span>
+                    <span id="badge-strategic-subtotal">0.000</span>
+                    <span id="badge-support-subtotal">0.000</span>
+                    <span id="sum-core-score">0.000</span>
+                    <span id="sum-core-avg">0.000</span>
+                    <span id="mult-core-val">1.00</span>
+                    <span id="sum-strategic-score">0.000</span>
+                    <span id="sum-strategic-avg">0.000</span>
+                    <span id="mult-strategic-val">0.00</span>
+                    <span id="sum-support-score">0.000</span>
+                    <span id="sum-support-avg">0.000</span>
+                    <span id="mult-support-val">0.00</span>
+                    <span id="grand-score">0.000</span>
+                    <span id="adjectival-badge">PENDING EVALUATION</span>
+                    <span id="grand-formula"></span>
+                </div>
+                <?php endif; ?>
 
-                <!-- PMT & DEAN REMARKS -->
-                <div style="border: 1px solid #000; padding: 10px; box-sizing: border-box;">
-                    <div style="font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #0f172a; margin-bottom: 4px;">
-                        College Performance Management Team (PMT) & Dean Remarks / Recommendations:
+                <!-- REMARKS BOX (ROW 29 IN EXCEL SPREADSHEET) -->
+                <div style="border: 1px solid #000; <?= $isDocIperf ? '' : 'border-top: none;' ?> padding: 8px 10px; box-sizing: border-box;">
+                    <div style="font-weight: bold; font-size: 11px; color: #000000; margin-bottom: 4px;">
+                        Remarks/Suggestions/Recommendations on Ratee's Performance:
                     </div>
-                    <textarea id="pmt-remarks" rows="2" placeholder="Enter PMT & Dean remarks and recommendations here..." class="spms-textarea" style="width: 100%; border: 1px solid transparent; font-style: italic;"></textarea>
+                    <textarea id="pmt-remarks" rows="2" placeholder="Enter remarks/suggestions/recommendations on ratee's performance..." class="spms-textarea" style="width: 100%; border: 1px solid transparent; font-style: italic; font-size: 11px;" <?= $canEditEvaluation ? '' : ($isOwner ? 'disabled' : '') ?>></textarea>
                 </div>
 
-                <!-- 3 BOTTOM SIGNATORIES -->
-                <table class="spms-signatories-matrix" style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 11px; text-align: center;">
+                <?php if ($isDocIperf): ?>
+                <!-- IPERF TWO-PHASE SIGNATORIES & REFERENCE GUIDES (EXACT REPLICA OF PHOTO) -->
+                <table class="spms-signatories-matrix" style="width: 100%; border-collapse: collapse; border: 1px solid #000; margin-top: 18px; font-size: 11px;">
                     <tr>
-                        <!-- Discussed with (Ratee) -->
-                        <td style="width: 33.33%; border: 1px solid #000; padding: 12px; vertical-align: top;">
-                            <div id="sig-label-ratee" style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #475569; text-align: left; margin-bottom: 16px;">
-                                Discussed with (Ratee):
+                        <!-- Phase 1: Start of Period (Columns A-B) -->
+                        <td style="width: 36%; vertical-align: top; border-right: 1px solid #000; padding: 10px 12px;">
+                            <div style="color: #ba372a; font-style: italic; font-size: 10.5px; font-weight: bold; margin-bottom: 10px;">
+                                signed at the start of the rating period
                             </div>
-                            <input type="text" id="sig-ratee-name" value="" placeholder="Name of Ratee" style="font-weight: 900; color: #dc2626; border: none; border-bottom: 1px solid #94a3b8; text-align: center; width: 85%; outline: none; font-size: 11px; padding: 2px 0;">
-                            <div id="sig-role-ratee" style="font-size: 10px; color: #475569; margin-top: 3px;">Faculty Member / Professor</div>
-                            <div style="font-size: 10px; color: #64748b; margin-top: 3px;">
-                                Date: <input type="text" id="sig-ratee-date" placeholder="Date" style="border: none; border-bottom: 1px solid #cbd5e1; text-align: center; width: 85px; outline: none; font-size: 10px;">
+
+                            <!-- Targets Prepared By -->
+                            <div style="margin-bottom: 16px;">
+                                <div style="font-weight: bold; margin-bottom: 4px;">Targets prepared by:</div>
+                                <input type="text" id="sig-targets-prepared-name" value="" placeholder="(Signature over Printed Name)" style="width: 90%; border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; font-weight: bold; color: #ba372a;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                <div style="font-size: 10px; color: #334155; margin-top: 2px;">Employee (Ratee)</div>
+                                <div style="margin-top: 4px; font-size: 10.5px;">
+                                    Date: <input type="date" id="sig-targets-prepared-date" onclick="this.showPicker && this.showPicker()" style="border: none; border-bottom: 1px solid #ba372a; width: 130px; outline: none; font-size: 11px; color: #ba372a; background: transparent; font-family: inherit; cursor: pointer;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                </div>
+                            </div>
+
+                            <!-- Approved By -->
+                            <div>
+                                <div style="font-weight: bold; margin-bottom: 4px;">Approved by:</div>
+                                <input type="text" id="sig-targets-approved-name" value="" placeholder="(Signature over Printed Name)" style="width: 90%; border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; font-weight: bold; color: #ba372a;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                <div style="font-size: 10px; color: #334155; margin-top: 2px;">Immediate Supervisor (Rater)</div>
+                                <div style="margin-top: 4px; font-size: 10.5px;">
+                                    Date: <input type="date" id="sig-targets-approved-date" onclick="this.showPicker && this.showPicker()" style="border: none; border-bottom: 1px solid #ba372a; width: 130px; outline: none; font-size: 11px; color: #ba372a; background: transparent; font-family: inherit; cursor: pointer;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                </div>
                             </div>
                         </td>
 
-                        <!-- Assessed by (Dean) -->
-                        <td style="width: 33.33%; border: 1px solid #000; padding: 12px; vertical-align: top;">
-                            <div id="sig-label-dean" style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #475569; text-align: left; margin-bottom: 16px;">
-                                Assessed by (Immediate Supervisor / Dean):
+                        <!-- Phase 2: End of Period (Columns C-D) -->
+                        <td style="width: 36%; vertical-align: top; border-right: 1px solid #000; padding: 10px 12px;">
+                            <div style="color: #ba372a; font-style: italic; font-size: 10.5px; font-weight: bold; margin-bottom: 10px;">
+                                signed at the end of the rating period
                             </div>
-                            <input type="text" id="sig-dean-name" value="" placeholder="Name of Dean / Supervisor" style="font-weight: 900; color: #dc2626; border: none; border-bottom: 1px solid #94a3b8; text-align: center; width: 85%; outline: none; font-size: 11px; padding: 2px 0;">
-                            <div id="sig-role-dean" style="font-size: 10px; color: #475569; margin-top: 3px;">College Dean / Unit Head</div>
-                            <div style="font-size: 10px; color: #64748b; margin-top: 3px;">
-                                Date: <input type="text" id="sig-dean-date" placeholder="Date" style="border: none; border-bottom: 1px solid #cbd5e1; text-align: center; width: 85px; outline: none; font-size: 10px;">
+
+                            <!-- Rated By -->
+                            <div style="margin-bottom: 16px;">
+                                <div style="font-weight: bold; margin-bottom: 4px;">Rated by:</div>
+                                <input type="text" id="sig-eval-rated-name" value="" placeholder="(Signature over Printed Name)" style="width: 90%; border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; font-weight: bold; color: #ba372a;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
+                                <div style="font-size: 10px; color: #334155; margin-top: 2px;">Immediate Supervisor (Rater)</div>
+                                <div style="margin-top: 4px; font-size: 10.5px;">
+                                    Date: <input type="date" id="sig-eval-rated-date" onclick="this.showPicker && this.showPicker()" style="border: none; border-bottom: 1px solid #ba372a; width: 130px; outline: none; font-size: 11px; color: #ba372a; background: transparent; font-family: inherit; cursor: pointer;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
+                                </div>
+                            </div>
+
+                            <!-- Conforme -->
+                            <div>
+                                <div style="font-weight: bold; margin-bottom: 4px;">Conforme:</div>
+                                <input type="text" id="sig-eval-conforme-name" value="" placeholder="(Signature over Printed Name)" style="width: 90%; border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; font-weight: bold; color: #ba372a;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
+                                <div style="font-size: 10px; color: #334155; margin-top: 2px;">Employee (Ratee)</div>
+                                <div style="margin-top: 4px; font-size: 10.5px;">
+                                    Date: <input type="date" id="sig-eval-conforme-date" onclick="this.showPicker && this.showPicker()" style="border: none; border-bottom: 1px solid #ba372a; width: 130px; outline: none; font-size: 11px; color: #ba372a; background: transparent; font-family: inherit; cursor: pointer;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
+                                </div>
                             </div>
                         </td>
 
-                        <!-- Final Approval (VP) -->
-                        <td style="width: 33.33%; border: 1px solid #000; padding: 12px; vertical-align: top;">
-                            <div id="sig-label-vp" style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #475569; text-align: left; margin-bottom: 16px;">
-                                Final Approval (PMT Chair / Head of Agency):
+                        <!-- Side Reference: Measures & Rating Guide (Columns E-H) -->
+                        <td style="width: 28%; vertical-align: top; padding: 10px 12px; background: #fdfdfd;">
+                            <!-- Measures -->
+                            <div style="margin-bottom: 12px;">
+                                <div style="font-weight: bold; margin-bottom: 4px; border-bottom: 1px solid #000; padding-bottom: 2px;">Measures:</div>
+                                <table style="width: 100%; font-size: 10.5px; border-collapse: collapse;">
+                                    <tr><td style="width: 20px; font-weight: bold; padding: 1px 0;">Q</td><td style="padding: 1px 0;">Quality</td></tr>
+                                    <tr><td style="font-weight: bold; padding: 1px 0;">T</td><td style="padding: 1px 0;">Timeliness</td></tr>
+                                    <tr><td style="font-weight: bold; padding: 1px 0;">E</td><td style="padding: 1px 0;">Efficiency</td></tr>
+                                </table>
                             </div>
-                            <input type="text" id="sig-vp-name" value="" placeholder="Name of Approving Authority" style="font-weight: 900; color: #dc2626; border: none; border-bottom: 1px solid #94a3b8; text-align: center; width: 85%; outline: none; font-size: 11px; padding: 2px 0;">
-                            <div id="sig-role-vp" style="font-size: 10px; color: #475569; margin-top: 3px;">Vice President for Academic Affairs</div>
-                            <div style="font-size: 10px; color: #64748b; margin-top: 3px;">
-                                Date: <input type="text" id="sig-vp-date" placeholder="Date" style="border: none; border-bottom: 1px solid #cbd5e1; text-align: center; width: 85px; outline: none; font-size: 10px;">
+
+                            <!-- Rating Guide -->
+                            <div>
+                                <div style="font-weight: bold; margin-bottom: 4px; border-bottom: 1px solid #000; padding-bottom: 2px;">Rating Guide:</div>
+                                <table style="width: 100%; font-size: 10.5px; border-collapse: collapse;">
+                                    <tr><td style="width: 20px; font-weight: bold; padding: 1px 0;">5</td><td style="padding: 1px 0;">Outstanding</td></tr>
+                                    <tr><td style="font-weight: bold; padding: 1px 0;">4</td><td style="padding: 1px 0;">Very Satisfactory</td></tr>
+                                    <tr><td style="font-weight: bold; padding: 1px 0;">3</td><td style="padding: 1px 0;">Satisfactory</td></tr>
+                                    <tr><td style="font-weight: bold; padding: 1px 0;">2</td><td style="padding: 1px 0;">Unsatisfactory</td></tr>
+                                    <tr><td style="font-weight: bold; padding: 1px 0;">1</td><td style="padding: 1px 0;">Poor</td></tr>
+                                </table>
                             </div>
                         </td>
                     </tr>
                 </table>
+                <!-- Compatibility hidden inputs for standard signatures -->
+                <input type="hidden" id="sig-ratee-name" value="">
+                <input type="hidden" id="sig-ratee-pos" value="">
+                <input type="hidden" id="sig-ratee-date" value="">
+                <input type="hidden" id="sig-dean-name" value="">
+                <input type="hidden" id="sig-dean-pos" value="">
+                <input type="hidden" id="sig-dean-date" value="">
+                <input type="hidden" id="sig-vp-name" value="">
+                <input type="hidden" id="sig-vp-date" value="">
+                <?php else: ?>
+                <!-- 2 BOTTOM SIGNATORIES (ROWS 32-35 EXCEL SPREADSHEET EXACT REPLICA) -->
+                <table style="width: 100%; border-collapse: collapse; border: none; font-size: 11px; margin-top: 18px;">
+                    <tr>
+                        <!-- Left: Ratee (Columns A-C) -->
+                        <td style="width: 50%; vertical-align: top; border: none; padding: 0 15px 0 0;">
+                            <div style="margin-bottom: 6px;">Name and Signature of Ratee: 
+                                <input type="text" id="sig-ratee-name" value="" placeholder="(name here)" style="color: #ba372a; font-weight: bold; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: 55%;">
+                            </div>
+                            <div style="margin-bottom: 6px;">Position: 
+                                <input type="text" id="sig-ratee-pos" value="" placeholder="(position here)" style="color: #ba372a; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: 70%;">
+                            </div>
+                            <div style="margin-bottom: 6px;">
+                                Date: <input type="date" id="sig-ratee-date" onclick="this.showPicker && this.showPicker()" style="border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; width: 130px; color: #ba372a; background: transparent; font-family: inherit; cursor: pointer;">
+                            </div>
+                        </td>
+
+                        <!-- Right: Office Head (Columns D-H) -->
+                        <td style="width: 50%; vertical-align: top; border: none; padding: 0 0 0 15px;">
+                            <div style="margin-bottom: 6px;">Final Rating by: 
+                                <input type="text" id="sig-dean-name" value="" placeholder="(name of office head)" style="color: #ba372a; font-weight: bold; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: 55%;">
+                            </div>
+                            <div style="margin-bottom: 6px;">Position: 
+                                <input type="text" id="sig-dean-pos" value="" placeholder="(position of office head)" style="color: #ba372a; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: 70%;">
+                            </div>
+                            <div style="margin-bottom: 6px;">
+                                Date: <input type="date" id="sig-dean-date" onclick="this.showPicker && this.showPicker()" style="border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; width: 130px; color: #ba372a; background: transparent; font-family: inherit; cursor: pointer;">
+                            </div>
+                            <div style="color: #ba372a; font-size: 10px; font-style: italic;">(may add signatories depending on position/designation)</div>
+                        </td>
+                    </tr>
+                </table>
+                <input type="hidden" id="sig-vp-name" value="">
+                <input type="hidden" id="sig-vp-date" value="">
+                <?php endif; ?>
 
             </article>
+            </div>
+        </div>
+
+        <!-- SPMS DIGITAL RUBRICS MATRIX WORKSPACE -->
+        <div id="spms-rubrics-workspace" class="hidden w-full h-full overflow-y-auto p-2 sm:p-6 lg:p-8 flex flex-col items-center custom-scrollbar print:p-0 print:bg-white print:overflow-visible">
+            <div class="w-full max-w-[1280px] flex flex-col gap-6 print:w-full print:block">
+                
+                <!-- BSU Institutional Rubrics Banner -->
+                <div class="rounded-2xl p-5 sm:p-6 bg-gradient-to-r from-amber-500/15 via-emerald-500/10 to-transparent border border-amber-500/30 dark:border-amber-400/20 shadow-sm">
+                    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <div class="space-y-1.5">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30">
+                                    BSU Rubrics Policy
+                                </span>
+                                <span class="text-xs font-extrabold text-emerald-800 dark:text-emerald-300">
+                                    Required Standards &amp; Attachment
+                                </span>
+                            </div>
+                            <p class="text-xs sm:text-sm font-bold text-rose-600 dark:text-rose-400 leading-relaxed">
+                                Note: Always attach your rubrics to your DPCR/IPCR/IPERF when submitting. Also, the targets in your rubrics should match the targets in your form.
+                            </p>
+                            <p class="text-[11px] text-text-muted">
+                                Define what qualifies as a rating of 5, 4, 3, 2, or 1 for Quality (Q), Timeliness (T), and Efficiency (E) for each deliverable below.
+                            </p>
+                        </div>
+
+                        <!-- Action Buttons: Download Template & View Sample Guide -->
+                        <div class="flex flex-wrap items-center gap-2 shrink-0">
+                            <a href="<?= site_url('document/' . $doc['id'] . '/export-rubric') ?>" target="_blank"
+                               class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+                               title="Download official Excel rubric sheet with your current deliverables pre-filled in Column A">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                <span>Download Template (.xlsx)</span>
+                            </a>
+                            <button type="button" onclick="toggleRubricDrawer(true)"
+                                    class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-800 dark:text-amber-300 border border-amber-500/30 transition-all cursor-pointer">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                </svg>
+                                <span>Sample Guide</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- External File Attachment Section -->
+                <div class="p-4 sm:p-5 rounded-2xl bg-surface border border-surface-border shadow-sm space-y-4">
+                    <div class="flex items-center justify-between border-b border-surface-border pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            <h3 class="text-xs font-black uppercase tracking-wider text-text">Rubric Document Attachment</h3>
+                            <span class="text-[10px] text-text-muted font-medium">(Optional external file: XLSX, PDF, DOCX)</span>
+                        </div>
+                        <div id="rubric-file-status-badge"></div>
+                    </div>
+
+                    <!-- Current Attached File Card -->
+                    <div id="rubric-attached-file-card" class="hidden p-3.5 rounded-xl bg-surface-border/20 border border-surface-border flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <div class="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                            <div class="overflow-hidden">
+                                <div class="text-xs font-bold text-text truncate" id="rubric-file-name">—</div>
+                                <div class="text-[10px] text-text-muted mt-0.5" id="rubric-file-meta">—</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <a id="rubric-file-download-link" href="#" target="_blank" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-accent/10 hover:bg-accent/20 text-accent transition-colors">
+                                Download
+                            </a>
+                            <button type="button" id="rubric-file-view-btn" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-surface-border/40 hover:bg-surface-border text-text transition-colors">
+                                View
+                            </button>
+                            <?php if ($canEditTargets): ?>
+                            <button type="button" onclick="deleteRubricAttachment()" class="px-2.5 py-1.5 rounded-lg text-xs font-bold text-rose-500 hover:bg-rose-500/10 transition-colors" title="Delete attachment">
+                                ✕
+                            </button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <!-- Upload Dropzone (if canEditTargets) -->
+                    <?php if ($canEditTargets): ?>
+                    <div id="rubric-upload-zone" class="space-y-2">
+                        <div id="rubric-drop-target"
+                             onclick="document.getElementById('rubric-file-input').click()"
+                             ondragover="event.preventDefault(); this.classList.add('border-emerald-500', 'bg-emerald-500/5');"
+                             ondragleave="this.classList.remove('border-emerald-500', 'bg-emerald-500/5');"
+                             ondrop="handleRubricDrop(event)"
+                             class="border-2 border-dashed border-surface-border hover:border-emerald-500/60 rounded-xl p-5 text-center cursor-pointer transition-all bg-surface-border/5 hover:bg-emerald-500/5 flex flex-col items-center justify-center gap-2">
+                            <div class="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                            </div>
+                            <div>
+                                <span class="text-xs font-bold text-text">Click to attach completed rubric file</span>
+                                <span class="text-xs text-text-muted"> or drag &amp; drop</span>
+                            </div>
+                            <span class="text-[10px] text-text-muted">Accepted formats: .xlsx, .xls, .pdf, .docx, .doc, .csv (Max 20MB)</span>
+                            <input type="file" id="rubric-file-input" class="hidden" accept=".xlsx,.xls,.pdf,.docx,.doc,.csv" onchange="handleRubricFileSelect(this)">
+                        </div>
+                        <div id="rubric-upload-progress" class="hidden p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-300 font-bold animate-pulse">
+                            <span>Uploading rubric document...</span>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Interactive Digital Rubrics Matrix Section -->
+                <div class="space-y-5">
+                    <!-- Rubric Matrix Header & Controls Card -->
+                    <div class="p-4 sm:p-5 rounded-2xl bg-surface border border-surface-border shadow-sm space-y-4">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-surface-border pb-4">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    <h2 class="text-sm sm:text-base font-black uppercase tracking-wider text-text">
+                                        Standards or Rating Matrix per Success Indicator
+                                    </h2>
+                                </div>
+                                <p class="text-xs text-text-muted mt-1">
+                                    Define measurable scoring criteria (5 to 1) for Quality (Q), Timeliness (T), and Efficiency (E) per output.
+                                </p>
+                            </div>
+                            
+                            <div class="flex items-center gap-2.5 shrink-0">
+                                <?php if ($canEditTargets): ?>
+                                <div class="relative group inline-flex items-center">
+                                    <button type="button" 
+                                            id="btn-rubrics-save"
+                                            onclick="saveDocument(true)" 
+                                            title="Save (Ctrl + S)"
+                                            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow transition-all active:scale-95 cursor-pointer">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                                        </svg>
+                                        <span id="btn-rubrics-save-text">Save</span>
+                                    </button>
+                                    
+                                    <!-- Hover Tooltip showing (Ctrl + S) -->
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-900 text-white shadow-xl pointer-events-none whitespace-nowrap z-50">
+                                        <span>Save changes</span>
+                                        <span class="text-slate-400 font-mono text-[9px] bg-slate-800 px-1 py-0.5 rounded border border-slate-700">(Ctrl + S)</span>
+                                        <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
+                                    </div>
+                                </div>
+                                <span id="rubrics-save-status" class="text-[10px] uppercase tracking-widest font-bold transition-all"></span>
+                                <?php else: ?>
+                                <span class="px-3 py-1.5 rounded-xl text-xs font-bold bg-surface-border/40 text-text-muted">
+                                    Read-Only
+                                </span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <!-- Deliverables Quick Navigation & Progress -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-0.5">
+                            <div class="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1 text-xs" id="rubric-quick-jump-pills">
+                                <!-- Populated dynamically by JS -->
+                            </div>
+
+                            <div class="flex items-center gap-2 shrink-0 text-xs self-end sm:self-auto flex-wrap">
+                                <span id="rubric-overall-progress" class="font-bold text-text-muted text-[11px]"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Full Sheet View Container (Permanent Single View) -->
+                    <div id="rubrics-sheet-container" class="overflow-x-auto rounded-2xl border border-surface-border bg-surface shadow-sm p-4">
+                        <table id="digital-rubrics-table" class="w-full text-left border-collapse" style="font-size: 11px; min-width: 900px;">
+                            <thead>
+                                <tr class="bg-surface-border/40 text-text border-b border-surface-border">
+                                    <th class="p-3 font-black uppercase tracking-wider text-xs" style="width: 32%;">
+                                        OFFICE PPA / MAJOR FINAL OUTPUT / EXPECTED OUTPUTS
+                                    </th>
+                                    <th class="p-3 font-black uppercase tracking-wider text-xs text-center" style="width: 12%;">
+                                        Rating
+                                    </th>
+                                    <th class="p-3 font-black uppercase tracking-wider text-xs" style="width: 20%;">
+                                        Q (Quality)
+                                    </th>
+                                    <th class="p-3 font-black uppercase tracking-wider text-xs" style="width: 20%;">
+                                        T (Timeliness)
+                                    </th>
+                                    <th class="p-3 font-black uppercase tracking-wider text-xs" style="width: 16%;">
+                                        E (Efficiency)
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="digital-rubrics-tbody">
+                                <!-- Populated dynamically by JS with Category Groups -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <?php if ($canEditTargets): ?>
+            <!-- Floating Action Button (FAB) for Rubrics Quick Add -->
+            <div id="rubric-fab-container" class="hidden fixed bottom-6 right-6 z-40">
+                <div class="relative">
+                    <!-- Dropup Menu for FAB -->
+                    <div id="rubric-fab-menu" class="hidden absolute bottom-full right-0 mb-3 w-56 rounded-2xl bg-surface/95 backdrop-blur-md border border-surface-border shadow-2xl p-2 space-y-1 text-xs font-bold transition-all">
+                        <div class="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-text-muted border-b border-surface-border/60">
+                            Add Deliverable
+                        </div>
+                        <button type="button" onclick="addDeliverableFromRubrics('core'); toggleRubricFabMenu(false);"
+                                class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-emerald-500/10 text-text hover:text-emerald-700 dark:hover:text-emerald-300 flex items-center gap-2.5 transition-colors cursor-pointer">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                            <span>Core Functions</span>
+                        </button>
+                        <?php if (!$isDocIperf): ?>
+                        <button type="button" onclick="addDeliverableFromRubrics('strategic'); toggleRubricFabMenu(false);"
+                                class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-sky-500/10 text-text hover:text-sky-700 dark:hover:text-sky-300 flex items-center gap-2.5 transition-colors cursor-pointer">
+                            <span class="w-2.5 h-2.5 rounded-full bg-sky-500 shrink-0"></span>
+                            <span>Strategic Functions</span>
+                        </button>
+                        <button type="button" onclick="addDeliverableFromRubrics('support'); toggleRubricFabMenu(false);"
+                                class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-amber-500/10 text-text hover:text-amber-700 dark:hover:text-amber-300 flex items-center gap-2.5 transition-colors cursor-pointer">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
+                            <span>Support Functions</span>
+                        </button>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Primary FAB Button -->
+                    <button type="button" onclick="handleRubricFabClick()"
+                            id="rubric-fab-btn"
+                            title="Add new deliverable"
+                            class="flex items-center gap-2 px-4 py-3 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-xl hover:shadow-emerald-600/30 hover:scale-105 active:scale-95 transition-all cursor-pointer font-bold text-xs">
+                        <span class="text-base font-black leading-none">＋</span>
+                        <span>Add Deliverable</span>
+                    </button>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
 
         <!-- Fallback TinyMCE Editor Container for Free-Form Documents -->
@@ -1490,6 +2162,11 @@
             { id: 'tab-' + Date.now(), title: 'Target Form', content: '' }
         ];
     }
+    tabs.forEach((t, i) => {
+        if (!t.title || !t.title.trim()) {
+            t.title = (i === 0) ? 'Target Form' : `Tab ${i + 1}`;
+        }
+    });
 
     let activeTabId = tabs[0].id;
     
@@ -1499,9 +2176,13 @@
     const ownerAccountInfo = <?= json_encode($ownerInfo ?? []) ?>;
 
     const canEditTargets = <?= json_encode($canEditTargets) ?>;
+    const canEditApprover = <?= json_encode($canEditApprover) ?>;
     const canEditEvaluation = <?= json_encode($canEditEvaluation) ?>;
     const isTargetPhase = <?= json_encode($isTargetPhase) ?>;
     const isEvaluationPhase = <?= json_encode($isEvaluationPhase) ?>;
+
+    window.rubricAttachments = <?= json_encode($attachmentsByRow['rubric'] ?? []) ?>;
+    window.digitalRubricsData = tabs[0]?.formData?.rubrics || {};
     
     // Set initial content for TinyMCE initialization
     document.getElementById('editable-doc').value = tabs[0].content;
@@ -1529,7 +2210,7 @@
             btn.onclick = () => switchEditorTab(tab.id);
             
             const span = document.createElement('span');
-            span.textContent = tab.title;
+            span.textContent = (tab.title && tab.title.trim()) ? tab.title : 'Target Form';
             
             <?php if ($isEditable): ?>
             span.contentEditable = "true";
@@ -1537,8 +2218,11 @@
             span.className = 'outline-none cursor-text px-1 min-w-[20px] inline-block rounded focus:bg-surface-border/30';
             
             span.onblur = (e) => {
-                const newName = e.target.textContent.trim();
-                if (newName !== '' && newName !== tab.title) {
+                let newName = e.target.textContent.trim();
+                if (!newName) {
+                    newName = tab.title || 'Target Form';
+                }
+                if (newName !== tab.title) {
                     tab.title = getUniqueTitle(newName, tab.id);
                     AppState.setDirty(true);
                 }
@@ -1569,7 +2253,28 @@
             tabBar.appendChild(btn);
         });
 
+        // Digital Rubrics Matrix Tab
+        const isRubricsActive = (activeTabId === 'rubrics-tab');
+        const rubricsBtn = document.createElement('div');
+        rubricsBtn.className = `group flex items-center gap-1.5 pb-2 border-b-2 transition-colors select-none cursor-pointer ${isRubricsActive ? 'border-amber-500 text-amber-500 dark:text-amber-400 font-bold' : 'border-transparent text-text-muted hover:text-text'}`;
+        rubricsBtn.onclick = () => switchEditorTab('rubrics-tab');
+        rubricsBtn.title = 'View and Edit Rubrics Matrix';
+        rubricsBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 ${isRubricsActive ? 'text-amber-500' : 'text-amber-500/70'} shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+            <span>Rubrics Matrix</span>
+            <span id="tab-rubrics-badge" class="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30">
+                Standards
+            </span>
+        `;
+        tabBar.appendChild(rubricsBtn);
+
         <?php if (!empty($basisDoc) && !$isGuide): ?>
+        <?php 
+            $isBasisOpcr = !empty($isParentDocOpcr) || str_contains(strtoupper($basisDoc['title'] ?? ''), 'OPCR') || (strtoupper($basisDoc['doc_type'] ?? '') === 'OPCR');
+            $basisBadgeLabel = $isParentTargetApproved ? ($isBasisOpcr ? 'Institutional' : 'Approved') : 'Pending';
+        ?>
         const isBasisActive = (activeTabId === 'basis-tab');
         const basisBtn = document.createElement('div');
         basisBtn.className = `group flex items-center gap-1.5 pb-2 border-b-2 transition-colors select-none cursor-pointer ${isBasisActive ? 'border-sky-500 text-sky-500 dark:text-sky-400 font-bold' : 'border-transparent text-text-muted hover:text-text'}`;
@@ -1581,26 +2286,23 @@
             </svg>
             <span>Basis: <?= esc($basisDoc['title']) ?></span>
             <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold ${isBasisActive ? 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-300 dark:border-sky-700' : '<?= $isParentTargetApproved ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400' ?>'}">
-                <?= $isParentTargetApproved ? 'Approved' : 'Pending' ?>
+                <?= esc($basisBadgeLabel) ?>
             </span>
         `;
         tabBar.appendChild(basisBtn);
         <?php endif; ?>
         
-        <?php if ($isEditable): ?>
-        const addBtn = document.createElement('button');
-        addBtn.innerHTML = '＋';
-        addBtn.title = 'Add Tab';
-        addBtn.className = 'pb-2 border-b-2 border-transparent text-text-muted hover:text-text transition-colors text-lg font-black px-2';
-        addBtn.onclick = () => addTab();
-        tabBar.appendChild(addBtn);
-        <?php endif; ?>
+
     }
 
     function switchEditorTab(tabId) {
         if (tabId === activeTabId) return;
 
-        if (activeTabId !== 'basis-tab') {
+        if (activeTabId === 'rubrics-tab') {
+            if (typeof window.syncDigitalRubricsData === 'function') {
+                window.syncDigitalRubricsData();
+            }
+        } else if (activeTabId !== 'basis-tab') {
             if (window.isSpmsFormActive && typeof window.syncSpmsActiveTab === 'function') {
                 window.syncSpmsActiveTab();
             } else {
@@ -1615,6 +2317,9 @@
         activeTabId = tabId;
         renderTabs();
         initActiveTabView();
+        if (typeof updateRubricsTabBadge === 'function') {
+            updateRubricsTabBadge();
+        }
     }
 
     function addTab() {
@@ -1711,6 +2416,175 @@
         autoSave();
     });
 
+    // Helper: sanitize budget input and cap at 12 whole digits (up to 999 Billion) + 2 decimal places
+    function sanitizeBudgetInput(raw) {
+        let clean = String(raw || '').replace(/[^0-9.]/g, '');
+        const parts = clean.split('.');
+        let whole = parts[0] || '';
+        let decimal = parts.length > 1 ? parts.slice(1).join('') : null;
+        if (whole.length > 12) {
+            whole = whole.substring(0, 12);
+        }
+        if (decimal !== null && decimal.length > 2) {
+            decimal = decimal.substring(0, 2);
+        }
+        return decimal !== null ? whole + '.' + decimal : whole;
+    }
+
+    // Helper: full exact comma-formatted string (e.g. 10,000,000,000.00)
+    function formatBudgetFull(num) {
+        if (isNaN(num) || num === null || num === undefined) return '';
+        return num.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    // Auto-shrink font size for large budget values + dynamic hover tooltip
+    function adjustBudgetFontSize(input) {
+        if (!input) return;
+        const len = (input.value || '').length;
+        if (len >= 18) {
+            input.style.fontSize = '7.5px';
+            input.style.letterSpacing = '-0.5px';
+        } else if (len >= 15) {
+            input.style.fontSize = '8px';
+            input.style.letterSpacing = '-0.3px';
+        } else if (len >= 12) {
+            input.style.fontSize = '9px';
+            input.style.letterSpacing = '-0.2px';
+        } else if (len >= 9) {
+            input.style.fontSize = '10px';
+            input.style.letterSpacing = 'normal';
+        } else {
+            input.style.fontSize = '11px';
+            input.style.letterSpacing = 'normal';
+        }
+        const wrapper = input.closest('.budget-input-wrapper');
+        const cur = wrapper ? (wrapper.querySelector('.field-budget-currency')?.value || '₱') : '₱';
+        input.title = input.value ? `${cur} ${input.value}` : 'Allotted Budget (Numbers only)';
+    }
+
+    function applyBudgetBlur(el) {
+        if (!el) return;
+        const raw = el.dataset.rawValue || el.value.replace(/,/g, '').trim();
+        const clean = sanitizeBudgetInput(raw);
+        if (clean !== '') {
+            const num = parseFloat(clean);
+            if (!isNaN(num) && num >= 0) {
+                el.dataset.rawValue = clean;
+                const full = formatBudgetFull(num);
+                el.dataset.fullValue = full;
+                el.value = full;
+            } else {
+                el.value = '';
+                el.dataset.rawValue = '';
+                el.dataset.fullValue = '';
+            }
+        } else {
+            el.value = '';
+            el.dataset.rawValue = '';
+            el.dataset.fullValue = '';
+        }
+        adjustBudgetFontSize(el);
+    }
+
+    function applyBudgetFocus(el) {
+        if (!el) return;
+        const raw = el.dataset.rawValue || el.value.replace(/,/g, '').trim();
+        if (raw !== '') {
+            el.value = raw;
+            setTimeout(() => { try { el.select(); } catch(e) {} }, 0);
+        }
+        adjustBudgetFontSize(el);
+    }
+
+    function applyBudgetInput(el) {
+        if (!el) return;
+        const oldVal = el.value;
+        const clean = sanitizeBudgetInput(oldVal);
+        if (clean !== oldVal) {
+            el.value = clean;
+        }
+        el.dataset.rawValue = clean;
+        const num = parseFloat(clean);
+        if (!isNaN(num)) {
+            el.dataset.fullValue = formatBudgetFull(num);
+        } else {
+            el.dataset.fullValue = clean;
+        }
+        adjustBudgetFontSize(el);
+    }
+
+    // Global delegation for .field-budget to strictly enforce numbers-only input and capping at billions
+    document.addEventListener('keydown', function(e) {
+        const el = e.target;
+        if (!el || !el.classList || !el.classList.contains('field-budget')) return;
+        if (['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key) ||
+            (e.ctrlKey || e.metaKey)) {
+            return;
+        }
+        if (/^[0-9]$/.test(e.key)) {
+            const val = el.value || '';
+            const selStart = el.selectionStart;
+            const selEnd = el.selectionEnd;
+            const newVal = val.substring(0, selStart) + e.key + val.substring(selEnd);
+            const parts = newVal.split('.');
+            if (parts[0].length > 12) {
+                e.preventDefault();
+                return;
+            }
+            if (parts.length > 1 && parts[1].length > 2) {
+                e.preventDefault();
+                return;
+            }
+            return;
+        }
+        if (e.key === '.') {
+            const selStart = el.selectionStart;
+            const selEnd = el.selectionEnd;
+            const selectedText = el.value.substring(selStart, selEnd);
+            if (!el.value.includes('.') || selectedText.includes('.')) {
+                return;
+            }
+        }
+        e.preventDefault();
+    });
+
+    document.addEventListener('input', function(e) {
+        const el = e.target;
+        if (!el || !el.classList || !el.classList.contains('field-budget')) return;
+        applyBudgetInput(el);
+    });
+
+    document.addEventListener('paste', function(e) {
+        const el = e.target;
+        if (!el || !el.classList || !el.classList.contains('field-budget')) return;
+        e.preventDefault();
+        const text = (e.clipboardData || window.clipboardData).getData('text') || '';
+        const clean = sanitizeBudgetInput(text);
+        document.execCommand('insertText', false, clean);
+        applyBudgetInput(el);
+    });
+
+    document.addEventListener('focusin', function(e) {
+        const el = e.target;
+        if (!el || !el.classList || !el.classList.contains('field-budget')) return;
+        applyBudgetFocus(el);
+    });
+
+    document.addEventListener('focusout', function(e) {
+        const el = e.target;
+        if (!el || !el.classList || !el.classList.contains('field-budget')) return;
+        applyBudgetBlur(el);
+        if (typeof window.syncSpmsActiveTab === 'function') window.syncSpmsActiveTab();
+        if (typeof AppState !== 'undefined' && typeof AppState.setDirty === 'function') AppState.setDirty(true);
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.field-budget').forEach(adjustBudgetFontSize);
+    });
+
     async function lockFolderEvaluation() {
         let finalScore = '';
         if (window.isSpmsFormActive) {
@@ -1725,9 +2599,28 @@
         formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
         formData.append('final_rating', finalScore);
 
-        document.getElementById('btn-submit').innerText = 'Locking...';
+        const btn = document.getElementById('btn-submit');
+        const origContent = btn ? btn.innerHTML : 'Submit';
+        if (btn) {
+            btn.innerText = 'Locking...';
+            btn.disabled = true;
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+        }
+
+        const restoreBtn = () => {
+            if (btn) {
+                btn.innerHTML = origContent;
+                btn.disabled = false;
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+            }
+        };
+
         apiPost('<?= site_url('folder/evaluate') ?>', formData, {
-            onSuccess: () => window.location.reload()
+            onSuccess: () => window.location.reload(),
+            onError: async (errMsg) => {
+                restoreBtn();
+                await window.appAlert(errMsg || "An error occurred while locking evaluation.");
+            }
         });
     }
 
@@ -1741,7 +2634,12 @@
             finalScore = editorBody?.getAttribute('data-final-score') || '';
         }
 
-        const ok = await window.appConfirm("Complete and approve this evaluation?", { confirmText: 'Approve' });
+        const ok = await window.appConfirm("Complete and approve this evaluation?", { 
+            title: 'Approve Evaluation',
+            confirmText: 'Approve',
+            cancelText: 'Cancel',
+            variant: 'success'
+        });
         if (!ok) return;
 
         const formData = new FormData();
@@ -1755,7 +2653,12 @@
     }
 
     async function unapproveFolderEvaluation() {
-        const ok = await window.appConfirm("Remove your approval and revert to To Evaluate?", { confirmText: 'Remove Approval' });
+        const ok = await window.appConfirm("Remove your approval and revert to To Evaluate?", { 
+            title: 'Remove Approval',
+            confirmText: 'Remove Approval',
+            cancelText: 'Cancel',
+            variant: 'warning'
+        });
         if (!ok) return;
 
         const formData = new FormData();
@@ -1795,22 +2698,74 @@
     }
 
     async function lockFolderTarget() {
-        const ok = await window.appConfirm("Submit these targets for approval? You won't be able to edit them until returned.", { confirmText: 'Submit Targets' });
+        const hasFile = (window.rubricAttachments && window.rubricAttachments.length > 0);
+        const rubricsData = window.digitalRubricsData || tabs[0]?.formData?.rubrics || {};
+        let criteriaCount = 0;
+        Object.values(rubricsData).forEach(scores => {
+            if (typeof scores === 'object') {
+                Object.values(scores).forEach(s => {
+                    if (s && (s.q || s.t || s.e)) criteriaCount++;
+                });
+            }
+        });
+
+        let rubricNotice = '';
+        if (hasFile && criteriaCount > 0) {
+            rubricNotice = 'Rubrics Matrix configured & external file attached.';
+        } else if (hasFile) {
+            rubricNotice = 'External Rubrics file attached.';
+        } else if (criteriaCount > 0) {
+            rubricNotice = `Rubrics Matrix configured (${criteriaCount} criteria set).`;
+        } else {
+            rubricNotice = 'Caution: No Rubrics standards configured or attached yet.';
+        }
+
+        const confirmMsg = `Submit targets and rubrics for supervisor approval?\n\n` +
+            `• Rubrics Status: ${rubricNotice}\n\n` +
+            `Note: Always attach your rubrics to your DPCR/IPCR/IPERF when submitting. Also, the targets in your rubrics should match the targets in this form.`;
+
+        const ok = await window.appConfirm(confirmMsg, { 
+            title: 'Submit Targets & Rubrics',
+            confirmText: 'Submit Now',
+            cancelText: 'Keep Editing',
+            variant: (hasFile || criteriaCount > 0) ? 'primary' : 'warning'
+        });
         if (!ok) return;
         
         const formData = new FormData();
         formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
 
-        document.getElementById('btn-submit-target').innerText = 'Submitting...';
+        const btn = document.getElementById('btn-submit-target');
+        const origContent = btn ? btn.innerHTML : 'Submit Targets';
+        if (btn) {
+            btn.innerHTML = 'Submitting...';
+            btn.disabled = true;
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+        }
+
+        const restoreBtn = () => {
+            if (btn) {
+                btn.innerHTML = origContent;
+                btn.disabled = false;
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+            }
+        };
+
         apiPost('<?= site_url('folder/submit_target') ?>', formData, {
-            onSuccess: () => window.location.reload()
+            onSuccess: () => window.location.reload(),
+            onError: async (errMsg) => {
+                restoreBtn();
+                await window.appAlert(errMsg || "An error occurred while submitting targets.");
+            }
         });
     }
 
     async function unsubmitTargetDocument() {
         const ok = await window.appConfirm("Are you sure you want to revoke your target submission? This will return your folder to Draft status so you can make edits and fixes to your commitments.", { 
-            variant: 'warning', 
-            confirmText: 'Revoke Submission' 
+            title: 'Revoke Submission',
+            variant: 'undo', 
+            confirmText: 'Revoke Submission',
+            cancelText: 'Keep Submitted'
         });
         if (!ok) return;
 
@@ -1826,8 +2781,11 @@
         apiPost('<?= site_url('folder/unsubmit_target') ?>', formData, {
             onSuccess: () => window.location.reload(),
             onError: async (errMsg) => {
+                if (btn) {
+                    btn.innerText = 'Revoke Submission';
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
                 await window.appAlert(errMsg || "An error occurred.");
-                window.location.reload();
             }
         });
     }
@@ -1840,14 +2798,19 @@
             msg = "Approve this OPCR and immediately distribute it to all College Deans as their target basis?";
             confirmBtnText = 'Approve & Release to Deans';
         } else if (releaseScope === 'chairs') {
-            msg = "Approve this collegiate DPCR and immediately distribute it to all Department Chairs as their target basis?";
-            confirmBtnText = 'Approve & Release to Chairs';
+            msg = "Distribute this approved collegiate DPCR to all Department Chairs as their target basis?";
+            confirmBtnText = 'Release to Chairs';
         } else if (releaseScope === 'faculty' || releaseScope === 'subordinates') {
-            msg = "Approve this department DPCR and immediately distribute it to all faculty members as their target basis?";
+            msg = "Approve this DPCR Department Chair and immediately distribute it to all faculty members as their target basis?";
             confirmBtnText = 'Approve & Release to Faculty';
         }
 
-        const ok = await window.appConfirm(msg, { confirmText: confirmBtnText });
+        const ok = await window.appConfirm(msg, { 
+            title: 'Approve Targets',
+            confirmText: confirmBtnText,
+            cancelText: 'Cancel',
+            variant: 'success'
+        });
         if (!ok) return;
 
         const formData = new FormData();
@@ -1878,7 +2841,12 @@
     }
 
     async function unapproveFolderTarget() {
-        const ok = await window.appConfirm("Remove approval and revert to pending?", { confirmText: 'Remove Approval' });
+        const ok = await window.appConfirm("Remove approval and revert to pending?", { 
+            title: 'Remove Approval',
+            confirmText: 'Remove Approval',
+            cancelText: 'Cancel',
+            variant: 'warning'
+        });
         if (!ok) return;
 
         const formData = new FormData();
@@ -1982,9 +2950,33 @@
     // SPMS FORM BUILDER ENGINE (Matches templates/editor.php Exactly)
     // =========================================================================
     window.isSpmsFormActive = false;
+    const IS_DOC_DPCR = <?= $isDocDpcr ? 'true' : 'false' ?>;
+    const IS_DOC_OPCR = <?= $isDocOpcr ? 'true' : 'false' ?>;
 
     // Default Seed Blueprint (Clean empty rows upon creation)
-    const DEFAULT_BLUEPRINT = {
+    const DEFAULT_BLUEPRINT = IS_DOC_DPCR ? {
+        core: [
+            { row_id: "row_core_1", mfo: "", indicators: "", budget: "", accountable: "", accomplishments: "", q: "", t: "", e: "", remarks: "", std_5: "", std_4: "", std_3: "", std_2: "", std_1: "" },
+            { row_id: "row_core_2", mfo: "", indicators: "", budget: "", accountable: "", accomplishments: "", q: "", t: "", e: "", remarks: "", std_5: "", std_4: "", std_3: "", std_2: "", std_1: "" }
+        ],
+        strategic: [
+            { row_id: "row_strat_1", mfo: "", indicators: "", budget: "", accountable: "", accomplishments: "", q: "", t: "", e: "", remarks: "", std_5: "", std_4: "", std_3: "", std_2: "", std_1: "" }
+        ],
+        support: [
+            { row_id: "row_supp_1", mfo: "", indicators: "", budget: "", accountable: "", accomplishments: "", q: "", t: "", e: "", remarks: "", std_5: "", std_4: "", std_3: "", std_2: "", std_1: "" }
+        ]
+    } : (IS_DOC_OPCR ? {
+        core: [
+            { row_id: "row_core_1", mfo: "", indicators: "", budget: "", accountable: "", accomplishments: "", q: "", t: "", e: "", remarks: "" },
+            { row_id: "row_core_2", mfo: "", indicators: "", budget: "", accountable: "", accomplishments: "", q: "", t: "", e: "", remarks: "" }
+        ],
+        strategic: [
+            { row_id: "row_strat_1", mfo: "", indicators: "", budget: "", accountable: "", accomplishments: "", q: "", t: "", e: "", remarks: "" }
+        ],
+        support: [
+            { row_id: "row_supp_1", mfo: "", indicators: "", budget: "", accountable: "", accomplishments: "", q: "", t: "", e: "", remarks: "" }
+        ]
+    } : {
         core: [
             { row_id: "row_core_1", mfo: "", indicators: "", accomplishments: "", q: "", t: "", e: "", remarks: "" }
         ],
@@ -1994,21 +2986,31 @@
         support: [
             { row_id: "row_supp_1", mfo: "", indicators: "", accomplishments: "", q: "", t: "", e: "", remarks: "" }
         ]
-    };
+    });
 
-    const CATEGORY_WEIGHTS = {
+    const CATEGORY_WEIGHTS = IS_DOC_DPCR ? {
+        core: 0.60,
+        strategic: 0.30,
+        support: 0.10
+    } : (IS_DOC_OPCR ? {
+        core: 0.60,
+        strategic: 0.25,
+        support: 0.15
+    } : {
         core: 0.70,
         strategic: 0.20,
         support: 0.10
-    };
+    });
 
     function initActiveTabView() {
         const basisWorkspace = document.getElementById('spms-basis-workspace');
+        const rubricsWorkspace = document.getElementById('spms-rubrics-workspace');
 
         if (activeTabId === 'basis-tab') {
             window.isSpmsFormActive = false;
             document.getElementById('spms-form-workspace')?.classList.add('hidden');
             document.getElementById('tinymce-wrapper')?.classList.add('hidden');
+            if (rubricsWorkspace) rubricsWorkspace.classList.add('hidden');
             if (basisWorkspace) {
                 basisWorkspace.classList.remove('hidden');
                 renderBasisStaticSheet();
@@ -2016,8 +3018,26 @@
             return;
         }
 
+        if (activeTabId === 'rubrics-tab') {
+            window.isSpmsFormActive = false;
+            document.getElementById('spms-form-workspace')?.classList.add('hidden');
+            document.getElementById('tinymce-wrapper')?.classList.add('hidden');
+            if (basisWorkspace) basisWorkspace.classList.add('hidden');
+            if (rubricsWorkspace) {
+                rubricsWorkspace.classList.remove('hidden');
+                document.getElementById('rubric-fab-container')?.classList.remove('hidden');
+                renderDigitalRubricsMatrix();
+                renderRubricAttachmentCard();
+            }
+            return;
+        }
+
+        document.getElementById('rubric-fab-container')?.classList.add('hidden');
         if (basisWorkspace) {
             basisWorkspace.classList.add('hidden');
+        }
+        if (rubricsWorkspace) {
+            rubricsWorkspace.classList.add('hidden');
         }
 
         const activeTab = tabs.find(t => t.id === activeTabId);
@@ -2048,6 +3068,114 @@
         }
     }
 
+    function addApproverBlock(name = '', position = '', date = '', isFirst = null) {
+        const container = document.getElementById('approvers-container');
+        if (!container) return;
+        const items = container.querySelectorAll('.approver-item');
+        const index = items.length;
+        const isActuallyFirst = (isFirst !== null) ? isFirst : (index === 0);
+
+        const isDpcr = (typeof window.isCurrentDocDpcr !== 'undefined') ? window.isCurrentDocDpcr : <?= $isDocDpcr ? 'true' : 'false' ?>;
+        const isOpcr = (typeof window.isCurrentDocOpcr !== 'undefined') ? window.isCurrentDocOpcr : <?= $isDocOpcr ? 'true' : 'false' ?>;
+        const isDpcrOrOpcr = isDpcr || isOpcr;
+
+        const div = document.createElement('div');
+        div.className = 'approver-item';
+        div.style.cssText = (!isActuallyFirst ? 'border-top: 1px dashed #cbd5e1; margin-top: 6px; padding-top: 6px;' : '') + ' position: relative;';
+
+        const namePlaceholder = isOpcr ? '(name of head of office / approving authority)' : (isDpcr ? '(name of office head)' : 'Name of Approving Authority');
+        const posPlaceholder = isOpcr ? '(position / designation)' : (isDpcr ? '(position of office head)' : 'Official Designation');
+        const disabledAttr = canEditTargets ? '' : 'disabled';
+
+        div.innerHTML = `
+            <table style="width: 100%; border-collapse: collapse; border: none; font-size: 11px;">
+                <tr>
+                    <td style="width: ${isDpcrOrOpcr ? '65px' : '60px'}; border: none; padding: 3px 0; font-weight: bold; color: ${isDpcrOrOpcr ? '#000' : '#64748b'};">Name:</td>
+                    <td style="border: none; padding: 3px 0;">
+                        <input type="text" class="field-approver-name" ${isActuallyFirst ? 'id="approver-name"' : ''} value="${escapeHtml(name)}" placeholder="${namePlaceholder}" style="font-weight: bold; color: #ba372a; border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; width: ${isDpcrOrOpcr ? '60%' : '100%'};" ${disabledAttr}>
+                        ${!isActuallyFirst ? (canEditTargets ? `
+                        <button type="button" onclick="removeApproverBlock(this)" class="print-hide" style="margin-left: 6px; color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5; font-size: 9px; padding: 1px 5px; border-radius: 3px; cursor: pointer; font-weight: bold;" title="Remove this signatory">✕ Remove</button>
+                        ` : '') : (isDpcrOrOpcr ? `
+                        <span style="color: #ba372a; font-style: italic; font-size: 10px; margin-left: 6px;">(may add signatories depending on position)</span>
+                        ` : '')}
+                    </td>
+                </tr>
+                <tr>
+                    <td style="border: none; padding: 3px 0; font-weight: bold; color: ${isDpcrOrOpcr ? '#000' : '#64748b'};">Position:</td>
+                    <td style="border: none; padding: 3px 0;">
+                        <input type="text" class="field-approver-pos" ${isActuallyFirst ? 'id="approver-pos"' : ''} value="${escapeHtml(position)}" placeholder="${posPlaceholder}" style="color: #ba372a; border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; width: ${isDpcrOrOpcr ? '80%' : '100%'};" ${disabledAttr}>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="border: none; padding: 3px 0; font-weight: bold; color: ${isDpcrOrOpcr ? '#000' : '#64748b'};">Date:</td>
+                    <td style="border: none; padding: 3px 0;">
+                        <input type="date" class="field-approver-date" ${isActuallyFirst ? 'id="approver-date"' : ''} value="${escapeHtml(date)}" onclick="this.showPicker && this.showPicker()" style="color: #ba372a; border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; width: 130px; background: transparent; font-family: inherit; cursor: pointer;" ${disabledAttr}>
+                    </td>
+                </tr>
+            </table>
+        `;
+        container.appendChild(div);
+
+        // Attach input listeners for dirty state, dynamic red hint styling, and autosync
+        div.querySelectorAll('input').forEach(inp => {
+            const updateStyle = () => {
+                if (inp.value.trim() !== '') {
+                    inp.style.color = '#0f172a';
+                    inp.style.borderColor = '#cbd5e1';
+                } else {
+                    inp.style.color = '#ba372a';
+                    inp.style.borderColor = '#ba372a';
+                }
+            };
+            updateStyle();
+            const handleUpdate = () => {
+                updateStyle();
+                window.syncSpmsActiveTab();
+                if (typeof AppState !== 'undefined') AppState.setDirty(true);
+            };
+            inp.addEventListener('input', handleUpdate);
+            inp.addEventListener('change', handleUpdate);
+        });
+
+        if (isFirst === null) {
+            window.syncSpmsActiveTab();
+            if (typeof AppState !== 'undefined') AppState.setDirty(true);
+        }
+    }
+
+    function removeApproverBlock(btn) {
+        const item = btn.closest('.approver-item');
+        if (item) {
+            item.remove();
+            window.syncSpmsActiveTab();
+            if (typeof AppState !== 'undefined') AppState.setDirty(true);
+        }
+    }
+
+    function extractApprovers() {
+        const items = document.querySelectorAll('#approvers-container .approver-item');
+        const approvers = [];
+        items.forEach(item => {
+            const name = item.querySelector('.field-approver-name')?.value || '';
+            const position = item.querySelector('.field-approver-pos')?.value || '';
+            const date = item.querySelector('.field-approver-date')?.value || '';
+            if (name || position || date || items.length === 1) {
+                approvers.push({ name, position, date });
+            }
+        });
+        if (approvers.length === 0) {
+            approvers.push({
+                name: document.getElementById('approver-name')?.value || '',
+                position: document.getElementById('approver-pos')?.value || '',
+                date: document.getElementById('approver-date')?.value || ''
+            });
+        }
+        return approvers;
+    }
+
+    window.addApproverBlock = addApproverBlock;
+    window.removeApproverBlock = removeApproverBlock;
+
     function populateSpmsForm(formData) {
         const data = formData || {};
 
@@ -2056,60 +3184,67 @@
         const docType = '<?= strtolower($doc['doc_type'] ?? 'ipcr') ?>';
         
         // Prioritize explicit document title: A DPCR is always a DPCR regardless of user default doc_type
-        const isDpcr = explicitDocTitle === 'DPCR' || titleText.includes('DPCR') || titleText.includes('DIVISION') || (docType === 'dpcr' && !titleText.includes('OPCR'));
-        const isOpcr = !isDpcr && (explicitDocTitle === 'OPCR' || titleText.includes('OPCR') || titleText.includes('OFFICE') || docType === 'opcr');
-        const isIperf = !isDpcr && !isOpcr && (titleText.includes('IPERF') || titleText.includes('NON-TEACHING') || docType === 'iperf');
+        const isDocExplicitDpcr = <?= $isDocDpcr ? 'true' : 'false' ?>;
+        const isDpcr = isDocExplicitDpcr || explicitDocTitle === 'DPCR' || titleText.includes('DPCR') || titleText.includes('DIVISION') || (docType === 'dpcr' && !titleText.includes('OPCR'));
+        window.isCurrentDocDpcr = isDpcr;
+        const isDocExplicitOpcr = <?= $isDocOpcr ? 'true' : 'false' ?>;
+        const isOpcr = !isDpcr && (isDocExplicitOpcr || explicitDocTitle === 'OPCR' || titleText.includes('OPCR') || titleText.includes('OFFICE') || docType === 'opcr');
+        window.isCurrentDocOpcr = isOpcr;
+        const isDocExplicitIperf = <?= $isDocIperf ? 'true' : 'false' ?>;
+        const isIperf = !isDpcr && !isOpcr && (isDocExplicitIperf || explicitDocTitle.includes('IPERF') || titleText.includes('IPERF') || titleText.includes('CONTRACT OF SERVICE') || titleText.includes('JOB ORDER') || docType === 'iperf');
+        window.isCurrentDocIperf = isIperf;
 
         let coreW = 0.70, stratW = 0.20, suppW = 0.10;
-        let defaultDocTitle = 'Individual Performance Commitment and Review (IPCR) — Faculty / Professors';
-        let coreTitle = "1. Core Functions — Instruction & Teaching Load (70%)";
-        let stratTitle = "2. Strategic Functions — Research, Citations & Extension Services (20%)";
-        let suppTitle = "3. Support Functions — Committee Work, Thesis Advising & Governance (10%)";
+        let defaultDocTitle = 'INDIVIDUAL PERFORMANCE COMMITMENT AND REVIEW';
+        let coreTitle = "CORE FUNCTIONS (70%)";
+        let stratTitle = "STRATEGIC FUNCTIONS (20%)";
+        let suppTitle = "SUPPORT FUNCTIONS (10%)";
         let rateeRole = "Faculty Member / Professor";
         let deanRole = "College Dean / Unit Head";
         let vpRole = "Vice President for Academic Affairs";
 
         if (isOpcr) {
-            coreW = 0.60;
-            stratW = 0.25;
-            suppW = 0.15;
-            defaultDocTitle = "Office Performance Commitment and Review (OPCR) — Executive / College";
-            coreTitle = "1. Core Office Mandate (60%)";
-            stratTitle = "2. Strategic Functions — Research, Citations & Extension Services (25%)";
-            suppTitle = "3. Support Functions — Institutional Governance & Operations (15%)";
-            rateeRole = "College Dean / Executive";
-            deanRole = "Vice President / PMT Chair";
+            coreW = data.weights?.core ?? 0.60;
+            stratW = data.weights?.strategic ?? 0.25;
+            suppW = data.weights?.support ?? 0.15;
+            defaultDocTitle = "OFFICE PERFORMANCE COMMITMENT AND REVIEW (OPCR)";
+            coreTitle = `CORE MANDATE (${Math.round(coreW * 100)}%)`;
+            stratTitle = `STRATEGIC FUNCTIONS (${Math.round(stratW * 100)}%)`;
+            suppTitle = `SUPPORT FUNCTIONS (${Math.round(suppW * 100)}%)`;
+            const posLower = (ownerAccountInfo.position || '').toLowerCase();
+            rateeRole = posLower.includes('vice president') ? "Vice President / Sector Head" : "Vice President / College Dean";
+            deanRole = "University President / PMT Chair";
             vpRole = "University President";
-            if (!data.title || data.title.includes('IPCR')) {
+            if (!data.title || data.title.includes('IPCR') || data.title.includes('DPCR') || data.title.includes('Faculty / Professors')) {
                 data.title = defaultDocTitle;
             }
         } else if (isDpcr) {
-            coreW = 0.60;
-            stratW = 0.25;
-            suppW = 0.15;
-            defaultDocTitle = "Division Performance Commitment and Review (DPCR) — Division / Department";
-            coreTitle = "1. Core Division Functions (60%)";
-            stratTitle = "2. Strategic Functions — Division Extension & Research (25%)";
-            suppTitle = "3. Support Functions — Governance & Admin Support (15%)";
+            coreW = data.weights?.core ?? 0.60;
+            stratW = data.weights?.strategic ?? 0.30;
+            suppW = data.weights?.support ?? 0.10;
+            defaultDocTitle = "DEPARTMENT PERFORMANCE COMMITMENT AND REVIEW (DPCR)";
+            coreTitle = `CORE FUNCTIONS (${Math.round(coreW * 100)}%)`;
+            stratTitle = `STRATEGIC FUNCTIONS (${Math.round(stratW * 100)}%)`;
+            suppTitle = `SUPPORT FUNCTIONS (${Math.round(suppW * 100)}%)`;
             const posLower = (ownerAccountInfo.position || '').toLowerCase();
             rateeRole = posLower.includes('dean') ? "College Dean / Supervisor" : "Department Chairperson / Unit Head";
             deanRole = posLower.includes('dean') ? "Vice President for Academic Affairs" : "College Dean / Supervisor";
             vpRole = "Vice President for Academic Affairs";
-            if (!data.title || data.title.includes('IPCR') || data.title.includes('OPCR')) {
+            if (!data.title || data.title.includes('IPCR') || data.title.includes('OPCR') || data.title.includes('Division Performance')) {
                 data.title = defaultDocTitle;
             }
         } else if (isIperf) {
-            coreW = 0.70;
-            stratW = 0.20;
-            suppW = 0.10;
-            defaultDocTitle = "Individual Performance Evaluation and Review Form (IPERF) — Administrative / Non-Teaching Staff";
-            coreTitle = "1. Core Functions — Administrative & Technical Mandate (70%)";
-            stratTitle = "2. Strategic Functions — Process Improvement & Special Projects (20%)";
-            suppTitle = "3. Support Functions — Office Support & Cross-Functional Services (10%)";
-            rateeRole = "Administrative Staff / Employee";
-            deanRole = "Administrative Unit Head / Supervisor";
-            vpRole = "Vice President for Administration / Head of Agency";
-            if (!data.title || data.title.includes('IPCR')) {
+            coreW = 1.00;
+            stratW = 0.00;
+            suppW = 0.00;
+            defaultDocTitle = "INDIVIDUAL PERFORMANCE EVALUATION RATING FORM FOR CONTRACT OF SERVICE AND JOB ORDER PERSONNEL";
+            coreTitle = "OFFICE PPA / EXPECTED OUTPUTS";
+            stratTitle = "";
+            suppTitle = "";
+            rateeRole = "Contract of Service / Job Order Personnel";
+            deanRole = "Immediate Supervisor";
+            vpRole = "Office Head";
+            if (!data.title || data.title.includes('IPCR') || data.title.includes('DPCR') || data.title.includes('OPCR')) {
                 data.title = defaultDocTitle;
             }
         }
@@ -2121,15 +3256,40 @@
         // Header info
         const titleEl = document.getElementById('spms-doc-title');
         if (titleEl) {
-            titleEl.innerText = data.title || defaultDocTitle;
+            let titleToSet = data.title || defaultDocTitle;
+            if (titleToSet.includes('Faculty / Professors') || titleToSet.includes('IPCR Form')) {
+                titleToSet = defaultDocTitle;
+            }
+            titleEl.innerText = titleToSet;
         }
 
         const elCore = document.getElementById('label-cat-core');
-        if (elCore) elCore.innerText = coreTitle;
+        if (elCore) {
+            const hint = ' <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>';
+            if (!isDpcr && !isOpcr && !isIperf) {
+                elCore.innerHTML = 'CORE FUNCTIONS (70%)' + hint;
+            } else {
+                elCore.innerHTML = escapeHtml(coreTitle) + hint;
+            }
+        }
         const elStrat = document.getElementById('label-cat-strategic');
-        if (elStrat) elStrat.innerText = stratTitle;
+        if (elStrat) {
+            const hint = ' <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>';
+            if (!isDpcr && !isOpcr && !isIperf) {
+                elStrat.innerHTML = 'STRATEGIC FUNCTIONS (20%)' + hint;
+            } else {
+                elStrat.innerHTML = escapeHtml(stratTitle) + hint;
+            }
+        }
         const elSupp = document.getElementById('label-cat-support');
-        if (elSupp) elSupp.innerText = suppTitle;
+        if (elSupp) {
+            const hint = ' <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>';
+            if (!isDpcr && !isOpcr && !isIperf) {
+                elSupp.innerHTML = 'SUPPORT FUNCTIONS (10%)' + hint;
+            } else {
+                elSupp.innerHTML = escapeHtml(suppTitle) + hint;
+            }
+        }
 
         const elRoleRatee = document.getElementById('sig-role-ratee');
         if (elRoleRatee) elRoleRatee.innerText = rateeRole;
@@ -2155,65 +3315,200 @@
                 if (el.value.trim() !== '') {
                     el.style.color = '#0f172a';
                     el.style.borderColor = '#94a3b8';
+                } else {
+                    el.style.color = '#ba372a';
+                    el.style.borderColor = '#ba372a';
                 }
             }
         };
 
-        const defaultRateeName = ownerAccountInfo.name || '';
-        const defaultRateePos  = ownerAccountInfo.position || '';
-        const defaultRateeDept = ownerAccountInfo.dept || '';
-        const defaultPeriod    = ownerAccountInfo.period || '';
+        const defaultRateeName = '';
+        const defaultRateePos  = '';
+        const defaultRateeDept = '';
+        const defaultPeriod    = ''; // Keep blank for user to fill
 
-        const defaultSupName = superiorUserInfo ? `${superiorUserInfo.first_name || ''} ${superiorUserInfo.last_name || ''}`.trim() : '';
-        const defaultSupPos  = superiorUserInfo ? (superiorUserInfo.position || '') : '';
+        let savedPeriod = data.ratee?.period || '';
+        if (savedPeriod.toLowerCase().startsWith('untitled evaluation') || (ownerAccountInfo.folderTitle && savedPeriod === ownerAccountInfo.folderTitle)) {
+            savedPeriod = '';
+        }
 
-        setVal('ratee-name', data.ratee?.name || defaultRateeName);
-        setVal('ratee-position', data.ratee?.position || defaultRateePos);
-        setVal('ratee-dept', data.ratee?.dept || defaultRateeDept);
-        setVal('ratee-period', data.ratee?.period || defaultPeriod);
+        const defaultSupName = '';
+        const defaultSupPos  = '';
 
-        setVal('approver-name', data.approver?.name || defaultSupName);
-        setVal('approver-pos', data.approver?.position || defaultSupPos);
-        setVal('approver-date', data.approver?.date || '');
+        setVal('ratee-name', data.ratee?.name || '');
+        setVal('ratee-position', data.ratee?.position || '');
+        setVal('ratee-dept', data.ratee?.dept || '');
+        setVal('ratee-period', savedPeriod);
 
-        setVal('ratee-sign-name', data.rateeSign?.name || defaultRateeName);
+        // Populate Approver(s)
+        const container = document.getElementById('approvers-container');
+        if (container) {
+            container.innerHTML = '';
+            let approversList = (data.approvers && Array.isArray(data.approvers) && data.approvers.length > 0)
+                ? data.approvers
+                : (data.approver && (data.approver.name || data.approver.position || data.approver.date)
+                    ? [data.approver]
+                    : [{ name: '', position: '', date: '' }]);
+
+            approversList.forEach((appr, idx) => {
+                addApproverBlock(appr.name || '', appr.position || '', appr.date || '', idx === 0);
+            });
+        } else {
+            setVal('approver-name', data.approver?.name || '');
+            setVal('approver-pos', data.approver?.position || '');
+            setVal('approver-date', data.approver?.date || '');
+        }
+
+        const addApprBtn = document.getElementById('btn-add-approver') || document.getElementById('btn-add-approver-ipcr');
+        if (addApprBtn) {
+            addApprBtn.style.display = canEditTargets ? 'inline-flex' : 'none';
+        }
+
+        setVal('ratee-sign-name', data.rateeSign?.name || '');
         setVal('ratee-sign-date', data.rateeSign?.date || '');
+
+        window.currentDocCurrency = data.budget_currency || data.currency || '₱';
+        document.querySelectorAll('.header-budget-currency').forEach(el => {
+            el.value = window.currentDocCurrency;
+            el.style.width = Math.max(22, (el.value.length + 1) * 7.5) + 'px';
+            el.disabled = !canEditTargets;
+        });
 
         setVal('pmt-remarks', data.pmtRemarks || '');
 
-        setVal('sig-ratee-name', data.signatories?.ratee || defaultRateeName);
+        setVal('sig-ratee-name', data.signatories?.ratee || '');
+        setVal('sig-ratee-pos', data.signatories?.rateePos || '');
         setVal('sig-ratee-date', data.signatories?.rateeDate || '');
-        setVal('sig-dean-name', data.signatories?.dean || defaultSupName);
+        setVal('sig-dean-name', data.signatories?.dean || '');
         setVal('sig-dean-date', data.signatories?.deanDate || '');
         setVal('sig-vp-name', data.signatories?.vp || '');
         setVal('sig-vp-date', data.signatories?.vpDate || '');
+
+        if (isIperf) {
+            setVal('ratee-classification', data.classification || 'Contract of Service (COS)');
+            setVal('sig-targets-prepared-name', data.signatories?.targetsPreparedName || '');
+            setVal('sig-targets-prepared-date', data.signatories?.targetsPreparedDate || '');
+            setVal('sig-targets-approved-name', data.signatories?.targetsApprovedName || '');
+            setVal('sig-targets-approved-date', data.signatories?.targetsApprovedDate || '');
+            setVal('sig-eval-rated-name', data.signatories?.evalRatedName || '');
+            setVal('sig-eval-rated-date', data.signatories?.evalRatedDate || '');
+            setVal('sig-eval-conforme-name', data.signatories?.evalConformeName || '');
+            setVal('sig-eval-conforme-date', data.signatories?.evalConformeDate || '');
+
+            const elClass = document.getElementById('ratee-classification');
+            if (elClass) elClass.disabled = !canEditTargets;
+            ['sig-targets-prepared-name', 'sig-targets-prepared-date',
+             'sig-targets-approved-name', 'sig-targets-approved-date'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.disabled = !canEditTargets;
+            });
+            ['sig-eval-rated-name', 'sig-eval-rated-date',
+             'sig-eval-conforme-name', 'sig-eval-conforme-date'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.disabled = !canEditEvaluation;
+            });
+        }
 
         // Clear existing rows
         document.querySelectorAll('.table-row-core, .table-row-strategic, .table-row-support').forEach(tr => tr.remove());
 
         // Populate category rows
+        const hasSavedCategories = Boolean(data && data.categories && typeof data.categories === 'object');
         const cats = data.categories || DEFAULT_BLUEPRINT;
-        const coreRows = cats.core && cats.core.length > 0 ? cats.core : DEFAULT_BLUEPRINT.core;
+        const coreRows = Array.isArray(cats.core) 
+            ? (hasSavedCategories ? cats.core : (cats.core.length > 0 ? cats.core : DEFAULT_BLUEPRINT.core))
+            : (DEFAULT_BLUEPRINT.core || []);
         coreRows.forEach(row => addTableRow('core', row));
 
-        const stratRows = cats.strategic && cats.strategic.length > 0 ? cats.strategic : DEFAULT_BLUEPRINT.strategic;
-        stratRows.forEach(row => addTableRow('strategic', row));
+        if (!isIperf) {
+            const stratRows = Array.isArray(cats.strategic)
+                ? (hasSavedCategories ? cats.strategic : (cats.strategic.length > 0 ? cats.strategic : DEFAULT_BLUEPRINT.strategic))
+                : (DEFAULT_BLUEPRINT.strategic || []);
+            stratRows.forEach(row => addTableRow('strategic', row));
 
-        const suppRows = cats.support && cats.support.length > 0 ? cats.support : DEFAULT_BLUEPRINT.support;
-        suppRows.forEach(row => addTableRow('support', row));
+            const suppRows = Array.isArray(cats.support)
+                ? (hasSavedCategories ? cats.support : (cats.support.length > 0 ? cats.support : DEFAULT_BLUEPRINT.support))
+                : (DEFAULT_BLUEPRINT.support || []);
+            suppRows.forEach(row => addTableRow('support', row));
+        }
 
         // Update add buttons visibility based on phase permissions
         ['core', 'strategic', 'support'].forEach(cat => {
             const tfoot = document.getElementById(`tfoot-add-${cat}`);
             if (tfoot) {
-                tfoot.style.display = canEditTargets ? '' : 'none';
+                if (isIperf && (cat === 'strategic' || cat === 'support')) {
+                    tfoot.style.display = 'none';
+                } else {
+                    tfoot.style.display = canEditTargets ? '' : 'none';
+                }
             }
         });
 
-        // Update header ratee inputs based on phase permissions
-        ['ratee-name', 'ratee-position', 'ratee-dept', 'ratee-period'].forEach(id => {
+        // Update header ratee inputs based on phase permissions and attach live styling listeners
+        ['ratee-name', 'ratee-position', 'ratee-dept', 'ratee-period', 'ratee-sign-name', 'ratee-sign-date', 'approver-name', 'approver-pos', 'approver-date', 'sig-ratee-name', 'sig-ratee-pos', 'sig-ratee-date', 'sig-dean-name', 'sig-dean-pos', 'sig-dean-date', 'sig-targets-prepared-date', 'sig-targets-approved-date', 'sig-eval-rated-date', 'sig-eval-conforme-date'].forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.disabled = !canEditTargets;
+            if (el) {
+                el.disabled = !canEditTargets;
+                const updateStyle = function() {
+                    if (el.value.trim() !== '') {
+                        el.style.color = '#0f172a';
+                        el.style.borderColor = '#94a3b8';
+                    } else {
+                        el.style.color = '#ba372a';
+                        el.style.borderColor = '#ba372a';
+                    }
+                };
+                if (!el.dataset.hasStyleListener) {
+                    el.dataset.hasStyleListener = '1';
+                    el.addEventListener('input', () => {
+                        updateStyle();
+                        AppState.setDirty(true);
+                        if (typeof window.syncSpmsActiveTab === 'function') {
+                            window.syncSpmsActiveTab();
+                        }
+                    });
+                    el.addEventListener('change', () => {
+                        updateStyle();
+                        AppState.setDirty(true);
+                        if (typeof window.syncSpmsActiveTab === 'function') {
+                            window.syncSpmsActiveTab();
+                        }
+                    });
+                }
+                updateStyle();
+            }
+        });
+
+        // Setup live sync for header currency inputs
+        document.querySelectorAll('.header-budget-currency').forEach(el => {
+            if (!el.dataset.hasCurrencyListener) {
+                el.dataset.hasCurrencyListener = '1';
+                el.style.width = Math.max(18, (el.value.length + 1) * 6.5) + 'px';
+                el.addEventListener('input', function() {
+                    const val = this.value || '₱';
+                    this.style.width = Math.max(18, (this.value.length + 1) * 6.5) + 'px';
+                    window.currentDocCurrency = val;
+                    document.querySelectorAll('.header-budget-currency').forEach(other => {
+                        if (other !== this) other.value = this.value;
+                    });
+                    document.querySelectorAll('.field-budget-currency').forEach(rowCur => {
+                        rowCur.value = val;
+                        rowCur.style.width = Math.max(18, (val.length + 1) * 6.5) + 'px';
+                        const bInput = rowCur.closest('.budget-input-wrapper')?.querySelector('.field-budget');
+                        if (bInput) adjustBudgetFontSize(bInput);
+                    });
+                    AppState.setDirty(true);
+                    if (typeof window.syncSpmsActiveTab === 'function') {
+                        window.syncSpmsActiveTab();
+                    }
+                });
+                el.addEventListener('blur', function() {
+                    if (this.value.trim() === '') {
+                        this.value = '₱';
+                        this.dispatchEvent(new Event('input'));
+                    }
+                });
+            }
         });
 
         recalculateForm();
@@ -2223,16 +3518,51 @@
         const tbody = document.getElementById(`tbody-${category}`);
         if (!tbody) return;
 
-        const data = rowData || {
+        const data = rowData || (window.isCurrentDocIperf ? {
             row_id: 'row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7),
             mfo: "",
             indicators: "",
             accomplishments: "",
             q: "", t: "", e: "",
             remarks: ""
-        };
+        } : (window.isCurrentDocDpcr ? {
+            row_id: 'row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7),
+            mfo: "",
+            indicators: "",
+            budget: "",
+            budget_currency: "₱",
+            accountable: "",
+            accomplishments: "",
+            q: "", t: "", e: "",
+            remarks: "",
+            std_5: "", std_4: "", std_3: "", std_2: "", std_1: ""
+        } : (window.isCurrentDocOpcr ? {
+            row_id: 'row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7),
+            mfo: "",
+            indicators: "",
+            budget: "",
+            budget_currency: "₱",
+            accountable: "",
+            accomplishments: "",
+            q: "", t: "", e: "",
+            remarks: ""
+        } : {
+            row_id: 'row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7),
+            mfo: "",
+            indicators: "",
+            accomplishments: "",
+            q: "", t: "", e: "",
+            remarks: ""
+        })));
 
         const rowId = data.row_id || ('row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7));
+        const rawBudget = (data.budget !== undefined && data.budget !== null && String(data.budget).trim() !== '')
+            ? sanitizeBudgetInput(String(data.budget))
+            : '';
+        const numBudget = parseFloat(rawBudget);
+        const fullBudget = !isNaN(numBudget) ? formatBudgetFull(numBudget) : rawBudget;
+        const displayBudget = !isNaN(numBudget) ? formatBudgetDisplay(numBudget) : rawBudget;
+        const rowCurrency = data.budget_currency || (typeof window !== 'undefined' && window.currentDocCurrency) || '₱';
         const rowFiles = (window.documentAttachments && window.documentAttachments[rowId]) || [];
         const fileCount = rowFiles.length;
         const hasFiles = fileCount > 0;
@@ -2243,9 +3573,338 @@
         const tr = document.createElement('tr');
         tr.className = `table-row-${category}`;
         tr.dataset.rowId = rowId;
+        tr.id = rowId;
         tr.style.borderBottom = '1px solid #000000';
 
-        tr.innerHTML = `
+        if (window.isCurrentDocIperf) {
+            tr.innerHTML = `
+                <!-- 1. Office PPA (Target Phase) -->
+                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                    <textarea class="spms-textarea field-mfo" rows="3" placeholder="Enter office/project/programs/activities aligned with office deliverables..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.mfo)}</textarea>
+                </td>
+
+                <!-- 2. Expected Outputs (Target Phase) -->
+                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                    <textarea class="spms-textarea field-indicators" rows="3" placeholder="Enter expected outputs based on contract or duties..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.indicators)}</textarea>
+                </td>
+
+                <!-- 3. Actual Accomplishments (Evaluation Phase) -->
+                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                    <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishments..." ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : ''}>${escapeHtml(data.accomplishments)}</textarea>
+                    
+                    <!-- MOV Evidence Toolbar (Only visible during Evaluation Phase) -->
+                    ${isEvaluationPhase ? `
+                    <div class="mov-toolbar flex items-center justify-between mt-1 pt-1 border-t border-slate-200 dark:border-slate-800 text-[10px] print-hide">
+                        ${hasFiles ? `
+                        <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
+                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25" 
+                                title="View Means of Verification (MOV) evidence proof for this accomplishment">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                            <span class="mov-btn-text">MOV (${fileCount})</span>
+                        </button>
+                        ` : (canEditEvaluation ? `
+                        <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
+                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700" 
+                                title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                            <span class="mov-btn-text">Attach MOV</span>
+                        </button>
+                        ` : `
+                        <span class="text-[9px] text-slate-400 italic">No MOV</span>
+                        `)}
+                        <span class="text-[9px] text-slate-400 font-medium italic">Evidence</span>
+                    </div>
+                    ` : ''}
+                </td>
+
+                <!-- 4. Rating Q (Evaluation Phase) -->
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
+                    <input type="number" min="0" max="5" step="1" 
+                        value="${data.q !== undefined && data.q !== null && data.q !== '' ? data.q : ''}" 
+                        placeholder="—" 
+                        ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
+                        class="spms-score-input field-q">
+                </td>
+
+                <!-- 5. Rating T (Evaluation Phase) -->
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
+                    <input type="number" min="0" max="5" step="1" 
+                        value="${data.t !== undefined && data.t !== null && data.t !== '' ? data.t : ''}" 
+                        placeholder="—" 
+                        ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
+                        class="spms-score-input field-t">
+                </td>
+
+                <!-- 6. Rating E (Evaluation Phase) -->
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
+                    <input type="number" min="0" max="5" step="1" 
+                        value="${data.e !== undefined && data.e !== null && data.e !== '' ? data.e : ''}" 
+                        placeholder="—" 
+                        ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
+                        class="spms-score-input field-e">
+                </td>
+
+                <!-- 7. Row Average -->
+                <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f0f9ff; border: 1px solid #000;">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <span class="field-row-avg" style="font-weight: 900; color: #0369a1; font-size: 11px;">—</span>
+                        <span style="font-size: 8px; font-weight: 800; color: #0284c7; text-transform: uppercase;">auto</span>
+                    </div>
+                </td>
+
+                <!-- 8. Remarks -->
+                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                    <div class="flex items-center justify-between mb-1 print-hide">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Remarks</span>
+                        ${!isOwner ? `
+                            <button type="button" onclick="stampRoleTag(this)" class="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-800 transition-colors cursor-pointer" title="Stamp your role tag into remarks">
+                                + Tag [${escapeHtml(window.currentReviewerRole || 'Reviewer')}]
+                            </button>
+                        ` : ''}
+                    </div>
+                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." ${isOwner && (status === FolderStatus.PENDING_TARGET_APPROVAL || status === FolderStatus.SUBMITTED || status === FolderStatus.TARGET_APPROVED || status === FolderStatus.APPROVED) ? 'disabled title="Locked while submitted or approved"' : ''}>${escapeHtml(data.remarks)}</textarea>
+                </td>
+
+                <!-- 9. Delete Action (Target Phase) -->
+                <td style="padding: 2px; text-align: center; vertical-align: middle; border: 1px solid #000;" class="print-hide">
+                    ${canEditTargets ? `
+                    <button type="button" onclick="deleteTableRow(this)" title="Delete Row" class="btn-del-row">
+                        <svg xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>` : ''}
+                </td>
+            `;
+        } else if (window.isCurrentDocDpcr) {
+            tr.innerHTML = `
+                <!-- 1. Programs, Projects, Activities (Target Phase) -->
+                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                    <textarea class="spms-textarea field-mfo" rows="3" placeholder="Enter programs, projects, activities..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.mfo)}</textarea>
+                </td>
+
+                <!-- 2. Success Indicators (Target Phase) -->
+                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                    <textarea class="spms-textarea field-indicators" rows="3" placeholder="Enter success indicators (targets + measures)..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.indicators)}</textarea>
+                </td>
+
+                <!-- 3. Allotted Budget (Target Phase) - Decimal with Editable Currency -->
+                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                    <div class="budget-input-wrapper">
+                        <input type="text" class="field-budget-currency" value="${escapeHtml(rowCurrency)}" placeholder="₱" title="Currency (editable, defaults to ₱)" style="width: 18px; text-align: center; font-weight: 700; color: #0284c7; border: none; border-right: 1px solid #e2e8f0; outline: none; background: transparent; font-size: 10px; padding: 1px 2px 1px 0; cursor: pointer; flex-shrink: 0;" ${mfoDisabled ? 'disabled' : ''}>
+                        <input type="text" inputmode="decimal" spellcheck="false" autocomplete="off" class="spms-input field-budget" maxlength="18" data-raw-value="${escapeHtml(rawBudget)}" data-full-value="${escapeHtml(fullBudget)}" value="${escapeHtml(fullBudget)}" placeholder="0.00" style="flex: 1; min-width: 0; width: 100%; border: none; outline: none; font-size: 11px; text-align: right; background: transparent; font-family: inherit; font-weight: 500; color: #0f172a; padding: 1px 1px; transition: font-size 0.1s ease;" ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>
+                    </div>
+                </td>
+
+                <!-- 4. Individuals / Offices Accountable (Target Phase) -->
+                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                    <textarea class="spms-textarea field-accountable" rows="3" placeholder="Individuals / offices accountable..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.accountable || '')}</textarea>
+                </td>
+
+                <!-- 5. Actual Accomplishments (Evaluation Phase) -->
+                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                    <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishments..." ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : ''}>${escapeHtml(data.accomplishments)}</textarea>
+                    
+                    <!-- MOV Evidence Toolbar (Only visible during Evaluation Phase) -->
+                    ${isEvaluationPhase ? `
+                    <div class="mov-toolbar flex items-center justify-between mt-1 pt-1 border-t border-slate-200 dark:border-slate-800 text-[10px] print-hide">
+                        ${hasFiles ? `
+                        <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
+                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25" 
+                                title="View Means of Verification (MOV) evidence proof for this accomplishment">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                            <span class="mov-btn-text">MOV (${fileCount})</span>
+                        </button>
+                        ` : (canEditEvaluation ? `
+                        <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
+                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700" 
+                                title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                            <span class="mov-btn-text">Attach MOV</span>
+                        </button>
+                        ` : `
+                        <span class="text-[9px] text-slate-400 italic">No MOV</span>
+                        `)}
+                        <span class="text-[9px] text-slate-400 font-medium italic">Evidence</span>
+                    </div>
+                    ` : ''}
+                </td>
+
+                <!-- Rating Q, T, E Inputs (Evaluation Phase) with Amber #ffe599 Background -->
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
+                    <input type="number" min="0" max="5" step="1" 
+                        value="${data.q !== undefined && data.q !== null && data.q !== '' ? data.q : ''}" 
+                        placeholder="—" 
+                        ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
+                        class="spms-score-input field-q" style="background-color: #ffe599;">
+                </td>
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
+                    <input type="number" min="0" max="5" step="1" 
+                        value="${data.t !== undefined && data.t !== null && data.t !== '' ? data.t : ''}" 
+                        placeholder="—" 
+                        ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
+                        class="spms-score-input field-t" style="background-color: #ffe599;">
+                </td>
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
+                    <input type="number" min="0" max="5" step="1" 
+                        value="${data.e !== undefined && data.e !== null && data.e !== '' ? data.e : ''}" 
+                        placeholder="—" 
+                        ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
+                        class="spms-score-input field-e" style="background-color: #ffe599;">
+                </td>
+
+                <!-- Row Average -->
+                <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f0f9ff; border: 1px solid #000;">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <span class="field-row-avg" style="font-weight: 900; color: #0369a1; font-size: 11px;">—</span>
+                        <span style="font-size: 8px; font-weight: 800; color: #0284c7; text-transform: uppercase;">auto</span>
+                    </div>
+                </td>
+
+                <!-- Remarks -->
+                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                    <div class="flex items-center justify-between mb-1 print-hide">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Remarks</span>
+                        ${!isOwner ? `
+                            <button type="button" onclick="stampRoleTag(this)" class="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-800 transition-colors cursor-pointer" title="Stamp your role tag into remarks">
+                                + Tag [${escapeHtml(window.currentReviewerRole || 'Reviewer')}]
+                            </button>
+                        ` : ''}
+                    </div>
+                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." ${isOwner && (status === FolderStatus.PENDING_TARGET_APPROVAL || status === FolderStatus.SUBMITTED || status === FolderStatus.TARGET_APPROVED || status === FolderStatus.APPROVED) ? 'disabled title="Locked while submitted or approved"' : ''}>${escapeHtml(data.remarks)}</textarea>
+                </td>
+
+                <!-- Delete Action (Target Phase) -->
+                <td style="padding: 2px; text-align: center; vertical-align: middle; border: 1px solid #000;" class="print-hide">
+                    ${canEditTargets ? `
+                    <button type="button" onclick="deleteTableRow(this)" title="Delete Row" class="btn-del-row">
+                        <svg xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>` : ''}
+                </td>
+            `;
+        } else if (window.isCurrentDocOpcr) {
+            tr.innerHTML = `
+                <!-- 1. Programs, Projects, Activities (Target Phase) -->
+                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                    <textarea class="spms-textarea field-mfo" rows="3" placeholder="Enter project, program, activities..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.mfo)}</textarea>
+                </td>
+
+                <!-- 2. Success Indicators (Targets + Measures) Performance (Target Phase) -->
+                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                    <textarea class="spms-textarea field-indicators" rows="3" placeholder="Enter success indicators (targets + measures)..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.indicators)}</textarea>
+                </td>
+
+                <!-- 3. Allotted Budget (Target Phase) - Decimal with Editable Currency -->
+                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                    <div class="budget-input-wrapper">
+                        <input type="text" class="field-budget-currency" value="${escapeHtml(rowCurrency)}" placeholder="₱" title="Currency (editable, defaults to ₱)" style="width: 18px; text-align: center; font-weight: 700; color: #0284c7; border: none; border-right: 1px solid #e2e8f0; outline: none; background: transparent; font-size: 10px; padding: 1px 2px 1px 0; cursor: pointer; flex-shrink: 0;" ${mfoDisabled ? 'disabled' : ''}>
+                        <input type="text" inputmode="decimal" spellcheck="false" autocomplete="off" class="spms-input field-budget" maxlength="18" data-raw-value="${escapeHtml(rawBudget)}" data-full-value="${escapeHtml(fullBudget)}" value="${escapeHtml(fullBudget)}" placeholder="0.00" style="flex: 1; min-width: 0; width: 100%; border: none; outline: none; font-size: 11px; text-align: right; background: transparent; font-family: inherit; font-weight: 500; color: #0f172a; padding: 1px 1px; transition: font-size 0.1s ease;" ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>
+                    </div>
+                </td>
+
+                <!-- 4. Divisions Accountable (Target Phase) -->
+                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                    <textarea class="spms-textarea field-accountable" rows="3" placeholder="Divisions accountable..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.accountable || '')}</textarea>
+                </td>
+
+                <!-- 5. Actual Accomplishment (Evaluation Phase) -->
+                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                    <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishment..." ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : ''}>${escapeHtml(data.accomplishments)}</textarea>
+                    
+                    <!-- MOV Evidence Toolbar (Only visible during Evaluation Phase) -->
+                    ${isEvaluationPhase ? `
+                    <div class="mov-toolbar flex items-center justify-between mt-1 pt-1 border-t border-slate-200 dark:border-slate-800 text-[10px] print-hide">
+                        ${hasFiles ? `
+                        <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
+                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25" 
+                                title="View Means of Verification (MOV) evidence proof for this accomplishment">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                            <span class="mov-btn-text">MOV (${fileCount})</span>
+                        </button>
+                        ` : (canEditEvaluation ? `
+                        <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
+                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700" 
+                                title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                            <span class="mov-btn-text">Attach MOV</span>
+                        </button>
+                        ` : `
+                        <span class="text-[9px] text-slate-400 italic">No MOV</span>
+                        `)}
+                        <span class="text-[9px] text-slate-400 font-medium italic">Evidence</span>
+                    </div>
+                    ` : ''}
+                </td>
+
+                <!-- Rating Q, T, E Inputs (Evaluation Phase) with Amber #ffe599 Background -->
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
+                    <input type="number" min="0" max="5" step="1" 
+                        value="${data.q !== undefined && data.q !== null && data.q !== '' ? data.q : ''}" 
+                        placeholder="—" 
+                        ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
+                        class="spms-score-input field-q" style="background-color: #ffe599;">
+                </td>
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
+                    <input type="number" min="0" max="5" step="1" 
+                        value="${data.t !== undefined && data.t !== null && data.t !== '' ? data.t : ''}" 
+                        placeholder="—" 
+                        ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
+                        class="spms-score-input field-t" style="background-color: #ffe599;">
+                </td>
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
+                    <input type="number" min="0" max="5" step="1" 
+                        value="${data.e !== undefined && data.e !== null && data.e !== '' ? data.e : ''}" 
+                        placeholder="—" 
+                        ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
+                        class="spms-score-input field-e" style="background-color: #ffe599;">
+                </td>
+
+                <!-- Row Average -->
+                <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f0f9ff; border: 1px solid #000;">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <span class="field-row-avg" style="font-weight: 900; color: #0369a1; font-size: 11px;">—</span>
+                        <span style="font-size: 8px; font-weight: 800; color: #0284c7; text-transform: uppercase;">auto</span>
+                    </div>
+                </td>
+
+                <!-- Remarks -->
+                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                    <div class="flex items-center justify-between mb-1 print-hide">
+                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Remarks</span>
+                        ${!isOwner ? `
+                            <button type="button" onclick="stampRoleTag(this)" class="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-800 transition-colors cursor-pointer" title="Stamp your role tag into remarks">
+                                + Tag [${escapeHtml(window.currentReviewerRole || 'Reviewer')}]
+                            </button>
+                        ` : ''}
+                    </div>
+                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." ${isOwner && (status === FolderStatus.PENDING_TARGET_APPROVAL || status === FolderStatus.SUBMITTED || status === FolderStatus.TARGET_APPROVED || status === FolderStatus.APPROVED) ? 'disabled title="Locked while submitted or approved"' : ''}>${escapeHtml(data.remarks)}</textarea>
+                </td>
+
+                <!-- Delete Action (Target Phase) -->
+                <td style="padding: 2px; text-align: center; vertical-align: middle; border: 1px solid #000;" class="print-hide">
+                    ${canEditTargets ? `
+                    <button type="button" onclick="deleteTableRow(this)" title="Delete Row" class="btn-del-row">
+                        <svg xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>` : ''}
+                </td>
+            `;
+        } else {
+            tr.innerHTML = `
             <!-- Major Final Output (Only modifiable during Target Phase) -->
             <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
                 <textarea class="spms-textarea field-mfo" rows="3" placeholder="Enter academic function / major final output..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.mfo)}</textarea>
@@ -2342,17 +4001,49 @@
                     </svg>
                 </button>` : ''}
             </td>
-        `;
+            `;
+        }
 
         tbody.appendChild(tr);
 
         // Track changes for autoSave
         tr.querySelectorAll('textarea, input').forEach(el => {
-            el.addEventListener('input', () => {
+            const sync = () => {
                 window.syncSpmsActiveTab();
-                AppState.setDirty(true);
-            });
+                if (typeof AppState !== 'undefined' && typeof AppState.setDirty === 'function') AppState.setDirty(true);
+            };
+            el.addEventListener('input', sync);
+            el.addEventListener('change', sync);
         });
+
+        // Decimal formatting and currency sync for Budget inputs
+        const budgetInput = tr.querySelector('.field-budget');
+        const curInput = tr.querySelector('.field-budget-currency');
+        if (budgetInput) {
+            budgetInput.setAttribute('spellcheck', 'false');
+            budgetInput.setAttribute('autocomplete', 'off');
+            budgetInput.setAttribute('maxlength', '16');
+            adjustBudgetFontSize(budgetInput);
+        }
+        if (curInput) {
+            const syncW = (el) => {
+                el.style.width = Math.max(18, (el.value.length + 1) * 6.5) + 'px';
+            };
+            syncW(curInput);
+            curInput.addEventListener('input', function() {
+                syncW(this);
+                if (budgetInput) adjustBudgetFontSize(budgetInput);
+            });
+            curInput.addEventListener('blur', function() {
+                if (this.value.trim() === '') {
+                    this.value = '₱';
+                    syncW(this);
+                    window.syncSpmsActiveTab();
+                    AppState.setDirty(true);
+                }
+                if (budgetInput) adjustBudgetFontSize(budgetInput);
+            });
+        }
 
         recalculateForm();
     }
@@ -2415,6 +4106,55 @@
     }
 
     function recalculateForm() {
+        if (window.isCurrentDocIperf) {
+            const rows = document.querySelectorAll('.table-row-core');
+            let sumOfRowAvgs = 0;
+            let count = 0;
+
+            rows.forEach(row => {
+                const q = parseWholeScore(row.querySelector('.field-q')?.value);
+                const t = parseWholeScore(row.querySelector('.field-t')?.value);
+                const e = parseWholeScore(row.querySelector('.field-e')?.value);
+
+                let rowSum = 0;
+                let rowInputs = 0;
+
+                if (q !== null) { rowSum += q; rowInputs++; }
+                if (t !== null) { rowSum += t; rowInputs++; }
+                if (e !== null) { rowSum += e; rowInputs++; }
+
+                let rowAvg = rowInputs > 0 ? (rowSum / rowInputs) : 0;
+                const avgEl = row.querySelector('.field-row-avg');
+                if (avgEl) avgEl.innerText = rowInputs > 0 ? rowAvg.toFixed(2) : '—';
+
+                if (rowInputs > 0) {
+                    sumOfRowAvgs += rowAvg;
+                    count++;
+                }
+            });
+
+            let overallAvg = count > 0 ? (sumOfRowAvgs / count) : 0;
+            const iperfAvgEl = document.getElementById('iperf-overall-average');
+            if (iperfAvgEl) iperfAvgEl.innerText = count > 0 ? overallAvg.toFixed(3) : '0.000';
+
+            let adjectival = getAdjectivalRating(overallAvg, count);
+            const iperfBadgeEl = document.getElementById('iperf-adjectival-badge');
+            if (iperfBadgeEl) {
+                iperfBadgeEl.innerText = adjectival.text;
+                iperfBadgeEl.style.background = adjectival.color;
+            }
+
+            // Sync with grand-score and adjectival-badge
+            const gScoreEl = document.getElementById('grand-score');
+            if (gScoreEl) gScoreEl.innerText = count > 0 ? overallAvg.toFixed(3) : '0.000';
+            const badgeEl = document.getElementById('adjectival-badge');
+            if (badgeEl) {
+                badgeEl.innerText = adjectival.text;
+                badgeEl.style.background = adjectival.color;
+            }
+            return;
+        }
+
         let categoryResults = {
             core: calculateCategory('core'),
             strategic: calculateCategory('strategic'),
@@ -2541,7 +4281,7 @@
             const t = parseWholeScore(row.querySelector('.field-t')?.value);
             const e = parseWholeScore(row.querySelector('.field-e')?.value);
 
-            result.push({
+            const rowData = {
                 row_id: row.dataset.rowId || ('row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7)),
                 mfo: row.querySelector('.field-mfo')?.value || '',
                 indicators: row.querySelector('.field-indicators')?.value || '',
@@ -2550,7 +4290,23 @@
                 t: t !== null ? t : '',
                 e: e !== null ? e : '',
                 remarks: row.querySelector('.field-remarks')?.value || ''
-            });
+            };
+
+            if (window.isCurrentDocDpcr || window.isCurrentDocOpcr) {
+                const bInput = row.querySelector('.field-budget');
+                rowData.budget = bInput?.dataset?.rawValue || bInput?.dataset?.fullValue || bInput?.value.trim() || '';
+                rowData.budget_currency = row.querySelector('.field-budget-currency')?.value.trim() || '₱';
+                rowData.accountable = row.querySelector('.field-accountable')?.value || '';
+            }
+            if (window.isCurrentDocDpcr) {
+                rowData.std_5 = row.querySelector('.field-std-5')?.value || '';
+                rowData.std_4 = row.querySelector('.field-std-4')?.value || '';
+                rowData.std_3 = row.querySelector('.field-std-3')?.value || '';
+                rowData.std_2 = row.querySelector('.field-std-2')?.value || '';
+                rowData.std_1 = row.querySelector('.field-std-1')?.value || '';
+            }
+
+            result.push(rowData);
         });
 
         return result;
@@ -2558,55 +4314,869 @@
 
     window.syncSpmsActiveTab = function() {
         if (!window.isSpmsFormActive) return;
-        const activeTab = tabs.find(t => t.id === activeTabId);
+        const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0];
         if (!activeTab) return;
 
         const getVal = (id) => document.getElementById(id)?.value || '';
 
+        const approversList = extractApprovers();
+
+        const defaultTitle = window.isCurrentDocDpcr 
+            ? 'DEPARTMENT PERFORMANCE COMMITMENT AND REVIEW (DPCR)' 
+            : (window.isCurrentDocOpcr 
+                ? 'OFFICE PERFORMANCE COMMITMENT AND REVIEW (OPCR)' 
+                : (window.isCurrentDocIperf 
+                    ? 'INDIVIDUAL PERFORMANCE EVALUATION RATING FORM FOR CONTRACT OF SERVICE AND JOB ORDER PERSONNEL' 
+                    : 'INDIVIDUAL PERFORMANCE COMMITMENT AND REVIEW'));
         const formData = {
             revisionHistory: activeTab.formData?.revisionHistory || [],
-            title: document.getElementById('spms-doc-title')?.innerText || document.getElementById('doc-title')?.value || 'Individual Performance Commitment and Review (IPCR) — Faculty / Professors',
+            title: document.getElementById('spms-doc-title')?.innerText || document.getElementById('doc-title')?.value || defaultTitle,
+            doc_type: window.isCurrentDocDpcr ? 'dpcr' : (window.isCurrentDocOpcr ? 'opcr' : (window.isCurrentDocIperf ? 'iperf' : (activeTab.formData?.doc_type || 'ipcr'))),
+            currency: document.querySelector('.header-budget-currency')?.value.trim() || '₱',
+            budget_currency: document.querySelector('.header-budget-currency')?.value.trim() || '₱',
+            classification: window.isCurrentDocIperf ? getVal('ratee-classification') : undefined,
+            weights: CATEGORY_WEIGHTS,
             ratee: {
                 name: getVal('ratee-name'),
                 position: getVal('ratee-position'),
                 dept: getVal('ratee-dept'),
                 period: getVal('ratee-period')
             },
-            approver: {
+            approver: approversList[0] || {
                 name: getVal('approver-name'),
                 position: getVal('approver-pos'),
                 date: getVal('approver-date')
             },
+            approvers: approversList,
             rateeSign: {
                 name: getVal('ratee-sign-name'),
                 date: getVal('ratee-sign-date')
             },
             categories: {
                 core: extractRowsData('core'),
-                strategic: extractRowsData('strategic'),
-                support: extractRowsData('support')
+                strategic: window.isCurrentDocIperf ? [] : extractRowsData('strategic'),
+                support: window.isCurrentDocIperf ? [] : extractRowsData('support')
             },
             pmtRemarks: getVal('pmt-remarks'),
-            signatories: {
+            signatories: window.isCurrentDocIperf ? {
+                targetsPreparedName: getVal('sig-targets-prepared-name'),
+                targetsPreparedDate: getVal('sig-targets-prepared-date'),
+                targetsApprovedName: getVal('sig-targets-approved-name'),
+                targetsApprovedDate: getVal('sig-targets-approved-date'),
+                evalRatedName: getVal('sig-eval-rated-name'),
+                evalRatedDate: getVal('sig-eval-rated-date'),
+                evalConformeName: getVal('sig-eval-conforme-name'),
+                evalConformeDate: getVal('sig-eval-conforme-date')
+            } : {
                 ratee: getVal('sig-ratee-name'),
                 rateeDate: getVal('sig-ratee-date'),
                 dean: getVal('sig-dean-name'),
                 deanDate: getVal('sig-dean-date'),
                 vp: getVal('sig-vp-name'),
                 vpDate: getVal('sig-vp-date')
-            }
+            },
+            rubrics: (window.digitalRubricsData || activeTab.formData?.rubrics || {})
         };
 
         activeTab.formData = formData;
         activeTab.content = document.getElementById('printable-form')?.innerHTML || '';
     };
 
+    // -------------------------------------------------------------
+    // DIGITAL RUBRICS MATRIX & ATTACHMENTS ENGINE
+    // -------------------------------------------------------------
+    function getFormDeliverables() {
+        const deliverables = [];
+        const seenRows = new Set();
+
+        const collectFromTbody = (tbodyId, catName) => {
+            const tbody = document.getElementById(tbodyId);
+            if (!tbody) return;
+            tbody.querySelectorAll(`tr.table-row-${catName}, tr[data-row-id], tr[id^="row-"]`).forEach((tr, idx) => {
+                const rowId = tr.dataset.rowId || tr.id || `row-${catName}-${idx}`;
+                if (seenRows.has(rowId)) return;
+                seenRows.add(rowId);
+
+                const mfoEl = tr.querySelector('.field-mfo') || tr.querySelector('.spms-input-mfo') || tr.querySelector('.spms-input-paps');
+                const indEl = tr.querySelector('.field-indicators') || tr.querySelector('.spms-input-indicator') || tr.querySelector('.spms-input-success-indicator');
+                const ppaEl = tr.querySelector('.spms-input-office-ppa');
+                const expEl = tr.querySelector('.spms-input-expected-outputs');
+                
+                const ppa = ppaEl ? ppaEl.value.trim() : '';
+                const exp = expEl ? expEl.value.trim() : '';
+                const mfo = mfoEl ? mfoEl.value.trim() : '';
+                const ind = indEl ? indEl.value.trim() : '';
+                
+                const parts = [mfo, ppa, exp, ind].filter(Boolean);
+                let text = parts.join(' — ');
+                
+                if (!text) {
+                    const firstInput = tr.querySelector('textarea, input[type="text"]');
+                    if (firstInput && firstInput.value.trim()) text = firstInput.value.trim();
+                }
+                
+                deliverables.push({
+                    rowId: rowId,
+                    cat: catName,
+                    title: text || `Deliverable #${deliverables.length + 1}`
+                });
+            });
+        };
+
+        collectFromTbody('tbody-core', 'core');
+        if (!window.isCurrentDocIperf) {
+            collectFromTbody('tbody-strategic', 'strategic');
+            collectFromTbody('tbody-support', 'support');
+        }
+        
+        // Fallback to activeTab.formData if table DOM is not yet populated
+        if (deliverables.length === 0) {
+            const activeTab = tabs[0];
+            const cats = activeTab?.formData?.categories;
+            if (cats) {
+                ['core', 'strategic', 'support'].forEach(cat => {
+                    if (Array.isArray(cats[cat])) {
+                        cats[cat].forEach((r, idx) => {
+                            const ppa = r.office_ppa || '';
+                            const exp = r.expected_outputs || r.indicators || r.success_indicators || '';
+                            const mfo = r.mfo_title || r.paps || '';
+                            const text = [mfo, ppa, exp].filter(Boolean).join(' — ');
+                            deliverables.push({
+                                rowId: r.row_id || `row-${cat}-${idx}`,
+                                cat: cat,
+                                title: text || `Deliverable #${deliverables.length + 1}`
+                            });
+                        });
+                    }
+                });
+            }
+        }
+        return deliverables;
+    }
+
+    function autoResizeTextarea(el) {
+        if (!el) return;
+        el.style.height = 'auto';
+        el.style.height = Math.max(el.scrollHeight, 46) + 'px';
+    }
+
+    // Single Full Sheet Table View (Cards view removed)
+    window.setRubricsViewMode = function() {};
+    window.toggleRubricCard = function() {};
+    window.toggleAllRubricCards = function() {};
+
+    function filterRubricDeliverable(filterKey) {
+        document.querySelectorAll('.rubric-jump-pill').forEach(p => {
+            const isSelected = (p.getAttribute('data-target-filter') === filterKey);
+            if (isSelected) {
+                p.className = 'rubric-jump-pill px-3 py-1.5 rounded-xl font-extrabold bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 transition-all cursor-pointer shrink-0 flex items-center gap-1.5 shadow-xs';
+            } else {
+                p.className = 'rubric-jump-pill px-3 py-1.5 rounded-xl font-bold bg-surface-border/30 hover:bg-surface-border/50 text-text-muted hover:text-text transition-all cursor-pointer shrink-0 flex items-center gap-1.5';
+            }
+        });
+
+        if (filterKey === 'all') {
+            document.querySelectorAll('#digital-rubrics-tbody tr').forEach(tr => tr.classList.remove('hidden'));
+        } else if (['core', 'strategic', 'support'].includes(filterKey)) {
+            document.querySelectorAll('#digital-rubrics-tbody tr').forEach(tr => {
+                const cat = tr.getAttribute('data-category');
+                const isHeader = tr.id === `sheet-category-row-${filterKey}`;
+                if (cat === filterKey || isHeader) {
+                    tr.classList.remove('hidden');
+                } else {
+                    tr.classList.add('hidden');
+                }
+            });
+            const headerRow = document.getElementById(`sheet-category-row-${filterKey}`);
+            if (headerRow) {
+                headerRow.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        } else {
+            // Specific rowId / deliverable
+            document.querySelectorAll('#digital-rubrics-tbody tr').forEach(tr => {
+                const delId = tr.getAttribute('data-deliverable-id');
+                if (!delId || delId === filterKey) {
+                    tr.classList.remove('hidden');
+                } else {
+                    tr.classList.add('hidden');
+                }
+            });
+            const delRow = document.querySelector(`#digital-rubrics-tbody tr[data-deliverable-id="${filterKey}"]`);
+            if (delRow) {
+                delRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    }
+
+    function handleRubricFabClick() {
+        if (window.isCurrentDocIperf) {
+            addDeliverableFromRubrics('core');
+            return;
+        }
+        const menu = document.getElementById('rubric-fab-menu');
+        if (menu) menu.classList.toggle('hidden');
+    }
+
+    function toggleRubricFabMenu(show = false) {
+        const menu = document.getElementById('rubric-fab-menu');
+        if (!menu) return;
+        if (show) menu.classList.remove('hidden');
+        else menu.classList.add('hidden');
+    }
+
+    document.addEventListener('click', (e) => {
+        const fabContainer = document.getElementById('rubric-fab-container');
+        if (fabContainer && !fabContainer.contains(e.target)) {
+            toggleRubricFabMenu(false);
+        }
+    });
+
+    function addDeliverableFromRubrics(category = 'core') {
+        toggleRubricFabMenu(false);
+
+        const newRowId = 'row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7);
+        const rowData = {
+            row_id: newRowId,
+            mfo: "",
+            indicators: "",
+            accomplishments: "",
+            q: "", t: "", e: "",
+            remarks: ""
+        };
+
+        if (typeof addTableRow === 'function') {
+            addTableRow(category, rowData);
+        }
+
+        if (tabs[0]) {
+            if (!tabs[0].formData) tabs[0].formData = {};
+            if (!tabs[0].formData.categories) tabs[0].formData.categories = { core: [], strategic: [], support: [] };
+            if (!tabs[0].formData.categories[category]) tabs[0].formData.categories[category] = [];
+            tabs[0].formData.categories[category].push(rowData);
+        }
+
+        AppState.setDirty(true);
+        renderDigitalRubricsMatrix();
+
+        setTimeout(() => {
+            const rowEl = document.querySelector(`#digital-rubrics-tbody tr[data-deliverable-id="${newRowId}"]`);
+            if (rowEl) {
+                rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                rowEl.classList.add('bg-emerald-500/10');
+                setTimeout(() => rowEl.classList.remove('bg-emerald-500/10'), 2500);
+
+                const titleInput = rowEl.querySelector('.rubric-title-input');
+                if (titleInput) {
+                    titleInput.focus();
+                    titleInput.select();
+                }
+            }
+        }, 80);
+    }
+
+    function syncDeliverableTitleToForm(rowId, newTitle) {
+        const rowEl = document.querySelector(`tr[data-row-id="${rowId}"]`) || document.getElementById(rowId);
+        if (rowEl) {
+            const targetInput = rowEl.querySelector('.field-mfo') || rowEl.querySelector('.spms-input-office-ppa') || rowEl.querySelector('.field-indicators') || rowEl.querySelector('textarea, input[type="text"]');
+            if (targetInput) {
+                targetInput.value = newTitle;
+            }
+        }
+        if (tabs[0]?.formData?.categories) {
+            Object.values(tabs[0].formData.categories).forEach(catRows => {
+                if (Array.isArray(catRows)) {
+                    const found = catRows.find(r => (r.row_id === rowId || r.id === rowId));
+                    if (found) {
+                        if ('mfo' in found) found.mfo = newTitle;
+                        else if ('office_ppa' in found) found.office_ppa = newTitle;
+                        else if ('mfo_title' in found) found.mfo_title = newTitle;
+                    }
+                }
+            });
+        }
+        AppState.setDirty(true);
+    }
+
+    async function deleteDeliverableFromRubrics(rowId) {
+        const ok = await window.appConfirm("Delete this deliverable from both the Target Form and Rubrics Matrix?", {
+            title: 'Delete Deliverable',
+            confirmText: 'Delete',
+            isDanger: true
+        });
+        if (!ok) return;
+
+        const rowEl = document.querySelector(`tr[data-row-id="${rowId}"]`) || document.getElementById(rowId);
+        if (rowEl) rowEl.remove();
+
+        if (window.digitalRubricsData && window.digitalRubricsData[rowId]) {
+            delete window.digitalRubricsData[rowId];
+        }
+        if (tabs[0]?.formData?.rubrics?.[rowId]) {
+            delete tabs[0].formData.rubrics[rowId];
+        }
+
+        if (tabs[0]?.formData?.categories) {
+            ['core', 'strategic', 'support'].forEach(cat => {
+                if (Array.isArray(tabs[0].formData.categories[cat])) {
+                    tabs[0].formData.categories[cat] = tabs[0].formData.categories[cat].filter(r => r.row_id !== rowId && r.id !== rowId);
+                }
+            });
+        }
+
+        AppState.setDirty(true);
+        if (typeof recalculateForm === 'function') recalculateForm();
+        renderDigitalRubricsMatrix();
+    }
+
+    async function clearRubricRow(rowId) {
+        const ok = await window.appConfirm("Clear all scoring criteria for this deliverable?", {
+            title: 'Clear Rubrics',
+            confirmText: 'Clear',
+            isDanger: true
+        });
+        if (!ok) return;
+
+        if (!window.digitalRubricsData) window.digitalRubricsData = tabs[0]?.formData?.rubrics || {};
+        window.digitalRubricsData[rowId] = {
+            5: { q: '', t: '', e: '' },
+            4: { q: '', t: '', e: '' },
+            3: { q: '', t: '', e: '' },
+            2: { q: '', t: '', e: '' },
+            1: { q: '', t: '', e: '' }
+        };
+
+        if (tabs[0]) {
+            if (!tabs[0].formData) tabs[0].formData = {};
+            tabs[0].formData.rubrics = window.digitalRubricsData;
+        }
+
+        AppState.setDirty(true);
+        renderDigitalRubricsMatrix();
+    }
+
+    function updateSingleDeliverableBadge(rowId) {
+        const badge = document.getElementById(`rubric-count-badge-${rowId}`);
+        if (!badge) return;
+        const rowData = (window.digitalRubricsData && window.digitalRubricsData[rowId]) || {};
+        let filled = 0;
+        [5, 4, 3, 2, 1].forEach(sc => {
+            const d = rowData[sc];
+            if (d && (d.q || d.t || d.e)) {
+                if (d.q) filled++;
+                if (d.t) filled++;
+                if (d.e) filled++;
+            }
+        });
+        badge.innerText = `${filled}/15 Defined`;
+        if (filled === 15) {
+            badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30';
+        } else if (filled > 0) {
+            badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30';
+        } else {
+            badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-medium text-text-muted bg-surface-border/40';
+        }
+    }
+    window.updateSingleCardCriteriaBadge = updateSingleDeliverableBadge;
+
+    function renderDigitalRubricsMatrix() {
+        const tbody = document.getElementById('digital-rubrics-tbody');
+        const quickPills = document.getElementById('rubric-quick-jump-pills');
+        const overallProg = document.getElementById('rubric-overall-progress');
+        if (!tbody) return;
+        
+        const deliverables = getFormDeliverables();
+        if (deliverables.length === 0) {
+            const emptyHtml = `
+                <div class="py-14 text-center rounded-2xl bg-surface border border-surface-border p-8 space-y-3">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <h3 class="font-black text-base text-text">No deliverables found on the Commitment Form yet</h3>
+                    <p class="text-xs text-text-muted max-w-md mx-auto leading-relaxed">
+                        Add your committed Major Final Outputs and Expected Outputs under the "Target Form" tab first. They will automatically link here for standard criteria setting.
+                    </p>
+                    <button type="button" onclick="switchEditorTab(tabs[0].id)" class="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-accent text-accent-text hover:bg-accent-hover shadow-sm transition-all cursor-pointer">
+                        <span>Open Target Form</span>
+                    </button>
+                </div>
+            `;
+            tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-text-muted">${emptyHtml}</td></tr>`;
+            if (quickPills) quickPills.innerHTML = '';
+            if (overallProg) overallProg.innerText = '';
+            return;
+        }
+
+        const savedRubrics = window.digitalRubricsData || tabs[0]?.formData?.rubrics || {};
+
+        const isIperf = (typeof window.isCurrentDocIperf !== 'undefined') ? window.isCurrentDocIperf : <?= $isDocIperf ? 'true' : 'false' ?>;
+        const isDpcr = (typeof window.isCurrentDocDpcr !== 'undefined') ? window.isCurrentDocDpcr : <?= $isDocDpcr ? 'true' : 'false' ?>;
+        const isOpcr = (typeof window.isCurrentDocOpcr !== 'undefined') ? window.isCurrentDocOpcr : <?= $isDocOpcr ? 'true' : 'false' ?>;
+
+        const catWeights = {
+            core: isIperf ? '100%' : (isDpcr ? '70%' : (isOpcr ? '70%' : '70%')),
+            strategic: isDpcr ? '30%' : (isOpcr ? '25%' : '20%'),
+            support: isDpcr ? '10%' : (isOpcr ? '15%' : '10%')
+        };
+
+        const catConfigs = {
+            core: {
+                title: isIperf ? 'Committed Outputs' : 'Core Functions',
+                weight: catWeights.core,
+                badge: 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30',
+                dot: 'bg-emerald-500',
+                addBtn: 'border-emerald-500/30 hover:border-emerald-500/60 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+                emptyHint: 'Add your primary operational and mandated deliverables.'
+            },
+            strategic: {
+                title: 'Strategic Functions',
+                weight: catWeights.strategic,
+                badge: 'bg-sky-500/15 text-sky-800 dark:text-sky-300 border-sky-500/30',
+                dot: 'bg-sky-500',
+                addBtn: 'border-sky-500/30 hover:border-sky-500/60 bg-sky-500/5 hover:bg-sky-500/10 text-sky-700 dark:text-sky-300',
+                emptyHint: 'Add strategic priority projects and institutional development targets.'
+            },
+            support: {
+                title: 'Support Functions',
+                weight: catWeights.support,
+                badge: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30',
+                dot: 'bg-amber-500',
+                addBtn: 'border-amber-500/30 hover:border-amber-500/60 bg-amber-500/5 hover:bg-amber-500/10 text-amber-700 dark:text-amber-300',
+                emptyHint: 'Add administrative, cross-functional, or support committee outputs.'
+            }
+        };
+
+        const activeCatKeys = isIperf ? ['core'] : ['core', 'strategic', 'support'];
+
+        const scoreMeta = {
+            5: { label: '5 • Outstanding', hint: 'Exceptional / Top Quality', pill: 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30' },
+            4: { label: '4 • Very Satisfactory', hint: 'Exceeds Target', pill: 'bg-sky-500/15 text-sky-800 dark:text-sky-300 border-sky-500/30' },
+            3: { label: '3 • Satisfactory', hint: '100% Target Standard', pill: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30' },
+            2: { label: '2 • Unsatisfactory', hint: 'Below Target Standard', pill: 'bg-orange-500/15 text-orange-800 dark:text-orange-300 border-orange-500/30' },
+            1: { label: '1 • Poor', hint: 'Fails Standard / Deficient', pill: 'bg-rose-500/15 text-rose-800 dark:text-rose-300 border-rose-500/30' }
+        };
+
+        const readonlyAttr = canEditTargets ? '' : 'readonly disabled';
+        const inputBg = canEditTargets 
+            ? 'bg-input border border-surface-border text-text placeholder:text-text-muted/50 focus:bg-surface focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 shadow-xs' 
+            : 'bg-transparent border border-transparent text-text cursor-default select-text';
+
+        let sheetHtml = '';
+        let totalConfiguredCriteria = 0;
+        const maxPossibleCriteria = deliverables.length * 15;
+
+        // Quick jump category pills
+        if (quickPills) {
+            let pillsHtml = `
+                <button type="button" onclick="filterRubricDeliverable('all')" data-target-filter="all"
+                        class="rubric-jump-pill px-3 py-1.5 rounded-xl font-extrabold bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 transition-all cursor-pointer shrink-0 shadow-xs">
+                    All Outputs (${deliverables.length})
+                </button>
+            `;
+
+            activeCatKeys.forEach(catKey => {
+                const cfg = catConfigs[catKey];
+                const catDelivs = deliverables.filter(d => (d.cat || 'core') === catKey);
+                pillsHtml += `
+                    <button type="button" onclick="filterRubricDeliverable('${catKey}')" data-target-filter="${catKey}"
+                            class="rubric-jump-pill px-3 py-1.5 rounded-xl font-bold bg-surface-border/30 hover:bg-surface-border/50 text-text-muted hover:text-text transition-all cursor-pointer shrink-0 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full ${cfg.dot}"></span>
+                        <span>${cfg.title} (${catDelivs.length})</span>
+                    </button>
+                `;
+            });
+
+            quickPills.innerHTML = pillsHtml;
+        }
+
+        // Build Table Rows per Category
+        activeCatKeys.forEach(catKey => {
+            const cfg = catConfigs[catKey];
+            const catDelivs = deliverables.filter(d => (d.cat || 'core') === catKey);
+
+            let catFilledCriteria = 0;
+            const catMaxCriteria = catDelivs.length * 15;
+
+            catDelivs.forEach(del => {
+                const rowId = del.rowId;
+                const rubricData = savedRubrics[rowId] || {};
+                [5, 4, 3, 2, 1].forEach(sc => {
+                    const s = rubricData[sc];
+                    if (s?.q) catFilledCriteria++;
+                    if (s?.t) catFilledCriteria++;
+                    if (s?.e) catFilledCriteria++;
+                });
+            });
+            totalConfiguredCriteria += catFilledCriteria;
+
+            // Category Header Row
+            sheetHtml += `
+                <tr class="border-t-2 border-b-2 border-surface-border bg-surface-border/25 font-bold" id="sheet-category-row-${catKey}">
+                    <td colspan="5" class="p-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full ${cfg.dot}"></span>
+                                <span class="text-xs font-black uppercase tracking-wider text-text">${cfg.title} (${cfg.weight})</span>
+                                <span class="text-[10px] font-medium text-text-muted">(${catDelivs.length} ${catDelivs.length === 1 ? 'output' : 'outputs'})</span>
+                            </div>
+                            <span class="text-[10px] font-bold text-text-muted">${catFilledCriteria}/${catMaxCriteria} Criteria Defined</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+
+            if (catDelivs.length === 0) {
+                sheetHtml += `
+                    <tr class="border-b border-surface-border" data-category="${catKey}">
+                        <td colspan="5" class="p-4 text-center text-xs text-text-muted italic bg-surface/20">
+                            No deliverables under ${cfg.title} yet.
+                        </td>
+                    </tr>
+                `;
+            } else {
+                catDelivs.forEach((del, dIdx) => {
+                    const rowId = del.rowId;
+                    const rubricData = savedRubrics[rowId] || {};
+                    const catClass = cfg.badge;
+
+                    let rowFilledCount = 0;
+                    [5, 4, 3, 2, 1].forEach(sc => {
+                        const s = rubricData[sc];
+                        if (s?.q) rowFilledCount++;
+                        if (s?.t) rowFilledCount++;
+                        if (s?.e) rowFilledCount++;
+                    });
+
+                    const badgeCompClass = rowFilledCount === 15 
+                        ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30 font-extrabold'
+                        : (rowFilledCount > 0 
+                            ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30 font-extrabold'
+                            : 'bg-surface-border/40 text-text-muted font-medium');
+
+                    [5, 4, 3, 2, 1].forEach((score, sIdx) => {
+                        const scData = rubricData[score] || { q: '', t: '', e: '' };
+                        const meta = scoreMeta[score];
+                        const isFirst = (sIdx === 0);
+
+                        sheetHtml += `<tr class="border-b border-surface-border hover:bg-surface-border/5 transition-colors" data-category="${catKey}" data-deliverable-id="${escapeHtml(rowId)}">`;
+
+                        if (isFirst) {
+                            sheetHtml += `
+                                <td rowspan="5" class="p-3.5 align-top bg-surface-border/10 border-r border-surface-border text-text">
+                                    <div class="space-y-2.5">
+                                        <div class="flex items-center justify-between gap-1 flex-wrap">
+                                            <span class="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border ${catClass}">
+                                                Output #${dIdx + 1} &bull; ${escapeHtml(cfg.title.toUpperCase())}
+                                            </span>
+                                            <span id="rubric-count-badge-${escapeHtml(rowId)}" class="px-2 py-0.5 rounded-full text-[9px] border ${badgeCompClass}">
+                                                ${rowFilledCount}/15 Defined
+                                            </span>
+                                        </div>
+
+                                        ${canEditTargets ? `
+                                        <div>
+                                            <label class="block text-[9px] font-black uppercase tracking-wider text-text-muted mb-1">Deliverable Title / Description</label>
+                                            <textarea rows="2" 
+                                                      placeholder="Enter deliverable description..."
+                                                      oninput="syncDeliverableTitleToForm('${escapeHtml(rowId)}', this.value); autoResizeTextarea(this);"
+                                                      class="rubric-title-input w-full bg-surface-border/20 hover:bg-surface-border/30 focus:bg-surface border border-surface-border/60 focus:border-amber-500 rounded-xl p-2 outline-none text-text font-bold text-xs leading-snug transition-all resize-none">${escapeHtml(del.title)}</textarea>
+                                        </div>
+                                        <div class="flex items-center gap-1.5 pt-1">
+                                            <button type="button" onclick="clearRubricRow('${escapeHtml(rowId)}')"
+                                                    class="px-2 py-1 rounded-lg text-[10px] font-bold text-text-muted hover:text-amber-600 hover:bg-amber-500/10 transition-all cursor-pointer"
+                                                    title="Clear all scoring criteria for this deliverable">
+                                                Clear Criteria
+                                            </button>
+                                            <button type="button" onclick="deleteDeliverableFromRubrics('${escapeHtml(rowId)}')"
+                                                    class="px-2 py-1 rounded-lg text-[10px] font-bold text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer"
+                                                    title="Delete this deliverable from both rubric and target form">
+                                                Delete Output
+                                            </button>
+                                        </div>
+                                        ` : `
+                                        <div class="font-bold text-xs text-text leading-snug break-words">
+                                            ${escapeHtml(del.title)}
+                                        </div>
+                                        `}
+                                    </div>
+                                </td>
+                            `;
+                        }
+
+                        sheetHtml += `
+                            <td class="p-2.5 text-center align-middle border-r border-surface-border">
+                                <div class="flex flex-col items-center gap-1">
+                                    <span class="inline-flex px-2 py-0.5 rounded-lg text-xs font-black border ${meta.pill}">
+                                        ${score}
+                                    </span>
+                                    <span class="text-[9px] text-text-muted font-medium leading-tight">
+                                        ${meta.hint}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="p-2 align-top border-r border-surface-border">
+                                <textarea data-row-id="${escapeHtml(rowId)}" data-score="${score}" data-dim="q" ${readonlyAttr}
+                                          placeholder="${canEditTargets ? 'e.g. No revisions / zero defect...' : '—'}"
+                                          rows="2"
+                                          oninput="autoResizeTextarea(this); onDigitalRubricChange(this)"
+                                          class="w-full text-xs p-2.5 rounded-xl transition-all resize-none leading-relaxed font-sans ${inputBg}">${escapeHtml(scData.q || '')}</textarea>
+                            </td>
+                            <td class="p-2 align-top border-r border-surface-border">
+                                <textarea data-row-id="${escapeHtml(rowId)}" data-score="${score}" data-dim="t" ${readonlyAttr}
+                                          placeholder="${canEditTargets ? 'e.g. within 1–2 working days ahead...' : '—'}"
+                                          rows="2"
+                                          oninput="autoResizeTextarea(this); onDigitalRubricChange(this)"
+                                          class="w-full text-xs p-2.5 rounded-xl transition-all resize-none leading-relaxed font-sans ${inputBg}">${escapeHtml(scData.t || '')}</textarea>
+                            </td>
+                            <td class="p-2 align-top">
+                                <textarea data-row-id="${escapeHtml(rowId)}" data-score="${score}" data-dim="e" ${readonlyAttr}
+                                          placeholder="${canEditTargets ? 'e.g. 100% of target accomplished...' : '—'}"
+                                          rows="2"
+                                          oninput="autoResizeTextarea(this); onDigitalRubricChange(this)"
+                                          class="w-full text-xs p-2.5 rounded-xl transition-all resize-none leading-relaxed font-sans ${inputBg}">${escapeHtml(scData.e || '')}</textarea>
+                            </td>
+                        </tr>`;
+                    });
+                });
+            }
+
+            // Category Add Button
+            if (canEditTargets) {
+                sheetHtml += `
+                    <tr class="border-b border-surface-border" data-category="${catKey}">
+                        <td colspan="5" class="p-2.5 text-center bg-surface-border/10">
+                            <button type="button" onclick="addDeliverableFromRubrics('${catKey}')"
+                                    class="w-full py-2 px-3 rounded-xl border border-dashed ${cfg.addBtn} text-xs font-bold transition-all cursor-pointer">
+                                ＋ Add Deliverable to ${cfg.title}
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
+        });
+
+        tbody.innerHTML = sheetHtml;
+
+        if (overallProg) {
+            const pct = Math.round((totalConfiguredCriteria / maxPossibleCriteria) * 100);
+            overallProg.innerText = `${totalConfiguredCriteria} / ${maxPossibleCriteria} Criteria Configured (${pct}%)`;
+        }
+
+        setTimeout(() => {
+            document.querySelectorAll('#spms-rubrics-workspace textarea').forEach(ta => autoResizeTextarea(ta));
+        }, 50);
+
+        updateRubricsTabBadge();
+    }
+
+    function onDigitalRubricChange(el) {
+        const rowId = el.getAttribute('data-row-id');
+        const score = el.getAttribute('data-score');
+        const dim = el.getAttribute('data-dim');
+        const val = el.value;
+
+        if (!window.digitalRubricsData) {
+            window.digitalRubricsData = tabs[0]?.formData?.rubrics || {};
+        }
+        if (!window.digitalRubricsData[rowId]) {
+            window.digitalRubricsData[rowId] = {};
+        }
+        if (!window.digitalRubricsData[rowId][score]) {
+            window.digitalRubricsData[rowId][score] = { q: '', t: '', e: '' };
+        }
+        window.digitalRubricsData[rowId][score][dim] = val;
+
+        // Keep sibling textarea in sync if both card view and sheet view exist in DOM
+        document.querySelectorAll(`textarea[data-row-id="${rowId}"][data-score="${score}"][data-dim="${dim}"]`).forEach(sibling => {
+            if (sibling !== el && sibling.value !== val) {
+                sibling.value = val;
+                autoResizeTextarea(sibling);
+            }
+        });
+
+        if (tabs[0]) {
+            if (!tabs[0].formData) tabs[0].formData = {};
+            tabs[0].formData.rubrics = window.digitalRubricsData;
+        }
+
+        updateSingleCardCriteriaBadge(rowId);
+
+        AppState.setDirty(true);
+        updateRubricsTabBadge();
+    }
+
+    window.syncDigitalRubricsData = function() {
+        const container = document.getElementById('spms-rubrics-workspace');
+        if (!container) return;
+
+        if (!window.digitalRubricsData) {
+            window.digitalRubricsData = tabs[0]?.formData?.rubrics || {};
+        }
+
+        container.querySelectorAll('textarea[data-row-id]').forEach(ta => {
+            const rowId = ta.getAttribute('data-row-id');
+            const score = ta.getAttribute('data-score');
+            const dim = ta.getAttribute('data-dim');
+            const val = ta.value;
+
+            if (!window.digitalRubricsData[rowId]) {
+                window.digitalRubricsData[rowId] = {};
+            }
+            if (!window.digitalRubricsData[rowId][score]) {
+                window.digitalRubricsData[rowId][score] = { q: '', t: '', e: '' };
+            }
+            window.digitalRubricsData[rowId][score][dim] = val;
+        });
+
+        if (tabs[0]) {
+            if (!tabs[0].formData) tabs[0].formData = {};
+            tabs[0].formData.rubrics = window.digitalRubricsData;
+        }
+
+        updateRubricsTabBadge();
+    };
+
+    function renderRubricAttachmentCard() {
+        const fileCard = document.getElementById('rubric-attached-file-card');
+        const statusBadge = document.getElementById('rubric-file-status-badge');
+        const nameEl = document.getElementById('rubric-file-name');
+        const metaEl = document.getElementById('rubric-file-meta');
+        const dlLink = document.getElementById('rubric-file-download-link');
+        const viewBtn = document.getElementById('rubric-file-view-btn');
+
+        const rubrics = window.rubricAttachments || [];
+        const active = rubrics.length > 0 ? rubrics[rubrics.length - 1] : null;
+
+        if (active) {
+            fileCard?.classList.remove('hidden');
+            if (nameEl) nameEl.textContent = active.file_name;
+            if (metaEl) metaEl.textContent = `${active.formatted_size || ''} • Uploaded on ${active.created_at || ''}`;
+            if (dlLink) dlLink.href = '<?= site_url('attachments/download/') ?>' + active.id;
+            if (viewBtn) {
+                viewBtn.onclick = () => {
+                    window.open('<?= site_url('attachments/view/') ?>' + active.id, '_blank');
+                };
+            }
+            if (statusBadge) {
+                statusBadge.innerHTML = `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">File Attached</span>`;
+            }
+        } else {
+            fileCard?.classList.add('hidden');
+            if (statusBadge) {
+                statusBadge.innerHTML = `<span class="px-2 py-0.5 rounded-full text-[10px] font-medium text-text-muted bg-surface-border/30">No File Attached</span>`;
+            }
+        }
+        updateRubricsTabBadge();
+    }
+
+    async function handleRubricFileSelect(input) {
+        if (input.files && input.files[0]) {
+            await uploadRubricAttachment(input.files[0]);
+            input.value = '';
+        }
+    }
+
+    function handleRubricDrop(e) {
+        e.preventDefault();
+        const dt = document.getElementById('rubric-drop-target');
+        dt?.classList.remove('border-emerald-500', 'bg-emerald-500/5');
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+            uploadRubricAttachment(e.dataTransfer.files[0]);
+        }
+    }
+
+    async function uploadRubricAttachment(file) {
+        const progressEl = document.getElementById('rubric-upload-progress');
+        try {
+            progressEl?.classList.remove('hidden');
+            const formData = new FormData();
+            formData.append('document_id', '<?= $doc['id'] ?>');
+            formData.append('row_id', 'rubric');
+            formData.append('file', file);
+
+            const res = await axios.post('<?= site_url('attachments/upload') ?>', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            if (res.data?.status === 'success') {
+                window.rubricAttachments = [res.data.attachment];
+                renderRubricAttachmentCard();
+            } else {
+                alert(res.data?.message || 'Upload failed.');
+            }
+        } catch (err) {
+            console.error('Rubric upload error:', err);
+            alert(err.response?.data?.message || 'Failed to upload rubric document.');
+        } finally {
+            progressEl?.classList.add('hidden');
+        }
+    }
+
+    async function deleteRubricAttachment() {
+        const rubrics = window.rubricAttachments || [];
+        const active = rubrics.length > 0 ? rubrics[rubrics.length - 1] : null;
+        if (!active) return;
+
+        const ok = await window.appConfirm('Are you sure you want to remove this attached rubric file?', {
+            title: 'Remove Rubric File',
+            confirmText: 'Remove',
+            isDanger: true
+        });
+        if (!ok) return;
+
+        try {
+            const res = await axios.delete('<?= site_url('attachments/') ?>' + active.id);
+            if (res.data?.status === 'success') {
+                window.rubricAttachments = [];
+                renderRubricAttachmentCard();
+            }
+        } catch (err) {
+            console.error('Delete error:', err);
+            alert('Failed to remove attachment.');
+        }
+    }
+
+    function updateRubricsTabBadge() {
+        const badge = document.getElementById('tab-rubrics-badge');
+        if (!badge) return;
+
+        const hasFile = (window.rubricAttachments && window.rubricAttachments.length > 0);
+        const rubricsData = window.digitalRubricsData || tabs[0]?.formData?.rubrics || {};
+        let criteriaCount = 0;
+        Object.values(rubricsData).forEach(scores => {
+            if (typeof scores === 'object') {
+                Object.values(scores).forEach(s => {
+                    if (s && (s.q || s.t || s.e)) criteriaCount++;
+                });
+            }
+        });
+
+        if (hasFile && criteriaCount > 0) {
+            badge.innerHTML = 'Matrix &amp; File Configured';
+            badge.className = 'px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30';
+        } else if (hasFile) {
+            badge.innerHTML = 'File Attached';
+            badge.className = 'px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30';
+        } else if (criteriaCount > 0) {
+            badge.innerHTML = `${criteriaCount} Criteria Set`;
+            badge.className = 'px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30';
+        } else {
+            badge.innerHTML = 'Needs Rubrics';
+            badge.className = 'px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30';
+        }
+    }
+
     // Attach input listeners on header and signatory inputs for autosave
     document.addEventListener('DOMContentLoaded', () => {
         const pf = document.getElementById('printable-form');
         if (pf) {
-            pf.querySelectorAll('input, textarea').forEach(el => {
+            pf.querySelectorAll('input, textarea, select').forEach(el => {
                 el.addEventListener('input', () => {
+                    window.syncSpmsActiveTab();
+                    AppState.setDirty(true);
+                });
+                el.addEventListener('change', () => {
                     window.syncSpmsActiveTab();
                     AppState.setDirty(true);
                 });
@@ -2672,12 +5242,21 @@
         }
     }
 
-    // Auto-expand textareas before printing when triggered via browser Ctrl+P
+    // Auto-expand textareas before printing
     window.addEventListener('beforeprint', () => {
         document.querySelectorAll('#printable-form textarea, #basis-printable-sheet textarea').forEach(ta => {
             ta.style.height = 'auto';
             ta.style.height = Math.max(ta.scrollHeight, 38) + 'px';
         });
+        document.querySelectorAll('.field-budget').forEach(input => {
+            if (input.dataset && input.dataset.fullValue) {
+                input.value = input.dataset.fullValue;
+            }
+        });
+    });
+
+    window.addEventListener('afterprint', () => {
+        document.querySelectorAll('.field-budget').forEach(adjustBudgetFontSize);
     });
 
     function renderBasisStaticSheet() {
@@ -2703,39 +5282,8 @@
         const sheetTitleEl = document.getElementById('basis-sheet-title');
         if (sheetTitleEl) sheetTitleEl.innerText = titleText;
 
-        const setText = (id, val, fallback = '—') => {
-            const el = document.getElementById(id);
-            if (el) el.innerText = (val !== undefined && val !== null && String(val).trim() !== '') ? val : fallback;
-        };
-
-        const supName = (superiorUserInfo?.first_name ? `${superiorUserInfo.first_name} ${superiorUserInfo.last_name}` : '');
-        const supPos = superiorUserInfo?.position || 'Supervisor';
-        const supDept = superiorUserInfo?.department || '';
-
-        setText('basis-val-ratee-name', data.ratee?.name || supName, supName || 'Higher Authority');
-        setText('basis-val-ratee-pos', data.ratee?.position || supPos, supPos);
-        setText('basis-val-ratee-dept', data.ratee?.dept || supDept, supDept || 'Office / Division');
-        setText('basis-val-ratee-period', data.ratee?.period, 'Current Rating Period');
-
-        setText('basis-val-approver-name', data.approver?.name);
-        setText('basis-val-approver-pos', data.approver?.position);
-        setText('basis-val-approver-date', data.approver?.date);
-
-        setText('basis-val-ratee-sign', data.rateeSign?.name || data.ratee?.name || supName, supName || 'Higher Authority');
-        setText('basis-val-ratee-sign-pos', data.ratee?.position || supPos, supPos);
-        setText('basis-val-ratee-sign-date', data.rateeSign?.date);
-
-        const isOpcr = titleText.toUpperCase().includes('OPCR') || titleText.toUpperCase().includes('OFFICE');
-        const isDpcr = titleText.toUpperCase().includes('DPCR') || titleText.toUpperCase().includes('DIVISION') || titleText.toUpperCase().includes('DEPARTMENT');
-
-        const catLabels = {
-            core: isOpcr ? "1. Core Office Mandate (60%)" : (isDpcr ? "1. Core Division Functions (60%)" : "1. Core Functions (70%)"),
-            strategic: isOpcr ? "2. Strategic Functions (25%)" : (isDpcr ? "2. Strategic Functions (25%)" : "2. Strategic Functions (20%)"),
-            support: isOpcr ? "3. Support Functions (15%)" : (isDpcr ? "3. Support Functions (15%)" : "3. Support Functions (10%)")
-        };
-
         const escapeHtml = (str) => {
-            if (!str) return '—';
+            if (!str) return '';
             return String(str)
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
@@ -2743,6 +5291,172 @@
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#039;');
         };
+
+        const setVal = (id, val, fallback = '') => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const finalVal = (val !== undefined && val !== null && String(val).trim() !== '' && String(val).trim() !== '—') ? String(val).trim() : fallback;
+            if ('value' in el) {
+                el.value = finalVal;
+                el.removeAttribute('placeholder');
+            } else {
+                el.innerText = finalVal;
+            }
+        };
+
+        // In the cascaded basis, if original owner kept fields empty, do not fallback-fill; keep them empty!
+        setVal('basis-val-ratee-name', data.ratee?.name || '');
+        setVal('basis-val-ratee-pos', data.ratee?.position || '');
+        setVal('basis-val-ratee-dept', data.ratee?.dept || '');
+        setVal('basis-val-ratee-period', data.ratee?.period || '');
+
+        const approversContainer = document.getElementById('basis-approvers-container');
+        if (data.approvers && data.approvers.length > 0 && approversContainer) {
+            approversContainer.innerHTML = data.approvers.map((a, idx) => `
+                <div class="approver-item" style="${idx > 0 ? 'border-top: 1px dashed #cbd5e1; margin-top: 6px; padding-top: 6px;' : ''} position: relative;">
+                    <table style="width: 100%; border-collapse: collapse; border: none; font-size: 11px;">
+                        <tr>
+                            <td style="width: 65px; border: none; padding: 3px 0; font-weight: bold; color: #000000;">Name:</td>
+                            <td style="border: none; padding: 3px 0;">
+                                <input type="text" readonly value="${a.name ? escapeHtml(a.name) : ''}" style="font-weight: bold; color: #000000; border: none; border-bottom: 1px solid #94a3b8; outline: none; font-size: 11px; width: 60%; background: transparent; font-family: inherit;">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="width: 65px; border: none; padding: 3px 0; font-weight: bold; color: #000000;">Position:</td>
+                            <td style="border: none; padding: 3px 0;">
+                                <input type="text" readonly value="${a.position ? escapeHtml(a.position) : ''}" style="color: #000000; border: none; border-bottom: 1px solid #94a3b8; outline: none; font-size: 11px; width: 80%; background: transparent; font-family: inherit;">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="width: 65px; border: none; padding: 3px 0; font-weight: bold; color: #000000;">Date:</td>
+                            <td style="border: none; padding: 3px 0;">
+                                <input type="text" readonly value="${a.date ? escapeHtml(a.date) : ''}" style="color: #000000; border: none; border-bottom: 1px solid #94a3b8; outline: none; font-size: 11px; width: 130px; background: transparent; font-family: inherit;">
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            `).join('');
+        } else {
+            setVal('basis-val-approver-name', data.approver?.name || '');
+            setVal('basis-val-approver-pos', data.approver?.position || '');
+            setVal('basis-val-approver-date', data.approver?.date || '');
+        }
+
+        setVal('basis-val-ratee-sign', data.rateeSign?.name || '');
+        const posEl = document.getElementById('basis-val-ratee-sign-pos');
+        if (posEl) posEl.innerText = 'Name of Employee';
+        setVal('basis-val-ratee-sign-date', data.rateeSign?.date || '');
+
+        const isOpcr = titleText.toUpperCase().includes('OPCR') || titleText.toUpperCase().includes('OFFICE') || (data.doc_type && data.doc_type.toUpperCase() === 'OPCR');
+        const isDpcr = titleText.toUpperCase().includes('DPCR') || titleText.toUpperCase().includes('DIVISION') || titleText.toUpperCase().includes('DEPARTMENT') || (data.doc_type && data.doc_type.toUpperCase() === 'DPCR');
+
+        const colCountBadge = document.getElementById('basis-col-count-badge');
+        if (colCountBadge) colCountBadge.innerText = (isOpcr || isDpcr) ? '10 Columns' : '8 Columns';
+
+        // Dynamically update thead and colgroup of basis-printable-sheet
+        const colgroupEl = document.getElementById('basis-table-colgroup');
+        const theadEl = document.getElementById('basis-table-thead');
+        if (colgroupEl && theadEl) {
+            if (isOpcr) {
+                colgroupEl.innerHTML = `
+                    <col style="width: 15%;">
+                    <col style="width: 17%;">
+                    <col style="width: 11%;">
+                    <col style="width: 13%;">
+                    <col style="width: 18%;">
+                    <col style="width: 3.5%;">
+                    <col style="width: 3.5%;">
+                    <col style="width: 3.5%;">
+                    <col style="width: 4.5%;">
+                    <col style="width: 11%;">
+                `;
+                theadEl.innerHTML = `
+                    <tr style="background-color: #fff2cc; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
+                        <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">PROJECT / PROGRAM / ACTIVITIES</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">SUCCESS INDICATORS<br><span style="font-weight: normal; font-size: 9px;">(TARGETS + MEASURES)</span></th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ALLOTTED BUDGET</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">DIVISIONS ACCOUNTABLE</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENTS</th>
+                        <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
+                    </tr>
+                    <tr style="background-color: #fff2cc; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                        <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
+                        <th style="border: 1px solid #000; padding: 4px 2px;">T</th>
+                        <th style="border: 1px solid #000; padding: 4px 2px;">E</th>
+                        <th style="border: 1px solid #000; padding: 4px 2px;">Ave.</th>
+                    </tr>
+                `;
+            } else if (isDpcr) {
+                colgroupEl.innerHTML = `
+                    <col style="width: 15%;">
+                    <col style="width: 17%;">
+                    <col style="width: 11%;">
+                    <col style="width: 13%;">
+                    <col style="width: 18%;">
+                    <col style="width: 3.5%;">
+                    <col style="width: 3.5%;">
+                    <col style="width: 3.5%;">
+                    <col style="width: 4.5%;">
+                    <col style="width: 11%;">
+                `;
+                theadEl.innerHTML = `
+                    <tr style="background-color: #cfe2f3; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
+                        <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">PROGRAMS, PROJECTS, ACTIVITIES</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">SUCCESS INDICATORS<br><span style="font-weight: normal; font-size: 9px;">(TARGETS + MEASURES)</span></th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ALLOTTED BUDGET</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">INDIVIDUALS / OFFICES ACCOUNTABLE</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENTS</th>
+                        <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
+                    </tr>
+                    <tr style="background-color: #cfe2f3; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                        <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
+                        <th style="border: 1px solid #000; padding: 4px 2px;">T</th>
+                        <th style="border: 1px solid #000; padding: 4px 2px;">E</th>
+                        <th style="border: 1px solid #000; padding: 4px 2px;">Ave.</th>
+                    </tr>
+                `;
+            } else {
+                colgroupEl.innerHTML = `
+                    <col style="width: 25%;">
+                    <col style="width: 25%;">
+                    <col style="width: 24%;">
+                    <col style="width: 4%;">
+                    <col style="width: 4%;">
+                    <col style="width: 4%;">
+                    <col style="width: 5%;">
+                    <col style="width: 9%;">
+                `;
+                theadEl.innerHTML = `
+                    <tr style="background: #f1f5f9; text-align: center; font-weight: bold; border-bottom: 1px solid #000;">
+                        <th rowspan="2" style="padding: 8px; border: 1px solid #000;">ACADEMIC FUNCTION /<br>MAJOR FINAL OUTPUT</th>
+                        <th rowspan="2" style="padding: 8px; border: 1px solid #000;">SUCCESS INDICATORS<br><span style="font-size: 9px; font-weight: normal;">(Targets + Measures)</span></th>
+                        <th rowspan="2" style="padding: 8px; border: 1px solid #000;">ACTUAL ACCOMPLISHMENTS</th>
+                        <th colspan="4" style="padding: 4px; border: 1px solid #000;">RATING</th>
+                        <th rowspan="2" style="padding: 8px; border: 1px solid #000;">REMARKS</th>
+                    </tr>
+                    <tr style="background: #f1f5f9; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                        <th style="padding: 4px; border: 1px solid #000;">Q</th>
+                        <th style="padding: 4px; border: 1px solid #000;">T</th>
+                        <th style="padding: 4px; border: 1px solid #000;">E</th>
+                        <th style="padding: 4px; border: 1px solid #000;">Ave.</th>
+                    </tr>
+                `;
+            }
+        }
+
+        const catLabels = {
+            core: isOpcr ? "1. Core Office Mandate (60%)" : (isDpcr ? "1. Core Division Functions (60%)" : "1. Core Functions (70%)"),
+            strategic: isOpcr ? "2. Strategic Functions (25%)" : (isDpcr ? "2. Strategic Functions (25%)" : "2. Strategic Functions (20%)"),
+            support: isOpcr ? "3. Support Functions (15%)" : (isDpcr ? "3. Support Functions (15%)" : "3. Support Functions (10%)")
+        };
+
+        const colCount = (isOpcr || isDpcr) ? 10 : 8;
+        const colTitleSpan = (isOpcr || isDpcr) ? 6 : 5;
+        const colBadgeSpan = (isOpcr || isDpcr) ? 4 : 3;
+
+
 
         ['core', 'strategic', 'support'].forEach(cat => {
             const tbody = document.getElementById(`basis-tbody-${cat}`);
@@ -2753,10 +5467,10 @@
             const trHeader = document.createElement('tr');
             trHeader.style.cssText = 'background: #f8fafc; border-top: 2px solid #000; border-bottom: 1px solid #000;';
             trHeader.innerHTML = `
-                <td colspan="5" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a;">
+                <td colspan="${colTitleSpan}" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a;">
                     ${catLabels[cat]}
                 </td>
-                <td colspan="3" style="padding: 6px 12px; text-align: right;">
+                <td colspan="${colBadgeSpan}" style="padding: 6px 12px; text-align: right;">
                     <span style="display: inline-block; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 800; font-size: 10px; padding: 2px 6px; border-radius: 4px;">
                         Cascaded Deliverables
                     </span>
@@ -2769,7 +5483,7 @@
                 const trEmpty = document.createElement('tr');
                 trEmpty.style.cssText = 'border-bottom: 1px solid #000;';
                 trEmpty.innerHTML = `
-                    <td colspan="8" style="padding: 12px; text-align: center; color: #94a3b8; font-style: italic; font-size: 11px;">
+                    <td colspan="${colCount}" style="padding: 12px; text-align: center; color: #94a3b8; font-style: italic; font-size: 11px;">
                         No deliverables entered for this category.
                     </td>
                 `;
@@ -2778,32 +5492,73 @@
                 rows.forEach(r => {
                     const tr = document.createElement('tr');
                     tr.style.cssText = 'border-bottom: 1px solid #000;';
-                    tr.innerHTML = `
-                        <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; color: #0f172a; line-height: 1.5;">
-                            ${escapeHtml(r.mfo)}
-                        </td>
-                        <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; color: #0f172a; font-weight: 600; line-height: 1.5;">
-                            ${escapeHtml(r.indicators)}
-                        </td>
-                        <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; color: #334155; line-height: 1.5;">
-                            ${escapeHtml(r.accomplishments)}
-                        </td>
-                        <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: bold; font-size: 11px;">
-                            ${r.q || '—'}
-                        </td>
-                        <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: bold; font-size: 11px;">
-                            ${r.t || '—'}
-                        </td>
-                        <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: bold; font-size: 11px;">
-                            ${r.e || '—'}
-                        </td>
-                        <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: 900; color: #0369a1; background: #f0f9ff; font-size: 11px;">
-                            ${r.ave || '—'}
-                        </td>
-                        <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 10px; color: #475569;">
-                            ${escapeHtml(r.remarks)}
-                        </td>
-                    `;
+                    if (isOpcr || isDpcr) {
+                        const budgetRaw = (r.budget !== undefined && r.budget !== null && String(r.budget).trim() !== '')
+                            ? parseFloat(String(r.budget).replace(/,/g, ''))
+                            : null;
+                        const budgetFormatted = (budgetRaw !== null && !isNaN(budgetRaw))
+                            ? `${escapeHtml(r.budget_currency || '₱')} ${formatBudgetFull(budgetRaw)}`
+                            : '—';
+                        tr.innerHTML = `
+                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; color: #0f172a; line-height: 1.5;">
+                                ${escapeHtml(r.mfo)}
+                            </td>
+                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; color: #0f172a; font-weight: 600; line-height: 1.5;">
+                                ${escapeHtml(r.indicators)}
+                            </td>
+                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; text-align: right; color: #0f172a; font-weight: 600; line-height: 1.5;">
+                                ${budgetFormatted}
+                            </td>
+                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; color: #334155; line-height: 1.5;">
+                                ${escapeHtml(r.accountable || '')}
+                            </td>
+                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; color: #334155; line-height: 1.5;">
+                                ${escapeHtml(r.accomplishments)}
+                            </td>
+                            <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: bold; font-size: 11px;">
+                                ${r.q || '—'}
+                            </td>
+                            <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: bold; font-size: 11px;">
+                                ${r.t || '—'}
+                            </td>
+                            <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: bold; font-size: 11px;">
+                                ${r.e || '—'}
+                            </td>
+                            <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: 900; color: #0369a1; background: #f0f9ff; font-size: 11px;">
+                                ${r.ave || '—'}
+                            </td>
+                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 10px; color: #475569;">
+                                ${escapeHtml(r.remarks)}
+                            </td>
+                        `;
+                    } else {
+                        tr.innerHTML = `
+                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; color: #0f172a; line-height: 1.5;">
+                                ${escapeHtml(r.mfo)}
+                            </td>
+                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; color: #0f172a; font-weight: 600; line-height: 1.5;">
+                                ${escapeHtml(r.indicators)}
+                            </td>
+                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; color: #334155; line-height: 1.5;">
+                                ${escapeHtml(r.accomplishments)}
+                            </td>
+                            <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: bold; font-size: 11px;">
+                                ${r.q || '—'}
+                            </td>
+                            <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: bold; font-size: 11px;">
+                                ${r.t || '—'}
+                            </td>
+                            <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: bold; font-size: 11px;">
+                                ${r.e || '—'}
+                            </td>
+                            <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: 900; color: #0369a1; background: #f0f9ff; font-size: 11px;">
+                                ${r.ave || '—'}
+                            </td>
+                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 10px; color: #475569;">
+                                ${escapeHtml(r.remarks)}
+                            </td>
+                        `;
+                    }
                     tbody.appendChild(tr);
                 });
             }
@@ -2813,6 +5568,7 @@
     // Launch active view on page load
     document.addEventListener('DOMContentLoaded', () => {
         initActiveTabView();
+        updateRubricsTabBadge();
         if (new URLSearchParams(window.location.search).get('print') === '1') {
             setTimeout(() => exportToPdf(), 700);
         }

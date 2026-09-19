@@ -79,7 +79,593 @@
                 <!-- 1. MY SUBMISSIONS TAB -->
                 <div id="tab-content-mine" class="tab-content-doc flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar" style="background-color: #02160e; padding: 24px 28px;">
                     
-                    <?php if (empty($myDocs)): ?>
+                    <style>
+                        /* BSU SPMS Official Paper Hub - Exact Mockup Styles */
+                        .spms-hub-card {
+                            background-color: #032115 !important;
+                            border: 1px solid #0d4a32 !important;
+                            border-radius: 16px !important;
+                            padding: 32px 36px !important;
+                            box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.6) !important;
+                            position: relative !important;
+                            overflow: hidden !important;
+                            width: 100% !important;
+                        }
+
+                        .spms-hub-kicker {
+                            color: #f59e0b !important;
+                            font-size: 11px !important;
+                            font-weight: 800 !important;
+                            letter-spacing: 0.08em !important;
+                            text-transform: uppercase !important;
+                            margin-bottom: 8px !important;
+                            display: block !important;
+                        }
+
+                        .spms-hub-title {
+                            color: #ffffff !important;
+                            font-size: 24px !important;
+                            font-weight: 800 !important;
+                            letter-spacing: -0.01em !important;
+                            line-height: 1.25 !important;
+                            margin: 0 !important;
+                        }
+                        @media (min-width: 640px) {
+                            .spms-hub-title {
+                                font-size: 27px !important;
+                            }
+                        }
+
+                        .spms-hub-subtitle {
+                            color: #5a8b73 !important;
+                            font-size: 13px !important;
+                            font-weight: 500 !important;
+                            margin-top: 8px !important;
+                            margin-bottom: 0 !important;
+                        }
+
+                        .spms-hub-subtitle-val {
+                            color: #ffffff !important;
+                            font-weight: 700 !important;
+                        }
+
+                        .spms-hub-status-pill {
+                            background-color: #083321 !important;
+                            border: 1px solid #115337 !important;
+                            color: #f59e0b !important;
+                            border-radius: 9999px !important;
+                            padding: 6px 14px !important;
+                            font-size: 11px !important;
+                            font-weight: 800 !important;
+                            letter-spacing: 0.06em !important;
+                            text-transform: uppercase !important;
+                            display: inline-flex !important;
+                            align-items: center !important;
+                            gap: 8px !important;
+                            white-space: nowrap !important;
+                        }
+
+                        .spms-hub-status-dot {
+                            width: 7px !important;
+                            height: 7px !important;
+                            border-radius: 9999px !important;
+                            background-color: #f59e0b !important;
+                            display: inline-block !important;
+                        }
+
+                        .spms-hub-tracker-label {
+                            color: #5a8b73 !important;
+                            font-size: 11px !important;
+                            font-weight: 800 !important;
+                            letter-spacing: 0.08em !important;
+                            text-transform: uppercase !important;
+                            margin-top: 28px !important;
+                            margin-bottom: 16px !important;
+                            display: block !important;
+                        }
+
+                        .spms-hub-stepper-row {
+                            display: flex !important;
+                            align-items: center !important;
+                            gap: 12px !important;
+                            overflow-x: auto !important;
+                            padding-bottom: 6px !important;
+                            margin-bottom: 28px !important;
+                        }
+
+                        .spms-hub-circle-active {
+                            width: 26px !important;
+                            height: 26px !important;
+                            border-radius: 9999px !important;
+                            background-color: #f59e0b !important;
+                            border: none !important;
+                            display: flex !important;
+                            align-items: center !important;
+                            justify-content: center !important;
+                            flex-shrink: 0 !important;
+                        }
+
+                        .spms-hub-circle-active-dot {
+                            width: 8px !important;
+                            height: 8px !important;
+                            border-radius: 9999px !important;
+                            background-color: #032115 !important;
+                        }
+
+                        .spms-hub-circle-inactive {
+                            width: 26px !important;
+                            height: 26px !important;
+                            border-radius: 9999px !important;
+                            border: 1.5px solid #145235 !important;
+                            background-color: transparent !important;
+                            display: flex !important;
+                            align-items: center !important;
+                            justify-content: center !important;
+                            flex-shrink: 0 !important;
+                        }
+
+                        .spms-hub-circle-completed {
+                            width: 26px !important;
+                            height: 26px !important;
+                            border-radius: 9999px !important;
+                            background-color: #10b981 !important;
+                            border: none !important;
+                            color: #ffffff !important;
+                            display: flex !important;
+                            align-items: center !important;
+                            justify-content: center !important;
+                            flex-shrink: 0 !important;
+                        }
+
+                        .spms-hub-step-text-active {
+                            color: #ffffff !important;
+                            font-size: 13px !important;
+                            font-weight: 700 !important;
+                            white-space: nowrap !important;
+                            margin-left: 8px !important;
+                        }
+
+                        .spms-hub-step-text-inactive {
+                            color: #5a8b73 !important;
+                            font-size: 13px !important;
+                            font-weight: 500 !important;
+                            white-space: nowrap !important;
+                            margin-left: 8px !important;
+                        }
+
+                        .spms-hub-stat-grid {
+                            display: grid !important;
+                            grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+                            gap: 16px !important;
+                            margin-bottom: 28px !important;
+                        }
+                        @media (min-width: 768px) {
+                            .spms-hub-stat-grid {
+                                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+                            }
+                        }
+
+                        .spms-hub-stat-tile {
+                            background-color: #062e1e !important;
+                            border: 1px solid #0d4a32 !important;
+                            border-radius: 14px !important;
+                            padding: 20px 24px !important;
+                            display: flex !important;
+                            flex-direction: column !important;
+                            justify-content: space-between !important;
+                            min-height: 136px !important;
+                        }
+
+                        .spms-hub-tile-label {
+                            color: #5a8b73 !important;
+                            font-size: 12px !important;
+                            font-weight: 600 !important;
+                            margin: 0 !important;
+                        }
+
+                        .spms-hub-tile-value {
+                            color: #ffffff !important;
+                            font-size: 16px !important;
+                            font-weight: 700 !important;
+                            margin-top: 6px !important;
+                            margin-bottom: 0 !important;
+                        }
+
+                        .spms-hub-window-pill {
+                            background-color: #083b27 !important;
+                            border: 1px solid #10593b !important;
+                            color: #34d399 !important;
+                            font-size: 11px !important;
+                            font-weight: 700 !important;
+                            padding: 4px 12px !important;
+                            border-radius: 9999px !important;
+                            display: inline-flex !important;
+                            align-items: center !important;
+                            gap: 7px !important;
+                            width: fit-content !important;
+                            margin-top: 14px !important;
+                        }
+
+                        .spms-hub-tile-dash {
+                            width: 34px !important;
+                            height: 3px !important;
+                            background-color: #1e5a3e !important;
+                            border-radius: 9999px !important;
+                            margin-top: 20px !important;
+                        }
+
+                        .spms-hub-tile-btn {
+                            background-color: #083b27 !important;
+                            border: 1px solid #11593b !important;
+                            color: #82c8a6 !important;
+                            font-size: 12px !important;
+                            font-weight: 600 !important;
+                            padding: 6px 16px !important;
+                            border-radius: 8px !important;
+                            cursor: pointer !important;
+                            width: fit-content !important;
+                            margin-top: 14px !important;
+                            text-decoration: none !important;
+                            display: inline-block !important;
+                            transition: all 0.15s ease !important;
+                        }
+                        .spms-hub-tile-btn:hover {
+                            background-color: #0c4d33 !important;
+                            color: #ffffff !important;
+                            border-color: #176a46 !important;
+                        }
+
+                        .spms-hub-actions-bar {
+                            display: flex !important;
+                            align-items: center !important;
+                            gap: 12px !important;
+                            flex-wrap: wrap !important;
+                        }
+
+                        .spms-hub-btn-primary {
+                            background-color: #f59e0b !important;
+                            color: #000000 !important;
+                            font-size: 12px !important;
+                            font-weight: 900 !important;
+                            letter-spacing: 0.05em !important;
+                            text-transform: uppercase !important;
+                            padding: 14px 26px !important;
+                            border-radius: 12px !important;
+                            border: none !important;
+                            cursor: pointer !important;
+                            text-decoration: none !important;
+                            display: inline-flex !important;
+                            align-items: center !important;
+                            justify-content: center !important;
+                            transition: all 0.15s ease !important;
+                        }
+                        .spms-hub-btn-primary:hover {
+                            background-color: #e08e06 !important;
+                            color: #000000 !important;
+                        }
+
+                        .spms-hub-btn-secondary {
+                            background-color: #083b27 !important;
+                            border: 1px solid #11593b !important;
+                            color: #ffffff !important;
+                            font-size: 12px !important;
+                            font-weight: 700 !important;
+                            padding: 13px 22px !important;
+                            border-radius: 12px !important;
+                            cursor: pointer !important;
+                            text-decoration: none !important;
+                            display: inline-flex !important;
+                            align-items: center !important;
+                            justify-content: center !important;
+                            transition: all 0.15s ease !important;
+                        }
+                        .spms-hub-btn-secondary:hover {
+                            background-color: #0c4d33 !important;
+                            border-color: #176a46 !important;
+                            color: #ffffff !important;
+                        }
+
+                        /* SPMS Modal Design System */
+                        .spms-modal-backdrop {
+                            position: fixed !important;
+                            top: 0 !important;
+                            left: 0 !important;
+                            right: 0 !important;
+                            bottom: 0 !important;
+                            z-index: 9999 !important;
+                            background-color: rgba(0, 0, 0, 0.75) !important;
+                            backdrop-filter: blur(6px) !important;
+                            -webkit-backdrop-filter: blur(6px) !important;
+                            display: flex !important;
+                            align-items: center !important;
+                            justify-content: center !important;
+                            padding: 16px !important;
+                        }
+                        .spms-modal-backdrop.hidden {
+                            display: none !important;
+                        }
+                        .spms-modal-dialog {
+                            background-color: #032115 !important;
+                            border: 1px solid #0d4a32 !important;
+                            border-radius: 16px !important;
+                            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85) !important;
+                            color: #ffffff !important;
+                            width: 100%;
+                            max-height: 90vh !important;
+                            display: flex !important;
+                            flex-direction: column !important;
+                            overflow: hidden !important;
+                            position: relative !important;
+                        }
+                        .spms-modal-header {
+                            background-color: #02170f !important;
+                            border-bottom: 1px solid #0d4a32 !important;
+                            padding: 20px 24px !important;
+                            display: flex !important;
+                            align-items: center !important;
+                            justify-content: space-between !important;
+                            flex-shrink: 0 !important;
+                        }
+                        .spms-modal-body {
+                            background-color: #032115 !important;
+                            padding: 24px !important;
+                            overflow-y: auto !important;
+                            flex: 1 1 auto !important;
+                        }
+                        .spms-modal-section {
+                            background-color: #062e1e !important;
+                            border: 1px solid #0d4a32 !important;
+                            border-radius: 12px !important;
+                            padding: 16px !important;
+                            margin-bottom: 16px !important;
+                        }
+                        .spms-modal-card {
+                            background-color: #083b27 !important;
+                            border: 1px solid #10593b !important;
+                            border-radius: 8px !important;
+                            padding: 12px 14px !important;
+                            color: #d1fae5 !important;
+                        }
+                        .spms-modal-footer {
+                            background-color: #02170f !important;
+                            border-top: 1px solid #0d4a32 !important;
+                            padding: 16px 24px !important;
+                            display: flex !important;
+                            align-items: center !important;
+                            justify-content: space-between !important;
+                            flex-shrink: 0 !important;
+                        }
+                        .spms-modal-btn-close {
+                            width: 32px !important;
+                            height: 32px !important;
+                            border-radius: 8px !important;
+                            background-color: #083b27 !important;
+                            border: 1px solid #11593b !important;
+                            color: #94a3b8 !important;
+                            display: flex !important;
+                            align-items: center !important;
+                            justify-content: center !important;
+                            cursor: pointer !important;
+                            transition: all 0.15s ease !important;
+                        }
+                        .spms-modal-btn-close:hover {
+                            background-color: #0c4d33 !important;
+                            color: #ffffff !important;
+                            border-color: #176a46 !important;
+                        }
+
+                        /* Interactive Stepper Carousel Styles */
+                        .spms-guide-tabs {
+                            display: grid !important;
+                            grid-template-columns: repeat(4, 1fr) !important;
+                            gap: 8px !important;
+                            margin-bottom: 20px !important;
+                        }
+                        @media (max-width: 640px) {
+                            .spms-guide-tabs {
+                                grid-template-columns: repeat(2, 1fr) !important;
+                            }
+                        }
+                        .spms-guide-tab {
+                            background-color: #062e1e !important;
+                            border: 1px solid #0d4a32 !important;
+                            border-radius: 10px !important;
+                            padding: 10px 12px !important;
+                            cursor: pointer !important;
+                            display: flex !important;
+                            align-items: center !important;
+                            gap: 8px !important;
+                            transition: all 0.15s ease !important;
+                            text-align: left !important;
+                        }
+                        .spms-guide-tab:hover {
+                            background-color: #083b27 !important;
+                            border-color: #156643 !important;
+                        }
+                        .spms-guide-tab.active {
+                            background-color: #083b27 !important;
+                            border-color: #f59e0b !important;
+                            box-shadow: 0 0 12px rgba(245, 158, 11, 0.25) !important;
+                        }
+                        .spms-guide-tab-badge {
+                            width: 22px !important;
+                            height: 22px !important;
+                            border-radius: 9999px !important;
+                            background-color: #032115 !important;
+                            border: 1px solid #0d4a32 !important;
+                            color: #82c8a6 !important;
+                            font-size: 11px !important;
+                            font-weight: 800 !important;
+                            display: flex !important;
+                            align-items: center !important;
+                            justify-content: center !important;
+                            flex-shrink: 0 !important;
+                        }
+                        .spms-guide-tab.active .spms-guide-tab-badge {
+                            background-color: #f59e0b !important;
+                            border-color: #f59e0b !important;
+                            color: #000000 !important;
+                        }
+                        .spms-guide-tab-title {
+                            font-size: 11px !important;
+                            font-weight: 700 !important;
+                            color: #94a3b8 !important;
+                            line-height: 1.2 !important;
+                        }
+                        .spms-guide-tab.active .spms-guide-tab-title {
+                            color: #ffffff !important;
+                        }
+                        .spms-guide-slide {
+                            display: none;
+                        }
+                        .spms-guide-slide.active {
+                            display: block;
+                            animation: spmsFadeSlideIn 0.2s ease-out;
+                        }
+                        @keyframes spmsFadeSlideIn {
+                            from { opacity: 0; transform: translateY(6px); }
+                            to { opacity: 1; transform: translateY(0); }
+                        }
+                        .spms-guide-canvas {
+                            background-color: #02170f !important;
+                            border: 1px solid #0d4a32 !important;
+                            border-radius: 12px !important;
+                            padding: 18px !important;
+                            margin-bottom: 16px !important;
+                            position: relative !important;
+                            overflow: hidden !important;
+                        }
+                        .spms-guide-instruction-card {
+                            background-color: #062e1e !important;
+                            border: 1px solid #0d4a32 !important;
+                            border-radius: 12px !important;
+                            padding: 16px 18px !important;
+                        }
+                    </style>
+
+                    <?php 
+                        $isUserAdmin = (session()->get('role') === 'Admin');
+                        $isAdminRootCycle = $isUserAdmin && ($activeFolder['user_id'] == session()->get('user_id'));
+                    ?>
+
+                    <?php if ($isAdminRootCycle): ?>
+                        <!-- ADMIN INSTITUTIONAL CYCLE MONITORING HUB CARD -->
+                        <div class="spms-hub-card">
+                            <!-- HEADER -->
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 24px;">
+                                <div>
+                                    <span class="spms-hub-kicker" style="color: #34d399 !important;">INSTITUTIONAL EVALUATION CYCLE</span>
+                                    <h2 class="spms-hub-title"><?= esc($activeFolder['title'] ?: 'Untitled Cycle') ?></h2>
+                                    <p class="spms-hub-subtitle">
+                                        Cycle Coordinator: <span class="spms-hub-subtitle-val"><?= esc(session()->get('name') ?? 'System Administrator') ?></span> (Administrator)
+                                    </p>
+                                </div>
+                                <div style="flex-shrink: 0;">
+                                    <div class="spms-hub-status-pill" style="border-color: #059669 !important; color: #34d399 !important; background-color: #064e3b !important;">
+                                        <span class="spms-hub-status-dot" style="background-color: #34d399 !important;"></span>
+                                        <span>TARGET PHASE ACTIVE</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TIMELINE INFORMATION BANNER -->
+                            <div class="p-4 rounded-xl border border-emerald-700/60 bg-emerald-950/50 text-emerald-100 mb-6 flex items-start gap-3.5 shadow-sm">
+                                <div class="w-9 h-9 rounded-lg bg-emerald-900/80 border border-emerald-600/50 flex items-center justify-center shrink-0 text-emerald-400 mt-0.5">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div class="text-xs leading-relaxed">
+                                    <span class="font-extrabold text-emerald-300 block mb-0.5 text-sm">Target Setting Window is Active</span>
+                                    As Administrator, you oversee the evaluation schedule and cascade targets downward. You have <strong>no personal evaluation paper to fill</strong>. Use the <strong>Cascade Management</strong> panel on the right to distribute this cycle to the <strong>Vice President (Executive Team)</strong> so institutional OPCR commitments can be formulated.
+                                </div>
+                            </div>
+
+                            <!-- 3 STAT TILES -->
+                            <div class="spms-hub-stat-grid">
+                                <!-- 1. Target Period -->
+                                <div class="spms-hub-stat-tile">
+                                    <div>
+                                        <div class="spms-hub-tile-label">Target Setting Period</div>
+                                        <div class="spms-hub-tile-value">
+                                            <?= !empty($activeFolder['ipcr_target_start']) && !empty($activeFolder['ipcr_target_end']) ? date('M j', strtotime($activeFolder['ipcr_target_start'])) . ' – ' . date('M j, Y', strtotime($activeFolder['ipcr_target_end'])) : 'Dates Not Configured' ?>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="spms-hub-window-pill">
+                                            <span style="width: 6px; height: 6px; border-radius: 9999px; background-color: #34d399; display: inline-block;"></span>
+                                            <span>TARGET PHASE</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 2. Evaluation Period -->
+                                <div class="spms-hub-stat-tile">
+                                    <div>
+                                        <div class="spms-hub-tile-label">Evaluation Period</div>
+                                        <div class="spms-hub-tile-value">
+                                            <?= !empty($activeFolder['ipcr_eval_start']) && !empty($activeFolder['ipcr_eval_end']) ? date('M j', strtotime($activeFolder['ipcr_eval_start'])) . ' – ' . date('M j, Y', strtotime($activeFolder['ipcr_eval_end'])) : 'Scheduled Following Targets' ?>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="spms-hub-tile-dash"></div>
+                                    </div>
+                                </div>
+
+                                <!-- 3. Cascade Status -->
+                                <?php $cascadedTeamId = $activeFolder['routing_preset_id'] ?? null; ?>
+                                <div class="spms-hub-stat-tile">
+                                    <div>
+                                        <div class="spms-hub-tile-label">Cascade Status</div>
+                                        <div class="spms-hub-tile-value">
+                                            <?= $cascadedTeamId ? 'Cascaded to Subordinates' : 'Awaiting Cascade' ?>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <?php if ($cascadedTeamId): ?>
+                                            <span class="text-[11px] font-extrabold text-emerald-400">Distribution Active</span>
+                                        <?php else: ?>
+                                            <span class="text-[11px] font-extrabold text-amber-400">Select Team on Right</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ACTIONS -->
+                            <div class="spms-hub-actions-bar">
+                                <button type="button" onclick='openEditFolderModal(<?= json_encode([
+                                    "id"    => $activeFolder["id"],
+                                    "title" => $activeFolder["title"],
+                                    "ipcr_target_start" => $activeFolder["ipcr_target_start"] ?? "",
+                                    "ipcr_target_end"   => $activeFolder["ipcr_target_end"] ?? "",
+                                    "ipcr_eval_start"   => $activeFolder["ipcr_eval_start"] ?? "",
+                                    "ipcr_eval_end"     => $activeFolder["ipcr_eval_end"] ?? "",
+                                    "cdpcr_target_start" => $activeFolder["cdpcr_target_start"] ?? "",
+                                    "cdpcr_target_end"   => $activeFolder["cdpcr_target_end"] ?? "",
+                                    "cdpcr_eval_start"   => $activeFolder["cdpcr_eval_start"] ?? "",
+                                    "cdpcr_eval_end"     => $activeFolder["cdpcr_eval_end"] ?? "",
+                                    "dpcr_target_start" => $activeFolder["dpcr_target_start"] ?? "",
+                                    "dpcr_target_end"   => $activeFolder["dpcr_target_end"] ?? "",
+                                    "dpcr_eval_start"   => $activeFolder["dpcr_eval_start"] ?? "",
+                                    "dpcr_eval_end"     => $activeFolder["dpcr_eval_end"] ?? "",
+                                    "opcr_target_start" => $activeFolder["opcr_target_start"] ?? "",
+                                    "opcr_target_end"   => $activeFolder["opcr_target_end"] ?? "",
+                                    "opcr_eval_start"   => $activeFolder["opcr_eval_start"] ?? "",
+                                    "opcr_eval_end"     => $activeFolder["opcr_eval_end"] ?? "",
+                                    "iperf_target_start" => $activeFolder["iperf_target_start"] ?? "",
+                                    "iperf_target_end"   => $activeFolder["iperf_target_end"] ?? "",
+                                    "iperf_eval_start"   => $activeFolder["iperf_eval_start"] ?? "",
+                                    "iperf_eval_end"     => $activeFolder["iperf_eval_end"] ?? ""
+                                ]) ?>)' class="spms-hub-btn-primary">
+                                    Edit Cycle Dates
+                                </button>
+                                <button type="button" onclick="openUserGuideModal()" class="spms-hub-btn-secondary">
+                                    SPMS Cascade Guide
+                                </button>
+                            </div>
+                        </div>
+
+                    <?php elseif (empty($myDocs)): ?>
                         <div class="border-2 border-dashed border-[#c2d4c4] dark:border-[#0c4a33] bg-[#f4f8f4]/50 dark:bg-[#032316]/30 rounded-2xl w-full flex-1 flex flex-col items-center justify-center p-8 sm:p-12 my-2 min-h-[380px] text-center">
                             <div class="w-12 h-12 rounded-xl bg-[#d5e4d7] dark:bg-[#0c4a33] text-[#064e3b] dark:text-emerald-400 flex items-center justify-center mb-3.5 shadow-2xs">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -114,8 +700,13 @@
                                 $effectiveDocType = 'OPCR';
                                 $officialPaperName = 'Office Performance Commitment and Review (OPCR)';
                             } elseif (str_contains($pTitleUpper, 'DPCR') || str_contains($pTitleUpper, 'DIVISION') || str_contains($pTitleUpper, 'DEPARTMENT')) {
-                                $effectiveDocType = 'DPCR';
-                                $officialPaperName = 'Department Performance Commitment and Review (DPCR)';
+                                if (!empty($isOwnerDean)) {
+                                    $effectiveDocType = 'CDPCR';
+                                    $officialPaperName = 'DPCR Dean (Collegiate Performance Commitment and Review)';
+                                } else {
+                                    $effectiveDocType = 'DPCR';
+                                    $officialPaperName = 'DPCR Department Chair (Departmental Performance Commitment and Review)';
+                                }
                             } elseif (str_contains($pTitleUpper, 'IPERF') || str_contains($pTitleUpper, 'NON-TEACHING')) {
                                 $effectiveDocType = 'IPERF';
                                 $officialPaperName = 'Individual Performance Evaluation Review Form (IPERF)';
@@ -125,8 +716,9 @@
                             } else {
                                 $effectiveDocType = strtoupper($ownerDocType ?? 'IPCR');
                                 $officialPaperName = match($effectiveDocType) {
-                                    'OPCR' => 'Office Performance Commitment and Review (OPCR)',
-                                    'DPCR' => 'Department Performance Commitment and Review (DPCR)',
+                                    'OPCR'  => 'Office Performance Commitment and Review (OPCR)',
+                                    'CDPCR' => 'DPCR Dean (Collegiate Performance Commitment and Review)',
+                                    'DPCR'  => 'DPCR Department Chair (Departmental Performance Commitment and Review)',
                                     'IPERF' => 'Individual Performance Evaluation Review Form (IPERF)',
                                     default => 'Individual Performance Commitment and Review (IPCR)'
                                 };
@@ -159,6 +751,9 @@
                             }
 
                             $docTypeKey = strtolower($effectiveDocType);
+                            if ($docTypeKey === 'cdpcr' && empty($activeFolder['cdpcr_target_start']) && empty($activeFolder['cdpcr_target_end']) && empty($activeFolder['cdpcr_eval_start']) && empty($activeFolder['cdpcr_eval_end'])) {
+                                $docTypeKey = 'dpcr';
+                            }
                             $tStartDate = !empty($activeFolder[$docTypeKey . '_target_start']) ? strtotime($activeFolder[$docTypeKey . '_target_start']) : null;
                             $tEndDate   = !empty($activeFolder[$docTypeKey . '_target_end'])   ? strtotime($activeFolder[$docTypeKey . '_target_end'])   : null;
                             $eStartDate = !empty($activeFolder[$docTypeKey . '_eval_start'])   ? strtotime($activeFolder[$docTypeKey . '_eval_start'])   : null;
@@ -219,470 +814,6 @@
                                 ? $activeFolder['title'] 
                                 : '1st Semester, AY 2026–2027';
                         ?>
-
-                        <style>
-                            /* BSU SPMS Official Paper Hub - Exact Mockup Styles */
-                            .spms-hub-card {
-                                background-color: #032115 !important;
-                                border: 1px solid #0d4a32 !important;
-                                border-radius: 16px !important;
-                                padding: 32px 36px !important;
-                                box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.6) !important;
-                                position: relative !important;
-                                overflow: hidden !important;
-                                width: 100% !important;
-                            }
-
-                            .spms-hub-kicker {
-                                color: #f59e0b !important;
-                                font-size: 11px !important;
-                                font-weight: 800 !important;
-                                letter-spacing: 0.08em !important;
-                                text-transform: uppercase !important;
-                                margin-bottom: 8px !important;
-                                display: block !important;
-                            }
-
-                            .spms-hub-title {
-                                color: #ffffff !important;
-                                font-size: 24px !important;
-                                font-weight: 800 !important;
-                                letter-spacing: -0.01em !important;
-                                line-height: 1.25 !important;
-                                margin: 0 !important;
-                            }
-                            @media (min-width: 640px) {
-                                .spms-hub-title {
-                                    font-size: 27px !important;
-                                }
-                            }
-
-                            .spms-hub-subtitle {
-                                color: #5a8b73 !important;
-                                font-size: 13px !important;
-                                font-weight: 500 !important;
-                                margin-top: 8px !important;
-                                margin-bottom: 0 !important;
-                            }
-
-                            .spms-hub-subtitle-val {
-                                color: #ffffff !important;
-                                font-weight: 700 !important;
-                            }
-
-                            .spms-hub-status-pill {
-                                background-color: #083321 !important;
-                                border: 1px solid #115337 !important;
-                                color: #f59e0b !important;
-                                border-radius: 9999px !important;
-                                padding: 6px 14px !important;
-                                font-size: 11px !important;
-                                font-weight: 800 !important;
-                                letter-spacing: 0.06em !important;
-                                text-transform: uppercase !important;
-                                display: inline-flex !important;
-                                align-items: center !important;
-                                gap: 8px !important;
-                                white-space: nowrap !important;
-                            }
-
-                            .spms-hub-status-dot {
-                                width: 7px !important;
-                                height: 7px !important;
-                                border-radius: 9999px !important;
-                                background-color: #f59e0b !important;
-                                display: inline-block !important;
-                            }
-
-                            .spms-hub-tracker-label {
-                                color: #5a8b73 !important;
-                                font-size: 11px !important;
-                                font-weight: 800 !important;
-                                letter-spacing: 0.08em !important;
-                                text-transform: uppercase !important;
-                                margin-top: 28px !important;
-                                margin-bottom: 16px !important;
-                                display: block !important;
-                            }
-
-                            .spms-hub-stepper-row {
-                                display: flex !important;
-                                align-items: center !important;
-                                gap: 12px !important;
-                                overflow-x: auto !important;
-                                padding-bottom: 6px !important;
-                                margin-bottom: 28px !important;
-                            }
-
-                            .spms-hub-circle-active {
-                                width: 26px !important;
-                                height: 26px !important;
-                                border-radius: 9999px !important;
-                                background-color: #f59e0b !important;
-                                border: none !important;
-                                display: flex !important;
-                                align-items: center !important;
-                                justify-content: center !important;
-                                flex-shrink: 0 !important;
-                            }
-
-                            .spms-hub-circle-active-dot {
-                                width: 8px !important;
-                                height: 8px !important;
-                                border-radius: 9999px !important;
-                                background-color: #032115 !important;
-                            }
-
-                            .spms-hub-circle-inactive {
-                                width: 26px !important;
-                                height: 26px !important;
-                                border-radius: 9999px !important;
-                                border: 1.5px solid #145235 !important;
-                                background-color: transparent !important;
-                                display: flex !important;
-                                align-items: center !important;
-                                justify-content: center !important;
-                                flex-shrink: 0 !important;
-                            }
-
-                            .spms-hub-circle-completed {
-                                width: 26px !important;
-                                height: 26px !important;
-                                border-radius: 9999px !important;
-                                background-color: #10b981 !important;
-                                border: none !important;
-                                color: #ffffff !important;
-                                display: flex !important;
-                                align-items: center !important;
-                                justify-content: center !important;
-                                flex-shrink: 0 !important;
-                            }
-
-                            .spms-hub-step-text-active {
-                                color: #ffffff !important;
-                                font-size: 13px !important;
-                                font-weight: 700 !important;
-                                white-space: nowrap !important;
-                                margin-left: 8px !important;
-                            }
-
-                            .spms-hub-step-text-inactive {
-                                color: #5a8b73 !important;
-                                font-size: 13px !important;
-                                font-weight: 500 !important;
-                                white-space: nowrap !important;
-                                margin-left: 8px !important;
-                            }
-
-                            .spms-hub-stat-grid {
-                                display: grid !important;
-                                grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
-                                gap: 16px !important;
-                                margin-bottom: 28px !important;
-                            }
-                            @media (min-width: 768px) {
-                                .spms-hub-stat-grid {
-                                    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-                                }
-                            }
-
-                            .spms-hub-stat-tile {
-                                background-color: #062e1e !important;
-                                border: 1px solid #0d4a32 !important;
-                                border-radius: 14px !important;
-                                padding: 20px 24px !important;
-                                display: flex !important;
-                                flex-direction: column !important;
-                                justify-content: space-between !important;
-                                min-height: 136px !important;
-                            }
-
-                            .spms-hub-tile-label {
-                                color: #5a8b73 !important;
-                                font-size: 12px !important;
-                                font-weight: 600 !important;
-                                margin: 0 !important;
-                            }
-
-                            .spms-hub-tile-value {
-                                color: #ffffff !important;
-                                font-size: 16px !important;
-                                font-weight: 700 !important;
-                                margin-top: 6px !important;
-                                margin-bottom: 0 !important;
-                            }
-
-                            .spms-hub-window-pill {
-                                background-color: #083b27 !important;
-                                border: 1px solid #10593b !important;
-                                color: #34d399 !important;
-                                font-size: 11px !important;
-                                font-weight: 700 !important;
-                                padding: 4px 12px !important;
-                                border-radius: 9999px !important;
-                                display: inline-flex !important;
-                                align-items: center !important;
-                                gap: 7px !important;
-                                width: fit-content !important;
-                                margin-top: 14px !important;
-                            }
-
-                            .spms-hub-tile-dash {
-                                width: 34px !important;
-                                height: 3px !important;
-                                background-color: #1e5a3e !important;
-                                border-radius: 9999px !important;
-                                margin-top: 20px !important;
-                            }
-
-                            .spms-hub-tile-btn {
-                                background-color: #083b27 !important;
-                                border: 1px solid #11593b !important;
-                                color: #82c8a6 !important;
-                                font-size: 12px !important;
-                                font-weight: 600 !important;
-                                padding: 6px 16px !important;
-                                border-radius: 8px !important;
-                                cursor: pointer !important;
-                                width: fit-content !important;
-                                margin-top: 14px !important;
-                                text-decoration: none !important;
-                                display: inline-block !important;
-                                transition: all 0.15s ease !important;
-                            }
-                            .spms-hub-tile-btn:hover {
-                                background-color: #0c4d33 !important;
-                                color: #ffffff !important;
-                                border-color: #176a46 !important;
-                            }
-
-                            .spms-hub-actions-bar {
-                                display: flex !important;
-                                align-items: center !important;
-                                gap: 12px !important;
-                                flex-wrap: wrap !important;
-                            }
-
-                            .spms-hub-btn-primary {
-                                background-color: #f59e0b !important;
-                                color: #000000 !important;
-                                font-size: 12px !important;
-                                font-weight: 900 !important;
-                                letter-spacing: 0.05em !important;
-                                text-transform: uppercase !important;
-                                padding: 14px 26px !important;
-                                border-radius: 12px !important;
-                                border: none !important;
-                                cursor: pointer !important;
-                                text-decoration: none !important;
-                                display: inline-flex !important;
-                                align-items: center !important;
-                                justify-content: center !important;
-                                transition: all 0.15s ease !important;
-                            }
-                            .spms-hub-btn-primary:hover {
-                                background-color: #e08e06 !important;
-                                color: #000000 !important;
-                            }
-
-                            .spms-hub-btn-secondary {
-                                background-color: #083b27 !important;
-                                border: 1px solid #11593b !important;
-                                color: #ffffff !important;
-                                font-size: 12px !important;
-                                font-weight: 700 !important;
-                                padding: 13px 22px !important;
-                                border-radius: 12px !important;
-                                cursor: pointer !important;
-                                text-decoration: none !important;
-                                display: inline-flex !important;
-                                align-items: center !important;
-                                justify-content: center !important;
-                                transition: all 0.15s ease !important;
-                            }
-                            .spms-hub-btn-secondary:hover {
-                                background-color: #0c4d33 !important;
-                                border-color: #176a46 !important;
-                                color: #ffffff !important;
-                            }
-
-                            /* SPMS Modal Design System */
-                            .spms-modal-backdrop {
-                                position: fixed !important;
-                                top: 0 !important;
-                                left: 0 !important;
-                                right: 0 !important;
-                                bottom: 0 !important;
-                                z-index: 9999 !important;
-                                background-color: rgba(0, 0, 0, 0.75) !important;
-                                backdrop-filter: blur(6px) !important;
-                                -webkit-backdrop-filter: blur(6px) !important;
-                                display: flex !important;
-                                align-items: center !important;
-                                justify-content: center !important;
-                                padding: 16px !important;
-                            }
-                            .spms-modal-backdrop.hidden {
-                                display: none !important;
-                            }
-                            .spms-modal-dialog {
-                                background-color: #032115 !important;
-                                border: 1px solid #0d4a32 !important;
-                                border-radius: 16px !important;
-                                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85) !important;
-                                color: #ffffff !important;
-                                width: 100%;
-                                max-height: 90vh !important;
-                                display: flex !important;
-                                flex-direction: column !important;
-                                overflow: hidden !important;
-                                position: relative !important;
-                            }
-                            .spms-modal-header {
-                                background-color: #02170f !important;
-                                border-bottom: 1px solid #0d4a32 !important;
-                                padding: 20px 24px !important;
-                                display: flex !important;
-                                align-items: center !important;
-                                justify-content: space-between !important;
-                                flex-shrink: 0 !important;
-                            }
-                            .spms-modal-body {
-                                background-color: #032115 !important;
-                                padding: 24px !important;
-                                overflow-y: auto !important;
-                                flex: 1 1 auto !important;
-                            }
-                            .spms-modal-section {
-                                background-color: #062e1e !important;
-                                border: 1px solid #0d4a32 !important;
-                                border-radius: 12px !important;
-                                padding: 16px !important;
-                                margin-bottom: 16px !important;
-                            }
-                            .spms-modal-card {
-                                background-color: #083b27 !important;
-                                border: 1px solid #10593b !important;
-                                border-radius: 8px !important;
-                                padding: 12px 14px !important;
-                                color: #d1fae5 !important;
-                            }
-                            .spms-modal-footer {
-                                background-color: #02170f !important;
-                                border-top: 1px solid #0d4a32 !important;
-                                padding: 16px 24px !important;
-                                display: flex !important;
-                                align-items: center !important;
-                                justify-content: space-between !important;
-                                flex-shrink: 0 !important;
-                            }
-                            .spms-modal-btn-close {
-                                width: 32px !important;
-                                height: 32px !important;
-                                border-radius: 8px !important;
-                                background-color: #083b27 !important;
-                                border: 1px solid #11593b !important;
-                                color: #94a3b8 !important;
-                                display: flex !important;
-                                align-items: center !important;
-                                justify-content: center !important;
-                                cursor: pointer !important;
-                                transition: all 0.15s ease !important;
-                            }
-                            .spms-modal-btn-close:hover {
-                                background-color: #0c4d33 !important;
-                                color: #ffffff !important;
-                                border-color: #176a46 !important;
-                            }
-
-                            /* Interactive Stepper Carousel Styles */
-                            .spms-guide-tabs {
-                                display: grid !important;
-                                grid-template-columns: repeat(4, 1fr) !important;
-                                gap: 8px !important;
-                                margin-bottom: 20px !important;
-                            }
-                            @media (max-width: 640px) {
-                                .spms-guide-tabs {
-                                    grid-template-columns: repeat(2, 1fr) !important;
-                                }
-                            }
-                            .spms-guide-tab {
-                                background-color: #062e1e !important;
-                                border: 1px solid #0d4a32 !important;
-                                border-radius: 10px !important;
-                                padding: 10px 12px !important;
-                                cursor: pointer !important;
-                                display: flex !important;
-                                align-items: center !important;
-                                gap: 8px !important;
-                                transition: all 0.15s ease !important;
-                                text-align: left !important;
-                            }
-                            .spms-guide-tab:hover {
-                                background-color: #083b27 !important;
-                                border-color: #156643 !important;
-                            }
-                            .spms-guide-tab.active {
-                                background-color: #083b27 !important;
-                                border-color: #f59e0b !important;
-                                box-shadow: 0 0 12px rgba(245, 158, 11, 0.25) !important;
-                            }
-                            .spms-guide-tab-badge {
-                                width: 22px !important;
-                                height: 22px !important;
-                                border-radius: 9999px !important;
-                                background-color: #032115 !important;
-                                border: 1px solid #0d4a32 !important;
-                                color: #82c8a6 !important;
-                                font-size: 11px !important;
-                                font-weight: 800 !important;
-                                display: flex !important;
-                                align-items: center !important;
-                                justify-content: center !important;
-                                flex-shrink: 0 !important;
-                            }
-                            .spms-guide-tab.active .spms-guide-tab-badge {
-                                background-color: #f59e0b !important;
-                                border-color: #f59e0b !important;
-                                color: #000000 !important;
-                            }
-                            .spms-guide-tab-title {
-                                font-size: 11px !important;
-                                font-weight: 700 !important;
-                                color: #94a3b8 !important;
-                                line-height: 1.2 !important;
-                            }
-                            .spms-guide-tab.active .spms-guide-tab-title {
-                                color: #ffffff !important;
-                            }
-                            .spms-guide-slide {
-                                display: none;
-                            }
-                            .spms-guide-slide.active {
-                                display: block;
-                                animation: spmsFadeSlideIn 0.2s ease-out;
-                            }
-                            @keyframes spmsFadeSlideIn {
-                                from { opacity: 0; transform: translateY(6px); }
-                                to { opacity: 1; transform: translateY(0); }
-                            }
-                            .spms-guide-canvas {
-                                background-color: #02170f !important;
-                                border: 1px solid #0d4a32 !important;
-                                border-radius: 12px !important;
-                                padding: 18px !important;
-                                margin-bottom: 16px !important;
-                                position: relative !important;
-                                overflow: hidden !important;
-                            }
-                            .spms-guide-instruction-card {
-                                background-color: #062e1e !important;
-                                border: 1px solid #0d4a32 !important;
-                                border-radius: 12px !important;
-                                padding: 16px 18px !important;
-                            }
-                        </style>
 
                         <!-- EXECUTIVE PERFORMANCE PAPER HUB CARD -->
                         <div class="spms-hub-card">
@@ -890,42 +1021,6 @@
                             </div>
                         </div>
 
-                        <?php if (!empty($groupedGuides)): ?>
-                            <!-- SUPERIOR REFERENCE BASIS GUIDE -->
-                            <div class="mt-6 p-5 rounded-2xl bg-surface border border-surface-border shadow-sm flex flex-col gap-3">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-2">
-                                        <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
-                                        <span class="text-[10px] font-black uppercase tracking-wider text-text-muted">Superior Reference Basis</span>
-                                    </div>
-                                    <span class="text-[10px] font-bold text-cyan-700 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-200 dark:border-cyan-800">Cascaded Guide</span>
-                                </div>
-                                <p class="text-xs text-text-muted leading-relaxed">
-                                    Your performance targets are guided by your superior's approved commitments below:
-                                </p>
-                                <?php foreach ($groupedGuides as $group): ?>
-                                    <?php foreach ($group['docs'] as $gDoc): ?>
-                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] gap-3">
-                                            <div class="flex items-center gap-3 min-w-0">
-                                                <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-950/60 dark:border-blue-800/40 dark:text-blue-400 flex items-center justify-center shrink-0">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                    </svg>
-                                                </div>
-                                                <div class="flex flex-col min-w-0">
-                                                    <span class="text-xs font-bold text-text truncate"><?= esc($gDoc['title']) ?></span>
-                                                    <span class="text-[10px] text-text-muted"><?= esc($group['superior']['name']) ?> • <?= esc($group['superior']['role']) ?></span>
-                                                </div>
-                                            </div>
-                                            <a href="<?= site_url('document/' . $gDoc['id']) ?>" class="px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs shrink-0 text-center">
-                                                View Superior Guide
-                                            </a>
-                                        </div>
-                                    <?php endforeach; ?>
-                                <?php endforeach; ?>
-                            </div>
-                        <?php endif; ?>
-
                     <?php endif; ?>
                 </div>
 
@@ -971,8 +1066,12 @@
         </div>
 
         <?php 
-            $canCascade = in_array(session()->get('role'), ['Admin', 'Supervisor']) && ($activeFolder['user_id'] == session()->get('user_id')); 
+            $isUserAdmin = (session()->get('role') === 'Admin');
+            $canCascade = $isUserAdmin || (session()->get('role') === 'Supervisor' && ($activeFolder['user_id'] == session()->get('user_id'))); 
             $docType = strtolower($ownerDocType ?? 'ipcr');
+            if (($docType === 'dpcr' || $docType === 'cdpcr') && !empty($isOwnerDean)) {
+                $docType = (!empty($activeFolder['cdpcr_target_start']) || !empty($activeFolder['cdpcr_target_end']) || !empty($activeFolder['cdpcr_eval_start']) || !empty($activeFolder['cdpcr_eval_end'])) ? 'cdpcr' : 'dpcr';
+            }
             $tStartDate = !empty($activeFolder[$docType . '_target_start']) ? date('M d, Y', strtotime($activeFolder[$docType . '_target_start'])) : null;
             $tEndDate   = !empty($activeFolder[$docType . '_target_end'])   ? date('M d, Y', strtotime($activeFolder[$docType . '_target_end']))   : null;
             $eStartDate = !empty($activeFolder[$docType . '_eval_start'])   ? date('M d, Y', strtotime($activeFolder[$docType . '_eval_start']))   : null;
@@ -1002,8 +1101,14 @@
 
                     <?php 
                         $isUserAdmin = (session()->get('role') === 'Admin');
-                        $isFolderTargetApproved = ($activeFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
-                        $canActuallyCascade = $isUserAdmin || $isFolderTargetApproved;
+                        // Supervisors can cascade immediately once formulating commitments in target phase
+                        $inTargetPhase = in_array($activeFolder['status'], [
+                            \App\Enums\FolderStatus::DRAFT_TARGET->value,
+                            \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
+                            \App\Enums\FolderStatus::TARGET_APPROVED->value,
+                            \App\Enums\FolderStatus::DRAFT->value
+                        ]);
+                        $canActuallyCascade = $isUserAdmin || $inTargetPhase;
                         $hasPresets = !empty($presets);
                     ?>
 
@@ -1013,10 +1118,10 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                 </svg>
-                                <span>Cascade Locked</span>
+                                <span>Cascade Closed</span>
                             </div>
                             <p class="text-[10px] leading-tight text-amber-700 dark:text-amber-400">
-                                Your target commitments must be approved by your higher-up first before cascading them as a basis for your subordinates.
+                                The target setting phase has ended for this cycle. Subordinates can no longer be cascaded.
                             </p>
                         </div>
                     <?php elseif ($cascadedTeamId): ?>
@@ -1032,6 +1137,41 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
                             </div>
                         </div>
+
+                        <div class="flex items-center justify-between px-1">
+                            <span class="text-[10px] text-text-muted font-medium">Team Roster</span>
+                            <a href="<?= site_url('teams?team_id=' . $cascadedTeamId) ?>" class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1">
+                                + Manage Members in Teams
+                            </a>
+                        </div>
+
+                        <?php $pendingCount = (int)($pendingTeamMembersCount ?? 0); ?>
+                        <?php if ($pendingCount > 0 && $canActuallyCascade): ?>
+                            <!-- SYNC NOTICE: MISSING MEMBERS DETECTED -->
+                            <div class="p-3 rounded-xl border border-emerald-300 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 flex flex-col gap-2 shadow-2xs">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-1.5 font-bold text-xs text-emerald-800 dark:text-emerald-300">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                        </svg>
+                                        <span>New Members (+<?= $pendingCount ?>)</span>
+                                    </div>
+                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-200 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200">
+                                        Sync Available
+                                    </span>
+                                </div>
+                                <p class="text-[10px] leading-relaxed text-emerald-700 dark:text-emerald-400 font-medium">
+                                    <?= $pendingCount ?> member<?= $pendingCount === 1 ? ' was' : 's were' ?> added to this team. Sync to provision their target folders without affecting existing cascaded members.
+                                </p>
+                                <button id="btn-sync-cascade" onclick="triggerSyncCascade('<?= $activeFolder['id'] ?>')" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs shadow-xs transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-1.5">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    <span>Sync Team (+<?= $pendingCount ?> New)</span>
+                                </button>
+                            </div>
+                        <?php endif; ?>
+
                         <button onclick="triggerUncascade('<?= $activeFolder['id'] ?>')" class="w-full py-2.5 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-300 dark:border-[#361a1f] bg-rose-50 dark:bg-[#1c1214] hover:bg-rose-600 dark:hover:bg-[#261619] rounded-xl transition-colors cursor-pointer flex justify-center items-center gap-1.5 font-bold text-xs uppercase tracking-wider">
                             Revoke Cascade
                         </button>
@@ -1058,19 +1198,32 @@
                                                         <?= esc($child['position'] ?: $child['email']) ?>
                                                     </span>
                                                 </div>
-                                                <?php if ($isPending): ?>
-                                                    <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300 shrink-0">
-                                                        Awaiting Approval
-                                                    </span>
-                                                <?php elseif ($isApproved): ?>
-                                                    <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 shrink-0">
-                                                        Target Approved
-                                                    </span>
-                                                <?php else: ?>
-                                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 shrink-0">
-                                                        Drafting
-                                                    </span>
-                                                <?php endif; ?>
+                                                <div class="flex items-center gap-1.5 shrink-0">
+                                                    <?php if ($isPending): ?>
+                                                        <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300 shrink-0">
+                                                            Awaiting Approval
+                                                        </span>
+                                                    <?php elseif ($isApproved): ?>
+                                                        <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 shrink-0">
+                                                            Target Approved
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 shrink-0">
+                                                            Drafting
+                                                        </span>
+                                                    <?php endif; ?>
+
+                                                    <?php if ($canActuallyCascade): ?>
+                                                        <button type="button"
+                                                                onclick="triggerRemoveCascadedSubordinate('<?= $child['id'] ?>', '<?= esc(addslashes($child['first_name'] . ' ' . $child['last_name'])) ?>', '<?= $activeFolder['id'] ?>')"
+                                                                title="Remove from this cycle"
+                                                                class="p-1 rounded-md text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer shrink-0">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                            </svg>
+                                                        </button>
+                                                    <?php endif; ?>
+                                                </div>
                                             </div>
                                             <?php if ($isPending): ?>
                                                 <a href="<?= site_url('ratings/show/' . $child['id']) ?>" 
@@ -1132,7 +1285,8 @@
                     <?php endif; ?>
                 </div>
 
-                <!-- FOLDER MANAGEMENT BUTTONS -->
+                <!-- FOLDER MANAGEMENT BUTTONS (Admin Only) -->
+                <?php if (session()->get('role') === 'Admin'): ?>
                 <div class="flex flex-col gap-3 border-t border-surface-border pt-4 mt-auto">
                     <h4 class="text-[10px] font-black uppercase text-text-muted tracking-wider">Folder Management</h4>
                     
@@ -1152,7 +1306,7 @@
                                 Restore Folder
                             </button>
 
-                            <?php if ($isEligibleForDisposal && session()->get('role') === 'Admin'): ?>
+                            <?php if ($isEligibleForDisposal): ?>
                                 <button class="w-full btn-delete-modal bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 dark:bg-[#1c1214] dark:hover:bg-[#261619] dark:text-rose-400 dark:border-[#361a1f] py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
                                     data-id="<?= $activeFolder['id'] ?>" data-desc="<?= esc($activeFolder['title']) ?>" data-url="<?= site_url('folder') ?>" data-title="Dispose Record (5-Year Retention Lapsed)">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1180,6 +1334,10 @@
                                 "ipcr_target_end"   => $activeFolder["ipcr_target_end"] ?? "",
                                 "ipcr_eval_start"   => $activeFolder["ipcr_eval_start"] ?? "",
                                 "ipcr_eval_end"     => $activeFolder["ipcr_eval_end"] ?? "",
+                                "cdpcr_target_start" => $activeFolder["cdpcr_target_start"] ?? "",
+                                "cdpcr_target_end"   => $activeFolder["cdpcr_target_end"] ?? "",
+                                "cdpcr_eval_start"   => $activeFolder["cdpcr_eval_start"] ?? "",
+                                "cdpcr_eval_end"     => $activeFolder["cdpcr_eval_end"] ?? "",
                                 "dpcr_target_start" => $activeFolder["dpcr_target_start"] ?? "",
                                 "dpcr_target_end"   => $activeFolder["dpcr_target_end"] ?? "",
                                 "dpcr_eval_start"   => $activeFolder["dpcr_eval_start"] ?? "",
@@ -1205,6 +1363,7 @@
                         </div>
                     <?php endif; ?>
                 </div>
+                <?php endif; ?>
 
             <?php else: ?>
                 <!-- 2. FOLDER OVERVIEW & DETAILS SECTION (For Normal Users in exchange for Cascade Distribution) -->
@@ -1338,9 +1497,12 @@
                         <div class="bg-slate-50 dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] rounded-xl px-3 py-2.5 flex flex-col gap-1.5">
                             <div class="flex items-center justify-between">
                                 <span class="text-[10px] font-medium text-slate-500 dark:text-[#8ea396]">Superior Basis</span>
+                                <?php 
+                                    $isParentDocOpcr = !empty($isParentDocOpcr) || str_contains(strtoupper($parentFolder['title'] ?? ''), 'OPCR');
+                                ?>
                                 <?php if ($isParentTargetApproved ?? false): ?>
                                     <span class="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-[#102a1e] px-1.5 py-0.5 rounded border border-emerald-200 dark:border-[#1b4330]">
-                                        Approved
+                                        <?= $isParentDocOpcr ? 'Institutional Basis' : 'Approved' ?>
                                     </span>
                                 <?php else: ?>
                                     <span class="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
@@ -1884,9 +2046,19 @@
             }
         });
 
-        function submitTargetFolder(folderId, btn) {
-            btn.innerText = 'Submitting...';
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
+        async function submitTargetFolder(folderId, btn) {
+            const ok = await window.appConfirm("Submit these targets for approval? You won't be able to edit them until returned.", {
+                title: 'Submit Targets',
+                confirmText: 'Submit Targets',
+                cancelText: 'Keep Editing',
+                variant: 'primary'
+            });
+            if (!ok) return;
+
+            if (btn) {
+                btn.innerText = 'Submitting...';
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
             const formData = new FormData();
             formData.append('folder_id', folderId);
             apiPost('<?= site_url('folder/submit_target') ?>', formData, {
@@ -1936,8 +2108,17 @@
             });
         }
 
-        function triggerUncascade(folderId) {
+        async function triggerUncascade(folderId) {
             if (sending) return;
+
+            const ok = await window.appConfirm("Are you sure you want to revoke the cascade for this evaluation cycle? All cascaded subordinate folders and their assigned draft evaluation forms will be permanently removed.", {
+                title: 'Revoke Cascade',
+                confirmText: 'Revoke Cascade',
+                cancelText: 'Keep Cascaded',
+                variant: 'danger'
+            });
+            if (!ok) return;
+
             sending = true;
 
             const formData = new FormData();
@@ -1950,6 +2131,63 @@
                     sending = false;
                     window.location.reload();
                 }
+            });
+        }
+
+        function triggerSyncCascade(folderId) {
+            if (sending) return;
+            const btn = document.getElementById('btn-sync-cascade');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `
+                    <svg class="animate-spin -ml-1 mr-2 h-3.5 w-3.5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Syncing Team...</span>
+                `;
+            }
+            sending = true;
+
+            const formData = new FormData();
+            formData.append('folder_id', folderId);
+
+            apiPost('<?= site_url('folder/sync-team-cascade') ?>', formData, {
+                onSuccess: (res) => {
+                    window.location.reload();
+                },
+                onError: async (errMsg) => {
+                    await window.appAlert(errMsg || "An error occurred while syncing team members.");
+                    sending = false;
+                    window.location.reload();
+                }
+            });
+        }
+
+        function triggerRemoveCascadedSubordinate(childFolderId, subordinateName, parentFolderId) {
+            if (sending) return;
+            window.appConfirm({
+                title: 'Remove Subordinate from Cycle',
+                message: `Are you sure you want to remove ${subordinateName} from this evaluation cycle? This will delete their target folder and evaluation paper for this cycle.`,
+                confirmText: 'Remove Subordinate',
+                variant: 'danger'
+            }).then(ok => {
+                if (!ok) return;
+                sending = true;
+
+                const formData = new FormData();
+                formData.append('child_folder_id', childFolderId);
+                formData.append('parent_folder_id', parentFolderId);
+
+                apiPost('<?= site_url('folder/remove-subordinate-cascade') ?>', formData, {
+                    onSuccess: (res) => {
+                        window.location.reload();
+                    },
+                    onError: async (errMsg) => {
+                        await window.appAlert(errMsg || "An error occurred while removing subordinate.");
+                        sending = false;
+                    }
+                });
             });
         }
 
@@ -2041,8 +2279,10 @@
 
         async function unsubmitTargetFolder(folderId, btn) {
             const ok = await window.appConfirm("Revoke target submission and return this folder to draft?", {
-                variant: 'warning',
-                confirmText: 'Revoke Submission'
+                title: 'Revoke Submission',
+                variant: 'undo',
+                confirmText: 'Revoke Submission',
+                cancelText: 'Keep Submitted'
             });
             if (!ok) return;
 
@@ -2063,7 +2303,12 @@
             const msg = releaseToDeans 
                 ? "Approve this OPCR and automatically release it to all College Deans as their target basis?"
                 : "Approve these targets?";
-            const ok = await window.appConfirm(msg, { confirmText: releaseToDeans ? 'Approve & Release' : 'Approve' });
+            const ok = await window.appConfirm(msg, { 
+                title: 'Approve Targets',
+                confirmText: releaseToDeans ? 'Approve & Release' : 'Approve',
+                cancelText: 'Cancel',
+                variant: 'success'
+            });
             if (!ok) return;
 
             if (btn) btn.disabled = true;

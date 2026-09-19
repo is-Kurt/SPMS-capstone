@@ -32,9 +32,6 @@ class ListUnits extends BaseCommand
         };
 
         CLI::newLine();
-        CLI::write("=========================================================", 'yellow');
-        CLI::write(" BENGUET STATE UNIVERSITY - UNITS & DEPARTMENTS HIERARCHY", 'yellow');
-        CLI::write("=========================================================", 'yellow');
         CLI::newLine();
         $printNode(0, 0);
         CLI::newLine();

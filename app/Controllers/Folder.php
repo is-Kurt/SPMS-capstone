@@ -77,29 +77,42 @@ class Folder extends BaseController
             // to switch. (Evaluators/Admins/Supervisors viewing someone else's folder
             // for rating purposes go through Rating::show() instead, which has its
             // own proper authorization check.)
-            if (!$activeFolder || $activeFolder['user_id'] != $userId) {
+            if (!$activeFolder) {
+                // If the folder no longer exists (e.g. revoked cascade or deleted cycle),
+                // remove any stale notifications referencing it and notify the user
+                (new \App\Models\NotificationModel())
+                    ->groupStart()
+                        ->like('link', 'folders/' . $folderId)
+                        ->orLike('link', 'ratings/show/' . $folderId)
+                    ->groupEnd()
+                    ->delete();
+
+                session()->remove('active_folder_id');
+                session()->setFlashdata('error', 'The evaluation folder you tried to access has been revoked or no longer exists.');
+                return redirect()->to(site_url('folders'));
+            }
+
+            if ($activeFolder['user_id'] != $userId) {
                 session()->remove('active_folder_id');
 
-                if ($activeFolder) {
-                    // If the viewer is an Admin, TWG, or routed evaluator, seamlessly route to ratings view
-                    $routingModel = new \App\Models\EvaluationRoutingModel();
-                    $isAuthorizedEvaluator = ($role === 'Admin' || $role === 'TWG') || 
-                        ($routingModel->where('folder_id', $activeFolder['id'])->where('evaluator_id', $userId)->countAllResults() > 0);
+                // If the viewer is an Admin, TWG, or routed evaluator, seamlessly route to ratings view
+                $routingModel = new \App\Models\EvaluationRoutingModel();
+                $isAuthorizedEvaluator = ($role === 'Admin' || $role === 'TWG') || 
+                    ($routingModel->where('folder_id', $activeFolder['id'])->where('evaluator_id', $userId)->countAllResults() > 0);
 
-                    if ($isAuthorizedEvaluator) {
-                        if (in_array($activeFolder['status'], [FolderStatus::DRAFT->value, FolderStatus::DRAFT_TARGET->value])) {
-                            session()->setFlashdata('error', 'This folder is currently being drafted by the employee and has not yet been submitted for evaluation.');
-                            return redirect()->to(site_url('ratings'));
-                        }
-                        return redirect()->to(site_url('ratings/show/' . $activeFolder['id']));
+                if ($isAuthorizedEvaluator) {
+                    if (in_array($activeFolder['status'], [FolderStatus::DRAFT->value, FolderStatus::DRAFT_TARGET->value])) {
+                        session()->setFlashdata('error', 'This folder is currently being drafted by the employee and has not yet been submitted for evaluation.');
+                        return redirect()->to(site_url('ratings'));
                     }
+                    return redirect()->to(site_url('ratings/show/' . $activeFolder['id']));
+                }
 
-                    $owner = $userModel->find($activeFolder['user_id']);
-                    if ($owner) {
-                        session()->setFlashdata('mismatch_detected', true);
-                        session()->setFlashdata('mismatch_target_email', $owner['email']);
-                        return redirect()->to('account-mismatch');
-                    }
+                $owner = $userModel->find($activeFolder['user_id']);
+                if ($owner) {
+                    session()->setFlashdata('mismatch_detected', true);
+                    session()->setFlashdata('mismatch_target_email', $owner['email']);
+                    return redirect()->to('account-mismatch');
                 }
 
                 return redirect()->to('folders');
@@ -131,8 +144,10 @@ class Folder extends BaseController
                 $activeFolder['status'] = FolderStatus::DRAFT_TARGET->value;
             }
 
-            // Ensure the user's official performance paper exists automatically based on their profile doc_type
-            $this->ensureUserDocumentExists($folderId, $userId, $activeFolder['title']);
+            // Ensure the user's official performance paper exists automatically based on their profile doc_type (Admins only initiate cycles)
+            if ($role !== 'Admin') {
+                $this->ensureUserDocumentExists($folderId, $userId, $activeFolder['title']);
+            }
 
             $myDocs = $documentModel->where('document_folder_id', $folderId)->findAll();
             $routingModel = new EvaluationRoutingModel();
@@ -197,9 +212,16 @@ class Folder extends BaseController
         }
 
         $ownerDocType = null;
+        $isOwnerDean = false;
+        $isOwnerChair = false;
         if ($activeFolder) {
             $owner = $userModel->find($activeFolder['user_id']);
             $ownerDocType = $owner['doc_type'] ?? null;
+            $ownerPlantilla = $userModel->getActivePlantillaDetails($activeFolder['user_id']);
+            $posTitle = strtolower($ownerPlantilla['position'] ?? '');
+            $userEmail = strtolower($owner['email'] ?? '');
+            $isOwnerDean = str_contains($posTitle, 'dean') || str_contains($userEmail, 'dean');
+            $isOwnerChair = str_contains($posTitle, 'chair') || str_contains($posTitle, 'head') || str_contains($userEmail, 'chair');
         }
 
         $parentFolder = null;
@@ -216,28 +238,69 @@ class Folder extends BaseController
                              ?? $documentModel->where('document_folder_id', $activeFolder['id'])->first();
                 $myDocTitleUpper = strtoupper($myPrimaryDoc['title'] ?? '');
                 $isMyDocOpcr = str_contains($myDocTitleUpper, 'OPCR') || str_contains($myDocTitleUpper, 'OFFICE') || (strtoupper($myPrimaryDoc['doc_type'] ?? '') === 'OPCR');
+                $candidateBasis = $documentModel->where('document_folder_id', $parentFolder['id'])->where('is_target', 1)->first()
+                             ?? $documentModel->where('document_folder_id', $parentFolder['id'])->first();
+                $candidateTitleUpper = strtoupper($candidateBasis['title'] ?? '');
+                $isParentDocOpcr = str_contains($candidateTitleUpper, 'OPCR') || str_contains($candidateTitleUpper, 'OFFICE') || (strtoupper($candidateBasis['doc_type'] ?? '') === 'OPCR');
 
                 if ($isParentAdmin || $isMyDocOpcr) {
                     $isParentTargetApproved = true;
                     $parentFolder = null;
                     $basisDoc = null;
                 } else {
-                    $isParentTargetApproved = ($parentFolder['status'] === FolderStatus::TARGET_APPROVED->value);
-                    $basisDoc = $documentModel->where('document_folder_id', $parentFolder['id'])->where('is_target', 1)->first()
-                             ?? $documentModel->where('document_folder_id', $parentFolder['id'])->first();
+                    // Under CSC SPMS guidelines, OPCR is the apex institutional commitment and does not require superior target approval
+                    $isParentTargetApproved = $isParentDocOpcr || ($parentFolder['status'] === FolderStatus::TARGET_APPROVED->value);
+                    $basisDoc = $candidateBasis;
                 }
             }
         }
 
         $cascadedChildren = [];
+        $pendingTeamMembers = [];
         if ($activeFolder && in_array($role, ['Admin', 'Supervisor'])) {
             $cascadedChildren = $folderModel->where('parent_folder_id', $activeFolder['id'])
                 ->where('document_folders.deleted_at IS NULL')
-                ->select("document_folders.id, document_folders.status, document_folders.target_submitted_at, users.first_name, users.last_name, users.email, pos.title as position")
+                ->select("document_folders.id, document_folders.user_id, document_folders.status, document_folders.target_submitted_at, users.first_name, users.last_name, users.email, pos.title as position")
                 ->join('users', 'users.id = document_folders.user_id')
                 ->join('plantillas p', 'p.user_id = users.id AND p.ended_at IS NULL', 'left')
                 ->join('positions pos', 'pos.id = p.position_id', 'left')
                 ->findAll();
+
+            if (!empty($activeFolder['routing_preset_id'])) {
+                $rpmModel = new \App\Models\RoutingPresetMemberModel();
+                $teamMembers = $rpmModel->where('preset_id', $activeFolder['routing_preset_id'])->findAll();
+                $cascadedUserIds = array_map('intval', array_column($cascadedChildren, 'user_id'));
+
+                foreach ($teamMembers as $tm) {
+                    $tUserId = (int)$tm['user_id'];
+                    if (in_array($tUserId, $cascadedUserIds, true)) {
+                        continue;
+                    }
+
+                    // Enforce teaching staff filter if caller is Department Chair
+                    if ($role !== 'Admin' && $isOwnerChair) {
+                        $memberPlantilla = $userModel->getActivePlantillaDetails($tUserId);
+                        $memberUser = $userModel->find($tUserId);
+                        $isTeaching = (($memberPlantilla['is_teaching'] ?? null) == 1) 
+                                   || (strtoupper($memberUser['doc_type'] ?? '') === 'IPCR');
+                        if (!$isTeaching) {
+                            continue;
+                        }
+                    }
+
+                    $pUser = $userModel->find($tUserId);
+                    if ($pUser) {
+                        $pPlantilla = $userModel->getActivePlantillaDetails($tUserId);
+                        $pendingTeamMembers[] = [
+                            'user_id'    => $tUserId,
+                            'first_name' => $pUser['first_name'],
+                            'last_name'  => $pUser['last_name'],
+                            'email'      => $pUser['email'],
+                            'position'   => $pPlantilla['position'] ?? ''
+                        ];
+                    }
+                }
+            }
         }
 
         $templateModel = new TemplateModel();
@@ -248,16 +311,20 @@ class Folder extends BaseController
             'mainView'         => 'document/_doc_rows',
             'templates'        => $templateModel->findAll(),
             'mainData'         => [
-                'activeFolder'           => $activeFolder,
-                'parentFolder'           => $parentFolder,
-                'isParentTargetApproved' => $isParentTargetApproved,
-                'basisDoc'               => $basisDoc,
-                'ownerDocType'           => $ownerDocType,
-                'myDocs'                 => $myDocs,
-                'groupedGuides'          => $groupedGuides,
-                'isReadOnly'             => $isReadOnly,
-                'presets'                => $presets,
-                'cascadedChildren'       => $cascadedChildren
+                'activeFolder'            => $activeFolder,
+                'parentFolder'            => $parentFolder,
+                'isParentTargetApproved'  => $isParentTargetApproved,
+                'basisDoc'                => $basisDoc,
+                'ownerDocType'            => $ownerDocType,
+                'isOwnerDean'             => $isOwnerDean,
+                'isOwnerChair'            => $isOwnerChair,
+                'myDocs'                  => $myDocs,
+                'groupedGuides'           => $groupedGuides,
+                'isReadOnly'              => $isReadOnly,
+                'presets'                 => $presets,
+                'cascadedChildren'        => $cascadedChildren,
+                'pendingTeamMembers'      => $pendingTeamMembers,
+                'pendingTeamMembersCount' => count($pendingTeamMembers)
             ]
         ]);
     }
@@ -284,21 +351,16 @@ class Folder extends BaseController
             $activeFolder = $folderModel->find($folderId);
             if (!$activeFolder) return $this->respondError("Folder not found.", 400);
 
-            // --- STRICT SPMS CASCADE GATING ---
-            // Supervisors/Chairs/Deans must have their own targets approved first before cascading as a basis
-            if ($role !== 'Admin') {
-                if ($activeFolder['status'] !== \App\Enums\FolderStatus::TARGET_APPROVED->value) {
-                    return $this->respondError("Cannot cascade yet: Your target commitments must be approved by your higher-up first before cascading them as a basis for your subordinates.", 400);
-                }
-            } else {
-                $allowedStatuses = [
-                    \App\Enums\FolderStatus::DRAFT_TARGET->value, 
-                    \App\Enums\FolderStatus::TARGET_APPROVED->value,
-                    \App\Enums\FolderStatus::DRAFT->value
-                ];
-                if (!in_array($activeFolder['status'], $allowedStatuses)) {
-                    return $this->respondError("You cannot cascade this folder because it has already moved past the target setting phase.", 400);
-                }
+            // --- SPMS CASCADE GATING ---
+            // Allow cascading during the target setting phase (drafting, submitted, or approved targets)
+            $allowedStatuses = [
+                \App\Enums\FolderStatus::DRAFT_TARGET->value, 
+                \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
+                \App\Enums\FolderStatus::TARGET_APPROVED->value,
+                \App\Enums\FolderStatus::DRAFT->value
+            ];
+            if (!in_array($activeFolder['status'], $allowedStatuses)) {
+                return $this->respondError("You cannot cascade this folder because it has already moved past the target setting phase.", 400);
             }
 
             $presetModel = new RoutingPresetModel();
@@ -342,6 +404,11 @@ class Folder extends BaseController
                             'ipcr_eval_start'     => $activeFolder['ipcr_eval_start'],
                             'ipcr_eval_end'       => $activeFolder['ipcr_eval_end'],
                             
+                            'cdpcr_target_start'  => $activeFolder['cdpcr_target_start'] ?? null,
+                            'cdpcr_target_end'    => $activeFolder['cdpcr_target_end'] ?? null,
+                            'cdpcr_eval_start'    => $activeFolder['cdpcr_eval_start'] ?? null,
+                            'cdpcr_eval_end'      => $activeFolder['cdpcr_eval_end'] ?? null,
+
                             'dpcr_target_start'   => $activeFolder['dpcr_target_start'],
                             'dpcr_target_end'     => $activeFolder['dpcr_target_end'],
                             'dpcr_eval_start'     => $activeFolder['dpcr_eval_start'],
@@ -395,7 +462,31 @@ class Folder extends BaseController
             } else {
                 $batchId = $activeFolder['id'];
 
+                // Detect supervisor position/tier (e.g. Department Chair cascading to faculty)
+                $callerPlantilla = $userModel->getActivePlantillaDetails($userId);
+                $callerPos = strtolower($callerPlantilla['position'] ?? '');
+                $callerEmail = strtolower(session()->get('email') ?? '');
+                $isCallerChair = str_contains($callerPos, 'chair') 
+                              || str_contains($callerPos, 'head') 
+                              || str_contains($callerEmail, 'chair');
+
+                $cascadedCount = 0;
+                $skippedNonTeachingCount = 0;
+
                 foreach ($members as $member) {
+                    // When Department Chair cascades to faculty, enforce teaching staff filter
+                    if ($isCallerChair) {
+                        $memberPlantilla = $userModel->getActivePlantillaDetails((int) $member['user_id']);
+                        $memberUser = $userModel->find($member['user_id']);
+                        $isTeaching = (($memberPlantilla['is_teaching'] ?? null) == 1) 
+                                   || (strtoupper($memberUser['doc_type'] ?? '') === 'IPCR');
+
+                        if (!$isTeaching) {
+                            $skippedNonTeachingCount++;
+                            continue;
+                        }
+                    }
+
                     $subFolder = $folderModel->where('user_id', $member['user_id'])
                                              ->where('parent_folder_id', $batchId)
                                              ->where('deleted_at IS NULL')->first();
@@ -411,6 +502,11 @@ class Folder extends BaseController
                             'ipcr_eval_start'     => $activeFolder['ipcr_eval_start'],
                             'ipcr_eval_end'       => $activeFolder['ipcr_eval_end'],
                             
+                            'cdpcr_target_start'  => $activeFolder['cdpcr_target_start'] ?? null,
+                            'cdpcr_target_end'    => $activeFolder['cdpcr_target_end'] ?? null,
+                            'cdpcr_eval_start'    => $activeFolder['cdpcr_eval_start'] ?? null,
+                            'cdpcr_eval_end'      => $activeFolder['cdpcr_eval_end'] ?? null,
+
                             'dpcr_target_start'   => $activeFolder['dpcr_target_start'],
                             'dpcr_target_end'     => $activeFolder['dpcr_target_end'],
                             'dpcr_eval_start'     => $activeFolder['dpcr_eval_start'],
@@ -472,9 +568,20 @@ class Folder extends BaseController
                                 }
                             }
                         }
+
+                        $cascadedCount++;
                     }
                 }
-                $message = "Goals successfully cascaded to your team.";
+
+                if ($isCallerChair && $cascadedCount === 0 && $skippedNonTeachingCount > 0) {
+                    return $this->respondError("No teaching staff found in the selected team. Department Chairs can only cascade to active teaching faculty.", 400);
+                }
+
+                if ($isCallerChair && $skippedNonTeachingCount > 0) {
+                    $message = "Goals successfully cascaded to {$cascadedCount} teaching faculty member(s) ({$skippedNonTeachingCount} non-teaching personnel skipped).";
+                } else {
+                    $message = "Goals successfully cascaded to your team ({$cascadedCount} members).";
+                }
             }
 
             $folderModel->db->transComplete();
@@ -490,23 +597,21 @@ class Folder extends BaseController
             $userId   = session()->get('user_id');
             $role     = session()->get('role');
 
-            $folderModel = new DocumentFolderModel();
-            $routingModel = new EvaluationRoutingModel();
+            $folderModel       = new DocumentFolderModel();
+            $routingModel      = new EvaluationRoutingModel();
             $presetMemberModel = new RoutingPresetMemberModel();
-            $presetModel = new RoutingPresetModel();
+            $presetModel       = new RoutingPresetModel();
+            $documentModel     = new \App\Models\DocumentModel();
 
             $activeFolder = $folderModel->find($folderId);
-
-            // Use the folder's own stored reference rather than trusting a client-submitted
-            // team_id - the cascade-select dropdown's value isn't reliable once the cascaded
-            // team is missing/archived, so this must be authoritative, not client-supplied.
-            $teamId = $activeFolder['routing_preset_id'] ?? null;
-            if (!$teamId) {
-                return $this->respondError("This folder isn't currently cascaded to a team.", 400);
+            if (!$activeFolder) {
+                return $this->respondError("Folder not found.", 404);
             }
 
-            $members = $presetMemberModel->where('preset_id', $teamId)->findAll();
-            $memberIds = array_column($members, 'user_id');
+            // Permissions: Must be folder owner or Admin
+            if ($activeFolder['user_id'] != $userId && $role !== 'Admin') {
+                return $this->respondError("You do not have permission to revoke the cascade for this folder.", 403);
+            }
 
             $allowedStatuses = [
                 \App\Enums\FolderStatus::DRAFT_TARGET->value,
@@ -516,45 +621,372 @@ class Folder extends BaseController
                 \App\Enums\FolderStatus::TARGET_UNAPPROVED->value,
                 \App\Enums\FolderStatus::DRAFT->value
             ];
-            if (!in_array($activeFolder['status'], $allowedStatuses)) {
+            if ($role !== 'Admin' && !in_array($activeFolder['status'], $allowedStatuses)) {
                 return $this->respondError("You cannot revoke the cascade for a folder that has moved past the target setting phase or is locked.", 400);
+            }
+
+            $teamId = $activeFolder['routing_preset_id'] ?? null;
+
+            // Recursively collect all descendant folders (children, grandchildren, etc.) level-by-level
+            $allFolderIds = [];
+            $currentLevel = [$folderId];
+            $levels = [];
+            while (!empty($currentLevel)) {
+                $nextLevel = $folderModel->whereIn('parent_folder_id', $currentLevel)
+                                         ->where('deleted_at IS NULL')
+                                         ->findColumn('id');
+                if (!empty($nextLevel)) {
+                    $levels[] = $nextLevel;
+                    $allFolderIds = array_merge($allFolderIds, $nextLevel);
+                    $currentLevel = $nextLevel;
+                } else {
+                    break;
+                }
+            }
+            $allFolderIds = array_unique($allFolderIds);
+
+            if (!$teamId && empty($allFolderIds)) {
+                return $this->respondError("This folder isn't currently cascaded to any team or subordinates.", 400);
             }
 
             $folderModel->db->transStart();
 
-            // 1. Clear the memory
+            // 1. Clear the routing_preset_id on this active folder
             $folderModel->update($folderId, ['routing_preset_id' => null]);
 
-            if (!empty($members)) {
-                $batchId = $activeFolder['id'];
-                $subFolders = $folderModel->whereIn('user_id', $memberIds)
-                                          ->where('parent_folder_id', $batchId)->findAll();
-                $subFolderIds = array_column($subFolders, 'id');
+            if (!empty($allFolderIds)) {
+                $in = "'" . implode("','", $allFolderIds) . "'";
 
-                if (!empty($subFolderIds)) {
-                    // SQLite / MySQL foreign key safety: Delete documents inside child folders first
-                    $documentModel = new \App\Models\DocumentModel();
-                    $documentModel->whereIn('document_folder_id', $subFolderIds)->delete();
+                // 2. Foreign Key Safety: Delete document attachments inside descendant folders
+                $folderModel->db->query("DELETE FROM document_attachments WHERE document_id IN (SELECT id FROM documents WHERE document_folder_id IN ($in))");
 
-                    // Delete routings
-                    $routingModel->whereIn('folder_id', $subFolderIds)->delete();
+                // 3. Foreign Key Safety: Delete documents inside descendant folders
+                $documentModel->whereIn('document_folder_id', $allFolderIds)->delete();
 
-                    // Delete child folders
-                    $folderModel->whereIn('id', $subFolderIds)->delete();
+                // 4. Foreign Key Safety: Delete evaluation routings referencing any descendant folder
+                $folderModel->db->query("DELETE FROM evaluation_routings WHERE folder_id IN ($in) OR evaluator_folder_id IN ($in)");
+
+                // 5. Clean up notifications referencing any of the removed folders
+                foreach ($allFolderIds as $delId) {
+                    $folderModel->db->query("DELETE FROM notifications WHERE link LIKE '%folders/{$delId}%' OR link LIKE '%ratings/show/{$delId}%'");
+                }
+
+                // 6. Delete descendant folders in leaf-to-root order (deepest levels first) to prevent SQLite FK constraint errors
+                $levelsReversed = array_reverse($levels);
+                foreach ($levelsReversed as $levelIds) {
+                    $folderModel->whereIn('id', $levelIds)->delete();
                 }
             }
 
-            // 2. Clean up the routing preset if it was soft-deleted and is no longer in use anywhere
-            $inUseCount = $folderModel->where('routing_preset_id', $teamId)->countAllResults();
-            if ($inUseCount === 0) {
-                $deletedPreset = $presetModel->onlyDeleted()->find($teamId);
-                if ($deletedPreset) {
-                    $presetModel->delete($teamId, true); // Hard delete
+            // 6. Clean up the routing preset if it was soft-deleted and is no longer in use anywhere
+            if ($teamId) {
+                $inUseCount = $folderModel->where('routing_preset_id', $teamId)->countAllResults();
+                if ($inUseCount === 0) {
+                    $deletedPreset = $presetModel->onlyDeleted()->find($teamId);
+                    if ($deletedPreset) {
+                        $presetModel->delete($teamId, true); // Hard delete
+                    }
                 }
             }
 
             $folderModel->db->transComplete();
             return $this->respond(['status' => 'success', 'message' => 'Cascade revoked successfully.']);
+        });
+    }
+
+    /** POST /folder/sync-team-cascade - Synchronizes missing team members into an already cascaded folder without touching existing folders. */
+    public function syncTeamCascade() {
+        return $this->tryOrFail(function() {
+            $folderId = $this->request->getPost('folder_id');
+            $userId   = session()->get('user_id');
+            $role     = session()->get('role');
+
+            $folderModel       = new DocumentFolderModel();
+            $routingModel      = new EvaluationRoutingModel();
+            $presetMemberModel = new RoutingPresetMemberModel();
+            $presetModel       = new RoutingPresetModel();
+            $userModel         = new UserModel();
+
+            $activeFolder = $folderModel->find($folderId);
+            if (!$activeFolder) {
+                return $this->respondError("Folder not found.", 400);
+            }
+
+            // Gating: Target setting phase
+            $allowedStatuses = [
+                \App\Enums\FolderStatus::DRAFT_TARGET->value, 
+                \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
+                \App\Enums\FolderStatus::TARGET_APPROVED->value,
+                \App\Enums\FolderStatus::DRAFT->value
+            ];
+            if ($role !== 'Admin' && !in_array($activeFolder['status'], $allowedStatuses)) {
+                return $this->respondError("Cannot sync cascade: this folder has already moved past the target setting phase.", 400);
+            }
+
+            $teamId = $activeFolder['routing_preset_id'] ?? null;
+            if (!$teamId) {
+                return $this->respondError("This folder is not currently cascaded to any team.", 400);
+            }
+
+            $preset = $presetModel->find($teamId);
+            if (!$preset) {
+                return $this->respondError("The cascaded team was not found.", 404);
+            }
+            if ($preset['owner_id'] != $userId && $role !== 'Admin') {
+                return $this->respondError("You do not have permission to sync this team.", 403);
+            }
+
+            $members = $presetMemberModel->where('preset_id', $teamId)->findAll();
+            if (empty($members)) {
+                return $this->respondError("The team currently has no members. Add members in the Teams tab first.", 400);
+            }
+
+            // Detect caller position
+            $callerPlantilla = $userModel->getActivePlantillaDetails($userId);
+            $callerPos = strtolower($callerPlantilla['position'] ?? '');
+            $callerEmail = strtolower(session()->get('email') ?? '');
+            $isCallerChair = str_contains($callerPos, 'chair') 
+                          || str_contains($callerPos, 'head') 
+                          || str_contains($callerEmail, 'chair');
+
+            $folderModel->db->transStart();
+
+            $addedCount = 0;
+            $skippedNonTeachingCount = 0;
+
+            foreach ($members as $member) {
+                $targetUserId = (int)$member['user_id'];
+
+                // Enforce teaching staff filter if Department Chair
+                if ($role !== 'Admin' && $isCallerChair) {
+                    $memberPlantilla = $userModel->getActivePlantillaDetails($targetUserId);
+                    $memberUser = $userModel->find($targetUserId);
+                    $isTeaching = (($memberPlantilla['is_teaching'] ?? null) == 1) 
+                               || (strtoupper($memberUser['doc_type'] ?? '') === 'IPCR');
+
+                    if (!$isTeaching) {
+                        $skippedNonTeachingCount++;
+                        continue;
+                    }
+                }
+
+                // Check if child folder already exists for this member
+                $exists = $folderModel->where('user_id', $targetUserId)
+                                      ->where('parent_folder_id', $activeFolder['id'])
+                                      ->where('deleted_at IS NULL')
+                                      ->first();
+                if ($exists) {
+                    // Already cascaded! Do not touch or overwrite existing drafts!
+                    continue;
+                }
+
+                // Create new child folder for this missing member
+                $newFolderId = create_unique_row($folderModel, [
+                    'title'               => $activeFolder['title'],
+                    'user_id'             => $targetUserId,
+                    'parent_folder_id'    => $activeFolder['id'],
+                    
+                    'ipcr_target_start'   => $activeFolder['ipcr_target_start'],
+                    'ipcr_target_end'     => $activeFolder['ipcr_target_end'],
+                    'ipcr_eval_start'     => $activeFolder['ipcr_eval_start'],
+                    'ipcr_eval_end'       => $activeFolder['ipcr_eval_end'],
+                    
+                    'cdpcr_target_start'  => $activeFolder['cdpcr_target_start'] ?? null,
+                    'cdpcr_target_end'    => $activeFolder['cdpcr_target_end'] ?? null,
+                    'cdpcr_eval_start'    => $activeFolder['cdpcr_eval_start'] ?? null,
+                    'cdpcr_eval_end'      => $activeFolder['cdpcr_eval_end'] ?? null,
+
+                    'dpcr_target_start'   => $activeFolder['dpcr_target_start'],
+                    'dpcr_target_end'     => $activeFolder['dpcr_target_end'],
+                    'dpcr_eval_start'     => $activeFolder['dpcr_eval_start'],
+                    'dpcr_eval_end'       => $activeFolder['dpcr_eval_end'],
+                    
+                    'opcr_target_start'   => $activeFolder['opcr_target_start'],
+                    'opcr_target_end'     => $activeFolder['opcr_target_end'],
+                    'opcr_eval_start'     => $activeFolder['opcr_eval_start'],
+                    'opcr_eval_end'       => $activeFolder['opcr_eval_end'],
+                    
+                    'iperf_target_start'  => $activeFolder['iperf_target_start'],
+                    'iperf_target_end'    => $activeFolder['iperf_target_end'],
+                    'iperf_eval_start'    => $activeFolder['iperf_eval_start'],
+                    'iperf_eval_end'      => $activeFolder['iperf_eval_end'],
+                    
+                    'status'              => \App\Enums\FolderStatus::DRAFT_TARGET->value
+                ]);
+
+                // Pre-generate official evaluation paper
+                $this->ensureUserDocumentExists($newFolderId, $targetUserId, $activeFolder['title']);
+
+                // Register evaluator routing
+                $routingExists = $routingModel->where('folder_id', $newFolderId)
+                                              ->where('evaluator_id', $userId)
+                                              ->first();
+                if (!$routingExists) {
+                    $routingModel->insert([
+                        'folder_id'           => $newFolderId,
+                        'evaluator_id'        => $userId,
+                        'evaluator_folder_id' => $activeFolder['id'],
+                        'status'              => FolderStatus::DRAFT->value
+                    ]);
+                }
+
+                // Next-in-Rank Calibrator (e.g. Dean if Chair cascades to faculty)
+                if (!empty($activeFolder['parent_folder_id'])) {
+                    $parentFolder = $folderModel->find($activeFolder['parent_folder_id']);
+                    if ($parentFolder && !empty($parentFolder['user_id']) && $parentFolder['user_id'] != $userId) {
+                        $parentExists = $routingModel->where('folder_id', $newFolderId)
+                                                     ->where('evaluator_id', $parentFolder['user_id'])->first();
+                        if (!$parentExists) {
+                            $routingModel->insert([
+                                'folder_id'           => $newFolderId,
+                                'evaluator_id'        => $parentFolder['user_id'],
+                                'evaluator_folder_id' => $parentFolder['id'],
+                                'status'              => FolderStatus::DRAFT->value
+                            ]);
+                        }
+                    }
+                }
+
+                // In-app notification
+                $targetUser = $userModel->find($targetUserId);
+                $paperType = strtoupper($targetUser['doc_type'] ?? 'IPCR');
+                notify_user($targetUserId, [
+                    'sender_id' => $userId,
+                    'type'      => 'target_assigned',
+                    'title'     => 'Evaluation Target Assigned',
+                    'message'   => "You have been assigned to prepare your {$paperType} for \"{$activeFolder['title']}\".",
+                    'link'      => 'folders/' . $newFolderId,
+                    'icon'      => 'file'
+                ]);
+
+                $addedCount++;
+            }
+
+            $folderModel->db->transComplete();
+
+            if ($addedCount === 0) {
+                return $this->respond([
+                    'status'      => 'success',
+                    'message'     => 'Team is already fully synchronized. All members have target folders.',
+                    'added_count' => 0
+                ]);
+            }
+
+            return $this->respond([
+                'status'      => 'success',
+                'message'     => "Successfully synchronized {$addedCount} new member" . ($addedCount === 1 ? '' : 's') . " to this evaluation cycle.",
+                'added_count' => $addedCount
+            ]);
+        });
+    }
+
+    /** POST /folder/remove-subordinate-cascade - Removes an individual cascaded subordinate and their folder/documents. */
+    public function removeSubordinateCascade() {
+        return $this->tryOrFail(function() {
+            $childFolderId  = $this->request->getPost('child_folder_id');
+            $parentFolderId = $this->request->getPost('parent_folder_id');
+            $userId         = session()->get('user_id');
+            $role           = session()->get('role');
+
+            $folderModel       = new DocumentFolderModel();
+            $routingModel      = new EvaluationRoutingModel();
+            $presetMemberModel = new RoutingPresetMemberModel();
+            $documentModel     = new DocumentModel();
+
+            $parentFolder = $folderModel->find($parentFolderId);
+            if (!$parentFolder) {
+                return $this->respondError("Parent evaluation cycle not found.", 404);
+            }
+
+            if ($parentFolder['user_id'] != $userId && $role !== 'Admin') {
+                return $this->respondError("You do not have permission to modify subordinates in this folder.", 403);
+            }
+
+            // Gating: Target setting phase only
+            $allowedStatuses = [
+                \App\Enums\FolderStatus::DRAFT_TARGET->value,
+                \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
+                \App\Enums\FolderStatus::TARGET_APPROVED->value,
+                \App\Enums\FolderStatus::TARGET_RETURNED->value,
+                \App\Enums\FolderStatus::TARGET_UNAPPROVED->value,
+                \App\Enums\FolderStatus::DRAFT->value
+            ];
+            if ($role !== 'Admin' && !in_array($parentFolder['status'], $allowedStatuses)) {
+                return $this->respondError("Cannot remove subordinate: this evaluation cycle has already moved past the target setting phase.", 400);
+            }
+
+            $childFolder = $folderModel->find($childFolderId);
+            if (!$childFolder || $childFolder['parent_folder_id'] != $parentFolderId) {
+                return $this->respondError("Subordinate folder not found under this evaluation cycle.", 404);
+            }
+
+            $folderModel->db->transStart();
+
+            // 1. Recursively find any descendants under this child folder (e.g. if Chair cascaded to faculty)
+            $allFolderIds = [$childFolderId];
+            $currentLevel = [$childFolderId];
+            $levels = [[$childFolderId]];
+            while (!empty($currentLevel)) {
+                $nextLevel = $folderModel->whereIn('parent_folder_id', $currentLevel)->findColumn('id');
+                if (!empty($nextLevel)) {
+                    $levels[] = $nextLevel;
+                    $allFolderIds = array_merge($allFolderIds, $nextLevel);
+                    $currentLevel = $nextLevel;
+                } else {
+                    break;
+                }
+            }
+            $allFolderIds = array_unique($allFolderIds);
+
+            // 2. Clean up foreign key dependents: attachments, documents, routings, folders
+            $in = "'" . implode("','", $allFolderIds) . "'";
+            $folderModel->db->query("DELETE FROM document_attachments WHERE document_id IN (SELECT id FROM documents WHERE document_folder_id IN ($in))");
+            $documentModel->whereIn('document_folder_id', $allFolderIds)->delete();
+            $folderModel->db->query("DELETE FROM evaluation_routings WHERE folder_id IN ($in) OR evaluator_folder_id IN ($in)");
+            
+            // Clean up notifications referencing any of the removed folders
+            foreach ($allFolderIds as $delId) {
+                $folderModel->db->query("DELETE FROM notifications WHERE link LIKE '%folders/{$delId}%' OR link LIKE '%ratings/show/{$delId}%'");
+            }
+
+            // Delete folders leaf-first
+            $levelsReversed = array_reverse($levels);
+            foreach ($levelsReversed as $levelIds) {
+                $folderModel->whereIn('id', $levelIds)->delete();
+            }
+
+            // 3. Keep preset sync consistent: if parent folder is cascaded to a team preset, also remove user from preset members
+            $teamId = $parentFolder['routing_preset_id'] ?? null;
+            if ($teamId) {
+                $presetMemberModel->where('preset_id', $teamId)
+                                  ->where('user_id', $childFolder['user_id'])
+                                  ->delete();
+            }
+
+            // 4. Notify the removed user
+            notify_user((int)$childFolder['user_id'], [
+                'sender_id' => $userId,
+                'type'      => 'target_revoked',
+                'title'     => 'Evaluation Assignment Removed',
+                'message'   => "Your evaluation target assignment for \"{$parentFolder['title']}\" has been removed by your supervisor.",
+                'link'      => 'folders',
+                'icon'      => 'user-minus'
+            ]);
+
+            // 5. If no cascaded children remain under parent, clear the routing_preset_id
+            $remainingCount = $folderModel->where('parent_folder_id', $parentFolderId)
+                                          ->where('deleted_at IS NULL')
+                                          ->countAllResults();
+            if ($remainingCount === 0) {
+                $folderModel->update($parentFolderId, ['routing_preset_id' => null]);
+            }
+
+            $folderModel->db->transComplete();
+
+            return $this->respond([
+                'status'  => 'success',
+                'message' => 'Subordinate removed from this evaluation cycle successfully.'
+            ]);
         });
     }
 
@@ -693,7 +1125,7 @@ class Folder extends BaseController
                 'target_approved_at' => null,
             ];
 
-            $docTypes = ['ipcr', 'dpcr', 'opcr', 'iperf'];
+            $docTypes = ['ipcr', 'cdpcr', 'dpcr', 'opcr', 'iperf'];
             foreach ($docTypes as $type) {
                 $payload["{$type}_target_start"] = str_replace('T', ' ', $this->request->getPost("{$type}_target_start")) ?: null;
                 $payload["{$type}_target_end"]   = str_replace('T', ' ', $this->request->getPost("{$type}_target_end")) ?: null;
@@ -707,10 +1139,11 @@ class Folder extends BaseController
                 return $this->respondError("Could not generate a unique ID.", 400);
             }
 
-            // Immediately create the owner's official evaluation paper based on profile doc_type (OPCR for Admin)
+            // Create the owner's official evaluation paper (Admins initiate cycles and do not fill forms)
             $role = session()->get('role');
-            $overrideDocType = ($role === 'Admin') ? 'OPCR' : null;
-            $this->ensureUserDocumentExists($newId, $userId, $title, $overrideDocType);
+            if ($role !== 'Admin') {
+                $this->ensureUserDocumentExists($newId, $userId, $title);
+            }
 
             return $this->respond(['status' => 'success', 'id' => $newId]);
         });
@@ -777,6 +1210,9 @@ class Folder extends BaseController
             if (!empty($allFolderIds)) {
                 $documentModel = new \App\Models\DocumentModel();
                 $documentModel->whereIn('document_folder_id', $allFolderIds)->delete();
+                foreach ($allFolderIds as $delId) {
+                    $folderModel->db->query("DELETE FROM notifications WHERE link LIKE '%folders/{$delId}%' OR link LIKE '%ratings/show/{$delId}%'");
+                }
             }
             $teamIds = array_unique($teamIds);
 
@@ -801,11 +1237,12 @@ class Folder extends BaseController
      * GET /folders/archived or /folders/archived/{folderId} - Displays archived folders.
      */
     public function archived($folderId = null) {
-        if (session()->get('role') === 'TWG') {
-            return redirect()->to(site_url('ratings'));
+        if (session()->get('role') !== 'Admin') {
+            return redirect()->to(site_url('folders'));
         }
 
         $userId = session()->get('user_id');
+        $role   = session()->get('role');
 
         $folderModel   = new DocumentFolderModel();
         $documentModel = new DocumentModel();
@@ -828,7 +1265,9 @@ class Folder extends BaseController
         if ($folderId) {
             $activeFolder = $folderModel->find($folderId);
             if ($activeFolder && $activeFolder['user_id'] == $userId) {
-                $this->ensureUserDocumentExists($folderId, $userId, $activeFolder['title']);
+                if ($role !== 'Admin') {
+                    $this->ensureUserDocumentExists($folderId, $userId, $activeFolder['title']);
+                }
                 $myDocs = $documentModel->where('document_folder_id', $folderId)->findAll();
                 $owner = $userModel->find($activeFolder['user_id']);
                 $ownerDocType = $owner['doc_type'] ?? null;
@@ -868,8 +1307,8 @@ class Folder extends BaseController
                 return $this->respondError('Folder not found', 404);
             }
 
-            if ($role !== 'Admin' && $folder['user_id'] != $userId) {
-                return $this->respondError('Unauthorized', 403);
+            if ($role !== 'Admin') {
+                return $this->respondError('Unauthorized. Only administrators can archive evaluation folders.', 403);
             }
 
             $now = date('Y-m-d H:i:s');
@@ -915,8 +1354,8 @@ class Folder extends BaseController
                 return $this->respondError('Folder not found', 404);
             }
 
-            if ($role !== 'Admin' && $folder['user_id'] != $userId) {
-                return $this->respondError('Unauthorized', 403);
+            if ($role !== 'Admin') {
+                return $this->respondError('Unauthorized. Only administrators can restore evaluation folders.', 403);
             }
 
             // Restore this folder and its child folders
@@ -963,14 +1402,14 @@ class Folder extends BaseController
             $userRole = session()->get('role');
             $userId   = session()->get('user_id');
 
-            // Admins can edit any master folder; Supervisors can edit folders they own
-            if ($userRole !== 'Admin' && $masterFolder['user_id'] != $userId) {
-                return $this->respondError("Unauthorized to edit this folder.", 403);
+            // Only administrators can edit cycle dates and retitle folders
+            if ($userRole !== 'Admin') {
+                return $this->respondError("Unauthorized. Only administrators can edit evaluation folders.", 403);
             }
 
             $title = $this->request->getPost('title');
             
-            $docTypes = ['ipcr', 'dpcr', 'opcr', 'iperf'];
+            $docTypes = ['ipcr', 'cdpcr', 'dpcr', 'opcr', 'iperf'];
             $folderData = ['title' => $title];
             
             foreach ($docTypes as $type) {
@@ -1013,8 +1452,10 @@ class Folder extends BaseController
             $childFolders = [];
             if (!empty($allDescendantIds)) {
                 $childFolders = $db->table('document_folders df')
-                    ->select('df.*, u.doc_type')
+                    ->select('df.*, u.doc_type, u.email, pos.title as position')
                     ->join('users u', 'u.id = df.user_id')
+                    ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
+                    ->join('positions pos', 'pos.id = p.position_id', 'left')
                     ->whereIn('df.id', array_unique($allDescendantIds))
                     ->where('df.deleted_at IS NULL')
                     ->get()->getResultArray();
@@ -1025,12 +1466,20 @@ class Folder extends BaseController
                     $childData = $folderData;
                     
                     $userDocType = strtolower($child['doc_type'] ?? 'ipcr');
-                    if (!in_array($userDocType, $docTypes)) $userDocType = 'ipcr';
+                    $pos = strtolower($child['position'] ?? '');
+                    $email = strtolower($child['email'] ?? '');
+                    $isDean = str_contains($pos, 'dean') || str_contains($email, 'dean');
 
-                    $targetStart = $folderData["{$userDocType}_target_start"];
-                    $targetEnd   = $folderData["{$userDocType}_target_end"];
-                    $dateStart   = $folderData["{$userDocType}_eval_start"];
-                    $dateEnd     = $folderData["{$userDocType}_eval_end"];
+                    if (($userDocType === 'dpcr' || $userDocType === 'cdpcr') && $isDean) {
+                        $effectiveType = (!empty($folderData['cdpcr_target_start']) || !empty($folderData['cdpcr_target_end']) || !empty($folderData['cdpcr_eval_start']) || !empty($folderData['cdpcr_eval_end'])) ? 'cdpcr' : 'dpcr';
+                    } else {
+                        $effectiveType = in_array($userDocType, $docTypes) ? $userDocType : 'ipcr';
+                    }
+
+                    $targetStart = $folderData["{$effectiveType}_target_start"] ?? $folderData['dpcr_target_start'];
+                    $targetEnd   = $folderData["{$effectiveType}_target_end"] ?? $folderData['dpcr_target_end'];
+                    $dateStart   = $folderData["{$effectiveType}_eval_start"] ?? $folderData['dpcr_eval_start'];
+                    $dateEnd     = $folderData["{$effectiveType}_eval_end"] ?? $folderData['dpcr_eval_end'];
                     
                     $isEvalFuture  = !empty($dateStart) && $dateStart > $now;
                     $isEvalOpen    = !empty($dateStart) && !empty($dateEnd) && $dateStart <= $now && $dateEnd >= $now;
@@ -1294,7 +1743,10 @@ class Folder extends BaseController
                     $isMyDocOpcr = str_contains($myDocTitleUpper, 'OPCR') || str_contains($myDocTitleUpper, 'OFFICE') || (strtoupper($myDoc['doc_type'] ?? '') === 'OPCR');
 
                     if ($parentDoc && !$isMyDocOpcr) {
-                        if ($parentFolder['status'] !== FolderStatus::TARGET_APPROVED->value) {
+                        $parentDocTitleUpper = strtoupper($parentDoc['title'] ?? '');
+                        $isParentDocOpcr = str_contains($parentDocTitleUpper, 'OPCR') || str_contains($parentDocTitleUpper, 'OFFICE') || (strtoupper($parentDoc['doc_type'] ?? '') === 'OPCR');
+
+                        if (!$isParentDocOpcr && $parentFolder['status'] !== FolderStatus::TARGET_APPROVED->value) {
                             $parentTitle = $parentFolder['title'] ?? 'Superior';
                             return $this->respondError("Cannot submit targets yet: The superior basis commitments (\"{$parentTitle}\") have not been approved by the higher-up yet. Under SPMS cascading rules, individual commitments require approved superior targets as a basis.", 400);
                         }
@@ -1467,6 +1919,10 @@ class Folder extends BaseController
                             'ipcr_target_end'     => $folder['ipcr_target_end'],
                             'ipcr_eval_start'     => $folder['ipcr_eval_start'],
                             'ipcr_eval_end'       => $folder['ipcr_eval_end'],
+                            'cdpcr_target_start'  => $folder['cdpcr_target_start'] ?? null,
+                            'cdpcr_target_end'    => $folder['cdpcr_target_end'] ?? null,
+                            'cdpcr_eval_start'    => $folder['cdpcr_eval_start'] ?? null,
+                            'cdpcr_eval_end'      => $folder['cdpcr_eval_end'] ?? null,
                             'dpcr_target_start'   => $folder['dpcr_target_start'],
                             'dpcr_target_end'     => $folder['dpcr_target_end'],
                             'dpcr_eval_start'     => $folder['dpcr_eval_start'],
@@ -1529,6 +1985,10 @@ class Folder extends BaseController
                             'ipcr_target_end'     => $folder['ipcr_target_end'],
                             'ipcr_eval_start'     => $folder['ipcr_eval_start'],
                             'ipcr_eval_end'       => $folder['ipcr_eval_end'],
+                            'cdpcr_target_start'  => $folder['cdpcr_target_start'] ?? null,
+                            'cdpcr_target_end'    => $folder['cdpcr_target_end'] ?? null,
+                            'cdpcr_eval_start'    => $folder['cdpcr_eval_start'] ?? null,
+                            'cdpcr_eval_end'      => $folder['cdpcr_eval_end'] ?? null,
                             'dpcr_target_start'   => $folder['dpcr_target_start'],
                             'dpcr_target_end'     => $folder['dpcr_target_end'],
                             'dpcr_eval_start'     => $folder['dpcr_eval_start'],
@@ -1604,6 +2064,10 @@ class Folder extends BaseController
                             'ipcr_target_end'     => $folder['ipcr_target_end'],
                             'ipcr_eval_start'     => $folder['ipcr_eval_start'],
                             'ipcr_eval_end'       => $folder['ipcr_eval_end'],
+                            'cdpcr_target_start'  => $folder['cdpcr_target_start'] ?? null,
+                            'cdpcr_target_end'    => $folder['cdpcr_target_end'] ?? null,
+                            'cdpcr_eval_start'    => $folder['cdpcr_eval_start'] ?? null,
+                            'cdpcr_eval_end'      => $folder['cdpcr_eval_end'] ?? null,
                             'dpcr_target_start'   => $folder['dpcr_target_start'],
                             'dpcr_target_end'     => $folder['dpcr_target_end'],
                             'dpcr_eval_start'     => $folder['dpcr_eval_start'],
@@ -1675,6 +2139,10 @@ class Folder extends BaseController
                             'ipcr_target_end'     => $folder['ipcr_target_end'],
                             'ipcr_eval_start'     => $folder['ipcr_eval_start'],
                             'ipcr_eval_end'       => $folder['ipcr_eval_end'],
+                            'cdpcr_target_start'  => $folder['cdpcr_target_start'] ?? null,
+                            'cdpcr_target_end'    => $folder['cdpcr_target_end'] ?? null,
+                            'cdpcr_eval_start'    => $folder['cdpcr_eval_start'] ?? null,
+                            'cdpcr_eval_end'      => $folder['cdpcr_eval_end'] ?? null,
                             'dpcr_target_start'   => $folder['dpcr_target_start'],
                             'dpcr_target_end'     => $folder['dpcr_target_end'],
                             'dpcr_eval_start'     => $folder['dpcr_eval_start'],
@@ -2196,16 +2664,16 @@ class Folder extends BaseController
             }
         }
 
-        // If no evaluators or parents found, notify Admins
-        if (empty($notifiedIds)) {
+        // If no evaluators or parents found, notify primary Admin only (avoiding multi-admin inbox spam)
+        if (empty($notifiedIds) && session()->get('role') !== 'Admin') {
             $userRoleModel = new \App\Models\UserRoleModel();
             $roleModel = new \App\Models\RoleModel();
             $adminRole = $roleModel->where('name', 'Admin')->first();
             if ($adminRole) {
-                $adminUsers = $userRoleModel->where('role_id', $adminRole['id'])->findAll();
-                foreach ($adminUsers as $au) {
-                    $adminId = (int) $au['user_id'];
-                    if (!in_array($adminId, $notifiedIds)) {
+                $primaryAdmin = $userRoleModel->where('role_id', $adminRole['id'])->first();
+                if ($primaryAdmin) {
+                    $adminId = (int) $primaryAdmin['user_id'];
+                    if (!in_array($adminId, $notifiedIds) && $adminId !== $senderId) {
                         notify_user($adminId, [
                             'sender_id' => $senderId,
                             'type'      => $type,

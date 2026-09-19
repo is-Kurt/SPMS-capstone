@@ -67,8 +67,15 @@ class NightlyWorker extends BaseCommand
         foreach ($nearingEvalFolders as $folder) {
             $link = site_url("folders/" . $folder['id']);
             $docType = strtolower($folder['doc_type'] ?? 'ipcr');
-            $evalDateEndKey = $docType . '_eval_end';
-            $deadline = $folder[$evalDateEndKey] ?? null;
+            $pos = strtolower($folder['position'] ?? '');
+            $email = strtolower($folder['email'] ?? '');
+            $isDean = str_contains($pos, 'dean') || str_contains($email, 'dean');
+            if (($docType === 'dpcr' || $docType === 'cdpcr') && $isDean) {
+                $deadline = $folder['cdpcr_eval_end'] ?? $folder['dpcr_eval_end'] ?? null;
+            } else {
+                $evalDateEndKey = $docType . '_eval_end';
+                $deadline = $folder[$evalDateEndKey] ?? null;
+            }
             if (!$deadline) continue;
 
             queue_email(
@@ -90,8 +97,15 @@ class NightlyWorker extends BaseCommand
         foreach ($nearingTargetFolders as $folder) {
             $link = site_url("folders/" . $folder['id']);
             $docType = strtolower($folder['doc_type'] ?? 'ipcr');
-            $targetDateEndKey = $docType . '_target_end';
-            $deadline = $folder[$targetDateEndKey] ?? null;
+            $pos = strtolower($folder['position'] ?? '');
+            $email = strtolower($folder['email'] ?? '');
+            $isDean = str_contains($pos, 'dean') || str_contains($email, 'dean');
+            if (($docType === 'dpcr' || $docType === 'cdpcr') && $isDean) {
+                $deadline = $folder['cdpcr_target_end'] ?? $folder['dpcr_target_end'] ?? null;
+            } else {
+                $targetDateEndKey = $docType . '_target_end';
+                $deadline = $folder[$targetDateEndKey] ?? null;
+            }
             if (!$deadline) continue;
 
             queue_email(

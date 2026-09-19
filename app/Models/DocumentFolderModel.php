@@ -20,6 +20,7 @@ class  DocumentFolderModel extends Model
         'parent_folder_id',
         'final_rating',
         'ipcr_target_start', 'ipcr_target_end', 'ipcr_eval_start', 'ipcr_eval_end',
+        'cdpcr_target_start', 'cdpcr_target_end', 'cdpcr_eval_start', 'cdpcr_eval_end',
         'dpcr_target_start', 'dpcr_target_end', 'dpcr_eval_start', 'dpcr_eval_end',
         'opcr_target_start', 'opcr_target_end', 'opcr_eval_start', 'opcr_eval_end',
         'iperf_target_start', 'iperf_target_end', 'iperf_eval_start', 'iperf_eval_end',
@@ -156,10 +157,12 @@ class  DocumentFolderModel extends Model
         $cutoff = date('Y-m-d H:i:s', strtotime("+{$withinDays} days"));
 
         return $this->db->table('document_folders df')
-            ->select('df.id, u.email, u.first_name, u.doc_type, df.ipcr_eval_end, df.dpcr_eval_end, df.opcr_eval_end, df.iperf_eval_end')
+            ->select('df.id, u.email, u.first_name, u.doc_type, pos.title as position, df.ipcr_eval_end, df.cdpcr_eval_end, df.dpcr_eval_end, df.opcr_eval_end, df.iperf_eval_end')
             ->join('users u', 'u.id = df.user_id')
             ->join('user_roles ur', 'ur.user_id = u.id', 'left')
             ->join('roles r', 'r.id = ur.role_id', 'left')
+            ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
+            ->join('positions pos', 'pos.id = p.position_id', 'left')
             ->where('df.deleted_at IS NULL')
             ->where('df.status', FolderStatus::DRAFT->value)
             ->where('df.deadline_reminder_sent_at IS NULL')
@@ -169,7 +172,19 @@ class  DocumentFolderModel extends Model
             ->groupEnd()
             ->groupStart()
                 ->groupStart()->where('LOWER(COALESCE(u.doc_type, "ipcr"))', 'ipcr')->where('df.ipcr_eval_end >=', $now)->where('df.ipcr_eval_end <=', $cutoff)->groupEnd()
-                ->orGroupStart()->where('LOWER(u.doc_type)', 'dpcr')->where('df.dpcr_eval_end >=', $now)->where('df.dpcr_eval_end <=', $cutoff)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'cdpcr')->where('df.cdpcr_eval_end >=', $now)->where('df.cdpcr_eval_end <=', $cutoff)->groupEnd()
+                ->orGroupStart()
+                    ->where('LOWER(u.doc_type)', 'dpcr')
+                    ->groupStart()->like('pos.title', 'dean')->orLike('u.email', 'dean')->groupEnd()
+                    ->where('COALESCE(df.cdpcr_eval_end, df.dpcr_eval_end) >=', $now)
+                    ->where('COALESCE(df.cdpcr_eval_end, df.dpcr_eval_end) <=', $cutoff)
+                ->groupEnd()
+                ->orGroupStart()
+                    ->where('LOWER(u.doc_type)', 'dpcr')
+                    ->groupStart()->notLike('pos.title', 'dean')->orWhere('pos.title IS NULL')->groupEnd()
+                    ->notLike('u.email', 'dean')
+                    ->where('df.dpcr_eval_end >=', $now)->where('df.dpcr_eval_end <=', $cutoff)
+                ->groupEnd()
                 ->orGroupStart()->where('LOWER(u.doc_type)', 'opcr')->where('df.opcr_eval_end >=', $now)->where('df.opcr_eval_end <=', $cutoff)->groupEnd()
                 ->orGroupStart()->where('LOWER(u.doc_type)', 'iperf')->where('df.iperf_eval_end >=', $now)->where('df.iperf_eval_end <=', $cutoff)->groupEnd()
             ->groupEnd()
@@ -186,10 +201,12 @@ class  DocumentFolderModel extends Model
         $cutoff = date('Y-m-d H:i:s', strtotime("+{$withinDays} days"));
 
         return $this->db->table('document_folders df')
-            ->select('df.id, u.email, u.first_name, u.doc_type, df.ipcr_target_end, df.dpcr_target_end, df.opcr_target_end, df.iperf_target_end')
+            ->select('df.id, u.email, u.first_name, u.doc_type, pos.title as position, df.ipcr_target_end, df.cdpcr_target_end, df.dpcr_target_end, df.opcr_target_end, df.iperf_target_end')
             ->join('users u', 'u.id = df.user_id')
             ->join('user_roles ur', 'ur.user_id = u.id', 'left')
             ->join('roles r', 'r.id = ur.role_id', 'left')
+            ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
+            ->join('positions pos', 'pos.id = p.position_id', 'left')
             ->where('df.deleted_at IS NULL')
             ->where('df.status', FolderStatus::DRAFT_TARGET->value)
             ->where('df.target_deadline_reminder_sent_at IS NULL')
@@ -199,7 +216,19 @@ class  DocumentFolderModel extends Model
             ->groupEnd()
             ->groupStart()
                 ->groupStart()->where('LOWER(COALESCE(u.doc_type, "ipcr"))', 'ipcr')->where('df.ipcr_target_end >=', $now)->where('df.ipcr_target_end <=', $cutoff)->groupEnd()
-                ->orGroupStart()->where('LOWER(u.doc_type)', 'dpcr')->where('df.dpcr_target_end >=', $now)->where('df.dpcr_target_end <=', $cutoff)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'cdpcr')->where('df.cdpcr_target_end >=', $now)->where('df.cdpcr_target_end <=', $cutoff)->groupEnd()
+                ->orGroupStart()
+                    ->where('LOWER(u.doc_type)', 'dpcr')
+                    ->groupStart()->like('pos.title', 'dean')->orLike('u.email', 'dean')->groupEnd()
+                    ->where('COALESCE(df.cdpcr_target_end, df.dpcr_target_end) >=', $now)
+                    ->where('COALESCE(df.cdpcr_target_end, df.dpcr_target_end) <=', $cutoff)
+                ->groupEnd()
+                ->orGroupStart()
+                    ->where('LOWER(u.doc_type)', 'dpcr')
+                    ->groupStart()->notLike('pos.title', 'dean')->orWhere('pos.title IS NULL')->groupEnd()
+                    ->notLike('u.email', 'dean')
+                    ->where('df.dpcr_target_end >=', $now)->where('df.dpcr_target_end <=', $cutoff)
+                ->groupEnd()
                 ->orGroupStart()->where('LOWER(u.doc_type)', 'opcr')->where('df.opcr_target_end >=', $now)->where('df.opcr_target_end <=', $cutoff)->groupEnd()
                 ->orGroupStart()->where('LOWER(u.doc_type)', 'iperf')->where('df.iperf_target_end >=', $now)->where('df.iperf_target_end <=', $cutoff)->groupEnd()
             ->groupEnd()
@@ -210,7 +239,7 @@ class  DocumentFolderModel extends Model
         $today = date('Y-m-d');
         $tomorrow = date('Y-m-d', strtotime('+1 day'));
 
-        $docTypes = ['ipcr', 'dpcr', 'opcr', 'iperf'];
+        $docTypes = ['ipcr', 'cdpcr', 'dpcr', 'opcr', 'iperf'];
         foreach ($docTypes as $type) {
             if (empty($data['data']["{$type}_eval_start"]) && empty($data['data']["{$type}_eval_end"])) {
                 $data['data']["{$type}_eval_start"] = $today . ' 23:59:59';
@@ -232,12 +261,25 @@ class  DocumentFolderModel extends Model
         $startingTargetFolders = $db->table($this->table . ' df')
             ->select('df.id, df.user_id, df.title, u.email, u.first_name')
             ->join('users u', 'u.id = df.user_id')
+            ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
+            ->join('positions pos', 'pos.id = p.position_id', 'left')
             ->where('df.deleted_at IS NULL')
             ->where('df.status', \App\Enums\FolderStatus::DRAFT_TARGET->value)
             ->where('df.target_period_open_sent_at IS NULL')
             ->groupStart()
                 ->groupStart()->where('LOWER(COALESCE(u.doc_type, "ipcr"))', 'ipcr')->where('df.ipcr_target_start <=', $now)->groupEnd()
-                ->orGroupStart()->where('LOWER(u.doc_type)', 'dpcr')->where('df.dpcr_target_start <=', $now)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'cdpcr')->where('df.cdpcr_target_start <=', $now)->groupEnd()
+                ->orGroupStart()
+                    ->where('LOWER(u.doc_type)', 'dpcr')
+                    ->groupStart()->like('pos.title', 'dean')->orLike('u.email', 'dean')->groupEnd()
+                    ->where('COALESCE(df.cdpcr_target_start, df.dpcr_target_start) <=', $now)
+                ->groupEnd()
+                ->orGroupStart()
+                    ->where('LOWER(u.doc_type)', 'dpcr')
+                    ->groupStart()->notLike('pos.title', 'dean')->orWhere('pos.title IS NULL')->groupEnd()
+                    ->notLike('u.email', 'dean')
+                    ->where('df.dpcr_target_start <=', $now)
+                ->groupEnd()
                 ->orGroupStart()->where('LOWER(u.doc_type)', 'opcr')->where('df.opcr_target_start <=', $now)->groupEnd()
                 ->orGroupStart()->where('LOWER(u.doc_type)', 'iperf')->where('df.iperf_target_start <=', $now)->groupEnd()
             ->groupEnd()
@@ -267,6 +309,8 @@ class  DocumentFolderModel extends Model
         $unapprovedFolders = $db->table($this->table . ' df')
             ->select('df.id, df.user_id, u.email, u.first_name')
             ->join('users u', 'u.id = df.user_id')
+            ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
+            ->join('positions pos', 'pos.id = p.position_id', 'left')
             ->where('df.deleted_at IS NULL')
             ->whereIn('df.status', [
                 \App\Enums\FolderStatus::DRAFT_TARGET->value,
@@ -275,7 +319,18 @@ class  DocumentFolderModel extends Model
             ])
             ->groupStart()
                 ->groupStart()->where('LOWER(COALESCE(u.doc_type, "ipcr"))', 'ipcr')->where('df.ipcr_target_end <', $now)->groupEnd()
-                ->orGroupStart()->where('LOWER(u.doc_type)', 'dpcr')->where('df.dpcr_target_end <', $now)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'cdpcr')->where('df.cdpcr_target_end <', $now)->groupEnd()
+                ->orGroupStart()
+                    ->where('LOWER(u.doc_type)', 'dpcr')
+                    ->groupStart()->like('pos.title', 'dean')->orLike('u.email', 'dean')->groupEnd()
+                    ->where('COALESCE(df.cdpcr_target_end, df.dpcr_target_end) <', $now)
+                ->groupEnd()
+                ->orGroupStart()
+                    ->where('LOWER(u.doc_type)', 'dpcr')
+                    ->groupStart()->notLike('pos.title', 'dean')->orWhere('pos.title IS NULL')->groupEnd()
+                    ->notLike('u.email', 'dean')
+                    ->where('df.dpcr_target_end <', $now)
+                ->groupEnd()
                 ->orGroupStart()->where('LOWER(u.doc_type)', 'opcr')->where('df.opcr_target_end <', $now)->groupEnd()
                 ->orGroupStart()->where('LOWER(u.doc_type)', 'iperf')->where('df.iperf_target_end <', $now)->groupEnd()
             ->groupEnd()
@@ -298,13 +353,11 @@ class  DocumentFolderModel extends Model
         }
 
         // 1. Process TARGET_APPROVED or SUBMITTED -> TO_EVALUATE (Eval Window Open)
-        // Note: this query intentionally stays unfiltered by role - it also drives
-        // the status update just below, and an Admin's own folder still needs to
-        // transition normally even though (per the per-folder check in the loop
-        // further down) Admins don't get emailed about it.
         $startingFolders = $db->table($this->table . ' df')
             ->select('df.id, df.user_id, df.title, u.email, u.first_name')
             ->join('users u', 'u.id = df.user_id')
+            ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
+            ->join('positions pos', 'pos.id = p.position_id', 'left')
             ->where('df.deleted_at IS NULL')
             ->whereIn('df.status', [
                 \App\Enums\FolderStatus::TARGET_APPROVED->value,
@@ -314,17 +367,26 @@ class  DocumentFolderModel extends Model
             ->where('df.eval_period_open_sent_at IS NULL')
             ->groupStart()
                 ->groupStart()->where('LOWER(COALESCE(u.doc_type, "ipcr"))', 'ipcr')->where('df.ipcr_eval_start <=', $now)->where('df.ipcr_eval_end >=', $now)->groupEnd()
-                ->orGroupStart()->where('LOWER(u.doc_type)', 'dpcr')->where('df.dpcr_eval_start <=', $now)->where('df.dpcr_eval_end >=', $now)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'cdpcr')->where('df.cdpcr_eval_start <=', $now)->where('df.cdpcr_eval_end >=', $now)->groupEnd()
+                ->orGroupStart()
+                    ->where('LOWER(u.doc_type)', 'dpcr')
+                    ->groupStart()->like('pos.title', 'dean')->orLike('u.email', 'dean')->groupEnd()
+                    ->where('COALESCE(df.cdpcr_eval_start, df.dpcr_eval_start) <=', $now)
+                    ->where('COALESCE(df.cdpcr_eval_end, df.dpcr_eval_end) >=', $now)
+                ->groupEnd()
+                ->orGroupStart()
+                    ->where('LOWER(u.doc_type)', 'dpcr')
+                    ->groupStart()->notLike('pos.title', 'dean')->orWhere('pos.title IS NULL')->groupEnd()
+                    ->notLike('u.email', 'dean')
+                    ->where('df.dpcr_eval_start <=', $now)
+                    ->where('df.dpcr_eval_end >=', $now)
+                ->groupEnd()
                 ->orGroupStart()->where('LOWER(u.doc_type)', 'opcr')->where('df.opcr_eval_start <=', $now)->where('df.opcr_eval_end >=', $now)->groupEnd()
                 ->orGroupStart()->where('LOWER(u.doc_type)', 'iperf')->where('df.iperf_eval_start <=', $now)->where('df.iperf_eval_end >=', $now)->groupEnd()
             ->groupEnd()
             ->get()->getResultArray();
 
         foreach ($startingFolders as $folder) {
-            // Admins oversee the whole system rather than being evaluated employees,
-            // so drafting/deadline/approval reminders don't apply to them even if
-            // they happen to own a folder themselves - status still transitions
-            // normally above/below, only the notification email is skipped.
             if ($userModel->hasRole($folder['user_id'], 'Admin')) continue;
 
             $link = site_url("folders/" . $folder['id']);
@@ -349,11 +411,11 @@ class  DocumentFolderModel extends Model
         }
 
         // 2. Find folders that just expired (Before we change their status)
-        // Also intentionally unfiltered by role for the same reason as above - the
-        // status update below still needs to run for an Admin's own folder.
         $expiringFolders = $db->table($this->table . ' df')
             ->select('df.id, df.user_id, u.email, u.first_name')
             ->join('users u', 'u.id = df.user_id')
+            ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
+            ->join('positions pos', 'pos.id = p.position_id', 'left')
             ->where('df.deleted_at IS NULL')
             ->whereNotIn('df.status', [
                 \App\Enums\FolderStatus::APPROVED->value,
@@ -363,7 +425,18 @@ class  DocumentFolderModel extends Model
             ])
             ->groupStart()
                 ->groupStart()->where('LOWER(COALESCE(u.doc_type, "ipcr"))', 'ipcr')->where('df.ipcr_eval_end <', $now)->groupEnd()
-                ->orGroupStart()->where('LOWER(u.doc_type)', 'dpcr')->where('df.dpcr_eval_end <', $now)->groupEnd()
+                ->orGroupStart()->where('LOWER(u.doc_type)', 'cdpcr')->where('df.cdpcr_eval_end <', $now)->groupEnd()
+                ->orGroupStart()
+                    ->where('LOWER(u.doc_type)', 'dpcr')
+                    ->groupStart()->like('pos.title', 'dean')->orLike('u.email', 'dean')->groupEnd()
+                    ->where('COALESCE(df.cdpcr_eval_end, df.dpcr_eval_end) <', $now)
+                ->groupEnd()
+                ->orGroupStart()
+                    ->where('LOWER(u.doc_type)', 'dpcr')
+                    ->groupStart()->notLike('pos.title', 'dean')->orWhere('pos.title IS NULL')->groupEnd()
+                    ->notLike('u.email', 'dean')
+                    ->where('df.dpcr_eval_end <', $now)
+                ->groupEnd()
                 ->orGroupStart()->where('LOWER(u.doc_type)', 'opcr')->where('df.opcr_eval_end <', $now)->groupEnd()
                 ->orGroupStart()->where('LOWER(u.doc_type)', 'iperf')->where('df.iperf_eval_end <', $now)->groupEnd()
             ->groupEnd()
@@ -394,13 +467,21 @@ class  DocumentFolderModel extends Model
         
         $docType = null;
         if ($owner) {
+            $plantilla = $userModel->getActivePlantillaDetails($owner['id']);
+            $pos = strtolower($plantilla['position'] ?? '');
+            $email = strtolower($owner['email'] ?? '');
+            $isDean = str_contains($pos, 'dean') || str_contains($email, 'dean');
+            $isChair = str_contains($pos, 'chair') || str_contains($pos, 'head') || str_contains($email, 'chair');
+
             $docType = !empty($owner['doc_type']) ? strtolower($owner['doc_type']) : null;
-            if (!$docType) {
-                $plantilla = $userModel->getActivePlantillaDetails($owner['id']);
-                $pos = strtolower($plantilla['position'] ?? '');
-                if (str_contains($pos, 'dean') || str_contains($pos, 'chair') || str_contains($pos, 'head')) {
+            if (($docType === 'dpcr' || $docType === 'cdpcr') && $isDean) {
+                $docType = 'cdpcr';
+            } elseif (!$docType) {
+                if ($isDean) {
+                    $docType = 'cdpcr';
+                } elseif ($isChair) {
                     $docType = 'dpcr';
-                } elseif (str_contains($pos, 'president') || str_contains($pos, 'vpaa') || str_contains(strtolower($owner['email'] ?? ''), 'vpaa')) {
+                } elseif (str_contains($pos, 'president') || str_contains($pos, 'vpaa') || str_contains($email, 'vpaa')) {
                     $docType = 'opcr';
                 }
             }
@@ -414,9 +495,19 @@ class  DocumentFolderModel extends Model
             'eval_date_end'     => $folder["{$docType}_eval_end"] ?? null,
         ];
 
+        // If cdpcr dates are empty, fallback to dpcr dates
+        if ($docType === 'cdpcr' && empty($dates['target_date_start']) && empty($dates['target_date_end']) && empty($dates['eval_date_start']) && empty($dates['eval_date_end'])) {
+            $dates = [
+                'target_date_start' => $folder["dpcr_target_start"] ?? null,
+                'target_date_end'   => $folder["dpcr_target_end"] ?? null,
+                'eval_date_start'   => $folder["dpcr_eval_start"] ?? null,
+                'eval_date_end'     => $folder["dpcr_eval_end"] ?? null,
+            ];
+        }
+
         // Fallback: If this docType's dates are all null, find any populated dates from the other form types
         if (empty($dates['target_date_start']) && empty($dates['target_date_end']) && empty($dates['eval_date_start']) && empty($dates['eval_date_end'])) {
-            foreach (['opcr', 'dpcr', 'ipcr', 'iperf'] as $altType) {
+            foreach (['opcr', 'cdpcr', 'dpcr', 'ipcr', 'iperf'] as $altType) {
                 if (!empty($folder["{$altType}_target_end"]) || !empty($folder["{$altType}_eval_end"])) {
                     $dates = [
                         'target_date_start' => $folder["{$altType}_target_start"] ?? null,
@@ -443,6 +534,7 @@ class  DocumentFolderModel extends Model
         // Allow structure/cascade changes during target drafting and target approved phases
         $isLocked = !in_array($folder['status'], [
             FolderStatus::DRAFT_TARGET->value,
+            FolderStatus::PENDING_TARGET_APPROVAL->value,
             FolderStatus::TARGET_RETURNED->value,
             FolderStatus::TARGET_APPROVED->value,
             FolderStatus::DRAFT->value

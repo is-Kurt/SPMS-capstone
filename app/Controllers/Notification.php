@@ -92,4 +92,48 @@ class Notification extends BaseController
             'unread_count' => 0,
         ]);
     }
+
+    /**
+     * POST /notifications/clear-all
+     * Removes all notifications for current user.
+     */
+    public function clearAll()
+    {
+        $userId = session()->get('user_id');
+        if (!$userId) {
+            return $this->respond(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
+        $model = new NotificationModel();
+        $model->clearAllNotifications($userId);
+
+        return $this->respond([
+            'status'       => 'success',
+            'unread_count' => 0,
+            'message'      => 'Notifications cleared successfully.'
+        ]);
+    }
+
+    /**
+     * POST /notifications/delete/(:num)
+     * Removes a single notification for current user.
+     */
+    public function deleteNotification($id)
+    {
+        $userId = session()->get('user_id');
+        if (!$userId) {
+            return $this->respond(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
+        $model = new NotificationModel();
+        $model->deleteNotification((int) $id, $userId);
+
+        $unreadCount = $model->getUnreadCount($userId);
+
+        return $this->respond([
+            'status'       => 'success',
+            'unread_count' => $unreadCount,
+            'message'      => 'Notification dismissed.'
+        ]);
+    }
 }

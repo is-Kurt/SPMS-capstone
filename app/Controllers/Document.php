@@ -77,7 +77,12 @@ class Document extends BaseController
                                    ?? $documentModel->where('document_folder_id', $parentFolder['id'])->first();
 
                     if ($candidateBasis) {
-                        $isParentTargetApproved = ($parentFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
+                        $candidateTitleUpper = strtoupper($candidateBasis['title'] ?? '');
+                        $isParentDocOpcr = str_contains($candidateTitleUpper, 'OPCR') || str_contains($candidateTitleUpper, 'OFFICE') || (strtoupper($candidateBasis['doc_type'] ?? '') === 'OPCR');
+                        $isParentDocDpcr = str_contains($candidateTitleUpper, 'DPCR') || str_contains($candidateTitleUpper, 'DEPARTMENT') || str_contains($candidateTitleUpper, 'DIVISION') || (strtoupper($candidateBasis['doc_type'] ?? '') === 'DPCR');
+
+                        // Under CSC SPMS guidelines, OPCR is the apex institutional commitment and does not require superior target approval
+                        $isParentTargetApproved = $isParentDocOpcr || ($parentFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
                         $basisDoc = $candidateBasis;
                         $superiorUser = $userModel->find($parentFolder['user_id']);
                         if ($superiorUser) {
@@ -97,6 +102,94 @@ class Document extends BaseController
 
         $basisFormData = null;
         $basisDocContent = '';
+
+        // Query cascaded superior reference guides (e.g. OPCR/DPCR from evaluators/superiors)
+        $folderId = $docInfo['document_folder_id'] ?? null;
+        $groupedGuides = [];
+
+        if ($folderId && !$isGuide) {
+            $docTitleUpper = strtoupper($docInfo['title'] ?? '');
+            $isMyDocOpcr = str_contains($docTitleUpper, 'OPCR') || str_contains($docTitleUpper, 'OFFICE') || (strtoupper($docInfo['doc_type'] ?? '') === 'OPCR');
+
+            // Only non-OPCR documents have superior guides
+            if (!$isMyDocOpcr) {
+                $routingModel = new \App\Models\EvaluationRoutingModel();
+                $fModel = new \App\Models\DocumentFolderModel();
+                $cascadedRoutes = $routingModel->getEvaluatorsForFolder((string)$folderId);
+
+                foreach ($cascadedRoutes as $route) {
+                    $guideFolder = $fModel->find($route['evaluator_folder_id']);
+                    if ($guideFolder && empty($guideFolder['deleted_at'])) {
+                        $docs = $documentModel->where('document_folder_id', $guideFolder['id'])->findAll();
+                        if (!empty($docs)) {
+                            $groupedGuides[] = [
+                                'superior' => [
+                                    'id'   => $route['evaluator_id'],
+                                    'name' => $route['first_name'] . ' ' . $route['last_name'],
+                                    'role' => $route['evaluator_position'] ?? 'Evaluator' 
+                                ], 
+                                'docs' => $docs
+                            ];
+                        }
+                    }
+                }
+
+                if (!empty($docInfo['parent_folder_id'])) {
+                    $adminFolder = $fModel->find($docInfo['parent_folder_id']);
+                    if ($adminFolder && empty($adminFolder['deleted_at'])) {
+                        $adminDocs = $documentModel->where('document_folder_id', $adminFolder['id'])->findAll();
+                        if (!empty($adminDocs)) {
+                            $adminInfo = $userModel->getAdminPosition($adminFolder['user_id']);
+                            if ($adminInfo) {
+                                $groupedGuides[] = [
+                                    'superior' => [
+                                        'id'       => $adminInfo['id'],
+                                        'name'     => $adminInfo['first_name'] . ' ' . $adminInfo['last_name'],
+                                        'role'     => $adminInfo['admin_position'] ?? 'System Administrator',
+                                        'is_admin' => true
+                                    ],
+                                    'docs' => $adminDocs
+                                ];
+                            }
+                        }
+                    }
+                }
+
+                $mergedGuides = [];
+                foreach ($groupedGuides as $guide) {
+                    $key = $guide['superior']['name']; 
+                    if (!isset($mergedGuides[$key])) {
+                        $mergedGuides[$key] = $guide;
+                    } else {
+                        $existingRoles = $mergedGuides[$key]['superior']['role'];
+                        $newRole       = $guide['superior']['role'];
+                        if (strpos($existingRoles, $newRole) === false) {
+                            $mergedGuides[$key]['superior']['role'] .= ', ' . $newRole;
+                        }
+                    }
+                }
+                $groupedGuides = array_values($mergedGuides);
+            }
+        }
+
+        // Link primary superior guide doc to basisDoc if basisDoc was not already set via parent_folder_id
+        if (!$basisDoc && !empty($groupedGuides)) {
+            foreach ($groupedGuides as $g) {
+                if (!empty($g['docs'])) {
+                    $basisDoc = $g['docs'][0];
+                    if (!empty($g['superior'])) {
+                        $superiorUser = [
+                            'first_name' => $g['superior']['name'],
+                            'last_name'  => '',
+                            'position'   => $g['superior']['role'],
+                            'department' => ''
+                        ];
+                    }
+                    break;
+                }
+            }
+        }
+
         if ($basisDoc) {
             $basisDocContent = $basisDoc['content'] ?? '';
             if (!empty($basisDoc['tabs'])) {
@@ -124,7 +217,7 @@ class Document extends BaseController
         $ownerName = trim(($ownerUser['first_name'] ?? '') . ' ' . ($ownerUser['last_name'] ?? ''));
         $ownerPosition = $ownerPlantilla['position'] ?? ($ownerRoleName ?: 'Faculty');
         $ownerDept = $ownerPlantilla['department'] ?? '';
-        $docPeriod = $docInfo['folder_title'] ?? '';
+        $docPeriod = '';
 
         $data['ownerInfo'] = [
             'name'     => $ownerName,
@@ -188,6 +281,8 @@ class Document extends BaseController
         $data['isGuide']                = $isGuide;
         $data['parentFolder']           = $parentFolder;
         $data['isParentTargetApproved'] = $isParentTargetApproved;
+        $data['isParentDocOpcr']         = $isParentDocOpcr ?? false;
+        $data['isParentDocDpcr']         = $isParentDocDpcr ?? false;
         $data['basisDoc']               = $basisDoc;
         $data['superiorUser']           = $superiorUser;
         $data['basisFormData']          = $basisFormData;
@@ -196,6 +291,7 @@ class Document extends BaseController
 
         $attachmentModel                = new \App\Models\DocumentAttachmentModel();
         $data['attachmentsByRow']       = $attachmentModel->getAttachmentsGroupedByRow((int)$docId);
+        $data['groupedGuides']          = $groupedGuides;
         
         return view('document/show', $data);
     }
@@ -280,7 +376,7 @@ class Document extends BaseController
 
         $isAuthorized = false;
 
-        if ($docOwnerInfo['owner_id'] === $userId || $sysRole === 'Admin') {
+        if ((string)$docOwnerInfo['owner_id'] === (string)$userId || $sysRole === 'Admin') {
             $isAuthorized = true; 
         } else {
             $routingModel = new EvaluationRoutingModel();
@@ -358,13 +454,11 @@ class Document extends BaseController
     /** POST /document/delete - Deletes a document after confirming the requester owns its folder or is Admin. */
     public function destroy() {
         $docId = $this->request->getVar('doc_id') ?? $this->request->getPost('doc_id');
-        $userId = session()->get('user_id');
         $isAdmin = (session()->get('role') === 'Admin');
         $documentModel = new DocumentModel();
 
-        // Verify ownership via folder join since documents no longer have user_id
-        if (!$isAdmin && !$documentModel->getUserDocuments($userId, $docId)) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized']);
+        if (!$isAdmin) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized. Only administrators can delete performance documents.']);
         }
 
         $documentModel->delete($docId);
@@ -415,7 +509,7 @@ class Document extends BaseController
             'name'     => trim(($ownerUser['first_name'] ?? '') . ' ' . ($ownerUser['last_name'] ?? '')),
             'position' => $ownerPlantilla['position'] ?? ($ownerRoleName ?: 'Faculty'),
             'dept'     => $ownerPlantilla['department'] ?? '',
-            'period'   => $docInfo['folder_title'] ?? '',
+            'period'   => $formData['ratee']['period'] ?? '',
         ];
 
         // Superior / Supervisor Account Details
@@ -435,5 +529,54 @@ class Document extends BaseController
         }
 
         \App\Libraries\CscExcelExporter::export($docInfo, $formData, $ownerInfo, $superiorInfo);
+    }
+
+    /**
+     * GET /document/{id}/export-rubric
+     * Generate and stream the official BSU Rubric Excel template pre-filled with the document's deliverables.
+     */
+    public function exportRubric($docId = null)
+    {
+        $userId  = session()->get('user_id');
+        $sysRole = session()->get('role');
+
+        if (!$docId) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+
+        $documentModel = new DocumentModel();
+        $userModel     = new \App\Models\UserModel();
+
+        $docInfo = $documentModel->getDocumentWithFolderInfo($docId);
+        if (!$docInfo) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+
+        $docOwnerId = $docInfo['owner_id'];
+
+        // Authorization: Owner, Evaluator/Supervisor, Admin, or TWG
+        if ($docOwnerId !== $userId && !in_array($sysRole, ['Admin', 'Supervisor', 'TWG'])) {
+            return redirect()->back()->with('error', 'Unauthorized to export rubrics for this document.');
+        }
+
+        // Parse form data from tabs
+        $formData = null;
+        if (!empty($docInfo['tabs'])) {
+            $tabs = is_string($docInfo['tabs']) ? json_decode($docInfo['tabs'], true) : $docInfo['tabs'];
+            if (!empty($tabs) && is_array($tabs)) {
+                $formData = $tabs[0]['formData'] ?? null;
+            }
+        }
+
+        // Owner Account Details
+        $ownerUser = $userModel->find($docOwnerId);
+        $ownerPlantilla = $userModel->getActivePlantillaDetails($docOwnerId);
+        $ownerRolePivot = (new \App\Models\UserRoleModel())->where('user_id', $docOwnerId)->first();
+        $ownerRoleName = $ownerRolePivot ? ((new \App\Models\RoleModel())->find($ownerRolePivot['role_id'])['name'] ?? '') : '';
+
+        $ownerInfo = [
+            'name'     => trim(($ownerUser['first_name'] ?? '') . ' ' . ($ownerUser['last_name'] ?? '')),
+            'position' => $ownerPlantilla['position'] ?? ($ownerRoleName ?: 'Staff'),
+            'dept'     => $ownerPlantilla['department'] ?? '',
+            'period'   => $formData['ratee']['period'] ?? '',
+        ];
+
+        \App\Libraries\CscExcelExporter::exportRubricTemplate($docInfo, $formData, $ownerInfo);
     }
 }

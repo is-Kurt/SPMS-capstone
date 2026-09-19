@@ -162,15 +162,18 @@ class Register extends BaseController
         if (!$skipDetails) {
             $units = $this->request->getPost('units');
             $positions = $this->request->getPost('positions');
+            $employmentStatuses = $this->request->getPost('employment_statuses');
 
             if (is_array($positions) && is_array($units)) {
                 foreach ($positions as $index => $posId) {
                     if (!empty($posId) && !empty($units[$index])) {
+                        $empStatus = !empty($employmentStatuses[$index]) ? trim($employmentStatuses[$index]) : 'Permanent';
                         $plantillaModel->insert([
-                            'user_id'     => $userId,
-                            'position_id' => $posId,
-                            'unit_id'     => $units[$index],
-                            'started_at'  => date('Y-m-d')
+                            'user_id'           => $userId,
+                            'position_id'       => $posId,
+                            'unit_id'           => $units[$index],
+                            'employment_status' => $empStatus,
+                            'started_at'        => date('Y-m-d')
                         ]);
                     }
                 }

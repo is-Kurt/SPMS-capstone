@@ -16,6 +16,7 @@ class PlantillaModel extends Model
         'user_id',
         'position_id',
         'unit_id',
+        'employment_status',
         'started_at',
         'ended_at',
         'created_at',

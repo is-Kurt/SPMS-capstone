@@ -27,6 +27,27 @@
 
             <div class="flex items-center gap-3 shrink-0 flex-wrap">
                 <?php if ($sysRole === 'Admin'): ?>
+                <!-- VIEW SWITCHER (Analytics vs Masterlist) -->
+                <div class="inline-flex p-1 bg-slate-100 dark:bg-[#061e14] rounded-xl border border-slate-200 dark:border-[#0c4a33] shadow-2xs">
+                    <button type="button" id="btn-view-analytics" onclick="switchDashboardView('analytics')"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white dark:bg-emerald-600 text-slate-900 dark:text-white shadow-xs cursor-pointer">
+                        <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <span>Overview Analytics</span>
+                    </button>
+                    <button type="button" id="btn-view-masterlist" onclick="switchDashboardView('masterlist')"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer">
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                        <span>Ratings Master List</span>
+                        <span class="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">
+                            <?= count($cycleFolders) ?>
+                        </span>
+                    </button>
+                </div>
+
                 <!-- College / Department Filter -->
                 <div class="flex items-center gap-2">
                     <label for="college-filter" class="text-xs font-bold text-slate-500 dark:text-slate-400 hidden sm:inline-flex items-center gap-1">
@@ -303,6 +324,15 @@
 
                 <!-- Search & Department Filter Controls -->
                 <div class="flex items-center gap-2.5 flex-wrap">
+                    <a href="<?= site_url('dashboard/export-masterlist/' . ($activeCycle['id'] ?? '')) ?>"
+                       class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 dark:bg-[#0c4a33] dark:hover:bg-emerald-700 border border-emerald-600/30 transition-all shadow-xs cursor-pointer"
+                       title="Download CSC SLIR Excel Sheet for this unit">
+                        <svg class="w-3.5 h-3.5 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span>Export Master List (.xlsx)</span>
+                    </a>
+
                     <?php if (!empty($collegeDepartments) && count($collegeDepartments) > 1 && empty($isChairScope)): ?>
                         <select id="roster-dept-filter" onchange="filterRoster()"
                                 class="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#032316] border border-slate-200 dark:border-[#0c4a33] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer">
@@ -440,8 +470,11 @@
 
     </div>
 <?php else: ?>
-    <!-- MAIN SCROLLABLE CONTENT (ADMIN EXECUTIVE ANALYTICS) -->
+    <!-- MAIN SCROLLABLE CONTENT (ADMIN EXECUTIVE ANALYTICS & MASTERLIST) -->
     <div class="p-6 lg:p-8 overflow-y-auto custom-scrollbar flex-1 space-y-5">
+
+        <!-- 1. EXECUTIVE ANALYTICS VIEW -->
+        <div id="dashboard-view-analytics" class="space-y-5">
 
         <!-- 1. TOP KPI SUMMARY METRIC CARDS -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -549,90 +582,321 @@
 
         </div>
 
-        <!-- 2. SPMS WORKFLOW PIPELINE STAGES -->
-        <div class="p-6 rounded-xl bg-slate-50/70 dark:bg-[#0c1510]/50 border border-slate-200 dark:border-[#1a2b22] shadow-xs">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5">
+        <!-- 2. SPMS 4-STAGE LIFECYCLE PIPELINE (CSC MC No. 6, s. 2012) -->
+        <div class="rounded-2xl bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] shadow-xs overflow-hidden">
+            <!-- Header Banner with Stepper Trail -->
+            <div class="px-6 py-4 border-b border-slate-100 dark:border-[#16281f] bg-slate-50/70 dark:bg-[#08130e] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <h2 class="text-base font-bold text-slate-900 dark:text-white">SPMS 2-Phase Lifecycle</h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Target commitment setting versus accomplishment evaluation progress</p>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            CSC MC No. 6, s. 2012
+                        </span>
+                        <span class="text-xs text-slate-400 dark:text-slate-500 font-medium">Standard University Cycle</span>
+                    </div>
+                    <h2 class="text-base font-extrabold text-slate-900 dark:text-white tracking-tight">SPMS 4-Stage Performance Lifecycle</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">End-to-end performance cycle: target commitments, evidence collection, review calibrations, and merit incentives</p>
                 </div>
-                <span class="self-start sm:self-auto px-2.5 py-1 rounded-lg text-xs font-bold bg-white dark:bg-[#032316] border border-slate-200 dark:border-[#0c4a33] text-slate-600 dark:text-slate-300 shadow-2xs">
-                    Phase 1 &rarr; Phase 2
-                </span>
+                
+                <!-- Interconnected Stepper Indicator Flow -->
+                <div class="inline-flex items-center p-1 rounded-xl bg-slate-100 dark:bg-[#091712] border border-slate-200/80 dark:border-[#16281f] text-xs">
+                    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold text-slate-700 dark:text-slate-200">
+                        <span class="w-4 h-4 rounded-full bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[10px] font-black">1</span>
+                        <span class="text-xs">Planning</span>
+                    </div>
+                    <span class="text-slate-400 dark:text-zinc-600 font-bold px-0.5">&rsaquo;</span>
+                    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold text-slate-700 dark:text-slate-200">
+                        <span class="w-4 h-4 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-[10px] font-black">2</span>
+                        <span class="text-xs">Coaching</span>
+                    </div>
+                    <span class="text-slate-400 dark:text-zinc-600 font-bold px-0.5">&rsaquo;</span>
+                    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold text-slate-700 dark:text-slate-200">
+                        <span class="w-4 h-4 rounded-full bg-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center text-[10px] font-black">3</span>
+                        <span class="text-xs">Review</span>
+                    </div>
+                    <span class="text-slate-400 dark:text-zinc-600 font-bold px-0.5">&rsaquo;</span>
+                    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold text-slate-700 dark:text-slate-200">
+                        <span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-[10px] font-black">4</span>
+                        <span class="text-xs">Rewarding</span>
+                    </div>
+                </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Target Phase -->
-                <div class="p-5 rounded-xl bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] shadow-2xs flex flex-col justify-between">
-                    <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#1a2b22] mb-4">
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-highlight-500/20 text-indigo-600 dark:text-highlight-400 flex items-center justify-center text-xs font-black">
-                                1
+            <!-- 4 Stage Columns Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-[#16281f]">
+                
+                <!-- STAGE 1: Performance Planning & Commitment -->
+                <div class="p-5 flex flex-col justify-between hover:bg-slate-50/40 dark:hover:bg-white/[0.015] transition-colors">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 font-black text-xs flex items-center justify-center border border-indigo-200/50 dark:border-indigo-500/20">
+                                    1
+                                </span>
+                                <div>
+                                    <h3 class="text-xs font-bold text-slate-900 dark:text-white leading-tight">Planning &amp; Commitment</h3>
+                                    <p class="text-2xs text-slate-400 dark:text-slate-500 font-medium">Target Setting Phase</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 class="text-sm font-bold text-slate-900 dark:text-white leading-none">Target Setting</h3>
-                                <span class="text-xs text-slate-400 dark:text-slate-500 font-medium">Commitment Phase</span>
+                            <span class="px-2 py-0.5 rounded-md text-2xs font-extrabold bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-500/20">
+                                Stage 1
+                            </span>
+                        </div>
+
+                        <!-- Hero Number & Progress -->
+                        <div class="mt-4 mb-3">
+                            <div class="flex items-baseline justify-between mb-1.5">
+                                <div class="flex items-baseline gap-1.5">
+                                    <span class="text-2xl font-black text-slate-900 dark:text-white"><?= $pipeline['stage1']['approved'] ?></span>
+                                    <span class="text-xs text-slate-400 dark:text-slate-500 font-bold">/ <?= $totalPersonnel ?> Approved</span>
+                                </div>
+                                <span class="text-xs font-extrabold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-200/40 dark:border-indigo-500/20">
+                                    <?= $totalPersonnel > 0 ? round(($pipeline['stage1']['approved'] / $totalPersonnel) * 100) : 0 ?>%
+                                </span>
+                            </div>
+                            <div class="w-full bg-slate-100 dark:bg-[#07130e] rounded-full h-1.5 overflow-hidden">
+                                <div class="bg-indigo-500 h-1.5 rounded-full transition-all duration-500" style="width: <?= $totalPersonnel > 0 ? min(100, round(($pipeline['stage1']['approved'] / $totalPersonnel) * 100)) : 0 ?>%;"></div>
                             </div>
                         </div>
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 dark:bg-highlight-500/20 dark:text-highlight-400 border border-indigo-200 dark:border-highlight-500/30">
-                            <?= $pipeline['target']['approved'] ?> / <?= $totalPersonnel ?> Approved
-                        </span>
                     </div>
-                    <div class="grid grid-cols-2 gap-3 text-center">
-                        <div class="p-3 rounded-xl bg-emerald-50 text-emerald-800 dark:bg-[#102a1e] dark:border-[#1b4330] dark:text-emerald-400 border border-emerald-200">
-                            <span class="block text-xl font-black"><?= $pipeline['target']['approved'] ?></span>
-                            <span class="text-xs font-bold mt-1 block">Approved</span>
+
+                    <!-- Clean Row Breakdown -->
+                    <div class="pt-3 border-t border-slate-100 dark:border-[#16281f] space-y-1.5 mt-2">
+                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
+                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-xs shadow-emerald-500/50 shrink-0"></span>
+                                Approved Targets
+                            </span>
+                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage1']['approved'] ?></span>
                         </div>
-                        <div class="p-3 rounded-xl bg-blue-50 text-blue-800 dark:bg-info-500/10 dark:border-info-500/20 dark:text-blue-400 border border-blue-200">
-                            <span class="block text-xl font-black"><?= $pipeline['target']['pending'] ?></span>
-                            <span class="text-xs font-bold mt-1 block">In Review</span>
+                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
+                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
+                                <span class="w-2 h-2 rounded-full bg-blue-500 shadow-xs shadow-blue-500/50 shrink-0"></span>
+                                In Review
+                            </span>
+                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage1']['pending'] ?></span>
                         </div>
-                        <div class="p-3 rounded-xl bg-slate-100 text-slate-700 dark:bg-zinc-800/50 dark:border-zinc-700 dark:text-zinc-400 border border-slate-200">
-                            <span class="block text-xl font-black"><?= $pipeline['target']['draft'] ?></span>
-                            <span class="text-xs font-bold mt-1 block">Draft</span>
+                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
+                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
+                                <span class="w-2 h-2 rounded-full bg-amber-500 shadow-xs shadow-amber-500/50 shrink-0"></span>
+                                Needs Revision
+                            </span>
+                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage1']['returned'] ?></span>
                         </div>
-                        <div class="p-3 rounded-xl bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:border-amber-800/80 dark:text-amber-400 border border-amber-200">
-                            <span class="block text-xl font-black"><?= $pipeline['target']['returned'] ?></span>
-                            <span class="text-xs font-bold mt-1 block">Revision</span>
+                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
+                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
+                                <span class="w-2 h-2 rounded-full bg-slate-400 dark:bg-zinc-600 shrink-0"></span>
+                                Draft Mode
+                            </span>
+                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage1']['draft'] ?></span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Evaluation Phase -->
-                <div class="p-5 rounded-xl bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] shadow-2xs flex flex-col justify-between">
-                    <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#1a2b22] mb-4">
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-[#102a1e] text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-black">
-                                2
+                <!-- STAGE 2: Performance Monitoring & Coaching -->
+                <div class="p-5 flex flex-col justify-between hover:bg-slate-50/40 dark:hover:bg-white/[0.015] transition-colors">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 font-black text-xs flex items-center justify-center border border-amber-200/50 dark:border-amber-500/20">
+                                    2
+                                </span>
+                                <div>
+                                    <h3 class="text-xs font-bold text-slate-900 dark:text-white leading-tight">Monitoring &amp; Coaching</h3>
+                                    <p class="text-2xs text-slate-400 dark:text-slate-500 font-medium">Execution &amp; Evidence</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 class="text-sm font-bold text-slate-900 dark:text-white leading-none">Accomplishment</h3>
-                                <span class="text-xs text-slate-400 dark:text-slate-500 font-medium">Evaluation Phase</span>
+                            <span class="px-2 py-0.5 rounded-md text-2xs font-extrabold bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-500/20">
+                                Stage 2
+                            </span>
+                        </div>
+
+                        <!-- Hero Number & Progress -->
+                        <div class="mt-4 mb-3">
+                            <div class="flex items-baseline justify-between mb-1.5">
+                                <div class="flex items-baseline gap-1.5">
+                                    <span class="text-2xl font-black text-slate-900 dark:text-white"><?= $pipeline['stage2']['active_execution'] ?></span>
+                                    <span class="text-xs text-slate-400 dark:text-slate-500 font-bold">Active Commitments</span>
+                                </div>
+                                <span class="text-xs font-extrabold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-200/40 dark:border-amber-500/20">
+                                    <?= $pipeline['stage2']['execution_rate'] ?>%
+                                </span>
+                            </div>
+                            <div class="w-full bg-slate-100 dark:bg-[#07130e] rounded-full h-1.5 overflow-hidden">
+                                <div class="bg-amber-500 h-1.5 rounded-full transition-all duration-500" style="width: <?= min(100, $pipeline['stage2']['execution_rate']) ?>%;"></div>
                             </div>
                         </div>
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">
-                            <?= $pipeline['evaluation']['completed'] ?> / <?= $totalPersonnel ?> Completed
-                        </span>
                     </div>
-                    <div class="grid grid-cols-2 gap-3 text-center">
-                        <div class="p-3 rounded-xl bg-emerald-50 text-emerald-800 dark:bg-[#102a1e] dark:border-[#1b4330] dark:text-emerald-400 border border-emerald-200">
-                            <span class="block text-xl font-black"><?= $pipeline['evaluation']['completed'] ?></span>
-                            <span class="text-xs font-bold mt-1 block">Approved</span>
+
+                    <!-- Clean Row Breakdown -->
+                    <div class="pt-3 border-t border-slate-100 dark:border-[#16281f] space-y-1.5 mt-2">
+                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
+                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-xs shadow-emerald-500/50 shrink-0"></span>
+                                Targets in Execution
+                            </span>
+                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage2']['active_execution'] ?></span>
                         </div>
-                        <div class="p-3 rounded-xl bg-blue-50 text-blue-800 dark:bg-info-500/10 dark:border-info-500/20 dark:text-blue-400 border border-blue-200">
-                            <span class="block text-xl font-black"><?= $pipeline['evaluation']['action'] ?></span>
-                            <span class="text-xs font-bold mt-1 block">Evaluating</span>
+                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
+                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
+                                <span class="w-2 h-2 rounded-full bg-teal-500 shadow-xs shadow-teal-500/50 shrink-0"></span>
+                                MOVs Uploaded
+                            </span>
+                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage2']['mov_count'] ?> files</span>
                         </div>
-                        <div class="p-3 rounded-xl bg-cyan-50 text-cyan-800 dark:bg-cyan-950/50 dark:border-cyan-800/40 dark:text-cyan-400 border border-cyan-200">
-                            <span class="block text-xl font-black"><?= $pipeline['evaluation']['submitted'] ?></span>
-                            <span class="text-xs font-bold mt-1 block">Submitted</span>
+                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
+                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
+                                <span class="w-2 h-2 rounded-full bg-amber-500 shadow-xs shadow-amber-500/50 shrink-0"></span>
+                                Coaching Feedback
+                            </span>
+                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage2']['coaching_notes'] ?> notes</span>
                         </div>
-                        <div class="p-3 rounded-xl bg-slate-100 text-slate-700 dark:bg-zinc-800/50 dark:border-zinc-700 dark:text-zinc-400 border border-slate-200">
-                            <span class="block text-xl font-black"><?= $pipeline['evaluation']['pending'] ?></span>
-                            <span class="text-xs font-bold mt-1 block">Draft</span>
+                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
+                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
+                                <span class="w-2 h-2 rounded-full bg-slate-400 dark:bg-zinc-600 shrink-0"></span>
+                                Evidence Density
+                            </span>
+                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $totalPersonnel > 0 && $pipeline['stage2']['mov_count'] > 0 ? round($pipeline['stage2']['mov_count'] / $totalPersonnel, 1) : 0 ?> / ratee</span>
                         </div>
                     </div>
                 </div>
+
+                <!-- STAGE 3: Performance Review & Evaluation -->
+                <div class="p-5 flex flex-col justify-between hover:bg-slate-50/40 dark:hover:bg-white/[0.015] transition-colors">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg bg-sky-50 dark:bg-sky-500/15 text-sky-600 dark:text-sky-400 font-black text-xs flex items-center justify-center border border-sky-200/50 dark:border-sky-500/20">
+                                    3
+                                </span>
+                                <div>
+                                    <h3 class="text-xs font-bold text-slate-900 dark:text-white leading-tight">Review &amp; Evaluation</h3>
+                                    <p class="text-2xs text-slate-400 dark:text-slate-500 font-medium">Accomplishment Phase</p>
+                                </div>
+                            </div>
+                            <span class="px-2 py-0.5 rounded-md text-2xs font-extrabold bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-200/60 dark:border-sky-500/20">
+                                Stage 3
+                            </span>
+                        </div>
+
+                        <!-- Hero Number & Progress -->
+                        <div class="mt-4 mb-3">
+                            <div class="flex items-baseline justify-between mb-1.5">
+                                <div class="flex items-baseline gap-1.5">
+                                    <span class="text-2xl font-black text-slate-900 dark:text-white"><?= $pipeline['stage3']['completed'] ?></span>
+                                    <span class="text-xs text-slate-400 dark:text-slate-500 font-bold">/ <?= $totalPersonnel ?> Evaluated</span>
+                                </div>
+                                <span class="text-xs font-extrabold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-500/10 px-2 py-0.5 rounded-md border border-sky-200/40 dark:border-sky-500/20">
+                                    <?= $totalPersonnel > 0 ? round(($pipeline['stage3']['completed'] / $totalPersonnel) * 100) : 0 ?>%
+                                </span>
+                            </div>
+                            <div class="w-full bg-slate-100 dark:bg-[#07130e] rounded-full h-1.5 overflow-hidden">
+                                <div class="bg-sky-500 h-1.5 rounded-full transition-all duration-500" style="width: <?= $totalPersonnel > 0 ? min(100, round(($pipeline['stage3']['completed'] / $totalPersonnel) * 100)) : 0 ?>%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Clean Row Breakdown -->
+                    <div class="pt-3 border-t border-slate-100 dark:border-[#16281f] space-y-1.5 mt-2">
+                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
+                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-xs shadow-emerald-500/50 shrink-0"></span>
+                                Approved Ratings
+                            </span>
+                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage3']['completed'] ?></span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
+                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
+                                <span class="w-2 h-2 rounded-full bg-blue-500 shadow-xs shadow-blue-500/50 shrink-0"></span>
+                                Under Evaluation
+                            </span>
+                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage3']['evaluating'] ?></span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
+                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
+                                <span class="w-2 h-2 rounded-full bg-cyan-500 shadow-xs shadow-cyan-500/50 shrink-0"></span>
+                                Submitted Awaiting
+                            </span>
+                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage3']['submitted'] ?></span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
+                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
+                                <span class="w-2 h-2 rounded-full bg-slate-400 dark:bg-zinc-600 shrink-0"></span>
+                                Draft Accomplishment
+                            </span>
+                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage3']['draft'] ?></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STAGE 4: Performance Rewarding & Development -->
+                <div class="p-5 flex flex-col justify-between hover:bg-slate-50/40 dark:hover:bg-white/[0.015] transition-colors">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-black text-xs flex items-center justify-center border border-emerald-200/50 dark:border-emerald-500/20">
+                                    4
+                                </span>
+                                <div>
+                                    <h3 class="text-xs font-bold text-slate-900 dark:text-white leading-tight">Rewarding &amp; Development</h3>
+                                    <p class="text-2xs text-slate-400 dark:text-slate-500 font-medium">Incentives &amp; HR Phase</p>
+                                </div>
+                            </div>
+                            <span class="px-2 py-0.5 rounded-md text-2xs font-extrabold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-500/20">
+                                Stage 4
+                            </span>
+                        </div>
+
+                        <!-- Hero Number & Progress -->
+                        <div class="mt-4 mb-3">
+                            <div class="flex items-baseline justify-between mb-1.5">
+                                <div class="flex items-baseline gap-1.5">
+                                    <span class="text-2xl font-black text-slate-900 dark:text-white"><?= $pipeline['stage4']['pbb_eligible'] ?></span>
+                                    <span class="text-xs text-slate-400 dark:text-slate-500 font-bold">PBB / Incentive Eligible</span>
+                                </div>
+                                <span class="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-200/40 dark:border-emerald-500/20">
+                                    <?= $totalPersonnel > 0 ? round(($pipeline['stage4']['pbb_eligible'] / $totalPersonnel) * 100) : 0 ?>%
+                                </span>
+                            </div>
+                            <div class="w-full bg-slate-100 dark:bg-[#07130e] rounded-full h-1.5 overflow-hidden">
+                                <div class="bg-emerald-500 h-1.5 rounded-full transition-all duration-500" style="width: <?= $totalPersonnel > 0 ? min(100, round(($pipeline['stage4']['pbb_eligible'] / $totalPersonnel) * 100)) : 0 ?>%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Clean Row Breakdown -->
+                    <div class="pt-3 border-t border-slate-100 dark:border-[#16281f] space-y-1.5 mt-2">
+                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
+                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-xs shadow-emerald-500/50 shrink-0"></span>
+                                Outstanding &amp; VS
+                            </span>
+                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage4']['pbb_eligible'] ?></span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
+                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
+                                <span class="w-2 h-2 rounded-full bg-teal-500 shadow-xs shadow-teal-500/50 shrink-0"></span>
+                                TWG Certified
+                            </span>
+                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage4']['certified'] ?></span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
+                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
+                                <span class="w-2 h-2 rounded-full bg-indigo-500 shadow-xs shadow-indigo-500/50 shrink-0"></span>
+                                CSC Export Ready
+                            </span>
+                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage4']['export_ready'] ?></span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
+                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
+                                <span class="w-2 h-2 rounded-full bg-slate-400 dark:bg-zinc-600 shrink-0"></span>
+                                Dev. Needed
+                            </span>
+                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage4']['dev_needed'] ?></span>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -664,14 +928,13 @@
                             <th class="py-3 px-4 text-center">Headcount</th>
                             <th class="py-3 px-4 text-center">Target Compliance</th>
                             <th class="py-3 px-4 text-center">Eval Completion</th>
-                            <th class="py-3 px-4 text-center">Average</th>
                             <th class="py-3 px-4 text-right">Status</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200/70 dark:divide-[#1a2b22] text-xs font-semibold">
                         <?php if (empty($deptLeaderboard)): ?>
                             <tr>
-                                <td colspan="7" class="py-8 px-4 text-center text-slate-400 dark:text-slate-500">
+                                <td colspan="6" class="py-8 px-4 text-center text-slate-400 dark:text-slate-500">
                                     No department records found for this cycle.
                                 </td>
                             </tr>
@@ -689,12 +952,9 @@
                                         <span class="font-black text-emerald-700 dark:text-emerald-400"><?= $dept['compliance_pct'] ?>%</span>
                                         <span class="text-xs text-slate-400 dark:text-slate-400 font-normal ml-1">(<?= $dept['eval_completed'] ?>/<?= $dept['headcount'] ?>)</span>
                                     </td>
-                                    <td class="py-3 px-4 text-center font-black text-slate-900 dark:text-white">
-                                        <?= $dept['average_rating'] > 0 ? number_format($dept['average_rating'], 2) : '--' ?>
-                                    </td>
                                     <td class="py-3 px-4 text-right">
                                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase border <?= $dept['badge_class'] ?? 'bg-blue-50 text-blue-700 border-blue-200' ?>">
-                                            <?= esc($dept['status_badge']) ?>
+                                             <?= esc($dept['status_badge']) ?>
                                         </span>
                                     </td>
                                 </tr>
@@ -705,107 +965,357 @@
             </div>
         </div>
 
-        <!-- 4. RECENT PERFORMANCE ACTIVITY FEED -->
-        <div class="p-6 rounded-xl bg-slate-50/70 dark:bg-[#0c1510]/50 border border-slate-200 dark:border-[#1a2b22] shadow-xs">
-            <div class="flex items-center justify-between gap-3 mb-4">
-                <div>
-                    <h2 class="text-base font-bold text-slate-900 dark:text-white">Recent Performance Reviews</h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Latest employee rating updates and submissions in this cycle</p>
+        </div>
+        <!-- /END OF #dashboard-view-analytics -->
+
+        <!-- 2. RATINGS MASTERLIST VIEW (CSC SLIR - SUMMARY LIST OF INDIVIDUAL RATINGS) -->
+        <div id="dashboard-view-masterlist" class="hidden space-y-5">
+            
+            <!-- MASTERLIST HEADER & EXPORT ACTION CARD -->
+            <div class="p-6 rounded-2xl bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] shadow-xs">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30">
+                                CSC MC No. 6, s. 2012 Prescribed
+                            </span>
+                            <span class="text-xs font-semibold text-slate-400">|</span>
+                            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                <?= esc($selectedUnitName ?? 'University-Wide Roster') ?>
+                            </span>
+                        </div>
+                        <h2 class="text-xl lg:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                            Summary List of Individual Performance Ratings (Master List)
+                        </h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-3xl">
+                            Consolidated institutional master list of all active plantilla faculty and staff for <?= esc($activeCycle['title'] ?? 'this evaluation period') ?>. Formatted in accordance with Civil Service Commission Strategic Performance Management System guidelines.
+                        </p>
+                    </div>
+
+                    <div class="flex items-center gap-3 shrink-0">
+                        <a href="<?= site_url('dashboard/export-masterlist/' . ($activeCycle['id'] ?? '') . (!empty($selectedUnitId) ? '?unit_id=' . $selectedUnitId : '')) ?>"
+                           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black text-white bg-emerald-700 hover:bg-emerald-800 dark:bg-[#0c4a33] dark:hover:bg-emerald-700 border border-emerald-600/30 transition-all shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                           title="Generate and download official CSC landscape Excel workbook">
+                            <svg class="w-4 h-4 text-emerald-200 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <span>Export Master List (.xlsx)</span>
+                        </a>
+                    </div>
                 </div>
-                <a href="<?= site_url('ratings') ?>" class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 transition-colors">
-                    <span>View All</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                </a>
+
+                <!-- Quick Masterlist Stats Row -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5 mt-5 border-t border-slate-100 dark:border-[#1a2b22]">
+                    <div class="px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800">
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Total Personnel</div>
+                        <div class="text-base font-black text-slate-900 dark:text-white mt-0.5"><?= number_format(count($cycleFolders)) ?></div>
+                    </div>
+                    <div class="px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800">
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Permanent</div>
+                        <div class="text-base font-black text-emerald-700 dark:text-emerald-400 mt-0.5"><?= number_format($empStatusCounts['permanent'] ?? 0) ?></div>
+                    </div>
+                    <div class="px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800">
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Temporary</div>
+                        <div class="text-base font-black text-amber-600 dark:text-amber-400 mt-0.5"><?= number_format($empStatusCounts['temporary'] ?? 0) ?></div>
+                    </div>
+                    <div class="px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800">
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">Casual &amp; Contractual</div>
+                        <div class="text-base font-black text-sky-600 dark:text-sky-400 mt-0.5"><?= number_format(($empStatusCounts['casual'] ?? 0) + ($empStatusCounts['contractual'] ?? 0)) ?></div>
+                    </div>
+                </div>
             </div>
 
-            <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-[#1a2b22] bg-white dark:bg-[#0c1510]">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-slate-100/60 dark:bg-[#032316]/50 border-b border-slate-200 dark:border-[#1a2b22] text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">
-                            <th class="py-3 px-4">Ratee & Position</th>
-                            <th class="py-3 px-4">Department</th>
-                            <th class="py-3 px-4 text-center">Status</th>
-                            <th class="py-3 px-4 text-center">Score</th>
-                            <th class="py-3 px-4 text-right">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-200/70 dark:divide-[#1a2b22] text-xs font-semibold">
-                        <?php if (empty($recentFolders)): ?>
-                            <tr>
-                                <td colspan="5" class="py-8 px-4 text-center text-slate-400 dark:text-slate-500">
-                                    No folder records found.
+            <!-- SEARCH & FILTER TOOLBAR -->
+            <div class="p-5 rounded-2xl bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] shadow-xs space-y-4">
+                
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <!-- Search Input -->
+                    <div class="relative flex-1 max-w-lg">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </div>
+                        <input type="text" id="masterlist-search" onkeyup="filterMasterlist()"
+                               placeholder="Search personnel name, email, department, or position..."
+                               class="w-full text-xs font-medium py-2.5 pl-10 pr-4 rounded-xl bg-slate-50 dark:bg-[#032316] border border-slate-200 dark:border-[#0c4a33] text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-2xs" />
+                    </div>
+
+                    <!-- Filter Dropdown -->
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <select id="masterlist-status-filter" onchange="filterMasterlist()"
+                                class="text-xs font-semibold px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-[#032316] border border-slate-200 dark:border-[#0c4a33] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer shadow-2xs [color-scheme:light] dark:[color-scheme:dark]">
+                            <option value="">All Appointments</option>
+                            <option value="permanent">Permanent</option>
+                            <option value="temporary">Temporary</option>
+                            <option value="casual">Casual</option>
+                            <option value="contractual">Contractual</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Status Filter Pill Buttons -->
+                <div class="flex items-center gap-2 pb-1 overflow-x-auto custom-scrollbar pt-2 border-t border-slate-100 dark:border-[#1a2b22]">
+                    <button type="button" onclick="setMasterlistPill('all', this)"
+                            class="masterlist-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white shadow-2xs cursor-pointer">
+                        All Personnel (<?= count($cycleFolders) ?>)
+                    </button>
+                    <button type="button" onclick="setMasterlistPill('permanent', this)"
+                            class="masterlist-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                        <span>Permanent (<?= $empStatusCounts['permanent'] ?? 0 ?>)</span>
+                    </button>
+                    <button type="button" onclick="setMasterlistPill('temporary', this)"
+                            class="masterlist-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer">
+                        <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                        <span>Temporary (<?= $empStatusCounts['temporary'] ?? 0 ?>)</span>
+                    </button>
+                    <button type="button" onclick="setMasterlistPill('casual', this)"
+                            class="masterlist-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer">
+                        <span class="w-2 h-2 rounded-full bg-sky-500 shrink-0"></span>
+                        <span>Casual (<?= $empStatusCounts['casual'] ?? 0 ?>)</span>
+                    </button>
+                    <button type="button" onclick="setMasterlistPill('contractual', this)"
+                            class="masterlist-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer">
+                        <span class="w-2 h-2 rounded-full bg-purple-500 shrink-0"></span>
+                        <span>Contractual (<?= $empStatusCounts['contractual'] ?? 0 ?>)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- MASTERLIST DATA TABLE -->
+            <div class="rounded-2xl bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] shadow-xs overflow-hidden">
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left border-collapse" id="masterlist-table">
+                        <thead>
+                            <tr class="bg-slate-50 dark:bg-[#032316] border-b border-slate-200 dark:border-[#1a2b22] text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">
+                                <th class="py-3.5 px-4 w-12 text-center">#</th>
+                                <th class="py-3.5 px-4">Personnel / Ratee</th>
+                                <th class="py-3.5 px-4">College / Division</th>
+                                <th class="py-3.5 px-4">Position</th>
+                                <th class="py-3.5 px-4 text-center">Employment Status</th>
+                                <th class="py-3.5 px-4 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-[#1a2b22] text-xs">
+                            <?php if (empty($cycleFolders)): ?>
+                                <tr>
+                                    <td colspan="6" class="py-12 px-4 text-center text-slate-400 dark:text-slate-500 italic">
+                                        No personnel records discovered for this evaluation period.
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($cycleFolders as $idx => $f): ?>
+                                    <tr class="masterlist-row hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                                        data-name="<?= esc(strtolower($f['ratee_name'] ?? $f['full_name'] ?? '')) ?>"
+                                        data-email="<?= esc(strtolower($f['ratee_email'] ?? $f['email'] ?? '')) ?>"
+                                        data-dept="<?= esc(strtolower($f['department'] ?? '')) ?>"
+                                        data-pos="<?= esc(strtolower($f['position'] ?? '')) ?>"
+                                        data-emp-status="<?= esc(strtolower($f['employment_status'] ?? 'permanent')) ?>">
+                                        
+                                        <!-- Index -->
+                                        <td class="py-3.5 px-4 text-center font-bold text-slate-400 dark:text-slate-500">
+                                            <?= $idx + 1 ?>
+                                        </td>
+
+                                        <!-- Personnel Name & Email -->
+                                        <td class="py-3.5 px-4">
+                                            <div class="flex items-center gap-2.5">
+                                                <div class="w-7 h-7 rounded-full bg-slate-100 dark:bg-emerald-950/40 border border-slate-200 dark:border-emerald-800/50 flex items-center justify-center font-black text-[11px] text-slate-700 dark:text-emerald-400 shrink-0">
+                                                    <?= esc(strtoupper(substr($f['ratee_name'] ?? $f['full_name'] ?? 'U', 0, 1))) ?>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <div class="font-bold text-slate-900 dark:text-white truncate">
+                                                        <?= esc($f['ratee_name'] ?? $f['full_name'] ?? 'Personnel') ?>
+                                                    </div>
+                                                    <div class="text-[11px] text-slate-400 truncate">
+                                                        <?= esc($f['ratee_email'] ?? $f['email'] ?? '') ?>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <!-- College / Department -->
+                                        <td class="py-3.5 px-4 text-slate-700 dark:text-slate-300 font-medium">
+                                            <span class="truncate block max-w-[220px]" title="<?= esc($f['department'] ?? '—') ?>">
+                                                <?= esc($f['department'] ?? '—') ?>
+                                            </span>
+                                        </td>
+
+                                        <!-- Plantilla Position -->
+                                        <td class="py-3.5 px-4 text-slate-500 dark:text-slate-400 font-medium">
+                                            <span class="truncate block max-w-[180px]" title="<?= esc($f['position'] ?? '—') ?>">
+                                                <?= esc($f['position'] ?? '—') ?>
+                                            </span>
+                                        </td>
+
+                                        <!-- Employment Status -->
+                                        <td class="py-3.5 px-4 text-center">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border <?= $f['emp_status_badge'] ?? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-[#102a1e] dark:text-emerald-400 dark:border-[#1b4330]' ?>">
+                                                <?= esc($f['employment_status'] ?? 'Permanent') ?>
+                                            </span>
+                                        </td>
+
+                                        <!-- Action -->
+                                        <td class="py-3.5 px-4 text-right">
+                                            <?php if (!empty($f['id']) || !empty($f['folder_id'])): ?>
+                                                <a href="<?= site_url('folders/view/' . ($f['id'] ?? $f['folder_id'])) ?>"
+                                                   class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-500/30 transition-colors shadow-2xs">
+                                                    <span>Inspect</span>
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                                    </svg>
+                                                </a>
+                                            <?php else: ?>
+                                                <span class="text-xs text-slate-400 dark:text-slate-600 italic">No Folder</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+
+                            <tr id="masterlist-empty-row" class="hidden">
+                                <td colspan="6" class="py-12 px-4 text-center">
+                                    <div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+                                        <svg class="w-8 h-8 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                        </svg>
+                                        <p class="text-xs font-semibold">No personnel records found matching your filter criteria.</p>
+                                    </div>
                                 </td>
                             </tr>
-                        <?php else: ?>
-                            <?php foreach ($recentFolders as $rf): ?>
-                                <tr class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                                    <td class="py-3 px-4 whitespace-nowrap">
-                                        <div class="font-bold text-slate-900 dark:text-white"><?= esc($rf['full_name']) ?></div>
-                                        <div class="text-xs text-slate-400 dark:text-slate-500 font-normal"><?= esc($rf['position']) ?></div>
-                                    </td>
-                                    <td class="py-3 px-4 text-slate-600 dark:text-slate-300 truncate max-w-[220px]"><?= esc($rf['department']) ?></td>
-                                    <td class="py-3 px-4 text-center">
-                                        <?php
-                                            $st = $rf['folder_status'];
-                                            $stBadgeClass = 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-[#032316] dark:text-slate-300 dark:border-[#0c4a33]';
-                                            $stLabel = str_replace('_', ' ', $st);
+                        </tbody>
+                    </table>
+                </div>
 
-                                            if (in_array($st, ['approved', 'twg_approved'])) {
-                                                $stBadgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30';
-                                                $stLabel = 'Approved';
-                                            } elseif ($st === 'twg_disapproved') {
-                                                $stBadgeClass = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/15 dark:text-rose-400 dark:border-rose-500/30';
-                                                $stLabel = 'TWG Disapproved';
-                                            } elseif (in_array($st, ['target_returned', 'reevaluate', 'target_unapproved'])) {
-                                                $stBadgeClass = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30';
-                                                $stLabel = 'Needs Revision';
-                                            } elseif (in_array($st, ['pending_target_approval', 'submitted'])) {
-                                                $stBadgeClass = 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-info-500/15 dark:text-blue-400 dark:border-info-500/30';
-                                                $stLabel = $st === 'pending_target_approval' ? 'Target Submitted' : 'Submitted';
-                                            } elseif ($st === 'to evaluate') {
-                                                $stBadgeClass = 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-highlight-500/20 dark:text-highlight-400 dark:border-highlight-500/30';
-                                                $stLabel = 'In Evaluation';
-                                            } elseif ($st === 'unevaluated') {
-                                                $stBadgeClass = 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-zinc-800/50 dark:text-zinc-400 dark:border-zinc-700';
-                                                $stLabel = 'Unevaluated';
-                                            }
-                                        ?>
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold uppercase border <?= $stBadgeClass ?> shadow-2xs">
-                                            <?= esc($stLabel) ?>
-                                        </span>
-                                    </td>
-                                    <td class="py-3 px-4 text-center font-black text-slate-900 dark:text-white">
-                                        <?= $rf['rating_num'] !== null ? number_format($rf['rating_num'], 2) : '--' ?>
-                                    </td>
-                                    <td class="py-3 px-4 text-right whitespace-nowrap">
-                                        <?php if (!empty($rf['folder_id']) && !in_array($rf['folder_status'] ?? '', [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::DRAFT_TARGET->value, 'unstarted'])): ?>
-                                            <a href="<?= site_url('ratings/show/' . $rf['folder_id']) ?>" 
-                                                class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors shadow-2xs">
-                                                Inspect
-                                            </a>
-                                        <?php elseif (in_array($rf['folder_status'] ?? '', [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::DRAFT_TARGET->value])): ?>
-                                            <span class="inline-flex items-center px-2 py-1 rounded-md text-2xs font-semibold text-slate-400 dark:text-zinc-500 bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-700/40">
-                                                Drafting
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="text-2xs text-slate-400 dark:text-slate-500 italic">No Folder</span>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+                <!-- Masterlist Table Footer -->
+                <div class="px-5 py-3 border-t border-slate-100 dark:border-[#1a2b22] bg-slate-50/50 dark:bg-white/2 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                    <div>
+                        Showing <span id="masterlist-visible-count" class="font-bold text-slate-800 dark:text-slate-200"><?= count($cycleFolders) ?></span> of <span class="font-bold"><?= count($cycleFolders) ?></span> personnel
+                    </div>
+                    <div class="text-[11px] text-slate-400">
+                        Official Personnel Master List
+                    </div>
+                </div>
             </div>
+
         </div>
+        <!-- /END OF #dashboard-view-masterlist -->
 
     </div>
 <?php endif; ?>
 </div>
 
 <script>
+// --- DASHBOARD VIEW SWITCHER (Analytics vs Masterlist) ---
+function switchDashboardView(view) {
+    const analyticsView = document.getElementById('dashboard-view-analytics');
+    const masterlistView = document.getElementById('dashboard-view-masterlist');
+    const btnAnalytics = document.getElementById('btn-view-analytics');
+    const btnMasterlist = document.getElementById('btn-view-masterlist');
+
+    if (!analyticsView || !masterlistView) return;
+
+    if (view === 'masterlist') {
+        analyticsView.classList.add('hidden');
+        masterlistView.classList.remove('hidden');
+
+        if (btnAnalytics && btnMasterlist) {
+            btnAnalytics.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer';
+            btnMasterlist.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white dark:bg-emerald-600 text-slate-900 dark:text-white shadow-xs cursor-pointer';
+        }
+        localStorage.setItem('spms_dash_view', 'masterlist');
+    } else {
+        masterlistView.classList.add('hidden');
+        analyticsView.classList.remove('hidden');
+
+        if (btnAnalytics && btnMasterlist) {
+            btnAnalytics.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white dark:bg-emerald-600 text-slate-900 dark:text-white shadow-xs cursor-pointer';
+            btnMasterlist.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer';
+        }
+        localStorage.setItem('spms_dash_view', 'analytics');
+    }
+}
+
+// Restore saved view on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const savedView = localStorage.getItem('spms_dash_view');
+    if (savedView === 'masterlist') {
+        switchDashboardView('masterlist');
+    }
+});
+
+// --- MASTERLIST FILTERING ---
+let currentMasterlistPill = 'all';
+
+function setMasterlistPill(pillType, btn) {
+    currentMasterlistPill = pillType;
+    document.querySelectorAll('.masterlist-tab-btn').forEach(b => {
+        b.className = 'masterlist-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-zinc-700 cursor-pointer';
+    });
+    if (btn) {
+        btn.className = 'masterlist-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white shadow-2xs cursor-pointer';
+    }
+    filterMasterlist();
+}
+
+function filterMasterlist() {
+    const searchInput  = document.getElementById('masterlist-search');
+    const statusFilter  = document.getElementById('masterlist-status-filter');
+
+    const query     = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const empStatus = statusFilter ? statusFilter.value.trim().toLowerCase() : '';
+
+    const rows = document.querySelectorAll('.masterlist-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const name         = row.getAttribute('data-name') || '';
+        const email        = row.getAttribute('data-email') || '';
+        const dept         = row.getAttribute('data-dept') || '';
+        const pos          = row.getAttribute('data-pos') || '';
+        const rowEmpStatus = (row.getAttribute('data-emp-status') || '').toLowerCase();
+
+        // Pill filter
+        let matchesPill = false;
+        if (currentMasterlistPill === 'all') {
+            matchesPill = true;
+        } else if (currentMasterlistPill === 'permanent') {
+            matchesPill = rowEmpStatus === 'permanent';
+        } else if (currentMasterlistPill === 'temporary') {
+            matchesPill = rowEmpStatus === 'temporary';
+        } else if (currentMasterlistPill === 'casual') {
+            matchesPill = rowEmpStatus === 'casual';
+        } else if (currentMasterlistPill === 'contractual') {
+            matchesPill = rowEmpStatus === 'contractual';
+        }
+
+        // Search match
+        const matchesSearch = !query || name.includes(query) || email.includes(query) || dept.includes(query) || pos.includes(query);
+
+        // Employment status dropdown match
+        const matchesStatus = !empStatus || rowEmpStatus === empStatus;
+
+        if (matchesPill && matchesSearch && matchesStatus) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    const countElem = document.getElementById('masterlist-visible-count');
+    if (countElem) {
+        countElem.textContent = visibleCount;
+    }
+
+    const emptyRow = document.getElementById('masterlist-empty-row');
+    if (emptyRow) {
+        emptyRow.classList.toggle('hidden', visibleCount > 0);
+    }
+}
+
+// --- ROSTER / DEAN FILTERING ---
 let currentRosterFilter = 'all';
 
 function setRosterFilter(filterType, btn) {
