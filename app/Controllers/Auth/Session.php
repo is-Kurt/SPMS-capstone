@@ -48,6 +48,36 @@ class Session extends BaseController
             return redirect()->back()->withInput();
         }
 
+        // --- Cloudflare Turnstile Server-Side Validation ---
+        if (getenv('CI_ENVIRONMENT') !== 'development') {
+            $turnstileResponse = $this->request->getPost('cf-turnstile-response');
+            $secretKey = getenv('TURNSTILE_SECRET_KEY');
+            
+            $verifyUrl = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+            $data = [
+                'secret'   => $secretKey,
+                'response' => $turnstileResponse,
+                'remoteip' => $this->request->getIPAddress()
+            ];
+            
+            $options = [
+                'http' => [
+                    'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+                    'method'  => 'POST',
+                    'content' => http_build_query($data)
+                ]
+            ];
+            
+            $context  = stream_context_create($options);
+            $result = file_get_contents($verifyUrl, false, $context);
+            $turnstileResult = json_decode($result);
+            
+            if (!$turnstileResult || !$turnstileResult->success) {
+                return redirect()->back()->withInput()->with('errors', ['error' => 'Security check failed. Are you a robot? Please refresh and try again.']);
+            }
+        }
+        // --------------------------------------------------
+
         $email    = $postData['email'];
         $password = $postData['password'];
         $ipAddress = $this->request->getIPAddress();

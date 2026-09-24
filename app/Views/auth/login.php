@@ -76,6 +76,12 @@
                     </div>
                 </div>
 
+                <?php if (getenv('CI_ENVIRONMENT') !== 'development'): ?>
+                <div class="mt-4 flex justify-center">
+                    <div class="cf-turnstile" data-sitekey="<?= esc(getenv('TURNSTILE_SITE_KEY')) ?>"></div>
+                </div>
+                <?php endif; ?>
+
                 <div class="mt-6">
                     <button type="submit" class="w-full bg-[#064e3b] hover:bg-[#085a3a] text-white font-bold py-3.5 rounded-xl cursor-pointer transition-all text-xs uppercase tracking-wider shadow-md active:scale-[0.98]">
                         Log in
@@ -101,6 +107,9 @@
 </main>
 </div>
 
+<?php if (getenv('CI_ENVIRONMENT') !== 'development'): ?>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<?php endif; ?>
 <script src="<?= base_url('assets/vendor/fingerprintjs/fp.min.js') ?>"></script>
 <script>
     // Initialize FingerprintJS and populate the hidden device_id field

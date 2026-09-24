@@ -341,6 +341,13 @@
                                 </label>
                             </div>
 
+                            <?php if (getenv('CI_ENVIRONMENT') !== 'development'): ?>
+                            <div class="pt-1.5 flex justify-center">
+                                <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+                                <div class="cf-turnstile" data-sitekey="<?= esc(getenv('TURNSTILE_SITE_KEY')) ?>"></div>
+                            </div>
+                            <?php endif; ?>
+
                             <div class="pt-1.5">
                                 <button type="submit" class="w-full bg-[#064e3b] hover:bg-[#085a3a] text-white font-bold py-3.5 rounded-xl cursor-pointer transition-all text-xs uppercase tracking-wider shadow-md active:scale-[0.98] flex items-center justify-center gap-2">
                                     <span>Log in</span>
