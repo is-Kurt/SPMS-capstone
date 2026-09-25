@@ -257,7 +257,8 @@ class Folder extends BaseController
 
         $cascadedChildren = [];
         $pendingTeamMembers = [];
-        if ($activeFolder && in_array($role, ['Admin', 'Supervisor'])) {
+        $isUserSupervisorOrChair = in_array($role, ['Admin', 'Supervisor']) || $isOwnerChair || str_contains(strtolower(session()->get('position') ?? ''), 'chair');
+        if ($activeFolder && $isUserSupervisorOrChair) {
             $cascadedChildren = $folderModel->where('parent_folder_id', $activeFolder['id'])
                 ->where('document_folders.deleted_at IS NULL')
                 ->select("document_folders.id, document_folders.user_id, document_folders.status, document_folders.target_submitted_at, users.first_name, users.last_name, users.email, pos.title as position")
@@ -275,17 +276,6 @@ class Folder extends BaseController
                     $tUserId = (int)$tm['user_id'];
                     if (in_array($tUserId, $cascadedUserIds, true)) {
                         continue;
-                    }
-
-                    // Enforce teaching staff filter if caller is Department Chair
-                    if ($role !== 'Admin' && $isOwnerChair) {
-                        $memberPlantilla = $userModel->getActivePlantillaDetails($tUserId);
-                        $memberUser = $userModel->find($tUserId);
-                        $isTeaching = (($memberPlantilla['is_teaching'] ?? null) == 1) 
-                                   || (strtoupper($memberUser['doc_type'] ?? '') === 'IPCR');
-                        if (!$isTeaching) {
-                            continue;
-                        }
                     }
 
                     $pUser = $userModel->find($tUserId);
@@ -471,22 +461,8 @@ class Folder extends BaseController
                               || str_contains($callerEmail, 'chair');
 
                 $cascadedCount = 0;
-                $skippedNonTeachingCount = 0;
 
                 foreach ($members as $member) {
-                    // When Department Chair cascades to faculty, enforce teaching staff filter
-                    if ($isCallerChair) {
-                        $memberPlantilla = $userModel->getActivePlantillaDetails((int) $member['user_id']);
-                        $memberUser = $userModel->find($member['user_id']);
-                        $isTeaching = (($memberPlantilla['is_teaching'] ?? null) == 1) 
-                                   || (strtoupper($memberUser['doc_type'] ?? '') === 'IPCR');
-
-                        if (!$isTeaching) {
-                            $skippedNonTeachingCount++;
-                            continue;
-                        }
-                    }
-
                     $subFolder = $folderModel->where('user_id', $member['user_id'])
                                              ->where('parent_folder_id', $batchId)
                                              ->where('deleted_at IS NULL')->first();
@@ -572,16 +548,7 @@ class Folder extends BaseController
                         $cascadedCount++;
                     }
                 }
-
-                if ($isCallerChair && $cascadedCount === 0 && $skippedNonTeachingCount > 0) {
-                    return $this->respondError("No teaching staff found in the selected team. Department Chairs can only cascade to active teaching faculty.", 400);
-                }
-
-                if ($isCallerChair && $skippedNonTeachingCount > 0) {
-                    $message = "Goals successfully cascaded to {$cascadedCount} teaching faculty member(s) ({$skippedNonTeachingCount} non-teaching personnel skipped).";
-                } else {
-                    $message = "Goals successfully cascaded to your team ({$cascadedCount} members).";
-                }
+                $message = "Goals successfully cascaded to your team ({$cascadedCount} member" . ($cascadedCount === 1 ? '' : 's') . ").";
             }
 
             $folderModel->db->transComplete();
@@ -756,19 +723,6 @@ class Folder extends BaseController
 
             foreach ($members as $member) {
                 $targetUserId = (int)$member['user_id'];
-
-                // Enforce teaching staff filter if Department Chair
-                if ($role !== 'Admin' && $isCallerChair) {
-                    $memberPlantilla = $userModel->getActivePlantillaDetails($targetUserId);
-                    $memberUser = $userModel->find($targetUserId);
-                    $isTeaching = (($memberPlantilla['is_teaching'] ?? null) == 1) 
-                               || (strtoupper($memberUser['doc_type'] ?? '') === 'IPCR');
-
-                    if (!$isTeaching) {
-                        $skippedNonTeachingCount++;
-                        continue;
-                    }
-                }
 
                 // Check if child folder already exists for this member
                 $exists = $folderModel->where('user_id', $targetUserId)
@@ -1060,21 +1014,46 @@ class Folder extends BaseController
         // Check if document already exists in this folder
         $existing = $documentModel->where('document_folder_id', $folderId)->first();
         if ($existing) {
-            // Auto-upgrade from IPCR to OPCR if the user is an Executive (like VPAA)
+            $existingTabs = !empty($existing['tabs']) ? (is_string($existing['tabs']) ? json_decode($existing['tabs'], true) : $existing['tabs']) : [];
+            $hasExistingContent = false;
+            if (!empty($existingTabs)) {
+                foreach ($existingTabs as $t) {
+                    if (!empty($t['content']) && trim(strip_tags($t['content'])) !== '') {
+                        $hasExistingContent = true;
+                        break;
+                    }
+                    if (!empty($t['formData']['categories'])) {
+                        foreach (['core', 'strategic', 'support'] as $c) {
+                            if (!empty($t['formData']['categories'][$c])) {
+                                foreach ($t['formData']['categories'][$c] as $r) {
+                                    if (!empty($r['mfo']) || !empty($r['indicators']) || !empty($r['accomplishments'])) {
+                                        $hasExistingContent = true;
+                                        break 3;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Auto-upgrade title from IPCR to OPCR/DPCR if user role changed, but NEVER overwrite filled user tabs
             if ($isExecutive && strtoupper($existing['title']) === 'IPCR') {
-                $opcrTemplate = $templateModel->where('title', 'OPCR')->first() ?? $templateModel->first();
-                $opcrTabs = !empty($opcrTemplate['tabs']) ? (is_string($opcrTemplate['tabs']) ? json_decode($opcrTemplate['tabs'], true) : $opcrTemplate['tabs']) : [];
-                $documentModel->update($existing['id'], [
-                    'title' => 'OPCR',
-                    'tabs'  => !empty($opcrTabs) ? $opcrTabs : $existing['tabs']
-                ]);
+                $updateData = ['title' => 'OPCR'];
+                if (!$hasExistingContent) {
+                    $opcrTemplate = $templateModel->where('title', 'OPCR')->first() ?? $templateModel->first();
+                    $opcrTabs = !empty($opcrTemplate['tabs']) ? (is_string($opcrTemplate['tabs']) ? json_decode($opcrTemplate['tabs'], true) : $opcrTemplate['tabs']) : [];
+                    if (!empty($opcrTabs)) $updateData['tabs'] = $opcrTabs;
+                }
+                $documentModel->update($existing['id'], $updateData);
             } elseif (($isDean || $isChair) && strtoupper($existing['title']) === 'IPCR') {
-                $dpcrTemplate = $templateModel->where('title', 'DPCR')->first() ?? $templateModel->first();
-                $dpcrTabs = !empty($dpcrTemplate['tabs']) ? (is_string($dpcrTemplate['tabs']) ? json_decode($dpcrTemplate['tabs'], true) : $dpcrTemplate['tabs']) : [];
-                $documentModel->update($existing['id'], [
-                    'title' => 'DPCR',
-                    'tabs'  => !empty($dpcrTabs) ? $dpcrTabs : $existing['tabs']
-                ]);
+                $updateData = ['title' => 'DPCR'];
+                if (!$hasExistingContent) {
+                    $dpcrTemplate = $templateModel->where('title', 'DPCR')->first() ?? $templateModel->first();
+                    $dpcrTabs = !empty($dpcrTemplate['tabs']) ? (is_string($dpcrTemplate['tabs']) ? json_decode($dpcrTemplate['tabs'], true) : $dpcrTemplate['tabs']) : [];
+                    if (!empty($dpcrTabs)) $updateData['tabs'] = $dpcrTabs;
+                }
+                $documentModel->update($existing['id'], $updateData);
             }
             return $existing['id'];
         }
@@ -1613,7 +1592,7 @@ class Folder extends BaseController
         });
     }
 
-    /** POST /folder/unsubmit - Owner recalls a Submitted folder back to Draft, only while the eval window is still open. */
+    /** POST /folder/unsubmit - Owner recalls an Evaluated/Submitted folder back to To Evaluate, only while the eval window is still open. */
     public function unsubmit() {
         return $this->tryOrFail(function() {
             $folderId = $this->request->getPost('folder_id');
@@ -1622,31 +1601,36 @@ class Folder extends BaseController
 
             $folder = $folderModel->find($folderId);
 
-            if (!$folder || $folder['status'] !== FolderStatus::SUBMITTED->value) {
+            if (!$folder || !in_array($folder['status'], [FolderStatus::EVALUATED->value, FolderStatus::SUBMITTED->value])) {
                 return $this->respondError("This folder cannot be unsubmitted at this time.", 400);
             }
 
-            if (!$folder || $folder['user_id'] != $userId) return $this->respondError("Unauthorized.", 400);
+            if ($folder['user_id'] != $userId) return $this->respondError("Unauthorized to revoke evaluation for this folder.", 403);
 
             $dates = $folderModel->getFolderDates($folder);
             if (!empty($dates['eval_date_end']) && date('Y-m-d H:i:s') > $dates['eval_date_end']) {
-                return $this->respondError("Cannot unsubmit: Evaluation window has closed.", 400);
+                return $this->respondError("Cannot revoke: Evaluation window has already closed.", 400);
             }
 
-            $folderModel->update($folderId, ['status' => FolderStatus::DRAFT->value, 'submitted_at' => null]);
-            audit_log('ACCOMPLISHMENT_REVOKED', 'RATING', 'document_folder', (int) $folderId, "Accomplishment submission revoked back to draft: {$folder['title']}");
+            $folderModel->update($folderId, [
+                'status'       => FolderStatus::TO_EVALUATE->value,
+                'final_rating' => null,
+                'rated_at'     => null,
+                'submitted_at' => null
+            ]);
+            audit_log('EVALUATION_REVOKED', 'RATING', 'document_folder', (int) $folderId, "Self-evaluation submission revoked back to drafting: {$folder['title']}");
 
             $subUser = (new UserModel())->find($userId);
             $subName = trim(($subUser['first_name'] ?? '') . ' ' . ($subUser['last_name'] ?? '')) ?: 'Employee';
             $this->notifyFolderEvaluators(
                 $folder,
-                'Evaluation Submission Revoked',
-                "{$subName} revoked their accomplishment submission for \"{$folder['title']}\" and returned it to draft.",
+                'Self-Evaluation Revoked',
+                "{$subName} revoked their self-evaluation submission for \"{$folder['title']}\" and returned it to drafting.",
                 'eval_unsubmitted',
                 'file'
             );
 
-            return $this->respond(['status' => 'success', 'message' => 'Submission revoked.']);
+            return $this->respond(['status' => 'success', 'message' => 'Self-evaluation revoked successfully.']);
         });
     }
 
@@ -1859,31 +1843,7 @@ class Folder extends BaseController
                 'target_approved_at' => date('Y-m-d H:i:s')
             ]);
 
-            // Clean up temporary target review notes so the approved commitment starts fresh for evaluation
-            $documentModel = new \App\Models\DocumentModel();
-            $folderDocs = $documentModel->where('document_folder_id', $folderId)->findAll();
-            foreach ($folderDocs as $fDoc) {
-                $tabs = $fDoc['tabs'] ?? [];
-                if (is_string($tabs)) $tabs = json_decode($tabs, true) ?: [];
-                $modified = false;
-                foreach ($tabs as &$tab) {
-                    if (!empty($tab['formData']['categories'])) {
-                        foreach (['core', 'strategic', 'support'] as $cat) {
-                            if (!empty($tab['formData']['categories'][$cat])) {
-                                foreach ($tab['formData']['categories'][$cat] as &$row) {
-                                    if (isset($row['remarks']) && $row['remarks'] !== '') {
-                                        $row['remarks'] = '';
-                                        $modified = true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                if ($modified) {
-                    $documentModel->update($fDoc['id'], ['tabs' => $tabs]);
-                }
-            }
+
             
             $userModel = new \App\Models\UserModel();
             $unitModel = new \App\Models\UnitModel();

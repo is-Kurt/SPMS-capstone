@@ -39,7 +39,7 @@ class MasterSeeder extends Seeder
         // Keyed by positional slug (matches email prefix) instead of last_name,
         // so there are no collisions and plantillaData below can't reference a
         // user that doesn't exist.
-        $supervisorSlugs = ['vpaa', 'dean', 'cao'];
+        $supervisorSlugs = ['vpaa', 'dean', 'deptchair', 'cao'];
         
         $adminEmail = getenv('admin.email') ?: 'admin@test.com';
 

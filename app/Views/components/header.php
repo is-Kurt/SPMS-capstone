@@ -24,8 +24,10 @@
         $navItems['ratings'] = 'Ratings';
     }
 
-    // Only Admins and Supervisors create Distribution Lists (Teams)
-    if (in_array($role, ['Admin', 'Supervisor'])) {
+    // Admins, Supervisors, and Department Chairs create Distribution Lists (Teams)
+    $userPos = strtolower(session()->get('position') ?? '');
+    $canManageTeams = in_array($role, ['Admin', 'Supervisor']) || str_contains($userPos, 'chair') || str_contains($userPos, 'head');
+    if ($canManageTeams) {
         $navItems['teams'] = 'My Teams';
     }
 

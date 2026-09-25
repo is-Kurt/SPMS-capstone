@@ -8773,3 +8773,22 @@ input[type="datetime-local"] {
     }
   }
 }
+
+/* Suppress up/down stepper arrows on numeric rating score inputs across all browsers */
+.spms-score-input,
+input.spms-score-input,
+input[type="number"].spms-score-input {
+    -moz-appearance: textfield !important;
+    appearance: textfield !important;
+}
+
+.spms-score-input::-webkit-outer-spin-button,
+.spms-score-input::-webkit-inner-spin-button,
+input.spms-score-input::-webkit-outer-spin-button,
+input.spms-score-input::-webkit-inner-spin-button,
+input[type="number"].spms-score-input::-webkit-outer-spin-button,
+input[type="number"].spms-score-input::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+}
+

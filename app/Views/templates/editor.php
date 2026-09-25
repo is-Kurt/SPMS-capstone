@@ -163,6 +163,13 @@
         border-radius: 4px;
         padding: 4px 2px;
         box-sizing: border-box;
+        -moz-appearance: textfield;
+        appearance: textfield;
+    }
+    .spms-score-input::-webkit-outer-spin-button,
+    .spms-score-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
     }
     .spms-score-input:focus {
         border-color: #0284c7;
@@ -1367,32 +1374,32 @@
                     <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishments...">${escapeHtml(data.accomplishments)}</textarea>
                 </td>
 
-                <!-- Rating Q, T, E Inputs (Flat Whole Numbers 0 to 5) -->
+                <!-- Rating Q, T, E Inputs (Flat Whole Numbers 1 to 5) -->
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                    <input type="number" min="0" max="5" step="1" 
+                    <input type="number" min="1" max="5" step="1" 
                         value="${data.q !== undefined && data.q !== null && data.q !== '' ? data.q : ''}" 
                         placeholder="—" 
-                        title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" 
+                        title="Enter 1 to 5. Erase or press Esc to clear" 
                         oninput="handleScoreInput(this)" 
                         onkeydown="handleScoreKeydown(event, this)" 
                         ondblclick="clearScore(this)" 
                         class="spms-score-input field-q">
                 </td>
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                    <input type="number" min="0" max="5" step="1" 
+                    <input type="number" min="1" max="5" step="1" 
                         value="${data.t !== undefined && data.t !== null && data.t !== '' ? data.t : ''}" 
                         placeholder="—" 
-                        title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" 
+                        title="Enter 1 to 5. Erase or press Esc to clear" 
                         oninput="handleScoreInput(this)" 
                         onkeydown="handleScoreKeydown(event, this)" 
                         ondblclick="clearScore(this)" 
                         class="spms-score-input field-t">
                 </td>
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                    <input type="number" min="0" max="5" step="1" 
+                    <input type="number" min="1" max="5" step="1" 
                         value="${data.e !== undefined && data.e !== null && data.e !== '' ? data.e : ''}" 
                         placeholder="—" 
-                        title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" 
+                        title="Enter 1 to 5. Erase or press Esc to clear" 
                         oninput="handleScoreInput(this)" 
                         onkeydown="handleScoreKeydown(event, this)" 
                         ondblclick="clearScore(this)" 
@@ -1453,30 +1460,30 @@
 
                 <!-- Rating Q, T, E Inputs (Amber #ffe599 matching Excel sheet) -->
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; background-color: #ffe599;">
-                    <input type="number" min="0" max="5" step="1" 
+                    <input type="number" min="1" max="5" step="1" 
                         value="${data.q !== undefined && data.q !== null && data.q !== '' ? data.q : ''}" 
                         placeholder="—" 
-                        title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" 
+                        title="Enter 1 to 5. Erase or press Esc to clear" 
                         oninput="handleScoreInput(this)" 
                         onkeydown="handleScoreKeydown(event, this)" 
                         ondblclick="clearScore(this)" 
                         class="spms-score-input field-q" style="background-color: #ffe599;">
                 </td>
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; background-color: #ffe599;">
-                    <input type="number" min="0" max="5" step="1" 
+                    <input type="number" min="1" max="5" step="1" 
                         value="${data.t !== undefined && data.t !== null && data.t !== '' ? data.t : ''}" 
                         placeholder="—" 
-                        title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" 
+                        title="Enter 1 to 5. Erase or press Esc to clear" 
                         oninput="handleScoreInput(this)" 
                         onkeydown="handleScoreKeydown(event, this)" 
                         ondblclick="clearScore(this)" 
                         class="spms-score-input field-t" style="background-color: #ffe599;">
                 </td>
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; background-color: #ffe599;">
-                    <input type="number" min="0" max="5" step="1" 
+                    <input type="number" min="1" max="5" step="1" 
                         value="${data.e !== undefined && data.e !== null && data.e !== '' ? data.e : ''}" 
                         placeholder="—" 
-                        title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" 
+                        title="Enter 1 to 5. Erase or press Esc to clear" 
                         oninput="handleScoreInput(this)" 
                         onkeydown="handleScoreKeydown(event, this)" 
                         ondblclick="clearScore(this)" 
@@ -1537,30 +1544,30 @@
 
                 <!-- Rating Q, T, E Inputs (Amber #ffe599 matching Excel sheet) -->
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; background-color: #ffe599;">
-                    <input type="number" min="0" max="5" step="1" 
+                    <input type="number" min="1" max="5" step="1" 
                         value="${data.q !== undefined && data.q !== null && data.q !== '' ? data.q : ''}" 
                         placeholder="—" 
-                        title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" 
+                        title="Enter 1 to 5. Erase or press Esc to clear" 
                         oninput="handleScoreInput(this)" 
                         onkeydown="handleScoreKeydown(event, this)" 
                         ondblclick="clearScore(this)" 
                         class="spms-score-input field-q" style="background-color: #ffe599;">
                 </td>
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; background-color: #ffe599;">
-                    <input type="number" min="0" max="5" step="1" 
+                    <input type="number" min="1" max="5" step="1" 
                         value="${data.t !== undefined && data.t !== null && data.t !== '' ? data.t : ''}" 
                         placeholder="—" 
-                        title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" 
+                        title="Enter 1 to 5. Erase or press Esc to clear" 
                         oninput="handleScoreInput(this)" 
                         onkeydown="handleScoreKeydown(event, this)" 
                         ondblclick="clearScore(this)" 
                         class="spms-score-input field-t" style="background-color: #ffe599;">
                 </td>
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; background-color: #ffe599;">
-                    <input type="number" min="0" max="5" step="1" 
+                    <input type="number" min="1" max="5" step="1" 
                         value="${data.e !== undefined && data.e !== null && data.e !== '' ? data.e : ''}" 
                         placeholder="—" 
-                        title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" 
+                        title="Enter 1 to 5. Erase or press Esc to clear" 
                         oninput="handleScoreInput(this)" 
                         onkeydown="handleScoreKeydown(event, this)" 
                         ondblclick="clearScore(this)" 
@@ -1606,32 +1613,32 @@
                     <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishments...">${escapeHtml(data.accomplishments)}</textarea>
                 </td>
 
-                <!-- Rating Q, T, E Inputs (Flat Whole Numbers 0 to 5) -->
+                <!-- Rating Q, T, E Inputs (Flat Whole Numbers 1 to 5) -->
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                    <input type="number" min="0" max="5" step="1" 
+                    <input type="number" min="1" max="5" step="1" 
                         value="${data.q !== undefined && data.q !== null && data.q !== '' ? data.q : ''}" 
                         placeholder="—" 
-                        title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" 
+                        title="Enter 1 to 5. Erase or press Esc to clear" 
                         oninput="handleScoreInput(this)" 
                         onkeydown="handleScoreKeydown(event, this)" 
                         ondblclick="clearScore(this)" 
                         class="spms-score-input field-q">
                 </td>
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                    <input type="number" min="0" max="5" step="1" 
+                    <input type="number" min="1" max="5" step="1" 
                         value="${data.t !== undefined && data.t !== null && data.t !== '' ? data.t : ''}" 
                         placeholder="—" 
-                        title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" 
+                        title="Enter 1 to 5. Erase or press Esc to clear" 
                         oninput="handleScoreInput(this)" 
                         onkeydown="handleScoreKeydown(event, this)" 
                         ondblclick="clearScore(this)" 
                         class="spms-score-input field-t">
                 </td>
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                    <input type="number" min="0" max="5" step="1" 
+                    <input type="number" min="1" max="5" step="1" 
                         value="${data.e !== undefined && data.e !== null && data.e !== '' ? data.e : ''}" 
                         placeholder="—" 
-                        title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" 
+                        title="Enter 1 to 5. Erase or press Esc to clear" 
                         oninput="handleScoreInput(this)" 
                         onkeydown="handleScoreKeydown(event, this)" 
                         ondblclick="clearScore(this)" 
@@ -1770,32 +1777,62 @@
     }
 
     function handleScoreKeydown(e, input) {
-        // Clear back to null on Escape
         if (e.key === 'Escape') {
             e.preventDefault();
             clearScore(input);
             return;
         }
-        // If current value is 0 and user presses ArrowDown, return to null/blank
-        if (e.key === 'ArrowDown' && input.value === '0') {
+        // Disallow non-numeric keys: 'e', 'E', '+', '-', '.', ','
+        if (['e', 'E', '+', '-', '.', ','].includes(e.key)) {
+            e.preventDefault();
+            return;
+        }
+        // Disallow '0' directly since SPMS ratings are 1 to 5
+        if (e.key === '0') {
+            e.preventDefault();
+            return;
+        }
+        // ArrowDown at 1 or blank clears back to blank
+        if (e.key === 'ArrowDown' && (input.value === '1' || input.value === '0' || input.value === '')) {
             e.preventDefault();
             clearScore(input);
+            return;
+        }
+        // ArrowUp when blank starts at 1
+        if (e.key === 'ArrowUp' && (input.value === '' || input.value === null)) {
+            e.preventDefault();
+            input.value = '1';
+            handleScoreInput(input);
+            return;
+        }
+        // ArrowUp at 5 stays at 5
+        if (e.key === 'ArrowUp' && input.value === '5') {
+            e.preventDefault();
             return;
         }
     }
 
     function handleScoreInput(input) {
-        const raw = input.value.trim();
+        let raw = input.value.trim();
         if (raw === '') {
+            input.value = '';
             recalculateForm();
             return;
         }
+        // If user typed a new digit while one already existed (e.g. was 5, typed 3 -> "53"),
+        // take the newly typed digit if it's 1-5 so replacing digits feels effortless
+        if (raw.length > 1) {
+            const lastChar = raw.slice(-1);
+            if (['1', '2', '3', '4', '5'].includes(lastChar)) {
+                raw = lastChar;
+            }
+        }
         const num = parseInt(raw, 10);
-        // If invalid or out of range (< 0 or > 5), reset back to null
-        if (isNaN(num) || num < 0 || num > 5) {
+        // Only allow 1 to 5. If 0, > 5, or invalid, clear to blank
+        if (isNaN(num) || num < 1 || num > 5) {
             input.value = '';
         } else {
-            input.value = num; // enforce flat integer
+            input.value = num;
         }
         recalculateForm();
     }
@@ -1805,7 +1842,7 @@
         const str = String(val).trim();
         if (str === '') return null;
         const num = parseInt(str, 10);
-        if (isNaN(num) || num < 0 || num > 5) return null;
+        if (isNaN(num) || num < 1 || num > 5) return null;
         return num;
     }
 

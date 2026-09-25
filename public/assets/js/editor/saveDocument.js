@@ -2,10 +2,16 @@ let savePromise = null;
 let submitting = false;
 let saveStatusTimeout = null; 
 
-function saveDocument(manualSave = true) {
+async function saveDocument(manualSave = true) {
     if (savePromise && !isClosing) {
         console.log("Save already in progress. Waiting for it to finish...");
-        return savePromise;
+        try {
+            await savePromise;
+        } catch (_) {}
+        if (AppState.isDirty || manualSave) {
+            return saveDocument(manualSave);
+        }
+        return;
     }
 
     savePromise = new Promise((resolve, reject) => {
@@ -15,13 +21,14 @@ function saveDocument(manualSave = true) {
         if (!editor && !window.isSpmsFormActive && !isRubricsActive && !hasTabs) return resolve(); // Fail gracefully if neither editor is ready
 
         if (hasTabs) {
-            if (typeof window.syncSpmsActiveTab === 'function') {
+            const isSpmsFormVisible = window.isSpmsFormActive && !document.getElementById('spms-form-workspace')?.classList.contains('hidden');
+            if (isSpmsFormVisible && typeof window.syncSpmsActiveTab === 'function') {
                 window.syncSpmsActiveTab();
             }
             if (typeof window.syncDigitalRubricsData === 'function') {
                 window.syncDigitalRubricsData();
             }
-            if (editor && typeof activeTabId !== 'undefined') {
+            if (editor && typeof activeTabId !== 'undefined' && !window.isSpmsFormActive && !isRubricsActive) {
                 const activeTab = tabs.find(t => t.id === activeTabId);
                 if (activeTab) activeTab.content = editor.getContent();
             }
@@ -184,7 +191,7 @@ async function saveWith({before, after}) {
 
     try {
         // 2. Save the document (persists latest form/editor contents)
-        await saveDocument(false);
+        await saveDocument(true);
         // 3. Finally, trigger the POST request to Submit or Rate
         if (after) await after();
     } catch (error) {

@@ -26,8 +26,11 @@ class RoleFilter implements FilterInterface
     public function before(RequestInterface $request, $arguments = null)
     {
         $role = session()->get('role');
+        $pos = strtolower(session()->get('position') ?? '');
+        $isChair = str_contains($pos, 'chair') || str_contains($pos, 'head');
+        $isAllowed = ($role && in_array($role, $arguments)) || ($isChair && in_array('Supervisor', $arguments));
 
-        if (!$role || !in_array($role, $arguments)) {
+        if (!$isAllowed) {
             $dest = ($role === 'TWG') ? 'ratings' : 'folders';
             return redirect()->to(site_url($dest))->with('error', 'Unauthorized access.');
         }

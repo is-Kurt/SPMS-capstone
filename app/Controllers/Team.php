@@ -21,7 +21,9 @@ class Team extends BaseController
     /** GET /teams - Lists this user's saved teams and shows the selected one's member roster. */
     public function index() {
         $role = session()->get('role');
-        if (!in_array($role, ['Admin', 'Supervisor'])) return redirect()->to('/');
+        $userPos = strtolower(session()->get('position') ?? '');
+        $isChair = str_contains($userPos, 'chair') || str_contains($userPos, 'head');
+        if (!in_array($role, ['Admin', 'Supervisor']) && !$isChair) return redirect()->to('/');
 
         $userId = session()->get('user_id');
         $teamId = $this->request->getGet('team_id');
@@ -106,7 +108,9 @@ class Team extends BaseController
     /** POST /teams/create - Creates an empty, unnamed team shell so the UI has an id to attach members to. */
     public function createShell() {
         $role = session()->get('role');
-        if (!in_array($role, ['Admin', 'Supervisor'])) return $this->respondError('Unauthorized.', 403);
+        $userPos = strtolower(session()->get('position') ?? '');
+        $isChair = str_contains($userPos, 'chair') || str_contains($userPos, 'head');
+        if (!in_array($role, ['Admin', 'Supervisor']) && !$isChair) return $this->respondError('Unauthorized.', 403);
 
         $presetModel = new RoutingPresetModel();
 
@@ -132,7 +136,9 @@ class Team extends BaseController
     /** POST /teams - Saves a team's name/description and replaces its full member list. */
     public function store() {
         $role = session()->get('role');
-        if (!in_array($role, ['Admin', 'Supervisor'])) return redirect()->to('/');
+        $userPos = strtolower(session()->get('position') ?? '');
+        $isChair = str_contains($userPos, 'chair') || str_contains($userPos, 'head');
+        if (!in_array($role, ['Admin', 'Supervisor']) && !$isChair) return redirect()->to('/');
 
         $teamId  = $this->request->getPost('team_id');
         $name    = trim($this->request->getPost('name'));
@@ -184,7 +190,9 @@ class Team extends BaseController
     /** POST /teams/delete - Archives (soft-deletes) a team if cascaded, or hard-deletes if unused. */
     public function delete() {
         $role = session()->get('role');
-        if (!in_array($role, ['Admin', 'Supervisor'])) return $this->respondError('Unauthorized.', 403);
+        $userPos = strtolower(session()->get('position') ?? '');
+        $isChair = str_contains($userPos, 'chair') || str_contains($userPos, 'head');
+        if (!in_array($role, ['Admin', 'Supervisor']) && !$isChair) return $this->respondError('Unauthorized.', 403);
 
         $presetId = $this->request->getVar('preset_id') ?? $this->request->getPost('preset_id');
         $presetModel = new RoutingPresetModel();

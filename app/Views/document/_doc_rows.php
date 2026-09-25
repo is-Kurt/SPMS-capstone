@@ -1067,7 +1067,12 @@
 
         <?php 
             $isUserAdmin = (session()->get('role') === 'Admin');
-            $canCascade = $isUserAdmin || (session()->get('role') === 'Supervisor' && ($activeFolder['user_id'] == session()->get('user_id'))); 
+            $userPos = strtolower(session()->get('position') ?? '');
+            $isSupervisorOrChair = in_array(session()->get('role'), ['Supervisor', 'Admin']) 
+                                || !empty($isOwnerChair) 
+                                || str_contains($userPos, 'chair') 
+                                || str_contains($userPos, 'head');
+            $canCascade = $isUserAdmin || ($isSupervisorOrChair && ($activeFolder['user_id'] == session()->get('user_id'))); 
             $docType = strtolower($ownerDocType ?? 'ipcr');
             if (($docType === 'dpcr' || $docType === 'cdpcr') && !empty($isOwnerDean)) {
                 $docType = (!empty($activeFolder['cdpcr_target_start']) || !empty($activeFolder['cdpcr_target_end']) || !empty($activeFolder['cdpcr_eval_start']) || !empty($activeFolder['cdpcr_eval_end'])) ? 'cdpcr' : 'dpcr';
@@ -1090,7 +1095,7 @@
 
             <?php if ($canCascade): ?>
                 <!-- CASCADE MANAGEMENT SECTION (For Admins & Supervisors) -->
-                <div class="flex flex-col gap-3">
+                <div class="flex flex-col gap-3 flex-1 min-h-0">
                     <?php $cascadedTeamId = $activeFolder['routing_preset_id'] ?? null; ?>
                     <div class="flex items-center justify-between">
                         <h4 class="text-[10px] font-black uppercase text-text-muted tracking-wider">Cascade Management</h4>
@@ -1177,26 +1182,39 @@
                         </button>
 
                         <?php if (!empty($cascadedChildren)): ?>
-                            <div class="mt-2 flex flex-col gap-2">
+                            <?php 
+                                $subPageSize = 8;
+                                $totalSubPages = ceil(count($cascadedChildren) / $subPageSize) ?: 1;
+                            ?>
+                            <div class="mt-2 flex flex-col gap-2 flex-1 min-h-0">
                                 <div class="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-text-muted">
                                     <span>Cascaded Subordinates</span>
-                                    <span><?= count($cascadedChildren) ?></span>
+                                    <span id="subordinates-count-badge" class="px-2 py-0.5 rounded-full bg-[#062e1e] text-[#34d399] border border-[#0d4a32] font-extrabold text-[9px]"><?= count($cascadedChildren) ?></span>
                                 </div>
-                                <div class="max-h-56 overflow-y-auto space-y-1.5 custom-scrollbar pr-0.5">
-                                    <?php foreach ($cascadedChildren as $child): ?>
+
+                                <div id="cascaded-subordinates-list" class="space-y-2">
+                                    <?php foreach ($cascadedChildren as $cIndex => $child): ?>
                                         <?php 
                                             $isPending = ($child['status'] === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value);
                                             $isApproved = ($child['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
+                                            $fInit = mb_substr($child['first_name'] ?? '', 0, 1);
+                                            $lInit = mb_substr($child['last_name'] ?? '', 0, 1);
+                                            $initials = strtoupper($fInit . $lInit) ?: 'U';
                                         ?>
-                                        <div class="p-2.5 rounded-xl border border-slate-200 dark:border-[#1e382b] bg-slate-50 dark:bg-[#0c1510] flex flex-col gap-1.5 text-xs">
-                                            <div class="flex items-start justify-between gap-1">
-                                                <div>
-                                                    <span class="font-bold text-slate-800 dark:text-white block text-[11px] leading-tight">
-                                                        <?= esc($child['first_name'] . ' ' . $child['last_name']) ?>
-                                                    </span>
-                                                    <span class="text-[9px] text-slate-500 dark:text-slate-400">
-                                                        <?= esc($child['position'] ?: $child['email']) ?>
-                                                    </span>
+                                        <div class="subordinate-card <?= ($cIndex >= $subPageSize) ? 'hidden' : '' ?> p-3 rounded-xl border border-slate-200 dark:border-[#1e382b] bg-slate-50 dark:bg-[#0c1510] hover:border-emerald-500/40 flex flex-col gap-1.5 text-xs transition-all duration-150" data-subordinate-index="<?= $cIndex ?>">
+                                            <div class="flex items-center justify-between gap-1.5">
+                                                <div class="flex items-center gap-2.5 min-w-0">
+                                                    <div class="w-8 h-8 rounded-lg bg-[#062e1e] border border-[#0d4a32] text-[#34d399] font-black text-[11px] flex items-center justify-center shrink-0">
+                                                        <?= esc($initials) ?>
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <span class="font-bold text-slate-800 dark:text-white block text-[11px] leading-tight truncate">
+                                                            <?= esc($child['first_name'] . ' ' . $child['last_name']) ?>
+                                                        </span>
+                                                        <span class="text-[9px] text-slate-500 dark:text-slate-400 block truncate">
+                                                            <?= esc($child['position'] ?: $child['email']) ?>
+                                                        </span>
+                                                    </div>
                                                 </div>
                                                 <div class="flex items-center gap-1.5 shrink-0">
                                                     <?php if ($isPending): ?>
@@ -1234,6 +1252,31 @@
                                             <?php endif; ?>
                                         </div>
                                     <?php endforeach; ?>
+                                </div>
+
+                                <div id="subordinates-pagination" class="mt-auto pt-3 flex items-center justify-between border-t border-[#0d4a32]/60 text-xs <?= ($totalSubPages <= 1) ? 'hidden' : '' ?>">
+                                    <span id="sub-page-info" class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">
+                                        1–<?= min($subPageSize, count($cascadedChildren)) ?> of <?= count($cascadedChildren) ?>
+                                    </span>
+                                    <div class="flex items-center gap-1.5">
+                                        <button type="button" id="sub-prev-btn" onclick="changeSubPage(-1)" 
+                                                class="p-1 px-2 rounded-lg border border-[#1e382b] bg-[#0c1510] hover:bg-[#13271b] text-slate-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer text-xs font-bold flex items-center gap-1"
+                                                title="Previous page">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                                            </svg>
+                                        </button>
+                                        <span id="sub-page-indicator" class="text-[11px] font-extrabold text-emerald-400 px-1">
+                                            1 / <?= $totalSubPages ?>
+                                        </span>
+                                        <button type="button" id="sub-next-btn" onclick="changeSubPage(1)" 
+                                                class="p-1 px-2 rounded-lg border border-[#1e382b] bg-[#0c1510] hover:bg-[#13271b] text-slate-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer text-xs font-bold flex items-center gap-1"
+                                                title="Next page">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         <?php endif; ?>
@@ -1458,38 +1501,17 @@
                                 </svg>
                                 Revoke Target Submission
                             </button>
-                        <?php elseif (session()->get('role') === 'Admin'): ?>
-                            <?php $isOpcrFolder = ($formTypeName === 'OPCR'); ?>
-                            <div class="flex flex-col gap-2">
-                                <?php if ($isOpcrFolder): ?>
-                                    <button onclick="approveTargetFromFolder('<?= $activeFolder['id'] ?>', true, this)"
-                                            class="w-full py-2.5 px-3 bg-gradient-to-r from-emerald-600 to-[#064e3b] hover:from-emerald-700 hover:to-[#085a3a] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-[0.98]">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                        </svg>
-                                        Approve & Release to Deans
-                                    </button>
-                                <?php endif; ?>
-                                <button onclick="approveTargetFromFolder('<?= $activeFolder['id'] ?>', false, this)"
-                                        class="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-[0.98]">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                    Approve Target
-                                </button>
-                            </div>
                         <?php endif; ?>
-                    <?php elseif ($activeFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value && session()->get('role') === 'Admin' && ($isOpcrFolder ?? false)): ?>
-                        <div class="flex flex-col gap-2">
-                            <button onclick="approveTargetFromFolder('<?= $activeFolder['id'] ?>', true, this)"
-                                    class="w-full py-2.5 px-3 bg-gradient-to-r from-emerald-600 to-[#064e3b] hover:from-emerald-700 hover:to-[#085a3a] text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-[0.98]"
-                                    title="Distribute this approved OPCR to all College Deans as their target basis">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    <?php elseif ($activeFolder['status'] === \App\Enums\FolderStatus::EVALUATED->value): ?>
+                        <?php if ($activeFolder['user_id'] == session()->get('user_id')): ?>
+                            <button onclick="unsubmitEvaluationFolder('<?= $activeFolder['id'] ?>', this)" 
+                                    class="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                                 </svg>
-                                Release OPCR to Deans
+                                Revoke Self-Rating
                             </button>
-                        </div>
+                        <?php endif; ?>
                     <?php endif; ?>
 
                     <?php if (!empty($parentFolder)): ?>
@@ -2164,6 +2186,68 @@
             });
         }
 
+        let currentSubPage = 1;
+        const subPageSize = 8;
+
+        function renderSubordinatesPage(page) {
+            const cards = document.querySelectorAll('.subordinate-card');
+            if (!cards || cards.length === 0) return;
+
+            const total = cards.length;
+            const totalPages = Math.ceil(total / subPageSize) || 1;
+
+            if (page < 1) page = 1;
+            if (page > totalPages) page = totalPages;
+            currentSubPage = page;
+
+            const start = (page - 1) * subPageSize;
+            const end = start + subPageSize;
+
+            cards.forEach((card, idx) => {
+                if (idx >= start && idx < end) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+
+            const pageInfo = document.getElementById('sub-page-info');
+            if (pageInfo) {
+                const from = Math.min(start + 1, total);
+                const to = Math.min(end, total);
+                pageInfo.textContent = `${from}–${to} of ${total}`;
+            }
+
+            const indicator = document.getElementById('sub-page-indicator');
+            if (indicator) {
+                indicator.textContent = `${page} / ${totalPages}`;
+            }
+
+            const prevBtn = document.getElementById('sub-prev-btn');
+            const nextBtn = document.getElementById('sub-next-btn');
+            if (prevBtn) prevBtn.disabled = (page <= 1);
+            if (nextBtn) nextBtn.disabled = (page >= totalPages);
+
+            const pagination = document.getElementById('subordinates-pagination');
+            if (pagination) {
+                if (totalPages <= 1) {
+                    pagination.classList.add('hidden');
+                } else {
+                    pagination.classList.remove('hidden');
+                }
+            }
+        }
+
+        function changeSubPage(delta) {
+            renderSubordinatesPage(currentSubPage + delta);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => renderSubordinatesPage(1));
+        } else {
+            renderSubordinatesPage(1);
+        }
+
         function triggerRemoveCascadedSubordinate(childFolderId, subordinateName, parentFolderId) {
             if (sending) return;
             window.appConfirm({
@@ -2299,32 +2383,21 @@
             });
         }
 
-        async function approveTargetFromFolder(folderId, releaseToDeans, btn) {
-            const msg = releaseToDeans 
-                ? "Approve this OPCR and automatically release it to all College Deans as their target basis?"
-                : "Approve these targets?";
-            const ok = await window.appConfirm(msg, { 
-                title: 'Approve Targets',
-                confirmText: releaseToDeans ? 'Approve & Release' : 'Approve',
-                cancelText: 'Cancel',
-                variant: 'success'
+        async function unsubmitEvaluationFolder(folderId, btn) {
+            const ok = await window.appConfirm("Are you sure you want to revoke your self-rating submission? This will return your evaluation to drafting status so you can edit your ratings and accomplishments.", {
+                title: 'Revoke Self-Rating',
+                variant: 'undo',
+                confirmText: 'Revoke Self-Rating',
+                cancelText: 'Keep Submitted'
             });
             if (!ok) return;
 
             if (btn) btn.disabled = true;
             const formData = new FormData();
             formData.append('folder_id', folderId);
-            if (releaseToDeans) {
-                formData.append('release_to_deans', '1');
-            }
 
-            apiPost('<?= site_url('folder/approve_target') ?>', formData, {
-                onSuccess: async (res) => {
-                    if (res && res.message) {
-                        await window.appAlert(res.message);
-                    }
-                    window.location.reload();
-                },
+            apiPost('<?= site_url('folder/unsubmit') ?>', formData, {
+                onSuccess: () => window.location.reload(),
                 onError: async (errMsg) => {
                     await window.appAlert(errMsg || "An error occurred.");
                     if (btn) btn.disabled = false;

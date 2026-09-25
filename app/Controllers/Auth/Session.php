@@ -246,6 +246,15 @@ class Session extends BaseController
         $department = $plantillaData ? $plantillaData['department'] : null;
         $position   = $plantillaData ? $plantillaData['position'] : null;
 
+        $posLower = strtolower($position ?? '');
+        if (($systemRole === 'Employee') && (str_contains($posLower, 'chair') || str_contains($posLower, 'head'))) {
+            $systemRole = 'Supervisor';
+            $supRole = $userModel->db->table('roles')->where('name', 'Supervisor')->get()->getRowArray();
+            if ($supRole) {
+                $userModel->db->table('user_roles')->where('user_id', $user['id'])->update(['role_id' => $supRole['id']]);
+            }
+        }
+
         session()->set([
             'user_id'    => $user['id'],
             'email'      => $user['email'],
