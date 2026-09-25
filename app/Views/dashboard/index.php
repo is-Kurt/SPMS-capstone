@@ -41,7 +41,7 @@
                         <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                         </svg>
-                        <span>Ratings Master List</span>
+                        <span>Master List</span>
                         <span class="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">
                             <?= count($cycleFolders) ?>
                         </span>
@@ -985,7 +985,7 @@
                             </span>
                         </div>
                         <h2 class="text-xl lg:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                            Summary List of Individual Performance Ratings (Master List)
+                            Master List
                         </h2>
                         <p class="text-xs text-slate-500 dark:text-slate-400 max-w-3xl">
                             Consolidated institutional master list of all active plantilla faculty and staff for <?= esc($activeCycle['title'] ?? 'this evaluation period') ?>. Formatted in accordance with Civil Service Commission Strategic Performance Management System guidelines.
@@ -1094,13 +1094,12 @@
                                 <th class="py-3.5 px-4">College / Division</th>
                                 <th class="py-3.5 px-4">Position</th>
                                 <th class="py-3.5 px-4 text-center">Employment Status</th>
-                                <th class="py-3.5 px-4 text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-[#1a2b22] text-xs">
                             <?php if (empty($cycleFolders)): ?>
                                 <tr>
-                                    <td colspan="6" class="py-12 px-4 text-center text-slate-400 dark:text-slate-500 italic">
+                                    <td colspan="5" class="py-12 px-4 text-center text-slate-400 dark:text-slate-500 italic">
                                         No personnel records discovered for this evaluation period.
                                     </td>
                                 </tr>
@@ -1155,27 +1154,12 @@
                                                 <?= esc($f['employment_status'] ?? 'Permanent') ?>
                                             </span>
                                         </td>
-
-                                        <!-- Action -->
-                                        <td class="py-3.5 px-4 text-right">
-                                            <?php if (!empty($f['id']) || !empty($f['folder_id'])): ?>
-                                                <a href="<?= site_url('folders/view/' . ($f['id'] ?? $f['folder_id'])) ?>"
-                                                   class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-500/30 transition-colors shadow-2xs">
-                                                    <span>Inspect</span>
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                                    </svg>
-                                                </a>
-                                            <?php else: ?>
-                                                <span class="text-xs text-slate-400 dark:text-slate-600 italic">No Folder</span>
-                                            <?php endif; ?>
-                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
 
                             <tr id="masterlist-empty-row" class="hidden">
-                                <td colspan="6" class="py-12 px-4 text-center">
+                                <td colspan="5" class="py-12 px-4 text-center">
                                     <div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
                                         <svg class="w-8 h-8 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
