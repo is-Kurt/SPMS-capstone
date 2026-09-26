@@ -1,12 +1,13 @@
 {
   "scripts": {
-    "dev": "npx @tailwindcss/cli -i ./public/assets/css/main/input.css -o ./public/assets/css/main/style.css --watch"
+    "dev": "npx @tailwindcss/cli -i ./public/assets/css/main/input.css -o ./public/assets/css/main/style.css --watch",
+    "postinstall": "mkdir -p public/assets/vendor/axios/dist public/assets/vendor/tinymce && cp -r node_modules/axios/dist/* public/assets/vendor/axios/dist/ && cp -r node_modules/tinymce/* public/assets/vendor/tinymce/"
   },
   "dependencies": {
     "@tailwindcss/cli": "^4.1.18",
-    "axios": "^1.15.0",
+    "axios": "^1.20.0",
     "tailwindcss": "^4.1.18",
-    "tinymce": "^8.3.2"
+    "tinymce": "^8.9.2"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
