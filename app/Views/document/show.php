@@ -471,6 +471,256 @@
         }
     }
 </style>
+    
+    $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
+    $now = date('Y-m-d H:i:s');
+    $targetEndCol = $ownerDocType . '_target_end';
+    $tEnd = $doc[$targetEndCol] ?? null;
+    $isPastTargetDate = (!empty($tEnd) && $now > $tEnd);
+
+    $evalPhaseStatuses = [
+        FolderStatus::SUBMITTED->value,
+        FolderStatus::TO_EVALUATE->value,
+        FolderStatus::REEVALUATE->value,
+        FolderStatus::EVALUATED->value,
+        FolderStatus::APPROVED->value,
+        FolderStatus::TWG_APPROVED->value,
+        FolderStatus::TWG_DISAPPROVED->value,
+        FolderStatus::UNEVALUATED->value,
+    ];
+
+    $isEvaluationPhase = in_array($status, $evalPhaseStatuses) || $isPastTargetDate;
+    $isTargetPhase = !$isEvaluationPhase;
+
+    $canEditTargets = ($isOwner && in_array($status, [
+        FolderStatus::DRAFT_TARGET->value,
+        FolderStatus::TARGET_RETURNED->value,
+        FolderStatus::TARGET_UNAPPROVED->value,
+        FolderStatus::DRAFT->value
+    ]) && !$isPastTargetDate && !$isGuide);
+
+    $canEditEvaluation = ($isEvaluationPhase && (
+        ($isOwner && in_array($status, [FolderStatus::TO_EVALUATE->value, FolderStatus::REEVALUATE->value])) ||
+        (!$isOwner && isset($routingStatus) && in_array($status, [FolderStatus::SUBMITTED->value, FolderStatus::EVALUATED->value]))
+    ) && !$isGuide);
+
+    $editableStatuses = [
+        FolderStatus::DRAFT_TARGET->value,
+        FolderStatus::TARGET_RETURNED->value
+    ];
+    $isEditable = ($canEditTargets || $canEditEvaluation);
+?>
+
+<style>
+    .spms-sheet-container {
+        width: 100%;
+        max-width: 1280px;
+        background: #ffffff;
+        color: #000000;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+        border: 1px solid #cbd5e1;
+        padding: 36px 40px;
+        box-sizing: border-box;
+        font-family: inherit;
+        display: block !important;
+        height: auto !important;
+        min-height: fit-content !important;
+    }
+    .spms-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid #000000;
+        font-size: 11px;
+        height: auto !important;
+        table-layout: auto !important;
+        display: table !important;
+    }
+    .spms-table tbody {
+        display: table-row-group !important;
+        height: auto !important;
+    }
+    .spms-table th, .spms-table td {
+        border: 1px solid #000000;
+    }
+    .spms-textarea {
+        width: 100%;
+        min-height: 48px;
+        background: transparent;
+        border: 1px solid transparent;
+        padding: 4px;
+        font-size: 11px;
+        line-height: 1.35;
+        color: #0f172a;
+        resize: vertical;
+        box-sizing: border-box;
+        border-radius: 4px;
+        font-family: inherit;
+    }
+    .spms-textarea:hover:not(:disabled) {
+        border-color: #cbd5e1;
+    }
+    .spms-textarea:focus {
+        border-color: #0284c7;
+        background: #f8fafc;
+        outline: none;
+    }
+    .spms-textarea:disabled {
+        color: #475569;
+        background: #f8fafc;
+        border-color: #f1f5f9;
+        cursor: not-allowed;
+        resize: none;
+    }
+    .field-mfo:disabled {
+        color: #0f172a !important;
+        font-weight: 600;
+        background: #fcfcfc;
+    }
+    .spms-score-input {
+        width: 100%;
+        text-align: center;
+        font-weight: 800;
+        font-size: 12px;
+        color: #0f172a;
+        background: #ffffff;
+        border: 1px solid #94a3b8;
+        border-radius: 4px;
+        padding: 4px 2px;
+        box-sizing: border-box;
+    }
+    .spms-score-input:focus {
+        border-color: #0284c7;
+        outline: none;
+        background: #f0f9ff;
+    }
+    .spms-score-input:disabled {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+        color: #94a3b8;
+        cursor: not-allowed;
+    }
+    .btn-add-dashed {
+        display: block;
+        width: 100%;
+        background: #f8fafc;
+        border: 1.5px dashed #0284c7;
+        color: #0284c7;
+        font-weight: 700;
+        font-size: 12px;
+        padding: 10px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-align: center;
+    }
+    .btn-add-dashed:hover {
+        background: #f0f9ff;
+        border-color: #0369a1;
+        color: #0369a1;
+    }
+    .btn-del-row {
+        color: #dc2626;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .btn-del-row:hover {
+        background: #fee2e2;
+    }
+    .subtotal-badge {
+        font-size: 10px;
+        font-weight: 800;
+        background: #0284c7;
+        color: #ffffff;
+        padding: 3px 8px;
+        border-radius: 12px;
+        display: inline-block;
+    }
+    .spms-category-header {
+        background: #e2e8f0;
+        border-top: 2px solid #000000;
+        border-bottom: 1px solid #000000;
+    }
+    @media print {
+        @page {
+            size: letter landscape;
+            margin: 8mm 6mm;
+        }
+        html, body {
+            background: #ffffff !important;
+            color: #000000 !important;
+            font-size: 10px !important;
+            width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
+        }
+        header, nav, aside, .print-hide, #tab-bar, .tox {
+            display: none !important;
+        }
+        main, #editor-container, #spms-form-workspace {
+            padding: 0 !important;
+            margin: 0 !important;
+            background: #ffffff !important;
+            overflow: visible !important;
+            display: block !important;
+            width: 100% !important;
+            height: auto !important;
+        }
+        .spms-sheet-container {
+            box-shadow: none !important;
+            border: none !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            display: block !important;
+        }
+        .spms-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 9.5px !important;
+            page-break-inside: auto;
+        }
+        .spms-table tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+        .spms-meta-matrix, .spms-navy-bar, .spms-signatories-matrix, .spms-sheet-container > div, .spms-table-responsive-wrapper {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+        .spms-table thead {
+            display: table-header-group !important;
+        }
+        .spms-table th, .spms-table td {
+            border: 1px solid #000000 !important;
+            color: #000000 !important;
+        }
+        .spms-textarea, .spms-score-input, input {
+            border: none !important;
+            background: transparent !important;
+            color: #000000 !important;
+            resize: none !important;
+            box-shadow: none !important;
+            padding: 2px !important;
+        }
+        .spms-textarea::placeholder, .spms-score-input::placeholder, input::placeholder {
+            color: transparent !important;
+        }
+        .btn-add-dashed, .btn-del-row, #tfoot-add-core, #tfoot-add-strategic, #tfoot-add-support {
+            display: none !important;
+        }
+        .spms-textarea {
+            overflow: hidden !important;
+            height: auto !important;
+        }
+    }
+</style>
 
 <div class="h-full flex flex-col bg-bg">
     <?= view('components/govph_masthead') ?>
@@ -487,13 +737,14 @@
         ?>
         <div class="flex items-center gap-1 sm:gap-3 min-w-0 flex-1">
             <!-- Return to Folder Button -->
-            <a href="<?= $returnUrl ?>" 
+            <a href="<?= site_url('folders/' . ($doc['document_folder_id'] ?? '')) ?>" 
+               onclick="if (window.history.length > 1) { history.back(); return false; }"
                class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-xs font-bold rounded-lg border border-surface-border transition-colors shrink-0 shadow-sm mr-1 sm:mr-2 cursor-pointer"
                title="Return to <?= $isOwner ? 'Folder' : 'Ratings Dashboard' ?>">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                <span class="font-extrabold uppercase text-[11px] tracking-wider hidden sm:inline">Return</span>
+                <span class="font-extrabold uppercase text-[11px] tracking-wider">Return</span>
             </a>
 
             <a href="<?= $homeUrl ?>" 
@@ -501,7 +752,7 @@
                title="Return to SPMS Home">
                 <!-- Back-to-folders brand mark. text-text (not text-white) so it stays visible on the
                      theme-aware bg-bg header in both light and dark mode. -->
-                <div class="flex-shrink-0 flex items-center gap-1 mr-1 sm:mr-4 text-text hover:text-accent transition-colors">
+                <div class="flex-shrink-0 flex items-center gap-1 mr-2 sm:mr-4 text-text hover:text-accent transition-colors">
                     <!-- Folder/document icon -->
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -572,9 +823,22 @@
                 onblur="restoreTitle(this, '<?= esc($doc['title']) ?>'); autoResize(this);"
                 onload="autoResize(this);"
                 <?= (!$isEditable) ? 'disabled' : '' ?>>
+                class="bg-transparent border-none font-bold text-sm text-text focus:ring-0 px-1 sm:px-2 py-1 min-w-[50px]"
+                oninput="AppState.setDirty(true); autoResize(this);"
+                onblur="restoreTitle(this, '<?= esc($doc['title']) ?>'); autoResize(this);"
+                onload="autoResize(this);"
+                <?= (!$isEditable) ? 'disabled' : '' ?>>
 
             <span id="save-status" class="ml-1 sm:ml-3 shrink-0 text-[10px] uppercase tracking-widest font-bold transition-all"></span>
         </div>
+        
+        <!-- Call autoResize immediately after the element is in DOM -->
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const titleInput = document.getElementById('doc-title');
+                if (titleInput) autoResize(titleInput);
+            });
+        </script>
         
         <!-- Call autoResize immediately after the element is in DOM -->
         <script>
@@ -606,13 +870,13 @@
             <?php if ($isOwner || session()->get('role') === 'Admin'): ?>
             <!-- Print / Export PDF Button -->
             <button type="button" onclick="exportToPdf()" 
-                    class="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-2.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-[10px] sm:text-xs font-bold rounded-lg border border-surface-border transition-all cursor-pointer shadow-sm print-hide"
+                    class="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 sm:py-2.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-[10px] sm:text-xs font-bold rounded-lg border border-surface-border transition-all cursor-pointer shadow-sm print-hide"
                     title="Print Document or Export to PDF">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[#FFB800]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>
                 <span class="hidden md:inline">Print / Export PDF</span>
-                <span class="hidden sm:inline md:hidden">Print</span>
+                <span class="md:hidden">Print</span>
             </button>
 
             <!-- Export to Excel Button -->
@@ -644,6 +908,43 @@
                         Supporting<span class="hidden sm:inline"> Evidence</span>
                     </button>
 
+                <?php elseif ($status === FolderStatus::APPROVED->value || $status === FolderStatus::TWG_APPROVED->value || $status === FolderStatus::TWG_DISAPPROVED->value): ?>
+                    <?php if (session()->get('role') === 'TWG'): ?>
+                        <div class="flex gap-1.5 sm:gap-2">
+                            <button id="btn-twg-disapprove" type="button" 
+                                    onclick="setTwgStatus('twg_disapproved')" 
+                                    class="<?= $status === FolderStatus::TWG_DISAPPROVED->value ? 'bg-danger-600 ring-2 ring-danger-400' : 'bg-danger-500 hover:bg-danger-600' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-danger-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                Disapprove
+                            </button>
+                            <button id="btn-twg-approve" type="button" 
+                                    onclick="setTwgStatus('twg_approved')" 
+                                    class="<?= $status === FolderStatus::TWG_APPROVED->value ? 'bg-success-600 ring-2 ring-success-400' : 'bg-success-500 hover:bg-success-600' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-success-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                Approve
+                            </button>
+                        </div>
+                    <?php else: ?>
+                        <?php 
+                            $canRemoveEvalApproval = false;
+                            if (session()->get('role') === 'Admin' && $status === FolderStatus::APPROVED->value) $canRemoveEvalApproval = true;
+                            if (isset($routingStatus) && $routingStatus === FolderStatus::APPROVED->value && $status === FolderStatus::APPROVED->value) $canRemoveEvalApproval = true;
+                        ?>
+                        <?php if ($canRemoveEvalApproval): ?>
+                            <?php 
+                                $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
+                                $evalEndCol = $ownerDocType . '_eval_end';
+                                $isEvalPeriodEnded = !empty($doc[$evalEndCol]) && date('Y-m-d H:i:s') > $doc[$evalEndCol]; 
+                            ?>
+                            <button id="btn-unapprove-evaluation" type="button" 
+                                    <?= $isEvalPeriodEnded ? 'disabled' : 'onclick="unapproveFolderEvaluation()"' ?>
+                                    class="<?= $isEvalPeriodEnded ? 'bg-warning-500/50 cursor-not-allowed opacity-80' : 'bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg transition-all">
+                                Remove<span class="hidden sm:inline"> Approval</span>
+                            </button>
+                        <?php else: ?>
+                            <button type="button" disabled class="bg-success-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
+                                <span class="hidden sm:inline">Folder </span><?= $status === FolderStatus::TWG_APPROVED->value ? 'TWG Approved' : ($status === FolderStatus::TWG_DISAPPROVED->value ? 'TWG Disapproved' : 'Approved') ?>
+                            </button>
+                        <?php endif; ?>
+                    <?php endif; ?>
                 <?php elseif ($status === FolderStatus::APPROVED->value || $status === FolderStatus::TWG_APPROVED->value || $status === FolderStatus::TWG_DISAPPROVED->value): ?>
                     <?php if (session()->get('role') === 'TWG'): ?>
                         <div class="flex gap-1.5 sm:gap-2">
@@ -727,7 +1028,30 @@
                                     Approve
                                 </button>
                             </div>
+                        
+                        <?php elseif (session()->get('role') === 'TWG'): ?>
+                            <div class="flex gap-1.5 sm:gap-2">
+                                <button id="btn-twg-disapprove" type="button" 
+                                        onclick="setTwgStatus('twg_disapproved')" 
+                                        class="bg-danger-500 hover:bg-danger-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-danger-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                    Disapprove
+                                </button>
+                                <button id="btn-twg-approve" type="button" 
+                                        onclick="setTwgStatus('twg_approved')" 
+                                        class="bg-success-500 hover:bg-success-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-success-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                    Approve
+                                </button>
+                            </div>
                         <?php elseif (isset($routingStatus) && $routingStatus === FolderStatus::APPROVED->value): ?>
+                            <?php 
+                                $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
+                                $evalEndCol = $ownerDocType . '_eval_end';
+                                $isEvalPeriodEnded = !empty($doc[$evalEndCol]) && date('Y-m-d H:i:s') > $doc[$evalEndCol]; 
+                            ?>
+                            <button id="btn-unapprove-evaluation" type="button" 
+                                    <?= $isEvalPeriodEnded ? 'disabled' : 'onclick="unapproveFolderEvaluation()"' ?>
+                                    class="<?= $isEvalPeriodEnded ? 'bg-warning-500/50 cursor-not-allowed opacity-80' : 'bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg transition-all">
+                                Remove<span class="hidden sm:inline"> Approval</span>
                             <?php 
                                 $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
                                 $evalEndCol = $ownerDocType . '_eval_end';
@@ -740,6 +1064,14 @@
                             </button>
                         <?php else: ?>
                             <div class="flex gap-1.5 sm:gap-2">
+                                <button type="button" 
+                                        onclick="rate()" 
+                                        class="flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1.5 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </svg>
+                                    Calculate
+                                </button>
                                 <button type="button" 
                                         onclick="rate()" 
                                         class="flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer">
@@ -780,6 +1112,21 @@
                                 <?= $status === FolderStatus::REEVALUATE->value ? 'Submit Revision' : '<span class="sm:hidden">Self-Rate</span><span class="hidden sm:inline">Complete Self-Rating</span>' ?>
                             </button>
                         </div>
+                        <div class="flex gap-1.5 sm:gap-2">
+                            <button type="button" 
+                                    onclick="rate()" 
+                                    class="flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1.5 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                                Calculate
+                            </button>
+                            <button id="btn-submit" type="button" 
+                                    onclick="saveWith({ after: () => lockFolderEvaluation() })" 
+                                    class="bg-info-500 hover:bg-info-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-info-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                <?= $status === FolderStatus::REEVALUATE->value ? 'Submit Revision' : '<span class="sm:hidden">Self-Rate</span><span class="hidden sm:inline">Complete Self-Rating</span>' ?>
+                            </button>
+                        </div>
                     <?php else: ?>
                         <button type="button" disabled class="bg-zinc-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
                             Wait<span class="hidden sm:inline">ing for Employee</span>
@@ -793,30 +1140,21 @@
                     
                 <?php elseif ($status === FolderStatus::DRAFT_TARGET->value || $status === FolderStatus::TARGET_RETURNED->value): ?>
                     <div class="flex items-center gap-1.5 sm:gap-2">
+                        <a href="<?= site_url('folders/' . ($doc['document_folder_id'] ?? '')) ?>" 
+                           onclick="if (window.history.length > 1) { history.back(); return false; }"
+                           class="inline-flex items-center justify-center bg-zinc-700/80 hover:bg-zinc-700 text-zinc-200 hover:text-white border border-zinc-600/60 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer"
+                           title="Return to Folder">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                            <span>Return</span>
+                        </a>
                         <?php if ($isOwner): ?>
-                            <?php if (session()->get('role') === 'Admin'): ?>
-                                <div class="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-xs">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                    </svg>
-                                    <span>Master Cycle Template</span>
-                                </div>
-                            <?php elseif (isset($isParentTargetApproved) && !$isParentTargetApproved): ?>
-                                <button type="button" disabled 
-                                        class="bg-amber-500/70 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-sm cursor-not-allowed flex items-center gap-1.5" 
-                                        title="Waiting for Superior Target Approval. Under SPMS rules, individual commitments require approved superior targets as a basis.">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <span class="hidden sm:inline">Waiting for Superior Approval</span><span class="sm:hidden">Waiting</span>
-                                </button>
-                            <?php else: ?>
-                                <button id="btn-submit-target" type="button" 
-                                        onclick="saveWith({ after: () => lockFolderTarget() })" 
-                                        class="bg-info-500 hover:bg-info-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-info-500/20 transition-all active:scale-[0.98] cursor-pointer">
-                                    <span class="sm:hidden">Submit Target</span><span class="hidden sm:inline">Submit Targets</span>
-                                </button>
-                            <?php endif; ?>
+                            <button id="btn-submit-target" type="button" 
+                                    onclick="saveWith({ after: () => lockFolderTarget() })" 
+                                    class="bg-info-500 hover:bg-info-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-info-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                <span class="sm:hidden">Submit Target</span><span class="hidden sm:inline">Submit Targets</span>
+                            </button>
                         <?php else: ?>
                             <button type="button" disabled class="bg-zinc-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
                                 Wait<span class="hidden sm:inline">ing for Employee Targets</span>
@@ -826,22 +1164,13 @@
 
                 <?php elseif ($status === FolderStatus::PENDING_TARGET_APPROVAL->value): ?>
                     <?php if ($isOwner): ?>
-                        <div class="flex items-center gap-1.5 sm:gap-2">
-                            <button type="button" disabled class="bg-amber-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-sm opacity-90 cursor-not-allowed flex items-center gap-1.5">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span class="hidden sm:inline">Awaiting Target Approval</span>
-                                <span class="sm:hidden">Awaiting Approval</span>
-                            </button>
-                            <button id="btn-unsubmit-target" type="button" 
-                                    onclick="unsubmitTargetDocument()" 
-                                    class="bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1"
-                                    title="Revoke your submission to make edits">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                                </svg>
-                                <span>Revoke Submission</span>
+                        <button type="button" disabled class="bg-warning-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
+                            <span class="hidden sm:inline">Awaiting </span>Target Approval
+                        </button>
+                    <?php else: ?>
+                        <?php if (session()->get('role') === 'Admin'): ?>
+                            <button type="button" disabled class="bg-highlight-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
+                                Monitoring<span class="hidden sm:inline"> View</span>
                             </button>
                         </div>
                     <?php else: ?>
@@ -981,6 +1310,8 @@
         </div>
     </div>
 
+    <div class="flex-none flex bg-bg border-b border-surface-border px-3 sm:px-6 <?= $isEditable ? 'gap-2' : 'gap-4' ?> text-sm font-bold pt-2 overflow-x-auto whitespace-nowrap scrollbar-hide print-hide" id="tab-bar">
+        <!-- Tabs injected here via JS -->
     <div class="flex-none flex bg-bg border-b border-surface-border px-3 sm:px-6 <?= $isEditable ? 'gap-2' : 'gap-4' ?> text-sm font-bold pt-2 overflow-x-auto whitespace-nowrap scrollbar-hide print-hide" id="tab-bar">
         <!-- Tabs injected here via JS -->
     </div>
@@ -1743,7 +2074,7 @@
                                 </tr>
 
                                 <!-- Dark Navy Grand Total Banner (Matching Reference Mockup) -->
-                                <tr class="spms-navy-bar" style="background: #0a192f; color: #ffffff;">
+                                <tr style="background: #0a192f; color: #ffffff;">
                                     <td style="padding: 12px 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px; color: #e2e8f0;">
                                         FINAL AVERAGE RATING
                                     </td>
@@ -2173,8 +2504,6 @@
             <textarea id="editable-doc" name="content"></textarea>
         </div>
     </div>
-    <?= view('document/_rubric_drawer') ?>
-</div>
 </div>
 
 <script>
@@ -2199,11 +2528,6 @@
 
     let activeTabId = tabs[0].id;
     
-    const basisFormData = <?= json_encode($basisFormData ?? null) ?>;
-    const basisDocContent = <?= json_encode($basisDocContent ?? '') ?>;
-    const superiorUserInfo = <?= json_encode($superiorUser ?? null) ?>;
-    const ownerAccountInfo = <?= json_encode($ownerInfo ?? []) ?>;
-
     const canEditTargets = <?= json_encode($canEditTargets) ?>;
     const canEditApprover = <?= json_encode($canEditApprover) ?>;
     const canEditEvaluation = <?= json_encode($canEditEvaluation) ?>;
@@ -2626,6 +2950,13 @@
         } else {
             const editorBody = tinymce.get('editable-doc')?.getBody();
             finalScore = editorBody?.getAttribute('data-final-score') || '';
+        let finalScore = '';
+        if (window.isSpmsFormActive) {
+            finalScore = document.getElementById('grand-score')?.innerText?.trim() || '';
+            if (finalScore === '0.000' || finalScore === '—') finalScore = '';
+        } else {
+            const editorBody = tinymce.get('editable-doc')?.getBody();
+            finalScore = editorBody?.getAttribute('data-final-score') || '';
         }
 
         const formData = new FormData();
@@ -2682,6 +3013,7 @@
 
         const formData = new FormData();
         formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
+        formData.append('final_score', finalScore);
         formData.append('final_score', finalScore);
 
         document.getElementById('btn-approve').innerText = 'Approving...';
@@ -2840,11 +3172,11 @@
         });
     }
 
-    async function unsubmitTargetDocument() {
-        const ok = await window.appConfirm("Are you sure you want to revoke your target submission? This will return your folder to Draft status so you can make edits and fixes to your commitments.", { 
-            title: 'Revoke Submission',
+    async function unsubmitEvaluationDocument() {
+        const ok = await window.appConfirm("Are you sure you want to revoke your self-rating submission? This will return your evaluation to drafting status so you can edit your ratings and accomplishments.", { 
+            title: 'Revoke Self-Rating',
             variant: 'undo', 
-            confirmText: 'Revoke Submission',
+            confirmText: 'Revoke Self-Rating',
             cancelText: 'Keep Submitted'
         });
         if (!ok) return;
@@ -2912,16 +3244,7 @@
         if (btn) btn.innerText = releaseScope ? 'Releasing...' : 'Approving...';
 
         apiPost('<?= site_url('folder/approve_target') ?>', formData, {
-            onSuccess: async (res) => {
-                if (res && res.message) {
-                    await window.appAlert(res.message);
-                }
-                window.location.reload();
-            },
-            onError: async (errMsg) => {
-                await window.appAlert(errMsg || "An error occurred.");
-                window.location.reload();
-            }
+            onSuccess: () => window.location.reload()
         });
     }
 
@@ -2989,10 +3312,20 @@
     window.status = <?= json_encode($doc['folder_status']) ?>;
     window.isTarget = <?= json_encode($doc['is_target'] == 1) ?>;
     window.isOwner = <?= json_encode($doc['owner_id'] == session()->get('user_id')) ?>;
-    window.currentReviewerRole = <?= json_encode($currentReviewerRole ?? 'Reviewer') ?>;
-    window.currentReviewerName = <?= json_encode($currentReviewerName ?? '') ?>;
 
     // Enum values exported for JS use
+    window.FolderStatus = <?= json_encode([
+        'DRAFT_TARGET'            => \App\Enums\FolderStatus::DRAFT_TARGET->value,
+        'PENDING_TARGET_APPROVAL' => \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
+        'TARGET_APPROVED'         => \App\Enums\FolderStatus::TARGET_APPROVED->value,
+        'TARGET_RETURNED'         => \App\Enums\FolderStatus::TARGET_RETURNED->value,
+        'DRAFT'                   => \App\Enums\FolderStatus::DRAFT->value,
+        'SUBMITTED'               => \App\Enums\FolderStatus::SUBMITTED->value,
+        'TO_EVALUATE'             => \App\Enums\FolderStatus::TO_EVALUATE->value,
+        'EVALUATED'               => \App\Enums\FolderStatus::EVALUATED->value,
+        'APPROVED'                => \App\Enums\FolderStatus::APPROVED->value,
+        'REEVALUATE'              => \App\Enums\FolderStatus::REEVALUATE->value,
+        'UNEVALUATED'             => \App\Enums\FolderStatus::UNEVALUATED->value,
     window.FolderStatus = <?= json_encode([
         'DRAFT_TARGET'            => \App\Enums\FolderStatus::DRAFT_TARGET->value,
         'PENDING_TARGET_APPROVAL' => \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
@@ -3010,10 +3343,13 @@
     let isFullyLocked = true;
     let useFullEditor = false;
     let useRemarksOnlyEditor = false;
+    let useFullEditor = false;
+    let useRemarksOnlyEditor = false;
 
     if (isGuide) {
         // Guide documents can only be edited by their owner (the Admin)
         isFullyLocked = !isOwner;
+        useFullEditor = isOwner;
         useFullEditor = isOwner;
     } else {
         if (status === FolderStatus.DRAFT_TARGET || status === FolderStatus.TARGET_RETURNED) {
@@ -3029,7 +3365,12 @@
             useFullEditor = false; // Eval drafting gets plain editor (structure locked)
         } else if ((status === FolderStatus.TO_EVALUATE || status === FolderStatus.REEVALUATE) && isOwner) {
             // Owner can only self-rate the TARGET document.
+            // Owner can only self-rate the TARGET document.
             isFullyLocked = !isTarget && status === FolderStatus.TO_EVALUATE;
+            // REEVALUATE implies revision of eval, or revision of targets?
+            // For now, if REEVALUATE, we give them the plain editor so they can fix their ratings/eval.
+            // If they need to fix targets, they would need to be back in DRAFT_TARGET.
+            useFullEditor = false; 
             // REEVALUATE implies revision of eval, or revision of targets?
             // For now, if REEVALUATE, we give them the plain editor so they can fix their ratings/eval.
             // If they need to fix targets, they would need to be back in DRAFT_TARGET.
@@ -3037,6 +3378,7 @@
         } else if (status === FolderStatus.EVALUATED && !isOwner) {
             // Evaluator can only evaluate/rate the TARGET document.
             isFullyLocked = !isTarget;
+            useFullEditor = false;
             useFullEditor = false;
         }
     }
@@ -3460,6 +3802,7 @@
         }
 
         setVal('ratee-sign-name', data.rateeSign?.name || '');
+        setVal('ratee-sign-name', data.rateeSign?.name || '');
         setVal('ratee-sign-date', data.rateeSign?.date || '');
 
         window.currentDocCurrency = data.budget_currency || data.currency || '₱';
@@ -3474,6 +3817,7 @@
         setVal('sig-ratee-name', data.signatories?.ratee || '');
         setVal('sig-ratee-pos', data.signatories?.rateePos || '');
         setVal('sig-ratee-date', data.signatories?.rateeDate || '');
+        setVal('sig-dean-name', data.signatories?.dean || '');
         setVal('sig-dean-name', data.signatories?.dean || '');
         setVal('sig-dean-date', data.signatories?.deanDate || '');
         setVal('sig-vp-name', data.signatories?.vp || '');
@@ -4066,13 +4410,13 @@
                     class="spms-score-input field-e">
             </td>
 
-            <!-- Row Average -->
-            <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f0f9ff; border: 1px solid #000;">
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                    <span class="field-row-avg" style="font-weight: 900; color: #0369a1; font-size: 11px;">—</span>
-                    <span style="font-size: 8px; font-weight: 800; color: #0284c7; text-transform: uppercase;">auto</span>
-                </div>
-            </td>
+                <!-- Row Average -->
+                <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f0f9ff; border: 1px solid #000;">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <span class="field-row-avg" style="font-weight: 900; color: #0369a1; font-size: 11px;">—</span>
+                        <span style="font-size: 8px; font-weight: 800; color: #0284c7; text-transform: uppercase;">auto</span>
+                    </div>
+                </td>
 
             <!-- Remarks -->
             <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
