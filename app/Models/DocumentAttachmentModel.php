@@ -32,14 +32,14 @@ class DocumentAttachmentModel extends Model
     /**
      * Get all active attachments for a document grouped by row_id.
      *
-     * @param int $documentId
+     * @param string|int $documentId
      * @return array [row_id => [attachments]]
      */
-    public function getAttachmentsGroupedByRow(int $documentId): array
+    public function getAttachmentsGroupedByRow(string|int $documentId): array
     {
         $rows = $this->select('document_attachments.*, u.first_name as uploader_first_name, u.last_name as uploader_last_name')
                      ->join('users u', 'u.id = document_attachments.uploaded_by', 'left')
-                     ->where('document_attachments.document_id', $documentId)
+                     ->where('document_attachments.document_id', (string) $documentId)
                      ->where('document_attachments.deleted_at IS NULL')
                      ->orderBy('document_attachments.created_at', 'ASC')
                      ->findAll();

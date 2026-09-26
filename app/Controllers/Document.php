@@ -290,7 +290,7 @@ class Document extends BaseController
         $data['isEmbed']                = (bool) $this->request->getGet('embed');
 
         $attachmentModel                = new \App\Models\DocumentAttachmentModel();
-        $data['attachmentsByRow']       = $attachmentModel->getAttachmentsGroupedByRow((int)$docId);
+        $data['attachmentsByRow']       = $attachmentModel->getAttachmentsGroupedByRow((string)$docId);
         $data['groupedGuides']          = $groupedGuides;
         
         return view('document/show', $data);

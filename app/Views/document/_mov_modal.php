@@ -371,7 +371,7 @@
         if (progressEl) progressEl.classList.remove('hidden');
 
         const formData = new FormData();
-        formData.append('document_id', '<?= (int)($doc['id'] ?? 0) ?>');
+        formData.append('document_id', '<?= esc($doc['id'] ?? '') ?>');
         formData.append('row_id', rowId);
         formData.append('file', file);
 
@@ -389,21 +389,39 @@
                 }
                 window.documentAttachments[rowId].push(res.data.attachment);
                 renderMovFileList();
-                showToast('Evidence attached successfully!');
+                if (typeof showToast === 'function') {
+                    showToast('Evidence attached successfully!', 'success');
+                }
             } else {
-                alert(res.data?.message || 'Error uploading file.');
+                const errText = res.data?.message || 'Error uploading file.';
+                if (window.appAlert) {
+                    await window.appAlert(errText, { title: 'Upload Notice', variant: 'warning' });
+                } else {
+                    alert(errText);
+                }
             }
         } catch (err) {
             console.error('MOV Upload Error:', err);
-            const msg = err.response?.data?.message || 'Failed to upload evidence file.';
-            alert(msg);
+            const msg = err.response?.data?.message || err.message || 'Failed to upload evidence file.';
+            if (window.appAlert) {
+                await window.appAlert(msg, { title: 'Upload Failed', variant: 'danger' });
+            } else {
+                alert(msg);
+            }
         } finally {
             if (progressEl) progressEl.classList.add('hidden');
         }
     }
 
     async function deleteMovAttachment(id) {
-        if (!confirm('Are you sure you want to remove this evidence file?')) return;
+        const ok = window.appConfirm
+            ? await window.appConfirm('Are you sure you want to permanently remove this evidence file?', {
+                title: 'Remove Evidence',
+                confirmText: 'Remove File',
+                variant: 'danger'
+            })
+            : confirm('Are you sure you want to remove this evidence file?');
+        if (!ok) return;
 
         try {
             const res = await axios.delete(`<?= site_url('attachments') ?>/${id}`, {
@@ -417,13 +435,25 @@
                 }
                 renderMovFileList();
                 closeMovPreview();
-                showToast('Attachment removed.');
+                if (typeof showToast === 'function') {
+                    showToast('Attachment removed.', 'info');
+                }
             } else {
-                alert(res.data?.message || 'Error deleting attachment.');
+                const errText = res.data?.message || 'Error deleting attachment.';
+                if (window.appAlert) {
+                    await window.appAlert(errText, { title: 'Delete Failed', variant: 'danger' });
+                } else {
+                    alert(errText);
+                }
             }
         } catch (err) {
             console.error('MOV Delete Error:', err);
-            alert(err.response?.data?.message || 'Failed to delete attachment.');
+            const errText = err.response?.data?.message || 'Failed to delete attachment.';
+            if (window.appAlert) {
+                await window.appAlert(errText, { title: 'Delete Failed', variant: 'danger' });
+            } else {
+                alert(errText);
+            }
         }
     }
 </script>

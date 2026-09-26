@@ -5278,12 +5278,25 @@
             if (res.data?.status === 'success') {
                 window.rubricAttachments = [res.data.attachment];
                 renderRubricAttachmentCard();
+                if (typeof showToast === 'function') {
+                    showToast('Rubric attached successfully!', 'success');
+                }
             } else {
-                alert(res.data?.message || 'Upload failed.');
+                const errMsg = res.data?.message || 'Upload failed.';
+                if (window.appAlert) {
+                    await window.appAlert(errMsg, { title: 'Upload Notice', variant: 'warning' });
+                } else {
+                    alert(errMsg);
+                }
             }
         } catch (err) {
             console.error('Rubric upload error:', err);
-            alert(err.response?.data?.message || 'Failed to upload rubric document.');
+            const errMsg = err.response?.data?.message || 'Failed to upload rubric document.';
+            if (window.appAlert) {
+                await window.appAlert(errMsg, { title: 'Upload Failed', variant: 'danger' });
+            } else {
+                alert(errMsg);
+            }
         } finally {
             progressEl?.classList.add('hidden');
         }
@@ -5297,7 +5310,7 @@
         const ok = await window.appConfirm('Are you sure you want to remove this attached rubric file?', {
             title: 'Remove Rubric File',
             confirmText: 'Remove',
-            isDanger: true
+            variant: 'danger'
         });
         if (!ok) return;
 
@@ -5306,10 +5319,17 @@
             if (res.data?.status === 'success') {
                 window.rubricAttachments = [];
                 renderRubricAttachmentCard();
+                if (typeof showToast === 'function') {
+                    showToast('Rubric attachment removed.', 'info');
+                }
             }
         } catch (err) {
             console.error('Delete error:', err);
-            alert('Failed to remove attachment.');
+            if (window.appAlert) {
+                await window.appAlert('Failed to remove attachment.', { title: 'Delete Failed', variant: 'danger' });
+            } else {
+                alert('Failed to remove attachment.');
+            }
         }
     }
 

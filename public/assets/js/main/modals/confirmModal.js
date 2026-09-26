@@ -210,6 +210,69 @@ window.appAlert = function (message, options = {}) {
     });
 };
 
+/**
+ * Shows a modern floating toast notification.
+ * @param {string} message
+ * @param {'success'|'danger'|'warning'|'info'} type
+ */
+window.showToast = function (message, type = 'success') {
+    let container = document.getElementById('global-toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'global-toast-container';
+        container.className = 'fixed bottom-5 right-5 z-[300] flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4 sm:px-0';
+        document.body.appendChild(container);
+    }
+
+    const typeConfig = {
+        success: {
+            bg: 'bg-emerald-600 text-white dark:bg-emerald-500 shadow-emerald-900/30',
+            icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0Z" />'
+        },
+        danger: {
+            bg: 'bg-rose-600 text-white dark:bg-rose-500 shadow-rose-900/30',
+            icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0Zm-9 3.75h.008v.008H12v-.008Z" />'
+        },
+        warning: {
+            bg: 'bg-amber-600 text-white dark:bg-amber-500 shadow-amber-900/30',
+            icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />'
+        },
+        info: {
+            bg: 'bg-accent text-white shadow-accent/30',
+            icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0Zm-9-3.75h.008v.008H12V8.25Z" />'
+        }
+    };
+
+    const cfg = typeConfig[type] || typeConfig.success;
+
+    const toast = document.createElement('div');
+    toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl text-xs font-bold transition-all duration-300 transform translate-y-3 opacity-0 ${cfg.bg}`;
+    toast.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            ${cfg.icon}
+        </svg>
+        <span class="flex-1 leading-snug">${message}</span>
+        <button type="button" class="shrink-0 opacity-70 hover:opacity-100 transition-opacity p-0.5 cursor-pointer" onclick="this.parentElement.remove()">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+    `;
+
+    container.appendChild(toast);
+
+    requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-3', 'opacity-0');
+        toast.classList.add('translate-y-0', 'opacity-100');
+    });
+
+    const timeout = setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-3', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+    }, 3500);
+
+    toast.addEventListener('mouseenter', () => clearTimeout(timeout));
+};
+
 // Any <form data-confirm="..."> is intercepted and re-submitted after the user confirms.
 // A <form data-blocked-message="..."> is always stopped and just shows an explanatory alert.
 document.addEventListener('submit', async (e) => {

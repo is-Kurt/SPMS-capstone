@@ -47,6 +47,18 @@ class Attachment extends BaseController
             return $this->response->setStatusCode(403)->setJSON(['status' => 'error', 'message' => 'This evaluation cycle is archived and frozen.']);
         }
 
+        $status = $doc['folder_status'] ?? '';
+        $evalPhaseStatuses = [
+            FolderStatus::SUBMITTED->value,
+            FolderStatus::TO_EVALUATE->value,
+            FolderStatus::REEVALUATE->value,
+            FolderStatus::EVALUATED->value,
+            FolderStatus::APPROVED->value,
+            FolderStatus::TWG_APPROVED->value,
+            FolderStatus::TWG_DISAPPROVED->value,
+            FolderStatus::UNEVALUATED->value,
+        ];
+
         $isRubricUpload = ($rowId === 'rubric');
 
         if ($isRubricUpload) {
@@ -149,7 +161,7 @@ class Attachment extends BaseController
             'document_id' => $docId,
             'row_id'      => $rowId,
             'file_name'   => $clientName,
-            'file_path'   => 'uploads/movs/' . $newName,
+            'file_path'   => $subDir . $newName,
             'file_type'   => $file->getClientMimeType() ?: 'application/octet-stream',
             'file_size'   => $file->getSize(),
             'uploaded_by' => $userId,
@@ -279,7 +291,7 @@ class Attachment extends BaseController
         }
 
         $attachmentModel = new DocumentAttachmentModel();
-        $all = $attachmentModel->getAttachmentsGroupedByRow((int)$docId);
+        $all = $attachmentModel->getAttachmentsGroupedByRow((string)$docId);
         $rowAttachments = $all[$rowId] ?? [];
 
         return $this->response->setJSON([

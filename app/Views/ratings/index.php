@@ -327,13 +327,12 @@
                 <div id="tab-content-<?= $key ?>" class="tab-content <?= ($pKey === $firstPeriodKey && $key === $firstTabKey) ? 'flex flex-col flex-1 min-w-0 min-h-0 h-full' : 'hidden' ?>">
                     
                     <?php
-                        $colWidths = ['26%'];
-                        if ($sysRole === 'Admin') { $colWidths[] = '15%'; }
+                        $colWidths = ($sysRole === 'Admin') ? ['28%', '16%'] : ['40%'];
                         
                         if ($pKey === 'target') {
-                            $colWidths = array_merge($colWidths, ['37%', '18%']); // Only Folder Status and Action
+                            $colWidths = array_merge($colWidths, ($sysRole === 'Admin') ? ['34%', '22%'] : ['38%', '22%']); // Only Folder Status and Action
                         } else {
-                            $colWidths = array_merge($colWidths, ['15%', '10%', '12%', '18%']);
+                            $colWidths = array_merge($colWidths, ($sysRole === 'Admin') ? ['18%', '16%', '22%'] : ['20%', '18%', '22%']); // Folder Status, Score, Action
                         }
                     ?>
                     <div id="ratings-header-<?= $key ?>" class="hidden lg:block shrink-0 overflow-hidden bg-zinc-50 dark:bg-zinc-800/30 border-b border-surface-border" data-frozen-header>
@@ -350,7 +349,6 @@
                                     <th class="px-6 py-4 min-w-[110px]">Folder Status</th>
                                     <?php if ($pKey !== 'target'): ?>
                                         <th class="px-6 py-4 min-w-[60px] text-center">Score</th>
-                                        <th class="px-6 py-4 min-w-[70px] text-center">Adjectival Rating</th>
                                     <?php endif; ?>
                                     <th class="px-6 py-4 min-w-[135px] text-right">Action</th>
                                 </tr>
@@ -452,19 +450,7 @@
                                                                    onkeydown="if(event.key === 'Enter') this.blur();"
                                                             >
                                                         </div>
-
-                                                        <div class="lg:hidden flex items-center gap-3 border-l border-surface-border pl-3">
-                                                            <span class="adjective-badge adj-badge-<?= $row['folder_id'] ?> px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm border border-transparent <?= is_null($row['final_rating']) ? 'hidden' : '' ?>" data-score="<?= $row['final_rating'] ?? 0 ?>"></span>
-                                                            <span class="adj-badge-null-<?= $row['folder_id'] ?> text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic <?= !is_null($row['final_rating']) ? 'hidden' : '' ?>">N/A</span>
-                                                        </div>
                                                     </div>
-                                                </td>
-                                            <?php endif; ?>
-
-                                            <?php if ($pKey !== 'target'): ?>
-                                                <td class="hidden lg:table-cell px-6 py-4 text-center lg:min-w-[70px]">
-                                                    <span class="adjective-badge adj-badge-<?= $row['folder_id'] ?> px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest shadow-sm border border-transparent whitespace-nowrap <?= is_null($row['final_rating']) ? 'hidden' : '' ?>" data-score="<?= $row['final_rating'] ?? 0 ?>"></span>
-                                                    <span class="adj-badge-null-<?= $row['folder_id'] ?> text-[10px] font-bold text-zinc-300 dark:text-zinc-700 uppercase tracking-widest italic whitespace-nowrap <?= !is_null($row['final_rating']) ? 'hidden' : '' ?>">Not Rated</span>
                                                 </td>
                                             <?php endif; ?>
 
@@ -477,7 +463,7 @@
 
                                         </tr>
                                     <?php endforeach; ?>
-                                    <tr class="ratings-empty-filter hidden block lg:table-row">
+                                    <tr class="ratings-empty-filter block lg:table-row" style="display: none;">
                                         <td colspan="100%" class="block lg:table-cell px-6 py-12 text-center text-sm font-bold text-text-muted italic">
                                             No employees found matching the selected filter.
                                         </td>
@@ -968,7 +954,7 @@
 
                 const emptyRow = tabContent.querySelector('.ratings-empty-filter');
                 if (emptyRow) {
-                    emptyRow.classList.toggle('hidden', visibleCards > 0);
+                    emptyRow.style.display = (visibleCards > 0) ? 'none' : '';
                 }
             });
         }
@@ -983,6 +969,9 @@
         if (clearBtn) {
             clearBtn.addEventListener('click', clearAllRatingsFilters);
         }
+
+        // Run once on load to ensure proper initial state
+        filterRatings();
 
         function filterSidebarPositions() {
             const input = document.getElementById('mini-search-positions');

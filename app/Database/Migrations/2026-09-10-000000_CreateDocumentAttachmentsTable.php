@@ -16,9 +16,8 @@ class CreateDocumentAttachmentsTable extends Migration
                 'auto_increment' => true,
             ],
             'document_id' => [
-                'type'       => 'INT',
+                'type'       => 'VARCHAR',
                 'constraint' => 11,
-                'unsigned'   => true,
                 'null'       => false,
             ],
             'row_id' => [

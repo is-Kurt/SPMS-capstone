@@ -1087,7 +1087,7 @@
         ?>
 
         <!-- RIGHT SIDEBAR (CASCADE DISTRIBUTION FOR ADMINS / FOLDER DETAILS FOR USERS) -->
-        <div id="bottom-sheet" class="lg:overflow-y-auto custom-scrollbar fixed inset-x-0 bottom-0 z-50 shadow-2xl lg:shadow-sm rounded-t-3xl lg:rounded-2xl transition-transform duration-300 transform translate-y-[calc(100%-95px)] lg:static lg:translate-y-0 lg:w-80 lg:shrink-0 flex flex-col p-5 gap-5" style="background-color: #02160e !important; border: 1px solid #0d4a32 !important;">
+        <div id="bottom-sheet" class="custom-scrollbar fixed inset-x-0 bottom-0 z-50 shadow-2xl lg:shadow-sm rounded-t-3xl lg:rounded-2xl transition-transform duration-300 transform translate-y-[calc(100%-95px)] lg:static lg:translate-y-0 lg:w-80 lg:shrink-0 flex flex-col p-4 sm:p-5 gap-4 overflow-hidden lg:overflow-y-auto max-h-[85vh] lg:max-h-none" style="background-color: #02160e !important; border: 1px solid #0d4a32 !important;">
             
             <div class="lg:hidden flex justify-center py-2 cursor-pointer touch-none" onclick="toggleBottomSheet()">
                 <div class="w-12 h-1 bg-zinc-300 dark:bg-slate-600 rounded-full"></div>
@@ -1097,7 +1097,7 @@
                 <!-- CASCADE MANAGEMENT SECTION (For Admins & Supervisors) -->
                 <div class="flex flex-col gap-3 flex-1 min-h-0">
                     <?php $cascadedTeamId = $activeFolder['routing_preset_id'] ?? null; ?>
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between shrink-0">
                         <h4 class="text-[10px] font-black uppercase text-text-muted tracking-wider">Cascade Management</h4>
                         <?php if ($cascadedTeamId): ?>
                             <span class="text-[10px] font-bold text-emerald-600 dark:text-[#34d399] bg-emerald-50 dark:bg-[#102a1e] px-2 py-0.5 rounded-md border border-emerald-200 dark:border-[#1b4330]">Cascaded</span>
@@ -1130,7 +1130,7 @@
                             </p>
                         </div>
                     <?php elseif ($cascadedTeamId): ?>
-                        <div class="relative w-full">
+                        <div class="relative w-full shrink-0">
                             <select id="team-cascade-select" disabled class="w-full bg-zinc-50 dark:bg-[#0c1510] text-xs font-bold text-text outline-none pl-3.5 pr-8 py-2.5 rounded-xl appearance-none border border-surface-border opacity-60 cursor-not-allowed">
                                 <?php foreach($presets as $preset): ?>
                                     <option value="<?= $preset['id'] ?>" <?= ($cascadedTeamId == $preset['id']) ? 'selected' : '' ?> class="bg-surface text-text">
@@ -1143,7 +1143,7 @@
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-between px-1">
+                        <div class="flex items-center justify-between px-1 shrink-0">
                             <span class="text-[10px] text-text-muted font-medium">Team Roster</span>
                             <a href="<?= site_url('teams?team_id=' . $cascadedTeamId) ?>" class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1">
                                 + Manage Members in Teams
@@ -1177,22 +1177,22 @@
                             </div>
                         <?php endif; ?>
 
-                        <button onclick="triggerUncascade('<?= $activeFolder['id'] ?>')" class="w-full py-2.5 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-300 dark:border-[#361a1f] bg-rose-50 dark:bg-[#1c1214] hover:bg-rose-600 dark:hover:bg-[#261619] rounded-xl transition-colors cursor-pointer flex justify-center items-center gap-1.5 font-bold text-xs uppercase tracking-wider">
+                        <button onclick="triggerUncascade('<?= $activeFolder['id'] ?>')" class="w-full py-2.5 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-300 dark:border-[#361a1f] bg-rose-50 dark:bg-[#1c1214] hover:bg-rose-600 dark:hover:bg-[#261619] rounded-xl transition-colors cursor-pointer flex justify-center items-center gap-1.5 font-bold text-xs uppercase tracking-wider shrink-0">
                             Revoke Cascade
                         </button>
 
                         <?php if (!empty($cascadedChildren)): ?>
                             <?php 
-                                $subPageSize = 8;
+                                $subPageSize = 6;
                                 $totalSubPages = ceil(count($cascadedChildren) / $subPageSize) ?: 1;
                             ?>
-                            <div class="mt-2 flex flex-col gap-2 flex-1 min-h-0">
-                                <div class="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-text-muted">
+                            <div class="mt-1 flex flex-col gap-2 flex-1 min-h-0">
+                                <div class="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-text-muted shrink-0">
                                     <span>Cascaded Subordinates</span>
                                     <span id="subordinates-count-badge" class="px-2 py-0.5 rounded-full bg-[#062e1e] text-[#34d399] border border-[#0d4a32] font-extrabold text-[9px]"><?= count($cascadedChildren) ?></span>
                                 </div>
 
-                                <div id="cascaded-subordinates-list" class="space-y-2">
+                                <div id="cascaded-subordinates-list" class="space-y-2 overflow-y-auto custom-scrollbar flex-1 min-h-0 pr-0.5">
                                     <?php foreach ($cascadedChildren as $cIndex => $child): ?>
                                         <?php 
                                             $isPending = ($child['status'] === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value);
@@ -1254,7 +1254,7 @@
                                     <?php endforeach; ?>
                                 </div>
 
-                                <div id="subordinates-pagination" class="mt-auto pt-3 flex items-center justify-between border-t border-[#0d4a32]/60 text-xs <?= ($totalSubPages <= 1) ? 'hidden' : '' ?>">
+                                <div id="subordinates-pagination" class="shrink-0 pt-2 flex items-center justify-between text-xs <?= ($totalSubPages <= 1) ? 'hidden' : '' ?>">
                                     <span id="sub-page-info" class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">
                                         1–<?= min($subPageSize, count($cascadedChildren)) ?> of <?= count($cascadedChildren) ?>
                                     </span>
@@ -1330,7 +1330,7 @@
 
                 <!-- FOLDER MANAGEMENT BUTTONS (Admin Only) -->
                 <?php if (session()->get('role') === 'Admin'): ?>
-                <div class="flex flex-col gap-3 border-t border-surface-border pt-4 mt-auto">
+                <div class="flex flex-col gap-3 border-t border-[#0d4a32]/60 pt-4 mt-auto shrink-0">
                     <h4 class="text-[10px] font-black uppercase text-text-muted tracking-wider">Folder Management</h4>
                     
                     <?php if (!empty($activeFolder['deleted_at'])): ?>
@@ -1394,12 +1394,14 @@
                                 "iperf_eval_start"  => $activeFolder["iperf_eval_start"] ?? "",
                                 "iperf_eval_end"    => $activeFolder["iperf_eval_end"] ?? ""
                             ]) ?>)'
-                                    class="w-full bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 dark:bg-[#13271b] dark:hover:bg-[#1b3b29] dark:text-[#34d399] dark:border-[#1e422f] py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs">
+                                    class="w-full text-[#34d399] hover:text-[#6ee7b7] py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs hover:brightness-110"
+                                    style="background-color: #13271b; border: 1px solid #1e422f;">
                                 Edit
                             </button>
 
                             <button onclick='archiveFolder("<?= esc($activeFolder["id"]) ?>", "<?= esc(addslashes($activeFolder["title"])) ?>")'
-                                    class="w-full bg-white hover:bg-slate-100 text-amber-700 dark:text-[#b45309] border border-slate-200 dark:border-slate-300 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                                    class="w-full text-rose-400 hover:text-rose-300 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs hover:brightness-110"
+                                    style="background-color: #1c1214; border: 1px solid #361a1f;"
                                     title="Close and archive this evaluation cycle (freezes all scores)">
                                 Close & Archive
                             </button>
@@ -2187,7 +2189,7 @@
         }
 
         let currentSubPage = 1;
-        const subPageSize = 8;
+        const subPageSize = 6;
 
         function renderSubordinatesPage(page) {
             const cards = document.querySelectorAll('.subordinate-card');
@@ -2281,7 +2283,7 @@
                 title: 'Close & Archive Evaluation Cycle',
                 message: `Are you sure you want to close and archive "${folderTitle}"? This will archive the cycle and all subordinate ratee folders, freezing all scores and ratings against further edits.`,
                 confirmText: 'Close & Archive Cycle',
-                variant: 'warning'
+                variant: 'danger'
             }).then(ok => {
                 if (!ok) return;
                 sending = true;
