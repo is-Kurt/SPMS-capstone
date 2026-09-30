@@ -35,6 +35,7 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->post('account/invite/resend', 'AccountManagement::resendInvite', ['filter' => 'role:Admin']);
     $routes->post('account/toggle', 'AccountManagement::toggleStatus', ['filter' => 'role:Admin']);
     $routes->post('account/update-role', 'AccountManagement::updateRole', ['filter' => 'role:Admin']);
+    $routes->post('account/twg-assignments/update', 'AccountManagement::updateTwgAssignments', ['filter' => 'role:Admin']);
     $routes->post('account/process-queue', 'AccountManagement::processQueueAjax');
     $routes->match(['POST', 'DELETE'], 'account', 'AccountManagement::destroy', ['filter' => 'role:Admin']);
 

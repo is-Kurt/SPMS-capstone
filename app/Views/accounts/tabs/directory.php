@@ -215,16 +215,46 @@
                                         <?php endif; ?>
                                     </div>
                                     <div class="flex flex-col min-w-0 lg:hidden text-right">
-                                        <span class="text-xs font-bold text-text truncate"><?= esc($u['department'] ?? 'No Unit') ?></span>
-                                        <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate"><?= esc($u['position'] ?? 'No Position') ?></span>
+                                        <?php if (str_contains($u['role_name'] ?? '', 'TWG')): ?>
+                                            <?php 
+                                                $uAssigned = $twgAssignmentsGrouped[$u['id']] ?? [];
+                                                $assignedCount = count($uAssigned);
+                                                $assignedIds = array_column($uAssigned, 'unit_id');
+                                            ?>
+                                            <button type="button" 
+                                                    onclick='openTwgAssignmentModal(<?= $u['id'] ?>, "<?= esc(addslashes($u['first_name'] . ' ' . $u['last_name'])) ?>", "<?= esc(addslashes($u['email'])) ?>", <?= json_encode(array_values($assignedIds)) ?>)'
+                                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-accent/10 text-accent border border-accent/20 cursor-pointer self-end">
+                                                <span><?= $assignedCount > 0 ? "{$assignedCount} Offices" : 'Assign Offices' ?></span>
+                                            </button>
+                                        <?php else: ?>
+                                            <span class="text-xs font-bold text-text truncate"><?= esc($u['department'] ?? 'No Unit') ?></span>
+                                            <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate"><?= esc($u['position'] ?? 'No Position') ?></span>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </td>
 
                             <td class="hidden lg:table-cell px-6 lg:py-4">
                                 <div class="flex flex-col min-w-0">
-                                    <span class="text-xs font-bold text-text truncate"><?= esc($u['department'] ?? 'No Unit') ?></span>
-                                    <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate"><?= esc($u['position'] ?? 'No Position') ?></span>
+                                    <?php if (str_contains($u['role_name'] ?? '', 'TWG')): ?>
+                                        <?php 
+                                            $uAssigned = $twgAssignmentsGrouped[$u['id']] ?? [];
+                                            $assignedCount = count($uAssigned);
+                                            $assignedIds = array_column($uAssigned, 'unit_id');
+                                        ?>
+                                        <button type="button" 
+                                                onclick='openTwgAssignmentModal(<?= $u['id'] ?>, "<?= esc(addslashes($u['first_name'] . ' ' . $u['last_name'])) ?>", "<?= esc(addslashes($u['email'])) ?>", <?= json_encode(array_values($assignedIds)) ?>)'
+                                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 transition-all cursor-pointer w-fit group">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                            </svg>
+                                            <span class="group-hover:underline"><?= $assignedCount > 0 ? "{$assignedCount} Assigned Office" . ($assignedCount > 1 ? 's' : '') : 'Assign Offices' ?></span>
+                                        </button>
+                                        <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate mt-0.5">TWG Reviewer</span>
+                                    <?php else: ?>
+                                        <span class="text-xs font-bold text-text truncate"><?= esc($u['department'] ?? 'No Unit') ?></span>
+                                        <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate"><?= esc($u['position'] ?? 'No Position') ?></span>
+                                    <?php endif; ?>
                                 </div>
                             </td>
 
@@ -259,6 +289,22 @@
                                             </div>
                                         <?php endif; ?>
                                     </div>
+
+                                    <?php if (str_contains($u['role_name'] ?? '', 'TWG')): ?>
+                                        <?php 
+                                            $uAssigned = $twgAssignmentsGrouped[$u['id']] ?? [];
+                                            $assignedIds = array_column($uAssigned, 'unit_id');
+                                        ?>
+                                        <button type="button" 
+                                                onclick='openTwgAssignmentModal(<?= $u['id'] ?>, "<?= esc(addslashes($u['first_name'] . ' ' . $u['last_name'])) ?>", "<?= esc(addslashes($u['email'])) ?>", <?= json_encode(array_values($assignedIds)) ?>)'
+                                                class="w-full lg:w-auto px-2.5 py-1.5 lg:p-1.5 rounded-lg text-xs font-bold text-accent hover:text-accent-hover bg-accent/10 hover:bg-accent/20 border border-accent/20 transition-all cursor-pointer text-center flex justify-center items-center gap-1"
+                                                title="Assign Review Offices">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                            </svg>
+                                            <span class="lg:hidden">Offices</span>
+                                        </button>
+                                    <?php endif; ?>
 
                                     <?php if ($u['id'] != session()->get('user_id')): ?>
                                         <?= form_open('account', [

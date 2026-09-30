@@ -19,7 +19,7 @@ class AccountManagement extends BaseController
 {
     /** GET /accounts[/{tab}] - Lists every user plus the reference lists (roles/positions/units) shown on the page. */
     public function index(?string $tab = null) {
-        $validTabs = ['directory', 'create', 'invitations', 'system'];
+        $validTabs = ['directory', 'create', 'invitations', 'system', 'twg'];
         $activeTab = in_array($tab, $validTabs, true) ? $tab : 'directory';
 
         $userModel = new UserModel();
@@ -32,24 +32,29 @@ class AccountManagement extends BaseController
             if ($u['role_name'])  $u['role_name']  = str_replace(',', ', ', $u['role_name']);
         }
 
-        $roleModel       = new RoleModel();
-        $positionModel   = new PositionModel();
-        $unitModel       = new UnitModel();
-        $invitationModel = new InvitationModel();
+        $roleModel          = new RoleModel();
+        $positionModel      = new PositionModel();
+        $unitModel          = new UnitModel();
+        $invitationModel    = new InvitationModel();
+        $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
 
-        $roles       = $roleModel->where('name !=', 'Admin')->orderBy('name', 'ASC')->findAll();
-        $positions   = $positionModel->orderBy('title', 'ASC')->findAll();
+        $roles                 = $roleModel->where('name !=', 'Admin')->orderBy('name', 'ASC')->findAll();
+        $positions             = $positionModel->orderBy('title', 'ASC')->findAll();
         $unitModel->unnestCollegesFromOvpaa();
-        $units       = $unitModel->orderBy('name', 'ASC')->findAll();
-        $invitations = $invitationModel->getAllWithRoleNames();
+        $units                 = $unitModel->orderBy('name', 'ASC')->findAll();
+        $invitations           = $invitationModel->getAllWithRoleNames();
+        $twgUsers              = $twgAssignmentModel->getTwgUsers();
+        $twgAssignmentsGrouped = $twgAssignmentModel->getAllAssignmentsGrouped();
 
         return view('accounts/index', [
-            'users'       => $users,
-            'roles'       => $roles,
-            'positions'   => $positions,
-            'units'       => $units,
-            'invitations' => $invitations,
-            'activeTab'   => $activeTab
+            'users'                 => $users,
+            'roles'                 => $roles,
+            'positions'             => $positions,
+            'units'                 => $units,
+            'invitations'           => $invitations,
+            'activeTab'             => $activeTab,
+            'twgUsers'              => $twgUsers,
+            'twgAssignmentsGrouped' => $twgAssignmentsGrouped
         ]);
     }
 
@@ -275,6 +280,37 @@ class AccountManagement extends BaseController
             audit_log('ROLE_CHANGED', 'ACCOUNT', 'user', (int) $targetId, "Role for {$user['email']} changed to {$role['name']}");
 
             return $this->respond(['status' => 'success', 'role_name' => $role['name']]);
+        });
+    }
+
+    /** POST /account/twg-assignments/update - Updates assigned units/offices for a TWG member. */
+    public function updateTwgAssignments() {
+        return $this->tryOrFail(function() {
+            $targetId = (int) $this->request->getPost('user_id');
+            $unitIds  = $this->request->getPost('unit_ids') ?? [];
+
+            if (!is_array($unitIds)) {
+                $unitIds = array_filter(explode(',', (string) $unitIds));
+            }
+
+            $userModel = new UserModel();
+            $targetUser = $userModel->find($targetId);
+            if (!$targetUser) return $this->respondError('User not found.', 404);
+
+            $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
+            $twgAssignmentModel->assignUnits($targetId, $unitIds);
+
+            $assigned = $twgAssignmentModel->getAssignmentsByUser($targetId);
+            $assignedNames = array_column($assigned, 'unit_name');
+            $assignedText = !empty($assignedNames) ? implode(', ', $assignedNames) : 'None';
+
+            audit_log('TWG_ASSIGNMENTS_UPDATED', 'ACCOUNT', 'user', $targetId, "TWG office assignments updated for {$targetUser['email']}: {$assignedText}");
+
+            return $this->respond([
+                'status'   => 'success',
+                'message'  => 'Assigned offices updated successfully.',
+                'assigned' => $assigned
+            ]);
         });
     }
 

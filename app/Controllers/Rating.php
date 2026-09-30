@@ -125,6 +125,9 @@ class Rating extends BaseController
         $unitModel->unnestCollegesFromOvpaa();
         $allUnits = $unitModel->orderBy('name', 'ASC')->findAll();
 
+        $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
+        $assignedUnits = ($sysRole === 'TWG') ? $twgAssignmentModel->getAssignmentsByUser($userId) : [];
+
         return view('components/app_shell', [
             'sidebarFolders'   => $folders,
             'selectedFolderId' => $folderId, 
@@ -135,7 +138,8 @@ class Rating extends BaseController
                 'sysRole'         => $sysRole,
                 'filterUnits'     => $filterUnits,
                 'filterPositions' => $filterPositions,
-                'allUnits'        => $allUnits
+                'allUnits'        => $allUnits,
+                'assignedUnits'   => $assignedUnits
             ]
         ]);
     }
@@ -183,8 +187,11 @@ class Rating extends BaseController
 
         $isAuthorized = false;
 
-        if ($sysRole === 'Admin' || $sysRole === 'TWG') {
+        if ($sysRole === 'Admin') {
             $isAuthorized = true;
+        } elseif ($sysRole === 'TWG') {
+            $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
+            $isAuthorized = $twgAssignmentModel->isTwgAssignedToFolder($userId, $subFolderId);
         } else {
             $routingCount = $routingModel->where('folder_id', $subFolderId)
                                          ->where('evaluator_id', $userId)
@@ -193,6 +200,10 @@ class Rating extends BaseController
         }
 
         if (!$isAuthorized) {
+            if ($sysRole === 'TWG') {
+                session()->setFlashdata('error', 'You are not assigned to review folders from this office/college.');
+                return redirect()->to(site_url('ratings'));
+            }
             // Unlike Folder::index() (a folder always has exactly one owner), this
             // route can legitimately belong to several accounts - a folder may have
             // multiple routed evaluators, and "Pending Review" emails the same link

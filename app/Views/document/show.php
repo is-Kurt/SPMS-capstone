@@ -1172,8 +1172,7 @@
                             <button type="button" disabled class="bg-highlight-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
                                 Monitoring<span class="hidden sm:inline"> View</span>
                             </button>
-                        </div>
-                    <?php else: ?>
+                        <?php else: ?>
                         <?php 
                             $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
                             $ownerPos = strtolower($ownerInfo['position'] ?? '');
@@ -1231,6 +1230,7 @@
                                 Approve<span class="hidden sm:inline"> Target</span>
                             </button>
                         </div>
+                    <?php endif; ?>
                     <?php endif; ?>
 
                 <?php elseif ($status === FolderStatus::TARGET_APPROVED->value || $status === FolderStatus::SUBMITTED->value): ?>
@@ -3014,7 +3014,6 @@
         const formData = new FormData();
         formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
         formData.append('final_score', finalScore);
-        formData.append('final_score', finalScore);
 
         document.getElementById('btn-approve').innerText = 'Approving...';
         apiPost('<?= site_url('folder/approve') ?>', formData, {
@@ -3326,30 +3325,15 @@
         'APPROVED'                => \App\Enums\FolderStatus::APPROVED->value,
         'REEVALUATE'              => \App\Enums\FolderStatus::REEVALUATE->value,
         'UNEVALUATED'             => \App\Enums\FolderStatus::UNEVALUATED->value,
-    window.FolderStatus = <?= json_encode([
-        'DRAFT_TARGET'            => \App\Enums\FolderStatus::DRAFT_TARGET->value,
-        'PENDING_TARGET_APPROVAL' => \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
-        'TARGET_APPROVED'         => \App\Enums\FolderStatus::TARGET_APPROVED->value,
-        'TARGET_RETURNED'         => \App\Enums\FolderStatus::TARGET_RETURNED->value,
-        'DRAFT'                   => \App\Enums\FolderStatus::DRAFT->value,
-        'SUBMITTED'               => \App\Enums\FolderStatus::SUBMITTED->value,
-        'TO_EVALUATE'             => \App\Enums\FolderStatus::TO_EVALUATE->value,
-        'EVALUATED'               => \App\Enums\FolderStatus::EVALUATED->value,
-        'APPROVED'                => \App\Enums\FolderStatus::APPROVED->value,
-        'REEVALUATE'              => \App\Enums\FolderStatus::REEVALUATE->value,
-        'UNEVALUATED'             => \App\Enums\FolderStatus::UNEVALUATED->value,
     ]) ?>;
 
     let isFullyLocked = true;
-    let useFullEditor = false;
-    let useRemarksOnlyEditor = false;
     let useFullEditor = false;
     let useRemarksOnlyEditor = false;
 
     if (isGuide) {
         // Guide documents can only be edited by their owner (the Admin)
         isFullyLocked = !isOwner;
-        useFullEditor = isOwner;
         useFullEditor = isOwner;
     } else {
         if (status === FolderStatus.DRAFT_TARGET || status === FolderStatus.TARGET_RETURNED) {
@@ -3365,12 +3349,7 @@
             useFullEditor = false; // Eval drafting gets plain editor (structure locked)
         } else if ((status === FolderStatus.TO_EVALUATE || status === FolderStatus.REEVALUATE) && isOwner) {
             // Owner can only self-rate the TARGET document.
-            // Owner can only self-rate the TARGET document.
             isFullyLocked = !isTarget && status === FolderStatus.TO_EVALUATE;
-            // REEVALUATE implies revision of eval, or revision of targets?
-            // For now, if REEVALUATE, we give them the plain editor so they can fix their ratings/eval.
-            // If they need to fix targets, they would need to be back in DRAFT_TARGET.
-            useFullEditor = false; 
             // REEVALUATE implies revision of eval, or revision of targets?
             // For now, if REEVALUATE, we give them the plain editor so they can fix their ratings/eval.
             // If they need to fix targets, they would need to be back in DRAFT_TARGET.
@@ -3378,7 +3357,6 @@
         } else if (status === FolderStatus.EVALUATED && !isOwner) {
             // Evaluator can only evaluate/rate the TARGET document.
             isFullyLocked = !isTarget;
-            useFullEditor = false;
             useFullEditor = false;
         }
     }
@@ -3802,7 +3780,6 @@
         }
 
         setVal('ratee-sign-name', data.rateeSign?.name || '');
-        setVal('ratee-sign-name', data.rateeSign?.name || '');
         setVal('ratee-sign-date', data.rateeSign?.date || '');
 
         window.currentDocCurrency = data.budget_currency || data.currency || '₱';
@@ -3817,7 +3794,6 @@
         setVal('sig-ratee-name', data.signatories?.ratee || '');
         setVal('sig-ratee-pos', data.signatories?.rateePos || '');
         setVal('sig-ratee-date', data.signatories?.rateeDate || '');
-        setVal('sig-dean-name', data.signatories?.dean || '');
         setVal('sig-dean-name', data.signatories?.dean || '');
         setVal('sig-dean-date', data.signatories?.deanDate || '');
         setVal('sig-vp-name', data.signatories?.vp || '');

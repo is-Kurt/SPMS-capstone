@@ -1435,4 +1435,266 @@
 
 
 
+    // ==========================================
+    // TWG ASSIGNMENTS JAVASCRIPT LOGIC
+    // ==========================================
+    function syncUnitCardVisual(card, isChecked) {
+        const indicator = card.querySelector('.unit-check-indicator');
+        const icon = card.querySelector('.check-icon');
+        const nameText = card.querySelector('.unit-name-text');
+        const badge = card.querySelector('.sub-prog-badge');
+
+        if (isChecked) {
+            card.classList.add('border-accent', 'bg-accent/10', 'ring-1', 'ring-accent/40');
+            card.classList.remove('border-surface-border/70', 'bg-surface/50');
+            if (indicator) {
+                indicator.classList.add('bg-accent', 'border-accent');
+                indicator.classList.remove('bg-input/80', 'border-surface-border');
+            }
+            if (icon) icon.classList.remove('hidden');
+            if (nameText) nameText.classList.add('text-accent');
+            if (badge) {
+                badge.classList.add('bg-accent/20', 'border-accent/40', 'text-accent');
+                badge.classList.remove('bg-input', 'border-surface-border', 'text-text-muted');
+            }
+        } else {
+            card.classList.remove('border-accent', 'bg-accent/10', 'ring-1', 'ring-accent/40');
+            card.classList.add('border-surface-border/70', 'bg-surface/50');
+            if (indicator) {
+                indicator.classList.remove('bg-accent', 'border-accent');
+                indicator.classList.add('bg-input/80', 'border-surface-border');
+            }
+            if (icon) icon.classList.add('hidden');
+            if (nameText) nameText.classList.remove('text-accent');
+            if (badge) {
+                badge.classList.remove('bg-accent/20', 'border-accent/40', 'text-accent');
+                badge.classList.add('bg-input', 'border-surface-border', 'text-text-muted');
+            }
+        }
+    }
+
+    function toggleUnitCard(card) {
+        const cb = card.querySelector('.js-unit-checkbox');
+        if (!cb) return;
+        cb.checked = !cb.checked;
+        syncUnitCardVisual(card, cb.checked);
+        updateModalSelectedBadge();
+    }
+    window.toggleUnitCard = toggleUnitCard;
+
+    function openTwgAssignmentModal(userId, name, email, assignedIds = []) {
+        const modal = document.getElementById('twg-assignment-modal');
+        if (!modal) return;
+
+        document.getElementById('modal-user-id').value = userId;
+        document.getElementById('modal-reviewer-name').textContent = name;
+        document.getElementById('modal-reviewer-email').textContent = email ? `(${email})` : '';
+
+        // Reset search filter
+        const filterInput = document.getElementById('modal-unit-filter');
+        if (filterInput) {
+            filterInput.value = '';
+            filterModalUnits();
+        }
+
+        // Set checkboxes and card visuals
+        const numericIds = (assignedIds || []).map(Number);
+        document.querySelectorAll('.modal-unit-item').forEach(card => {
+            const cb = card.querySelector('.js-unit-checkbox');
+            if (!cb) return;
+            cb.checked = numericIds.includes(Number(cb.value));
+            syncUnitCardVisual(card, cb.checked);
+        });
+
+        updateModalSelectedBadge();
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+    window.openTwgAssignmentModal = openTwgAssignmentModal;
+
+    function closeTwgAssignmentModal() {
+        const modal = document.getElementById('twg-assignment-modal');
+        if (!modal) return;
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+    }
+    window.closeTwgAssignmentModal = closeTwgAssignmentModal;
+
+    function filterModalUnits() {
+        const query = (document.getElementById('modal-unit-filter')?.value || '').toLowerCase().trim();
+        document.querySelectorAll('.modal-unit-item').forEach(item => {
+            const name = (item.dataset.name || '').toLowerCase();
+            item.style.display = (!query || name.includes(query)) ? '' : 'none';
+        });
+    }
+    window.filterModalUnits = filterModalUnits;
+
+    function selectModalUnits(type) {
+        document.querySelectorAll('.modal-unit-item').forEach(card => {
+            if (card.style.display === 'none') return;
+            const cb = card.querySelector('.js-unit-checkbox');
+            if (!cb) return;
+
+            if (type === 'all') {
+                cb.checked = true;
+            } else if (type === 'none') {
+                cb.checked = false;
+            } else if (type === 'colleges') {
+                if (card.dataset.type === 'college') {
+                    cb.checked = true;
+                }
+            }
+            syncUnitCardVisual(card, cb.checked);
+        });
+        updateModalSelectedBadge();
+    }
+    window.selectModalUnits = selectModalUnits;
+
+    function updateModalSelectedBadge() {
+        const checkedCount = document.querySelectorAll('.js-unit-checkbox:checked').length;
+        const badge = document.getElementById('modal-selected-badge');
+        if (badge) badge.textContent = checkedCount;
+    }
+    window.updateModalSelectedBadge = updateModalSelectedBadge;
+
+    document.addEventListener('change', (e) => {
+        if (e.target.classList.contains('js-unit-checkbox')) {
+            updateModalSelectedBadge();
+        }
+    });
+
+    async function submitTwgAssignments(event) {
+        event.preventDefault();
+        const form = event.target;
+        const submitBtn = document.getElementById('btn-save-twg-assignments');
+        const userId = document.getElementById('modal-user-id')?.value;
+        if (!userId) return;
+
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-75');
+            submitBtn.innerHTML = `
+                <svg class="animate-spin h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span>Saving...</span>
+            `;
+        }
+
+        const formData = new FormData(form);
+
+        apiPost('account/twg-assignments/update', formData, {
+            onSuccess: (data) => {
+                closeTwgAssignmentModal();
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-75');
+                    submitBtn.innerHTML = '<span>Save Assignments</span>';
+                }
+
+                window.appAlert(data.message || 'Office assignments updated successfully!', { 
+                    title: 'Assignments Saved', 
+                    variant: 'success' 
+                });
+
+                // Update the reviewer's card in the TWG tab
+                const assigned = data.assigned || [];
+                const count = assigned.length;
+                const newIds = assigned.map(a => Number(a.unit_id));
+
+                const countLabel = document.getElementById(`twg-count-label-${userId}`);
+                if (countLabel) {
+                    countLabel.textContent = count > 0 ? `${count} Office${count > 1 ? 's' : ''}` : '0 Assigned';
+                    if (count > 0) {
+                        countLabel.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-accent/10 border border-accent/20 text-accent js-assigned-count-label';
+                    } else {
+                        countLabel.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 border border-amber-500/20 text-amber-500 js-assigned-count-label';
+                    }
+                }
+
+                const chipsContainer = document.getElementById(`twg-chips-${userId}`);
+                if (chipsContainer) {
+                    if (count > 0) {
+                        chipsContainer.innerHTML = assigned.map(a => `
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-input border border-surface-border text-text hover:border-accent/40 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 shrink-0 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                </svg>
+                                <span class="truncate max-w-[220px]">${escapeHtml(a.unit_name)}</span>
+                            </span>
+                        `).join('');
+                    } else {
+                        chipsContainer.innerHTML = `
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                <span>No offices assigned (Review queue is empty)</span>
+                            </span>
+                        `;
+                    }
+                }
+
+                // Also update the button in the TWG card
+                const twgCard = document.getElementById(`twg-card-${userId}`);
+                if (twgCard) {
+                    const assignBtn = twgCard.querySelector('button[onclick^="openTwgAssignmentModal"]');
+                    if (assignBtn) {
+                        const name = twgCard.dataset.name || '';
+                        const email = twgCard.dataset.email || '';
+                        assignBtn.setAttribute('onclick', `openTwgAssignmentModal(${userId}, "${name}", "${email}", ${JSON.stringify(newIds)})`);
+                    }
+                }
+
+                // Update the User Directory button if it exists
+                document.querySelectorAll(`tr.user-dir-row button[onclick*="openTwgAssignmentModal(${userId},"]`).forEach(btn => {
+                    const span = btn.querySelector('span');
+                    if (span) {
+                        span.textContent = count > 0 ? `${count} Assigned Office${count > 1 ? 's' : ''}` : 'Assign Offices';
+                    }
+                    const parentRow = btn.closest('tr.user-dir-row');
+                    const rName = parentRow ? (parentRow.dataset.name || '') : '';
+                    const rEmail = parentRow ? (parentRow.dataset.email || '') : '';
+                    btn.setAttribute('onclick', `openTwgAssignmentModal(${userId}, "${rName}", "${rEmail}", ${JSON.stringify(newIds)})`);
+                });
+            },
+            onError: (errMsg) => {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-75');
+                    submitBtn.innerHTML = '<span>Save Assignments</span>';
+                }
+                window.appAlert(errMsg || 'Failed to save assignments.', { variant: 'danger' });
+            }
+        });
+    }
+    window.submitTwgAssignments = submitTwgAssignments;
+
+    function filterTwgReviewers() {
+        const query = (document.getElementById('twg-search-input')?.value || '').toLowerCase().trim();
+        document.querySelectorAll('.twg-reviewer-card').forEach(card => {
+            const name = (card.dataset.name || '').toLowerCase();
+            const email = (card.dataset.email || '').toLowerCase();
+            card.style.display = (!query || name.includes(query) || email.includes(query)) ? '' : 'none';
+        });
+    }
+    window.filterTwgReviewers = filterTwgReviewers;
+
+    // Close modal on backdrop click or ESC
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeTwgAssignmentModal();
+        }
+    });
+
+    const twgModal = document.getElementById('twg-assignment-modal');
+    if (twgModal) {
+        twgModal.addEventListener('click', (e) => {
+            if (e.target === twgModal) {
+                closeTwgAssignmentModal();
+            }
+        });
+    }
 </script>

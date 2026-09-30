@@ -238,6 +238,24 @@
                 <p class="text-xs font-bold text-text-muted mt-2 uppercase tracking-widest">
                     Manage your assigned reviews
                 </p>
+                <?php if ($sysRole === 'TWG'): ?>
+                    <?php if (!empty($assignedUnits)): ?>
+                        <div class="mt-2.5 flex flex-wrap items-center gap-1.5">
+                            <span class="text-[10px] font-black uppercase tracking-wider text-text-muted">Assigned Jurisdiction:</span>
+                            <?php foreach ($assignedUnits as $au): ?>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-accent/10 text-accent border border-accent/20">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                    <?= esc($au['unit_name']) ?>
+                                </span>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            <span>No offices assigned yet. Please contact HRDO / Administrator to assign your review jurisdiction.</span>
+                        </div>
+                    <?php endif; ?>
+                <?php endif; ?>
             </div>
             <div class="shrink-0">
                 <div class="relative w-full lg:w-64 js-custom-select" id="period-custom-select">

@@ -97,7 +97,8 @@ class Folder extends BaseController
 
                 // If the viewer is an Admin, TWG, or routed evaluator, seamlessly route to ratings view
                 $routingModel = new \App\Models\EvaluationRoutingModel();
-                $isAuthorizedEvaluator = ($role === 'Admin' || $role === 'TWG') || 
+                $isAuthorizedEvaluator = ($role === 'Admin') || 
+                    ($role === 'TWG' && (new \App\Models\TwgUnitAssignmentModel())->isTwgAssignedToFolder($userId, $activeFolder['id'])) ||
                     ($routingModel->where('folder_id', $activeFolder['id'])->where('evaluator_id', $userId)->countAllResults() > 0);
 
                 if ($isAuthorizedEvaluator) {
@@ -2451,6 +2452,13 @@ class Folder extends BaseController
             $folder = $folderModel->find($folderId);
             if (!$folder || !empty($folder['deleted_at'])) {
                 return $this->respondError("Cannot perform TWG review: This evaluation cycle is closed/archived.", 400);
+            }
+
+            if ($role === 'TWG') {
+                $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
+                if (!$twgAssignmentModel->isTwgAssignedToFolder((int) session()->get('user_id'), $folderId)) {
+                    return $this->respondError('Unauthorized. You are not assigned to review folders from this office/college.', 403);
+                }
             }
             
             $folderModel->update($folderId, [

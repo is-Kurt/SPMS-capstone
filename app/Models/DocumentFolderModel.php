@@ -98,7 +98,15 @@ class  DocumentFolderModel extends Model
             }
         }
 
-        if ($sysRole !== 'Admin' && $sysRole !== 'TWG') {
+        if ($sysRole === 'TWG') {
+            $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
+            $assignedUnitIds = $twgAssignmentModel->getAssignedUnitIdsWithDescendants($userId);
+            if (!empty($assignedUnitIds)) {
+                $builder->whereIn('p.unit_id', $assignedUnitIds);
+            } else {
+                $builder->where('df.id', -1);
+            }
+        } elseif ($sysRole !== 'Admin') {
             $builder->join('evaluation_routings er_me', 'er_me.folder_id = df.id')
                     ->where('er_me.evaluator_id', $userId);
         }

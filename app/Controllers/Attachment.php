@@ -326,9 +326,10 @@ class Attachment extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        // Authorization check: Owner, Admin, TWG, or assigned Evaluator
+        // Authorization check: Owner, Admin, TWG (assigned), or assigned Evaluator
         $docOwnerId = $doc['owner_id'];
-        $hasAccess  = ($docOwnerId == $userId) || in_array($sysRole, ['Admin', 'TWG']);
+        $hasAccess  = ($docOwnerId == $userId) || ($sysRole === 'Admin') ||
+            ($sysRole === 'TWG' && (new \App\Models\TwgUnitAssignmentModel())->isTwgAssignedToFolder($userId, $doc['document_folder_id']));
 
         if (!$hasAccess) {
             $routingModel = new EvaluationRoutingModel();
