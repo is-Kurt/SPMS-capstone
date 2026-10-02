@@ -7,18 +7,18 @@
 @theme {
     --font-sans: "Roboto", ui-sans-serif, system-ui, sans-serif;
 
-    /* Surfaces - Light Mode (Soft Sage Anti-Flashbang Canvas matching Frame2a.1) */
-    --color-bg:             #d7e4d8; /* Soothing muted sage green canvas */
+    /* Surfaces - Light Mode (Clean Executive Slate Canvas) */
+    --color-bg:             #f1f5f9; /* Clean executive slate-100 canvas */
     --color-surface:        #ffffff; /* Clean crisp white card container */
-    --color-input:          #f4f8f4; /* Subtle sage-tinted input/inner surface */
+    --color-input:          #f8fafc; /* Crisp neutral slate-50 input/inner surface */
 
     /* Borders - Subtle separation */
-    --color-border:         #c2d4c4;
-    --color-surface-border: #c2d4c4;
+    --color-border:         #e2e8f0; /* Clean slate-200 border */
+    --color-surface-border: #e2e8f0;
 
     /* Text - High contrast */
     --color-text:           #0f172a; /* slate-900 */
-    --color-text-muted:     #4d6b56; /* sage-tinted slate for secondary text */
+    --color-text-muted:     #64748b; /* Clean slate-500 for secondary text */
 
     /* Accent - BSU Warm Gold Primary Interactive Color */
     --color-accent:         #ffb800; /* BSU Warm Gold */

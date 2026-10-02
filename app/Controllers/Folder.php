@@ -121,6 +121,8 @@ class Folder extends BaseController
 
             $isReadOnly = false;
 
+            $isFolderOpcr = $this->isOpcrFolder($activeFolder, $userId);
+
             // The cascaded team may have since been archived (soft-deleted), in which
             // case it no longer shows up in $presets above - inject it back in just for
             // this folder so the "Cascade Management" panel can still show/select its
@@ -136,8 +138,8 @@ class Folder extends BaseController
             }
 
 
-            // Reconcile unsubmitted folders that were previously auto-approved for Admin
-            if ($activeFolder && $activeFolder['status'] === FolderStatus::TARGET_APPROVED->value && empty($activeFolder['target_submitted_at'])) {
+            // Reconcile unsubmitted folders that were previously auto-approved for Admin (excluding OPCR which requires no approval)
+            if (!$isFolderOpcr && $activeFolder && $activeFolder['status'] === FolderStatus::TARGET_APPROVED->value && empty($activeFolder['target_submitted_at'])) {
                 $folderModel->update($folderId, [
                     'status' => FolderStatus::DRAFT_TARGET->value,
                     'target_approved_at' => null
@@ -258,7 +260,15 @@ class Folder extends BaseController
 
         $cascadedChildren = [];
         $pendingTeamMembers = [];
-        $isUserSupervisorOrChair = in_array($role, ['Admin', 'Supervisor']) || $isOwnerChair || str_contains(strtolower(session()->get('position') ?? ''), 'chair');
+        $userPosLower = strtolower(session()->get('position') ?? '');
+        $isUserSupervisorOrChair = in_array($role, ['Admin', 'Supervisor']) 
+                                || $isOwnerChair 
+                                || str_contains($userPosLower, 'chair')
+                                || str_contains($userPosLower, 'head')
+                                || str_contains($userPosLower, 'dean')
+                                || str_contains($userPosLower, 'president')
+                                || str_contains($userPosLower, 'vpaa')
+                                || !empty($isMyDocOpcr);
         if ($activeFolder && $isUserSupervisorOrChair) {
             $cascadedChildren = $folderModel->where('parent_folder_id', $activeFolder['id'])
                 ->where('document_folders.deleted_at IS NULL')
@@ -360,6 +370,7 @@ class Folder extends BaseController
                 return $this->respondError("Please select a team to cascade to.", 400);
             }
 
+
             // Verify team exists and is accessible
             $preset = $presetModel->where('id', $teamId)->first();
             if (!$preset) {
@@ -376,7 +387,17 @@ class Folder extends BaseController
 
             $folderModel->db->transStart();
 
-            $folderModel->update($folderId, ['routing_preset_id' => $teamId]);
+            // Detect if this folder is OPCR (Apex institutional paper requiring no superior approval)
+            $isFolderOpcr = $this->isOpcrFolder($activeFolder, $userId);
+
+            $updateFolderPayload = ['routing_preset_id' => $teamId];
+            if ($isFolderOpcr) {
+                // OPCR commitments are finalized and approved upon cascading downward
+                $updateFolderPayload['status'] = FolderStatus::TARGET_APPROVED->value;
+                $updateFolderPayload['target_approved_at'] = date('Y-m-d H:i:s');
+            }
+
+            $folderModel->update($folderId, $updateFolderPayload);
             $emailsQueued = 0;
             if ($role === 'Admin') {
                 foreach ($members as $member) {
@@ -620,7 +641,14 @@ class Folder extends BaseController
             $folderModel->db->transStart();
 
             // 1. Clear the routing_preset_id on this active folder
-            $folderModel->update($folderId, ['routing_preset_id' => null]);
+            $isFolderOpcr = $this->isOpcrFolder($activeFolder, $userId);
+
+            $uncascadeUpdate = ['routing_preset_id' => null];
+            if ($isFolderOpcr) {
+                $uncascadeUpdate['status'] = FolderStatus::DRAFT_TARGET->value;
+                $uncascadeUpdate['target_approved_at'] = null;
+            }
+            $folderModel->update($folderId, $uncascadeUpdate);
 
             if (!empty($allFolderIds)) {
                 $in = "'" . implode("','", $allFolderIds) . "'";
@@ -1717,24 +1745,25 @@ class Folder extends BaseController
                 return $this->respondError("The target setting period has already ended.", 400);
             }
 
+            $isFolderOpcr = $this->isOpcrFolder($folder, $userId);
+
             // --- STRICT SPMS MODE: Parent Basis Target Validation ---
-            if (!empty($folder['parent_folder_id'])) {
+            if (!$isFolderOpcr && !empty($folder['parent_folder_id'])) {
                 $parentFolder = $folderModel->find($folder['parent_folder_id']);
                 if ($parentFolder) {
                     $parentDoc = (new \App\Models\DocumentModel())->where('document_folder_id', $parentFolder['id'])->first();
-                    $myDoc = (new \App\Models\DocumentModel())->where('document_folder_id', $folderId)->where('is_target', 1)->first()
-                          ?? (new \App\Models\DocumentModel())->where('document_folder_id', $folderId)->first();
-                    $myDocTitleUpper = strtoupper($myDoc['title'] ?? '');
-                    $isMyDocOpcr = str_contains($myDocTitleUpper, 'OPCR') || str_contains($myDocTitleUpper, 'OFFICE') || (strtoupper($myDoc['doc_type'] ?? '') === 'OPCR');
-
-                    if ($parentDoc && !$isMyDocOpcr) {
+                    $isParentDocOpcr = false;
+                    if ($parentDoc) {
                         $parentDocTitleUpper = strtoupper($parentDoc['title'] ?? '');
                         $isParentDocOpcr = str_contains($parentDocTitleUpper, 'OPCR') || str_contains($parentDocTitleUpper, 'OFFICE') || (strtoupper($parentDoc['doc_type'] ?? '') === 'OPCR');
+                    }
+                    if (!$isParentDocOpcr && $this->isOpcrFolder($parentFolder)) {
+                        $isParentDocOpcr = true;
+                    }
 
-                        if (!$isParentDocOpcr && $parentFolder['status'] !== FolderStatus::TARGET_APPROVED->value) {
-                            $parentTitle = $parentFolder['title'] ?? 'Superior';
-                            return $this->respondError("Cannot submit targets yet: The superior basis commitments (\"{$parentTitle}\") have not been approved by the higher-up yet. Under SPMS cascading rules, individual commitments require approved superior targets as a basis.", 400);
-                        }
+                    if (!$isParentDocOpcr && $parentFolder['status'] !== FolderStatus::TARGET_APPROVED->value) {
+                        $parentTitle = $parentFolder['title'] ?? 'Superior';
+                        return $this->respondError("Cannot submit targets yet: The superior basis commitments (\"{$parentTitle}\") have not been approved by the higher-up yet. Under SPMS cascading rules, individual commitments require approved superior targets as a basis.", 400);
                     }
                 }
             }
@@ -1749,6 +1778,17 @@ class Folder extends BaseController
                 return $this->respondError("Submission Failed: You must set at least one document as the Basis Target before submitting targets.", 400);
             }
             // ---------------------------------------
+
+            if ($isFolderOpcr) {
+                // Under CSC SPMS guidelines, OPCR is the apex institutional commitment and does not require superior target approval
+                $folderModel->update($folderId, [
+                    'status'              => FolderStatus::TARGET_APPROVED->value,
+                    'target_approved_at'  => date('Y-m-d H:i:s'),
+                    'target_submitted_at' => date('Y-m-d H:i:s')
+                ]);
+                audit_log('TARGET_FINALIZED', 'TARGET', 'document_folder', (int) $folderId, "OPCR institutional targets finalized: {$folder['title']}");
+                return $this->respond(['status' => 'success', 'message' => 'OPCR institutional targets finalized. You can now cascade commitments to subordinates.']);
+            }
 
             $folderModel->update($folderId, [
                 'status' => FolderStatus::PENDING_TARGET_APPROVAL->value,
@@ -2655,5 +2695,42 @@ class Folder extends BaseController
                 }
             }
         }
+    }
+
+    /**
+     * Helper to detect whether a folder represents an OPCR (Office Performance Commitment and Review).
+     * Under CSC SPMS guidelines, OPCR is the apex institutional commitment paper that requires no superior approval.
+     */
+    private function isOpcrFolder(array $folder, ?int $userId = null): bool
+    {
+        if (str_contains(strtoupper($folder['title'] ?? ''), 'OPCR')) {
+            return true;
+        }
+
+        $ownerId = $userId ?? $folder['user_id'] ?? null;
+        if ($ownerId) {
+            $userModel = new UserModel();
+            $owner = $userModel->find($ownerId);
+            if ($owner && strtoupper($owner['doc_type'] ?? '') === 'OPCR') {
+                return true;
+            }
+            $plantilla = $userModel->getActivePlantillaDetails($ownerId);
+            $pos = strtolower($plantilla['position'] ?? '');
+            if (str_contains($pos, 'vice president') || str_contains($pos, 'president') || str_contains($pos, 'vpaa')) {
+                return true;
+            }
+        }
+
+        if (!empty($folder['id'])) {
+            $doc = (new \App\Models\DocumentModel())->where('document_folder_id', $folder['id'])->first();
+            if ($doc) {
+                $docTitleUpper = strtoupper($doc['title'] ?? '');
+                if (str_contains($docTitleUpper, 'OPCR') || str_contains($docTitleUpper, 'OFFICE PERFORMANCE') || (strtoupper($doc['doc_type'] ?? '') === 'OPCR')) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

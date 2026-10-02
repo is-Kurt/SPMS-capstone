@@ -23,7 +23,8 @@ class Team extends BaseController
         $role = session()->get('role');
         $userPos = strtolower(session()->get('position') ?? '');
         $isChair = str_contains($userPos, 'chair') || str_contains($userPos, 'head');
-        if (!in_array($role, ['Admin', 'Supervisor']) && !$isChair) return redirect()->to('/');
+        $isExecOrOpcr = str_contains($userPos, 'president') || str_contains($userPos, 'vpaa') || str_contains($userPos, 'dean') || (strtolower(session()->get('doc_type') ?? '') === 'opcr');
+        if (!in_array($role, ['Admin', 'Supervisor']) && !$isChair && !$isExecOrOpcr) return redirect()->to('/');
 
         $userId = session()->get('user_id');
         $teamId = $this->request->getGet('team_id');
@@ -110,7 +111,8 @@ class Team extends BaseController
         $role = session()->get('role');
         $userPos = strtolower(session()->get('position') ?? '');
         $isChair = str_contains($userPos, 'chair') || str_contains($userPos, 'head');
-        if (!in_array($role, ['Admin', 'Supervisor']) && !$isChair) return $this->respondError('Unauthorized.', 403);
+        $isExecOrOpcr = str_contains($userPos, 'president') || str_contains($userPos, 'vpaa') || str_contains($userPos, 'dean') || (strtolower(session()->get('doc_type') ?? '') === 'opcr');
+        if (!in_array($role, ['Admin', 'Supervisor']) && !$isChair && !$isExecOrOpcr) return $this->respondError('Unauthorized.', 403);
 
         $presetModel = new RoutingPresetModel();
 
@@ -138,7 +140,8 @@ class Team extends BaseController
         $role = session()->get('role');
         $userPos = strtolower(session()->get('position') ?? '');
         $isChair = str_contains($userPos, 'chair') || str_contains($userPos, 'head');
-        if (!in_array($role, ['Admin', 'Supervisor']) && !$isChair) return redirect()->to('/');
+        $isExecOrOpcr = str_contains($userPos, 'president') || str_contains($userPos, 'vpaa') || str_contains($userPos, 'dean') || (strtolower(session()->get('doc_type') ?? '') === 'opcr');
+        if (!in_array($role, ['Admin', 'Supervisor']) && !$isChair && !$isExecOrOpcr) return redirect()->to('/');
 
         $teamId  = $this->request->getPost('team_id');
         $name    = trim($this->request->getPost('name'));
@@ -159,15 +162,34 @@ class Team extends BaseController
             $model->where('owner_id', $userId)->where('id !=', $teamId);
         }, 'name', $presetModel);
 
+        $isNew = empty($teamId);
+        if ($isNew) {
+            $teamId = create_unique_row($presetModel, [
+                'owner_id'    => $userId,
+                'name'        => $name,
+                'description' => trim($this->request->getPost('description')) ?: null,
+                'created_at'  => date('Y-m-d H:i:s'),
+                'updated_at'  => date('Y-m-d H:i:s')
+            ]);
+            if (!$teamId) {
+                if ($this->request->isAJAX() || $this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest' || str_contains($this->request->getHeaderLine('Accept'), 'application/json')) {
+                    return $this->response->setJSON(['status' => 'error', 'message' => 'Could not generate unique team ID.'])->setStatusCode(400);
+                }
+                return redirect()->back()->with('error', 'Could not generate unique team ID.');
+            }
+        }
+
         $presetModel->db->transStart();
 
-        $presetModel->where('id', $teamId)->where('owner_id', $userId)->set([
-            'name'        => $name,
-            'description' => trim($this->request->getPost('description')) ?: null,
-            'updated_at'  => date('Y-m-d H:i:s')
-        ])->update();
-        
-        $memberModel->where('preset_id', $teamId)->delete();
+        if (!$isNew) {
+            $presetModel->where('id', $teamId)->where('owner_id', $userId)->set([
+                'name'        => $name,
+                'description' => trim($this->request->getPost('description')) ?: null,
+                'updated_at'  => date('Y-m-d H:i:s')
+            ])->update();
+            
+            $memberModel->where('preset_id', $teamId)->delete();
+        }
 
         $membersData = [];
         foreach ($userIds as $uid) {
@@ -183,7 +205,30 @@ class Team extends BaseController
 
         $presetModel->db->transComplete();
 
-        if ($presetModel->db->transStatus() === false) return redirect()->back()->with('error', 'Failed to update team.');
+        $isJsonRequest = $this->request->isAJAX() 
+                      || $this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest' 
+                      || str_contains($this->request->getHeaderLine('Accept'), 'application/json');
+
+        if ($presetModel->db->transStatus() === false) {
+            if ($isJsonRequest) {
+                return $this->response->setJSON(['status' => 'error', 'message' => 'Failed to save distribution team.'])->setStatusCode(500);
+            }
+            return redirect()->back()->with('error', 'Failed to update team.');
+        }
+
+        if ($isJsonRequest) {
+            return $this->response->setJSON([
+                'status'  => 'success',
+                'message' => 'Distribution team saved successfully!',
+                'team'    => [
+                    'id'           => $teamId,
+                    'name'         => $name,
+                    'member_count' => count($userIds),
+                    'description'  => trim($this->request->getPost('description')) ?: ''
+                ]
+            ]);
+        }
+
         return redirect()->back()->with('success', 'Distribution list saved successfully!');
     }
 

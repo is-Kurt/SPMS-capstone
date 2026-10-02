@@ -166,6 +166,9 @@ function restore_session_from_cookie(): bool {
             ->where('p.user_id', $user['id'])
             ->where('p.ended_at IS NULL')->get()->getRowArray();
 
+        // Security: Regenerate session ID when restoring from persistent cookie
+        $session->regenerate();
+
         $session->set([
             'user_id'    => $user['id'],
             'email'      => $user['email'],

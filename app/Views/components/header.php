@@ -64,8 +64,8 @@
             <!-- Left Side: GOVPH + Divider + Twin Official Seals + Gold SPMS Badge + Brand Text -->
             <div class="flex items-center gap-2.5 sm:gap-3.5 shrink-0 min-w-0" style="height: 100%;">
                 
-                <!-- Official GOVPH & Twin Seals (MC 24, s. 2023 / RA 10535 Compliance) -->
-                <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
+                <!-- Official GOVPH & Twin Seals (MC 24, s. 2023 / RA 10535 Compliance) - Visible on sm and up -->
+                <div class="hidden sm:flex items-center gap-2 sm:gap-2.5 shrink-0">
                     <!-- GOVPH Link -->
                     <a href="https://www.gov.ph" target="_blank" rel="noopener noreferrer" 
                        class="font-black tracking-wider uppercase underline underline-offset-2 shrink-0 transition-colors hover:text-amber-300"
@@ -90,21 +90,19 @@
                                  style="width: 22px; height: 22px; min-width: 22px; min-height: 22px; max-width: 22px; max-height: 22px; border-radius: 9999px; object-fit: contain; display: block;" />
                         </a>
                     </div>
+                    <!-- Subtle Vertical Divider -->
+                    <span style="color: #15452d; font-size: 13px; line-height: 1;" class="select-none font-light shrink-0">|</span>
                 </div>
 
-                <!-- SPMS Institutional Brand Identity with Official Logo -->
-                <a href="<?= site_url(array_key_first($navItems) ?? 'folders') ?>" class="flex-shrink-0 flex items-center gap-2.5 text-white hover:opacity-95 transition-opacity group min-w-0">
-                    <!-- SPMS Official Logo -->
-                    <img src="<?= base_url('assets/images/spms_logo.png') ?>" alt="SPMS Logo"
-                         class="w-9 h-9 rounded-full object-contain shrink-0 shadow-xs group-hover:scale-105 transition-transform"
-                         style="width: 36px; height: 36px; min-width: 36px; min-height: 36px; max-width: 36px; max-height: 36px; display: block;" />
+                <!-- SPMS Institutional Brand Identity -->
+                <a href="<?= site_url(array_key_first($navItems) ?? 'folders') ?>" class="flex-shrink-0 flex items-center text-white hover:opacity-95 transition-opacity group min-w-0">
                     <div class="flex flex-col min-w-0 leading-tight">
                         <div class="flex items-center gap-1.5 leading-none">
                             <span class="font-heading font-black tracking-tight text-base sm:text-lg uppercase text-white">SPMS</span>
-                            <span class="font-bold text-sm" style="color: #34d399;">-</span>
+                            <span class="font-bold text-sm" style="color: #34d399;">&bull;</span>
                             <span class="font-heading font-black tracking-tight text-xs sm:text-sm uppercase" style="color: #34d399;">BSU</span>
                         </div>
-                        <span class="font-bold uppercase tracking-wider truncate" style="font-size: 8px; color: rgba(209, 250, 229, 0.7); letter-spacing: 0.05em;">STRATEGIC PERFORMANCE MANAGEMENT SYSTEM</span>
+                        <span class="hidden sm:block font-bold uppercase tracking-wider truncate" style="font-size: 8px; color: rgba(209, 250, 229, 0.7); letter-spacing: 0.05em;">STRATEGIC PERFORMANCE MANAGEMENT SYSTEM</span>
                     </div>
                 </a>
 
@@ -125,7 +123,17 @@
             </div>
             
             <!-- Right: Theme Toggle, Notification Bell, User Profile Capsule, Mobile Menu -->
-            <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+
+                <!-- SPMS User Guide Button (Desktop / Tablet) -->
+                <button type="button" onclick="if(typeof openUserGuideModal === 'function') openUserGuideModal()" 
+                        class="hidden sm:flex relative w-8 h-8 rounded-xl text-amber-300 hover:text-white shadow-xs items-center justify-center transition-all cursor-pointer shrink-0"
+                        style="background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(245, 158, 11, 0.35);"
+                        title="SPMS User Guide & Performance Cycle">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-400 hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                </button>
 
                 <!-- Theme Toggle Button -->
                 <button type="button" id="theme-toggle" 
@@ -224,10 +232,10 @@
                     </div>
                 </div>
 
-                <!-- Profile Dropdown Button Capsule (Matching GovHeader4 with Fully Visible Name) -->
+                <!-- Profile Dropdown Button Capsule (Matching GovHeader4 with Fully Visible Name on sm+) -->
                 <div class="relative">
                     <button id="profile-btn-mobile" 
-                            class="relative flex items-center gap-2.5 text-white shadow-xs pl-1.5 pr-3 py-1 cursor-pointer transition-all hover:bg-white/5"
+                            class="relative flex items-center gap-1.5 sm:gap-2.5 text-white shadow-xs p-1 sm:pl-1.5 sm:pr-3 sm:py-1 cursor-pointer transition-all hover:bg-white/5"
                             style="background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 12px;">
                         <?php if (session('avatar_image')): ?>
                             <img src="<?= base_url('uploads/avatars/' . session('avatar_image')) ?>" alt="User" 
@@ -239,14 +247,14 @@
                             </div>
                         <?php endif; ?>
                         
-                        <!-- Fully Visible Name & Role -->
-                        <div class="flex flex-col text-left leading-tight shrink-0" style="display: flex;">
+                        <!-- Fully Visible Name & Role on sm and up -->
+                        <div class="hidden sm:flex flex-col text-left leading-tight shrink-0">
                             <span class="text-xs font-bold text-white whitespace-nowrap" style="font-size: 12px; font-weight: 700; color: #ffffff; white-space: nowrap;"><?= esc($displayName) ?></span>
                             <span class="font-bold tracking-wider uppercase whitespace-nowrap" style="font-size: 8.5px; color: rgba(110, 231, 183, 0.85); letter-spacing: 0.05em; white-space: nowrap;"><?= esc($role ?? 'User') ?></span>
                         </div>
 
-                        <!-- Dropdown Chevron -->
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-300/70 shrink-0" style="display: block;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <!-- Dropdown Chevron on sm and up -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-300/70 shrink-0 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
@@ -272,6 +280,14 @@
                             </svg>
                             Profile
                         </a>
+
+                        <button type="button" onclick="if(typeof openUserGuideModal === 'function') openUserGuideModal(); document.getElementById('profile-dropdown-menu')?.classList.add('hidden');" 
+                                class="w-full flex items-center gap-3 px-3 py-2 text-sm font-semibold text-text-muted hover:bg-amber-500/10 hover:text-amber-500 rounded-xl transition-colors cursor-pointer text-left">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5 text-amber-500 opacity-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                            SPMS User Guide
+                        </button>
 
                         <hr class="my-1.5 border-surface-border">
 
@@ -304,18 +320,293 @@
         </div>
     </div>
 
+    <!-- Telegram-Style Mobile Navigation Side Drawer & Overlay -->
     <?php if ($showHamburger): ?>
-        <div class="md:hidden hidden absolute left-0 right-0 bg-accent shadow-2xl z-[90] border-t border-white/10" id="mobile-menu">
-            <div class="space-y-1 px-4 pb-4 pt-2">
+        <style>
+            #mobile-drawer-overlay {
+                position: fixed;
+                inset: 0;
+                background-color: rgba(0, 0, 0, 0.65);
+                backdrop-filter: blur(3px);
+                -webkit-backdrop-filter: blur(3px);
+                z-index: 998;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.28s ease;
+            }
+            #mobile-drawer-overlay.overlay-open {
+                opacity: 1 !important;
+                pointer-events: auto !important;
+            }
+
+            #mobile-drawer {
+                position: fixed;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                width: 295px;
+                max-width: 82vw;
+                background-color: #ffffff;
+                z-index: 999;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+                display: flex;
+                flex-direction: column;
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+                border-right: 1px solid #e2e8f0;
+                overflow: hidden;
+            }
+            .dark #mobile-drawer {
+                background-color: #032115 !important;
+                border-right: 1px solid #0d4a32 !important;
+            }
+            #mobile-drawer.drawer-open {
+                transform: translateX(0) !important;
+            }
+
+            .spms-drawer-header {
+                padding: 24px 20px 16px 20px;
+                background: linear-gradient(145deg, #064e3b 0%, #022c1e 100%);
+                position: relative;
+                overflow: hidden;
+                flex-shrink: 0;
+            }
+            .dark .spms-drawer-header {
+                background: linear-gradient(145deg, #042a1b 0%, #011910 100%) !important;
+            }
+
+            .spms-drawer-body {
+                flex: 1;
+                overflow-y: auto;
+                padding: 10px 12px;
+                background-color: #ffffff;
+            }
+            .dark .spms-drawer-body {
+                background-color: #032115 !important;
+            }
+
+            .spms-drawer-item {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                padding: 12px 14px;
+                border-radius: 12px;
+                font-size: 14px;
+                font-weight: 700;
+                color: #1e293b;
+                text-decoration: none;
+                transition: all 0.15s ease;
+                cursor: pointer;
+                width: 100%;
+            }
+            .spms-drawer-item:hover {
+                background-color: #f1f5f9;
+                color: #0f172a;
+            }
+            .dark .spms-drawer-item {
+                color: #e2e8f0 !important;
+            }
+            .dark .spms-drawer-item:hover {
+                background-color: #073824 !important;
+                color: #ffffff !important;
+            }
+
+            .spms-drawer-item.active {
+                background-color: #ecfdf5;
+                color: #047857;
+                font-weight: 800;
+            }
+            .dark .spms-drawer-item.active {
+                background-color: #083b27 !important;
+                color: #34d399 !important;
+            }
+
+            .spms-drawer-icon {
+                width: 20px;
+                height: 20px;
+                flex-shrink: 0;
+                color: #64748b;
+            }
+            .dark .spms-drawer-icon {
+                color: #5a8b73;
+            }
+            .spms-drawer-item.active .spms-drawer-icon {
+                color: #059669;
+            }
+            .dark .spms-drawer-item.active .spms-drawer-icon {
+                color: #34d399;
+            }
+
+            .spms-drawer-divider {
+                height: 1px;
+                background-color: #f1f5f9;
+                margin: 8px 0;
+            }
+            .dark .spms-drawer-divider {
+                background-color: #0d4a32 !important;
+            }
+        </style>
+
+        <!-- Semi-transparent backdrop blur overlay -->
+        <div id="mobile-drawer-overlay" class="md:hidden"></div>
+
+        <!-- Off-canvas Side Drawer -->
+        <div id="mobile-drawer" class="md:hidden select-none">
+            
+            <!-- Telegram-Style Top Banner -->
+            <div class="spms-drawer-header select-none">
+                
+                <!-- Ambient background glow -->
+                <div class="absolute -right-6 -bottom-6 w-32 h-32 rounded-full bg-emerald-400/10 blur-xl pointer-events-none"></div>
+
+                <div class="flex items-start justify-between relative z-10">
+                    <!-- User Avatar -->
+                    <a href="<?= site_url('profile') ?>" class="block group">
+                        <?php if (session('avatar_image')): ?>
+                            <img src="<?= base_url('uploads/avatars/' . session('avatar_image')) ?>" alt="<?= esc($displayName) ?>" 
+                                 class="w-14 h-14 rounded-full object-cover border-2 border-white/60 shadow-md group-hover:scale-105 transition-transform" />
+                        <?php else: ?>
+                            <div class="w-14 h-14 rounded-full bg-amber-500 text-black font-black text-xl flex items-center justify-center border-2 border-white/60 shadow-md group-hover:scale-105 transition-transform">
+                                <?= esc($avatarLetter) ?>
+                            </div>
+                        <?php endif; ?>
+                    </a>
+
+                    <!-- Theme Toggle Button (Telegram-Style Moon / Sun Icon) -->
+                    <button type="button" id="drawer-theme-toggle" 
+                            class="w-9 h-9 rounded-full bg-black/25 hover:bg-black/45 text-amber-300 flex items-center justify-center transition-all cursor-pointer shadow-xs"
+                            title="Toggle Light / Dark Mode">
+                        <!-- Sun icon: visible in dark mode -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 hidden dark:block text-amber-400 hover:rotate-45 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        <!-- Moon icon: visible in light mode -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 block dark:hidden text-amber-300 hover:-rotate-12 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- User Name & Role/Email with Chevron -->
+                <a href="<?= site_url('profile') ?>" class="mt-3.5 block group">
+                    <div class="flex items-center justify-between">
+                        <div class="min-w-0 pr-2">
+                            <h3 class="text-base font-extrabold text-white tracking-tight leading-tight group-hover:text-emerald-200 transition-colors truncate">
+                                <?= esc($displayName) ?>
+                            </h3>
+                            <p class="text-xs text-emerald-200/80 font-medium truncate mt-0.5">
+                                <?= esc(session('email') ?: ($role . ' • BSU SPMS')) ?>
+                            </p>
+                        </div>
+                        <!-- Chevron icon to Profile -->
+                        <div class="text-emerald-300/80 group-hover:text-white transition-colors shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Telegram-Style Menu List -->
+            <div class="spms-drawer-body custom-scrollbar">
+                
                 <?php foreach ($navItems as $uri => $label):
                     $isActive = ($currentUri === $uri) || ($uri !== '' && strpos($currentUri, $uri) === 0);
                 ?>
                     <a href="<?= site_url($uri) ?>"
-                        class="block px-4 py-3 text-base font-bold text-white transition-all duration-200 <?= $isActive ?
-                        'rounded-xl bg-black/15 shadow-inner' : 'rounded-xl hover:bg-black/10'?>">
-                        <?= $label ?>
+                       class="spms-drawer-item <?= $isActive ? 'active' : '' ?>">
+                        
+                        <span class="spms-drawer-icon">
+                            <?php if ($uri === 'dashboard'): ?>
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                </svg>
+                            <?php elseif ($uri === 'folders'): ?>
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                                </svg>
+                            <?php elseif ($uri === 'ratings'): ?>
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            <?php elseif ($uri === 'teams'): ?>
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                            <?php elseif ($uri === 'accounts'): ?>
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                            <?php elseif ($uri === 'templates'): ?>
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            <?php elseif ($uri === 'audit-logs'): ?>
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                </svg>
+                            <?php else: ?>
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                            <?php endif; ?>
+                        </span>
+                        
+                        <span>
+                            <?php 
+                                echo match($uri) {
+                                    'folders' => 'Evaluation Folders',
+                                    'ratings' => 'Performance Ratings',
+                                    'accounts' => 'User Accounts',
+                                    'templates' => 'Document Templates',
+                                    'audit-logs' => 'Audit Trail',
+                                    default => $label
+                                };
+                            ?>
+                        </span>
                     </a>
                 <?php endforeach; ?>
+
+                <div class="spms-drawer-divider"></div>
+
+                <!-- Secondary Links: Profile & User Guide -->
+                <a href="<?= site_url('profile') ?>" class="spms-drawer-item">
+                    <span class="spms-drawer-icon">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                    </span>
+                    <span>My Profile</span>
+                </a>
+
+                <button type="button" 
+                        onclick="if(typeof openUserGuideModal === 'function') openUserGuideModal(); if(typeof window.closeMobileDrawer === 'function') window.closeMobileDrawer();"
+                        class="spms-drawer-item text-left">
+                    <span class="spms-drawer-icon" style="color: #f59e0b !important;">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                    </span>
+                    <span>SPMS User Guide</span>
+                </button>
+
+                <div class="spms-drawer-divider"></div>
+
+                <!-- Sign Out -->
+                <?= form_open('login', ['class' => 'm-0']) ?>
+                    <input type="hidden" name="_method" value="DELETE">
+                    <button type="submit" 
+                            class="spms-drawer-item text-left" style="color: #ef4444 !important;">
+                        <span class="spms-drawer-icon" style="color: #ef4444 !important;">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                        </span>
+                        <span>Sign Out</span>
+                    </button>
+                <?= form_close() ?>
+
             </div>
         </div>
     <?php endif; ?>
@@ -326,10 +617,56 @@
         const profileBtn = document.getElementById('profile-btn-mobile');
         const profileMenu = document.getElementById('profile-dropdown-menu');
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-        const mobileMenu = document.getElementById('mobile-menu');
+        const drawerOverlay = document.getElementById('mobile-drawer-overlay');
+        const drawer = document.getElementById('mobile-drawer');
+        const drawerThemeToggle = document.getElementById('drawer-theme-toggle');
         const themeToggleBtn = document.getElementById('theme-toggle');
 
-        // Toggle Theme
+        // Drawer Controllers
+        window.openMobileDrawer = function() {
+            if (!drawer || !drawerOverlay) return;
+            profileMenu?.classList.add('hidden');
+            document.getElementById('notification-menu')?.classList.add('hidden');
+            drawerOverlay.classList.add('overlay-open');
+            drawer.classList.add('drawer-open');
+            document.body.style.overflow = 'hidden';
+        };
+
+        window.closeMobileDrawer = function() {
+            if (!drawer || !drawerOverlay) return;
+            drawerOverlay.classList.remove('overlay-open');
+            drawer.classList.remove('drawer-open');
+            document.body.style.overflow = '';
+        };
+
+        // Hamburger button click opens Telegram-style side drawer
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                window.openMobileDrawer();
+            });
+        }
+
+        // Overlay click closes side drawer
+        drawerOverlay?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            window.closeMobileDrawer();
+        });
+
+        // Theme toggle inside Telegram drawer
+        if (drawerThemeToggle) {
+            drawerThemeToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                document.documentElement.classList.toggle('dark');
+                localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+                if (typeof initEditor === 'function') {
+                    initEditor();
+                }
+            });
+        }
+
+        // Top Header Theme Toggle Button
         if (themeToggleBtn) {
             themeToggleBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -347,30 +684,28 @@
             profileBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 profileMenu.classList.toggle('hidden');
-                if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
-                    mobileMenu.classList.add('hidden'); // Auto-close mobile menu if open
-                }
+                window.closeMobileDrawer();
             });
         }
 
-        // Toggle Mobile Hamburger Menu
-        if (mobileMenuBtn && mobileMenu) {
-            mobileMenuBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                mobileMenu.classList.toggle('hidden');
-                if (profileMenu && !profileMenu.classList.contains('hidden')) {
-                    profileMenu.classList.add('hidden'); // Auto-close profile menu if open
-                }
-            });
-        }
-
-        // Close dropdowns when clicking anywhere outside of them
+        // Close dropdowns & drawer when clicking anywhere outside of them or on Escape key
         document.addEventListener('click', (e) => {
-            if (profileMenu && !profileMenu.classList.contains('hidden') && !profileMenu.contains(e.target) && !profileBtn.contains(e.target)) {
+            if (profileMenu && !profileMenu.classList.contains('hidden') && !profileMenu.contains(e.target) && !profileBtn?.contains(e.target)) {
                 profileMenu.classList.add('hidden');
             }
-            if (mobileMenu && !mobileMenu.classList.contains('hidden') && !mobileMenu.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
-                mobileMenu.classList.add('hidden');
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                window.closeMobileDrawer();
+                profileMenu?.classList.add('hidden');
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                window.closeMobileDrawer();
+                profileMenu?.classList.add('hidden');
             }
         });
 

@@ -298,6 +298,8 @@ class Document extends BaseController
         $attachmentModel                = new \App\Models\DocumentAttachmentModel();
         $data['attachmentsByRow']       = $attachmentModel->getAttachmentsGroupedByRow((string)$docId);
         $data['groupedGuides']          = $groupedGuides;
+        $data['userTeams']              = (new \App\Models\RoutingPresetModel())->getPresetsWithDetails($userId);
+        $data['eligibleUsers']          = $userModel->getEligibleTeamMembers($userId);
         
         return view('document/show', $data);
     }

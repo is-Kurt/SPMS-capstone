@@ -42,10 +42,12 @@ class MasterSeeder extends Seeder
         $supervisorSlugs = ['vpaa', 'dean', 'deptchair', 'cao'];
         
         $adminEmail = getenv('admin.email') ?: 'admin@test.com';
+        $adminPasswordRaw = getenv('admin.password') ?: (getenv('ADMIN_DEFAULT_PASSWORD') ?: '123');
+        $adminPassword = password_hash($adminPasswordRaw, PASSWORD_DEFAULT);
 
         $usersData = [
-            'admin'     => ['email' => $adminEmail,          'first_name' => 'System',    'last_name' => 'Admin',    'password' => $password, 'is_active' => 1, 'doc_type' => null],
-            'admin2'    => ['email' => 'admin2@test.com',    'first_name' => 'Secondary', 'last_name' => 'Admin',    'password' => $password, 'is_active' => 1, 'doc_type' => null],
+            'admin'     => ['email' => $adminEmail,          'first_name' => 'System',    'last_name' => 'Admin',    'password' => $adminPassword, 'is_active' => 1, 'doc_type' => null],
+            'admin2'    => ['email' => 'admin2@test.com',    'first_name' => 'Secondary', 'last_name' => 'Admin',    'password' => $adminPassword, 'is_active' => 1, 'doc_type' => null],
             'twg'       => ['email' => 'twg@test.com',       'first_name' => 'System',    'last_name' => 'TWG',      'password' => password_hash('123', PASSWORD_DEFAULT), 'is_active' => 1, 'doc_type' => null],
             'vpaa'      => ['email' => 'vpaa@test.com',      'first_name' => 'Ana',       'last_name' => 'Santos',   'password' => $password, 'is_active' => 1, 'doc_type' => 'IPCR'],
             'dean'      => ['email' => 'dean@test.com',      'first_name' => 'Roberto',   'last_name' => 'Reyes',    'password' => $password, 'is_active' => 1, 'doc_type' => 'OPCR'],

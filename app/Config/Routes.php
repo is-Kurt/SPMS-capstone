@@ -160,9 +160,10 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
 $routes->get('signup', 'Auth\Register::index');
 $routes->post('signup', 'Auth\Register::store');
 
-$routes->get('/', 'Landing::index');
+$routes->get('about', 'Landing::index');
 
 $routes->group('', ['filter' => 'guest'], function($routes) {
+    $routes->get('/', 'Auth\Session::index');
     $routes->get('login', 'Auth\Session::index');
     $routes->post('login', 'Auth\Session::edit');
     $routes->get('login/2fa', 'Auth\Session::show2fa');

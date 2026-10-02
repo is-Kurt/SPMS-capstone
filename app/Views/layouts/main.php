@@ -36,6 +36,7 @@
 <body class="h-full bg-bg text-text antialiased">
     
     <?= view('components/confirm_modal') ?>
+    <?= view('components/user_guide_modal') ?>
 
     <?php 
         $flashError = session('error') ?? session('errors.error') ?? session()->getFlashdata('error');

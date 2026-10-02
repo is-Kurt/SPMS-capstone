@@ -12,23 +12,31 @@
 
     <div class="mx-auto w-full max-w-md border border-emerald-800/30 p-8 sm:p-10 rounded-3xl bg-white dark:bg-[#0b1b13] shadow-2xl relative z-10">
 
-        <!-- Top Navigation: Return to Landing Page -->
+        <!-- Top Status & Help -->
         <div class="mb-5 flex items-center justify-between">
-            <a href="<?= site_url('/') ?>" class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#064e3b] dark:hover:text-emerald-400 transition-colors group" title="Return to SPMS Landing Page">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            <button type="button" onclick="if(typeof openUserGuideModal === 'function') openUserGuideModal()" class="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600 hover:text-amber-500 dark:text-amber-400 dark:hover:text-amber-300 transition-colors cursor-pointer group" title="Open SPMS Visual User Guide">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
-                <span>Back to Home</span>
-            </a>
-            <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950 text-[#064e3b] dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 px-2 py-0.5 rounded-full">
-                BSU PORTAL
+                <span>SPMS User Guide</span>
+            </button>
+            <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950 text-[#064e3b] dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-0.5 rounded-full">
+                BSU SECURE PORTAL
             </span>
         </div>
 
+        <?php if (request()->getGet('logged_out')): ?>
+            <div class="mb-4 p-3 rounded-xl text-xs font-semibold flex items-center gap-2.5 transition-all"
+                 style="background-color: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399;">
+                <svg class="w-4 h-4 shrink-0" style="color: #34d399;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                <span class="text-slate-800 dark:text-emerald-200 font-bold">You have been successfully signed out.</span>
+            </div>
+        <?php endif; ?>
+
         <div class="sm:mx-auto sm:w-full sm:max-w-sm flex flex-col items-center">
-            <a href="<?= site_url('/') ?>" class="mb-3 hover:scale-105 transition-transform" title="Back to Home">
+            <div class="mb-3">
                 <img src="<?= base_url('assets/images/spms_logo.png') ?>" alt="SPMS Logo" class="w-16 h-16 rounded-full object-contain shadow-md" />
-            </a>
+            </div>
             <h2 class="text-center text-2xl font-heading font-black tracking-tight text-slate-900 dark:text-white">Log in</h2>
             <p class="text-xs text-slate-500 dark:text-slate-400 text-center mt-1">Benguet State University • SPMS</p>
         </div>
@@ -41,7 +49,7 @@
                     <label for="email" class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Email address</label>
                     <div class="mt-1.5">
                         <input id="email" type="text" name="email" value="<?= esc(old('email', $prefillEmail ?? '')) ?>"
-                               class="w-full bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-[#064e3b] focus:ring-1 focus:ring-[#064e3b] focus:outline-none text-slate-900 dark:text-white transition-all" />
+                                class="w-full bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-[#064e3b] focus:ring-1 focus:ring-[#064e3b] focus:outline-none text-slate-900 dark:text-white transition-all" />
                     </div>
                     <div class="h-3 pl-1">
                         <p class="text-danger-500 text-[10px] font-bold mt-1 uppercase tracking-wider"><?= validation_show_error('email') ?></p>
@@ -54,7 +62,7 @@
                     </div>
                     <div class="mt-1.5">
                         <input id="password" type="password" name="password" 
-                               class="w-full bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-[#064e3b] focus:ring-1 focus:ring-[#064e3b] focus:outline-none text-slate-900 dark:text-white transition-all" />
+                                class="w-full bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-[#064e3b] focus:ring-1 focus:ring-[#064e3b] focus:outline-none text-slate-900 dark:text-white transition-all" />
                     </div>
                     <div class="h-3 pl-1">
                         <p class="text-danger-500 text-[10px] font-bold mt-1 uppercase tracking-wider"><?= session('errors.error') ?? validation_show_error('password') ?></p>
@@ -94,9 +102,14 @@
                     </a>
                 </div>
 
-                <div class="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800/80 text-center">
-                    <a href="<?= site_url('/') ?>" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-[#064e3b] dark:hover:text-emerald-400 transition-colors">
-                        <span>&larr; Return to SPMS Landing Page</span>
+                <div class="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800/80 text-center flex items-center justify-center gap-4 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    <button type="button" onclick="if(typeof openUserGuideModal === 'function') openUserGuideModal()" class="hover:text-[#064e3b] dark:hover:text-emerald-400 transition-colors inline-flex items-center gap-1.5 cursor-pointer">
+                        <svg class="w-3.5 h-3.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>How SPMS Works</span>
+                    </button>
+                    <span class="text-slate-300 dark:text-slate-700">•</span>
+                    <a href="<?= site_url('about') ?>" class="hover:text-[#064e3b] dark:hover:text-emerald-400 transition-colors">
+                        <span>About SPMS</span>
                     </a>
                 </div>
 

@@ -8,10 +8,13 @@
     $isOwner = ($doc['owner_id'] == session()->get('user_id'));
     
     $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
-    $isDocDpcr = in_array($ownerDocType, ['dpcr', 'cdpcr']) || stripos($doc['title'] ?? '', 'dpcr') !== false;
+    $docTitleUpper = strtoupper(trim($doc['title'] ?? ''));
+    $isTrueOpcr = str_contains($docTitleUpper, 'OPCR') || str_contains($docTitleUpper, 'OFFICE') || (strtoupper($doc['doc_type'] ?? '') === 'OPCR');
+    $isTrueDpcr = str_contains($docTitleUpper, 'DPCR') || str_contains($docTitleUpper, 'DIVISION') || str_contains($docTitleUpper, 'DEPARTMENT') || (strtoupper($doc['doc_type'] ?? '') === 'DPCR');
+    $isDocDpcr = in_array($ownerDocType, ['dpcr', 'cdpcr']) || $isTrueDpcr;
     $ownerPos = strtolower($ownerInfo['position'] ?? '');
     $isOwnerDean = str_contains($ownerPos, 'dean');
-    $isDocOpcr = (!$isDocDpcr) && ($ownerDocType === 'opcr' || stripos($doc['title'] ?? '', 'opcr') !== false || str_contains($ownerPos, 'vice president'));
+    $isDocOpcr = (!$isDocDpcr) && ($isTrueOpcr || str_contains($ownerPos, 'vice president'));
     $isDocIperf = (!$isDocDpcr && !$isDocOpcr) && ($ownerDocType === 'iperf' || stripos($doc['title'] ?? '', 'iperf') !== false);
     if (($ownerDocType === 'dpcr' || $ownerDocType === 'cdpcr') && $isOwnerDean) {
         $targetEndCol = (!empty($doc['cdpcr_target_end'])) ? 'cdpcr_target_end' : 'dpcr_target_end';
@@ -72,8 +75,8 @@
         width: 100%;
         max-width: <?= $isDocDpcr ? '1400px' : ($isDocOpcr ? '1350px' : ($isDocIperf ? '1280px' : '1280px')) ?>;
         background: #ffffff;
-        color: #000000;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+        color: #0f172a;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
         border: 1px solid #cbd5e1;
         padding: 16px 12px;
         box-sizing: border-box;
@@ -91,8 +94,33 @@
     @media (min-width: 1024px) {
         .spms-sheet-container {
             padding: 36px 40px;
-            border-radius: 4px;
+            border-radius: 6px;
         }
+    }
+    .spms-sheet-container input::placeholder,
+    .spms-sheet-container textarea::placeholder {
+        color: #94a3b8;
+        font-style: italic;
+        opacity: 0.9;
+    }
+    .spms-meta-input {
+        color: #0f172a;
+        border: none;
+        border-bottom: 1.5px solid #cbd5e1;
+        outline: none;
+        background: transparent;
+        font-family: inherit;
+        font-size: 11px;
+        transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+    .spms-meta-input:focus {
+        border-bottom-color: #059669;
+        background: #ffffff;
+    }
+    .spms-meta-input:disabled {
+        border-bottom-color: #e2e8f0;
+        color: #334155;
+        cursor: not-allowed;
     }
     .spms-table-responsive-wrapper {
         width: 100%;
@@ -143,13 +171,14 @@
         box-sizing: border-box;
         border-radius: 4px;
         font-family: inherit;
+        transition: border-color 0.15s ease, background-color 0.15s ease;
     }
     .spms-textarea:hover:not(:disabled) {
         border-color: #cbd5e1;
     }
     .spms-textarea:focus {
-        border-color: #0284c7;
-        background: #f8fafc;
+        border-color: #059669;
+        background: #ffffff;
         outline: none;
     }
     .spms-textarea:disabled {
@@ -171,22 +200,27 @@
         font-size: 12px;
         color: #0f172a;
         background: #ffffff;
-        border: 1px solid #94a3b8;
+        border: 1px solid #cbd5e1;
         border-radius: 4px;
         padding: 4px 2px;
         box-sizing: border-box;
         -moz-appearance: textfield;
         appearance: textfield;
+        transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
     }
     .spms-score-input::-webkit-outer-spin-button,
     .spms-score-input::-webkit-inner-spin-button {
         -webkit-appearance: none;
         margin: 0;
     }
+    .spms-score-input:hover:not(:disabled) {
+        border-color: #94a3b8;
+    }
     .spms-score-input:focus {
-        border-color: #0284c7;
+        border-color: #059669;
         outline: none;
-        background: #f0f9ff;
+        background: #ffffff;
+        box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15);
     }
     .spms-score-input:disabled {
         background: #f8fafc;
@@ -203,16 +237,16 @@
         padding: 1px 3px;
         gap: 2px;
         box-sizing: border-box;
-        transition: border-color 0.15s ease, background-color 0.15s ease;
+        transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
         overflow: hidden;
     }
     .budget-input-wrapper:hover:not(:has(:disabled)) {
         border-color: #94a3b8;
     }
     .budget-input-wrapper:focus-within {
-        border-color: #0284c7;
-        box-shadow: 0 0 0 1px #0284c7;
-        background: #f0f9ff;
+        border-color: #059669;
+        box-shadow: 0 0 0 1px #059669;
+        background: #ffffff;
     }
     .budget-input-wrapper:has(:disabled) {
         background: #f8fafc;
@@ -221,9 +255,9 @@
     }
     .header-budget-currency {
         border: none;
-        border-bottom: 1px dashed #0284c7;
+        border-bottom: 1px dashed #10b981;
         background: transparent;
-        color: #ba372a;
+        color: #047857;
         outline: none;
         font-size: 9.5px;
         text-align: center;
@@ -232,7 +266,7 @@
     }
     .header-budget-currency:focus {
         border-bottom-style: solid;
-        color: #0284c7;
+        color: #047857;
     }
     @media print {
         .budget-input-wrapper {
@@ -259,21 +293,22 @@
     .btn-add-dashed {
         display: block;
         width: 100%;
-        background: #f8fafc;
-        border: 1.5px dashed #0284c7;
-        color: #0284c7;
+        background: #ffffff;
+        border: 1.5px dashed #cbd5e1;
+        color: #475569;
         font-weight: 700;
-        font-size: 12px;
-        padding: 10px 16px;
+        font-size: 11px;
+        padding: 8px 16px;
         border-radius: 6px;
         cursor: pointer;
-        transition: all 0.15s;
+        transition: all 0.15s ease-in-out;
         text-align: center;
     }
     .btn-add-dashed:hover {
-        background: #f0f9ff;
-        border-color: #0369a1;
-        color: #0369a1;
+        background: #f8fafc;
+        border-color: #94a3b8;
+        color: #0f172a;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
     }
     .btn-del-row {
         color: #dc2626;
@@ -471,261 +506,11 @@
         }
     }
 </style>
-    
-    $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
-    $now = date('Y-m-d H:i:s');
-    $targetEndCol = $ownerDocType . '_target_end';
-    $tEnd = $doc[$targetEndCol] ?? null;
-    $isPastTargetDate = (!empty($tEnd) && $now > $tEnd);
 
-    $evalPhaseStatuses = [
-        FolderStatus::SUBMITTED->value,
-        FolderStatus::TO_EVALUATE->value,
-        FolderStatus::REEVALUATE->value,
-        FolderStatus::EVALUATED->value,
-        FolderStatus::APPROVED->value,
-        FolderStatus::TWG_APPROVED->value,
-        FolderStatus::TWG_DISAPPROVED->value,
-        FolderStatus::UNEVALUATED->value,
-    ];
-
-    $isEvaluationPhase = in_array($status, $evalPhaseStatuses) || $isPastTargetDate;
-    $isTargetPhase = !$isEvaluationPhase;
-
-    $canEditTargets = ($isOwner && in_array($status, [
-        FolderStatus::DRAFT_TARGET->value,
-        FolderStatus::TARGET_RETURNED->value,
-        FolderStatus::TARGET_UNAPPROVED->value,
-        FolderStatus::DRAFT->value
-    ]) && !$isPastTargetDate && !$isGuide);
-
-    $canEditEvaluation = ($isEvaluationPhase && (
-        ($isOwner && in_array($status, [FolderStatus::TO_EVALUATE->value, FolderStatus::REEVALUATE->value])) ||
-        (!$isOwner && isset($routingStatus) && in_array($status, [FolderStatus::SUBMITTED->value, FolderStatus::EVALUATED->value]))
-    ) && !$isGuide);
-
-    $editableStatuses = [
-        FolderStatus::DRAFT_TARGET->value,
-        FolderStatus::TARGET_RETURNED->value
-    ];
-    $isEditable = ($canEditTargets || $canEditEvaluation);
-?>
-
-<style>
-    .spms-sheet-container {
-        width: 100%;
-        max-width: 1280px;
-        background: #ffffff;
-        color: #000000;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
-        border: 1px solid #cbd5e1;
-        padding: 36px 40px;
-        box-sizing: border-box;
-        font-family: inherit;
-        display: block !important;
-        height: auto !important;
-        min-height: fit-content !important;
-    }
-    .spms-table {
-        width: 100%;
-        border-collapse: collapse;
-        border: 1px solid #000000;
-        font-size: 11px;
-        height: auto !important;
-        table-layout: auto !important;
-        display: table !important;
-    }
-    .spms-table tbody {
-        display: table-row-group !important;
-        height: auto !important;
-    }
-    .spms-table th, .spms-table td {
-        border: 1px solid #000000;
-    }
-    .spms-textarea {
-        width: 100%;
-        min-height: 48px;
-        background: transparent;
-        border: 1px solid transparent;
-        padding: 4px;
-        font-size: 11px;
-        line-height: 1.35;
-        color: #0f172a;
-        resize: vertical;
-        box-sizing: border-box;
-        border-radius: 4px;
-        font-family: inherit;
-    }
-    .spms-textarea:hover:not(:disabled) {
-        border-color: #cbd5e1;
-    }
-    .spms-textarea:focus {
-        border-color: #0284c7;
-        background: #f8fafc;
-        outline: none;
-    }
-    .spms-textarea:disabled {
-        color: #475569;
-        background: #f8fafc;
-        border-color: #f1f5f9;
-        cursor: not-allowed;
-        resize: none;
-    }
-    .field-mfo:disabled {
-        color: #0f172a !important;
-        font-weight: 600;
-        background: #fcfcfc;
-    }
-    .spms-score-input {
-        width: 100%;
-        text-align: center;
-        font-weight: 800;
-        font-size: 12px;
-        color: #0f172a;
-        background: #ffffff;
-        border: 1px solid #94a3b8;
-        border-radius: 4px;
-        padding: 4px 2px;
-        box-sizing: border-box;
-    }
-    .spms-score-input:focus {
-        border-color: #0284c7;
-        outline: none;
-        background: #f0f9ff;
-    }
-    .spms-score-input:disabled {
-        background: #f8fafc;
-        border-color: #e2e8f0;
-        color: #94a3b8;
-        cursor: not-allowed;
-    }
-    .btn-add-dashed {
-        display: block;
-        width: 100%;
-        background: #f8fafc;
-        border: 1.5px dashed #0284c7;
-        color: #0284c7;
-        font-weight: 700;
-        font-size: 12px;
-        padding: 10px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.15s;
-        text-align: center;
-    }
-    .btn-add-dashed:hover {
-        background: #f0f9ff;
-        border-color: #0369a1;
-        color: #0369a1;
-    }
-    .btn-del-row {
-        color: #dc2626;
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        padding: 4px;
-        border-radius: 4px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .btn-del-row:hover {
-        background: #fee2e2;
-    }
-    .subtotal-badge {
-        font-size: 10px;
-        font-weight: 800;
-        background: #0284c7;
-        color: #ffffff;
-        padding: 3px 8px;
-        border-radius: 12px;
-        display: inline-block;
-    }
-    .spms-category-header {
-        background: #e2e8f0;
-        border-top: 2px solid #000000;
-        border-bottom: 1px solid #000000;
-    }
-    @media print {
-        @page {
-            size: letter landscape;
-            margin: 8mm 6mm;
-        }
-        html, body {
-            background: #ffffff !important;
-            color: #000000 !important;
-            font-size: 10px !important;
-            width: 100% !important;
-            height: auto !important;
-            overflow: visible !important;
-        }
-        header, nav, aside, .print-hide, #tab-bar, .tox {
-            display: none !important;
-        }
-        main, #editor-container, #spms-form-workspace {
-            padding: 0 !important;
-            margin: 0 !important;
-            background: #ffffff !important;
-            overflow: visible !important;
-            display: block !important;
-            width: 100% !important;
-            height: auto !important;
-        }
-        .spms-sheet-container {
-            box-shadow: none !important;
-            border: none !important;
-            max-width: 100% !important;
-            width: 100% !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            display: block !important;
-        }
-        .spms-table {
-            width: 100% !important;
-            border-collapse: collapse !important;
-            font-size: 9.5px !important;
-            page-break-inside: auto;
-        }
-        .spms-table tr {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-        }
-        .spms-meta-matrix, .spms-navy-bar, .spms-signatories-matrix, .spms-sheet-container > div, .spms-table-responsive-wrapper {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-        }
-        .spms-table thead {
-            display: table-header-group !important;
-        }
-        .spms-table th, .spms-table td {
-            border: 1px solid #000000 !important;
-            color: #000000 !important;
-        }
-        .spms-textarea, .spms-score-input, input {
-            border: none !important;
-            background: transparent !important;
-            color: #000000 !important;
-            resize: none !important;
-            box-shadow: none !important;
-            padding: 2px !important;
-        }
-        .spms-textarea::placeholder, .spms-score-input::placeholder, input::placeholder {
-            color: transparent !important;
-        }
-        .btn-add-dashed, .btn-del-row, #tfoot-add-core, #tfoot-add-strategic, #tfoot-add-support {
-            display: none !important;
-        }
-        .spms-textarea {
-            overflow: hidden !important;
-            height: auto !important;
-        }
-    }
-</style>
-
-<div class="h-full flex flex-col bg-bg">
+<div class="h-full flex flex-col bg-slate-100 dark:bg-bg">
     <?= view('components/govph_masthead') ?>
     
-    <div class="flex-none flex items-center justify-between py-2 px-3 sm:px-6 bg-bg gap-2 sm:gap-4 print-hide">
+    <div class="flex-none flex items-center justify-between py-2 px-3 sm:px-6 bg-white dark:bg-[#0c1410] border-b border-slate-200 dark:border-surface-border gap-2 sm:gap-4 print-hide">
         
         <?php if (!($isEmbed ?? false)): ?>
         <?php 
@@ -735,11 +520,11 @@
                 ? site_url('folders/' . ($doc['document_folder_id'] ?? ''))
                 : site_url('ratings' . (!empty($rootFolderId) ? '/' . $rootFolderId : ''));
         ?>
-        <div class="flex items-center gap-1 sm:gap-3 min-w-0 flex-1">
+        <div class="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-1">
             <!-- Return to Folder Button -->
             <a href="<?= site_url('folders/' . ($doc['document_folder_id'] ?? '')) ?>" 
                onclick="if (window.history.length > 1) { history.back(); return false; }"
-               class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-xs font-bold rounded-lg border border-surface-border transition-colors shrink-0 shadow-sm mr-1 sm:mr-2 cursor-pointer"
+               class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-xs font-bold rounded-lg border border-surface-border transition-colors shrink-0 shadow-sm mr-1 sm:mr-2 cursor-pointer"
                title="Return to <?= $isOwner ? 'Folder' : 'Ratings Dashboard' ?>">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -747,13 +532,11 @@
                 <span class="font-extrabold uppercase text-[11px] tracking-wider">Return</span>
             </a>
 
+            <!-- Brand mark hidden on small screens (< md) to conserve space -->
             <a href="<?= $homeUrl ?>" 
-               class="cursor-pointer shrink-0"
+               class="cursor-pointer shrink-0 hidden md:block"
                title="Return to SPMS Home">
-                <!-- Back-to-folders brand mark. text-text (not text-white) so it stays visible on the
-                     theme-aware bg-bg header in both light and dark mode. -->
                 <div class="flex-shrink-0 flex items-center gap-1 mr-2 sm:mr-4 text-text hover:text-accent transition-colors">
-                    <!-- Folder/document icon -->
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
@@ -762,8 +545,8 @@
             </a>
 
             <?php if (!empty($rateeNav)): ?>
-                <!-- Quick Ratee Navigator Widget for Evaluators/Supervisors -->
-                <div class="flex items-center bg-surface-border/25 border border-surface-border rounded-lg p-0.5 text-xs font-bold shadow-2xs shrink-0 mr-1 sm:mr-3">
+                <!-- Quick Ratee Navigator Widget (Desktop view - hidden on mobile, placed in toolstrip below) -->
+                <div class="hidden md:flex items-center bg-surface-border/25 border border-surface-border rounded-lg p-0.5 text-xs font-bold shadow-2xs shrink-0 mr-1 sm:mr-3">
                     <?php if (!empty($rateeNav['prev'])): ?>
                         <a href="<?= site_url('ratings/show/' . $rateeNav['prev']['folder_id']) ?>" 
                            class="flex items-center gap-1 px-2 py-1 hover:bg-surface-border/50 text-text rounded-md transition-colors cursor-pointer"
@@ -771,14 +554,14 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                             </svg>
-                            <span class="hidden md:inline text-[11px]">Prev</span>
+                            <span class="text-[11px]">Prev</span>
                         </a>
                     <?php else: ?>
                         <span class="flex items-center gap-1 px-2 py-1 text-text-muted/30 rounded-md cursor-not-allowed">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                             </svg>
-                            <span class="hidden md:inline text-[11px]">Prev</span>
+                            <span class="text-[11px]">Prev</span>
                         </span>
                     <?php endif; ?>
 
@@ -793,14 +576,14 @@
                         <a href="<?= site_url('ratings/show/' . $rateeNav['next']['folder_id']) ?>" 
                            class="flex items-center gap-1 px-2 py-1 hover:bg-surface-border/50 text-text rounded-md transition-colors cursor-pointer"
                            title="Next Ratee: <?= esc($rateeNav['next']['name']) ?><?= !empty($rateeNav['next']['position']) ? ' (' . esc($rateeNav['next']['position']) . ')' : '' ?>">
-                            <span class="hidden md:inline text-[11px]">Next</span>
+                            <span class="text-[11px]">Next</span>
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                             </svg>
                         </a>
                     <?php else: ?>
                         <span class="flex items-center gap-1 px-2 py-1 text-text-muted/30 rounded-md cursor-not-allowed">
-                            <span class="hidden md:inline text-[11px]">Next</span>
+                            <span class="text-[11px]">Next</span>
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                             </svg>
@@ -808,6 +591,16 @@
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
+
+            <input type="text" maxlength="100" id="doc-title" value="<?= esc($doc['title']) ?>"
+                class="bg-transparent border-none font-bold text-sm text-text focus:ring-0 px-1 sm:px-2 py-1 min-w-[50px] max-w-[120px] xs:max-w-[160px] sm:max-w-xs md:max-w-sm truncate"
+                oninput="AppState.setDirty(true); autoResize(this);"
+                onblur="restoreTitle(this, '<?= esc($doc['title']) ?>'); autoResize(this);"
+                onload="autoResize(this);"
+                <?= (!$isEditable) ? 'disabled' : '' ?>>
+
+            <span id="save-status" class="ml-1 sm:ml-3 shrink-0 text-[10px] uppercase tracking-widest font-bold transition-all"></span>
+        </div>
         <?php else: ?>
         <div class="flex items-center gap-2 min-w-0 flex-1">
             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300 text-[11px] font-bold border border-sky-200 dark:border-sky-800">
@@ -817,21 +610,6 @@
         </div>
         <?php endif; ?>
 
-            <input type="text" maxlength="100" id="doc-title" value="<?= esc($doc['title']) ?>"
-                class="bg-transparent border-none font-bold text-sm text-text focus:ring-0 px-1 sm:px-2 py-1 min-w-[50px]"
-                oninput="AppState.setDirty(true); autoResize(this);"
-                onblur="restoreTitle(this, '<?= esc($doc['title']) ?>'); autoResize(this);"
-                onload="autoResize(this);"
-                <?= (!$isEditable) ? 'disabled' : '' ?>>
-                class="bg-transparent border-none font-bold text-sm text-text focus:ring-0 px-1 sm:px-2 py-1 min-w-[50px]"
-                oninput="AppState.setDirty(true); autoResize(this);"
-                onblur="restoreTitle(this, '<?= esc($doc['title']) ?>'); autoResize(this);"
-                onload="autoResize(this);"
-                <?= (!$isEditable) ? 'disabled' : '' ?>>
-
-            <span id="save-status" class="ml-1 sm:ml-3 shrink-0 text-[10px] uppercase tracking-widest font-bold transition-all"></span>
-        </div>
-        
         <!-- Call autoResize immediately after the element is in DOM -->
         <script>
             document.addEventListener('DOMContentLoaded', () => {
@@ -840,15 +618,7 @@
             });
         </script>
         
-        <!-- Call autoResize immediately after the element is in DOM -->
-        <script>
-            document.addEventListener('DOMContentLoaded', () => {
-                const titleInput = document.getElementById('doc-title');
-                if (titleInput) autoResize(titleInput);
-            });
-        </script>
-        
-        <div class="flex items-center gap-2 sm:gap-4 shrink-0">
+        <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <?php if ($canEditTargets || $canEditEvaluation): ?>
             <!-- Save Button with hover (Ctrl + S) -->
             <div class="relative group inline-flex items-center print-hide">
@@ -868,38 +638,35 @@
             <?php endif; ?>
 
             <?php if ($isOwner || session()->get('role') === 'Admin'): ?>
-            <!-- Print / Export PDF Button -->
+            <!-- Print / Export PDF Button (Desktop - hidden on mobile) -->
             <button type="button" onclick="exportToPdf()" 
-                    class="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 sm:py-2.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-[10px] sm:text-xs font-bold rounded-lg border border-surface-border transition-all cursor-pointer shadow-sm print-hide"
+                    class="hidden md:inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 sm:py-2.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-[10px] sm:text-xs font-bold rounded-lg border border-surface-border transition-all cursor-pointer shadow-sm print-hide"
                     title="Print Document or Export to PDF">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[#FFB800]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>
-                <span class="hidden md:inline">Print / Export PDF</span>
-                <span class="md:hidden">Print</span>
+                <span>Print / Export PDF</span>
             </button>
 
-            <!-- Export to Excel Button -->
+            <!-- Export to Excel Button (Desktop - hidden on mobile) -->
             <button type="button" onclick="exportToExcel()" 
-                    class="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[10px] sm:text-xs font-bold rounded-lg border border-emerald-500/30 hover:border-emerald-500/50 transition-all cursor-pointer shadow-sm active:scale-[0.98] print-hide"
+                    class="hidden md:inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[10px] sm:text-xs font-bold rounded-lg border border-emerald-500/30 hover:border-emerald-500/50 transition-all cursor-pointer shadow-sm active:scale-[0.98] print-hide"
                     title="Export document to official Civil Service Commission Excel spreadsheet (.xlsx)">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <span class="hidden md:inline">Export Excel</span>
-                <span class="hidden sm:inline md:hidden">Excel</span>
+                <span>Export Excel</span>
             </button>
             <?php endif; ?>
 
-            <!-- CSC Scoring Rubric Button -->
+            <!-- CSC Scoring Rubric Button (Desktop - hidden on mobile) -->
             <button type="button" id="btn-toggle-rubric" onclick="toggleRubricDrawer()" 
-                    class="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-2.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-[10px] sm:text-xs font-bold rounded-lg border border-surface-border transition-all cursor-pointer shadow-sm active:scale-[0.98] print-hide"
+                    class="hidden md:inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-2.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-[10px] sm:text-xs font-bold rounded-lg border border-surface-border transition-all cursor-pointer shadow-sm active:scale-[0.98] print-hide"
                     title="View official CSC 5-point rating rubric for Quality, Timeliness, and Efficiency">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-500 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
-                <span class="hidden md:inline">Rubric Guide</span>
-                <span class="hidden sm:inline md:hidden">Rubric</span>
+                <span>Rubric Guide</span>
             </button>
 
             <?php if (!$isGuide): ?>
@@ -944,45 +711,7 @@
                                 <span class="hidden sm:inline">Folder </span><?= $status === FolderStatus::TWG_APPROVED->value ? 'TWG Approved' : ($status === FolderStatus::TWG_DISAPPROVED->value ? 'TWG Disapproved' : 'Approved') ?>
                             </button>
                         <?php endif; ?>
-                    <?php endif; ?>
-                <?php elseif ($status === FolderStatus::APPROVED->value || $status === FolderStatus::TWG_APPROVED->value || $status === FolderStatus::TWG_DISAPPROVED->value): ?>
-                    <?php if (session()->get('role') === 'TWG'): ?>
-                        <div class="flex gap-1.5 sm:gap-2">
-                            <button id="btn-twg-disapprove" type="button" 
-                                    onclick="setTwgStatus('twg_disapproved')" 
-                                    class="<?= $status === FolderStatus::TWG_DISAPPROVED->value ? 'bg-danger-600 ring-2 ring-danger-400' : 'bg-danger-500 hover:bg-danger-600' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-danger-500/20 transition-all active:scale-[0.98] cursor-pointer">
-                                Disapprove
-                            </button>
-                            <button id="btn-twg-approve" type="button" 
-                                    onclick="setTwgStatus('twg_approved')" 
-                                    class="<?= $status === FolderStatus::TWG_APPROVED->value ? 'bg-success-600 ring-2 ring-success-400' : 'bg-success-500 hover:bg-success-600' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-success-500/20 transition-all active:scale-[0.98] cursor-pointer">
-                                Approve
-                            </button>
-                        </div>
-                    <?php else: ?>
-                        <?php 
-                            $canRemoveEvalApproval = false;
-                            if (session()->get('role') === 'Admin' && $status === FolderStatus::APPROVED->value) $canRemoveEvalApproval = true;
-                            if (isset($routingStatus) && $routingStatus === FolderStatus::APPROVED->value && $status === FolderStatus::APPROVED->value) $canRemoveEvalApproval = true;
-                        ?>
-                        <?php if ($canRemoveEvalApproval): ?>
-                            <?php 
-                                $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
-                                $evalEndCol = $ownerDocType . '_eval_end';
-                                $isEvalPeriodEnded = !empty($doc[$evalEndCol]) && date('Y-m-d H:i:s') > $doc[$evalEndCol]; 
-                            ?>
-                            <button id="btn-unapprove-evaluation" type="button" 
-                                    <?= $isEvalPeriodEnded ? 'disabled' : 'onclick="unapproveFolderEvaluation()"' ?>
-                                    class="<?= $isEvalPeriodEnded ? 'bg-warning-500/50 cursor-not-allowed opacity-80' : 'bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg transition-all">
-                                Remove<span class="hidden sm:inline"> Approval</span>
-                            </button>
-                        <?php else: ?>
-                            <button type="button" disabled class="bg-success-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
-                                <span class="hidden sm:inline">Folder </span><?= $status === FolderStatus::TWG_APPROVED->value ? 'TWG Approved' : ($status === FolderStatus::TWG_DISAPPROVED->value ? 'TWG Disapproved' : 'Approved') ?>
-                            </button>
-                        <?php endif; ?>
-                    <?php endif; ?>
-                    
+                    <?php endif; ?>                    
                 <?php elseif ($status === FolderStatus::EVALUATED->value): ?>
                     <?php if ($isOwner): ?>
                         <?php 
@@ -1028,30 +757,7 @@
                                     Approve
                                 </button>
                             </div>
-                        
-                        <?php elseif (session()->get('role') === 'TWG'): ?>
-                            <div class="flex gap-1.5 sm:gap-2">
-                                <button id="btn-twg-disapprove" type="button" 
-                                        onclick="setTwgStatus('twg_disapproved')" 
-                                        class="bg-danger-500 hover:bg-danger-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-danger-500/20 transition-all active:scale-[0.98] cursor-pointer">
-                                    Disapprove
-                                </button>
-                                <button id="btn-twg-approve" type="button" 
-                                        onclick="setTwgStatus('twg_approved')" 
-                                        class="bg-success-500 hover:bg-success-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-success-500/20 transition-all active:scale-[0.98] cursor-pointer">
-                                    Approve
-                                </button>
-                            </div>
                         <?php elseif (isset($routingStatus) && $routingStatus === FolderStatus::APPROVED->value): ?>
-                            <?php 
-                                $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
-                                $evalEndCol = $ownerDocType . '_eval_end';
-                                $isEvalPeriodEnded = !empty($doc[$evalEndCol]) && date('Y-m-d H:i:s') > $doc[$evalEndCol]; 
-                            ?>
-                            <button id="btn-unapprove-evaluation" type="button" 
-                                    <?= $isEvalPeriodEnded ? 'disabled' : 'onclick="unapproveFolderEvaluation()"' ?>
-                                    class="<?= $isEvalPeriodEnded ? 'bg-warning-500/50 cursor-not-allowed opacity-80' : 'bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg transition-all">
-                                Remove<span class="hidden sm:inline"> Approval</span>
                             <?php 
                                 $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
                                 $evalEndCol = $ownerDocType . '_eval_end';
@@ -1064,14 +770,6 @@
                             </button>
                         <?php else: ?>
                             <div class="flex gap-1.5 sm:gap-2">
-                                <button type="button" 
-                                        onclick="rate()" 
-                                        class="flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1.5 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                    </svg>
-                                    Calculate
-                                </button>
                                 <button type="button" 
                                         onclick="rate()" 
                                         class="flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer">
@@ -1112,21 +810,6 @@
                                 <?= $status === FolderStatus::REEVALUATE->value ? 'Submit Revision' : '<span class="sm:hidden">Self-Rate</span><span class="hidden sm:inline">Complete Self-Rating</span>' ?>
                             </button>
                         </div>
-                        <div class="flex gap-1.5 sm:gap-2">
-                            <button type="button" 
-                                    onclick="rate()" 
-                                    class="flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1.5 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                </svg>
-                                Calculate
-                            </button>
-                            <button id="btn-submit" type="button" 
-                                    onclick="saveWith({ after: () => lockFolderEvaluation() })" 
-                                    class="bg-info-500 hover:bg-info-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-info-500/20 transition-all active:scale-[0.98] cursor-pointer">
-                                <?= $status === FolderStatus::REEVALUATE->value ? 'Submit Revision' : '<span class="sm:hidden">Self-Rate</span><span class="hidden sm:inline">Complete Self-Rating</span>' ?>
-                            </button>
-                        </div>
                     <?php else: ?>
                         <button type="button" disabled class="bg-zinc-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
                             Wait<span class="hidden sm:inline">ing for Employee</span>
@@ -1150,11 +833,55 @@
                             <span>Return</span>
                         </a>
                         <?php if ($isOwner): ?>
-                            <button id="btn-submit-target" type="button" 
-                                    onclick="saveWith({ after: () => lockFolderTarget() })" 
-                                    class="bg-info-500 hover:bg-info-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-info-500/20 transition-all active:scale-[0.98] cursor-pointer">
-                                <span class="sm:hidden">Submit Target</span><span class="hidden sm:inline">Submit Targets</span>
-                            </button>
+                            <?php if (session()->get('role') === 'Admin'): ?>
+                                <div class="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-xs">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                    </svg>
+                                    <span>Master Cycle Template</span>
+                                </div>
+                            <?php elseif ($isDocOpcr || $isTrueOpcr): ?>
+                                <!-- Under CSC SPMS rules, OPCR is the apex institutional commitment and requires NO superior approval. Once done, they can just cascade it! -->
+                                <?php $isOpcrCascaded = ($status === FolderStatus::TARGET_APPROVED->value) || !empty($doc['routing_preset_id']); ?>
+                                <?php if ($isOpcrCascaded): ?>
+                                    <div class="flex items-center gap-1.5 sm:gap-2">
+                                        <span class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 dark:bg-[#102a1e] border border-emerald-300 dark:border-[#1b4330] text-emerald-700 dark:text-[#34d399] rounded-lg text-[10px] sm:text-xs font-bold shadow-xs">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-[#34d399]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            <span>OPCR Cascaded</span>
+                                        </span>
+                                        <a href="<?= site_url('folders/' . $doc['document_folder_id']) ?>" class="bg-surface hover:bg-surface-border text-text text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg border border-surface-border transition-all">
+                                            Manage Cascade
+                                        </a>
+                                    </div>
+                                <?php else: ?>
+                                    <button id="btn-cascade-opcr" type="button" 
+                                            onclick="saveWith({ after: () => openCascadeModal() })" 
+                                            class="bg-gradient-to-r from-emerald-600 to-[#064e3b] hover:from-emerald-700 hover:to-[#085a3a] text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg shadow-emerald-600/30 transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1.5"
+                                            title="Cascade OPCR targets to a distribution team as their reference basis without requiring approval.">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                        </svg>
+                                        <span>Cascade Targets</span>
+                                    </button>
+                                <?php endif; ?>
+                            <?php elseif (isset($isParentTargetApproved) && !$isParentTargetApproved): ?>
+                                <button type="button" disabled 
+                                        class="bg-amber-500/70 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-sm cursor-not-allowed flex items-center gap-1.5" 
+                                        title="Waiting for Superior Target Approval. Under SPMS rules, individual commitments require approved superior targets as a basis.">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span class="hidden sm:inline">Waiting for Superior Approval</span><span class="sm:hidden">Waiting</span>
+                                </button>
+                            <?php else: ?>
+                                <button id="btn-submit-target" type="button" 
+                                        onclick="saveWith({ after: () => lockFolderTarget() })" 
+                                        class="bg-info-500 hover:bg-info-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-info-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                    <span class="sm:hidden">Submit Target</span><span class="hidden sm:inline">Submit Targets</span>
+                                </button>
+                            <?php endif; ?>
                         <?php else: ?>
                             <button type="button" disabled class="bg-zinc-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
                                 Wait<span class="hidden sm:inline">ing for Employee Targets</span>
@@ -1163,10 +890,37 @@
                     </div>
 
                 <?php elseif ($status === FolderStatus::PENDING_TARGET_APPROVAL->value): ?>
-                    <?php if ($isOwner): ?>
-                        <button type="button" disabled class="bg-warning-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
-                            <span class="hidden sm:inline">Awaiting </span>Target Approval
-                        </button>
+                    <?php if ($isDocOpcr || $isTrueOpcr): ?>
+                        <div class="flex items-center gap-1.5 sm:gap-2">
+                            <button id="btn-cascade-opcr" type="button" 
+                                    onclick="saveWith({ after: () => openCascadeModal() })" 
+                                    class="bg-gradient-to-r from-emerald-600 to-[#064e3b] hover:from-emerald-700 hover:to-[#085a3a] text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg shadow-emerald-600/30 transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1.5"
+                                    title="Cascade OPCR targets to a distribution team as their reference basis without requiring approval.">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                <span>Cascade Targets</span>
+                            </button>
+                        </div>
+                    <?php elseif ($isOwner): ?>
+                        <div class="flex items-center gap-1.5 sm:gap-2">
+                            <button type="button" disabled class="bg-amber-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-sm opacity-90 cursor-not-allowed flex items-center gap-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span class="hidden sm:inline">Awaiting Target Approval</span>
+                                <span class="sm:hidden">Awaiting Approval</span>
+                            </button>
+                            <button id="btn-unsubmit-target" type="button" 
+                                    onclick="unsubmitTargetDocument()" 
+                                    class="bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1"
+                                    title="Revoke your submission to make edits">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                </svg>
+                                <span>Revoke Submission</span>
+                            </button>
+                        </div>
                     <?php else: ?>
                         <?php if (session()->get('role') === 'Admin'): ?>
                             <button type="button" disabled class="bg-highlight-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
@@ -1286,6 +1040,18 @@
                                 Remove<span class="hidden sm:inline"> Approval</span>
                             </button>
                         </div>
+                    <?php elseif ($isDocOpcr || $isTrueOpcr): ?>
+                        <div class="flex items-center gap-1.5 sm:gap-2">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 dark:bg-[#102a1e] border border-emerald-300 dark:border-[#1b4330] text-emerald-700 dark:text-[#34d399] rounded-lg text-[10px] sm:text-xs font-bold shadow-xs">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-[#34d399]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span>OPCR Cascaded</span>
+                            </span>
+                            <a href="<?= site_url('folders/' . $doc['document_folder_id']) ?>" class="bg-surface hover:bg-surface-border text-text text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg border border-surface-border transition-all">
+                                Manage Cascade
+                            </a>
+                        </div>
                     <?php else: ?>
                         <button type="button" disabled class="bg-highlight-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
                             Awaiting Eval<span class="hidden sm:inline"> Window</span>
@@ -1310,15 +1076,83 @@
         </div>
     </div>
 
-    <div class="flex-none flex bg-bg border-b border-surface-border px-3 sm:px-6 <?= $isEditable ? 'gap-2' : 'gap-4' ?> text-sm font-bold pt-2 overflow-x-auto whitespace-nowrap scrollbar-hide print-hide" id="tab-bar">
-        <!-- Tabs injected here via JS -->
-    <div class="flex-none flex bg-bg border-b border-surface-border px-3 sm:px-6 <?= $isEditable ? 'gap-2' : 'gap-4' ?> text-sm font-bold pt-2 overflow-x-auto whitespace-nowrap scrollbar-hide print-hide" id="tab-bar">
+    <!-- Mobile Secondary Action Toolstrip (Prev/Next Ratee, Print, Excel, Rubrics) -->
+    <div class="md:hidden flex-none flex items-center gap-1.5 px-3 py-1.5 bg-surface/50 border-b border-surface-border overflow-x-auto custom-scrollbar print-hide">
+        <?php if (!empty($rateeNav)): ?>
+            <div class="flex items-center bg-surface-border/30 border border-surface-border rounded-lg p-0.5 text-xs font-bold shadow-2xs shrink-0">
+                <?php if (!empty($rateeNav['prev'])): ?>
+                    <a href="<?= site_url('ratings/show/' . $rateeNav['prev']['folder_id']) ?>" 
+                       class="flex items-center gap-0.5 px-2 py-1 hover:bg-surface-border/50 text-text rounded-md transition-colors cursor-pointer"
+                       title="Previous Ratee: <?= esc($rateeNav['prev']['name']) ?>">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                        <span class="text-[10px]">Prev</span>
+                    </a>
+                <?php else: ?>
+                    <span class="flex items-center gap-0.5 px-2 py-1 text-text-muted/30 rounded-md cursor-not-allowed">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                        <span class="text-[10px]">Prev</span>
+                    </span>
+                <?php endif; ?>
+
+                <span class="px-2 py-0.5 text-[10px] font-black text-text border-x border-surface-border/50 whitespace-nowrap">
+                    <span class="text-accent font-extrabold"><?= $rateeNav['currentIndex'] ?></span>
+                    <span class="text-text-muted font-normal">/</span>
+                    <span><?= $rateeNav['totalRatees'] ?></span>
+                </span>
+
+                <?php if (!empty($rateeNav['next'])): ?>
+                    <a href="<?= site_url('ratings/show/' . $rateeNav['next']['folder_id']) ?>" 
+                       class="flex items-center gap-0.5 px-2 py-1 hover:bg-surface-border/50 text-text rounded-md transition-colors cursor-pointer"
+                       title="Next Ratee: <?= esc($rateeNav['next']['name']) ?>">
+                        <span class="text-[10px]">Next</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    </a>
+                <?php else: ?>
+                    <span class="flex items-center gap-0.5 px-2 py-1 text-text-muted/30 rounded-md cursor-not-allowed">
+                        <span class="text-[10px]">Next</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    </span>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($isOwner || session()->get('role') === 'Admin'): ?>
+            <button type="button" onclick="exportToPdf()" 
+                    class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-[10px] font-bold rounded-lg border border-surface-border transition-all cursor-pointer shadow-xs shrink-0"
+                    title="Print Document or Export to PDF">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-[#FFB800]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                <span>PDF</span>
+            </button>
+
+            <button type="button" onclick="exportToExcel()" 
+                    class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold rounded-lg border border-emerald-500/30 transition-all cursor-pointer shadow-xs shrink-0"
+                    title="Export document to Excel (.xlsx)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Excel</span>
+            </button>
+        <?php endif; ?>
+
+        <button type="button" onclick="toggleRubricDrawer()" 
+                class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-[10px] font-bold rounded-lg border border-surface-border transition-all cursor-pointer shadow-xs shrink-0"
+                title="View CSC 5-point rating rubric">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            <span>Rubric</span>
+        </button>
+    </div>
+
+    <div class="flex-none flex bg-white dark:bg-[#0c1410] border-b border-slate-200 dark:border-surface-border px-3 sm:px-6 <?= $isEditable ? 'gap-2' : 'gap-4' ?> text-sm font-bold pt-2 overflow-x-auto whitespace-nowrap scrollbar-hide print-hide" id="tab-bar">
         <!-- Tabs injected here via JS -->
     </div>
 
     <!-- Main Workspace Split Container: Form (Left ~3/4) & Rubric (Right ~1/4) -->
     <div class="flex-1 min-h-0 w-full relative flex flex-row overflow-hidden" id="workspace-split-container">
-        <div class="flex-1 min-h-0 h-full relative bg-[#031c12] dark:bg-[#031c12] overflow-x-auto transition-all duration-300 ease-out" id="editor-container">
+        <div class="flex-1 min-h-0 h-full relative bg-slate-100 dark:bg-[#031c12] overflow-x-auto transition-all duration-300 ease-out" id="editor-container">
         <?php if (!empty($basisDoc) && !$isGuide): ?>
         <!-- SUPERIOR BASIS STATIC FORM WORKSPACE -->
         <div id="spms-basis-workspace" class="hidden w-full h-full overflow-y-auto p-2 sm:p-6 lg:p-8 flex justify-center items-start custom-scrollbar print:p-0 print:bg-white print:overflow-visible">
@@ -1468,7 +1302,7 @@
                         </colgroup>
                         <thead id="basis-table-thead">
                             <?php if ($isBasisOpcr): ?>
-                            <tr style="background-color: #fff2cc; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
+                            <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">PROJECT / PROGRAM / ACTIVITIES</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">SUCCESS INDICATORS<br><span style="font-weight: normal; font-size: 9px;">(TARGETS + MEASURES)</span></th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ALLOTTED BUDGET</th>
@@ -1477,14 +1311,14 @@
                                 <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
                             </tr>
-                            <tr style="background-color: #fff2cc; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                            <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
                                 <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
                                 <th style="border: 1px solid #000; padding: 4px 2px;">T</th>
                                 <th style="border: 1px solid #000; padding: 4px 2px;">E</th>
                                 <th style="border: 1px solid #000; padding: 4px 2px;">Ave.</th>
                             </tr>
                             <?php elseif ($isBasisDpcr): ?>
-                            <tr style="background-color: #cfe2f3; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
+                            <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">PROGRAMS, PROJECTS, ACTIVITIES</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">SUCCESS INDICATORS<br><span style="font-weight: normal; font-size: 9px;">(TARGETS + MEASURES)</span></th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ALLOTTED BUDGET</th>
@@ -1493,7 +1327,7 @@
                                 <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
                             </tr>
-                            <tr style="background-color: #cfe2f3; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                            <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
                                 <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
                                 <th style="border: 1px solid #000; padding: 4px 2px;">T</th>
                                 <th style="border: 1px solid #000; padding: 4px 2px;">E</th>
@@ -1529,7 +1363,7 @@
 
         <!-- SPMS Structured Form Builder Container -->
         <div id="spms-form-workspace" class="hidden w-full h-full overflow-y-auto p-2 sm:p-6 lg:p-8 flex flex-col items-center custom-scrollbar print:p-0 print:bg-white print:overflow-visible">
-            <div class="w-full max-w-[1280px] flex flex-col gap-4 print:w-full print:block">
+            <div class="w-full max-w-[1440px] flex flex-col items-center gap-4 print:w-full print:block">
                 <article id="printable-form" class="spms-sheet-container block space-y-5">
                 
                 <?php if (!empty($isCycleArchived)): ?>
@@ -1549,13 +1383,13 @@
 
                 <!-- INSTITUTIONAL FORM HEADER -->
                 <div style="text-align: center; margin-bottom: 20px;">
-                    <h2 style="font-size: 15px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: 0.05em; color: #000000; line-height: 1.4;" id="spms-doc-title">
+                    <h2 style="font-size: 15px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: 0.05em; color: #0f172a; line-height: 1.4;" id="spms-doc-title">
                         <?= $isDocIperf 
                             ? 'INDIVIDUAL PERFORMANCE EVALUATION RATING FORM FOR CONTRACT OF SERVICE AND JOB ORDER PERSONNEL' 
                             : ($isDocDpcr ? 'DEPARTMENT PERFORMANCE COMMITMENT AND REVIEW (DPCR)' : ($isDocOpcr ? 'OFFICE PERFORMANCE COMMITMENT AND REVIEW (OPCR)' : 'INDIVIDUAL PERFORMANCE COMMITMENT AND REVIEW (IPCR)')) ?>
                     </h2>
                     <?php if ($isDocIperf): ?>
-                    <div style="font-size: 11px; font-style: italic; color: #000000; margin-top: 4px;">
+                    <div style="font-size: 11px; font-style: italic; color: #64748b; margin-top: 4px;">
                         (attach rubrics for the rating of actual accomplishments vis-à-vis expected outputs)
                     </div>
                     <?php endif; ?>
@@ -1565,32 +1399,32 @@
                 <!-- IPERF 3-ROW METADATA MATRIX (EXACT REPLICA OF PHOTO) -->
                 <table class="spms-meta-matrix" style="width: 100%; border-collapse: collapse; border: 1px solid #000000; margin-bottom: 18px; font-size: 11px;">
                     <tr style="border-bottom: 1px solid #000000;">
-                        <td style="width: 18%; padding: 6px 8px; font-weight: bold; border-right: 1px solid #000000; background: #fafafa;">Name of Employee:</td>
+                        <td style="width: 18%; padding: 6px 8px; font-weight: bold; border-right: 1px solid #000000; background: #fafafa; color: #0f172a;">Name of Employee:</td>
                         <td style="width: 42%; padding: 6px 8px; border-right: 1px solid #000000;">
-                            <input type="text" id="ratee-name" value="" placeholder="indicate full name (First Name Middle Initial Last Name, Extension; e.g., Juan D. Cruz III)" style="width: 100%; border: none; outline: none; font-size: 11px; color: #ba372a; font-weight: bold;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                            <input type="text" id="ratee-name" value="" placeholder="indicate full name (First Name Middle Initial Last Name, Extension; e.g., Juan D. Cruz III)" class="spms-meta-input" style="width: 100%; font-weight: bold; border: none; padding: 2px 0;" <?= $canEditTargets ? '' : 'disabled' ?>>
                         </td>
-                        <td style="width: 15%; padding: 6px 8px; font-weight: bold; border-right: 1px solid #000000; background: #fafafa;">Classification:</td>
+                        <td style="width: 15%; padding: 6px 8px; font-weight: bold; border-right: 1px solid #000000; background: #fafafa; color: #0f172a;">Classification:</td>
                         <td style="width: 25%; padding: 6px 8px;">
-                            <select id="ratee-classification" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 3px; padding: 2px 4px; font-size: 11px; color: #000; font-weight: bold; background: #ffffff;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                            <select id="ratee-classification" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 6px; font-size: 11px; color: #0f172a; font-weight: bold; background: #ffffff;" <?= $canEditTargets ? '' : 'disabled' ?>>
                                 <option value="Contract of Service (COS)">Contract of Service (COS)</option>
                                 <option value="Job Order">Job Order</option>
                             </select>
                         </td>
                     </tr>
                     <tr style="border-bottom: 1px solid #000000;">
-                        <td style="padding: 6px 8px; font-weight: bold; border-right: 1px solid #000000; background: #fafafa;">Position:</td>
+                        <td style="padding: 6px 8px; font-weight: bold; border-right: 1px solid #000000; background: #fafafa; color: #0f172a;">Position:</td>
                         <td style="padding: 6px 8px; border-right: 1px solid #000000;">
-                            <input type="text" id="ratee-position" value="" placeholder="indicate the full position title specified in the contract/job order" style="width: 100%; border: none; outline: none; font-size: 11px; color: #ba372a;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                            <input type="text" id="ratee-position" value="" placeholder="indicate the full position title specified in the contract/job order" class="spms-meta-input" style="width: 100%; border: none; padding: 2px 0;" <?= $canEditTargets ? '' : 'disabled' ?>>
                         </td>
-                        <td style="padding: 6px 8px; font-weight: bold; border-right: 1px solid #000000; background: #fafafa;">Rating Period:</td>
+                        <td style="padding: 6px 8px; font-weight: bold; border-right: 1px solid #000000; background: #fafafa; color: #0f172a;">Rating Period:</td>
                         <td style="padding: 6px 8px;">
-                            <input type="text" id="ratee-period" value="" placeholder="e.g., July - December 2024" style="width: 100%; border: none; outline: none; font-size: 11px; color: #ba372a; font-weight: bold;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                            <input type="text" id="ratee-period" value="" placeholder="e.g., July - December 2024" class="spms-meta-input" style="width: 100%; font-weight: bold; border: none; padding: 2px 0;" <?= $canEditTargets ? '' : 'disabled' ?>>
                         </td>
                     </tr>
                     <tr>
-                        <td style="padding: 6px 8px; font-weight: bold; border-right: 1px solid #000000; background: #fafafa;">Office:</td>
+                        <td style="padding: 6px 8px; font-weight: bold; border-right: 1px solid #000000; background: #fafafa; color: #0f172a;">Office:</td>
                         <td colspan="3" style="padding: 6px 8px;">
-                            <input type="text" id="ratee-dept" value="" placeholder="indicate in full the specific area of assignment (e.g., CIS - Department of Development Communication)" style="width: 100%; border: none; outline: none; font-size: 11px; color: #ba372a;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                            <input type="text" id="ratee-dept" value="" placeholder="indicate in full the specific area of assignment (e.g., CIS - Department of Development Communication)" class="spms-meta-input" style="width: 100%; border: none; padding: 2px 0;" <?= $canEditTargets ? '' : 'disabled' ?>>
                         </td>
                     </tr>
                 </table>
@@ -1605,12 +1439,12 @@
                     </div>
                 </div>
                 <?php else: ?>
-                <!-- Preamble with Red Hint Placeholders -->
-                <div style="margin-bottom: 18px; font-size: 11px; line-height: 1.6; text-align: justify; color: #000000;">
-                    I, <input type="text" id="ratee-name" value="" placeholder="FULL NAME HERE" style="font-weight: bold; color: #ba372a; border: none; border-bottom: 1px solid #ba372a; text-align: center; min-width: 170px; outline: none; padding: 2px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>>, 
-                    <input type="text" id="ratee-position" value="" placeholder="Position and Official Designation" style="color: #ba372a; border: none; border-bottom: 1px solid #ba372a; text-align: center; min-width: 200px; outline: none; padding: 2px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>> of the 
-                    <input type="text" id="ratee-dept" value="" placeholder="Office Name" style="color: #ba372a; border: none; border-bottom: 1px solid #ba372a; text-align: center; min-width: 170px; outline: none; padding: 2px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>>, commit to deliver and agree to be rated on the attainment of the following targets in accordance with the indicated measure for the period 
-                    <input type="text" id="ratee-period" value="" placeholder="January - June or July - December and Year; e.g., July - December 2024" style="font-weight: bold; color: #ba372a; border: none; border-bottom: 1px solid #ba372a; text-align: center; min-width: 320px; outline: none; padding: 2px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>>.
+                <!-- Preamble with Executive Form Styling -->
+                <div style="margin-bottom: 18px; font-size: 11px; line-height: 1.8; text-align: justify; color: #0f172a;">
+                    I, <input type="text" id="ratee-name" value="" placeholder="FULL NAME HERE" class="spms-meta-input" style="font-weight: bold; text-align: center; min-width: 170px; padding: 2px 6px;" <?= $canEditTargets ? '' : 'disabled' ?>>, 
+                    <input type="text" id="ratee-position" value="" placeholder="Position and Official Designation" class="spms-meta-input" style="text-align: center; min-width: 200px; padding: 2px 6px;" <?= $canEditTargets ? '' : 'disabled' ?>> of the 
+                    <input type="text" id="ratee-dept" value="" placeholder="Office Name" class="spms-meta-input" style="text-align: center; min-width: 170px; padding: 2px 6px;" <?= $canEditTargets ? '' : 'disabled' ?>>, commit to deliver and agree to be rated on the attainment of the following targets in accordance with the indicated measure for the period 
+                    <input type="text" id="ratee-period" value="" placeholder="January - June or July - December and Year; e.g., July - December 2024" class="spms-meta-input" style="font-weight: bold; text-align: center; min-width: 320px; padding: 2px 6px;" <?= $canEditTargets ? '' : 'disabled' ?>>.
                 </div>
 
                 <!-- Approver, Ratee, and Rating Scale Matrix -->
@@ -1619,8 +1453,8 @@
                         <!-- Left: Approved By (Extreme Left-most) -->
                         <td style="vertical-align: top; border: none; padding: 0 20px 0 0; text-align: left;">
                             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                <div style="font-weight: bold; color: #000000;">APPROVED BY:</div>
-                                <button type="button" id="btn-add-approver" onclick="addApproverBlock()" class="print-hide" style="display: <?= $canEditApprover ? 'inline-flex' : 'none' ?>; align-items: center; gap: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: #0284c7; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 4px; cursor: pointer;" title="Add another approving signatory">
+                                <div style="font-weight: bold; color: #0f172a;">APPROVED BY:</div>
+                                <button type="button" id="btn-add-approver" onclick="addApproverBlock()" class="print-hide" style="display: <?= $canEditApprover ? 'inline-flex' : 'none' ?>; align-items: center; gap: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 4px; cursor: pointer;" title="Add another approving signatory">
                                     + Add Signatory
                                 </button>
                             </div>
@@ -1628,22 +1462,22 @@
                                 <div class="approver-item" style="position: relative;">
                                     <table style="width: 100%; border-collapse: collapse; border: none; font-size: 11px;">
                                         <tr>
-                                            <td style="width: 65px; border: none; padding: 3px 0; font-weight: bold; color: #000000;">Name:</td>
+                                            <td style="width: 65px; border: none; padding: 3px 0; font-weight: bold; color: #0f172a;">Name:</td>
                                             <td style="border: none; padding: 3px 0;">
-                                                <input type="text" class="field-approver-name" id="approver-name" value="" placeholder="<?= $isDocOpcr ? '(name of head of office / approving authority)' : ($isDocDpcr ? '(name of office head)' : 'Name of Approving Authority') ?>" style="font-weight: bold; color: #ba372a; border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; width: 60%;" <?= $canEditApprover ? '' : 'disabled' ?>>
-                                                <span style="color: #ba372a; font-style: italic; font-size: 10px; margin-left: 6px;">(may add signatories depending on position)</span>
+                                                <input type="text" class="field-approver-name spms-meta-input" id="approver-name" value="" placeholder="<?= $isDocOpcr ? '(name of head of office / approving authority)' : ($isDocDpcr ? '(name of office head)' : 'Name of Approving Authority') ?>" style="font-weight: bold; width: 60%; padding: 2px 4px;" <?= $canEditApprover ? '' : 'disabled' ?>>
+                                                <span style="color: #64748b; font-style: italic; font-size: 10px; margin-left: 6px;">(may add signatories depending on position)</span>
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td style="border: none; padding: 3px 0; font-weight: bold; color: #000000;">Position:</td>
+                                            <td style="border: none; padding: 3px 0; font-weight: bold; color: #0f172a;">Position:</td>
                                             <td style="border: none; padding: 3px 0;">
-                                                <input type="text" class="field-approver-pos" id="approver-pos" value="" placeholder="<?= $isDocOpcr ? '(position / designation)' : ($isDocDpcr ? '(position of office head)' : 'Official Designation') ?>" style="color: #ba372a; border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; width: 80%;" <?= $canEditApprover ? '' : 'disabled' ?>>
+                                                <input type="text" class="field-approver-pos spms-meta-input" id="approver-pos" value="" placeholder="<?= $isDocOpcr ? '(position / designation)' : ($isDocDpcr ? '(position of office head)' : 'Official Designation') ?>" style="width: 80%; padding: 2px 4px;" <?= $canEditApprover ? '' : 'disabled' ?>>
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td style="border: none; padding: 3px 0; font-weight: bold; color: #000000;">Date:</td>
+                                            <td style="border: none; padding: 3px 0; font-weight: bold; color: #0f172a;">Date:</td>
                                             <td style="border: none; padding: 3px 0;">
-                                                <input type="date" class="field-approver-date" id="approver-date" value="" onclick="this.showPicker && this.showPicker()" style="color: #ba372a; border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; width: 130px; background: transparent; font-family: inherit; cursor: pointer;" <?= $canEditApprover ? '' : 'disabled' ?>>
+                                                <input type="date" class="field-approver-date spms-meta-input" id="approver-date" value="" onclick="this.showPicker && this.showPicker()" style="width: 130px; padding: 2px 4px; cursor: pointer;" <?= $canEditApprover ? '' : 'disabled' ?>>
                                             </td>
                                         </tr>
                                     </table>
@@ -1657,23 +1491,23 @@
                                 <!-- Name of Employee Block -->
                                 <div style="margin-bottom: 14px;">
                                     <div>
-                                        <input type="text" id="ratee-sign-name" value="" placeholder="(full name here)" style="color: #ba372a; font-weight: bold; border: none; border-bottom: 1px solid #ba372a; text-align: left; width: 240px; outline: none; font-size: 11px; padding: 2px 0;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                        <input type="text" id="ratee-sign-name" value="" placeholder="(full name here)" class="spms-meta-input" style="font-weight: bold; width: 240px; padding: 2px 0;" <?= $canEditTargets ? '' : 'disabled' ?>>
                                     </div>
-                                    <div style="font-size: 11px; color: #000000; margin-top: 3px;">Name of Employee</div>
-                                    <div style="margin-top: 4px; font-size: 11px; color: #000000;">
-                                        Date: <input type="date" id="ratee-sign-date" value="" onclick="this.showPicker && this.showPicker()" style="border: none; border-bottom: 1px solid #ba372a; width: 130px; outline: none; font-size: 11px; color: #ba372a; background: transparent; font-family: inherit; cursor: pointer;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                    <div style="font-size: 11px; color: #334155; margin-top: 3px; font-weight: 600;">Name of Employee</div>
+                                    <div style="margin-top: 4px; font-size: 11px; color: #334155;">
+                                        Date: <input type="date" id="ratee-sign-date" value="" onclick="this.showPicker && this.showPicker()" class="spms-meta-input" style="width: 130px; cursor: pointer; padding: 1px 2px;" <?= $canEditTargets ? '' : 'disabled' ?>>
                                     </div>
                                 </div>
 
                                 <!-- Rating Scale -->
-                                <div style="font-size: 10px; color: #000000;">
-                                    <div style="font-weight: bold; margin-bottom: 3px;">Rating Scale:</div>
-                                    <div style="display: flex; flex-direction: column; gap: 2px; line-height: 1.35;">
-                                        <div>5 – Outstanding</div>
-                                        <div>4 – Very Satisfactory</div>
-                                        <div>3 – Satisfactory</div>
-                                        <div>2 – Unsatisfactory</div>
-                                        <div>1 – Poor</div>
+                                <div style="font-size: 10px; color: #334155;">
+                                    <div style="font-weight: bold; margin-bottom: 3px; color: #0f172a;">Rating Scale:</div>
+                                    <div style="display: flex; flex-direction: column; gap: 2px; line-height: 1.35; color: #475569;">
+                                        <div><strong style="color: #0f172a;">5</strong> – Outstanding</div>
+                                        <div><strong style="color: #0f172a;">4</strong> – Very Satisfactory</div>
+                                        <div><strong style="color: #0f172a;">3</strong> – Satisfactory</div>
+                                        <div><strong style="color: #0f172a;">2</strong> – Unsatisfactory</div>
+                                        <div><strong style="color: #0f172a;">1</strong> – Poor</div>
                                     </div>
                                 </div>
                             </div>
@@ -1705,9 +1539,9 @@
                             <col style="width: 3%;">  <!-- ACT -->
                         </colgroup>
 
-                        <!-- Two-Row Header with Light Blue #cfe2f3 Background -->
+                        <!-- Two-Row Header with Executive Neutral Slate Background -->
                         <thead>
-                            <tr style="background-color: #cfe2f3; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
+                            <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">PROGRAMS, PROJECTS, ACTIVITIES</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">SUCCESS INDICATORS<br><span style="font-weight: normal; font-size: 9px;">(TARGETS + MEASURES)</span></th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">
@@ -1722,7 +1556,7 @@
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 4px;" class="print-hide">ACT</th>
                             </tr>
-                            <tr style="background-color: #cfe2f3; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                            <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
                                 <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
                                 <th style="border: 1px solid #000; padding: 4px 2px;">T</th>
                                 <th style="border: 1px solid #000; padding: 4px 2px;">E</th>
@@ -1745,9 +1579,9 @@
                             <col style="width: 3%;">  <!-- ACT -->
                         </colgroup>
 
-                        <!-- Two-Row Header with Soft Yellow/Amber #fff2cc Background -->
+                        <!-- Two-Row Header with Executive Neutral Slate Background -->
                         <thead>
-                            <tr style="background-color: #fff2cc; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
+                            <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">PROJECT/<br>PROGRAM/<br>ACTIVITIES</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">SUCCESS INDICATORS (TARGETS +<br>MEASURES) PERFORMANCE</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">
@@ -1762,7 +1596,7 @@
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 4px;" class="print-hide">ACT</th>
                             </tr>
-                            <tr style="background-color: #fff2cc; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                            <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
                                 <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
                                 <th style="border: 1px solid #000; padding: 4px 2px;">T</th>
                                 <th style="border: 1px solid #000; padding: 4px 2px;">E</th>
@@ -1785,21 +1619,21 @@
 
                         <!-- Two-Row Header with Soft Neutral #f1f5f9 Background -->
                         <thead>
-                            <tr style="background-color: #f1f5f9; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
+                            <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">
                                     OFFICE PPA<br><span style="font-size: 9px; font-weight: normal;">(PROGRAMS, PROJECTS, ACTIVITIES)</span><br>
-                                    <span style="color: #ba372a; font-size: 8.5px; font-style: italic; font-weight: normal;">(aligned with the deliverables of the office)</span>
+                                    <span style="color: #64748b; font-size: 8.5px; font-style: italic; font-weight: normal;">(aligned with the deliverables of the office)</span>
                                 </th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">
                                     EXPECTED OUTPUTS<br>
-                                    <span style="color: #ba372a; font-size: 8.5px; font-style: italic; font-weight: normal;">(based on contract or duties and responsibilities in the request to hire personnel)</span>
+                                    <span style="color: #64748b; font-size: 8.5px; font-style: italic; font-weight: normal;">(based on contract or duties and responsibilities in the request to hire personnel)</span>
                                 </th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENTS</th>
                                 <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 4px;" class="print-hide">ACT</th>
                             </tr>
-                            <tr style="background-color: #f1f5f9; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                            <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
                                 <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
                                 <th style="border: 1px solid #000; padding: 4px 2px;">T</th>
                                 <th style="border: 1px solid #000; padding: 4px 2px;">E</th>
@@ -1820,9 +1654,9 @@
                             <col style="width: 3%;">
                         </colgroup>
 
-                        <!-- Two-Row Header: Q, T, E, Ave side-by-side with Light Blue #cfe2f3 Background -->
+                        <!-- Two-Row Header: Q, T, E, Ave side-by-side with Executive Neutral Slate Background -->
                         <thead>
-                            <tr style="background-color: #cfe2f3; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
+                            <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">MAJOR FINAL OUTPUT</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">SUCCESS INDICATORS<br><span style="font-size: 9px; font-weight: normal; text-transform: none;">(TARGETS + MEASURES)</span></th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENTS</th>
@@ -1830,7 +1664,7 @@
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 4px;" class="print-hide">ACT</th>
                             </tr>
-                            <tr style="background-color: #cfe2f3; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                            <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
                                 <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
                                 <th style="border: 1px solid #000; padding: 4px 2px;">T</th>
                                 <th style="border: 1px solid #000; padding: 4px 2px;">E</th>
@@ -1846,7 +1680,7 @@
                         <!-- Add Row Footer for IPERF -->
                         <tbody class="print-hide" id="tfoot-add-core" style="<?= $canEditTargets ? '' : 'display: none;' ?>">
                             <tr>
-                                <td colspan="9" style="padding: 6px; background: #fafafa; text-align: center; border: 1px solid #000;">
+                                <td colspan="9" style="padding: 6px; background: #ffffff; text-align: center; border: 1px solid #000;">
                                     <button type="button" onclick="addTableRow('core')" class="btn-add-dashed">
                                         + Add Deliverable / Office PPA Row
                                     </button>
@@ -1860,7 +1694,7 @@
                                 <td colspan="6" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #000000; border: 1px solid #000; text-align: left;">
                                     OVERALL AVERAGE RATING
                                 </td>
-                                <td style="padding: 8px 4px; text-align: center; font-weight: 900; color: #0284c7; font-size: 12px; border: 1px solid #000;" id="iperf-overall-average">
+                                <td style="padding: 8px 4px; text-align: center; font-weight: 900; color: #047857; font-size: 12px; border: 1px solid #000;" id="iperf-overall-average">
                                     0.000
                                 </td>
                                 <td style="padding: 6px 8px; text-align: center; border: 1px solid #000;">
@@ -1879,32 +1713,32 @@
                         <?php else: ?>
                         <!-- 1. CORE FUNCTIONS -->
                         <tbody id="tbody-core">
-                            <tr style="background-color: #fce5cd; border-top: 2px solid #000; border-bottom: 1px solid #000; font-weight: bold;">
+                            <tr style="background-color: #f1f5f9; border-top: 2px solid #000; border-bottom: 1px solid #000; font-weight: bold;">
                                 <?php if ($isDocDpcr): ?>
                                 <td colspan="5" id="label-cat-core" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                                    CORE FUNCTIONS (60%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
+                                    CORE FUNCTIONS (60%) <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
                                 </td>
                                 <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
-                                    <span style="display: inline-block; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
-                                        Core Subtotal: <span id="badge-core-subtotal">0.000</span>
+                                    <span style="display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
+                                        Core Subtotal: <span id="badge-core-subtotal" style="color: #047857;">0.000</span>
                                     </span>
                                 </td>
                                 <?php elseif ($isDocOpcr): ?>
                                 <td colspan="5" id="label-cat-core" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                                    CORE MANDATE (60%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
+                                    CORE MANDATE (60%) <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
                                 </td>
                                 <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
-                                    <span style="display: inline-block; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
-                                        Core Subtotal: <span id="badge-core-subtotal">0.000</span>
+                                    <span style="display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
+                                        Core Subtotal: <span id="badge-core-subtotal" style="color: #047857;">0.000</span>
                                     </span>
                                 </td>
                                 <?php else: ?>
                                 <td colspan="5" id="label-cat-core" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                                    CORE FUNCTIONS (70%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
+                                    CORE FUNCTIONS (70%) <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
                                 </td>
                                 <td colspan="4" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
-                                    <span style="display: inline-block; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
-                                        Core Subtotal: <span id="badge-core-subtotal">0.000</span>
+                                    <span style="display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
+                                        Core Subtotal: <span id="badge-core-subtotal" style="color: #047857;">0.000</span>
                                     </span>
                                 </td>
                                 <?php endif; ?>
@@ -1913,7 +1747,7 @@
                         <!-- Add Row Footer for Core -->
                         <tbody class="print-hide" id="tfoot-add-core" style="<?= $canEditTargets ? '' : 'display: none;' ?>">
                             <tr>
-                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? 11 : 9 ?>" style="padding: 6px; background: #fafafa; text-align: center; border: 1px solid #000;">
+                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? 11 : 9 ?>" style="padding: 6px; background: #ffffff; text-align: center; border: 1px solid #000;">
                                     <button type="button" onclick="addTableRow('core')" class="btn-add-dashed">
                                         + Add Deliverable Row to Core Functions
                                     </button>
@@ -1923,32 +1757,32 @@
 
                         <!-- 2. STRATEGIC FUNCTIONS -->
                         <tbody id="tbody-strategic">
-                            <tr style="background-color: #fce5cd; border-top: 2px solid #000; border-bottom: 1px solid #000; font-weight: bold;">
+                            <tr style="background-color: #f1f5f9; border-top: 2px solid #000; border-bottom: 1px solid #000; font-weight: bold;">
                                 <?php if ($isDocDpcr): ?>
                                 <td colspan="5" id="label-cat-strategic" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                                    STRATEGIC FUNCTIONS (30%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
+                                    STRATEGIC FUNCTIONS (30%) <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
                                 </td>
                                 <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
-                                    <span style="display: inline-block; background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
-                                        Strategic Subtotal: <span id="badge-strategic-subtotal">0.000</span>
+                                    <span style="display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
+                                        Strategic Subtotal: <span id="badge-strategic-subtotal" style="color: #047857;">0.000</span>
                                     </span>
                                 </td>
                                 <?php elseif ($isDocOpcr): ?>
                                 <td colspan="5" id="label-cat-strategic" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                                    STRATEGIC FUNCTIONS (25%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
+                                    STRATEGIC FUNCTIONS (25%) <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
                                 </td>
                                 <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
-                                    <span style="display: inline-block; background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
-                                        Strategic Subtotal: <span id="badge-strategic-subtotal">0.000</span>
+                                    <span style="display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
+                                        Strategic Subtotal: <span id="badge-strategic-subtotal" style="color: #047857;">0.000</span>
                                     </span>
                                 </td>
                                 <?php else: ?>
                                 <td colspan="5" id="label-cat-strategic" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                                    STRATEGIC FUNCTIONS (20%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
+                                    STRATEGIC FUNCTIONS (20%) <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
                                 </td>
                                 <td colspan="4" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
-                                    <span style="display: inline-block; background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
-                                        Strategic Subtotal: <span id="badge-strategic-subtotal">0.000</span>
+                                    <span style="display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
+                                        Strategic Subtotal: <span id="badge-strategic-subtotal" style="color: #047857;">0.000</span>
                                     </span>
                                 </td>
                                 <?php endif; ?>
@@ -1957,7 +1791,7 @@
                         <!-- Add Row Footer for Strategic -->
                         <tbody class="print-hide" id="tfoot-add-strategic" style="<?= $canEditTargets ? '' : 'display: none;' ?>">
                             <tr>
-                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? 11 : 9 ?>" style="padding: 6px; background: #fafafa; text-align: center; border: 1px solid #000;">
+                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? 11 : 9 ?>" style="padding: 6px; background: #ffffff; text-align: center; border: 1px solid #000;">
                                     <button type="button" onclick="addTableRow('strategic')" class="btn-add-dashed">
                                         + Add Deliverable Row to Strategic Functions
                                     </button>
@@ -1967,32 +1801,32 @@
 
                         <!-- 3. SUPPORT FUNCTIONS -->
                         <tbody id="tbody-support">
-                            <tr style="background-color: #fce5cd; border-top: 2px solid #000; border-bottom: 1px solid #000; font-weight: bold;">
+                            <tr style="background-color: #f1f5f9; border-top: 2px solid #000; border-bottom: 1px solid #000; font-weight: bold;">
                                 <?php if ($isDocDpcr): ?>
                                 <td colspan="5" id="label-cat-support" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                                    SUPPORT FUNCTIONS (10%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
+                                    SUPPORT FUNCTIONS (10%) <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
                                 </td>
                                 <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
-                                    <span style="display: inline-block; background: #fffbeb; color: #92400e; border: 1px solid #fde68a; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
-                                        Support Subtotal: <span id="badge-support-subtotal">0.000</span>
+                                    <span style="display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
+                                        Support Subtotal: <span id="badge-support-subtotal" style="color: #047857;">0.000</span>
                                     </span>
                                 </td>
                                 <?php elseif ($isDocOpcr): ?>
                                 <td colspan="5" id="label-cat-support" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                                    SUPPORT FUNCTIONS (15%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
+                                    SUPPORT FUNCTIONS (15%) <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
                                 </td>
                                 <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
-                                    <span style="display: inline-block; background: #fffbeb; color: #92400e; border: 1px solid #fde68a; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
-                                        Support Subtotal: <span id="badge-support-subtotal">0.000</span>
+                                    <span style="display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
+                                        Support Subtotal: <span id="badge-support-subtotal" style="color: #047857;">0.000</span>
                                     </span>
                                 </td>
                                 <?php else: ?>
                                 <td colspan="5" id="label-cat-support" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                                    SUPPORT FUNCTIONS (10%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
+                                    SUPPORT FUNCTIONS (10%) <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
                                 </td>
                                 <td colspan="4" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
-                                    <span style="display: inline-block; background: #fffbeb; color: #92400e; border: 1px solid #fde68a; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
-                                        Support Subtotal: <span id="badge-support-subtotal">0.000</span>
+                                    <span style="display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
+                                        Support Subtotal: <span id="badge-support-subtotal" style="color: #047857;">0.000</span>
                                     </span>
                                 </td>
                                 <?php endif; ?>
@@ -2001,7 +1835,7 @@
                         <!-- Add Row Footer for Support -->
                         <tbody class="print-hide" id="tfoot-add-support" style="<?= $canEditTargets ? '' : 'display: none;' ?>">
                             <tr>
-                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? 11 : 9 ?>" style="padding: 6px; background: #fafafa; text-align: center; border: 1px solid #000;">
+                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? 11 : 9 ?>" style="padding: 6px; background: #ffffff; text-align: center; border: 1px solid #000;">
                                     <button type="button" onclick="addTableRow('support')" class="btn-add-dashed">
                                         + Add Deliverable Row to Support Functions
                                     </button>
@@ -2129,54 +1963,54 @@
                     <tr>
                         <!-- Phase 1: Start of Period (Columns A-B) -->
                         <td style="width: 36%; vertical-align: top; border-right: 1px solid #000; padding: 10px 12px;">
-                            <div style="color: #ba372a; font-style: italic; font-size: 10.5px; font-weight: bold; margin-bottom: 10px;">
+                            <div style="color: #64748b; font-style: italic; font-size: 10.5px; font-weight: bold; margin-bottom: 10px;">
                                 signed at the start of the rating period
                             </div>
 
                             <!-- Targets Prepared By -->
                             <div style="margin-bottom: 16px;">
-                                <div style="font-weight: bold; margin-bottom: 4px;">Targets prepared by:</div>
-                                <input type="text" id="sig-targets-prepared-name" value="" placeholder="(Signature over Printed Name)" style="width: 90%; border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; font-weight: bold; color: #ba372a;" <?= $canEditTargets ? '' : 'disabled' ?>>
-                                <div style="font-size: 10px; color: #334155; margin-top: 2px;">Employee (Ratee)</div>
-                                <div style="margin-top: 4px; font-size: 10.5px;">
-                                    Date: <input type="date" id="sig-targets-prepared-date" onclick="this.showPicker && this.showPicker()" style="border: none; border-bottom: 1px solid #ba372a; width: 130px; outline: none; font-size: 11px; color: #ba372a; background: transparent; font-family: inherit; cursor: pointer;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                <div style="font-weight: bold; color: #0f172a; margin-bottom: 4px;">Targets prepared by:</div>
+                                <input type="text" id="sig-targets-prepared-name" value="" placeholder="(Signature over Printed Name)" class="spms-meta-input" style="width: 90%; font-weight: bold; padding: 2px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Employee (Ratee)</div>
+                                <div style="margin-top: 4px; font-size: 10.5px; color: #334155;">
+                                    Date: <input type="date" id="sig-targets-prepared-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>>
                                 </div>
                             </div>
 
                             <!-- Approved By -->
                             <div>
-                                <div style="font-weight: bold; margin-bottom: 4px;">Approved by:</div>
-                                <input type="text" id="sig-targets-approved-name" value="" placeholder="(Signature over Printed Name)" style="width: 90%; border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; font-weight: bold; color: #ba372a;" <?= $canEditTargets ? '' : 'disabled' ?>>
-                                <div style="font-size: 10px; color: #334155; margin-top: 2px;">Immediate Supervisor (Rater)</div>
-                                <div style="margin-top: 4px; font-size: 10.5px;">
-                                    Date: <input type="date" id="sig-targets-approved-date" onclick="this.showPicker && this.showPicker()" style="border: none; border-bottom: 1px solid #ba372a; width: 130px; outline: none; font-size: 11px; color: #ba372a; background: transparent; font-family: inherit; cursor: pointer;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                <div style="font-weight: bold; color: #0f172a; margin-bottom: 4px;">Approved by:</div>
+                                <input type="text" id="sig-targets-approved-name" value="" placeholder="(Signature over Printed Name)" class="spms-meta-input" style="width: 90%; font-weight: bold; padding: 2px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Immediate Supervisor (Rater)</div>
+                                <div style="margin-top: 4px; font-size: 10.5px; color: #334155;">
+                                    Date: <input type="date" id="sig-targets-approved-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>>
                                 </div>
                             </div>
                         </td>
 
                         <!-- Phase 2: End of Period (Columns C-D) -->
                         <td style="width: 36%; vertical-align: top; border-right: 1px solid #000; padding: 10px 12px;">
-                            <div style="color: #ba372a; font-style: italic; font-size: 10.5px; font-weight: bold; margin-bottom: 10px;">
+                            <div style="color: #64748b; font-style: italic; font-size: 10.5px; font-weight: bold; margin-bottom: 10px;">
                                 signed at the end of the rating period
                             </div>
 
                             <!-- Rated By -->
                             <div style="margin-bottom: 16px;">
-                                <div style="font-weight: bold; margin-bottom: 4px;">Rated by:</div>
-                                <input type="text" id="sig-eval-rated-name" value="" placeholder="(Signature over Printed Name)" style="width: 90%; border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; font-weight: bold; color: #ba372a;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
-                                <div style="font-size: 10px; color: #334155; margin-top: 2px;">Immediate Supervisor (Rater)</div>
-                                <div style="margin-top: 4px; font-size: 10.5px;">
-                                    Date: <input type="date" id="sig-eval-rated-date" onclick="this.showPicker && this.showPicker()" style="border: none; border-bottom: 1px solid #ba372a; width: 130px; outline: none; font-size: 11px; color: #ba372a; background: transparent; font-family: inherit; cursor: pointer;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
+                                <div style="font-weight: bold; color: #0f172a; margin-bottom: 4px;">Rated by:</div>
+                                <input type="text" id="sig-eval-rated-name" value="" placeholder="(Signature over Printed Name)" class="spms-meta-input" style="width: 90%; font-weight: bold; padding: 2px 4px;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
+                                <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Immediate Supervisor (Rater)</div>
+                                <div style="margin-top: 4px; font-size: 10.5px; color: #334155;">
+                                    Date: <input type="date" id="sig-eval-rated-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
                                 </div>
                             </div>
 
                             <!-- Conforme -->
                             <div>
-                                <div style="font-weight: bold; margin-bottom: 4px;">Conforme:</div>
-                                <input type="text" id="sig-eval-conforme-name" value="" placeholder="(Signature over Printed Name)" style="width: 90%; border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; font-weight: bold; color: #ba372a;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
-                                <div style="font-size: 10px; color: #334155; margin-top: 2px;">Employee (Ratee)</div>
-                                <div style="margin-top: 4px; font-size: 10.5px;">
-                                    Date: <input type="date" id="sig-eval-conforme-date" onclick="this.showPicker && this.showPicker()" style="border: none; border-bottom: 1px solid #ba372a; width: 130px; outline: none; font-size: 11px; color: #ba372a; background: transparent; font-family: inherit; cursor: pointer;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
+                                <div style="font-weight: bold; color: #0f172a; margin-bottom: 4px;">Conforme:</div>
+                                <input type="text" id="sig-eval-conforme-name" value="" placeholder="(Signature over Printed Name)" class="spms-meta-input" style="width: 90%; font-weight: bold; padding: 2px 4px;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
+                                <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Employee (Ratee)</div>
+                                <div style="margin-top: 4px; font-size: 10.5px; color: #334155;">
+                                    Date: <input type="date" id="sig-eval-conforme-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
                                 </div>
                             </div>
                         </td>
@@ -2185,23 +2019,23 @@
                         <td style="width: 28%; vertical-align: top; padding: 10px 12px; background: #fdfdfd;">
                             <!-- Measures -->
                             <div style="margin-bottom: 12px;">
-                                <div style="font-weight: bold; margin-bottom: 4px; border-bottom: 1px solid #000; padding-bottom: 2px;">Measures:</div>
+                                <div style="font-weight: bold; margin-bottom: 4px; border-bottom: 1px solid #000; padding-bottom: 2px; color: #0f172a;">Measures:</div>
                                 <table style="width: 100%; font-size: 10.5px; border-collapse: collapse;">
-                                    <tr><td style="width: 20px; font-weight: bold; padding: 1px 0;">Q</td><td style="padding: 1px 0;">Quality</td></tr>
-                                    <tr><td style="font-weight: bold; padding: 1px 0;">T</td><td style="padding: 1px 0;">Timeliness</td></tr>
-                                    <tr><td style="font-weight: bold; padding: 1px 0;">E</td><td style="padding: 1px 0;">Efficiency</td></tr>
+                                    <tr><td style="width: 20px; font-weight: bold; padding: 1px 0; color: #0f172a;">Q</td><td style="padding: 1px 0; color: #334155;">Quality</td></tr>
+                                    <tr><td style="font-weight: bold; padding: 1px 0; color: #0f172a;">T</td><td style="padding: 1px 0; color: #334155;">Timeliness</td></tr>
+                                    <tr><td style="font-weight: bold; padding: 1px 0; color: #0f172a;">E</td><td style="padding: 1px 0; color: #334155;">Efficiency</td></tr>
                                 </table>
                             </div>
 
                             <!-- Rating Guide -->
                             <div>
-                                <div style="font-weight: bold; margin-bottom: 4px; border-bottom: 1px solid #000; padding-bottom: 2px;">Rating Guide:</div>
+                                <div style="font-weight: bold; margin-bottom: 4px; border-bottom: 1px solid #000; padding-bottom: 2px; color: #0f172a;">Rating Guide:</div>
                                 <table style="width: 100%; font-size: 10.5px; border-collapse: collapse;">
-                                    <tr><td style="width: 20px; font-weight: bold; padding: 1px 0;">5</td><td style="padding: 1px 0;">Outstanding</td></tr>
-                                    <tr><td style="font-weight: bold; padding: 1px 0;">4</td><td style="padding: 1px 0;">Very Satisfactory</td></tr>
-                                    <tr><td style="font-weight: bold; padding: 1px 0;">3</td><td style="padding: 1px 0;">Satisfactory</td></tr>
-                                    <tr><td style="font-weight: bold; padding: 1px 0;">2</td><td style="padding: 1px 0;">Unsatisfactory</td></tr>
-                                    <tr><td style="font-weight: bold; padding: 1px 0;">1</td><td style="padding: 1px 0;">Poor</td></tr>
+                                    <tr><td style="width: 20px; font-weight: bold; padding: 1px 0; color: #0f172a;">5</td><td style="padding: 1px 0; color: #334155;">Outstanding</td></tr>
+                                    <tr><td style="font-weight: bold; padding: 1px 0; color: #0f172a;">4</td><td style="padding: 1px 0; color: #334155;">Very Satisfactory</td></tr>
+                                    <tr><td style="font-weight: bold; padding: 1px 0; color: #0f172a;">3</td><td style="padding: 1px 0; color: #334155;">Satisfactory</td></tr>
+                                    <tr><td style="font-weight: bold; padding: 1px 0; color: #0f172a;">2</td><td style="padding: 1px 0; color: #334155;">Unsatisfactory</td></tr>
+                                    <tr><td style="font-weight: bold; padding: 1px 0; color: #0f172a;">1</td><td style="padding: 1px 0; color: #334155;">Poor</td></tr>
                                 </table>
                             </div>
                         </td>
@@ -2222,29 +2056,29 @@
                     <tr>
                         <!-- Left: Ratee (Columns A-C) -->
                         <td style="width: 50%; vertical-align: top; border: none; padding: 0 15px 0 0;">
-                            <div style="margin-bottom: 6px;">Name and Signature of Ratee: 
-                                <input type="text" id="sig-ratee-name" value="" placeholder="(name here)" style="color: #ba372a; font-weight: bold; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: 55%;">
+                            <div style="margin-bottom: 6px; color: #0f172a;">Name and Signature of Ratee: 
+                                <input type="text" id="sig-ratee-name" value="" placeholder="(name here)" class="spms-meta-input" style="font-weight: bold; width: 55%; padding: 2px 4px;">
                             </div>
-                            <div style="margin-bottom: 6px;">Position: 
-                                <input type="text" id="sig-ratee-pos" value="" placeholder="(position here)" style="color: #ba372a; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: 70%;">
+                            <div style="margin-bottom: 6px; color: #0f172a;">Position: 
+                                <input type="text" id="sig-ratee-pos" value="" placeholder="(position here)" class="spms-meta-input" style="width: 70%; padding: 2px 4px;">
                             </div>
-                            <div style="margin-bottom: 6px;">
-                                Date: <input type="date" id="sig-ratee-date" onclick="this.showPicker && this.showPicker()" style="border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; width: 130px; color: #ba372a; background: transparent; font-family: inherit; cursor: pointer;">
+                            <div style="margin-bottom: 6px; color: #0f172a;">
+                                Date: <input type="date" id="sig-ratee-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input" style="width: 130px; cursor: pointer; padding: 1px 4px;">
                             </div>
                         </td>
 
                         <!-- Right: Office Head (Columns D-H) -->
                         <td style="width: 50%; vertical-align: top; border: none; padding: 0 0 0 15px;">
-                            <div style="margin-bottom: 6px;">Final Rating by: 
-                                <input type="text" id="sig-dean-name" value="" placeholder="(name of office head)" style="color: #ba372a; font-weight: bold; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: 55%;">
+                            <div style="margin-bottom: 6px; color: #0f172a;">Final Rating by: 
+                                <input type="text" id="sig-dean-name" value="" placeholder="(name of office head)" class="spms-meta-input" style="font-weight: bold; width: 55%; padding: 2px 4px;">
                             </div>
-                            <div style="margin-bottom: 6px;">Position: 
-                                <input type="text" id="sig-dean-pos" value="" placeholder="(position of office head)" style="color: #ba372a; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: 70%;">
+                            <div style="margin-bottom: 6px; color: #0f172a;">Position: 
+                                <input type="text" id="sig-dean-pos" value="" placeholder="(position of office head)" class="spms-meta-input" style="width: 70%; padding: 2px 4px;">
                             </div>
-                            <div style="margin-bottom: 6px;">
-                                Date: <input type="date" id="sig-dean-date" onclick="this.showPicker && this.showPicker()" style="border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; width: 130px; color: #ba372a; background: transparent; font-family: inherit; cursor: pointer;">
+                            <div style="margin-bottom: 6px; color: #0f172a;">
+                                Date: <input type="date" id="sig-dean-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input" style="width: 130px; cursor: pointer; padding: 1px 4px;">
                             </div>
-                            <div style="color: #ba372a; font-size: 10px; font-style: italic;">(may add signatories depending on position/designation)</div>
+                            <div style="color: #64748b; font-size: 10px; font-style: italic;">(may add signatories depending on position/designation)</div>
                         </td>
                     </tr>
                 </table>
@@ -2260,47 +2094,6 @@
         <div id="spms-rubrics-workspace" class="hidden w-full h-full overflow-y-auto p-2 sm:p-6 lg:p-8 flex flex-col items-center custom-scrollbar print:p-0 print:bg-white print:overflow-visible">
             <div class="w-full max-w-[1280px] flex flex-col gap-6 print:w-full print:block">
                 
-                <!-- BSU Institutional Rubrics Banner -->
-                <div class="rounded-2xl p-5 sm:p-6 bg-gradient-to-r from-amber-500/15 via-emerald-500/10 to-transparent border border-amber-500/30 dark:border-amber-400/20 shadow-sm">
-                    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                        <div class="space-y-1.5">
-                            <div class="flex items-center gap-2">
-                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30">
-                                    BSU Rubrics Policy
-                                </span>
-                                <span class="text-xs font-extrabold text-emerald-800 dark:text-emerald-300">
-                                    Required Standards &amp; Attachment
-                                </span>
-                            </div>
-                            <p class="text-xs sm:text-sm font-bold text-rose-600 dark:text-rose-400 leading-relaxed">
-                                Note: Always attach your rubrics to your DPCR/IPCR/IPERF when submitting. Also, the targets in your rubrics should match the targets in your form.
-                            </p>
-                            <p class="text-[11px] text-text-muted">
-                                Define what qualifies as a rating of 5, 4, 3, 2, or 1 for Quality (Q), Timeliness (T), and Efficiency (E) for each deliverable below.
-                            </p>
-                        </div>
-
-                        <!-- Action Buttons: Download Template & View Sample Guide -->
-                        <div class="flex flex-wrap items-center gap-2 shrink-0">
-                            <a href="<?= site_url('document/' . $doc['id'] . '/export-rubric') ?>" target="_blank"
-                               class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
-                               title="Download official Excel rubric sheet with your current deliverables pre-filled in Column A">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                </svg>
-                                <span>Download Template (.xlsx)</span>
-                            </a>
-                            <button type="button" onclick="toggleRubricDrawer(true)"
-                                    class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-800 dark:text-amber-300 border border-amber-500/30 transition-all cursor-pointer">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                </svg>
-                                <span>Sample Guide</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- External File Attachment Section -->
                 <div class="p-4 sm:p-5 rounded-2xl bg-surface border border-surface-border shadow-sm space-y-4">
                     <div class="flex items-center justify-between border-b border-surface-border pb-3">
@@ -2309,7 +2102,17 @@
                             <h3 class="text-xs font-black uppercase tracking-wider text-text">Rubric Document Attachment</h3>
                             <span class="text-[10px] text-text-muted font-medium">(Optional external file: XLSX, PDF, DOCX)</span>
                         </div>
-                        <div id="rubric-file-status-badge"></div>
+                        <div class="flex items-center gap-2">
+                            <a href="<?= site_url('document/' . $doc['id'] . '/export-rubric') ?>" target="_blank"
+                               class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all"
+                               title="Download official Excel rubric sheet with your current deliverables pre-filled in Column A">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                <span>Download Template (.xlsx)</span>
+                            </a>
+                            <div id="rubric-file-status-badge"></div>
+                        </div>
                     </div>
 
                     <!-- Current Attached File Card -->
@@ -2366,6 +2169,16 @@
                         </div>
                     </div>
                     <?php endif; ?>
+
+                    <!-- Helpful Guidance Note -->
+                    <div class="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 text-xs leading-relaxed">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p class="text-text-muted">
+                            <strong class="text-emerald-700 dark:text-emerald-300 font-bold">Note:</strong> If you already have your rubrics finished in an external PDF, Word, or Excel file, you can simply attach it here and leave the matrix boxes below blank — having the file attached satisfies the rubric requirement for submission!
+                        </p>
+                    </div>
                 </div>
 
                 <!-- Interactive Digital Rubrics Matrix Section -->
@@ -2504,6 +2317,9 @@
             <textarea id="editable-doc" name="content"></textarea>
         </div>
     </div>
+    <?= view('document/_rubric_drawer') ?>
+    <?= view('document/_cascade_modal') ?>
+</div>
 </div>
 
 <script>
@@ -2528,6 +2344,11 @@
 
     let activeTabId = tabs[0].id;
     
+    const basisFormData = <?= json_encode($basisFormData ?? null) ?>;
+    const basisDocContent = <?= json_encode($basisDocContent ?? '') ?>;
+    const superiorUserInfo = <?= json_encode($superiorUser ?? null) ?>;
+    const ownerAccountInfo = <?= json_encode($ownerInfo ?? []) ?>;
+
     const canEditTargets = <?= json_encode($canEditTargets) ?>;
     const canEditApprover = <?= json_encode($canEditApprover) ?>;
     const canEditEvaluation = <?= json_encode($canEditEvaluation) ?>;
@@ -2563,7 +2384,7 @@
             const isActive = tab.id === activeTabId;
             
             const btn = document.createElement('div');
-            btn.className = `group flex items-center gap-1 pb-2 border-b-2 transition-colors select-none ${isActive ? 'border-accent text-accent' : 'border-transparent text-text-muted hover:text-text cursor-pointer'}`;
+            btn.className = `group flex items-center gap-1 pb-2 border-b-2 transition-colors select-none ${isActive ? 'border-emerald-600 text-emerald-800 dark:border-amber-400 dark:text-amber-300 font-extrabold' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-text-muted dark:hover:text-text cursor-pointer'}`;
             btn.onclick = () => switchEditorTab(tab.id);
             
             const span = document.createElement('span');
@@ -2613,7 +2434,7 @@
         // Digital Rubrics Matrix Tab
         const isRubricsActive = (activeTabId === 'rubrics-tab');
         const rubricsBtn = document.createElement('div');
-        rubricsBtn.className = `group flex items-center gap-1.5 pb-2 border-b-2 transition-colors select-none cursor-pointer ${isRubricsActive ? 'border-amber-500 text-amber-500 dark:text-amber-400 font-bold' : 'border-transparent text-text-muted hover:text-text'}`;
+        rubricsBtn.className = `group flex items-center gap-1.5 pb-2 border-b-2 transition-colors select-none cursor-pointer ${isRubricsActive ? 'border-amber-500 text-amber-700 dark:text-amber-400 font-extrabold' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-text-muted dark:hover:text-text'}`;
         rubricsBtn.onclick = () => switchEditorTab('rubrics-tab');
         rubricsBtn.title = 'View and Edit Rubrics Matrix';
         rubricsBtn.innerHTML = `
@@ -2634,7 +2455,7 @@
         ?>
         const isBasisActive = (activeTabId === 'basis-tab');
         const basisBtn = document.createElement('div');
-        basisBtn.className = `group flex items-center gap-1.5 pb-2 border-b-2 transition-colors select-none cursor-pointer ${isBasisActive ? 'border-sky-500 text-sky-500 dark:text-sky-400 font-bold' : 'border-transparent text-text-muted hover:text-text'}`;
+        basisBtn.className = `group flex items-center gap-1.5 pb-2 border-b-2 transition-colors select-none cursor-pointer ${isBasisActive ? 'border-sky-600 text-sky-800 dark:border-sky-400 dark:text-sky-300 font-extrabold' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-text-muted dark:hover:text-text'}`;
         basisBtn.onclick = () => switchEditorTab('basis-tab');
         basisBtn.title = 'View Superior Basis Document';
         basisBtn.innerHTML = `
@@ -2950,13 +2771,6 @@
         } else {
             const editorBody = tinymce.get('editable-doc')?.getBody();
             finalScore = editorBody?.getAttribute('data-final-score') || '';
-        let finalScore = '';
-        if (window.isSpmsFormActive) {
-            finalScore = document.getElementById('grand-score')?.innerText?.trim() || '';
-            if (finalScore === '0.000' || finalScore === '—') finalScore = '';
-        } else {
-            const editorBody = tinymce.get('editable-doc')?.getBody();
-            finalScore = editorBody?.getAttribute('data-final-score') || '';
         }
 
         const formData = new FormData();
@@ -3054,8 +2868,12 @@
     }
 
     async function returnFolderRevision() {
-        const reason = prompt("Return this evaluation to the employee for revision? Please enter your remarks or revision feedback:");
-        if (reason === null) return;
+        const ok = await window.appConfirm("Return this evaluation to the employee for revision?\n\nAll notes and feedback entered in the Remarks column will be saved and returned to the employee.", {
+            title: 'Return Evaluation for Revision',
+            confirmText: 'Return for Revision',
+            isDanger: true
+        });
+        if (!ok) return;
         
         // Save evaluator row notes and PMT remarks before returning
         if (typeof saveDocument === 'function') {
@@ -3064,7 +2882,7 @@
 
         const formData = new FormData();
         formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
-        formData.append('reason', (reason || '').trim());
+        formData.append('reason', '');
 
         const btn = document.getElementById('btn-return');
         if (btn) btn.innerText = 'Returning...';
@@ -3171,11 +2989,11 @@
         });
     }
 
-    async function unsubmitEvaluationDocument() {
-        const ok = await window.appConfirm("Are you sure you want to revoke your self-rating submission? This will return your evaluation to drafting status so you can edit your ratings and accomplishments.", { 
-            title: 'Revoke Self-Rating',
+    async function unsubmitTargetDocument() {
+        const ok = await window.appConfirm("Are you sure you want to revoke your target submission? This will return your folder to Draft status so you can make edits and fixes to your commitments.", { 
+            title: 'Revoke Submission',
             variant: 'undo', 
-            confirmText: 'Revoke Self-Rating',
+            confirmText: 'Revoke Submission',
             cancelText: 'Keep Submitted'
         });
         if (!ok) return;
@@ -3193,13 +3011,20 @@
             onSuccess: () => window.location.reload(),
             onError: async (errMsg) => {
                 if (btn) {
-                    btn.innerText = 'Revoke Submission';
+                    btn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                        </svg>
+                        <span>Revoke Submission</span>
+                    `;
                     btn.classList.remove('opacity-50', 'cursor-not-allowed');
                 }
                 await window.appAlert(errMsg || "An error occurred.");
             }
         });
     }
+
+
 
     async function approveFolderTarget(releaseScope = null) {
         let msg = "Approve these targets?";
@@ -3266,8 +3091,12 @@
     }
 
     async function returnTargetRevision() {
-        const reason = prompt("Return targets to the employee for revision? Please enter your remarks or revision feedback:");
-        if (reason === null) return;
+        const ok = await window.appConfirm("Return targets to the employee for revision?\n\nAll notes and feedback entered in the Remarks column will be saved and returned to the employee.", {
+            title: 'Return Targets for Revision',
+            confirmText: 'Return for Revision',
+            isDanger: true
+        });
+        if (!ok) return;
         
         // Save any reviewer notes in the Remarks column before returning
         if (typeof saveDocument === 'function') {
@@ -3276,7 +3105,7 @@
 
         const formData = new FormData();
         formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
-        formData.append('reason', (reason || '').trim());
+        formData.append('reason', '');
 
         const btn = document.getElementById('btn-return-target');
         if (btn) btn.innerText = 'Returning...';
@@ -3311,6 +3140,8 @@
     window.status = <?= json_encode($doc['folder_status']) ?>;
     window.isTarget = <?= json_encode($doc['is_target'] == 1) ?>;
     window.isOwner = <?= json_encode($doc['owner_id'] == session()->get('user_id')) ?>;
+    window.currentReviewerRole = <?= json_encode($currentReviewerRole ?? 'Reviewer') ?>;
+    window.currentReviewerName = <?= json_encode($currentReviewerName ?? '') ?>;
 
     // Enum values exported for JS use
     window.FolderStatus = <?= json_encode([
@@ -3505,42 +3336,37 @@
         div.innerHTML = `
             <table style="width: 100%; border-collapse: collapse; border: none; font-size: 11px;">
                 <tr>
-                    <td style="width: ${isDpcrOrOpcr ? '65px' : '60px'}; border: none; padding: 3px 0; font-weight: bold; color: ${isDpcrOrOpcr ? '#000' : '#64748b'};">Name:</td>
+                    <td style="width: ${isDpcrOrOpcr ? '65px' : '60px'}; border: none; padding: 3px 0; font-weight: bold; color: ${isDpcrOrOpcr ? '#0f172a' : '#64748b'};">Name:</td>
                     <td style="border: none; padding: 3px 0;">
-                        <input type="text" class="field-approver-name" ${isActuallyFirst ? 'id="approver-name"' : ''} value="${escapeHtml(name)}" placeholder="${namePlaceholder}" style="font-weight: bold; color: #ba372a; border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; width: ${isDpcrOrOpcr ? '60%' : '100%'};" ${disabledAttr}>
+                        <input type="text" class="field-approver-name spms-meta-input" ${isActuallyFirst ? 'id="approver-name"' : ''} value="${escapeHtml(name)}" placeholder="${namePlaceholder}" style="font-weight: bold; width: ${isDpcrOrOpcr ? '60%' : '100%'}; padding: 2px 4px;" ${disabledAttr}>
                         ${!isActuallyFirst ? (canEditTargets ? `
                         <button type="button" onclick="removeApproverBlock(this)" class="print-hide" style="margin-left: 6px; color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5; font-size: 9px; padding: 1px 5px; border-radius: 3px; cursor: pointer; font-weight: bold;" title="Remove this signatory">✕ Remove</button>
                         ` : '') : (isDpcrOrOpcr ? `
-                        <span style="color: #ba372a; font-style: italic; font-size: 10px; margin-left: 6px;">(may add signatories depending on position)</span>
+                        <span style="color: #64748b; font-style: italic; font-size: 10px; margin-left: 6px;">(may add signatories depending on position)</span>
                         ` : '')}
                     </td>
                 </tr>
                 <tr>
-                    <td style="border: none; padding: 3px 0; font-weight: bold; color: ${isDpcrOrOpcr ? '#000' : '#64748b'};">Position:</td>
+                    <td style="border: none; padding: 3px 0; font-weight: bold; color: ${isDpcrOrOpcr ? '#0f172a' : '#64748b'};">Position:</td>
                     <td style="border: none; padding: 3px 0;">
-                        <input type="text" class="field-approver-pos" ${isActuallyFirst ? 'id="approver-pos"' : ''} value="${escapeHtml(position)}" placeholder="${posPlaceholder}" style="color: #ba372a; border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; width: ${isDpcrOrOpcr ? '80%' : '100%'};" ${disabledAttr}>
+                        <input type="text" class="field-approver-pos spms-meta-input" ${isActuallyFirst ? 'id="approver-pos"' : ''} value="${escapeHtml(position)}" placeholder="${posPlaceholder}" style="width: ${isDpcrOrOpcr ? '80%' : '100%'}; padding: 2px 4px;" ${disabledAttr}>
                     </td>
                 </tr>
                 <tr>
-                    <td style="border: none; padding: 3px 0; font-weight: bold; color: ${isDpcrOrOpcr ? '#000' : '#64748b'};">Date:</td>
+                    <td style="border: none; padding: 3px 0; font-weight: bold; color: ${isDpcrOrOpcr ? '#0f172a' : '#64748b'};">Date:</td>
                     <td style="border: none; padding: 3px 0;">
-                        <input type="date" class="field-approver-date" ${isActuallyFirst ? 'id="approver-date"' : ''} value="${escapeHtml(date)}" onclick="this.showPicker && this.showPicker()" style="color: #ba372a; border: none; border-bottom: 1px solid #ba372a; outline: none; font-size: 11px; width: 130px; background: transparent; font-family: inherit; cursor: pointer;" ${disabledAttr}>
+                        <input type="date" class="field-approver-date spms-meta-input" ${isActuallyFirst ? 'id="approver-date"' : ''} value="${escapeHtml(date)}" onclick="this.showPicker && this.showPicker()" style="width: 130px; padding: 2px 4px; cursor: pointer;" ${disabledAttr}>
                     </td>
                 </tr>
             </table>
         `;
         container.appendChild(div);
 
-        // Attach input listeners for dirty state, dynamic red hint styling, and autosync
+        // Attach input listeners for dirty state, dynamic hint styling, and autosync
         div.querySelectorAll('input').forEach(inp => {
             const updateStyle = () => {
-                if (inp.value.trim() !== '') {
-                    inp.style.color = '#0f172a';
-                    inp.style.borderColor = '#cbd5e1';
-                } else {
-                    inp.style.color = '#ba372a';
-                    inp.style.borderColor = '#ba372a';
-                }
+                inp.style.color = '#0f172a';
+                inp.style.borderColor = inp.value.trim() !== '' ? '#94a3b8' : '#cbd5e1';
             };
             updateStyle();
             const handleUpdate = () => {
@@ -3680,7 +3506,7 @@
 
         const elCore = document.getElementById('label-cat-core');
         if (elCore) {
-            const hint = ' <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>';
+            const hint = ' <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>';
             if (!isDpcr && !isOpcr && !isIperf) {
                 elCore.innerHTML = 'CORE FUNCTIONS (70%)' + hint;
             } else {
@@ -3689,7 +3515,7 @@
         }
         const elStrat = document.getElementById('label-cat-strategic');
         if (elStrat) {
-            const hint = ' <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>';
+            const hint = ' <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>';
             if (!isDpcr && !isOpcr && !isIperf) {
                 elStrat.innerHTML = 'STRATEGIC FUNCTIONS (20%)' + hint;
             } else {
@@ -3698,7 +3524,7 @@
         }
         const elSupp = document.getElementById('label-cat-support');
         if (elSupp) {
-            const hint = ' <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>';
+            const hint = ' <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>';
             if (!isDpcr && !isOpcr && !isIperf) {
                 elSupp.innerHTML = 'SUPPORT FUNCTIONS (10%)' + hint;
             } else {
@@ -3727,13 +3553,8 @@
             const el = document.getElementById(id);
             if (el) {
                 el.value = (val !== undefined && val !== null && val !== '') ? val : '';
-                if (el.value.trim() !== '') {
-                    el.style.color = '#0f172a';
-                    el.style.borderColor = '#94a3b8';
-                } else {
-                    el.style.color = '#ba372a';
-                    el.style.borderColor = '#ba372a';
-                }
+                el.style.color = '#0f172a';
+                el.style.borderColor = el.value.trim() !== '' ? '#94a3b8' : '#cbd5e1';
             }
         };
 
@@ -3865,13 +3686,8 @@
             if (el) {
                 el.disabled = !canEditTargets;
                 const updateStyle = function() {
-                    if (el.value.trim() !== '') {
-                        el.style.color = '#0f172a';
-                        el.style.borderColor = '#94a3b8';
-                    } else {
-                        el.style.color = '#ba372a';
-                        el.style.borderColor = '#ba372a';
-                    }
+                    el.style.color = '#0f172a';
+                    el.style.borderColor = el.value.trim() !== '' ? '#94a3b8' : '#cbd5e1';
                 };
                 if (!el.dataset.hasStyleListener) {
                     el.dataset.hasStyleListener = '1';
@@ -4064,10 +3880,10 @@
                 </td>
 
                 <!-- 7. Row Average -->
-                <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f0f9ff; border: 1px solid #000;">
+                <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f8fafc; border: 1px solid #000;">
                     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                        <span class="field-row-avg" style="font-weight: 900; color: #0369a1; font-size: 11px;">—</span>
-                        <span style="font-size: 8px; font-weight: 800; color: #0284c7; text-transform: uppercase;">auto</span>
+                        <span class="field-row-avg" style="font-weight: 900; color: #0f172a; font-size: 11px;">—</span>
+                        <span style="font-size: 8px; font-weight: 700; color: #64748b; text-transform: uppercase;">auto</span>
                     </div>
                 </td>
 
@@ -4152,34 +3968,34 @@
                     ` : ''}
                 </td>
 
-                <!-- Rating Q, T, E Inputs (Evaluation Phase) with Amber #ffe599 Background -->
+                <!-- Rating Q, T, E Inputs (Evaluation Phase) -->
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
                     <input type="number" min="1" max="5" step="1" 
                         value="${data.q !== undefined && data.q !== null && data.q !== '' ? data.q : ''}" 
                         placeholder="—" 
                         ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 1 to 5. Erase or press Esc to clear" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
-                        class="spms-score-input field-q" style="background-color: #ffe599;">
+                        class="spms-score-input field-q">
                 </td>
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
                     <input type="number" min="1" max="5" step="1" 
                         value="${data.t !== undefined && data.t !== null && data.t !== '' ? data.t : ''}" 
                         placeholder="—" 
                         ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 1 to 5. Erase or press Esc to clear" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
-                        class="spms-score-input field-t" style="background-color: #ffe599;">
+                        class="spms-score-input field-t">
                 </td>
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
                     <input type="number" min="1" max="5" step="1" 
                         value="${data.e !== undefined && data.e !== null && data.e !== '' ? data.e : ''}" 
                         placeholder="—" 
                         ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 1 to 5. Erase or press Esc to clear" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
-                        class="spms-score-input field-e" style="background-color: #ffe599;">
+                        class="spms-score-input field-e">
                 </td>
 
                 <!-- Row Average -->
-                <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f0f9ff; border: 1px solid #000;">
+                <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f8fafc; border: 1px solid #000;">
                     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                        <span class="field-row-avg" style="font-weight: 900; color: #0369a1; font-size: 11px;">—</span>
-                        <span style="font-size: 8px; font-weight: 800; color: #0284c7; text-transform: uppercase;">auto</span>
+                        <span class="field-row-avg" style="font-weight: 900; color: #0f172a; font-size: 11px;">—</span>
+                        <span style="font-size: 8px; font-weight: 700; color: #64748b; text-transform: uppercase;">auto</span>
                     </div>
                 </td>
 
@@ -4264,34 +4080,34 @@
                     ` : ''}
                 </td>
 
-                <!-- Rating Q, T, E Inputs (Evaluation Phase) with Amber #ffe599 Background -->
+                <!-- Rating Q, T, E Inputs (Evaluation Phase) -->
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
                     <input type="number" min="1" max="5" step="1" 
                         value="${data.q !== undefined && data.q !== null && data.q !== '' ? data.q : ''}" 
                         placeholder="—" 
                         ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 1 to 5. Erase or press Esc to clear" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
-                        class="spms-score-input field-q" style="background-color: #ffe599;">
+                        class="spms-score-input field-q">
                 </td>
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
                     <input type="number" min="1" max="5" step="1" 
                         value="${data.t !== undefined && data.t !== null && data.t !== '' ? data.t : ''}" 
                         placeholder="—" 
                         ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 1 to 5. Erase or press Esc to clear" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
-                        class="spms-score-input field-t" style="background-color: #ffe599;">
+                        class="spms-score-input field-t">
                 </td>
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
                     <input type="number" min="1" max="5" step="1" 
                         value="${data.e !== undefined && data.e !== null && data.e !== '' ? data.e : ''}" 
                         placeholder="—" 
                         ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 1 to 5. Erase or press Esc to clear" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
-                        class="spms-score-input field-e" style="background-color: #ffe599;">
+                        class="spms-score-input field-e">
                 </td>
 
                 <!-- Row Average -->
-                <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f0f9ff; border: 1px solid #000;">
+                <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f8fafc; border: 1px solid #000;">
                     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                        <span class="field-row-avg" style="font-weight: 900; color: #0369a1; font-size: 11px;">—</span>
-                        <span style="font-size: 8px; font-weight: 800; color: #0284c7; text-transform: uppercase;">auto</span>
+                        <span class="field-row-avg" style="font-weight: 900; color: #0f172a; font-size: 11px;">—</span>
+                        <span style="font-size: 8px; font-weight: 700; color: #64748b; text-transform: uppercase;">auto</span>
                     </div>
                 </td>
 
@@ -4387,10 +4203,10 @@
             </td>
 
                 <!-- Row Average -->
-                <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f0f9ff; border: 1px solid #000;">
+                <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f8fafc; border: 1px solid #000;">
                     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                        <span class="field-row-avg" style="font-weight: 900; color: #0369a1; font-size: 11px;">—</span>
-                        <span style="font-size: 8px; font-weight: 800; color: #0284c7; text-transform: uppercase;">auto</span>
+                        <span class="field-row-avg" style="font-weight: 900; color: #0f172a; font-size: 11px;">—</span>
+                        <span style="font-size: 8px; font-weight: 700; color: #64748b; text-transform: uppercase;">auto</span>
                     </div>
                 </td>
 
@@ -4990,6 +4806,10 @@
         } else {
             // Specific rowId / deliverable
             document.querySelectorAll('#digital-rubrics-tbody tr').forEach(tr => {
+                if (tr.hasAttribute('data-deliverable-separator')) {
+                    tr.classList.add('hidden');
+                    return;
+                }
                 const delId = tr.getAttribute('data-deliverable-id');
                 if (!delId || delId === filterKey) {
                     tr.classList.remove('hidden');
@@ -5222,6 +5042,7 @@
                 weight: catWeights.core,
                 badge: 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30',
                 dot: 'bg-emerald-500',
+                borderL: 'border-l-emerald-500',
                 addBtn: 'border-emerald-500/30 hover:border-emerald-500/60 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
                 emptyHint: 'Add your primary operational and mandated deliverables.'
             },
@@ -5230,6 +5051,7 @@
                 weight: catWeights.strategic,
                 badge: 'bg-sky-500/15 text-sky-800 dark:text-sky-300 border-sky-500/30',
                 dot: 'bg-sky-500',
+                borderL: 'border-l-sky-500',
                 addBtn: 'border-sky-500/30 hover:border-sky-500/60 bg-sky-500/5 hover:bg-sky-500/10 text-sky-700 dark:text-sky-300',
                 emptyHint: 'Add strategic priority projects and institutional development targets.'
             },
@@ -5238,6 +5060,7 @@
                 weight: catWeights.support,
                 badge: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30',
                 dot: 'bg-amber-500',
+                borderL: 'border-l-amber-500',
                 addBtn: 'border-amber-500/30 hover:border-amber-500/60 bg-amber-500/5 hover:bg-amber-500/10 text-amber-700 dark:text-amber-300',
                 emptyHint: 'Add administrative, cross-functional, or support committee outputs.'
             }
@@ -5350,6 +5173,17 @@
                             ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30 font-extrabold'
                             : 'bg-surface-border/40 text-text-muted font-medium');
 
+                    // Clean, visible gap between deliverables
+                    if (dIdx > 0) {
+                        sheetHtml += `
+                            <tr data-category="${catKey}" data-deliverable-separator="true" class="select-none print:hidden">
+                                <td colspan="5" class="p-0 border-y border-surface-border/60 bg-surface-border/20">
+                                    <div class="h-3.5"></div>
+                                </td>
+                            </tr>
+                        `;
+                    }
+
                     [5, 4, 3, 2, 1].forEach((score, sIdx) => {
                         const scData = rubricData[score] || { q: '', t: '', e: '' };
                         const meta = scoreMeta[score];
@@ -5378,16 +5212,22 @@
                                                       oninput="syncDeliverableTitleToForm('${escapeHtml(rowId)}', this.value); autoResizeTextarea(this);"
                                                       class="rubric-title-input w-full bg-surface-border/20 hover:bg-surface-border/30 focus:bg-surface border border-surface-border/60 focus:border-amber-500 rounded-xl p-2 outline-none text-text font-bold text-xs leading-snug transition-all resize-none">${escapeHtml(del.title)}</textarea>
                                         </div>
-                                        <div class="flex items-center gap-1.5 pt-1">
+                                        <div class="flex items-center gap-1.5 pt-1.5 flex-wrap">
                                             <button type="button" onclick="clearRubricRow('${escapeHtml(rowId)}')"
-                                                    class="px-2 py-1 rounded-lg text-[10px] font-bold text-text-muted hover:text-amber-600 hover:bg-amber-500/10 transition-all cursor-pointer"
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1.2 rounded-lg text-[10px] font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 hover:border-amber-500/50 shadow-2xs transition-all active:scale-[0.96] cursor-pointer"
                                                     title="Clear all scoring criteria for this deliverable">
-                                                Clear Criteria
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                </svg>
+                                                <span>Clear Criteria</span>
                                             </button>
                                             <button type="button" onclick="deleteDeliverableFromRubrics('${escapeHtml(rowId)}')"
-                                                    class="px-2 py-1 rounded-lg text-[10px] font-bold text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer"
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1.2 rounded-lg text-[10px] font-bold bg-rose-500/15 hover:bg-rose-500/25 text-rose-700 dark:text-rose-300 border border-rose-500/30 hover:border-rose-500/50 shadow-2xs transition-all active:scale-[0.96] cursor-pointer"
                                                     title="Delete this deliverable from both rubric and target form">
-                                                Delete Output
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-rose-600 dark:text-rose-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                                <span>Delete Output</span>
                                             </button>
                                         </div>
                                         ` : `
@@ -5889,7 +5729,7 @@
                     <col style="width: 11%;">
                 `;
                 theadEl.innerHTML = `
-                    <tr style="background-color: #fff2cc; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
+                    <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
                         <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">PROJECT / PROGRAM / ACTIVITIES</th>
                         <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">SUCCESS INDICATORS<br><span style="font-weight: normal; font-size: 9px;">(TARGETS + MEASURES)</span></th>
                         <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ALLOTTED BUDGET</th>
@@ -5898,7 +5738,7 @@
                         <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
                         <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
                     </tr>
-                    <tr style="background-color: #fff2cc; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                    <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
                         <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
                         <th style="border: 1px solid #000; padding: 4px 2px;">T</th>
                         <th style="border: 1px solid #000; padding: 4px 2px;">E</th>
@@ -5919,7 +5759,7 @@
                     <col style="width: 11%;">
                 `;
                 theadEl.innerHTML = `
-                    <tr style="background-color: #cfe2f3; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
+                    <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
                         <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">PROGRAMS, PROJECTS, ACTIVITIES</th>
                         <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">SUCCESS INDICATORS<br><span style="font-weight: normal; font-size: 9px;">(TARGETS + MEASURES)</span></th>
                         <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ALLOTTED BUDGET</th>
@@ -5928,7 +5768,7 @@
                         <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
                         <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
                     </tr>
-                    <tr style="background-color: #cfe2f3; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                    <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
                         <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
                         <th style="border: 1px solid #000; padding: 4px 2px;">T</th>
                         <th style="border: 1px solid #000; padding: 4px 2px;">E</th>
@@ -5965,16 +5805,12 @@
         }
 
         const catLabels = {
-            core: isOpcr ? "1. Core Office Mandate (60%)" : (isDpcr ? "1. Core Division Functions (60%)" : "1. Core Functions (70%)"),
-            strategic: isOpcr ? "2. Strategic Functions (25%)" : (isDpcr ? "2. Strategic Functions (25%)" : "2. Strategic Functions (20%)"),
-            support: isOpcr ? "3. Support Functions (15%)" : (isDpcr ? "3. Support Functions (15%)" : "3. Support Functions (10%)")
+            core: isOpcr ? "Core Office Mandate (60%)" : (isDpcr ? "Core Division Functions (60%)" : "Core Functions (70%)"),
+            strategic: isOpcr ? "Strategic Functions (25%)" : (isDpcr ? "Strategic Functions (25%)" : "Strategic Functions (20%)"),
+            support: isOpcr ? "Support Functions (15%)" : (isDpcr ? "Support Functions (15%)" : "Support Functions (10%)")
         };
 
         const colCount = (isOpcr || isDpcr) ? 10 : 8;
-        const colTitleSpan = (isOpcr || isDpcr) ? 6 : 5;
-        const colBadgeSpan = (isOpcr || isDpcr) ? 4 : 3;
-
-
 
         ['core', 'strategic', 'support'].forEach(cat => {
             const tbody = document.getElementById(`basis-tbody-${cat}`);
@@ -5985,13 +5821,8 @@
             const trHeader = document.createElement('tr');
             trHeader.style.cssText = 'background: #f8fafc; border-top: 2px solid #000; border-bottom: 1px solid #000;';
             trHeader.innerHTML = `
-                <td colspan="${colTitleSpan}" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a;">
+                <td colspan="${colCount}" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a;">
                     ${catLabels[cat]}
-                </td>
-                <td colspan="${colBadgeSpan}" style="padding: 6px 12px; text-align: right;">
-                    <span style="display: inline-block; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 800; font-size: 10px; padding: 2px 6px; border-radius: 4px;">
-                        Cascaded Deliverables
-                    </span>
                 </td>
             `;
             tbody.appendChild(trHeader);

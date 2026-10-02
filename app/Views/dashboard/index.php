@@ -476,492 +476,265 @@
         <!-- 1. EXECUTIVE ANALYTICS VIEW -->
         <div id="dashboard-view-analytics" class="space-y-5">
 
+        <style>
+            .dark .spms-mockup-card { background-color: #0c1510; border-color: #172b20; }
+            .dark .spms-icon-green { background-color: #0e271a; border-color: #17422c; color: #10b981; }
+            .dark .spms-icon-amber { background-color: #261f0c; border-color: #453412; color: #f59e0b; }
+            .dark .spms-track-dark { background-color: #11241a !important; }
+            .dark .spms-bar-green { background-color: #10b981 !important; }
+            .dark .spms-stage-box { background-color: #07130e; border-color: #142a1e; }
+            .dark .spms-stage-box-active { background-color: #07130e; border-color: #1a3828; }
+            .dark .spms-stepper-line { background-color: #1b3829; }
+            .dark .spms-stepper-inactive-circle { border-color: #274736; color: #8fa89b; }
+            .dark .spms-stepper-inactive-text { color: #8fa89b; }
+        </style>
+
         <!-- 1. TOP KPI SUMMARY METRIC CARDS -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             
             <!-- Card 1: Total Ratees -->
-            <div class="p-5 rounded-xl bg-slate-50/70 dark:bg-[#0c1510]/50 border border-slate-200 dark:border-[#1a2b22] shadow-xs flex flex-col justify-between">
+            <div class="p-5 rounded-xl bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#172b20] shadow-xs flex flex-col justify-between spms-mockup-card">
                 <div>
-                    <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Ratees</span>
-                        <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-info-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-2xs">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Ratees</span>
+                        <div class="w-7 h-7 rounded-full bg-emerald-50 dark:bg-[#0e271a] text-emerald-600 dark:text-[#10b981] border border-emerald-200 dark:border-[#17422c] flex items-center justify-center shrink-0 spms-icon-green">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
                         </div>
                     </div>
-                    <div class="flex items-baseline gap-2 mb-3">
+                    <div class="flex items-baseline gap-2 mb-2">
                         <span class="text-3xl font-black tracking-tight text-slate-900 dark:text-white"><?= number_format($totalPersonnel) ?></span>
-                        <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Personnel</span>
+                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Personnel</span>
                     </div>
                 </div>
-                <div class="pt-3 border-t border-slate-200/70 dark:border-[#1a2b22] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                    <span>Roster</span>
-                    <span class="font-semibold text-slate-700 dark:text-slate-300">Active cycle ratees</span>
+                <div class="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-[#10b981]">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 dark:bg-[#10b981] shrink-0"></span>
+                    <span>100% active roster</span>
                 </div>
             </div>
 
             <!-- Card 2: Overall Average Rating -->
-            <div class="p-5 rounded-xl bg-slate-50/70 dark:bg-[#0c1510]/50 border border-slate-200 dark:border-[#1a2b22] shadow-xs flex flex-col justify-between">
+            <div class="p-5 rounded-xl bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#172b20] shadow-xs flex flex-col justify-between spms-mockup-card">
                 <div>
-                    <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Average Rating</span>
-                        <div class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-success-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-2xs">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Average Rating</span>
+                        <div class="w-7 h-7 rounded-full bg-amber-50 dark:bg-[#261f0c] text-amber-600 dark:text-[#f59e0b] border border-amber-200 dark:border-[#453412] flex items-center justify-center shrink-0 spms-icon-amber">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                             </svg>
                         </div>
                     </div>
-                    <div class="flex items-baseline gap-2 mb-3 flex-wrap">
+                    <div class="flex items-baseline gap-2 mb-2 flex-wrap">
                         <span class="text-3xl font-black tracking-tight text-slate-900 dark:text-white"><?= $overallAverage > 0 ? number_format($overallAverage, 2) : '--' ?></span>
-                        <span class="text-xs font-bold text-slate-500 dark:text-slate-400">/ 5.00</span>
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-black uppercase border <?= $adjectivalBadgeClass ?>">
+                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">/ 5.00</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-amber-50 dark:bg-[#261f0c] text-amber-700 dark:text-[#f59e0b] border border-amber-300 dark:border-[#453412]">
                             <?= esc($adjectivalLabel) ?>
                         </span>
                     </div>
                 </div>
-                <div class="pt-3 border-t border-slate-200/70 dark:border-[#1a2b22] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                    <span>Evaluated</span>
-                    <span class="font-semibold text-slate-700 dark:text-slate-300"><?= number_format($totalRated) ?> rated</span>
+                <div class="text-xs text-slate-500 dark:text-slate-400">
+                    Evaluated: <span class="font-bold text-slate-800 dark:text-white"><?= number_format($totalRated) ?> rated</span>
                 </div>
             </div>
 
             <!-- Card 3: Target Compliance -->
-            <div class="p-5 rounded-xl bg-slate-50/70 dark:bg-[#0c1510]/50 border border-slate-200 dark:border-[#1a2b22] shadow-xs flex flex-col justify-between">
+            <div class="p-5 rounded-xl bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#172b20] shadow-xs flex flex-col justify-between spms-mockup-card">
                 <div>
-                    <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Target Compliance</span>
-                        <div class="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-highlight-500/20 text-indigo-600 dark:text-highlight-400 flex items-center justify-center shadow-2xs">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Target Compliance</span>
+                        <div class="w-7 h-7 rounded-full bg-emerald-50 dark:bg-[#0e271a] text-emerald-600 dark:text-[#10b981] border border-emerald-200 dark:border-[#17422c] flex items-center justify-center shrink-0 spms-icon-green">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                             </svg>
                         </div>
                     </div>
-                    <div class="flex items-baseline gap-2 mb-3">
+                    <div class="flex items-baseline gap-1.5 mb-3 flex-wrap">
                         <span class="text-3xl font-black tracking-tight text-slate-900 dark:text-white"><?= $targetComplianceRate ?>%</span>
-                        <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Approved</span>
+                        <span class="text-xs font-normal text-slate-500 dark:text-slate-400">(<?= number_format($pipeline['stage1']['approved']) ?> of <?= number_format($totalPersonnel) ?> approved)</span>
                     </div>
                 </div>
-                <div class="pt-3 border-t border-slate-200/70 dark:border-[#1a2b22]">
-                    <div class="w-full bg-slate-200 dark:bg-zinc-800 rounded-full h-2 overflow-hidden mb-1.5">
-                        <div class="bg-indigo-600 dark:bg-highlight-500 h-2 rounded-full transition-all" style="width: <?= min(100, $targetComplianceRate) ?>%;"></div>
-                    </div>
-                    <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                        <span>Status</span>
-                        <span class="font-semibold text-slate-700 dark:text-slate-300"><?= number_format($pipeline['target']['approved']) ?> of <?= number_format($totalPersonnel) ?> approved</span>
-                    </div>
+                <div class="w-full bg-slate-200 dark:bg-[#11241a] rounded-full h-1.5 overflow-hidden spms-track-dark">
+                    <div class="bg-emerald-500 dark:bg-[#10b981] h-1.5 rounded-full transition-all duration-500 spms-bar-green" style="width: <?= min(100, $targetComplianceRate) ?>%;"></div>
                 </div>
             </div>
 
             <!-- Card 4: Cycle Completion -->
-            <div class="p-5 rounded-xl bg-slate-50/70 dark:bg-[#0c1510]/50 border border-slate-200 dark:border-[#1a2b22] shadow-xs flex flex-col justify-between">
+            <div class="p-5 rounded-xl bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#172b20] shadow-xs flex flex-col justify-between spms-mockup-card">
                 <div>
-                    <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Cycle Completion</span>
-                        <div class="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-2xs">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Cycle Completion</span>
+                        <div class="w-7 h-7 rounded-full bg-amber-50 dark:bg-[#261f0c] text-amber-600 dark:text-[#f59e0b] border border-amber-200 dark:border-[#453412] flex items-center justify-center shrink-0 spms-icon-amber">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
                     </div>
-                    <div class="flex items-baseline gap-2 mb-3">
+                    <div class="flex items-baseline gap-1.5 mb-3 flex-wrap">
                         <span class="text-3xl font-black tracking-tight text-slate-900 dark:text-white"><?= $evalCompletionRate ?>%</span>
-                        <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Finalized</span>
+                        <span class="text-xs font-normal text-slate-500 dark:text-slate-400">(<?= number_format($pipeline['stage3']['completed']) ?> of <?= number_format($totalPersonnel) ?> finalized)</span>
                     </div>
                 </div>
-                <div class="pt-3 border-t border-slate-200/70 dark:border-[#1a2b22]">
-                    <div class="w-full bg-slate-200 dark:bg-zinc-800 rounded-full h-2 overflow-hidden mb-1.5">
-                        <div class="bg-amber-600 dark:bg-amber-400 h-2 rounded-full transition-all" style="width: <?= min(100, $evalCompletionRate) ?>%;"></div>
-                    </div>
-                    <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                        <span>Status</span>
-                        <span class="font-semibold text-slate-700 dark:text-slate-300"><?= number_format($pipeline['evaluation']['completed']) ?> of <?= number_format($totalPersonnel) ?> finalized</span>
-                    </div>
+                <div class="w-full bg-slate-200 dark:bg-[#11241a] rounded-full h-1.5 overflow-hidden spms-track-dark">
+                    <div class="bg-emerald-500 dark:bg-[#10b981] h-1.5 rounded-full transition-all duration-500 spms-bar-green" style="width: <?= min(100, $evalCompletionRate) ?>%;"></div>
                 </div>
             </div>
 
         </div>
 
         <!-- 2. SPMS 4-STAGE LIFECYCLE PIPELINE (CSC MC No. 6, s. 2012) -->
-        <div class="rounded-2xl bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] shadow-xs overflow-hidden">
-            <!-- Header Banner with Stepper Trail -->
-            <div class="px-6 py-4 border-b border-slate-100 dark:border-[#16281f] bg-slate-50/70 dark:bg-[#08130e] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div class="p-6 rounded-2xl bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#172b20] shadow-xs spms-mockup-card">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-5">
                 <div>
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            CSC MC No. 6, s. 2012
-                        </span>
-                        <span class="text-xs text-slate-400 dark:text-slate-500 font-medium">Standard University Cycle</span>
-                    </div>
-                    <h2 class="text-base font-extrabold text-slate-900 dark:text-white tracking-tight">SPMS 4-Stage Performance Lifecycle</h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">End-to-end performance cycle: target commitments, evidence collection, review calibrations, and merit incentives</p>
+                    <h2 class="text-base font-bold text-slate-900 dark:text-white tracking-tight">SPMS 4-Stage Performance Lifecycle</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">CSC MC No. 6, S. 2012 • Standard University Strategic Calibration Cycle</p>
                 </div>
                 
-                <!-- Interconnected Stepper Indicator Flow -->
-                <div class="inline-flex items-center p-1 rounded-xl bg-slate-100 dark:bg-[#091712] border border-slate-200/80 dark:border-[#16281f] text-xs">
-                    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold text-slate-700 dark:text-slate-200">
-                        <span class="w-4 h-4 rounded-full bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[10px] font-black">1</span>
-                        <span class="text-xs">Planning</span>
+                <!-- Stepper Flow -->
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0">
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-slate-950 font-bold text-xs shrink-0 shadow-2xs" style="background-color: #00df82;">
+                        <span class="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[10px] font-black text-slate-950" style="background-color: rgba(0,0,0,0.2);">1</span>
+                        <span>Planning</span>
                     </div>
-                    <span class="text-slate-400 dark:text-zinc-600 font-bold px-0.5">&rsaquo;</span>
-                    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold text-slate-700 dark:text-slate-200">
-                        <span class="w-4 h-4 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-[10px] font-black">2</span>
-                        <span class="text-xs">Coaching</span>
+                    <span class="w-5 h-[1px] bg-slate-300 dark:bg-[#1b3829] shrink-0 spms-stepper-line"></span>
+                    <div class="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-[#8fa89b] font-medium shrink-0 spms-stepper-inactive-text">
+                        <span class="w-4 h-4 rounded-full border border-slate-300 dark:border-[#274736] flex items-center justify-center text-[10px] spms-stepper-inactive-circle">2</span>
+                        <span>Coaching</span>
                     </div>
-                    <span class="text-slate-400 dark:text-zinc-600 font-bold px-0.5">&rsaquo;</span>
-                    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold text-slate-700 dark:text-slate-200">
-                        <span class="w-4 h-4 rounded-full bg-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center text-[10px] font-black">3</span>
-                        <span class="text-xs">Review</span>
+                    <span class="w-5 h-[1px] bg-slate-300 dark:bg-[#1b3829] shrink-0 spms-stepper-line"></span>
+                    <div class="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-[#8fa89b] font-medium shrink-0 spms-stepper-inactive-text">
+                        <span class="w-4 h-4 rounded-full border border-slate-300 dark:border-[#274736] flex items-center justify-center text-[10px] spms-stepper-inactive-circle">3</span>
+                        <span>Review</span>
                     </div>
-                    <span class="text-slate-400 dark:text-zinc-600 font-bold px-0.5">&rsaquo;</span>
-                    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold text-slate-700 dark:text-slate-200">
-                        <span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-[10px] font-black">4</span>
-                        <span class="text-xs">Rewarding</span>
+                    <span class="w-5 h-[1px] bg-slate-300 dark:bg-[#1b3829] shrink-0 spms-stepper-line"></span>
+                    <div class="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-[#8fa89b] font-medium shrink-0 spms-stepper-inactive-text">
+                        <span class="w-4 h-4 rounded-full border border-slate-300 dark:border-[#274736] flex items-center justify-center text-[10px] spms-stepper-inactive-circle">4</span>
+                        <span>Rewarding</span>
                     </div>
                 </div>
             </div>
 
-            <!-- 4 Stage Columns Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-[#16281f]">
+            <!-- 4 Stage Cards Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                 
-                <!-- STAGE 1: Performance Planning & Commitment -->
-                <div class="p-5 flex flex-col justify-between hover:bg-slate-50/40 dark:hover:bg-white/[0.015] transition-colors">
+                <!-- STAGE 1: Target Commitment -->
+                <div class="p-4 rounded-xl bg-slate-50/70 dark:bg-[#07130e] border border-slate-200 dark:border-[#1a3828] flex flex-col justify-between min-h-[250px] spms-stage-box-active">
                     <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <div class="flex items-center gap-2">
-                                <span class="w-6 h-6 rounded-lg bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 font-black text-xs flex items-center justify-center border border-indigo-200/50 dark:border-indigo-500/20">
-                                    1
-                                </span>
-                                <div>
-                                    <h3 class="text-xs font-bold text-slate-900 dark:text-white leading-tight">Planning &amp; Commitment</h3>
-                                    <p class="text-2xs text-slate-400 dark:text-slate-500 font-medium">Target Setting Phase</p>
-                                </div>
-                            </div>
-                            <span class="px-2 py-0.5 rounded-md text-2xs font-extrabold bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-500/20">
-                                Stage 1
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-[#10b981] border border-emerald-500/20" style="background-color: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.25);">STAGE 1</span>
+                            <span class="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-[#10b981]">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-[#10b981] animate-pulse"></span>
+                                CURRENT
                             </span>
                         </div>
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Target Commitment</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Target Setting Phase</p>
 
-                        <!-- Hero Number & Progress -->
-                        <div class="mt-4 mb-3">
+                        <div class="mt-3">
                             <div class="flex items-baseline justify-between mb-1.5">
-                                <div class="flex items-baseline gap-1.5">
-                                    <span class="text-2xl font-black text-slate-900 dark:text-white"><?= $pipeline['stage1']['approved'] ?></span>
-                                    <span class="text-xs text-slate-400 dark:text-slate-500 font-bold">/ <?= $totalPersonnel ?> Approved</span>
-                                </div>
-                                <span class="text-xs font-extrabold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-200/40 dark:border-indigo-500/20">
+                                <span class="text-xs font-bold text-slate-900 dark:text-white">
+                                    <?= $pipeline['stage1']['approved'] ?>
+                                    <span class="text-slate-400 dark:text-slate-500 font-normal">/ <?= $totalPersonnel ?> Approved</span>
+                                </span>
+                                <span class="text-xs font-bold text-emerald-600 dark:text-[#10b981]">
                                     <?= $totalPersonnel > 0 ? round(($pipeline['stage1']['approved'] / $totalPersonnel) * 100) : 0 ?>%
                                 </span>
                             </div>
-                            <div class="w-full bg-slate-100 dark:bg-[#07130e] rounded-full h-1.5 overflow-hidden">
-                                <div class="bg-indigo-500 h-1.5 rounded-full transition-all duration-500" style="width: <?= $totalPersonnel > 0 ? min(100, round(($pipeline['stage1']['approved'] / $totalPersonnel) * 100)) : 0 ?>%;"></div>
+                            <div class="w-full bg-slate-200 dark:bg-[#11241a] rounded-full h-1 overflow-hidden spms-track-dark">
+                                <div class="bg-emerald-500 dark:bg-[#10b981] h-1 rounded-full transition-all duration-500 spms-bar-green" style="width: <?= $totalPersonnel > 0 ? min(100, round(($pipeline['stage1']['approved'] / $totalPersonnel) * 100)) : 0 ?>%;"></div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Clean Row Breakdown -->
-                    <div class="pt-3 border-t border-slate-100 dark:border-[#16281f] space-y-1.5 mt-2">
-                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
-                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
-                                <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-xs shadow-emerald-500/50 shrink-0"></span>
-                                Approved Targets
-                            </span>
-                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage1']['approved'] ?></span>
+                    <div class="pt-3 border-t border-slate-200/70 dark:border-[#14261d] space-y-1.5 mt-3 text-xs" style="border-top-color: #14261d;">
+                        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                            <span>Approved Targets</span>
+                            <span class="font-bold text-slate-900 dark:text-white"><?= $pipeline['stage1']['approved'] ?></span>
                         </div>
-                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
-                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
-                                <span class="w-2 h-2 rounded-full bg-blue-500 shadow-xs shadow-blue-500/50 shrink-0"></span>
-                                In Review
-                            </span>
-                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage1']['pending'] ?></span>
+                        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                            <span>In Review</span>
+                            <span class="font-bold text-slate-900 dark:text-white"><?= $pipeline['stage1']['pending'] ?></span>
                         </div>
-                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
-                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
-                                <span class="w-2 h-2 rounded-full bg-amber-500 shadow-xs shadow-amber-500/50 shrink-0"></span>
-                                Needs Revision
-                            </span>
-                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage1']['returned'] ?></span>
+                        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                            <span>Needs Revision</span>
+                            <span class="font-bold <?= $pipeline['stage1']['returned'] > 0 ? 'text-[#f59e0b]' : 'text-slate-900 dark:text-white' ?>" style="<?= $pipeline['stage1']['returned'] > 0 ? 'color: #f59e0b;' : '' ?>"><?= $pipeline['stage1']['returned'] ?></span>
                         </div>
-                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
-                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
-                                <span class="w-2 h-2 rounded-full bg-slate-400 dark:bg-zinc-600 shrink-0"></span>
-                                Draft Mode
-                            </span>
-                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage1']['draft'] ?></span>
+                        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                            <span>Draft Mode</span>
+                            <span class="font-bold text-slate-700 dark:text-slate-300"><?= $pipeline['stage1']['draft'] ?></span>
                         </div>
                     </div>
                 </div>
 
-                <!-- STAGE 2: Performance Monitoring & Coaching -->
-                <div class="p-5 flex flex-col justify-between hover:bg-slate-50/40 dark:hover:bg-white/[0.015] transition-colors">
+                <!-- STAGE 2: Monitoring & Coaching -->
+                <div class="p-4 rounded-xl bg-slate-50/70 dark:bg-[#07130e] border border-slate-200 dark:border-[#142a1e] flex flex-col justify-between min-h-[250px] spms-stage-box">
                     <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <div class="flex items-center gap-2">
-                                <span class="w-6 h-6 rounded-lg bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 font-black text-xs flex items-center justify-center border border-amber-200/50 dark:border-amber-500/20">
-                                    2
-                                </span>
-                                <div>
-                                    <h3 class="text-xs font-bold text-slate-900 dark:text-white leading-tight">Monitoring &amp; Coaching</h3>
-                                    <p class="text-2xs text-slate-400 dark:text-slate-500 font-medium">Execution &amp; Evidence</p>
-                                </div>
-                            </div>
-                            <span class="px-2 py-0.5 rounded-md text-2xs font-extrabold bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-500/20">
-                                Stage 2
-                            </span>
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-100 dark:bg-[#0e271a]/50 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-[#193d2b]">STAGE 2</span>
                         </div>
-
-                        <!-- Hero Number & Progress -->
-                        <div class="mt-4 mb-3">
-                            <div class="flex items-baseline justify-between mb-1.5">
-                                <div class="flex items-baseline gap-1.5">
-                                    <span class="text-2xl font-black text-slate-900 dark:text-white"><?= $pipeline['stage2']['active_execution'] ?></span>
-                                    <span class="text-xs text-slate-400 dark:text-slate-500 font-bold">Active Commitments</span>
-                                </div>
-                                <span class="text-xs font-extrabold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-200/40 dark:border-amber-500/20">
-                                    <?= $pipeline['stage2']['execution_rate'] ?>%
-                                </span>
-                            </div>
-                            <div class="w-full bg-slate-100 dark:bg-[#07130e] rounded-full h-1.5 overflow-hidden">
-                                <div class="bg-amber-500 h-1.5 rounded-full transition-all duration-500" style="width: <?= min(100, $pipeline['stage2']['execution_rate']) ?>%;"></div>
-                            </div>
-                        </div>
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Monitoring &amp; Coaching</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Execution &amp; Evidence</p>
                     </div>
-
-                    <!-- Clean Row Breakdown -->
-                    <div class="pt-3 border-t border-slate-100 dark:border-[#16281f] space-y-1.5 mt-2">
-                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
-                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
-                                <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-xs shadow-emerald-500/50 shrink-0"></span>
-                                Targets in Execution
-                            </span>
-                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage2']['active_execution'] ?></span>
-                        </div>
-                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
-                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
-                                <span class="w-2 h-2 rounded-full bg-teal-500 shadow-xs shadow-teal-500/50 shrink-0"></span>
-                                MOVs Uploaded
-                            </span>
-                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage2']['mov_count'] ?> files</span>
-                        </div>
-                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
-                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
-                                <span class="w-2 h-2 rounded-full bg-amber-500 shadow-xs shadow-amber-500/50 shrink-0"></span>
-                                Coaching Feedback
-                            </span>
-                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage2']['coaching_notes'] ?> notes</span>
-                        </div>
-                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
-                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
-                                <span class="w-2 h-2 rounded-full bg-slate-400 dark:bg-zinc-600 shrink-0"></span>
-                                Evidence Density
-                            </span>
-                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $totalPersonnel > 0 && $pipeline['stage2']['mov_count'] > 0 ? round($pipeline['stage2']['mov_count'] / $totalPersonnel, 1) : 0 ?> / ratee</span>
-                        </div>
-                    </div>
+                    <div></div>
                 </div>
 
-                <!-- STAGE 3: Performance Review & Evaluation -->
-                <div class="p-5 flex flex-col justify-between hover:bg-slate-50/40 dark:hover:bg-white/[0.015] transition-colors">
+                <!-- STAGE 3: Review & Evaluation -->
+                <div class="p-4 rounded-xl bg-slate-50/70 dark:bg-[#07130e] border border-slate-200 dark:border-[#142a1e] flex flex-col justify-between min-h-[250px] spms-stage-box">
                     <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <div class="flex items-center gap-2">
-                                <span class="w-6 h-6 rounded-lg bg-sky-50 dark:bg-sky-500/15 text-sky-600 dark:text-sky-400 font-black text-xs flex items-center justify-center border border-sky-200/50 dark:border-sky-500/20">
-                                    3
-                                </span>
-                                <div>
-                                    <h3 class="text-xs font-bold text-slate-900 dark:text-white leading-tight">Review &amp; Evaluation</h3>
-                                    <p class="text-2xs text-slate-400 dark:text-slate-500 font-medium">Accomplishment Phase</p>
-                                </div>
-                            </div>
-                            <span class="px-2 py-0.5 rounded-md text-2xs font-extrabold bg-sky-50 dark:bg-sky-500/15 text-sky-700 dark:text-sky-400 border border-sky-200/60 dark:border-sky-500/20">
-                                Stage 3
-                            </span>
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-100 dark:bg-[#0e271a]/50 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-[#193d2b]">STAGE 3</span>
                         </div>
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Review &amp; Evaluation</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Accomplishment Phase</p>
 
-                        <!-- Hero Number & Progress -->
-                        <div class="mt-4 mb-3">
+                        <div class="mt-3">
                             <div class="flex items-baseline justify-between mb-1.5">
-                                <div class="flex items-baseline gap-1.5">
-                                    <span class="text-2xl font-black text-slate-900 dark:text-white"><?= $pipeline['stage3']['completed'] ?></span>
-                                    <span class="text-xs text-slate-400 dark:text-slate-500 font-bold">/ <?= $totalPersonnel ?> Evaluated</span>
-                                </div>
-                                <span class="text-xs font-extrabold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-500/10 px-2 py-0.5 rounded-md border border-sky-200/40 dark:border-sky-500/20">
+                                <span class="text-xs font-bold text-slate-900 dark:text-white">
+                                    <?= $pipeline['stage3']['completed'] ?>
+                                    <span class="text-slate-400 dark:text-slate-500 font-normal">/ <?= $totalPersonnel ?> Evaluated</span>
+                                </span>
+                                <span class="text-xs font-bold text-slate-400 dark:text-slate-500">
                                     <?= $totalPersonnel > 0 ? round(($pipeline['stage3']['completed'] / $totalPersonnel) * 100) : 0 ?>%
                                 </span>
                             </div>
-                            <div class="w-full bg-slate-100 dark:bg-[#07130e] rounded-full h-1.5 overflow-hidden">
-                                <div class="bg-sky-500 h-1.5 rounded-full transition-all duration-500" style="width: <?= $totalPersonnel > 0 ? min(100, round(($pipeline['stage3']['completed'] / $totalPersonnel) * 100)) : 0 ?>%;"></div>
+                            <div class="w-full bg-slate-200 dark:bg-[#11241a] rounded-full h-1 overflow-hidden spms-track-dark">
+                                <div class="bg-emerald-500 dark:bg-[#10b981] h-1 rounded-full transition-all duration-500 spms-bar-green" style="width: <?= $totalPersonnel > 0 ? min(100, round(($pipeline['stage3']['completed'] / $totalPersonnel) * 100)) : 0 ?>%;"></div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Clean Row Breakdown -->
-                    <div class="pt-3 border-t border-slate-100 dark:border-[#16281f] space-y-1.5 mt-2">
-                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
-                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
-                                <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-xs shadow-emerald-500/50 shrink-0"></span>
-                                Approved Ratings
-                            </span>
-                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage3']['completed'] ?></span>
+                    <div class="pt-3 border-t border-slate-200/70 dark:border-[#14261d] space-y-1.5 mt-3 text-xs" style="border-top-color: #14261d;">
+                        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                            <span>Approved Ratings</span>
+                            <span class="font-bold text-slate-900 dark:text-white"><?= $pipeline['stage3']['completed'] ?></span>
                         </div>
-                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
-                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
-                                <span class="w-2 h-2 rounded-full bg-blue-500 shadow-xs shadow-blue-500/50 shrink-0"></span>
-                                Under Evaluation
-                            </span>
-                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage3']['evaluating'] ?></span>
+                        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                            <span>Under Evaluation</span>
+                            <span class="font-bold text-slate-900 dark:text-white"><?= $pipeline['stage3']['evaluating'] ?></span>
                         </div>
-                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
-                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
-                                <span class="w-2 h-2 rounded-full bg-cyan-500 shadow-xs shadow-cyan-500/50 shrink-0"></span>
-                                Submitted Awaiting
-                            </span>
-                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage3']['submitted'] ?></span>
+                        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                            <span>Submitted Awaiting</span>
+                            <span class="font-bold text-slate-900 dark:text-white"><?= $pipeline['stage3']['submitted'] ?></span>
                         </div>
-                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
-                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
-                                <span class="w-2 h-2 rounded-full bg-slate-400 dark:bg-zinc-600 shrink-0"></span>
-                                Draft Accomplishment
-                            </span>
-                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage3']['draft'] ?></span>
+                        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                            <span>Draft Accomplishment</span>
+                            <span class="font-bold text-slate-700 dark:text-slate-300"><?= $pipeline['stage3']['draft'] ?></span>
                         </div>
                     </div>
                 </div>
 
-                <!-- STAGE 4: Performance Rewarding & Development -->
-                <div class="p-5 flex flex-col justify-between hover:bg-slate-50/40 dark:hover:bg-white/[0.015] transition-colors">
+                <!-- STAGE 4: Rewarding & Dev. -->
+                <div class="p-4 rounded-xl bg-slate-50/70 dark:bg-[#07130e] border border-slate-200 dark:border-[#142a1e] flex flex-col justify-between min-h-[250px] spms-stage-box">
                     <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <div class="flex items-center gap-2">
-                                <span class="w-6 h-6 rounded-lg bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-black text-xs flex items-center justify-center border border-emerald-200/50 dark:border-emerald-500/20">
-                                    4
-                                </span>
-                                <div>
-                                    <h3 class="text-xs font-bold text-slate-900 dark:text-white leading-tight">Rewarding &amp; Development</h3>
-                                    <p class="text-2xs text-slate-400 dark:text-slate-500 font-medium">Incentives &amp; HR Phase</p>
-                                </div>
-                            </div>
-                            <span class="px-2 py-0.5 rounded-md text-2xs font-extrabold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-500/20">
-                                Stage 4
-                            </span>
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-slate-100 dark:bg-[#0e271a]/50 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-[#193d2b]">STAGE 4</span>
                         </div>
-
-                        <!-- Hero Number & Progress -->
-                        <div class="mt-4 mb-3">
-                            <div class="flex items-baseline justify-between mb-1.5">
-                                <div class="flex items-baseline gap-1.5">
-                                    <span class="text-2xl font-black text-slate-900 dark:text-white"><?= $pipeline['stage4']['pbb_eligible'] ?></span>
-                                    <span class="text-xs text-slate-400 dark:text-slate-500 font-bold">PBB / Incentive Eligible</span>
-                                </div>
-                                <span class="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-200/40 dark:border-emerald-500/20">
-                                    <?= $totalPersonnel > 0 ? round(($pipeline['stage4']['pbb_eligible'] / $totalPersonnel) * 100) : 0 ?>%
-                                </span>
-                            </div>
-                            <div class="w-full bg-slate-100 dark:bg-[#07130e] rounded-full h-1.5 overflow-hidden">
-                                <div class="bg-emerald-500 h-1.5 rounded-full transition-all duration-500" style="width: <?= $totalPersonnel > 0 ? min(100, round(($pipeline['stage4']['pbb_eligible'] / $totalPersonnel) * 100)) : 0 ?>%;"></div>
-                            </div>
-                        </div>
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Rewarding &amp; Dev.</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Incentives &amp; HR Phase</p>
                     </div>
-
-                    <!-- Clean Row Breakdown -->
-                    <div class="pt-3 border-t border-slate-100 dark:border-[#16281f] space-y-1.5 mt-2">
-                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
-                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
-                                <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-xs shadow-emerald-500/50 shrink-0"></span>
-                                Outstanding &amp; VS
-                            </span>
-                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage4']['pbb_eligible'] ?></span>
-                        </div>
-                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
-                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
-                                <span class="w-2 h-2 rounded-full bg-teal-500 shadow-xs shadow-teal-500/50 shrink-0"></span>
-                                TWG Certified
-                            </span>
-                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage4']['certified'] ?></span>
-                        </div>
-                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
-                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
-                                <span class="w-2 h-2 rounded-full bg-indigo-500 shadow-xs shadow-indigo-500/50 shrink-0"></span>
-                                CSC Export Ready
-                            </span>
-                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage4']['export_ready'] ?></span>
-                        </div>
-                        <div class="flex items-center justify-between text-xs px-2 py-1 rounded-lg hover:bg-slate-100/60 dark:hover:bg-white/[0.025] transition-colors">
-                            <span class="flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
-                                <span class="w-2 h-2 rounded-full bg-slate-400 dark:bg-zinc-600 shrink-0"></span>
-                                Dev. Needed
-                            </span>
-                            <span class="font-bold text-slate-900 dark:text-white px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#16281f] text-[11px]"><?= $pipeline['stage4']['dev_needed'] ?></span>
-                        </div>
-                    </div>
+                    <div></div>
                 </div>
 
-            </div>
-        </div>
-
-        <!-- 3. COLLEGE & DEPARTMENT COMPLIANCE LEADERBOARD -->
-        <div class="p-6 rounded-xl bg-slate-50/70 dark:bg-[#0c1510]/50 border border-slate-200 dark:border-[#1a2b22] shadow-xs">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-                <div class="min-w-0 flex-1">
-                    <h2 class="text-base font-bold text-slate-900 dark:text-white">Department Compliance Leaderboard</h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Target compliance and final evaluation completion per academic and admin unit</p>
-                </div>
-                <div class="relative shrink-0" style="width: 260px; max-width: 100%;">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 dark:text-slate-400">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                    </div>
-                    <input type="text" id="leaderboard-search" onkeyup="filterLeaderboard()"
-                           placeholder="Search department..." 
-                           class="w-full text-xs font-medium py-2 pl-9 pr-4 rounded-xl bg-white dark:bg-[#032316] border border-slate-200 dark:border-[#0c4a33] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-2xs" />
-                </div>
-            </div>
-
-            <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-[#1a2b22] bg-white dark:bg-[#0c1510]">
-                <table class="w-full text-left border-collapse" id="leaderboard-table">
-                    <thead>
-                        <tr class="bg-slate-100/60 dark:bg-[#032316]/50 border-b border-slate-200 dark:border-[#1a2b22] text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">
-                            <th class="py-3 px-4 w-16">Rank</th>
-                            <th class="py-3 px-4">College / Department</th>
-                            <th class="py-3 px-4 text-center">Headcount</th>
-                            <th class="py-3 px-4 text-center">Target Compliance</th>
-                            <th class="py-3 px-4 text-center">Eval Completion</th>
-                            <th class="py-3 px-4 text-right">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-200/70 dark:divide-[#1a2b22] text-xs font-semibold">
-                        <?php if (empty($deptLeaderboard)): ?>
-                            <tr>
-                                <td colspan="6" class="py-8 px-4 text-center text-slate-400 dark:text-slate-500">
-                                    No department records found for this cycle.
-                                </td>
-                            </tr>
-                        <?php else: ?>
-                            <?php foreach ($deptLeaderboard as $index => $dept): ?>
-                                <tr class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors dept-row">
-                                    <td class="py-3 px-4 font-black text-slate-400 dark:text-slate-500">#<?= $index + 1 ?></td>
-                                    <td class="py-3 px-4 font-bold text-slate-900 dark:text-white dept-name"><?= esc($dept['name']) ?></td>
-                                    <td class="py-3 px-4 text-center text-slate-800 dark:text-slate-300 font-bold"><?= $dept['headcount'] ?></td>
-                                    <td class="py-3 px-4 text-center">
-                                        <span class="font-black text-indigo-700 dark:text-highlight-400"><?= $dept['headcount'] > 0 ? round(($dept['target_approved'] / $dept['headcount']) * 100) : 0 ?>%</span>
-                                        <span class="text-xs text-slate-400 dark:text-slate-400 font-normal ml-1">(<?= $dept['target_approved'] ?>/<?= $dept['headcount'] ?>)</span>
-                                    </td>
-                                    <td class="py-3 px-4 text-center">
-                                        <span class="font-black text-emerald-700 dark:text-emerald-400"><?= $dept['compliance_pct'] ?>%</span>
-                                        <span class="text-xs text-slate-400 dark:text-slate-400 font-normal ml-1">(<?= $dept['eval_completed'] ?>/<?= $dept['headcount'] ?>)</span>
-                                    </td>
-                                    <td class="py-3 px-4 text-right">
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase border <?= $dept['badge_class'] ?? 'bg-blue-50 text-blue-700 border-blue-200' ?>">
-                                             <?= esc($dept['status_badge']) ?>
-                                        </span>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
             </div>
         </div>
 
@@ -1359,21 +1132,7 @@ function filterRoster() {
     }
 }
 
-function filterLeaderboard() {
-    const input = document.getElementById('leaderboard-search');
-    if (!input) return;
-    const filter = input.value.toLowerCase();
-    const rows = document.querySelectorAll('.dept-row');
 
-    rows.forEach(row => {
-        const deptName = row.querySelector('.dept-name').textContent.toLowerCase();
-        if (deptName.includes(filter)) {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
-        }
-    });
-}
 
 function applyCollegeFilter(unitId) {
     const url = new URL(window.location.href);

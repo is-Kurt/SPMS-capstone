@@ -277,9 +277,10 @@
         </div>
 
         <!-- QUEUE NAVIGATION TABS -->
-        <div class="px-6 lg:px-8 pt-3 pb-5 border-b border-surface-border shrink-0 overflow-x-auto custom-scrollbar">
+        <!-- QUEUE NAVIGATION TABS -->
+        <div class="px-4 lg:px-8 border-b border-surface-border shrink-0 overflow-x-auto no-scrollbar">
             <?php foreach ($periods as $pKey => $period): ?>
-                <div id="period-subtabs-<?= $pKey ?>" class="period-subtabs flex items-center gap-3 <?= ($pKey === $firstPeriodKey) ? 'flex' : 'hidden' ?>">
+                <div id="period-subtabs-<?= $pKey ?>" class="period-subtabs items-center gap-4 sm:gap-8 <?= ($pKey === $firstPeriodKey) ? 'flex' : 'hidden' ?>">
                     <?php foreach ($period['tabs'] as $key => $group): ?>
                         <?php 
                             $isActive = ($pKey === $firstPeriodKey && $key === $firstTabKey);
@@ -292,44 +293,71 @@
                                 default => 'text-text-muted'
                             };
 
-                            $defaultBadgeClass = ($count > 0 && in_array($key, ['action', 'target_approval']))
-                                ? 'px-2.5 py-0.5 rounded-full text-[10px] font-black transition-colors bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                                : 'px-2.5 py-0.5 rounded-full text-[10px] font-black transition-colors bg-surface-border/50 text-text-muted group-hover:text-text';
+                            $activeBorderColor = match($key) {
+                                'action', 'target_approval' => 'border-amber-500 dark:border-amber-400 text-amber-500 dark:text-amber-400',
+                                'pending', 'target_returned' => 'border-rose-500 dark:border-rose-400 text-rose-500 dark:text-rose-400',
+                                'completed', 'target_approved' => 'border-emerald-500 dark:border-emerald-400 text-emerald-500 dark:text-emerald-400',
+                                default => 'border-accent text-accent'
+                            };
+
+                            $activeBadgeClass = match($key) {
+                                'action', 'target_approval' => 'px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30',
+                                'pending', 'target_returned' => 'px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30',
+                                'completed', 'target_approved' => 'px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30',
+                                default => 'px-2 py-0.5 rounded-full text-[10px] font-black bg-accent/20 text-accent border border-accent/30'
+                            };
+
+                            $defaultBadgeClass = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface-border/50 text-text-muted group-hover:text-text';
+
+                            $shortLabel = match($key) {
+                                'action' => 'Action',
+                                'pending' => 'Returned',
+                                'completed' => 'Completed',
+                                'target_approval' => 'Review',
+                                'target_returned' => 'Returned',
+                                'target_approved' => 'Approved',
+                                default => $group['label']
+                            };
                         ?>
                         <button id="tab-btn-<?= $key ?>" 
                                 type="button"
-                                class="tab-btn group relative inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer whitespace-nowrap <?= $isActive ? 'active-tab bg-accent text-white shadow-md shadow-accent/20 border border-accent' : 'bg-surface-border/20 dark:bg-zinc-800/60 text-text-muted hover:text-text hover:bg-surface-border/40 border border-surface-border/50' ?>"
+                                data-tab-key="<?= $key ?>"
+                                data-active-border="<?= esc($activeBorderColor) ?>"
+                                data-active-badge="<?= esc($activeBadgeClass) ?>"
+                                data-default-badge="<?= esc($defaultBadgeClass) ?>"
+                                class="tab-btn group relative inline-flex items-center gap-1.5 sm:gap-2 pb-3.5 pt-1 text-xs sm:text-sm transition-all duration-150 cursor-pointer whitespace-nowrap shrink-0 <?= $isActive ? 'active-tab font-black ' . $activeBorderColor . ' border-b-2' : 'font-semibold text-text-muted hover:text-text border-b-2 border-transparent hover:border-surface-border' ?>"
                                 onclick="switchTab('<?= $key ?>', this)">
                             
                             <!-- Icon -->
                             <span class="tab-icon">
                                 <?php if ($key === 'action'): ?>
-                                    <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-amber-500' ?>" data-default-color="text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-amber-500 dark:text-amber-400' : 'text-text-muted group-hover:text-amber-500' ?>" data-default-color="text-text-muted group-hover:text-amber-500" data-active-color="text-amber-500 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                     </svg>
                                 <?php elseif ($key === 'pending'): ?>
-                                    <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-rose-500' ?>" data-default-color="text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-rose-500 dark:text-rose-400' : 'text-text-muted group-hover:text-rose-500' ?>" data-default-color="text-text-muted group-hover:text-rose-500" data-active-color="text-rose-500 dark:text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                     </svg>
                                 <?php elseif ($key === 'completed' || $key === 'target_approved'): ?>
-                                    <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-emerald-500' ?>" data-default-color="text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-emerald-500 dark:text-emerald-400' : 'text-text-muted group-hover:text-emerald-500' ?>" data-default-color="text-text-muted group-hover:text-emerald-500" data-active-color="text-emerald-500 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 <?php elseif ($key === 'target_approval'): ?>
-                                    <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-amber-500' ?>" data-default-color="text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-amber-500 dark:text-amber-400' : 'text-text-muted group-hover:text-amber-500' ?>" data-default-color="text-text-muted group-hover:text-amber-500" data-active-color="text-amber-500 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                     </svg>
                                 <?php elseif ($key === 'target_returned'): ?>
-                                    <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-white' : 'text-rose-500' ?>" data-default-color="text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-rose-500 dark:text-rose-400' : 'text-text-muted group-hover:text-rose-500' ?>" data-default-color="text-text-muted group-hover:text-rose-500" data-active-color="text-rose-500 dark:text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                                     </svg>
                                 <?php endif; ?>
                             </span>
 
-                            <span><?= esc($group['label']) ?></span>
+                            <span class="sm:hidden"><?= esc($shortLabel) ?></span>
+                            <span class="hidden sm:inline"><?= esc($group['label']) ?></span>
 
                             <!-- Badge -->
-                            <span class="tab-badge ml-1 <?= $isActive ? 'px-2.5 py-0.5 rounded-full text-[10px] font-black transition-colors bg-white/20 text-white' : $defaultBadgeClass ?>" data-default-badge="<?= esc($defaultBadgeClass) ?>">
+                            <span class="tab-badge ml-0.5 <?= $isActive ? $activeBadgeClass : $defaultBadgeClass ?>">
                                 <?= $count ?>
                             </span>
                         </button>
@@ -474,7 +502,7 @@
 
                                             <td class="block lg:table-cell px-0 lg:px-6 pt-1 pb-0 lg:py-4 text-right lg:min-w-[135px]">
                                                 <a href="<?= site_url('ratings/show/' . $row['folder_id']) ?>" 
-                                                class="w-full lg:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 lg:py-2 bg-accent hover:bg-accent-hover text-white rounded-xl font-bold text-xs transition-all shadow-md active:scale-95 cursor-pointer whitespace-nowrap">
+                                                class="w-full lg:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 lg:py-2 bg-accent hover:bg-accent-hover text-zinc-950 rounded-xl font-black text-xs transition-all shadow-sm active:scale-95 cursor-pointer whitespace-nowrap">
                                                     <?= ($pKey === 'target') ? 'Review Targets' : 'Open Evaluation' ?>
                                                 </a>
                                             </td>
@@ -680,28 +708,34 @@
             el.classList.remove('flex', 'flex-col', 'flex-1', 'min-w-0', 'min-h-0', 'h-full');
         });
 
-        const activeClasses = ['active-tab', 'bg-accent', 'text-white', 'shadow-md', 'shadow-accent/20', 'border-accent'];
-        const inactiveClasses = ['bg-surface-border/20', 'dark:bg-zinc-800/60', 'text-text-muted', 'hover:text-text', 'hover:bg-surface-border/40', 'border-surface-border/50'];
-        
         document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.remove(...activeClasses);
-            btn.classList.add(...inactiveClasses);
+            btn.classList.remove('active-tab', 'font-black');
+            btn.classList.add('font-semibold', 'text-text-muted', 'border-transparent');
             
+            const activeBorder = btn.getAttribute('data-active-border');
+            if (activeBorder) {
+                activeBorder.split(' ').forEach(cls => {
+                    if (cls.trim()) btn.classList.remove(cls.trim());
+                });
+            }
+
             const iconSvg = btn.querySelector('.tab-icon svg');
             if (iconSvg) {
-                iconSvg.classList.remove('text-white');
+                const activeColor = iconSvg.getAttribute('data-active-color');
                 const defaultColor = iconSvg.getAttribute('data-default-color');
-                if (defaultColor) iconSvg.classList.add(defaultColor);
+                if (activeColor) {
+                    activeColor.split(' ').forEach(cls => { if (cls.trim()) iconSvg.classList.remove(cls.trim()); });
+                }
+                if (defaultColor) {
+                    defaultColor.split(' ').forEach(cls => { if (cls.trim()) iconSvg.classList.add(cls.trim()); });
+                }
             }
 
             const badge = btn.querySelector('.tab-badge');
             if (badge) {
-                badge.classList.remove('bg-white/20', 'text-white');
-                const defaultBadgeClass = badge.getAttribute('data-default-badge');
+                const defaultBadgeClass = btn.getAttribute('data-default-badge');
                 if (defaultBadgeClass) {
-                    badge.className = 'tab-badge ' + defaultBadgeClass;
-                } else {
-                    badge.className = 'tab-badge ml-1 px-2.5 py-0.5 rounded-full text-[10px] font-black transition-colors bg-surface-border/50 text-text-muted group-hover:text-text';
+                    badge.className = 'tab-badge ml-0.5 ' + defaultBadgeClass;
                 }
             }
         });
@@ -713,19 +747,32 @@
         }
 
         if (btnElement) {
-            btnElement.classList.remove(...inactiveClasses);
-            btnElement.classList.add(...activeClasses);
+            btnElement.classList.remove('font-semibold', 'text-text-muted', 'border-transparent');
+            btnElement.classList.add('active-tab', 'font-black', 'border-b-2');
             
+            const activeBorder = btnElement.getAttribute('data-active-border');
+            if (activeBorder) {
+                activeBorder.split(' ').forEach(cls => {
+                    if (cls.trim()) btnElement.classList.add(cls.trim());
+                });
+            }
+
             const iconSvg = btnElement.querySelector('.tab-icon svg');
             if (iconSvg) {
                 const defaultColor = iconSvg.getAttribute('data-default-color');
-                if (defaultColor) iconSvg.classList.remove(defaultColor);
-                iconSvg.classList.add('text-white');
+                const activeColor = iconSvg.getAttribute('data-active-color');
+                if (defaultColor) {
+                    defaultColor.split(' ').forEach(cls => { if (cls.trim()) iconSvg.classList.remove(cls.trim()); });
+                }
+                if (activeColor) {
+                    activeColor.split(' ').forEach(cls => { if (cls.trim()) iconSvg.classList.add(cls.trim()); });
+                }
             }
 
             const activeBadge = btnElement.querySelector('.tab-badge');
-            if (activeBadge) {
-                activeBadge.className = 'tab-badge ml-1 px-2.5 py-0.5 rounded-full text-[10px] font-black transition-colors bg-white/20 text-white';
+            const activeBadgeClass = btnElement.getAttribute('data-active-badge');
+            if (activeBadge && activeBadgeClass) {
+                activeBadge.className = 'tab-badge ml-0.5 ' + activeBadgeClass;
             }
         }
 

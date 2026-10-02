@@ -85,10 +85,21 @@ class ProfilePasswordChange extends BaseController
         }
 
         $userModel->update($userId, [
-            'password' => password_hash((string)$this->request->getPost('new_password'), PASSWORD_DEFAULT)
+            'password'              => password_hash((string)$this->request->getPost('new_password'), PASSWORD_DEFAULT),
+            'remember_token'        => null,
+            'remember_token_expiry' => null
         ]);
 
+        // Invalidate persistent remember-me cookie
+        setcookie('remember_me', '', time() - 3600, '/');
+
+        // Regenerate session ID and purge old session ID data to prevent session hijacking
+        session()->regenerate(true);
+
         session()->remove('password_change_authorized');
+
+        audit_log('PASSWORD_CHANGED', 'AUTH', 'user', (int) $userId, 'User changed password from profile', (int) $userId);
+
         return redirect()->to('profile')->with('success', 'Your password has been successfully updated.');
     }
 }

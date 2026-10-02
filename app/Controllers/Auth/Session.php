@@ -255,6 +255,9 @@ class Session extends BaseController
             }
         }
 
+        // Security: Regenerate session ID upon successful login to prevent session fixation
+        session()->regenerate();
+
         session()->set([
             'user_id'    => $user['id'],
             'email'      => $user['email'],
@@ -278,11 +281,14 @@ class Session extends BaseController
                 'remember_token_expiry' => date('Y-m-d H:i:s', strtotime('+30 days'))
             ]);
 
+            $isSecure = (ENVIRONMENT === 'production') || (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on');
+
             setcookie('remember_me', $token, [
                 'expires'  => time() + (30 * 24 * 60 * 60),
                 'path'     => '/',
                 'httponly' => true,
-                'secure'   => false
+                'secure'   => $isSecure,
+                'samesite' => 'Lax'
             ]);
         }
 

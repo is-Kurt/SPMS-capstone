@@ -50,7 +50,7 @@ class PasswordReset extends BaseController
                 return redirect()->back()->with('error', "Please wait {$secondsLeft} seconds before requesting another code.");
             }
 
-            $code = sprintf("%06d", mt_rand(1, 999999)); 
+            $code = (string) random_int(100000, 999999);
             $expiresAt = date('Y-m-d H:i:s', strtotime('+5 minutes'));
 
             $userModel->update($user['id'], [
@@ -117,13 +117,19 @@ class PasswordReset extends BaseController
             return redirect()->to('password/forgot')->with('error', 'Your reset code has expired. Please request a new one.');
         }
 
-        // 4. Success - Update Password
+        // 4. Success - Update Password and invalidate previous sessions/tokens
         $userModel->update($user['id'], [
-            'password' => password_hash($password, PASSWORD_DEFAULT),
-            'reset_code' => null,
-            'reset_code_expires_at' => null
+            'password'              => password_hash($password, PASSWORD_DEFAULT),
+            'reset_code'            => null,
+            'reset_code_expires_at' => null,
+            'remember_token'        => null,
+            'remember_token_expiry' => null
         ]);
 
-        return redirect()->to('login');
+        setcookie('remember_me', '', time() - 3600, '/');
+
+        audit_log('PASSWORD_RESET', 'AUTH', 'user', (int) $user['id'], 'User reset password via recovery code', (int) $user['id']);
+
+        return redirect()->to('login')->with('success', 'Your password has been reset successfully. Please log in.');
     }
 }
