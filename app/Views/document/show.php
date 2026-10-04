@@ -1073,10 +1073,26 @@
                     Guide<span class="hidden sm:inline"> Template</span>
                 </div>
             <?php endif; ?>
+
+            <!-- Theme Toggle Divider & Button -->
+            <div class="h-6 w-px bg-surface-border hidden sm:block shrink-0 mx-0.5"></div>
+            <button type="button" onclick="window.handleThemeToggle(this)"
+                    class="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-surface-border/20 hover:bg-surface-border/40 text-text border border-surface-border transition-all cursor-pointer shadow-sm active:scale-[0.98] shrink-0 print-hide"
+                    title="Toggle Light / Dark Mode"
+                    aria-label="Toggle Light / Dark Mode">
+                <!-- Sun icon: visible in dark mode, click to switch to light -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 hidden dark:block text-amber-400 hover:rotate-45 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <!-- Moon icon: visible in light mode, click to switch to dark -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 block dark:hidden text-slate-700 hover:-rotate-12 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+            </button>
         </div>
     </div>
 
-    <!-- Mobile Secondary Action Toolstrip (Prev/Next Ratee, Print, Excel, Rubrics) -->
+    <!-- Mobile Secondary Action Toolstrip (Prev/Next Ratee, Print, Excel, Rubrics, Theme) -->
     <div class="md:hidden flex-none flex items-center gap-1.5 px-3 py-1.5 bg-surface/50 border-b border-surface-border overflow-x-auto custom-scrollbar print-hide">
         <?php if (!empty($rateeNav)): ?>
             <div class="flex items-center bg-surface-border/30 border border-surface-border rounded-lg p-0.5 text-xs font-bold shadow-2xs shrink-0">
@@ -1144,7 +1160,22 @@
             </svg>
             <span>Rubric</span>
         </button>
+
+        <!-- Mobile Theme Toggle Button -->
+        <button type="button" onclick="window.handleThemeToggle(this)" 
+                class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-[10px] font-bold rounded-lg border border-surface-border transition-all cursor-pointer shadow-xs shrink-0"
+                title="Toggle Light / Dark Mode"
+                aria-label="Toggle Light / Dark Mode">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 hidden dark:block text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 block dark:hidden text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+            <span>Theme</span>
+        </button>
     </div>
+
 
     <div class="flex-none flex bg-white dark:bg-[#0c1410] border-b border-slate-200 dark:border-surface-border px-3 sm:px-6 <?= $isEditable ? 'gap-2' : 'gap-4' ?> text-sm font-bold pt-2 overflow-x-auto whitespace-nowrap scrollbar-hide print-hide" id="tab-bar">
         <!-- Tabs injected here via JS -->

@@ -83,9 +83,14 @@
         <!-- VIEW 1: BSU SAMPLE GUIDE (7 Real-World Examples from Sheet)   -->
         <!-- ============================================================= -->
         <div id="view-bsu-guide" class="space-y-5">
-            <div class="p-3 rounded-lg bg-amber-950/30 border border-amber-500/30 text-xs text-amber-200/90 leading-relaxed">
-                <span class="font-bold text-amber-300">💡 Institutional Guideline:</span> 
-                Always attach your rubrics when submitting. The targets in your rubrics should match the targets in your DPCR/IPCR/IPERF.
+            <div class="p-3 rounded-lg bg-amber-950/30 border border-amber-500/30 text-xs text-amber-200/90 leading-relaxed flex items-start gap-2.5">
+                <svg class="w-4 h-4 text-amber-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                <div>
+                    <span class="font-bold text-amber-300">Institutional Guideline:</span> 
+                    Always attach your rubrics when submitting. The targets in your rubrics should match the targets in your DPCR/IPCR/IPERF.
+                </div>
             </div>
 
             <!-- Example 1: Database Recording -->

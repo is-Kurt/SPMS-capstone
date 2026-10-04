@@ -76,3 +76,25 @@ if (!function_exists('audit_log')) {
         }
     }
 }
+
+if (!function_exists('parse_short_os')) {
+    /**
+     * Extracts a concise platform identifier (e.g. 'Win10', 'Win11', 'Mac', 'iOS', 'Android') from a User-Agent string.
+     */
+    function parse_short_os(?string $ua): string
+    {
+        if (empty($ua)) return '';
+        if (stripos($ua, 'Windows NT 10.0') !== false) return 'Win10';
+        if (stripos($ua, 'Windows NT 11.0') !== false) return 'Win11';
+        if (stripos($ua, 'Windows NT 6.3') !== false) return 'Win8.1';
+        if (stripos($ua, 'Windows NT 6.1') !== false) return 'Win7';
+        if (stripos($ua, 'Windows') !== false) return 'Win';
+        if (stripos($ua, 'iPhone') !== false) return 'iOS';
+        if (stripos($ua, 'iPad') !== false) return 'iPadOS';
+        if (stripos($ua, 'Macintosh') !== false || stripos($ua, 'Mac OS') !== false) return 'Mac';
+        if (stripos($ua, 'Android') !== false) return 'Android';
+        if (stripos($ua, 'Linux') !== false) return 'Linux';
+        if (stripos($ua, 'CLI') !== false) return 'CLI';
+        return '';
+    }
+}

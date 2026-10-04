@@ -47,36 +47,36 @@
                 <!-- Visual Mockup Canvas -->
                 <div class="spms-guide-canvas">
                     <!-- Mini Window Chrome -->
-                    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #0d4a32; padding-bottom: 10px; margin-bottom: 12px;">
+                    <div class="spms-mock-chrome">
                         <div style="display: flex; align-items: center; gap: 6px;">
                             <span style="width: 10px; height: 10px; border-radius: 9999px; background-color: #ef4444; display: inline-block;"></span>
                             <span style="width: 10px; height: 10px; border-radius: 9999px; background-color: #f59e0b; display: inline-block;"></span>
                             <span style="width: 10px; height: 10px; border-radius: 9999px; background-color: #10b981; display: inline-block;"></span>
-                            <span style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-left: 8px;">BSU SPMS • Interactive Performance Grid</span>
+                            <span class="spms-mock-chrome-title">BSU SPMS • Interactive Performance Grid</span>
                         </div>
-                        <span style="font-size: 10px; font-weight: 700; color: #34d399; background-color: #083b27; padding: 2px 8px; border-radius: 9999px; border: 1px solid #10593b;">
+                        <span class="spms-mock-autosave">
                             ● Auto-Save Active
                         </span>
                     </div>
                     <!-- Mini Spreadsheet Grid -->
-                    <div style="border: 1px solid #0d4a32; border-radius: 8px; overflow: hidden; background-color: #032115; font-size: 11px;">
-                        <div style="display: grid; grid-template-columns: 1.5fr 2fr 1.5fr; background-color: #062e1e; border-bottom: 1px solid #0d4a32; padding: 8px 12px; font-weight: 800; color: #82c8a6; font-size: 10px; text-transform: uppercase;">
+                    <div class="spms-mock-table-box">
+                        <div class="spms-mock-thead">
                             <div>Major Final Output (MFO)</div>
                             <div>Success Indicators (Q, E, T)</div>
                             <div>Target Commitment</div>
                         </div>
-                        <div style="display: grid; grid-template-columns: 1.5fr 2fr 1.5fr; padding: 10px 12px; border-bottom: 1px solid #0d4a32; color: #e2e8f0; align-items: center;">
+                        <div class="spms-mock-trow-1">
                             <div style="font-weight: 600;">Higher Education Services</div>
-                            <div style="color: #94a3b8; font-size: 10px;">100% of course syllabi submitted on time</div>
-                            <div style="border: 1.5px solid #f59e0b; background-color: #083b27; padding: 4px 8px; border-radius: 6px; color: #ffffff; font-weight: 700; display: flex; align-items: center; justify-content: space-between;">
+                            <div class="spms-mock-cell-sub">100% of course syllabi submitted on time</div>
+                            <div class="spms-mock-target-input">
                                 <span>100% achieved</span>
                                 <span style="color: #f59e0b; font-weight: 900; animation: blink 1s infinite;">|</span>
                             </div>
                         </div>
-                        <div style="display: grid; grid-template-columns: 1.5fr 2fr 1.5fr; padding: 10px 12px; color: #64748b; align-items: center;">
+                        <div class="spms-mock-trow-2">
                             <div>Research & Innovation</div>
-                            <div style="font-size: 10px;">Target research publications completed</div>
-                            <div style="color: #5a8b73;">2 papers published</div>
+                            <div class="spms-mock-cell-sub">Target research publications completed</div>
+                            <div class="spms-mock-cell-sub2">2 papers published</div>
                         </div>
                     </div>
                     <!-- Floating Action Pointer -->
@@ -107,10 +107,10 @@
                 <div class="spms-guide-canvas">
                     <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center;">
                         <!-- Node 1: Ratee Folder -->
-                        <div style="background-color: #032115; border: 1px solid #0d4a32; border-radius: 10px; padding: 14px; text-align: center;">
+                        <div class="spms-mock-card">
                             <span style="font-size: 10px; font-weight: 700; color: #f59e0b; display: block; margin-bottom: 4px;">YOUR COMMITMENTS</span>
-                            <div style="font-size: 12px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">Target Setting Complete</div>
-                            <span style="font-size: 9px; font-weight: 800; background-color: #083b27; color: #34d399; padding: 4px 10px; border-radius: 9999px; border: 1px solid #10593b; display: inline-block;">
+                            <div class="spms-mock-card-title">Target Setting Complete</div>
+                            <span class="spms-mock-pill-green">
                                 Click "Submit Targets"
                             </span>
                         </div>
@@ -123,19 +123,19 @@
                             <span style="font-size: 9px; color: #f59e0b; font-weight: 700; margin-top: 4px;">Instant Routing</span>
                         </div>
                         <!-- Node 2: Supervisor Approval -->
-                        <div style="background-color: #032115; border: 1px solid #0d4a32; border-radius: 10px; padding: 14px; text-align: center;">
-                            <span style="font-size: 10px; font-weight: 700; color: #34d399; display: block; margin-bottom: 4px;">SUPERVISOR / EVALUATOR</span>
-                            <div style="font-size: 12px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">Review & Validation</div>
-                            <span style="font-size: 9px; font-weight: 800; background-color: #083b27; color: #34d399; padding: 4px 10px; border-radius: 9999px; border: 1px solid #10593b; display: inline-block;">
-                                • TARGET APPROVED ✓
+                        <div class="spms-mock-card">
+                            <span style="font-size: 10px; font-weight: 700; color: #047857; display: block; margin-bottom: 4px;" class="dark:text-[#34d399]">SUPERVISOR / EVALUATOR</span>
+                            <div class="spms-mock-card-title">Review & Validation</div>
+                            <span class="spms-mock-pill-green">
+                                • TARGET APPROVED
                             </span>
                         </div>
                     </div>
                     <!-- Cascading Rule Banner -->
-                    <div style="margin-top: 14px; padding: 10px 14px; border-radius: 8px; background-color: #062e1e; border: 1px solid #0d4a32; display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 16px;">🌿</span>
-                        <div style="font-size: 11px; color: #cbd5e1;">
-                            <strong style="color: #34d399;">Institutional Cascading Rule:</strong> Approved superior OPCR commitments cascade downward to provide the mandatory reference basis for subordinates' DPCR/IPCR papers.
+                    <div class="spms-mock-banner-green">
+                        <svg class="w-4 h-4 text-emerald-600 dark:text-[#34d399] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <div style="font-size: 11px;">
+                            <strong style="color: #047857;" class="dark:text-[#34d399]">Institutional Cascading Rule:</strong> Approved superior OPCR commitments cascade downward to provide the mandatory reference basis for subordinates' DPCR/IPCR papers.
                         </div>
                     </div>
                 </div>
@@ -158,36 +158,42 @@
                 <!-- Visual Mockup Canvas -->
                 <div class="spms-guide-canvas">
                     <!-- Mini Row with Paperclip -->
-                    <div style="background-color: #032115; border: 1px solid #0d4a32; border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                        <div style="font-size: 11px; font-weight: 700; color: #ffffff;">
+                    <div class="spms-mock-row-attach">
+                        <div class="spms-mock-row-text">
                             Syllabi & Curriculum Targets (AY 2026–2027)
                         </div>
-                        <div style="background-color: #083b27; border: 1px solid #10593b; color: #34d399; font-size: 10px; font-weight: 800; padding: 5px 12px; border-radius: 6px; display: flex; align-items: center; gap: 6px;">
+                        <div class="spms-mock-pill-green" style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 6px; font-size: 10px;">
                             <svg style="width: 12px; height: 12px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
                             <span>Attach MOVs (2 Files)</span>
                         </div>
                     </div>
                     <!-- Mini Attached Files List -->
                     <div style="display: flex; flex-direction: column; gap: 8px;">
-                        <div style="background-color: #062e1e; border: 1px solid #0d4a32; border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between;">
+                        <div class="spms-mock-file-card">
                             <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size: 14px;">📄</span>
+                                <svg class="w-4 h-4 text-slate-400 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                                 <div>
-                                    <div style="font-size: 11px; font-weight: 700; color: #ffffff;">Approved_Curriculum_Syllabi.pdf</div>
-                                    <div style="font-size: 9px; color: #5a8b73;">1.4 MB • Uploaded Sept 15, 2026</div>
+                                    <div class="spms-mock-file-name">Approved_Curriculum_Syllabi.pdf</div>
+                                    <div class="spms-mock-file-meta">1.4 MB • Uploaded Sept 15, 2026</div>
                                 </div>
                             </div>
-                            <span style="font-size: 9px; font-weight: 800; color: #34d399; background-color: #083b27; padding: 2px 8px; border-radius: 4px;">✓ Verified MOV</span>
+                            <span class="spms-mock-pill-green" style="border-radius: 4px; padding: 2px 8px; display: inline-flex; align-items: center; gap: 4px;">
+                                <svg style="width: 10px; height: 10px;" class="text-emerald-700 dark:text-[#00df82] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                <span>Verified MOV</span>
+                            </span>
                         </div>
-                        <div style="background-color: #062e1e; border: 1px solid #0d4a32; border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between;">
+                        <div class="spms-mock-file-card">
                             <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-size: 14px;">📄</span>
+                                <svg class="w-4 h-4 text-slate-400 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                                 <div>
-                                    <div style="font-size: 11px; font-weight: 700; color: #ffffff;">Dean_Department_Endorsement.pdf</div>
-                                    <div style="font-size: 9px; color: #5a8b73;">820 KB • Uploaded Sept 15, 2026</div>
+                                    <div class="spms-mock-file-name">Dean_Department_Endorsement.pdf</div>
+                                    <div class="spms-mock-file-meta">820 KB • Uploaded Sept 15, 2026</div>
                                 </div>
                             </div>
-                            <span style="font-size: 9px; font-weight: 800; color: #34d399; background-color: #083b27; padding: 2px 8px; border-radius: 4px;">✓ Verified MOV</span>
+                            <span class="spms-mock-pill-green" style="border-radius: 4px; padding: 2px 8px; display: inline-flex; align-items: center; gap: 4px;">
+                                <svg style="width: 10px; height: 10px;" class="text-emerald-700 dark:text-[#00df82] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                <span>Verified MOV</span>
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -198,7 +204,7 @@
                         <span>Step 3: Attach Supporting Evidence & MOVs</span>
                     </h4>
                     <ul style="margin: 0; padding-left: 18px; font-size: 11px; line-height: 1.7; display: flex; flex-direction: column; gap: 6px;">
-                        <li><strong>Attachment Trigger:</strong> In your paper, click the <span class="text-emerald-600 dark:text-[#34d399] font-bold">paperclip icon (📎)</span> on any target commitment row.</li>
+                        <li><strong>Attachment Trigger:</strong> In your paper, click the <span class="text-emerald-600 dark:text-[#34d399] font-bold">paperclip icon</span> on any target commitment row.</li>
                         <li><strong>Accepted Files:</strong> Upload official memos, attendance logs, published articles, certificates, or student evaluations.</li>
                         <li><strong>Audit Proof:</strong> Evaluators, TWG, and PMT calibrate your final ratings by reviewing these attached files.</li>
                     </ul>
@@ -210,26 +216,30 @@
                 <!-- Visual Mockup Canvas -->
                 <div class="spms-guide-canvas">
                     <!-- CSC Document Header Mockup -->
-                    <div style="background-color: #032115; border: 1px solid #0d4a32; border-radius: 8px; padding: 14px; text-align: center; margin-bottom: 12px;">
+                    <div class="spms-mock-card" style="margin-bottom: 12px;">
                         <span style="font-size: 9px; font-weight: 800; letter-spacing: 0.1em; color: #f59e0b; text-transform: uppercase;">REPUBLIC OF THE PHILIPPINES • CIVIL SERVICE COMMISSION</span>
-                        <div style="font-size: 13px; font-weight: 900; color: #ffffff; margin: 4px 0;">BENGUET STATE UNIVERSITY SPMS FORM</div>
-                        <span style="font-size: 10px; color: #5a8b73;">Official Institutional Rating Summary with Signature Blocks</span>
+                        <div class="spms-mock-card-title" style="font-size: 13px; font-weight: 900; margin: 4px 0;">BENGUET STATE UNIVERSITY SPMS FORM</div>
+                        <span class="spms-mock-file-meta" style="font-size: 10px;">Official Institutional Rating Summary with Signature Blocks</span>
                     </div>
                     <!-- Two Action Buttons Preview -->
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
-                        <div style="background-color: #083b27; border: 1px solid #11593b; border-radius: 8px; padding: 12px; text-align: center;">
-                            <div style="font-size: 16px; margin-bottom: 4px;">📊</div>
-                            <div style="font-size: 11px; font-weight: 800; color: #ffffff;">Export Excel (.xlsx)</div>
-                            <div style="font-size: 9px; color: #82c8a6; margin-top: 2px;">Formula-ready CSC template</div>
+                        <div class="spms-mock-action-card">
+                            <div class="flex items-center justify-center mb-1 text-emerald-700 dark:text-[#00df82]">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 4h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            </div>
+                            <div class="spms-mock-action-title">Export Excel (.xlsx)</div>
+                            <div class="spms-mock-action-sub">Formula-ready CSC template</div>
                         </div>
-                        <div style="background-color: #083b27; border: 1px solid #11593b; border-radius: 8px; padding: 12px; text-align: center;">
-                            <div style="font-size: 16px; margin-bottom: 4px;">🖨️</div>
-                            <div style="font-size: 11px; font-weight: 800; color: #ffffff;">Print / PDF (.pdf)</div>
-                            <div style="font-size: 9px; color: #82c8a6; margin-top: 2px;">Formatted for hardcopy routing</div>
+                        <div class="spms-mock-action-card">
+                            <div class="flex items-center justify-center mb-1 text-emerald-700 dark:text-[#00df82]">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                            </div>
+                            <div class="spms-mock-action-title">Print / PDF (.pdf)</div>
+                            <div class="spms-mock-action-sub">Formatted for hardcopy routing</div>
                         </div>
                     </div>
                     <!-- Signature Blocks Mockup -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; border-top: 1px dashed #0d4a32; padding-top: 10px; font-size: 9px; color: #5a8b73;">
+                    <div class="spms-mock-sign-grid">
                         <div>Ratee Signature</div>
                         <div>Immediate Supervisor</div>
                         <div>Head of Agency Approval</div>
@@ -255,7 +265,7 @@
                     <!-- Form Types Matrix -->
                     <div class="spms-guide-matrix-card">
                         <h5 class="spms-guide-matrix-header text-amber-600 dark:text-[#f59e0b]">
-                            <span>📄</span>
+                            <svg class="w-4 h-4 text-amber-600 dark:text-[#f59e0b] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                             <span>SPMS Performance Papers</span>
                         </h5>
                         <div class="spms-guide-matrix-list">
@@ -281,7 +291,7 @@
                     <!-- 4-Stage Cycle Matrix -->
                     <div class="spms-guide-matrix-card">
                         <h5 class="spms-guide-matrix-header text-emerald-600 dark:text-[#34d399]">
-                            <span>🔄</span>
+                            <svg class="w-4 h-4 text-emerald-600 dark:text-[#34d399] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                             <span>The 4-Stage CSC Cycle</span>
                         </h5>
                         <div class="spms-guide-matrix-list">
@@ -308,7 +318,7 @@
 
             <!-- Mandatory CSC 5-Year Retention Compliance Note (Visible on all slides) -->
             <div class="spms-guide-retention-banner">
-                <span style="font-size: 14px;">🛡️</span>
+                <svg class="w-4 h-4 text-emerald-700 dark:text-[#34d399] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
                 <div style="line-height: 1.4;">
                     <strong>CSC 5-Year Record Retention:</strong> Pursuant to CSC & National Archives of the Philippines (NAP) policies, all submitted performance commitments and MOVs are preserved for five (5) years for institutional audit and accreditation.
                 </div>
@@ -549,6 +559,269 @@
         background-color: #02170f !important;
         border: 1px solid #0d4a32 !important;
     }
+
+    /* Mockup Canvas UI Elements - Light & Dark Theme Adaptivity */
+    .spms-mock-chrome {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 10px;
+        margin-bottom: 12px;
+    }
+    .dark .spms-mock-chrome {
+        border-bottom-color: #0d4a32 !important;
+    }
+    .spms-mock-chrome-title {
+        font-size: 11px;
+        font-weight: 700;
+        color: #64748b;
+        margin-left: 8px;
+    }
+    .dark .spms-mock-chrome-title {
+        color: #94a3b8 !important;
+    }
+    .spms-mock-autosave {
+        font-size: 10px;
+        font-weight: 700;
+        color: #047857;
+        background-color: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        padding: 2px 8px;
+        border-radius: 9999px;
+    }
+    .dark .spms-mock-autosave {
+        color: #34d399 !important;
+        background-color: #083b27 !important;
+        border-color: #10593b !important;
+    }
+
+    /* Table Mockup (Slide 1) */
+    .spms-mock-table-box {
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        overflow: hidden;
+        background-color: #ffffff;
+        font-size: 11px;
+    }
+    .dark .spms-mock-table-box {
+        border-color: #0d4a32 !important;
+        background-color: #032115 !important;
+    }
+    .spms-mock-thead {
+        display: grid;
+        grid-template-columns: 1.5fr 2fr 1.5fr;
+        background-color: #f1f5f9;
+        border-bottom: 1px solid #cbd5e1;
+        padding: 8px 12px;
+        font-weight: 800;
+        color: #065f46;
+        font-size: 10px;
+        text-transform: uppercase;
+    }
+    .dark .spms-mock-thead {
+        background-color: #062e1e !important;
+        border-bottom-color: #0d4a32 !important;
+        color: #82c8a6 !important;
+    }
+    .spms-mock-trow-1 {
+        display: grid;
+        grid-template-columns: 1.5fr 2fr 1.5fr;
+        padding: 10px 12px;
+        border-bottom: 1px solid #e2e8f0;
+        color: #0f172a;
+        align-items: center;
+    }
+    .dark .spms-mock-trow-1 {
+        border-bottom-color: #0d4a32 !important;
+        color: #e2e8f0 !important;
+    }
+    .spms-mock-trow-2 {
+        display: grid;
+        grid-template-columns: 1.5fr 2fr 1.5fr;
+        padding: 10px 12px;
+        color: #64748b;
+        align-items: center;
+    }
+    .dark .spms-mock-trow-2 {
+        color: #64748b !important;
+    }
+    .spms-mock-cell-sub {
+        color: #64748b;
+        font-size: 10px;
+    }
+    .dark .spms-mock-cell-sub {
+        color: #94a3b8 !important;
+    }
+    .spms-mock-cell-sub2 {
+        color: #047857;
+    }
+    .dark .spms-mock-cell-sub2 {
+        color: #5a8b73 !important;
+    }
+    .spms-mock-target-input {
+        border: 1.5px solid #f59e0b;
+        background-color: #fffbeb;
+        padding: 4px 8px;
+        border-radius: 6px;
+        color: #92400e;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .dark .spms-mock-target-input {
+        background-color: #083b27 !important;
+        color: #ffffff !important;
+    }
+
+    /* Cards / Nodes Mockups (Slide 2, 3, 4) */
+    .spms-mock-card {
+        background-color: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        padding: 14px;
+        text-align: center;
+    }
+    .dark .spms-mock-card {
+        background-color: #032115 !important;
+        border-color: #0d4a32 !important;
+    }
+    .spms-mock-card-title {
+        font-size: 12px;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 8px;
+    }
+    .dark .spms-mock-card-title {
+        color: #ffffff !important;
+    }
+    .spms-mock-pill-green {
+        font-size: 9px;
+        font-weight: 800;
+        background-color: #ecfdf5;
+        color: #047857;
+        padding: 4px 10px;
+        border-radius: 9999px;
+        border: 1px solid #a7f3d0;
+        display: inline-block;
+    }
+    .dark .spms-mock-pill-green {
+        background-color: #083b27 !important;
+        color: #34d399 !important;
+        border-color: #10593b !important;
+    }
+    .spms-mock-banner-green {
+        margin-top: 14px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        background-color: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #065f46;
+    }
+    .dark .spms-mock-banner-green {
+        background-color: #062e1e !important;
+        border-color: #0d4a32 !important;
+        color: #cbd5e1 !important;
+    }
+
+    /* Attachments Mockup (Slide 3) */
+    .spms-mock-row-attach {
+        background-color: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 10px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+    .dark .spms-mock-row-attach {
+        background-color: #032115 !important;
+        border-color: #0d4a32 !important;
+    }
+    .spms-mock-row-text {
+        font-size: 11px;
+        font-weight: 700;
+        color: #0f172a;
+    }
+    .dark .spms-mock-row-text {
+        color: #ffffff !important;
+    }
+    .spms-mock-file-card {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .dark .spms-mock-file-card {
+        background-color: #062e1e !important;
+        border-color: #0d4a32 !important;
+    }
+    .spms-mock-file-name {
+        font-size: 11px;
+        font-weight: 700;
+        color: #0f172a;
+    }
+    .dark .spms-mock-file-name {
+        color: #ffffff !important;
+    }
+    .spms-mock-file-meta {
+        font-size: 9px;
+        color: #64748b;
+    }
+    .dark .spms-mock-file-meta {
+        color: #5a8b73 !important;
+    }
+
+    /* Export & Print Mockup (Slide 4) */
+    .spms-mock-action-card {
+        background-color: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        border-radius: 8px;
+        padding: 12px;
+        text-align: center;
+    }
+    .dark .spms-mock-action-card {
+        background-color: #083b27 !important;
+        border-color: #11593b !important;
+    }
+    .spms-mock-action-title {
+        font-size: 11px;
+        font-weight: 800;
+        color: #047857;
+    }
+    .dark .spms-mock-action-title {
+        color: #ffffff !important;
+    }
+    .spms-mock-action-sub {
+        font-size: 9px;
+        color: #065f46;
+        margin-top: 2px;
+    }
+    .dark .spms-mock-action-sub {
+        color: #82c8a6 !important;
+    }
+    .spms-mock-sign-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 8px;
+        text-align: center;
+        border-top: 1px dashed #cbd5e1;
+        padding-top: 10px;
+        font-size: 9px;
+        color: #64748b;
+    }
+    .dark .spms-mock-sign-grid {
+        border-top-color: #0d4a32 !important;
+        color: #5a8b73 !important;
+    }
     .spms-guide-instruction-card {
         background-color: #f8fafc;
         border: 1px solid #e2e8f0;
@@ -701,7 +974,7 @@
         }
         if (nextBtn) {
             if (step === totalGuideSteps) {
-                nextBtn.innerText = 'Got It, Start Working ✓';
+                nextBtn.innerText = 'Got It, Start Working';
                 nextBtn.onclick = closeUserGuideModal;
             } else {
                 nextBtn.innerText = 'Next Step →';

@@ -10,11 +10,12 @@
 
         /* Top Mobile Folder Card */
         .spms-folder-card {
-            background-color: #061810 !important;
-            border-color: #14422b !important;
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
         }
         .dark .spms-folder-card,
         .dark [class*="dark:border-[#14422b]"] {
+            background-color: #061810 !important;
             border-color: #14422b !important;
         }
 
@@ -31,7 +32,11 @@
         .dark [class*="dark:border-[#0e3a25]"] {
             border-color: #0e3a25 !important;
         }
-        .spms-tab-active,
+        .spms-tab-active {
+            background-color: #064e3b !important;
+            border-color: #047857 !important;
+            color: #ffffff !important;
+        }
         .dark .spms-tab-active,
         .dark [class*="dark:bg-[#0e422d]"] {
             background-color: #0e422d !important;
@@ -43,13 +48,20 @@
             border-color: transparent !important;
             color: #64748b !important;
         }
+        .spms-tab-inactive:hover {
+            color: #0f172a !important;
+        }
         .dark .spms-tab-inactive {
             color: #7f998c !important;
         }
         .dark .spms-tab-inactive:hover {
             color: #ffffff !important;
         }
-        .spms-tab-badge,
+        .spms-tab-badge {
+            background-color: #d1fae5 !important;
+            color: #065f46 !important;
+        }
+        .dark .spms-tab-badge,
         .dark [class*="dark:bg-[#0d2a1d]"] {
             background-color: #0d2a1d !important;
             color: #00df82 !important;
@@ -67,14 +79,22 @@
             border-color: #123d27 !important;
             color: #ffffff !important;
         }
-        .spms-btn-queue,
+        .spms-btn-queue {
+            background-color: #ecfdf5 !important;
+            border: 1px solid #a7f3d0 !important;
+            color: #047857 !important;
+        }
+        .spms-btn-queue:hover {
+            background-color: #d1fae5 !important;
+            border-color: #6ee7b7 !important;
+            color: #065f46 !important;
+        }
         .dark .spms-btn-queue,
         .dark [class*="dark:bg-[#072418]"] {
             background-color: #072418 !important;
             border-color: #144730 !important;
             color: #00df82 !important;
         }
-        .spms-btn-queue:hover,
         .dark .spms-btn-queue:hover {
             background-color: #0c3322 !important;
         }
@@ -104,13 +124,23 @@
         }
 
         /* Circular KPI Icons */
-        .spms-kpi-icon-green,
+        .spms-kpi-icon-green {
+            background-color: #ecfdf5 !important;
+            border: 1px solid #a7f3d0 !important;
+            color: #047857 !important;
+        }
+        .dark .spms-kpi-icon-green,
         .dark [class*="dark:bg-[#0b291c]"] {
             background-color: #0b291c !important;
             border: 1px solid #144730 !important;
             color: #00df82 !important;
         }
-        .spms-kpi-icon-amber,
+        .spms-kpi-icon-amber {
+            background-color: #fffbeb !important;
+            border: 1px solid #fde68a !important;
+            color: #b45309 !important;
+        }
+        .dark .spms-kpi-icon-amber,
         .dark [class*="dark:bg-[#241a08]"] {
             background-color: #241a08 !important;
             border: 1px solid #453412 !important;
@@ -118,15 +148,26 @@
         }
 
         /* Progress Bars & Badges */
-        .spms-progress-track,
+        .spms-progress-track {
+            background-color: #e2e8f0 !important;
+        }
+        .dark .spms-progress-track,
         .dark [class*="dark:bg-[#0d2a1d]"] {
             background-color: #0d2a1d !important;
         }
-        .spms-progress-fill,
+        .spms-progress-fill {
+            background-color: #059669 !important;
+        }
+        .dark .spms-progress-fill,
         .dark [class*="dark:bg-[#00df82]"] {
             background-color: #00df82 !important;
         }
-        .spms-badge-amber,
+        .spms-badge-amber {
+            background-color: #fef3c7 !important;
+            border: 1px solid #fde68a !important;
+            color: #92400e !important;
+        }
+        .dark .spms-badge-amber,
         .dark [class*="dark:bg-[#221706]"] {
             background-color: #241a08 !important;
             border-color: #47340f !important;
@@ -165,6 +206,44 @@
         .dark .spms-stage-box-active {
             background-color: #05130c !important;
             border-color: #18422b !important;
+        }
+
+        /* SPMS 4-Stage Performance Lifecycle Grid: 4 Columns on PC, Stacked on Mobile */
+        .spms-lifecycle-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            width: 100%;
+        }
+
+        @media (min-width: 1024px) {
+            .spms-lifecycle-grid {
+                display: grid !important;
+                grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+                gap: 0.75rem !important;
+                align-items: stretch !important;
+            }
+            .spms-stage-box,
+            .spms-stage-box-active {
+                min-height: 250px !important;
+                height: 100% !important;
+            }
+            .spms-stage-accordion-btn {
+                cursor: default !important;
+                pointer-events: none !important;
+            }
+        }
+
+        @media (max-width: 1023px) {
+            .spms-lifecycle-grid {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 0.75rem !important;
+            }
+            .spms-stage-box,
+            .spms-stage-box-active {
+                min-height: auto !important;
+            }
         }
         .dark [class*="dark:border-[#18422b]"] {
             border-color: #18422b !important;
@@ -383,7 +462,7 @@
                 <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-[#7f998c] truncate">
                     <?= ($sysRole === 'Supervisor') ? (!empty($isChairScope) ? 'Department Submission Compliance' : 'College Submission Compliance') : 'Executive Performance Analytics' ?>
                 </span>
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-[#0b2b1d] text-[#00df82] border border-[#145334] shrink-0">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-300 dark:bg-[#0b2b1d] dark:text-[#00df82] dark:border-[#145334] shrink-0">
                     <?= ($sysRole === 'Supervisor') ? esc($supervisorCollegeName ?? (!empty($isChairScope) ? 'Departmental Oversight' : 'Collegiate Oversight')) : 'University-Wide Oversight' ?>
                 </span>
             </div>
@@ -394,7 +473,7 @@
                 <a href="<?= site_url('ratings') ?>" 
                    class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shadow-2xs shrink-0 spms-btn-queue">
                     <span>Queue</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-[#00df82]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-current shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                     </svg>
                 </a>
@@ -467,7 +546,7 @@
                 <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-[#7f998c] truncate">
                     <?= ($sysRole === 'Supervisor') ? (!empty($isChairScope) ? 'Department Submission Compliance' : 'College Submission Compliance') : 'Executive Performance Analytics' ?>
                 </span>
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#0b2b1d] text-[#00df82] border border-[#145334] shrink-0">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-300 dark:bg-[#0b2b1d] dark:text-[#00df82] dark:border-[#145334] shrink-0">
                     <?= ($sysRole === 'Supervisor') ? esc($supervisorCollegeName ?? (!empty($isChairScope) ? 'Departmental Oversight' : 'Collegiate Oversight')) : 'University-Wide Oversight' ?>
                 </span>
             </div>
@@ -547,7 +626,7 @@
                         <a href="<?= site_url('ratings') ?>" 
                            class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors shadow-2xs shrink-0 spms-btn-queue">
                             <span>Evaluator Queue</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-[#00df82]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-current shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                             </svg>
                         </a>
@@ -556,7 +635,7 @@
                     <a href="<?= site_url('ratings') ?>" 
                        class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors shadow-2xs shrink-0 spms-btn-queue">
                         <span>Evaluator Queue</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-[#00df82]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-current shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                         </svg>
                     </a>
@@ -1010,35 +1089,39 @@
         <div class="p-4 sm:p-6 rounded-2xl shadow-xs spms-lifecycle-container">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                 <div>
-                    <h2 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight">SPMS 4-Stage Lifecycle</h2>
-                    <p class="text-[10px] sm:text-xs text-slate-500 dark:text-[#7f998c] mt-0.5">CSC MC No. 6, S. 2012 Standard</p>
+                    <h2 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight">SPMS 4-Stage Performance Lifecycle</h2>
+                    <p class="text-[10px] sm:text-xs text-slate-500 dark:text-[#7f998c] mt-0.5">CSC MC No. 6, S. 2012 • Standard University Strategic Calibration Cycle</p>
                 </div>
                 
-                <!-- Stepper Flow -->
+                <!-- Stepper Flow (Matches Image 2) -->
                 <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 sm:pb-0 text-[11px]">
                     <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-bold shrink-0 bg-emerald-500/15 dark:bg-[#0c442b] border border-emerald-500/30 dark:border-[#176641] text-emerald-700 dark:text-[#00df82]">
-                        <span>1 Planning</span>
+                        <span class="w-4 h-4 rounded-full bg-[#00df82] text-[#04170e] text-[9px] font-black flex items-center justify-center shrink-0">1</span>
+                        <span>Planning</span>
                     </div>
-                    <span class="text-slate-300 dark:text-[#1e4832] shrink-0 font-bold">•</span>
-                    <div class="inline-flex items-center text-slate-500 dark:text-[#7f998c] font-medium shrink-0">
-                        <span>2 Coaching</span>
+                    <span class="w-3 sm:w-4 h-px bg-slate-300 dark:bg-[#1e4832] shrink-0"></span>
+                    <div class="inline-flex items-center gap-1.5 text-slate-500 dark:text-[#7f998c] font-medium shrink-0">
+                        <span class="w-4 h-4 rounded-full border border-slate-300 dark:border-[#2a4d3b] text-[9px] font-bold flex items-center justify-center shrink-0">2</span>
+                        <span>Coaching</span>
                     </div>
-                    <span class="text-slate-300 dark:text-[#1e4832] shrink-0 font-bold">•</span>
-                    <div class="inline-flex items-center text-slate-500 dark:text-[#7f998c] font-medium shrink-0">
-                        <span>3 Review</span>
+                    <span class="w-3 sm:w-4 h-px bg-slate-300 dark:bg-[#1e4832] shrink-0"></span>
+                    <div class="inline-flex items-center gap-1.5 text-slate-500 dark:text-[#7f998c] font-medium shrink-0">
+                        <span class="w-4 h-4 rounded-full border border-slate-300 dark:border-[#2a4d3b] text-[9px] font-bold flex items-center justify-center shrink-0">3</span>
+                        <span>Review</span>
                     </div>
-                    <span class="text-slate-300 dark:text-[#1e4832] shrink-0 font-bold">•</span>
-                    <div class="inline-flex items-center text-slate-500 dark:text-[#7f998c] font-medium shrink-0">
-                        <span>4 Rewarding</span>
+                    <span class="w-3 sm:w-4 h-px bg-slate-300 dark:bg-[#1e4832] shrink-0"></span>
+                    <div class="inline-flex items-center gap-1.5 text-slate-500 dark:text-[#7f998c] font-medium shrink-0">
+                        <span class="w-4 h-4 rounded-full border border-slate-300 dark:border-[#2a4d3b] text-[9px] font-bold flex items-center justify-center shrink-0">4</span>
+                        <span>Rewarding</span>
                     </div>
                 </div>
             </div>
 
-            <!-- 4 Stage Cards Grid / Mobile Accordions -->
-            <div class="flex flex-col lg:grid lg:grid-cols-4 gap-3">
+            <!-- 4 Stage Cards Grid on PC (4 Columns) / Stacked on Mobile -->
+            <div class="spms-lifecycle-grid">
                 
                 <!-- STAGE 1: Target Commitment (Expanded / Current) -->
-                <div class="p-3.5 sm:p-4 rounded-xl spms-stage-box-active flex flex-col justify-between min-h-[auto] lg:min-h-[250px]">
+                <div class="p-3.5 sm:p-4 rounded-xl spms-stage-box-active flex flex-col justify-between">
                     <div>
                         <div class="flex items-center gap-2 mb-2">
                             <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-[#00df82] border border-emerald-500/20">STAGE 1</span>
@@ -1077,7 +1160,7 @@
                         </div>
                         <div class="flex items-center justify-between text-slate-500 dark:text-[#7f998c]">
                             <span>Needs Revision</span>
-                            <span class="font-bold <?= $pipeline['stage1']['returned'] > 0 ? 'text-rose-500 dark:text-rose-400' : 'text-slate-900 dark:text-white' ?>"><?= $pipeline['stage1']['returned'] ?></span>
+                            <span class="font-bold <?= $pipeline['stage1']['returned'] > 0 ? 'text-amber-500 dark:text-[#f59e0b]' : 'text-slate-900 dark:text-white' ?>"><?= $pipeline['stage1']['returned'] ?></span>
                         </div>
                         <div class="flex items-center justify-between text-slate-500 dark:text-[#7f998c]">
                             <span>Draft Mode</span>
@@ -1086,20 +1169,23 @@
                     </div>
                 </div>
 
-                <!-- STAGE 2: Monitoring & Coaching (Collapsible Accordion on Mobile) -->
-                <div class="p-3.5 sm:p-4 rounded-xl spms-stage-box flex flex-col justify-between min-h-[auto] lg:min-h-[250px] transition-all hover:border-emerald-500/30">
-                    <button type="button" onclick="toggleStageAccordion(2)" class="w-full text-left cursor-pointer lg:cursor-default">
-                        <div class="flex items-center justify-between">
-                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-[#0d2317] text-slate-500 dark:text-[#7f998c] border border-slate-200 dark:border-[#173826]">STAGE 2</span>
-                            <svg id="stage-2-chevron" class="w-4 h-4 text-slate-400 dark:text-[#7f998c] transition-transform duration-200 lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                        <h3 class="text-sm font-bold text-slate-900 dark:text-white mt-1.5">Monitoring &amp; Coaching</h3>
-                        <p class="text-[11px] text-slate-500 dark:text-[#7f998c] mt-0.5">Execution &amp; Evidence Collection</p>
-                    </button>
+                <!-- STAGE 2: Monitoring & Coaching -->
+                <div class="p-3.5 sm:p-4 rounded-xl spms-stage-box flex flex-col justify-between transition-all hover:border-emerald-500/30">
+                    <div>
+                        <button type="button" onclick="toggleStageAccordion(2)" class="w-full text-left cursor-pointer lg:cursor-default spms-stage-accordion-btn">
+                            <div class="flex items-center justify-between">
+                                <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-[#0d2317] text-slate-500 dark:text-[#7f998c] border border-slate-200 dark:border-[#173826]">STAGE 2</span>
+                                <svg id="stage-2-chevron" class="w-4 h-4 text-slate-400 dark:text-[#7f998c] transition-transform duration-200 lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                            <h3 class="text-sm font-bold text-slate-900 dark:text-white mt-1.5">Monitoring &amp; Coaching</h3>
+                            <p class="text-[11px] text-slate-500 dark:text-[#7f998c] mt-0.5">Execution &amp; Evidence</p>
+                        </button>
+                    </div>
                     
-                    <div id="stage-2-content" class="hidden lg:block pt-3 border-t border-slate-200/70 dark:border-[#14261d] space-y-1.5 mt-3 text-xs">
+                    <!-- Collapsible details on mobile only -->
+                    <div id="stage-2-content" class="hidden pt-3 border-t border-slate-200/70 dark:border-[#14261d] space-y-1.5 mt-3 text-xs">
                         <div class="flex items-center justify-between text-slate-500 dark:text-[#7f998c]">
                             <span>Active Execution</span>
                             <span class="font-bold text-slate-900 dark:text-white"><?= $pipeline['stage2']['active_execution'] ?? $pipeline['stage1']['approved'] ?></span>
@@ -1115,8 +1201,8 @@
                     </div>
                 </div>
 
-                <!-- STAGE 3: Review & Evaluation (Expanded / Detailed) -->
-                <div class="p-3.5 sm:p-4 rounded-xl spms-stage-box flex flex-col justify-between min-h-[auto] lg:min-h-[250px]">
+                <!-- STAGE 3: Review & Evaluation (Matches Image 2) -->
+                <div class="p-3.5 sm:p-4 rounded-xl spms-stage-box flex flex-col justify-between">
                     <div>
                         <div class="flex items-center gap-2 mb-2">
                             <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-[#0d2317] text-slate-500 dark:text-[#7f998c] border border-slate-200 dark:border-[#173826]">STAGE 3</span>
@@ -1142,30 +1228,41 @@
 
                     <div class="pt-2.5 border-t border-slate-200/70 dark:border-[#14261d] space-y-1.5 mt-3 text-xs">
                         <div class="flex items-center justify-between text-slate-500 dark:text-[#7f998c]">
-                            <span>Submitted Awaiting Review</span>
+                            <span>Approved Ratings</span>
+                            <span class="font-bold text-slate-900 dark:text-[#00df82]"><?= $pipeline['stage3']['completed'] ?? 0 ?></span>
+                        </div>
+                        <div class="flex items-center justify-between text-slate-500 dark:text-[#7f998c]">
+                            <span>Under Evaluation</span>
+                            <span class="font-bold text-slate-900 dark:text-white"><?= $pipeline['stage3']['evaluating'] ?? 0 ?></span>
+                        </div>
+                        <div class="flex items-center justify-between text-slate-500 dark:text-[#7f998c]">
+                            <span>Submitted Awaiting</span>
                             <span class="font-bold text-slate-900 dark:text-white"><?= $pipeline['stage3']['submitted'] ?></span>
                         </div>
                         <div class="flex items-center justify-between text-slate-500 dark:text-[#7f998c]">
                             <span>Draft Accomplishment</span>
-                            <span class="font-bold text-amber-600 dark:text-[#f59e0b]"><?= $pipeline['stage3']['draft'] ?></span>
+                            <span class="font-bold text-slate-900 dark:text-white"><?= $pipeline['stage3']['draft'] ?></span>
                         </div>
                     </div>
                 </div>
 
-                <!-- STAGE 4: Rewarding & Dev. (Collapsible Accordion on Mobile) -->
-                <div class="p-3.5 sm:p-4 rounded-xl spms-stage-box flex flex-col justify-between min-h-[auto] lg:min-h-[250px] transition-all hover:border-emerald-500/30">
-                    <button type="button" onclick="toggleStageAccordion(4)" class="w-full text-left cursor-pointer lg:cursor-default">
-                        <div class="flex items-center justify-between">
-                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-[#0d2317] text-slate-500 dark:text-[#7f998c] border border-slate-200 dark:border-[#173826]">STAGE 4</span>
-                            <svg id="stage-4-chevron" class="w-4 h-4 text-slate-400 dark:text-[#7f998c] transition-transform duration-200 lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                        <h3 class="text-sm font-bold text-slate-900 dark:text-white mt-1.5">Rewarding &amp; Dev.</h3>
-                        <p class="text-[11px] text-slate-500 dark:text-[#7f998c] mt-0.5">Incentives &amp; HR Calibrated Phase</p>
-                    </button>
+                <!-- STAGE 4: Rewarding & Dev. -->
+                <div class="p-3.5 sm:p-4 rounded-xl spms-stage-box flex flex-col justify-between transition-all hover:border-emerald-500/30">
+                    <div>
+                        <button type="button" onclick="toggleStageAccordion(4)" class="w-full text-left cursor-pointer lg:cursor-default spms-stage-accordion-btn">
+                            <div class="flex items-center justify-between">
+                                <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-[#0d2317] text-slate-500 dark:text-[#7f998c] border border-slate-200 dark:border-[#173826]">STAGE 4</span>
+                                <svg id="stage-4-chevron" class="w-4 h-4 text-slate-400 dark:text-[#7f998c] transition-transform duration-200 lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                            <h3 class="text-sm font-bold text-slate-900 dark:text-white mt-1.5">Rewarding &amp; Dev.</h3>
+                            <p class="text-[11px] text-slate-500 dark:text-[#7f998c] mt-0.5">Incentives &amp; HR Phase</p>
+                        </button>
+                    </div>
                     
-                    <div id="stage-4-content" class="hidden lg:block pt-3 border-t border-slate-200/70 dark:border-[#14261d] space-y-1.5 mt-3 text-xs">
+                    <!-- Collapsible details on mobile only -->
+                    <div id="stage-4-content" class="hidden pt-3 border-t border-slate-200/70 dark:border-[#14261d] space-y-1.5 mt-3 text-xs">
                         <div class="flex items-center justify-between text-slate-500 dark:text-[#7f998c]">
                             <span>PBB / Bonus Eligible</span>
                             <span class="font-bold text-slate-900 dark:text-[#00df82]"><?= $pipeline['stage4']['pbb_eligible'] ?? 0 ?></span>
@@ -2017,5 +2114,21 @@ function applyCollegeFilter(unitId) {
         url.searchParams.delete('unit_id');
     }
     window.location.href = url.toString();
+}
+
+function toggleStageAccordion(stageNum) {
+    if (window.innerWidth >= 1024) return;
+    const content = document.getElementById(`stage-${stageNum}-content`);
+    const chevron = document.getElementById(`stage-${stageNum}-chevron`);
+    if (!content) return;
+    
+    const isHidden = content.classList.contains('hidden');
+    if (isHidden) {
+        content.classList.remove('hidden');
+        if (chevron) chevron.classList.add('rotate-180');
+    } else {
+        content.classList.add('hidden');
+        if (chevron) chevron.classList.remove('rotate-180');
+    }
 }
 </script>

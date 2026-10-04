@@ -8,9 +8,15 @@
     <link rel="shortcut icon" type="image/x-icon" href="<?= base_url('favicon.ico') ?>">
 
     <script>
-        if (localStorage.getItem('theme') !== 'light') {
-            document.documentElement.classList.add('dark');
-        }
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
     </script>
 
     <style>

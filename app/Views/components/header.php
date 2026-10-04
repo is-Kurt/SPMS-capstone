@@ -125,15 +125,6 @@
             <!-- Right: Theme Toggle, Notification Bell, User Profile Capsule, Mobile Menu -->
             <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
 
-                <!-- SPMS User Guide Button -->
-                <button type="button" onclick="if(typeof openUserGuideModal === 'function') openUserGuideModal()" 
-                        class="flex relative w-8 h-8 rounded-full sm:rounded-xl text-emerald-400 hover:text-white shadow-xs items-center justify-center transition-all cursor-pointer shrink-0"
-                        style="background-color: #0a2318; border: 1px solid #144730;"
-                        title="SPMS User Guide & Performance Cycle">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-400 hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                </button>
 
                 <!-- Theme Toggle Button (Desktop & Tablet) -->
                 <button type="button" id="theme-toggle" 
@@ -215,25 +206,34 @@
                             Profile
                         </a>
 
-                        <button type="button" onclick="if(typeof openUserGuideModal === 'function') openUserGuideModal(); document.getElementById('profile-dropdown-menu')?.classList.add('hidden');" 
-                                class="w-full flex items-center gap-3 px-3 py-2 text-sm font-semibold text-text-muted hover:bg-amber-500/10 hover:text-amber-500 rounded-xl transition-colors cursor-pointer text-left">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5 text-amber-500 opacity-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                            </svg>
-                            SPMS User Guide
-                        </button>
 
-                        <hr class="my-1.5 border-surface-border">
+                        <?php if ($showHamburger): ?>
+                            <!-- For users with a mobile sidebar, hide Sign Out in dropdown on mobile (kept for desktop md+) -->
+                            <hr class="my-1.5 border-surface-border hidden md:block">
 
-                        <?= form_open('login') ?>
-                            <input type="hidden" name="_method" value="DELETE">
-                            <button type="submit" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10 rounded-xl transition-colors cursor-pointer">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                </svg>
-                                Sign out
-                            </button>
-                        <?= form_close() ?>
+                            <?= form_open('login', ['class' => 'hidden md:block m-0']) ?>
+                                <input type="hidden" name="_method" value="DELETE">
+                                <button type="submit" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10 rounded-xl transition-colors cursor-pointer">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                    </svg>
+                                    Sign out
+                                </button>
+                            <?= form_close() ?>
+                        <?php else: ?>
+                            <!-- For single-tab users (employees with only Folders), keep Sign Out accessible on mobile -->
+                            <hr class="my-1.5 border-surface-border">
+
+                            <?= form_open('login', ['class' => 'm-0']) ?>
+                                <input type="hidden" name="_method" value="DELETE">
+                                <button type="submit" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10 rounded-xl transition-colors cursor-pointer">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                    </svg>
+                                    Sign out
+                                </button>
+                            <?= form_close() ?>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -421,25 +421,15 @@
                     </button>
                 </div>
 
-                <!-- User Name & Role/Email with Chevron -->
-                <a href="<?= site_url('profile') ?>" class="mt-3.5 block group">
-                    <div class="flex items-center justify-between">
-                        <div class="min-w-0 pr-2">
-                            <h3 class="text-base font-extrabold text-white tracking-tight leading-tight group-hover:text-emerald-200 transition-colors truncate">
-                                <?= esc($displayName) ?>
-                            </h3>
-                            <p class="text-xs text-emerald-200/80 font-medium truncate mt-0.5">
-                                <?= esc(session('email') ?: ($role . ' • BSU SPMS')) ?>
-                            </p>
-                        </div>
-                        <!-- Chevron icon to Profile -->
-                        <div class="text-emerald-300/80 group-hover:text-white transition-colors shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                    </div>
-                </a>
+                <!-- User Name & Role/Email (Clean header info, no redundant dropdown chevron) -->
+                <div class="mt-3.5 block">
+                    <h3 class="text-base font-extrabold text-white tracking-tight leading-tight truncate">
+                        <?= esc($displayName) ?>
+                    </h3>
+                    <p class="text-xs text-emerald-200/80 font-medium truncate mt-0.5">
+                        <?= esc(session('email') ?: ($role . ' • BSU SPMS')) ?>
+                    </p>
+                </div>
             </div>
 
             <!-- Telegram-Style Menu List -->
@@ -525,16 +515,6 @@
                     <span>My Profile</span>
                 </a>
 
-                <button type="button" 
-                        onclick="if(typeof openUserGuideModal === 'function') openUserGuideModal(); if(typeof window.closeMobileDrawer === 'function') window.closeMobileDrawer();"
-                        class="spms-drawer-item text-left">
-                    <span class="spms-drawer-icon" style="color: #f59e0b !important;">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
-                    </span>
-                    <span>SPMS User Guide</span>
-                </button>
 
                 <div class="spms-drawer-divider"></div>
 
@@ -597,16 +577,19 @@
             window.closeMobileDrawer();
         });
 
+        // Universal Theme Toggle Handler
+        function handleThemeToggle(btn) {
+            if (typeof window.handleThemeToggle === 'function') {
+                window.handleThemeToggle(btn);
+            }
+        }
+
         // Theme toggle inside Telegram drawer
         if (drawerThemeToggle) {
             drawerThemeToggle.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                document.documentElement.classList.toggle('dark');
-                localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-                if (typeof initEditor === 'function') {
-                    initEditor();
-                }
+                handleThemeToggle(drawerThemeToggle);
             });
         }
 
@@ -614,11 +597,7 @@
         if (themeToggleBtn) {
             themeToggleBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                document.documentElement.classList.toggle('dark');
-                localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-                if (typeof initEditor === 'function') {
-                    initEditor();
-                }
+                handleThemeToggle(themeToggleBtn);
                 profileMenu?.classList.add('hidden');
             });
         }

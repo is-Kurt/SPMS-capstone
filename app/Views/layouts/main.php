@@ -11,10 +11,50 @@
 
     <script>
         // Applied before first paint so the page never flashes the wrong theme.
-        // Defaults to dark when no preference has been saved yet.
-        if (localStorage.getItem('theme') !== 'light') {
-            document.documentElement.classList.add('dark');
-        }
+        // 1. If user previously chose a theme, use saved preference.
+        // 2. Otherwise, adapt to device/OS setting (prefers-color-scheme).
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+            if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+
+            // Real-time sync with OS theme changes when user has no explicit override saved
+            if (window.matchMedia) {
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+                    if (!localStorage.getItem('theme')) {
+                        document.documentElement.classList.toggle('dark', e.matches);
+                    }
+                });
+            }
+        })();
+
+        // Global Theme Toggle Handler with smooth transition & micro-spin animation
+        window.handleThemeToggle = function(btn) {
+            document.documentElement.classList.add('theme-transitioning');
+            if (btn) {
+                btn.classList.add('theme-toggle-spin');
+            }
+
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+
+            if (typeof initEditor === 'function') {
+                initEditor();
+            }
+
+            setTimeout(() => {
+                document.documentElement.classList.remove('theme-transitioning');
+                if (btn) {
+                    btn.classList.remove('theme-toggle-spin');
+                }
+            }, 380);
+        };
 
         // Lets static JS (which can't read the PHP ENVIRONMENT constant directly)
         // know whether it's running in development - used by header.js to decide
@@ -30,6 +70,37 @@
 
     <meta name="csrf-token-name" content="<?= csrf_token() ?>">
     <meta name="csrf-token-hash" content="<?= csrf_hash() ?>">
+
+    <!-- Smooth Theme Transition Engine: active only during theme toggle to prevent flash on reload -->
+    <style>
+        html.theme-transitioning,
+        html.theme-transitioning *,
+        html.theme-transitioning *::before,
+        html.theme-transitioning *::after {
+            transition: background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                        border-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                        color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                        fill 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                        stroke 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                        box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            transition-delay: 0s !important;
+        }
+
+        /* Subtle micro-rotation for theme toggle buttons */
+        .theme-toggle-spin {
+            animation: theme-spin 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Subtle adaptive auth card border & elevation */
+        .spms-auth-card {
+            border: 1px solid rgba(226, 232, 240, 0.75) !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02) !important;
+        }
+        .dark .spms-auth-card {
+            border: 1px solid rgba(16, 185, 129, 0.18) !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+        }
+    </style>
 
     <title>SPMS</title>
 </head>
