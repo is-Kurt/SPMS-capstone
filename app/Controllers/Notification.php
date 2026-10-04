@@ -8,18 +8,21 @@ class Notification extends BaseController
 {
     /**
      * GET /notifications
-     * Fetches unread count and recent notifications list formatted for the UI.
+     * Renders dedicated notifications page for browser navigation, or returns JSON for AJAX polling.
      */
     public function index()
     {
         $userId = session()->get('user_id');
         if (!$userId) {
-            return $this->respond(['status' => 'error', 'message' => 'Unauthorized'], 401);
+            if ($this->request->isAJAX() || str_contains($this->request->getHeaderLine('Accept'), 'application/json')) {
+                return $this->respond(['status' => 'error', 'message' => 'Unauthorized'], 401);
+            }
+            return redirect()->to('login');
         }
 
         $model = new NotificationModel();
         $unreadCount = $model->getUnreadCount($userId);
-        $notifications = $model->getUserNotifications($userId, 25);
+        $notifications = $model->getUserNotifications($userId, 100);
 
         $formatted = array_map(function ($n) {
             $senderName = null;
@@ -44,10 +47,18 @@ class Notification extends BaseController
             ];
         }, $notifications);
 
-        return $this->respond([
-            'status'        => 'success',
-            'unread_count'  => $unreadCount,
+        if ($this->request->isAJAX() || str_contains($this->request->getHeaderLine('Accept'), 'application/json')) {
+            return $this->respond([
+                'status'        => 'success',
+                'unread_count'  => $unreadCount,
+                'notifications' => $formatted,
+            ]);
+        }
+
+        return view('notifications/index', [
+            'unreadCount'   => $unreadCount,
             'notifications' => $formatted,
+            'title'         => 'Notifications - SPMS'
         ]);
     }
 

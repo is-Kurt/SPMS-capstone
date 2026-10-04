@@ -21,7 +21,7 @@
     <?= view('components/create_team_modal') ?>
 <?php endif; ?>
 
-<div class="p-2 sm:p-4 lg:p-8 max-w-[100rem] mx-auto flex flex-col lg:flex-row gap-4 lg:gap-8 lg:min-h-[calc(100vh-6rem)] lg:pb-4">
+<div class="p-2 sm:p-4 lg:p-5 xl:p-8 max-w-[100rem] mx-auto flex flex-col lg:flex-row gap-4 lg:gap-5 xl:gap-8 lg:min-h-[calc(100vh-6rem)] lg:pb-4">
     
     <!-- LEFT SIDEBAR -->
     <div id="app-sidebar" class="fixed inset-y-0 left-0 z-[120] w-72 bg-surface lg:bg-transparent lg:w-60 lg:static lg:flex flex-shrink-0 flex-col h-full overflow-hidden transition-transform duration-300 transform -translate-x-full lg:translate-x-0 border-r border-surface-border lg:border-none shadow-2xl lg:shadow-none">
@@ -60,7 +60,11 @@
 
     <!-- MAIN CONTENT (Changed h-full to lg:h-full to FIX MOBILE SCROLLING) -->
     <div class="flex-1 flex flex-col min-w-0 overflow-visible relative">
-        <?= view($mainView, $mainData) ?>
+        <?= view($mainView, array_merge([
+            'sidebarFolders'   => $sidebarFolders ?? [],
+            'selectedFolderId' => $selectedFolderId ?? null,
+            'sidebarTitle'     => $sidebarTitle ?? 'Evaluation Folders'
+        ], $mainData)) ?>
     </div>
 
 </div>

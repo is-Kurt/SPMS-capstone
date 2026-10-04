@@ -125,19 +125,19 @@
             <!-- Right: Theme Toggle, Notification Bell, User Profile Capsule, Mobile Menu -->
             <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
 
-                <!-- SPMS User Guide Button (Desktop / Tablet) -->
+                <!-- SPMS User Guide Button -->
                 <button type="button" onclick="if(typeof openUserGuideModal === 'function') openUserGuideModal()" 
-                        class="hidden sm:flex relative w-8 h-8 rounded-xl text-amber-300 hover:text-white shadow-xs items-center justify-center transition-all cursor-pointer shrink-0"
-                        style="background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(245, 158, 11, 0.35);"
+                        class="flex relative w-8 h-8 rounded-full sm:rounded-xl text-emerald-400 hover:text-white shadow-xs items-center justify-center transition-all cursor-pointer shrink-0"
+                        style="background-color: #0a2318; border: 1px solid #144730;"
                         title="SPMS User Guide & Performance Cycle">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-400 hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-400 hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
                 </button>
 
-                <!-- Theme Toggle Button -->
+                <!-- Theme Toggle Button (Desktop & Tablet) -->
                 <button type="button" id="theme-toggle" 
-                        class="relative w-8 h-8 rounded-xl text-slate-300 hover:text-white shadow-xs flex items-center justify-center transition-all cursor-pointer shrink-0"
+                        class="hidden sm:flex relative w-8 h-8 rounded-xl text-slate-300 hover:text-white shadow-xs items-center justify-center transition-all cursor-pointer shrink-0"
                         style="background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(16, 185, 129, 0.25);"
                         title="Toggle Light / Dark Mode">
                     <!-- Sun icon: visible in dark mode, click to switch to light -->
@@ -150,87 +150,21 @@
                     </svg>
                 </button>
 
-                <!-- Notification Bell Dropdown Container -->
-                <div class="relative" id="notification-container">
-                    <button type="button" id="notification-btn"
-                            class="relative w-8 h-8 rounded-xl text-slate-300 hover:text-white shadow-xs flex items-center justify-center transition-all cursor-pointer shrink-0"
-                            style="background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(16, 185, 129, 0.25);"
-                            title="Notifications"
-                            aria-label="View Notifications">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                        </svg>
-                        <!-- Dynamic Notification Badge -->
-                        <span id="notification-badge" 
-                              class="hidden absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 bg-rose-500 text-white font-black text-[9px] rounded-full flex items-center justify-center shadow-xs border border-[#061a10] animate-pulse">
-                            0
-                        </span>
-                    </button>
-
-                    <!-- Notifications Dropdown Tray -->
-                    <div id="notification-menu" 
-                         class="hidden absolute right-0 mt-3 w-80 sm:w-96 origin-top-right rounded-2xl bg-white dark:bg-[#0c1510] p-0 shadow-2xl border border-slate-200 dark:border-[#1a2b22] ring-1 ring-black/5 z-[120] overflow-hidden">
-                        
-                        <!-- Header -->
-                        <div class="px-4 pt-3 pb-2 border-b border-slate-200 dark:border-[#1a2b22] flex flex-col gap-2.5 bg-slate-50/80 dark:bg-[#122019]/80">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <span class="font-black text-xs text-slate-900 dark:text-white uppercase tracking-wider">Notifications</span>
-                                    <span id="notification-header-count" class="hidden px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 text-[10px] font-black">
-                                        0 New
-                                    </span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <button type="button" id="btn-mark-all-read"
-                                            class="text-[11px] font-bold text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 transition-colors cursor-pointer flex items-center gap-1"
-                                            title="Mark all as read">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        <span>Mark read</span>
-                                    </button>
-                                    <span class="text-slate-300 dark:text-slate-700 text-xs">|</span>
-                                    <button type="button" id="btn-clear-all-notifs"
-                                            class="text-[11px] font-bold text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 transition-colors cursor-pointer flex items-center gap-1"
-                                            title="Clear all notifications">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                        <span>Clear</span>
-                                    </button>
-                                </div>
-                            </div>
-                            <!-- Filter Tabs (Unread vs All) -->
-                            <div class="flex items-center gap-1 bg-slate-200/70 dark:bg-[#0c1510] p-0.5 rounded-xl text-[11px] font-bold">
-                                <button type="button" id="notif-tab-unread" 
-                                        class="flex-1 py-1 px-2.5 rounded-lg text-center transition-all bg-emerald-600 text-white font-bold shadow-xs cursor-pointer">
-                                    Unread (<span id="notif-tab-unread-count">0</span>)
-                                </button>
-                                <button type="button" id="notif-tab-all" 
-                                        class="flex-1 py-1 px-2.5 rounded-lg text-center transition-all text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium cursor-pointer">
-                                    All (<span id="notif-tab-all-count">0</span>)
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Notification List (Scrollable) -->
-                        <div id="notification-list" class="max-h-[380px] overflow-y-auto custom-scrollbar divide-y divide-slate-100 dark:divide-[#15271d]">
-                            <!-- Loading / Empty / Dynamic Items injected here -->
-                            <div id="notification-loading" class="p-8 text-center text-slate-400 dark:text-slate-500 text-xs">
-                                <svg class="animate-spin h-5 w-5 mx-auto mb-2 text-emerald-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                                </svg>
-                                Loading notifications...
-                            </div>
-                        </div>
-
-                        <!-- Footer -->
-                        <div class="px-4 py-2 bg-slate-50/50 dark:bg-[#080e0b] border-t border-slate-200/60 dark:border-[#1a2b22] text-center">
-                            <span class="text-[10px] text-slate-400 dark:text-slate-500 font-medium">BSU-SPMS Activity Center</span>
-                        </div>
-                    </div>
-                </div>
+                <!-- Notification Bell Direct Link -->
+                <a href="<?= site_url('notifications') ?>" id="notification-btn"
+                   class="relative w-8 h-8 rounded-xl text-slate-300 hover:text-white shadow-xs flex items-center justify-center transition-all cursor-pointer shrink-0 <?= (isset($currentUri) && strpos($currentUri, 'notifications') === 0) ? 'ring-2 ring-emerald-400 bg-[#0d3b28] text-emerald-300' : '' ?>"
+                   style="background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(16, 185, 129, 0.25);"
+                   title="Notifications"
+                   aria-label="View Notifications">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    <!-- Dynamic Notification Badge -->
+                    <span id="notification-badge" 
+                          class="hidden absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 bg-rose-500 text-white font-black text-[9px] rounded-full flex items-center justify-center shadow-xs border border-[#061a10] animate-pulse">
+                        0
+                    </span>
+                </a>
 
                 <!-- Profile Dropdown Button Capsule (Matching GovHeader4 with Fully Visible Name on sm+) -->
                 <div class="relative">
@@ -570,6 +504,17 @@
 
                 <div class="spms-drawer-divider"></div>
 
+                <!-- Notifications Link -->
+                <a href="<?= site_url('notifications') ?>" class="spms-drawer-item <?= (isset($currentUri) && strpos($currentUri, 'notifications') === 0) ? 'active' : '' ?>">
+                    <span class="spms-drawer-icon">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                    </span>
+                    <span class="flex-1">Notifications</span>
+                    <span id="drawer-notif-badge" class="hidden px-2 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black shadow-xs">0</span>
+                </a>
+
                 <!-- Secondary Links: Profile & User Guide -->
                 <a href="<?= site_url('profile') ?>" class="spms-drawer-item">
                     <span class="spms-drawer-icon">
@@ -626,7 +571,6 @@
         window.openMobileDrawer = function() {
             if (!drawer || !drawerOverlay) return;
             profileMenu?.classList.add('hidden');
-            document.getElementById('notification-menu')?.classList.add('hidden');
             drawerOverlay.classList.add('overlay-open');
             drawer.classList.add('drawer-open');
             document.body.style.overflow = 'hidden';
@@ -702,394 +646,62 @@
             }
         });
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                window.closeMobileDrawer();
-                profileMenu?.classList.add('hidden');
-            }
-        });
-
-        // --- In-App Notifications Client ---
+        // --- In-App Notifications Background Syncer ---
         (function() {
-            const notifBtn = document.getElementById('notification-btn');
-            const notifMenu = document.getElementById('notification-menu');
             const notifBadge = document.getElementById('notification-badge');
-            const notifHeaderCount = document.getElementById('notification-header-count');
-            const notifList = document.getElementById('notification-list');
-            const markAllBtn = document.getElementById('btn-mark-all-read');
-            const clearAllBtn = document.getElementById('btn-clear-all-notifs');
-            const notifTabUnread = document.getElementById('notif-tab-unread');
-            const notifTabAll = document.getElementById('notif-tab-all');
-            const notifTabUnreadCount = document.getElementById('notif-tab-unread-count');
-            const notifTabAllCount = document.getElementById('notif-tab-all-count');
-
-            let notificationsCache = [];
-            let currentFilter = 'unread';
+            const drawerBadge = document.getElementById('drawer-notif-badge');
             let isFetching = false;
 
-            function getCsrfToken() {
-                return document.querySelector('meta[name="csrf-token-hash"]')?.content || '';
-            }
-
-            function getCsrfName() {
-                return document.querySelector('meta[name="csrf-token-name"]')?.content || 'csrf_test_name';
-            }
-
-            async function fetchNotifications() {
+            async function fetchUnreadCount() {
                 if (isFetching) return;
                 isFetching = true;
                 try {
                     const res = await fetch('<?= site_url("notifications") ?>', {
-                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        headers: { 
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
                     });
                     if (res.ok) {
                         const data = await res.json();
                         if (data.status === 'success') {
-                            notificationsCache = data.notifications || [];
-                            updateBadge(data.unread_count || 0);
-                            renderNotificationList();
+                            const count = data.unread_count || 0;
+                            updateBadge(count);
                         }
                     }
                 } catch (e) {
-                    console.warn('Failed to fetch notifications', e);
+                    console.warn('Failed to sync notification count', e);
                 } finally {
                     isFetching = false;
                 }
             }
 
             function updateBadge(count) {
-                if (!notifBadge) return;
-                if (count > 0) {
-                    notifBadge.textContent = count > 99 ? '99+' : count;
-                    notifBadge.classList.remove('hidden');
-                    if (notifHeaderCount) {
-                        notifHeaderCount.textContent = `${count} New`;
-                        notifHeaderCount.classList.remove('hidden');
-                    }
-                } else {
-                    notifBadge.classList.add('hidden');
-                    if (notifHeaderCount) {
-                        notifHeaderCount.classList.add('hidden');
-                    }
-                }
-            }
-
-            function getIconSvg(type) {
-                switch (type) {
-                    case 'target_approved':
-                    case 'eval_approved':
-                        return `<svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`;
-                    case 'target_returned':
-                    case 'eval_returned':
-                    case 'twg_disapproved':
-                    case 'target_unapproved':
-                    case 'target_unsubmitted':
-                    case 'eval_unsubmitted':
-                    case 'target_revoked':
-                        return `<svg class="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`;
-                    case 'target_submitted':
-                    case 'eval_submitted':
-                    case 'target_released':
-                    case 'target_assigned':
-                        return `<svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>`;
-                    case 'twg_approved':
-                        return `<svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>`;
-                    default:
-                        return `<svg class="w-4 h-4 text-slate-600 dark:text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>`;
-                }
-            }
-
-            function getIconBgClass(type) {
-                switch (type) {
-                    case 'target_approved':
-                    case 'eval_approved':
-                        return 'bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900';
-                    case 'target_returned':
-                    case 'eval_returned':
-                    case 'twg_disapproved':
-                    case 'target_unapproved':
-                    case 'target_unsubmitted':
-                    case 'eval_unsubmitted':
-                    case 'target_revoked':
-                        return 'bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900';
-                    case 'target_submitted':
-                    case 'eval_submitted':
-                    case 'target_released':
-                    case 'target_assigned':
-                        return 'bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900';
-                    case 'twg_approved':
-                        return 'bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-900';
-                    default:
-                        return 'bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700';
-                }
-            }
-
-            function escapeHtml(str) {
-                if (!str) return '';
-                return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-            }
-
-            const activeTabClass = 'flex-1 py-1 px-2.5 rounded-lg text-center transition-all bg-emerald-600 text-white font-bold shadow-xs cursor-pointer';
-            const inactiveTabClass = 'flex-1 py-1 px-2.5 rounded-lg text-center transition-all text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium hover:bg-slate-300/40 dark:hover:bg-white/5 cursor-pointer';
-
-            function updateTabUI() {
-                const unreadCount = notificationsCache.filter(n => !n.is_read).length;
-                const allCount = notificationsCache.length;
-
-                if (notifTabUnreadCount) notifTabUnreadCount.textContent = unreadCount;
-                if (notifTabAllCount) notifTabAllCount.textContent = allCount;
-
-                if (currentFilter === 'unread') {
-                    if (notifTabUnread) notifTabUnread.className = activeTabClass;
-                    if (notifTabAll) notifTabAll.className = inactiveTabClass;
-                } else {
-                    if (notifTabAll) notifTabAll.className = activeTabClass;
-                    if (notifTabUnread) notifTabUnread.className = inactiveTabClass;
-                }
-            }
-
-            function renderNotificationList() {
-                if (!notifList) return;
-                updateTabUI();
-
-                const unreadItems = notificationsCache.filter(n => !n.is_read);
-                const displayItems = (currentFilter === 'unread') ? unreadItems : notificationsCache;
-
-                if (displayItems.length === 0) {
-                    if (currentFilter === 'unread' && notificationsCache.length > 0) {
-                        notifList.innerHTML = `
-                            <div class="p-8 text-center">
-                                <div class="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center mb-2.5">
-                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                </div>
-                                <p class="text-xs font-bold text-slate-800 dark:text-white">All caught up!</p>
-                                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">No unread notifications.</p>
-                                <button type="button" onclick="document.getElementById('notif-tab-all').click()" class="mt-2.5 inline-block text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer">
-                                    View notification history (${notificationsCache.length})
-                                </button>
-                            </div>
-                        `;
+                if (notifBadge) {
+                    if (count > 0) {
+                        notifBadge.textContent = count > 99 ? '99+' : count;
+                        notifBadge.classList.remove('hidden');
                     } else {
-                        notifList.innerHTML = `
-                            <div class="p-8 text-center">
-                                <div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-[#13271b] text-slate-400 dark:text-emerald-400 mx-auto flex items-center justify-center mb-2.5">
-                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                                    </svg>
-                                </div>
-                                <p class="text-xs font-bold text-slate-800 dark:text-white">Inbox is empty</p>
-                                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">No notifications at this time.</p>
-                            </div>
-                        `;
-                    }
-                    return;
-                }
-
-                notifList.innerHTML = displayItems.map(item => {
-                    const isUnread = !item.is_read;
-                    const bgHover = isUnread 
-                        ? 'bg-emerald-50/50 dark:bg-[#10241a]/60 hover:bg-emerald-50/80 dark:hover:bg-[#132b20]' 
-                        : 'hover:bg-slate-50 dark:hover:bg-white/5';
-                    const iconSvg = getIconSvg(item.type);
-                    const iconBg = getIconBgClass(item.type);
-
-                    return `
-                        <div class="notification-item flex items-start gap-3 p-3.5 transition-colors cursor-pointer relative group ${bgHover}"
-                             data-id="${item.id}"
-                             data-link="${item.link || ''}">
-                            
-                            <!-- Icon Tile -->
-                            <div class="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center ${iconBg}">
-                                ${iconSvg}
-                            </div>
-
-                            <!-- Content -->
-                            <div class="flex-1 min-w-0 pr-1">
-                                <div class="flex items-center justify-between gap-1 mb-0.5">
-                                    <h5 class="text-xs text-slate-900 dark:text-white truncate ${isUnread ? 'font-black text-emerald-950 dark:text-emerald-300' : 'font-bold'}">${escapeHtml(item.title)}</h5>
-                                    <span class="text-[10px] text-slate-400 dark:text-slate-500 shrink-0 whitespace-nowrap">${item.time_ago}</span>
-                                </div>
-                                <p class="text-[11px] text-slate-600 dark:text-slate-300 leading-snug line-clamp-2">${escapeHtml(item.message)}</p>
-                            </div>
-
-                            <!-- Right Action Area (Dot & Dismiss) -->
-                            <div class="flex items-center gap-1.5 shrink-0 pt-0.5">
-                                ${isUnread ? '<span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-xs"></span>' : ''}
-                                <button type="button" 
-                                        class="btn-delete-notif opacity-0 group-hover:opacity-100 p-1 rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all cursor-pointer"
-                                        title="Dismiss notification"
-                                        data-id="${item.id}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-
-                // Attach click listeners on each row (open and mark as read)
-                notifList.querySelectorAll('.notification-item').forEach(el => {
-                    el.addEventListener('click', async (e) => {
-                        // Ignore click if the user clicked the delete button
-                        if (e.target.closest('.btn-delete-notif')) return;
-                        e.preventDefault();
-
-                        const notifId = el.getAttribute('data-id');
-                        const targetLink = el.getAttribute('data-link');
-
-                        try {
-                            const formData = new FormData();
-                            formData.append(getCsrfName(), getCsrfToken());
-                            fetch(`<?= site_url('notifications/read/') ?>${notifId}`, {
-                                method: 'POST',
-                                body: formData,
-                                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                            });
-                        } catch (err) {
-                            console.warn(err);
-                        }
-
-                        if (targetLink) {
-                            window.location.href = targetLink;
-                        } else {
-                            fetchNotifications();
-                        }
-                    });
-                });
-
-                // Attach click listeners on individual delete buttons
-                notifList.querySelectorAll('.btn-delete-notif').forEach(btn => {
-                    btn.addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        const notifId = btn.getAttribute('data-id');
-
-                        try {
-                            const formData = new FormData();
-                            formData.append(getCsrfName(), getCsrfToken());
-                            fetch(`<?= site_url('notifications/delete/') ?>${notifId}`, {
-                                method: 'POST',
-                                body: formData,
-                                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                            });
-                        } catch (err) {
-                            console.warn(err);
-                        }
-
-                        notificationsCache = notificationsCache.filter(n => n.id != notifId);
-                        const unreadCount = notificationsCache.filter(n => !n.is_read).length;
-                        updateBadge(unreadCount);
-                        renderNotificationList();
-                    });
-                });
-            }
-
-            // Tab Switching Listeners
-            if (notifTabUnread) {
-                notifTabUnread.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    currentFilter = 'unread';
-                    renderNotificationList();
-                });
-            }
-
-            if (notifTabAll) {
-                notifTabAll.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    currentFilter = 'all';
-                    renderNotificationList();
-                });
-            }
-
-            // Toggle Notification Tray
-            if (notifBtn && notifMenu) {
-                notifBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const willOpen = notifMenu.classList.contains('hidden');
-                    notifMenu.classList.toggle('hidden');
-
-                    // Close profile menu if open
-                    if (profileMenu && !profileMenu.classList.contains('hidden')) {
-                        profileMenu.classList.add('hidden');
-                    }
-                    if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
-                        mobileMenu.classList.add('hidden');
-                    }
-
-                    if (willOpen) {
-                        fetchNotifications();
-                    }
-                });
-            }
-
-            // Mark All Read button
-            if (markAllBtn) {
-                markAllBtn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    try {
-                        const formData = new FormData();
-                        formData.append(getCsrfName(), getCsrfToken());
-                        const res = await fetch('<?= site_url("notifications/read-all") ?>', {
-                            method: 'POST',
-                            body: formData,
-                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                        });
-                        if (res.ok) {
-                            updateBadge(0);
-                            notificationsCache.forEach(n => n.is_read = true);
-                            renderNotificationList();
-                        }
-                    } catch (err) {
-                        console.warn(err);
-                    }
-                });
-            }
-
-            // Clear All Notifications button
-            if (clearAllBtn) {
-                clearAllBtn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    if (notificationsCache.length === 0) return;
-                    try {
-                        const formData = new FormData();
-                        formData.append(getCsrfName(), getCsrfToken());
-                        const res = await fetch('<?= site_url("notifications/clear-all") ?>', {
-                            method: 'POST',
-                            body: formData,
-                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                        });
-                        if (res.ok) {
-                            notificationsCache = [];
-                            updateBadge(0);
-                            renderNotificationList();
-                        }
-                    } catch (err) {
-                        console.warn(err);
-                    }
-                });
-            }
-
-            // Close notification tray on outside click
-            document.addEventListener('click', (e) => {
-                if (notifMenu && !notifMenu.classList.contains('hidden') && !notifMenu.contains(e.target) && !notifBtn.contains(e.target)) {
-                    notifMenu.classList.add('hidden');
-                }
-            });
-
-            // Close on Escape key
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    if (notifMenu && !notifMenu.classList.contains('hidden')) {
-                        notifMenu.classList.add('hidden');
+                        notifBadge.classList.add('hidden');
                     }
                 }
-            });
+                if (drawerBadge) {
+                    if (count > 0) {
+                        drawerBadge.textContent = count > 99 ? '99+' : count;
+                        drawerBadge.classList.remove('hidden');
+                    } else {
+                        drawerBadge.classList.add('hidden');
+                    }
+                }
+            }
+
+            // Expose globally so other pages/scripts can trigger badge refresh if needed
+            window.syncNotificationBadge = updateBadge;
+            window.refreshNotificationCount = fetchUnreadCount;
 
             // Initial fetch & polling every 45s
-            fetchNotifications();
-            setInterval(fetchNotifications, 45000);
+            fetchUnreadCount();
+            setInterval(fetchUnreadCount, 45000);
         })();
     });
 </script>

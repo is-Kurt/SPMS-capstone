@@ -34,6 +34,14 @@
 @media (min-width: 1024px) {
     #ratings-sidebar { z-index: 0 !important; }
 }
+.spms-folder-card {
+    background-color: #061810 !important;
+    border-color: #14422b !important;
+}
+.dark .spms-folder-card,
+.dark [class*="dark:border-[#14422b]"] {
+    border-color: #14422b !important;
+}
 </style>
 
 <?php if (!$activeFolder): ?>
@@ -210,9 +218,10 @@
 
 
     <!-- MAIN CONTENT (Left side now) -->
-    <div class="flex-1 flex flex-col min-w-0 min-h-0 bg-transparent lg:bg-surface relative lg:static h-full lg:rounded-2xl lg:border border-surface-border shadow-sm overflow-hidden">
+    <div class="flex-1 flex flex-col min-w-0 min-h-0 bg-transparent lg:bg-surface relative lg:static h-full lg:rounded-2xl lg:border border-surface-border shadow-sm overflow-visible lg:overflow-hidden">
 
-        <div class="lg:hidden flex items-center justify-between mb-4 shrink-0 px-4 pt-4">
+        <!-- MOBILE RATINGS BAR -->
+        <div class="lg:hidden flex items-center justify-between mb-3 shrink-0 px-4 pt-4">
             <h1 class="text-xl font-black text-text truncate">Ratings</h1>
             <button type="button" id="open-mobile-filters" class="flex items-center gap-2 text-xs font-bold text-accent bg-accent/10 px-3 py-1.5 rounded-lg active:scale-95 transition-transform cursor-pointer">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
@@ -220,10 +229,19 @@
             </button>
         </div>
 
-        <div class="relative mb-6 pr-4 pt-6 px-6 lg:pt-8 lg:px-8 shrink-0 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <!-- MOBILE ACTIVE EVALUATION CYCLE FOLDER DROPDOWN (PULL-DOWN MENU SPEC) -->
+        <?= view('components/mobile_folder_dropdown', [
+            'activeFolder'     => $activeFolder ?? null,
+            'folders'          => $sidebarFolders ?? [],
+            'selectedFolderId' => $activeFolder['id'] ?? null,
+            'baseUrl'          => 'ratings',
+            'containerClass'   => 'px-4 mb-3.5 shrink-0'
+        ]) ?>
+
+        <div class="relative mb-6 px-4 lg:px-8 pt-0 lg:pt-8 shrink-0 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
-                <button onclick="toggleAppSidebar()" class="flex items-center text-left group cursor-pointer lg:cursor-default">
-                    <h1 class="text-3xl font-black tracking-tight text-text truncate group-hover:text-accent lg:group-hover:text-text transition-colors">
+                <div class="hidden lg:flex items-center">
+                    <h1 class="text-3xl font-black tracking-tight text-text truncate">
                         <?= esc($activeFolder['title']) ?>
                     </h1>
                     <?php if (!empty($activeFolder['deleted_at'])): ?>
@@ -231,11 +249,8 @@
                             Archived & Frozen
                         </span>
                     <?php endif; ?>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 shrink-0 text-text-muted transition-colors group-hover:text-accent lg:hidden ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                </button>
-                <p class="text-xs font-bold text-text-muted mt-2 uppercase tracking-widest">
+                </div>
+                <p class="text-xs font-bold text-text-muted mt-0.5 lg:mt-2 uppercase tracking-widest">
                     Manage your assigned reviews
                 </p>
                 <?php if ($sysRole === 'TWG'): ?>

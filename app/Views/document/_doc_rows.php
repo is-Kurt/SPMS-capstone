@@ -48,15 +48,16 @@
     <div class="flex flex-col lg:flex-row flex-1 lg:absolute lg:inset-0 lg:min-h-[650px] bg-transparent lg:gap-6 lg:pb-6">
         
         <!-- CENTER / MAIN CONTENT CONTAINER -->
-        <div class="flex flex-col flex-1 min-w-0 min-h-0 relative bg-surface lg:rounded-2xl border border-surface-border shadow-xl overflow-hidden dark:bg-[#02160e] dark:border-[#0d4a32]">
+        <div class="flex flex-col flex-1 min-w-0 min-h-0 relative bg-surface lg:rounded-2xl border border-surface-border shadow-xl overflow-visible lg:overflow-hidden dark:bg-[#02160e] dark:border-[#0d4a32]">
             
-            <!-- MOBILE ONLY DRAWER TOGGLE BAR -->
-            <div class="lg:hidden px-6 py-3.5 border-b border-surface-border dark:border-[#0d4a32] shrink-0 flex items-center justify-between bg-surface dark:bg-[#02170f]">
-                <button onclick="toggleAppSidebar()" class="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
-                    <span><?= esc($activeFolder['title']) ?></span>
-                </button>
-            </div>
+            <!-- MOBILE ACTIVE EVALUATION CYCLE FOLDER DROPDOWN (PULL-DOWN MENU SPEC) -->
+            <?= view('components/mobile_folder_dropdown', [
+                'activeFolder'     => $activeFolder ?? null,
+                'folders'          => $sidebarFolders ?? [],
+                'selectedFolderId' => $activeFolder['id'] ?? null,
+                'baseUrl'          => !empty($isArchivedView) ? 'folders/archived' : 'folders',
+                'containerClass'   => 'p-3.5 border-b border-surface-border dark:border-[#0d4a32] shrink-0 bg-surface dark:bg-[#02170f]'
+            ]) ?>
 
             <?php if (!empty($groupedGuides) && session()->get('role') !== 'Admin'): ?>
                 <!-- TAB NAVIGATION (When superior guide exists) -->
@@ -635,7 +636,7 @@
                             .spms-hub-actions-bar {
                                 display: flex;
                                 flex-direction: row;
-                                flex-wrap: nowrap;
+                                flex-wrap: wrap;
                                 align-items: center;
                                 gap: 6px;
                             }
@@ -730,6 +731,8 @@
                             text-align: center;
                             transition: all 0.15s ease;
                             white-space: nowrap;
+                            box-sizing: border-box;
+                            line-height: 1.25;
                         }
                         .dark .spms-hub-btn-secondary {
                             background-color: #062e1e !important;
@@ -760,6 +763,31 @@
                             background-color: #0c4d33 !important;
                             border-color: #176a46 !important;
                             color: #ffffff !important;
+                        }
+
+                        /* Standalone secondary button in actions bar: spans full width on mobile, auto width on desktop */
+                        .spms-hub-actions-bar > .spms-hub-btn-secondary:last-child:nth-child(2),
+                        .spms-hub-btn-secondary-full {
+                            grid-column: span 3;
+                            width: 100%;
+                            padding: 10px 16px;
+                            font-size: 11px;
+                        }
+                        @media (min-width: 640px) {
+                            .spms-hub-actions-bar > .spms-hub-btn-secondary:last-child:nth-child(2),
+                            .spms-hub-btn-secondary-full {
+                                width: auto;
+                                grid-column: auto;
+                                padding: 10px 12px;
+                                font-size: 10.5px;
+                            }
+                        }
+                        @media (min-width: 1400px) {
+                            .spms-hub-actions-bar > .spms-hub-btn-secondary:last-child:nth-child(2),
+                            .spms-hub-btn-secondary-full {
+                                padding: 11px 14px;
+                                font-size: 11px;
+                            }
                         }
 
                         @media (max-width: 1023px) {
@@ -1170,7 +1198,7 @@
                                 ]) ?>)' class="spms-hub-btn-primary">
                                     Edit Cycle Dates
                                 </button>
-                                <button type="button" onclick="openUserGuideModal()" class="spms-hub-btn-secondary">
+                                <button type="button" onclick="openUserGuideModal()" class="spms-hub-btn-secondary spms-hub-btn-secondary-full">
                                     SPMS Cascade Guide
                                 </button>
                             </div>
