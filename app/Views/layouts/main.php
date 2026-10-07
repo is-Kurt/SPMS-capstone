@@ -63,7 +63,7 @@
     </script>
 
     <link rel="preload" href="<?= base_url('assets/fonts/Roboto/Roboto-VariableFont_wdth,wght.ttf') ?>" as="font" type="font/ttf" crossorigin>
-    <link rel="stylesheet" href="<?= base_url('assets/css/main/style.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/css/main/style.css?v=' . filemtime(FCPATH . 'assets/css/main/style.css')) ?>">
 
     <script src="<?= base_url('assets/vendor/tinymce/tinymce.min.js') ?>"></script>
     <script src="<?= base_url('assets/vendor/axios/dist/axios.min.js') ?>"></script>

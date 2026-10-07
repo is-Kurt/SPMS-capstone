@@ -26,10 +26,10 @@
                     <?php $isActive = ($selectedFolderId == $folder['id']); ?>
                     
                     <a href="<?= site_url($currentBaseUrl . '/' . $folder['id']) ?>"
-                       class="sidebar-folder-item relative px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center gap-2.5 group
+                       class="sidebar-folder-item relative px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2.5 group
                         <?= $isActive ?
-                           'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700 shadow-xs' : 
-                           'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/60' ?>"
+                           'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700/60 shadow-xs' : 
+                           'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/40' ?>"
                        data-is-active="<?= $isActive ? '1' : '0' ?>"
                        data-index="<?= $index ?>">
                         
@@ -48,9 +48,9 @@
 
             <?php if (count($folders) > 5): ?>
                 <!-- Minimalist Sidebar Paginator (Only appears when > 5 folders) -->
-                <div id="sidebar-folder-pagination" class="flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 mt-1 text-xs text-text-muted select-none">
+                <div id="sidebar-folder-pagination" class="flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500 dark:text-zinc-400 select-none mt-1">
                     <button type="button" id="btn-sidebar-prev" 
-                            class="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white dark:hover:bg-white/10 hover:text-zinc-900 dark:hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs" 
+                            class="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-zinc-800 disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs" 
                             title="Previous 5 Folders">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
@@ -59,11 +59,11 @@
 
                     <div class="flex items-center gap-1.5 font-bold text-[10px] tracking-wider text-zinc-500 dark:text-zinc-400">
                         <span>Page</span>
-                        <span id="sidebar-page-indicator" class="px-1.5 py-0.5 rounded bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white font-extrabold">1 / <?= ceil(count($folders) / 5) ?></span>
+                        <span id="sidebar-page-indicator" class="px-2 py-0.5 rounded bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white font-extrabold">1 / <?= ceil(count($folders) / 5) ?></span>
                     </div>
 
                     <button type="button" id="btn-sidebar-next" 
-                            class="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white dark:hover:bg-white/10 hover:text-zinc-900 dark:hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs" 
+                            class="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-zinc-800 disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs" 
                             title="Next 5 Folders">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
@@ -77,10 +77,10 @@
 
     <!-- Archive Folder Link (Admin Only) -->
     <?php if (session()->get('role') === 'Admin'): ?>
-    <div class="pt-4 border-t border-zinc-200/50 dark:border-white/5">
+    <div class="pt-4 border-t border-zinc-200/50 dark:border-zinc-800/60">
         <a href="<?= site_url($isArchivedRoute ? 'folders' : 'folders/archived') ?>" 
-           class="px-3.5 py-2.5 rounded-xl text-xs font-bold <?= $isArchivedRoute ? 'text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white' ?> transition-all flex items-center gap-2.5 group">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0 text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+           class="px-3.5 py-2.5 rounded-xl text-xs font-bold <?= $isArchivedRoute ? 'text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/40' ?> transition-all flex items-center gap-2.5 group">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0 text-zinc-400 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
             </svg>
             <span><?= $isArchivedRoute ? 'Active Folders' : 'Archived Folders' ?></span>

@@ -165,6 +165,15 @@ a {
          focus-visible:outline-accent cursor-pointer;
 }
 
+@media (min-width: 1024px) {
+    #app-sidebar,
+    #app-sidebar > div:first-child {
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+}
+
 .custom-scrollbar {
             scrollbar-width: thin; /* Firefox */
             scrollbar-color: var(--color-surface-border) transparent; 

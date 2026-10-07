@@ -24,8 +24,8 @@
 <div class="p-2 sm:p-4 lg:p-5 xl:p-8 max-w-[100rem] mx-auto flex flex-col lg:flex-row gap-4 lg:gap-5 xl:gap-8 lg:min-h-[calc(100vh-6rem)] lg:pb-4">
     
     <!-- LEFT SIDEBAR -->
-    <div id="app-sidebar" class="fixed inset-y-0 left-0 z-[120] w-72 bg-white dark:bg-zinc-900 lg:bg-transparent lg:w-60 lg:static lg:flex flex-shrink-0 flex-col h-full overflow-hidden transition-transform duration-300 transform -translate-x-full lg:translate-x-0 border-r border-zinc-200 dark:border-zinc-800 lg:border-none shadow-2xl lg:shadow-none">
-        <div class="flex justify-between items-center px-4 pt-5 pb-3 lg:p-0 lg:mb-3 shrink-0 border-b border-zinc-200 dark:border-zinc-800 lg:border-none">
+    <div id="app-sidebar" class="fixed inset-y-0 left-0 z-[120] w-72 bg-white dark:bg-zinc-900 lg:w-60 lg:static lg:flex flex-shrink-0 flex-col h-full overflow-hidden transition-transform duration-300 transform -translate-x-full lg:translate-x-0 border-r border-zinc-200 dark:border-zinc-800 lg:border-none dark:lg:border-none shadow-2xl lg:shadow-none lg:!bg-transparent dark:lg:!bg-transparent lg:!border-none dark:lg:!border-none lg:!shadow-none">
+        <div class="flex justify-between items-center px-4 pt-5 pb-3 lg:px-3 lg:pt-0 lg:pb-0 lg:mb-3 shrink-0 border-b border-zinc-200 dark:border-zinc-800 lg:border-none dark:lg:border-none lg:!border-none dark:lg:!border-none">
             <div class="flex items-center gap-2">
                 <svg class="w-4 h-4 text-amber-500 lg:hidden shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
