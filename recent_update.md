@@ -1,6 +1,5 @@
 # Recent Updates
 
-## Latest Changes (Ready to Push — Oct 8, 2026)
 
 ### Unified Mobile Folder Navigation
 - Converted the mobile folder selector from a floating card popup into the unified off-canvas slide-out sidebar across Dashboard, Folders, and Ratings.

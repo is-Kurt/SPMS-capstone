@@ -86,8 +86,6 @@ The system guides users through the four official steps of the evaluation cycle:
 
 ## Capstone Project Team
 
-Developed for **Benguet State University** by:
-
 - **Kurt** — System Architecture, Backend Logic, and Security
 - **Nanashi (`PeroroFaust`)** — User Experience, Mobile Design, and Interface Improvements
 
