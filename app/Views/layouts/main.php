@@ -112,6 +112,9 @@
     <?php 
         $flashError = session('error') ?? session('errors.error') ?? session()->getFlashdata('error');
         $flashSuccess = session('success') ?? session()->getFlashdata('success');
+        if (!$flashError && !$flashSuccess && request()->getGet('logged_out') && !session('errors') && !old('email') && !validation_errors()) {
+            $flashSuccess = 'You have been successfully signed out of the BSU-SPMS portal.';
+        }
     ?>
     <?php if ($flashError || $flashSuccess): ?>
         <div id="global-flash-banner" class="fixed top-4 right-4 z-[200] max-w-md w-full shadow-2xl rounded-2xl p-4 flex items-center gap-3 border <?= $flashError ? 'bg-rose-50 border-rose-200 text-rose-800 dark:bg-rose-950/80 dark:border-rose-900/60 dark:text-rose-200' : 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/80 dark:border-emerald-900/60 dark:text-emerald-200' ?>">
@@ -130,6 +133,13 @@
             </button>
         </div>
         <script>
+            if (window.history.replaceState) {
+                const url = new URL(window.location);
+                if (url.searchParams.has('logged_out')) {
+                    url.searchParams.delete('logged_out');
+                    window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : ''));
+                }
+            }
             setTimeout(() => {
                 const b = document.getElementById('global-flash-banner');
                 if (b) {
