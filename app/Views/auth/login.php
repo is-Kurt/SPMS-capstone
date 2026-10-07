@@ -1,6 +1,32 @@
 <?= $this->extend('layouts/main') ?>
 <?= $this->section('content') ?>
 
+<style>
+    @keyframes portalFadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(14px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    .animate-portal-left {
+        animation: portalFadeUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .animate-portal-right {
+        animation: portalFadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .animate-portal-left, .animate-portal-right {
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+        }
+    }
+</style>
+
 <div class="min-h-screen flex flex-col bg-zinc-100 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-100 transition-colors">
     <?= view('components/govph_masthead') ?>
 
@@ -10,7 +36,7 @@
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 
                 <!-- LEFT COLUMN: Official University Portal Gateway & Advisories -->
-                <div class="lg:col-span-7 flex flex-col gap-6">
+                <div class="lg:col-span-7 flex flex-col gap-6 animate-portal-left">
                     
                     <!-- Institutional Identity Header -->
                     <div class="flex items-center gap-4">
@@ -94,7 +120,7 @@
                 </div>
 
                 <!-- RIGHT COLUMN: Secure Login Card -->
-                <div class="lg:col-span-5">
+                <div class="lg:col-span-5 animate-portal-right">
                     <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 sm:p-8 shadow-xs">
                         
                         <!-- Top Bar: Title & Theme Toggle -->
@@ -116,7 +142,7 @@
                             <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Enter your institutional credentials to access your evaluation workspace.</p>
                         </div>
 
-                        <?= form_open('login', ['class' => 'space-y-4']) ?>
+                        <?= form_open('login', ['id' => 'login-form', 'class' => 'space-y-4']) ?>
                             
                             <div>
                                 <label for="email" class="block text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-1.5">
@@ -160,9 +186,11 @@
                             <?php endif; ?>
 
                             <div class="pt-2">
-                                <button type="submit" 
-                                        class="w-full bg-[#064e3b] hover:bg-[#085a3a] text-white font-bold py-3 rounded-lg cursor-pointer transition-colors text-xs uppercase tracking-wider shadow-xs">
-                                    Log In to Workspace
+                                <button id="login-submit-btn" type="submit" 
+                                        class="w-full bg-[#064e3b] hover:bg-[#085a3a] text-white font-bold py-3 rounded-lg cursor-pointer transition-all duration-200 text-xs uppercase tracking-wider shadow-xs flex items-center justify-center gap-2">
+                                    <span id="login-btn-content" class="inline-flex items-center justify-center gap-2">
+                                        <span>Log In to Workspace</span>
+                                    </span>
                                 </button>
                             </div>
 
@@ -170,7 +198,7 @@
 
                         <div class="mt-5 pt-4 border-t border-zinc-100 dark:border-zinc-800 text-center">
                             <button type="button" onclick="if(typeof openUserGuideModal === 'function') openUserGuideModal()" 
-                                    class="text-xs font-semibold text-zinc-500 hover:text-emerald-800 dark:text-zinc-400 dark:hover:text-emerald-300 transition-colors inline-flex items-center gap-1 cursor-pointer">
+                                     class="text-xs font-semibold text-zinc-500 hover:text-emerald-800 dark:text-zinc-400 dark:hover:text-emerald-300 transition-colors inline-flex items-center gap-1 cursor-pointer">
                                 <svg class="w-3.5 h-3.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                 <span>Need help? Open the SPMS User Guide</span>
                             </button>
@@ -204,31 +232,47 @@
 <?php endif; ?>
 <script src="<?= base_url('assets/vendor/fingerprintjs/fp.min.js') ?>"></script>
 <script>
+    // Submit loading feedback with animated spinner
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('login-form') || document.querySelector('form');
+        const btn = document.getElementById('login-submit-btn');
+        const content = document.getElementById('login-btn-content');
+
+        if (form && btn) {
+            form.addEventListener('submit', function () {
+                if (!form.checkValidity()) return;
+
+                btn.style.pointerEvents = 'none';
+                btn.classList.add('opacity-90', 'cursor-wait');
+                if (content) {
+                    content.innerHTML = `
+                        <svg class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Signing in...</span>
+                    `;
+                }
+            });
+        }
+    });
+
     // Initialize FingerprintJS and populate the hidden device_id field
     const fpPromise = FingerprintJS.load();
     fpPromise
       .then(fp => fp.get())
       .then(result => {
         const deviceId = result.visitorId;
-        
-        // Find the login form and append a hidden input for the device ID
-        const form = document.querySelector('form');
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'device_id';
-        input.value = deviceId;
-        form.appendChild(input);
-
-        // Prevent double submit and show loading feedback
-        form.addEventListener('submit', function () {
-            const btn = form.querySelector('button[type="submit"]');
-            if (btn) {
-                btn.disabled = true;
-                btn.classList.add('opacity-70', 'cursor-not-allowed');
-                btn.innerText = 'Signing in...';
-            }
-        });
-      });
+        const form = document.getElementById('login-form') || document.querySelector('form');
+        if (form) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'device_id';
+            input.value = deviceId;
+            form.appendChild(input);
+        }
+      })
+      .catch(() => {});
 </script>
 
 <?= $this->endSection() ?>
