@@ -327,10 +327,10 @@
 </style>
 
 <!-- TOP CONTROL BAR -->
-<header class="flex-none flex items-center justify-between py-3 px-4 sm:px-6 bg-[#032115] border-b border-[#0c4a33] gap-4 w-full z-30 shrink-0 print-hide">
+<header class="flex-none flex items-center justify-between py-3 px-4 sm:px-6 bg-zinc-950 border-b border-zinc-800 gap-4 w-full z-30 shrink-0 print-hide">
     <div class="flex items-center gap-3 min-w-0 flex-1">
         <!-- Back Button -->
-        <a href="<?= site_url('templates') ?>" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#052e1d] hover:bg-[#08422b] text-white text-xs font-bold rounded-lg border border-[#0c4a33] transition-colors shrink-0">
+        <a href="<?= site_url('templates') ?>" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold rounded-lg border border-zinc-700 transition-colors shrink-0">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
@@ -339,17 +339,17 @@
 
         <!-- Breadcrumb & Editable Title -->
         <div class="flex items-center gap-2 min-w-0 flex-1">
-            <span class="text-slate-400 text-xs font-semibold hidden md:inline shrink-0"><?= $isDpcr ? 'Department Evaluation /' : ($isOpcr ? 'Office Evaluation /' : ($isIperf ? 'COS & Job Order Evaluation /' : 'Faculty Evaluation /')) ?></span>
+            <span class="text-zinc-400 text-xs font-semibold hidden md:inline shrink-0"><?= $isDpcr ? 'Department Evaluation /' : ($isOpcr ? 'Office Evaluation /' : ($isIperf ? 'COS & Job Order Evaluation /' : 'Faculty Evaluation /')) ?></span>
             <input type="text" name="title" id="template-title" placeholder="<?= $isDpcr ? 'Department Performance Commitment and Review (DPCR)' : ($isOpcr ? 'Office Performance Commitment and Review (OPCR)' : ($isIperf ? 'Individual Performance Evaluation Rating Form (IPERF)' : 'Template Title...')) ?>"
                 value="<?= $template ? esc($template['title']) : ($isDpcr ? 'DEPARTMENT PERFORMANCE COMMITMENT AND REVIEW (DPCR)' : ($isOpcr ? 'OFFICE PERFORMANCE COMMITMENT AND REVIEW (OPCR)' : ($isIperf ? 'INDIVIDUAL PERFORMANCE EVALUATION RATING FORM FOR CONTRACT OF SERVICE AND JOB ORDER PERSONNEL' : 'College Faculty IPCR Form (Teaching, Research, Extension)'))) ?>"
-                class="bg-transparent border-none font-black text-sm md:text-base text-white focus:ring-0 px-1 py-0.5 min-w-[200px] flex-1 truncate placeholder:text-slate-500">
+                class="bg-transparent border-none font-black text-sm md:text-base text-white focus:ring-0 px-1 py-0.5 min-w-[200px] flex-1 truncate placeholder:text-zinc-500">
         </div>
     </div>
 
     <!-- Action Buttons -->
     <div class="flex items-center gap-2.5 shrink-0">
         <!-- Export PDF -->
-        <button type="button" onclick="exportToPdf()" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#052e1d] hover:bg-[#08422b] text-slate-200 hover:text-white text-xs font-bold rounded-lg border border-[#0c4a33] transition-all cursor-pointer shadow-sm">
+        <button type="button" onclick="exportToPdf()" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white text-xs font-bold rounded-lg border border-zinc-700 transition-all cursor-pointer shadow-sm">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[#FFB800]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
             </svg>
@@ -909,12 +909,12 @@
                             </td>
                         </tr>
 
-                        <!-- Dark Navy Grand Total Banner (Matching Reference Mockup) -->
-                        <tr style="background: #0a192f; color: #ffffff;">
+                        <!-- Institutional Grand Total Banner -->
+                        <tr style="background: #062316; color: #ffffff;">
                             <td style="padding: 12px 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px; color: #e2e8f0;">
                                 FINAL AVERAGE RATING
                             </td>
-                            <td style="padding: 12px 14px; font-weight: 900; font-size: 24px; color: #38bdf8; font-family: monospace;" id="grand-score">
+                            <td style="padding: 12px 14px; font-weight: 900; font-size: 24px; color: #fbbf24; font-family: monospace;" id="grand-score">
                                 0.000
                             </td>
                             <td style="padding: 12px 14px; text-align: right;">

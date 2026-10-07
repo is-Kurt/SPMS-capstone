@@ -1,434 +1,9 @@
-<div class="flex flex-col flex-1 min-w-0 min-h-0 relative bg-surface lg:rounded-2xl border border-surface-border shadow-xl overflow-visible lg:overflow-hidden">
+<div class="flex flex-col flex-1 min-w-0 min-h-0 relative bg-surface lg:rounded-xl border border-surface-border shadow-xs overflow-visible lg:overflow-hidden">
     
-    <style>
-        /* SPMS Dashboard Responsive & Dark Theme Engine */
-        .dark .spms-mockup-card,
-        .dark [class*="dark:bg-[#0c1510]"],
-        .dark [class*="dark:bg-[#061810]"] { 
-            background-color: #061810 !important; 
-        }
-
-        /* Top Mobile Folder Card */
-        .spms-folder-card {
-            background-color: #ffffff;
-            border: 1px solid #e2e8f0;
-        }
-        .dark .spms-folder-card,
-        .dark [class*="dark:border-[#14422b]"] {
-            background-color: #061810 !important;
-            border-color: #14422b !important;
-        }
-
-        /* View Switcher */
-        .spms-tab-container {
-            background-color: #f1f5f9;
-            border-color: #e2e8f0;
-        }
-        .dark .spms-tab-container,
-        .dark [class*="dark:bg-[#04170e]"] {
-            background-color: #04170e !important;
-        }
-        .dark .spms-tab-container,
-        .dark [class*="dark:border-[#0e3a25]"] {
-            border-color: #0e3a25 !important;
-        }
-        .spms-tab-active {
-            background-color: #064e3b !important;
-            border-color: #047857 !important;
-            color: #ffffff !important;
-        }
-        .dark .spms-tab-active,
-        .dark [class*="dark:bg-[#0e422d]"] {
-            background-color: #0e422d !important;
-            border-color: #195e3f !important;
-            color: #ffffff !important;
-        }
-        .spms-tab-inactive {
-            background-color: transparent !important;
-            border-color: transparent !important;
-            color: #64748b !important;
-        }
-        .spms-tab-inactive:hover {
-            color: #0f172a !important;
-        }
-        .dark .spms-tab-inactive {
-            color: #7f998c !important;
-        }
-        .dark .spms-tab-inactive:hover {
-            color: #ffffff !important;
-        }
-        .spms-tab-badge {
-            background-color: #d1fae5 !important;
-            color: #065f46 !important;
-        }
-        .dark .spms-tab-badge,
-        .dark [class*="dark:bg-[#0d2a1d]"] {
-            background-color: #0d2a1d !important;
-            color: #00df82 !important;
-        }
-
-        /* Controls: Select & Queue */
-        .spms-select-dark {
-            background-color: #ffffff;
-            border-color: #e2e8f0;
-            color: #0f172a;
-        }
-        .dark .spms-select-dark,
-        .dark [class*="dark:bg-[#061e14]"] {
-            background-color: #061e14 !important;
-            border-color: #123d27 !important;
-            color: #ffffff !important;
-        }
-        .spms-btn-queue {
-            background-color: #ecfdf5 !important;
-            border: 1px solid #a7f3d0 !important;
-            color: #047857 !important;
-        }
-        .spms-btn-queue:hover {
-            background-color: #d1fae5 !important;
-            border-color: #6ee7b7 !important;
-            color: #065f46 !important;
-        }
-        .dark .spms-btn-queue,
-        .dark [class*="dark:bg-[#072418]"] {
-            background-color: #072418 !important;
-            border-color: #144730 !important;
-            color: #00df82 !important;
-        }
-        .dark .spms-btn-queue:hover {
-            background-color: #0c3322 !important;
-        }
-
-        /* 4 KPI Summary Metric Cards */
-        .spms-kpi-card {
-            background-color: #ffffff;
-            border: 1px solid #e2e8f0;
-        }
-        .dark .spms-kpi-card {
-            background-color: #061810 !important;
-            border: 1px solid #123d27 !important;
-        }
-        .spms-kpi-val {
-            color: #0f172a;
-        }
-        .dark .spms-kpi-val {
-            color: #ffffff !important;
-        }
-        .spms-kpi-label,
-        .spms-kpi-sub {
-            color: #64748b;
-        }
-        .dark .spms-kpi-label,
-        .dark .spms-kpi-sub {
-            color: #7f998c !important;
-        }
-
-        /* Circular KPI Icons */
-        .spms-kpi-icon-green {
-            background-color: #ecfdf5 !important;
-            border: 1px solid #a7f3d0 !important;
-            color: #047857 !important;
-        }
-        .dark .spms-kpi-icon-green,
-        .dark [class*="dark:bg-[#0b291c]"] {
-            background-color: #0b291c !important;
-            border: 1px solid #144730 !important;
-            color: #00df82 !important;
-        }
-        .spms-kpi-icon-amber {
-            background-color: #fffbeb !important;
-            border: 1px solid #fde68a !important;
-            color: #b45309 !important;
-        }
-        .dark .spms-kpi-icon-amber,
-        .dark [class*="dark:bg-[#241a08]"] {
-            background-color: #241a08 !important;
-            border: 1px solid #453412 !important;
-            color: #f59e0b !important;
-        }
-
-        /* Progress Bars & Badges */
-        .spms-progress-track {
-            background-color: #e2e8f0 !important;
-        }
-        .dark .spms-progress-track,
-        .dark [class*="dark:bg-[#0d2a1d]"] {
-            background-color: #0d2a1d !important;
-        }
-        .spms-progress-fill {
-            background-color: #059669 !important;
-        }
-        .dark .spms-progress-fill,
-        .dark [class*="dark:bg-[#00df82]"] {
-            background-color: #00df82 !important;
-        }
-        .spms-badge-amber {
-            background-color: #fef3c7 !important;
-            border: 1px solid #fde68a !important;
-            color: #92400e !important;
-        }
-        .dark .spms-badge-amber,
-        .dark [class*="dark:bg-[#221706]"] {
-            background-color: #241a08 !important;
-            border-color: #47340f !important;
-            color: #f59e0b !important;
-        }
-        .dark [class*="dark:border-[#47340f]"] {
-            border-color: #47340f !important;
-        }
-
-        /* Lifecycle Container & Stage Boxes */
-        .spms-lifecycle-container {
-            background-color: #ffffff;
-            border: 1px solid #e2e8f0;
-        }
-        .dark .spms-lifecycle-container,
-        .dark [class*="dark:bg-[#05140d]"] {
-            background-color: #05140d !important;
-            border-color: #113320 !important;
-        }
-        .dark [class*="dark:border-[#113320]"] {
-            border-color: #113320 !important;
-        }
-        .spms-stage-box {
-            background-color: rgba(248, 250, 252, 0.7);
-            border: 1px solid #e2e8f0;
-        }
-        .dark .spms-stage-box,
-        .dark [class*="dark:bg-[#05130c]"] {
-            background-color: #05130c !important;
-            border-color: #142a1e !important;
-        }
-        .spms-stage-box-active {
-            background-color: rgba(248, 250, 252, 0.9);
-            border: 1px solid #10b981;
-        }
-        .dark .spms-stage-box-active {
-            background-color: #05130c !important;
-            border-color: #18422b !important;
-        }
-
-        /* SPMS 4-Stage Performance Lifecycle Grid: 4 Columns on PC, Stacked on Mobile */
-        .spms-lifecycle-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            width: 100%;
-        }
-
-        @media (min-width: 1024px) {
-            .spms-lifecycle-grid {
-                display: grid !important;
-                grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-                gap: 0.75rem !important;
-                align-items: stretch !important;
-            }
-            .spms-stage-box,
-            .spms-stage-box-active {
-                min-height: 250px !important;
-                height: 100% !important;
-            }
-            .spms-stage-accordion-btn {
-                cursor: default !important;
-                pointer-events: none !important;
-            }
-        }
-
-        @media (max-width: 1023px) {
-            .spms-lifecycle-grid {
-                display: flex !important;
-                flex-direction: column !important;
-                gap: 0.75rem !important;
-            }
-            .spms-stage-box,
-            .spms-stage-box-active {
-                min-height: auto !important;
-            }
-        }
-        .dark [class*="dark:border-[#18422b]"] {
-            border-color: #18422b !important;
-        }
-        .dark [class*="dark:border-[#142a1e]"] {
-            border-color: #142a1e !important;
-        }
-        .dark [class*="dark:border-[#123d27]"] {
-            border-color: #123d27 !important;
-        }
-        .dark [class*="dark:border-[#144730]"] {
-            border-color: #144730 !important;
-        }
-        .dark [class*="dark:bg-[#0d2317]"] {
-            background-color: #0d2317 !important;
-        }
-        .dark [class*="dark:border-[#173826]"] {
-            border-color: #173826 !important;
-        }
-        .dark [class*="dark:bg-[#0c442b]"] {
-            background-color: #0c442b !important;
-        }
-        .dark [class*="dark:border-[#176641]"] {
-            border-color: #176641 !important;
-        }
-        .dark [class*="dark:bg-[#0b2b1d]"] {
-            background-color: #0b2b1d !important;
-        }
-        .dark [class*="dark:border-[#145334]"] {
-            border-color: #145334 !important;
-        }
-        .dark [class*="dark:bg-[#0c3924]"] {
-            background-color: #0c3924 !important;
-        }
-        .dark [class*="dark:bg-[#032316]"] {
-            background-color: #032316 !important;
-        }
-        .dark [class*="dark:border-[#0c4a33]"] {
-            border-color: #0c4a33 !important;
-        }
-        .dark [class*="dark:border-[#1a2b22]"] {
-            border-color: #1a2b22 !important;
-        }
-
-        /* Color text overrides */
-        .dark [class*="dark:text-[#7f998c]"] {
-            color: #7f998c !important;
-        }
-        .dark [class*="dark:text-[#00df82]"] {
-            color: #00df82 !important;
-        }
-        .dark [class*="dark:text-[#f59e0b]"] {
-            color: #f59e0b !important;
-        }
-        .dark [class*="dark:text-[#38bdf8]"] {
-            color: #38bdf8 !important;
-        }
-        .dark [class*="dark:text-[#4e6b5c]"] {
-            color: #4e6b5c !important;
-        }
-        .dark [class*="dark:placeholder-[#4e6b5c]"]::placeholder {
-            color: #4e6b5c !important;
-        }
-
-        /* Dark mode backgrounds & borders for Master List */
-        .dark [class*="dark:bg-[#072e1e]"] { background-color: #072e1e !important; }
-        .dark [class*="dark:hover:bg-[#0c442b]"]:hover { background-color: #0c442b !important; }
-        .dark [class*="dark:border-[#155237]"] { border-color: #155237 !important; }
-        .dark [class*="dark:bg-[#082230]"] { background-color: #082230 !important; }
-        .dark [class*="dark:border-[#0f435c]"] { border-color: #0f435c !important; }
-        .dark [class*="dark:border-[#123022]"] { border-color: #123022 !important; }
-
-        /* Stepper elements */
-        .dark .spms-stepper-line { background-color: #1b3829 !important; }
-        .dark .spms-stepper-inactive-circle { border-color: #274736 !important; color: #8fa89b !important; }
-        .dark .spms-stepper-inactive-text { color: #8fa89b !important; }
-
-        /* Masterlist Filter Pills */
-        .masterlist-tab-btn {
-            background-color: #f1f5f9;
-            border: 1px solid #e2e8f0;
-            color: #475569;
-        }
-        .dark .masterlist-tab-btn {
-            background-color: #061810 !important;
-            border: 1px solid #123d27 !important;
-            color: #ffffff !important;
-        }
-        .dark .masterlist-tab-btn:hover {
-            background-color: #0c2d1e !important;
-            border-color: #1a4f33 !important;
-        }
-        .masterlist-tab-btn.active {
-            background-color: #059669 !important;
-            border-color: #10b981 !important;
-            color: #ffffff !important;
-        }
-        .dark .masterlist-tab-btn.active {
-            background-color: #0e422d !important;
-            border-color: #195e3f !important;
-            color: #ffffff !important;
-        }
-
-        /* Masterlist Pagination & Cards */
-        .spms-page-btn {
-            background-color: #f1f5f9;
-            border: 1px solid #e2e8f0;
-            color: #334155;
-        }
-        .spms-page-btn:hover {
-            background-color: #e2e8f0;
-        }
-        .dark .spms-page-btn {
-            background-color: #071d13 !important;
-            border-color: #143d28 !important;
-            color: #7f998c !important;
-        }
-        .dark .spms-page-btn:hover {
-            background-color: #0c3322 !important;
-            color: #ffffff !important;
-        }
-        .spms-page-btn-active {
-            background-color: #047857;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            color: #ffffff !important;
-        }
-        .dark .spms-page-btn-active {
-            background-color: #0e422d !important;
-            border-color: #195e3f !important;
-            color: #ffffff !important;
-        }
-        .dark .masterlist-row-card {
-            background-color: #061810 !important;
-            border-color: #123d27 !important;
-        }
-
-        /* Suppress scrollbars across all browsers */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none !important;
-            width: 0 !important;
-            height: 0 !important;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none !important;
-            scrollbar-width: none !important;
-        }
-
-        /* Mobile Search Input Padding */
-        #masterlist-search-mobile {
-            padding-left: 36px !important;
-        }
-
-        /* Masterlist Filter Pill Dots */
-        .spms-pill-dot {
-            display: inline-block !important;
-            width: 6px !important;
-            height: 6px !important;
-            min-width: 6px !important;
-            min-height: 6px !important;
-            border-radius: 9999px !important;
-            flex-shrink: 0 !important;
-        }
-        .spms-pill-dot-perm {
-            background-color: #00df82 !important;
-        }
-        .spms-pill-dot-temp {
-            background-color: #f59e0b !important;
-        }
-        .spms-pill-dot-casual {
-            background-color: #38bdf8 !important;
-        }
-
-        /* Mobile 4-Column Full-Width Pills Grid */
-        .spms-mobile-pills-grid {
-            display: grid !important;
-            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-            gap: 0.375rem !important;
-            width: 100% !important;
-        }
-    </style>
-    
-    <!-- FOLDER / DASHBOARD HEADER -->
+    <!-- Dashboard Header -->
     <div class="px-3.5 sm:px-6 lg:px-8 py-3.5 sm:py-5 border-b border-surface-border shrink-0">
 
-        <!-- MOBILE ACTIVE EVALUATION CYCLE FOLDER DROPDOWN (PULL-DOWN MENU SPEC) -->
+        <!-- Active evaluation cycle dropdown (mobile) -->
         <?= view('components/mobile_folder_dropdown', [
             'activeCycle'      => $activeCycle ?? null,
             'folders'          => $rootFolders ?? ($sidebarFolders ?? []),
@@ -440,7 +15,7 @@
         <?php if ($sysRole === 'Admin'): ?>
         <!-- MOBILE VIEW SWITCHER (Analytics vs Masterlist) - Full Width Grid on Mobile directly under Folder Card -->
         <div class="lg:hidden mb-3.5">
-            <div class="grid grid-cols-2 p-1 rounded-xl border shadow-2xs w-full spms-tab-container dark:bg-[#04170e] dark:border-[#0e3a25]">
+            <div class="grid grid-cols-2 p-1 rounded-xl border shadow-2xs w-full spms-tab-container dark:bg-zinc-950 dark:border-zinc-800">
                 <button type="button" id="btn-view-analytics-mobile" onclick="switchDashboardView('analytics')"
                         class="w-full py-2 px-3 rounded-lg text-xs font-bold text-center transition-all shadow-xs cursor-pointer border spms-tab-active">
                     <span>Overview Analytics</span>
@@ -459,15 +34,15 @@
         <!-- MOBILE ANALYTICS HEADER (Shown only when Overview Analytics is active on mobile) -->
         <div id="analytics-mobile-header" class="lg:hidden space-y-2.5 mb-1">
             <div class="flex items-center justify-between gap-2">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-[#7f998c] truncate">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
                     <?= ($sysRole === 'Supervisor') ? (!empty($isChairScope) ? 'Department Submission Compliance' : 'College Submission Compliance') : 'Executive Performance Analytics' ?>
                 </span>
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-300 dark:bg-[#0b2b1d] dark:text-[#00df82] dark:border-[#145334] shrink-0">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-700 border border-zinc-300 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700 shrink-0">
                     <?= ($sysRole === 'Supervisor') ? esc($supervisorCollegeName ?? (!empty($isChairScope) ? 'Departmental Oversight' : 'Collegiate Oversight')) : 'University-Wide Oversight' ?>
                 </span>
             </div>
             <div class="flex items-center justify-between gap-2">
-                <h1 class="text-xl font-black tracking-tight text-slate-900 dark:text-white truncate">
+                <h1 class="text-xl font-black tracking-tight text-zinc-900 dark:text-white truncate">
                     <?= ($sysRole === 'Supervisor') ? (!empty($isChairScope) ? 'Department Overview' : 'College Overview') : 'Executive Overview' ?>
                 </h1>
                 <a href="<?= site_url('ratings') ?>" 
@@ -483,7 +58,7 @@
             <div class="flex items-center gap-2">
                 <div class="flex-1 min-w-0">
                     <select onchange="applyCollegeFilter(this.value)"
-                            class="w-full text-xs font-semibold px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer shadow-2xs spms-select-dark [color-scheme:light] dark:[color-scheme:dark]">
+                            class="w-full text-xs font-semibold px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-zinc-400/40 dark:focus:ring-zinc-600/40 cursor-pointer shadow-2xs spms-select-dark [color-scheme:light] dark:[color-scheme:dark]">
                         <option value="">All Colleges &amp; Divisions</option>
                         <?php
                         $colleges = [];
@@ -543,10 +118,10 @@
         <div class="hidden lg:block">
             <!-- Eyebrow Row -->
             <div class="flex items-center justify-between gap-2 mb-1">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-[#7f998c] truncate">
+                <span class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
                     <?= ($sysRole === 'Supervisor') ? (!empty($isChairScope) ? 'Department Submission Compliance' : 'College Submission Compliance') : 'Executive Performance Analytics' ?>
                 </span>
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-300 dark:bg-[#0b2b1d] dark:text-[#00df82] dark:border-[#145334] shrink-0">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-700 border border-zinc-300 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700 shrink-0">
                     <?= ($sysRole === 'Supervisor') ? esc($supervisorCollegeName ?? (!empty($isChairScope) ? 'Departmental Oversight' : 'Collegiate Oversight')) : 'University-Wide Oversight' ?>
                 </span>
             </div>
@@ -554,12 +129,12 @@
             <!-- Main Title & Desktop Toolbar -->
             <div class="flex items-center justify-between gap-4">
                 <div class="min-w-0">
-                    <h1 class="text-2xl lg:text-3xl font-black tracking-tight text-slate-900 dark:text-white truncate">
+                    <h1 class="text-2xl lg:text-3xl font-black tracking-tight text-zinc-900 dark:text-white truncate">
                         <?= ($sysRole === 'Supervisor') ? (!empty($isChairScope) ? 'Department Overview' : 'College Overview') : 'Executive Overview' ?>
                     </h1>
                     <?php if ($sysRole === 'Supervisor'): ?>
-                        <p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
-                            Tracking faculty &amp; staff submissions for <span class="font-bold text-slate-700 dark:text-slate-200"><?= esc($supervisorCollegeName ?? (!empty($isChairScope) ? 'Your Department' : 'Your College')) ?></span>
+                        <p class="text-xs font-medium text-zinc-500 dark:text-zinc-400 mt-0.5">
+                            Tracking faculty &amp; staff submissions for <span class="font-bold text-zinc-700 dark:text-zinc-200"><?= esc($supervisorCollegeName ?? (!empty($isChairScope) ? 'Your Department' : 'Your College')) ?></span>
                         </p>
                     <?php endif; ?>
                 </div>
@@ -567,7 +142,7 @@
                 <div class="flex items-center gap-2.5 shrink-0">
                     <?php if ($sysRole === 'Admin'): ?>
                     <!-- Desktop View Switcher -->
-                    <div class="inline-flex p-1 rounded-xl border shadow-2xs spms-tab-container dark:bg-[#04170e] dark:border-[#0e3a25]">
+                    <div class="inline-flex p-1 rounded-xl border shadow-2xs spms-tab-container dark:bg-zinc-950 dark:border-zinc-800">
                         <button type="button" id="btn-view-analytics" onclick="switchDashboardView('analytics')"
                                 class="py-2 px-4 rounded-lg text-xs font-bold text-center transition-all shadow-xs cursor-pointer border spms-tab-active">
                             <span>Overview Analytics</span>
@@ -584,7 +159,7 @@
                     <!-- Desktop College Filter & Queue -->
                     <div class="flex items-center gap-2">
                         <select id="college-filter" onchange="applyCollegeFilter(this.value)"
-                                class="text-xs font-semibold px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer shadow-2xs spms-select-dark [color-scheme:light] dark:[color-scheme:dark]">
+                                class="text-xs font-semibold px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-zinc-400/40 dark:focus:ring-zinc-600/40 cursor-pointer shadow-2xs spms-select-dark [color-scheme:light] dark:[color-scheme:dark]">
                             <option value="">All Colleges &amp; Divisions</option>
                             <?php if (!empty($allUnits)): ?>
                                 <optgroup label="Colleges">
@@ -653,10 +228,10 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             
             <!-- Card 1: Total College Headcount -->
-            <div class="p-5 rounded-2xl bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] shadow-xs flex flex-col justify-between">
+            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"><?= !empty($isChairScope) ? 'Department Headcount' : 'College Headcount' ?></span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400"><?= !empty($isChairScope) ? 'Department Headcount' : 'College Headcount' ?></span>
                         <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-info-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-2xs">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -664,20 +239,20 @@
                         </div>
                     </div>
                     <div class="flex items-baseline gap-2 mb-2">
-                        <span class="text-3xl font-black text-slate-900 dark:text-white"><?= number_format($totalPersonnel) ?></span>
-                        <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Personnel</span>
+                        <span class="text-3xl font-black text-zinc-900 dark:text-white"><?= number_format($totalPersonnel) ?></span>
+                        <span class="text-xs font-bold text-zinc-500 dark:text-zinc-400">Personnel</span>
                     </div>
                 </div>
-                <div class="pt-3 border-t border-slate-100 dark:border-[#1a2b22] text-xs text-slate-500 dark:text-slate-400 truncate">
+                <div class="pt-3 border-t border-zinc-100 dark:border-zinc-800 text-xs text-zinc-500 dark:text-zinc-400 truncate">
                     <span><?= esc($supervisorCollegeName ?? (!empty($isChairScope) ? 'Department roster' : 'College roster')) ?></span>
                 </div>
             </div>
 
             <!-- Card 2: Targets Submitted & Approved -->
-            <div class="p-5 rounded-2xl bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] shadow-xs flex flex-col justify-between">
+            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Target Commitments</span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Target Commitments</span>
                         <div class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-2xs">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -685,19 +260,19 @@
                         </div>
                     </div>
                     <div class="flex items-baseline gap-2 mb-2">
-                        <span class="text-3xl font-black text-slate-900 dark:text-white"><?= $pipeline['target']['approved'] ?></span>
-                        <span class="text-xs font-bold text-slate-500 dark:text-slate-400">/ <?= $totalPersonnel ?> Approved (<?= $targetComplianceRate ?>%)</span>
+                        <span class="text-3xl font-black text-zinc-900 dark:text-white"><?= $pipeline['target']['approved'] ?></span>
+                        <span class="text-xs font-bold text-zinc-500 dark:text-zinc-400">/ <?= $totalPersonnel ?> Approved (<?= $targetComplianceRate ?>%)</span>
                     </div>
                 </div>
-                <div class="pt-3 border-t border-slate-100 dark:border-[#1a2b22]">
-                    <div class="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                <div class="pt-3 border-t border-zinc-100 dark:border-zinc-800">
+                    <div class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
                         <div class="bg-emerald-500 h-1.5 rounded-full transition-all" style="width: <?= min(100, $targetComplianceRate) ?>%;"></div>
                     </div>
                 </div>
             </div>
 
             <!-- Card 3: Missing Target Submissions (Draft) -->
-            <div class="p-5 rounded-2xl bg-white dark:bg-[#0c1510] border <?= ($pipeline['target']['draft'] > 0) ? 'border-rose-300 dark:border-rose-900/60 bg-rose-50/20 dark:bg-[#0c1510]' : 'border-slate-200 dark:border-[#1a2b22]' ?> shadow-xs flex flex-col justify-between">
+            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border <?= ($pipeline['target']['draft'] > 0) ? 'border-rose-300 dark:border-rose-900/60 bg-rose-50/20 dark:bg-zinc-900' : 'border-zinc-200 dark:border-zinc-800' ?> shadow-xs flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between mb-3">
                         <span class="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">Missing Targets</span>
@@ -712,7 +287,7 @@
                         <span class="text-xs font-bold text-rose-500 dark:text-rose-400">Still in Draft</span>
                     </div>
                 </div>
-                <div class="pt-3 border-t border-slate-100 dark:border-[#1a2b22] text-xs font-semibold truncate">
+                <div class="pt-3 border-t border-zinc-100 dark:border-zinc-800 text-xs font-semibold truncate">
                     <?php if ($pipeline['target']['draft'] > 0): ?>
                         <span class="inline-flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
                             <svg class="w-3.5 h-3.5 inline-block shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -732,10 +307,10 @@
             </div>
 
             <!-- Card 4: Accomplishments Finalized -->
-            <div class="p-5 rounded-2xl bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] shadow-xs flex flex-col justify-between">
+            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Final Evaluations</span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Final Evaluations</span>
                         <div class="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-2xs">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -743,12 +318,12 @@
                         </div>
                     </div>
                     <div class="flex items-baseline gap-2 mb-2">
-                        <span class="text-3xl font-black text-slate-900 dark:text-white"><?= $pipeline['evaluation']['completed'] ?></span>
-                        <span class="text-xs font-bold text-slate-500 dark:text-slate-400">/ <?= $totalPersonnel ?> Finalized (<?= $evalCompletionRate ?>%)</span>
+                        <span class="text-3xl font-black text-zinc-900 dark:text-white"><?= $pipeline['evaluation']['completed'] ?></span>
+                        <span class="text-xs font-bold text-zinc-500 dark:text-zinc-400">/ <?= $totalPersonnel ?> Finalized (<?= $evalCompletionRate ?>%)</span>
                     </div>
                 </div>
-                <div class="pt-3 border-t border-slate-100 dark:border-[#1a2b22]">
-                    <div class="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                <div class="pt-3 border-t border-zinc-100 dark:border-zinc-800">
+                    <div class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
                         <div class="bg-indigo-600 h-1.5 rounded-full transition-all" style="width: <?= min(100, $evalCompletionRate) ?>%;"></div>
                     </div>
                 </div>
@@ -760,16 +335,16 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             
             <!-- Phase 1 Card -->
-            <div class="p-5 rounded-2xl bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] shadow-xs">
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#1a2b22] mb-4">
+            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
+                <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-4">
                     <div class="flex items-center gap-2.5">
                         <span class="w-6 h-6 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 flex items-center justify-center text-xs font-black">1</span>
                         <div>
-                            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Target Commitment Phase</h3>
-                            <span class="text-xs text-slate-400">Submission & Approval status</span>
+                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Target Commitment Phase</h3>
+                            <span class="text-xs text-zinc-400">Submission & Approval status</span>
                         </div>
                     </div>
-                    <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300">
+                    <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
                         <?= $totalPersonnel ?> Total
                     </span>
                 </div>
@@ -794,16 +369,16 @@
             </div>
 
             <!-- Phase 2 Card -->
-            <div class="p-5 rounded-2xl bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] shadow-xs">
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#1a2b22] mb-4">
+            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
+                <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-4">
                     <div class="flex items-center gap-2.5">
                         <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-xs font-black">2</span>
                         <div>
-                            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Accomplishment Report Phase</h3>
-                            <span class="text-xs text-slate-400">Evaluation & Grading status</span>
+                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Accomplishment Report Phase</h3>
+                            <span class="text-xs text-zinc-400">Evaluation & Grading status</span>
                         </div>
                     </div>
-                    <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300">
+                    <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
                         <?= $totalPersonnel ?> Total
                     </span>
                 </div>
@@ -830,11 +405,11 @@
         </div>
 
         <!-- 3. "WHO HAS SUBMITTED & WHO HAS NOT" COMPLIANCE ROSTER TABLE -->
-        <div class="p-6 rounded-2xl bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] shadow-xs">
+        <div class="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
             <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
                 <div>
-                    <h2 class="text-base font-bold text-slate-900 dark:text-white"><?= !empty($isChairScope) ? 'Department Personnel Submission Roster' : 'College Personnel Submission Roster' ?></h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    <h2 class="text-base font-bold text-zinc-900 dark:text-white"><?= !empty($isChairScope) ? 'Department Personnel Submission Roster' : 'College Personnel Submission Roster' ?></h2>
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
                         Track who has submitted their targets/accomplishments and who is still missing or in draft.
                     </p>
                 </div>
@@ -842,7 +417,7 @@
                 <!-- Search & Department Filter Controls -->
                 <div class="flex items-center gap-2.5 flex-wrap">
                     <a href="<?= site_url('dashboard/export-masterlist/' . ($activeCycle['id'] ?? '')) ?>"
-                       class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 dark:bg-[#0c4a33] dark:hover:bg-emerald-700 border border-emerald-600/30 transition-all shadow-xs cursor-pointer"
+                       class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white bg-[#114232] hover:bg-[#16533f] text-white border border-[#1b5e47] transition-all shadow-xs cursor-pointer"
                        title="Download CSC SLIR Excel Sheet for this unit">
                         <svg class="w-3.5 h-3.5 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -852,7 +427,7 @@
 
                     <?php if (!empty($collegeDepartments) && count($collegeDepartments) > 1 && empty($isChairScope)): ?>
                         <select id="roster-dept-filter" onchange="filterRoster()"
-                                class="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#032316] border border-slate-200 dark:border-[#0c4a33] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer">
+                                class="text-xs font-semibold px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-400/40 dark:focus:ring-zinc-600/40 cursor-pointer">
                             <option value="">All Sub-Departments</option>
                             <?php foreach ($collegeDepartments as $cd): ?>
                                 <option value="<?= esc($cd) ?>"><?= esc($cd) ?></option>
@@ -861,47 +436,47 @@
                     <?php endif; ?>
 
                     <div class="relative w-64 max-w-full">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </div>
                         <input type="text" id="roster-search" onkeyup="filterRoster()"
                                placeholder="Search faculty name or position..."
-                               class="w-full text-xs font-medium py-2 pl-9 pr-3 rounded-xl bg-slate-50 dark:bg-[#032316] border border-slate-200 dark:border-[#0c4a33] text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all shadow-2xs" />
+                               class="w-full text-xs font-medium py-2 pl-9 pr-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/40 dark:focus:ring-zinc-600/40 transition-all shadow-2xs" />
                     </div>
                 </div>
             </div>
 
             <!-- Quick Filter Pill Tabs -->
-            <div class="flex items-center gap-2 pb-4 overflow-x-auto custom-scrollbar border-b border-slate-100 dark:border-[#1a2b22]">
+            <div class="flex items-center gap-2 pb-4 overflow-x-auto custom-scrollbar border-b border-zinc-100 dark:border-zinc-800">
                 <button type="button" onclick="setRosterFilter('all', this)"
-                        class="roster-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-emerald-500 text-white shadow-2xs">
+                        class="roster-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border border-zinc-900 dark:border-white shadow-2xs">
                     All Personnel (<?= count($cycleFolders) ?>)
                 </button>
                 <button type="button" onclick="setRosterFilter('missing', this)"
-                        class="roster-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-zinc-700">
+                        class="roster-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700">
                     <svg class="w-3.5 h-3.5 text-rose-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                     <span>Missing Submissions (Draft) (<?= $pipeline['target']['draft'] + ($pipeline['evaluation']['draft'] ?? $pipeline['evaluation']['pending']) ?>)</span>
                 </button>
                 <button type="button" onclick="setRosterFilter('review', this)"
-                        class="roster-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-zinc-700">
+                        class="roster-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700">
                     <svg class="w-3.5 h-3.5 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span>Submitted (In Review) (<?= $pipeline['target']['pending'] + $pipeline['evaluation']['action'] + $pipeline['evaluation']['submitted'] ?>)</span>
                 </button>
                 <button type="button" onclick="setRosterFilter('revision', this)"
-                        class="roster-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-zinc-700">
+                        class="roster-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700">
                     <svg class="w-3.5 h-3.5 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
                     <span>Needs Revision (<?= $pipeline['target']['returned'] + ($pipeline['evaluation']['returned'] ?? 0) ?>)</span>
                 </button>
                 <button type="button" onclick="setRosterFilter('completed', this)"
-                        class="roster-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-zinc-700">
+                        class="roster-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700">
                     <svg class="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                     </svg>
@@ -910,10 +485,10 @@
             </div>
 
             <!-- Table -->
-            <div class="overflow-x-auto mt-4 rounded-xl border border-slate-200 dark:border-[#1a2b22]">
+            <div class="overflow-x-auto mt-4 rounded-xl border border-zinc-200 dark:border-zinc-800">
                 <table class="w-full text-left border-collapse" id="roster-table">
                     <thead>
-                        <tr class="bg-slate-50 dark:bg-[#032316] border-b border-slate-200 dark:border-[#1a2b22] text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">
+                        <tr class="bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-wider">
                             <th class="py-3 px-4">Faculty / Personnel</th>
                             <th class="py-3 px-4">Department / Unit</th>
                             <th class="py-3 px-4 text-center">Phase 1: Targets</th>
@@ -921,31 +496,31 @@
                             <th class="py-3 px-4 text-right">Action</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100 dark:divide-[#1a2b22] text-xs font-semibold">
+                    <tbody class="divide-y divide-zinc-100 dark:divide-[#1a2b22] text-xs font-semibold">
                         <?php if (empty($cycleFolders)): ?>
                             <tr>
-                                <td colspan="5" class="py-10 px-4 text-center text-slate-400 dark:text-slate-500 italic">
+                                <td colspan="5" class="py-10 px-4 text-center text-zinc-400 dark:text-zinc-500 italic">
                                     No personnel records found for this evaluation cycle.
                                 </td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($cycleFolders as $rf): ?>
-                                <tr class="roster-row hover:bg-slate-50/80 dark:hover:bg-white/5 transition-colors"
+                                <tr class="roster-row hover:bg-zinc-50/80 dark:hover:bg-white/5 transition-colors"
                                     data-filter="<?= esc($rf['submission_filter'] ?? 'all') ?>"
                                     data-target-state="<?= esc($rf['target_state'] ?? 'draft') ?>"
                                     data-eval-state="<?= esc($rf['eval_state'] ?? 'draft') ?>"
                                     data-name="<?= strtolower(esc($rf['full_name'] . ' ' . $rf['email'] . ' ' . $rf['position'])) ?>"
                                     data-dept="<?= esc($rf['department']) ?>">
                                     <td class="py-3 px-4 whitespace-nowrap">
-                                        <div class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                        <div class="font-bold text-zinc-900 dark:text-white flex items-center gap-2">
                                             <span><?= esc($rf['full_name']) ?></span>
-                                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider <?= ($rf['is_teaching'] == 1) ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300' : 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400' ?>">
+                                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider <?= ($rf['is_teaching'] == 1) ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400' ?>">
                                                 <?= ($rf['is_teaching'] == 1) ? 'Teaching' : 'Non-Teaching' ?>
                                             </span>
                                         </div>
-                                        <div class="text-[11px] text-slate-400 dark:text-slate-500 font-normal"><?= esc($rf['position']) ?> &bull; <?= esc($rf['email']) ?></div>
+                                        <div class="text-[11px] text-zinc-400 dark:text-zinc-500 font-normal"><?= esc($rf['position']) ?> &bull; <?= esc($rf['email']) ?></div>
                                     </td>
-                                    <td class="py-3 px-4 text-slate-600 dark:text-slate-300">
+                                    <td class="py-3 px-4 text-zinc-600 dark:text-zinc-300">
                                         <?= esc($rf['department']) ?>
                                     </td>
                                     <td class="py-3 px-4 text-center whitespace-nowrap">
@@ -961,22 +536,22 @@
                                     <td class="py-3 px-4 text-right whitespace-nowrap">
                                         <?php if (!empty($rf['folder_id']) && !in_array($rf['folder_status'] ?? '', [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::DRAFT_TARGET->value, 'unstarted'])): ?>
                                             <a href="<?= site_url('ratings/show/' . $rf['folder_id']) ?>"
-                                               class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 hover:bg-emerald-50 dark:hover:bg-white/5 transition-colors shadow-2xs">
+                                               class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:hover:bg-white/5 transition-colors shadow-2xs">
                                                 Inspect
                                             </a>
                                         <?php elseif (in_array($rf['folder_status'] ?? '', [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::DRAFT_TARGET->value])): ?>
-                                            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold text-slate-400 dark:text-zinc-500 bg-slate-50 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-700/40">
+                                            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700/40">
                                                 Drafting
                                             </span>
                                         <?php else: ?>
-                                            <span class="text-xs text-slate-400 dark:text-slate-500 italic">No Folder</span>
+                                            <span class="text-xs text-zinc-400 dark:text-zinc-500 italic">No Folder</span>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
                         <tr id="roster-empty-message" class="hidden">
-                            <td colspan="5" class="py-10 px-4 text-center text-slate-400 dark:text-slate-500 italic">
+                            <td colspan="5" class="py-10 px-4 text-center text-zinc-400 dark:text-zinc-500 italic">
                                 No employees found matching the selected filter.
                             </td>
                         </tr>
@@ -1012,8 +587,8 @@
                         <span class="text-[11px] sm:text-xs font-semibold spms-kpi-sub">Personnel</span>
                     </div>
                 </div>
-                <div class="flex items-center gap-1.5 text-[10px] sm:text-xs font-semibold text-emerald-600 dark:text-[#00df82] mt-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-[#00df82] shrink-0"></span>
+                <div class="flex items-center gap-1.5 text-[10px] sm:text-xs font-semibold text-zinc-500 dark:text-zinc-400 mt-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-zinc-400 dark:bg-zinc-500 shrink-0"></span>
                     <span>100% active roster</span>
                 </div>
             </div>
@@ -1086,34 +661,61 @@
         </div>
 
         <!-- 2. SPMS 4-STAGE LIFECYCLE PIPELINE (CSC MC No. 6, s. 2012) -->
+        <?php
+            // Dynamic Active Stage Resolution
+            $activeStageNum = 1;
+            $activeStageName = 'Planning';
+            if (($pipeline['stage3']['completed'] ?? 0) > 0 && ($totalPersonnel > 0 && $pipeline['stage3']['completed'] >= $totalPersonnel)) {
+                $activeStageNum = 4;
+                $activeStageName = 'Rewarding';
+            } elseif (($pipeline['stage3']['completed'] ?? 0) > 0 || ($pipeline['stage3']['evaluating'] ?? 0) > 0 || ($pipeline['stage3']['submitted'] ?? 0) > 0) {
+                $activeStageNum = 3;
+                $activeStageName = 'Review';
+            } elseif (($pipeline['stage1']['approved'] ?? 0) > 0 && (($pipeline['stage2']['mov_count'] ?? 0) > 0 || ($pipeline['stage2']['coaching_notes'] ?? 0) > 0)) {
+                $activeStageNum = 2;
+                $activeStageName = 'Coaching';
+            }
+            
+            $lifecycleStages = [
+                1 => 'Planning',
+                2 => 'Coaching',
+                3 => 'Review',
+                4 => 'Rewarding',
+            ];
+        ?>
         <div class="p-4 sm:p-6 rounded-2xl shadow-xs spms-lifecycle-container">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                 <div>
-                    <h2 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight">SPMS 4-Stage Performance Lifecycle</h2>
-                    <p class="text-[10px] sm:text-xs text-slate-500 dark:text-[#7f998c] mt-0.5">CSC MC No. 6, S. 2012 • Standard University Strategic Calibration Cycle</p>
+                    <h2 class="text-sm sm:text-base font-bold text-zinc-900 dark:text-white tracking-tight">SPMS 4-Stage Performance Lifecycle</h2>
+                    <p class="text-[10px] sm:text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">CSC MC No. 6, S. 2012 • Standard University Strategic Calibration Cycle</p>
                 </div>
+
+
                 
-                <!-- Stepper Flow (Matches Image 2) -->
-                <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 sm:pb-0 text-[11px]">
-                    <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-bold shrink-0 bg-emerald-500/15 dark:bg-[#0c442b] border border-emerald-500/30 dark:border-[#176641] text-emerald-700 dark:text-[#00df82]">
-                        <span class="w-4 h-4 rounded-full bg-[#00df82] text-[#04170e] text-[9px] font-black flex items-center justify-center shrink-0">1</span>
-                        <span>Planning</span>
-                    </div>
-                    <span class="w-3 sm:w-4 h-px bg-slate-300 dark:bg-[#1e4832] shrink-0"></span>
-                    <div class="inline-flex items-center gap-1.5 text-slate-500 dark:text-[#7f998c] font-medium shrink-0">
-                        <span class="w-4 h-4 rounded-full border border-slate-300 dark:border-[#2a4d3b] text-[9px] font-bold flex items-center justify-center shrink-0">2</span>
-                        <span>Coaching</span>
-                    </div>
-                    <span class="w-3 sm:w-4 h-px bg-slate-300 dark:bg-[#1e4832] shrink-0"></span>
-                    <div class="inline-flex items-center gap-1.5 text-slate-500 dark:text-[#7f998c] font-medium shrink-0">
-                        <span class="w-4 h-4 rounded-full border border-slate-300 dark:border-[#2a4d3b] text-[9px] font-bold flex items-center justify-center shrink-0">3</span>
-                        <span>Review</span>
-                    </div>
-                    <span class="w-3 sm:w-4 h-px bg-slate-300 dark:bg-[#1e4832] shrink-0"></span>
-                    <div class="inline-flex items-center gap-1.5 text-slate-500 dark:text-[#7f998c] font-medium shrink-0">
-                        <span class="w-4 h-4 rounded-full border border-slate-300 dark:border-[#2a4d3b] text-[9px] font-bold flex items-center justify-center shrink-0">4</span>
-                        <span>Rewarding</span>
-                    </div>
+                <!-- DESKTOP VIEW (sm:flex): Full Stepper Flow (Capsule Pills) -->
+                <div class="hidden sm:flex items-center gap-1.5 sm:gap-2 text-[11px] shrink-0">
+                    <?php foreach ($lifecycleStages as $sNum => $sTitle): ?>
+                        <?php if ($sNum > 1): ?>
+                            <span class="w-2 sm:w-3 h-px <?= $sNum <= $activeStageNum ? 'bg-amber-500/60' : 'bg-zinc-300 dark:bg-zinc-700' ?> shrink-0"></span>
+                        <?php endif; ?>
+
+                        <?php if ($sNum === $activeStageNum): ?>
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-bold shrink-0 bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border border-zinc-900 dark:border-white shadow-2xs">
+                                <span class="w-4 h-4 rounded-full bg-amber-500 text-zinc-950 text-[9px] font-black flex items-center justify-center shrink-0"><?= $sNum ?></span>
+                                <span><?= esc($sTitle) ?></span>
+                            </div>
+                        <?php elseif ($sNum < $activeStageNum): ?>
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-semibold shrink-0 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                                <span class="w-4 h-4 rounded-full bg-amber-500 text-zinc-950 text-[9px] font-bold flex items-center justify-center shrink-0">✓</span>
+                                <span><?= esc($sTitle) ?></span>
+                            </div>
+                        <?php else: ?>
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-semibold shrink-0 bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/80 text-zinc-500 dark:text-zinc-400">
+                                <span class="w-4 h-4 rounded-full border border-zinc-300 dark:border-zinc-600 text-[9px] font-bold flex items-center justify-center shrink-0"><?= $sNum ?></span>
+                                <span><?= esc($sTitle) ?></span>
+                            </div>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
                 </div>
             </div>
 
@@ -1124,79 +726,79 @@
                 <div class="p-3.5 sm:p-4 rounded-xl spms-stage-box-active flex flex-col justify-between">
                     <div>
                         <div class="flex items-center gap-2 mb-2">
-                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-[#00df82] border border-emerald-500/20">STAGE 1</span>
-                            <span class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-emerald-600 dark:text-[#00df82]">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-[#00df82] animate-pulse"></span>
+                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">STAGE 1</span>
+                            <span class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 font-extrabold">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                                 CURRENT
                             </span>
                         </div>
-                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Target Commitment</h3>
-                        <p class="text-[11px] text-slate-500 dark:text-[#7f998c] mt-0.5">Target Setting Phase</p>
+                        <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Target Commitment</h3>
+                        <p class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">Target Setting Phase</p>
 
                         <div class="mt-3">
                             <div class="flex items-baseline justify-between mb-1.5">
-                                <span class="text-xs font-bold text-slate-900 dark:text-white">
+                                <span class="text-xs font-bold text-zinc-900 dark:text-white">
                                     <?= $pipeline['stage1']['approved'] ?>
-                                    <span class="text-slate-400 dark:text-[#7f998c] font-normal">/ <?= $totalPersonnel ?> Approved</span>
+                                    <span class="text-zinc-400 dark:text-zinc-400 font-normal">/ <?= $totalPersonnel ?> Approved</span>
                                 </span>
-                                <span class="text-xs font-bold text-emerald-600 dark:text-[#00df82]">
+                                <span class="text-xs font-bold text-zinc-900 dark:text-white">
                                     <?= $totalPersonnel > 0 ? round(($pipeline['stage1']['approved'] / $totalPersonnel) * 100) : 0 ?>%
                                 </span>
                             </div>
-                            <div class="w-full bg-slate-200 dark:bg-[#0d2a1d] rounded-full h-1 overflow-hidden">
-                                <div class="bg-emerald-500 dark:bg-[#00df82] h-1 rounded-full transition-all duration-500" style="width: <?= $totalPersonnel > 0 ? min(100, round(($pipeline['stage1']['approved'] / $totalPersonnel) * 100)) : 0 ?>%;"></div>
+                            <div class="w-full bg-zinc-200 dark:bg-zinc-800 rounded-full h-1 overflow-hidden">
+                                <div class="bg-amber-500 h-1 rounded-full transition-all duration-500" style="width: <?= $totalPersonnel > 0 ? min(100, round(($pipeline['stage1']['approved'] / $totalPersonnel) * 100)) : 0 ?>%;"></div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="pt-2.5 border-t border-slate-200/70 dark:border-[#14261d] space-y-1.5 mt-3 text-xs">
-                        <div class="flex items-center justify-between text-slate-500 dark:text-[#7f998c]">
+                    <div class="pt-2.5 border-t border-zinc-200/70 dark:border-zinc-800 space-y-1.5 mt-3 text-xs">
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
                             <span>Approved Targets</span>
-                            <span class="font-bold text-slate-900 dark:text-[#00df82]"><?= $pipeline['stage1']['approved'] ?></span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage1']['approved'] ?></span>
                         </div>
-                        <div class="flex items-center justify-between text-slate-500 dark:text-[#7f998c]">
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
                             <span>In Review</span>
-                            <span class="font-bold text-slate-900 dark:text-white"><?= $pipeline['stage1']['pending'] ?></span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage1']['pending'] ?></span>
                         </div>
-                        <div class="flex items-center justify-between text-slate-500 dark:text-[#7f998c]">
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
                             <span>Needs Revision</span>
-                            <span class="font-bold <?= $pipeline['stage1']['returned'] > 0 ? 'text-amber-500 dark:text-[#f59e0b]' : 'text-slate-900 dark:text-white' ?>"><?= $pipeline['stage1']['returned'] ?></span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage1']['returned'] ?></span>
                         </div>
-                        <div class="flex items-center justify-between text-slate-500 dark:text-[#7f998c]">
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
                             <span>Draft Mode</span>
-                            <span class="font-bold text-amber-600 dark:text-[#f59e0b]"><?= $pipeline['stage1']['draft'] ?></span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage1']['draft'] ?></span>
                         </div>
                     </div>
                 </div>
 
                 <!-- STAGE 2: Monitoring & Coaching -->
-                <div class="p-3.5 sm:p-4 rounded-xl spms-stage-box flex flex-col justify-between transition-all hover:border-emerald-500/30">
+                <div class="p-3.5 sm:p-4 rounded-xl spms-stage-box flex flex-col justify-between transition-all hover:border-zinc-300 dark:hover:border-zinc-600">
                     <div>
                         <button type="button" onclick="toggleStageAccordion(2)" class="w-full text-left cursor-pointer lg:cursor-default spms-stage-accordion-btn">
                             <div class="flex items-center justify-between">
-                                <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-[#0d2317] text-slate-500 dark:text-[#7f998c] border border-slate-200 dark:border-[#173826]">STAGE 2</span>
-                                <svg id="stage-2-chevron" class="w-4 h-4 text-slate-400 dark:text-[#7f998c] transition-transform duration-200 lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">STAGE 2</span>
+                                <svg id="stage-2-chevron" class="w-4 h-4 text-zinc-400 dark:text-zinc-400 transition-transform duration-200 lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                                 </svg>
                             </div>
-                            <h3 class="text-sm font-bold text-slate-900 dark:text-white mt-1.5">Monitoring &amp; Coaching</h3>
-                            <p class="text-[11px] text-slate-500 dark:text-[#7f998c] mt-0.5">Execution &amp; Evidence</p>
+                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white mt-1.5">Monitoring &amp; Coaching</h3>
+                            <p class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">Execution &amp; Evidence</p>
                         </button>
                     </div>
                     
                     <!-- Collapsible details on mobile only -->
-                    <div id="stage-2-content" class="hidden pt-3 border-t border-slate-200/70 dark:border-[#14261d] space-y-1.5 mt-3 text-xs">
-                        <div class="flex items-center justify-between text-slate-500 dark:text-[#7f998c]">
+                    <div id="stage-2-content" class="hidden pt-3 border-t border-zinc-200/70 dark:border-zinc-800 space-y-1.5 mt-3 text-xs">
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
                             <span>Active Execution</span>
-                            <span class="font-bold text-slate-900 dark:text-white"><?= $pipeline['stage2']['active_execution'] ?? $pipeline['stage1']['approved'] ?></span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage2']['active_execution'] ?? $pipeline['stage1']['approved'] ?></span>
                         </div>
-                        <div class="flex items-center justify-between text-slate-500 dark:text-[#7f998c]">
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
                             <span>MOV Attachments</span>
-                            <span class="font-bold text-slate-900 dark:text-[#00df82]"><?= $pipeline['stage2']['mov_count'] ?? 0 ?></span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage2']['mov_count'] ?? 0 ?></span>
                         </div>
-                        <div class="flex items-center justify-between text-slate-500 dark:text-[#7f998c]">
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
                             <span>Coaching Feedback</span>
-                            <span class="font-bold text-slate-900 dark:text-white"><?= $pipeline['stage2']['coaching_notes'] ?? 0 ?></span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage2']['coaching_notes'] ?? 0 ?></span>
                         </div>
                     </div>
                 </div>
@@ -1205,71 +807,71 @@
                 <div class="p-3.5 sm:p-4 rounded-xl spms-stage-box flex flex-col justify-between">
                     <div>
                         <div class="flex items-center gap-2 mb-2">
-                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-[#0d2317] text-slate-500 dark:text-[#7f998c] border border-slate-200 dark:border-[#173826]">STAGE 3</span>
+                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">STAGE 3</span>
                         </div>
-                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Review &amp; Evaluation</h3>
-                        <p class="text-[11px] text-slate-500 dark:text-[#7f998c] mt-0.5">Accomplishment Phase</p>
+                        <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Review &amp; Evaluation</h3>
+                        <p class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">Accomplishment Phase</p>
 
                         <div class="mt-3">
                             <div class="flex items-baseline justify-between mb-1.5">
-                                <span class="text-xs font-bold text-slate-900 dark:text-white">
+                                <span class="text-xs font-bold text-zinc-900 dark:text-white">
                                     <?= $pipeline['stage3']['completed'] ?>
-                                    <span class="text-slate-400 dark:text-[#7f998c] font-normal">/ <?= $totalPersonnel ?> Evaluated</span>
+                                    <span class="text-zinc-400 dark:text-zinc-400 font-normal">/ <?= $totalPersonnel ?> Evaluated</span>
                                 </span>
-                                <span class="text-xs font-bold text-slate-400 dark:text-[#7f998c]">
+                                <span class="text-xs font-bold text-zinc-400 dark:text-zinc-400">
                                     <?= $totalPersonnel > 0 ? round(($pipeline['stage3']['completed'] / $totalPersonnel) * 100) : 0 ?>%
                                 </span>
                             </div>
-                            <div class="w-full bg-slate-200 dark:bg-[#0d2a1d] rounded-full h-1 overflow-hidden">
-                                <div class="bg-emerald-500 dark:bg-[#00df82] h-1 rounded-full transition-all duration-500" style="width: <?= $totalPersonnel > 0 ? min(100, round(($pipeline['stage3']['completed'] / $totalPersonnel) * 100)) : 0 ?>%;"></div>
+                            <div class="w-full bg-zinc-200 dark:bg-zinc-800 rounded-full h-1 overflow-hidden">
+                                <div class="bg-zinc-700 dark:bg-zinc-500 h-1 rounded-full transition-all duration-500" style="width: <?= $totalPersonnel > 0 ? min(100, round(($pipeline['stage3']['completed'] / $totalPersonnel) * 100)) : 0 ?>%;"></div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="pt-2.5 border-t border-slate-200/70 dark:border-[#14261d] space-y-1.5 mt-3 text-xs">
-                        <div class="flex items-center justify-between text-slate-500 dark:text-[#7f998c]">
+                    <div class="pt-2.5 border-t border-zinc-200/70 dark:border-zinc-800 space-y-1.5 mt-3 text-xs">
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
                             <span>Approved Ratings</span>
-                            <span class="font-bold text-slate-900 dark:text-[#00df82]"><?= $pipeline['stage3']['completed'] ?? 0 ?></span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage3']['completed'] ?? 0 ?></span>
                         </div>
-                        <div class="flex items-center justify-between text-slate-500 dark:text-[#7f998c]">
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
                             <span>Under Evaluation</span>
-                            <span class="font-bold text-slate-900 dark:text-white"><?= $pipeline['stage3']['evaluating'] ?? 0 ?></span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage3']['evaluating'] ?? 0 ?></span>
                         </div>
-                        <div class="flex items-center justify-between text-slate-500 dark:text-[#7f998c]">
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
                             <span>Submitted Awaiting</span>
-                            <span class="font-bold text-slate-900 dark:text-white"><?= $pipeline['stage3']['submitted'] ?></span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage3']['submitted'] ?></span>
                         </div>
-                        <div class="flex items-center justify-between text-slate-500 dark:text-[#7f998c]">
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
                             <span>Draft Accomplishment</span>
-                            <span class="font-bold text-slate-900 dark:text-white"><?= $pipeline['stage3']['draft'] ?></span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage3']['draft'] ?></span>
                         </div>
                     </div>
                 </div>
 
                 <!-- STAGE 4: Rewarding & Dev. -->
-                <div class="p-3.5 sm:p-4 rounded-xl spms-stage-box flex flex-col justify-between transition-all hover:border-emerald-500/30">
+                <div class="p-3.5 sm:p-4 rounded-xl spms-stage-box flex flex-col justify-between transition-all hover:border-zinc-300 dark:hover:border-zinc-600">
                     <div>
                         <button type="button" onclick="toggleStageAccordion(4)" class="w-full text-left cursor-pointer lg:cursor-default spms-stage-accordion-btn">
                             <div class="flex items-center justify-between">
-                                <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-[#0d2317] text-slate-500 dark:text-[#7f998c] border border-slate-200 dark:border-[#173826]">STAGE 4</span>
-                                <svg id="stage-4-chevron" class="w-4 h-4 text-slate-400 dark:text-[#7f998c] transition-transform duration-200 lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">STAGE 4</span>
+                                <svg id="stage-4-chevron" class="w-4 h-4 text-zinc-400 dark:text-zinc-400 transition-transform duration-200 lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                                 </svg>
                             </div>
-                            <h3 class="text-sm font-bold text-slate-900 dark:text-white mt-1.5">Rewarding &amp; Dev.</h3>
-                            <p class="text-[11px] text-slate-500 dark:text-[#7f998c] mt-0.5">Incentives &amp; HR Phase</p>
+                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white mt-1.5">Rewarding &amp; Dev.</h3>
+                            <p class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">Incentives &amp; HR Phase</p>
                         </button>
                     </div>
                     
                     <!-- Collapsible details on mobile only -->
-                    <div id="stage-4-content" class="hidden pt-3 border-t border-slate-200/70 dark:border-[#14261d] space-y-1.5 mt-3 text-xs">
-                        <div class="flex items-center justify-between text-slate-500 dark:text-[#7f998c]">
+                    <div id="stage-4-content" class="hidden pt-3 border-t border-zinc-200/70 dark:border-zinc-800 space-y-1.5 mt-3 text-xs">
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
                             <span>PBB / Bonus Eligible</span>
-                            <span class="font-bold text-slate-900 dark:text-[#00df82]"><?= $pipeline['stage4']['pbb_eligible'] ?? 0 ?></span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage4']['pbb_eligible'] ?? 0 ?></span>
                         </div>
-                        <div class="flex items-center justify-between text-slate-500 dark:text-[#7f998c]">
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
                             <span>Development Needed</span>
-                            <span class="font-bold text-slate-900 dark:text-white"><?= $pipeline['stage4']['dev_needed'] ?? 0 ?></span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage4']['dev_needed'] ?? 0 ?></span>
                         </div>
                     </div>
                 </div>
@@ -1291,22 +893,22 @@
                 <!-- 1. EYEBROW & TITLE ROW -->
                 <div class="space-y-1.5">
                     <div class="flex items-center gap-2">
-                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-[#0c3924] dark:text-[#00df82] dark:border-[#145334]">
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-zinc-800 dark:text-emerald-400 dark:border-zinc-700">
                             CSC MC NO. 6, S. 2012
                         </span>
-                        <span class="text-[11px] font-semibold text-slate-500 dark:text-[#7f998c]">
+                        <span class="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
                             <?= esc($selectedUnitName ?? 'University-Wide Roster') ?>
                         </span>
                     </div>
 
                     <div class="flex items-center justify-between gap-3">
-                        <h2 class="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                        <h2 class="text-xl font-black text-zinc-900 dark:text-white tracking-tight">
                             Master List
                         </h2>
                         <a href="<?= site_url('dashboard/export-masterlist/' . ($activeCycle['id'] ?? '') . (!empty($selectedUnitId) ? '?unit_id=' . $selectedUnitId : '')) ?>"
-                           class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold text-emerald-700 dark:text-[#00df82] bg-emerald-50 hover:bg-emerald-100 dark:bg-[#072e1e] dark:hover:bg-[#0c442b] border border-emerald-200 dark:border-[#155237] transition-all shadow-xs cursor-pointer"
+                           class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 transition-all shadow-xs cursor-pointer"
                            title="Export official CSC Excel workbook">
-                            <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-[#00df82] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                             </svg>
                             <span>Export (.xlsx)</span>
@@ -1317,28 +919,28 @@
                 <!-- 2. 2x2 QUICK METRICS CARDS -->
                 <div class="grid grid-cols-2 gap-2">
                     <!-- Card 1: TOTAL PERSONNEL -->
-                    <div class="py-2.5 px-3 rounded-xl bg-white dark:bg-[#061810] border border-slate-200 dark:border-[#123d27] shadow-xs">
-                        <div class="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-[#7f998c]">
+                    <div class="py-2.5 px-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
+                        <div class="text-[9px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                             TOTAL PERSONNEL
                         </div>
-                        <div class="text-xl font-black text-slate-900 dark:text-white mt-0.5">
+                        <div class="text-xl font-black text-zinc-900 dark:text-white mt-0.5">
                             <?= number_format(count($cycleFolders)) ?>
                         </div>
                     </div>
 
                     <!-- Card 2: PERMANENT -->
-                    <div class="py-2.5 px-3 rounded-xl bg-white dark:bg-[#061810] border border-slate-200 dark:border-[#123d27] shadow-xs">
-                        <div class="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-[#7f998c]">
+                    <div class="py-2.5 px-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
+                        <div class="text-[9px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                             PERMANENT
                         </div>
-                        <div class="text-xl font-black text-emerald-600 dark:text-[#00df82] mt-0.5">
+                        <div class="text-xl font-black text-zinc-900 dark:text-white mt-0.5">
                             <?= number_format($empStatusCounts['permanent'] ?? 0) ?>
                         </div>
                     </div>
 
                     <!-- Card 3: TEMPORARY -->
-                    <div class="py-2.5 px-3 rounded-xl bg-white dark:bg-[#061810] border border-slate-200 dark:border-[#123d27] shadow-xs">
-                        <div class="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-[#7f998c]">
+                    <div class="py-2.5 px-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
+                        <div class="text-[9px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                             TEMPORARY
                         </div>
                         <div class="text-xl font-black text-amber-500 dark:text-[#f59e0b] mt-0.5">
@@ -1347,11 +949,11 @@
                     </div>
 
                     <!-- Card 4: CASUAL & CONTR. -->
-                    <div class="py-2.5 px-3 rounded-xl bg-white dark:bg-[#061810] border border-slate-200 dark:border-[#123d27] shadow-xs">
-                        <div class="text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-[#7f998c]">
+                    <div class="py-2.5 px-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
+                        <div class="text-[9px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                             CASUAL &amp; CONTR.
                         </div>
-                        <div class="text-xl font-black text-sky-500 dark:text-[#38bdf8] mt-0.5">
+                        <div class="text-xl font-black text-sky-500 dark:text-sky-400 mt-0.5">
                             <?= number_format(($empStatusCounts['casual'] ?? 0) + ($empStatusCounts['contractual'] ?? 0)) ?>
                         </div>
                     </div>
@@ -1359,7 +961,7 @@
 
                 <!-- 3. SEARCH INPUT (Mobile) -->
                 <div class="relative w-full">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 dark:text-[#4e6b5c]">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400 dark:text-[#4e6b5c]">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
@@ -1367,7 +969,7 @@
                     <input type="text" id="masterlist-search-mobile" onkeyup="filterMasterlistMobile()"
                            placeholder="Search name, dept, or position..."
                            style="padding-left: 36px !important;"
-                           class="w-full text-xs font-medium py-2 pr-3 rounded-xl bg-white dark:bg-[#061e14] border border-slate-200 dark:border-[#123d27] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#4e6b5c] focus:outline-none focus:ring-1 focus:ring-emerald-500/50 shadow-2xs" />
+                           class="w-full text-xs font-medium py-2 pr-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#4e6b5c] focus:outline-none focus:ring-1 focus:ring-zinc-400/40 dark:focus:ring-zinc-600/40 shadow-2xs" />
                 </div>
 
                 <!-- 4. STATUS FILTER PILLS (Mobile - Fits 100% of Screen Width) -->
@@ -1402,28 +1004,28 @@
                 </div>
 
                 <!-- 5. SECTION SUBHEADER -->
-                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-[#7f998c] pt-0.5">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 pt-0.5">
                     PERSONNEL RECORDS (<span id="masterlist-mobile-records-count"><?= count($cycleFolders) ?></span>)
                 </div>
 
                 <!-- 6. PERSONNEL CARDS LIST (Mobile) -->
                 <div class="space-y-2" id="masterlist-mobile-cards-list">
                     <?php if (empty($cycleFolders)): ?>
-                        <div class="py-10 text-center text-slate-400 dark:text-slate-500 italic text-xs">
+                        <div class="py-10 text-center text-zinc-400 dark:text-zinc-500 italic text-xs">
                             No personnel records discovered for this evaluation period.
                         </div>
                     <?php else: ?>
                         <?php foreach ($cycleFolders as $idx => $f): ?>
                             <?php
                             $st = strtolower($f['employment_status'] ?? 'permanent');
-                            $badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-[#0c3924] dark:text-[#00df82] dark:border-[#145334]';
+                            $badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-zinc-800 dark:text-emerald-400 dark:border-zinc-700';
                             if ($st === 'temporary') {
                                 $badgeClass = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-[#241a08] dark:text-[#f59e0b] dark:border-[#47340f]';
                             } elseif ($st === 'casual' || $st === 'contractual') {
-                                $badgeClass = 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-[#082230] dark:text-[#38bdf8] dark:border-[#0f435c]';
+                                $badgeClass = 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-[#082230] dark:text-sky-400 dark:border-[#0f435c]';
                             }
                             ?>
-                            <div class="masterlist-row-card py-2.5 px-3 rounded-xl bg-white dark:bg-[#061810] border border-slate-200 dark:border-[#123d27] shadow-xs space-y-1.5 transition-all"
+                            <div class="masterlist-row-card py-2.5 px-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-1.5 transition-all"
                                  data-name="<?= esc(strtolower($f['ratee_name'] ?? $f['full_name'] ?? '')) ?>"
                                  data-email="<?= esc(strtolower($f['ratee_email'] ?? $f['email'] ?? '')) ?>"
                                  data-dept="<?= esc(strtolower($f['department'] ?? '')) ?>"
@@ -1433,14 +1035,14 @@
                                 <!-- Top Row: Avatar + Name + Email | Status Badge -->
                                 <div class="flex items-center justify-between gap-2">
                                     <div class="flex items-center gap-2.5 min-w-0">
-                                        <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-[#0b291c] border border-slate-200 dark:border-[#144730] flex items-center justify-center font-bold text-xs text-slate-700 dark:text-[#00df82] shrink-0">
+                                        <div class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs text-zinc-700 dark:text-zinc-200 shrink-0">
                                             <?= esc(strtoupper(substr($f['ratee_name'] ?? $f['full_name'] ?? 'U', 0, 1))) ?>
                                         </div>
                                         <div class="min-w-0">
-                                            <div class="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate">
+                                            <div class="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white truncate">
                                                 <?= esc($f['ratee_name'] ?? $f['full_name'] ?? 'Personnel') ?>
                                             </div>
-                                            <div class="text-[10px] text-slate-500 dark:text-[#7f998c] truncate">
+                                            <div class="text-[10px] text-zinc-500 dark:text-zinc-400 truncate">
                                                 <?= esc($f['ratee_email'] ?? $f['email'] ?? '') ?>
                                             </div>
                                         </div>
@@ -1452,11 +1054,11 @@
                                 </div>
 
                                 <!-- Bottom Row: Department (left) | Position (right) -->
-                                <div class="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-100 dark:border-[#123022] text-slate-500 dark:text-[#7f998c]">
+                                <div class="flex items-center justify-between text-[11px] pt-1.5 border-t border-zinc-100 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400">
                                     <div class="truncate min-w-0 flex-1 pr-2 text-[11px] font-medium">
                                         <?= esc($f['department'] ?? '—') ?>
                                     </div>
-                                    <div class="font-bold text-[11px] text-slate-900 dark:text-white shrink-0 text-right">
+                                    <div class="font-bold text-[11px] text-zinc-900 dark:text-white shrink-0 text-right">
                                         <?= esc($f['position'] ?? '—') ?>
                                     </div>
                                 </div>
@@ -1466,7 +1068,7 @@
 
                     <!-- Empty State (Mobile) -->
                     <div id="masterlist-mobile-empty" class="hidden py-10 text-center">
-                        <div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+                        <div class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500">
                             <svg class="w-8 h-8 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                             </svg>
@@ -1476,18 +1078,18 @@
                 </div>
 
                 <!-- 7. COMPACT CHEVRON PAGINATION BAR (Mobile) -->
-                <div class="rounded-xl bg-white dark:bg-[#061810] border border-slate-200 dark:border-[#123d27] px-3.5 py-2 flex items-center justify-between shadow-xs">
+                <div class="rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3.5 py-2 flex items-center justify-between shadow-xs">
                     <button type="button" id="masterlist-mobile-prev-btn" onclick="goToMasterlistPage(masterlistCurrentPage - 1)"
-                            class="text-[#00df82] hover:text-emerald-400 p-1.5 rounded-lg transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
+                            class="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white p-1.5 rounded-lg transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
                         </svg>
                     </button>
-                    <div class="text-xs text-slate-500 dark:text-[#7f998c] select-none">
-                        Showing <span id="masterlist-mobile-range" class="font-bold text-slate-900 dark:text-white">1 – 6</span> of <span id="masterlist-mobile-total" class="font-bold text-slate-900 dark:text-white"><?= count($cycleFolders) ?></span> records
+                    <div class="text-xs text-zinc-500 dark:text-zinc-400 select-none">
+                        Showing <span id="masterlist-mobile-range" class="font-bold text-zinc-900 dark:text-white">1 – 6</span> of <span id="masterlist-mobile-total" class="font-bold text-zinc-900 dark:text-white"><?= count($cycleFolders) ?></span> records
                     </div>
                     <button type="button" id="masterlist-mobile-next-btn" onclick="goToMasterlistPage(masterlistCurrentPage + 1)"
-                            class="text-[#00df82] hover:text-emerald-400 p-1.5 rounded-lg transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
+                            class="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white p-1.5 rounded-lg transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                         </svg>
@@ -1500,29 +1102,29 @@
             <!-- ======================================================== -->
             <div class="hidden md:block space-y-5">
                  <!-- MASTERLIST HEADER & EXPORT ACTION CARD (Desktop) -->
-                <div class="p-4 sm:p-5 lg:p-6 rounded-2xl bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] shadow-xs">
+                <div class="p-4 sm:p-5 lg:p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
                     <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
                         <div class="space-y-1">
                             <div class="flex items-center gap-2">
                                 <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30">
                                     CSC MC No. 6, s. 2012 Prescribed
                                 </span>
-                                <span class="text-xs font-semibold text-slate-400">|</span>
-                                <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                <span class="text-xs font-semibold text-zinc-400">|</span>
+                                <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
                                     <?= esc($selectedUnitName ?? 'University-Wide Roster') ?>
                                 </span>
                             </div>
-                            <h2 class="text-xl lg:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                            <h2 class="text-xl lg:text-2xl font-black text-zinc-900 dark:text-white tracking-tight">
                                 Master List
                             </h2>
-                            <p class="text-xs text-slate-500 dark:text-slate-400 max-w-3xl">
+                            <p class="text-xs text-zinc-500 dark:text-zinc-400 max-w-3xl">
                                 Consolidated institutional master list of all active plantilla faculty and staff for <?= esc($activeCycle['title'] ?? 'this evaluation period') ?>. Formatted in accordance with Civil Service Commission Strategic Performance Management System guidelines.
                             </p>
                         </div>
 
                         <div class="flex items-center gap-3 shrink-0">
                             <a href="<?= site_url('dashboard/export-masterlist/' . ($activeCycle['id'] ?? '') . (!empty($selectedUnitId) ? '?unit_id=' . $selectedUnitId : '')) ?>"
-                               class="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs font-black text-white bg-emerald-700 hover:bg-emerald-800 dark:bg-[#0c4a33] dark:hover:bg-emerald-700 border border-emerald-600/30 transition-all shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                               class="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs font-black text-white bg-[#114232] hover:bg-[#16533f] text-white border border-[#1b5e47] transition-all shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
                                title="Generate and download official CSC landscape Excel workbook">
                                 <svg class="w-4 h-4 text-emerald-200 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -1533,20 +1135,20 @@
                     </div>
 
                     <!-- Quick Masterlist Stats Row (Desktop) -->
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-4 sm:pt-5 mt-4 sm:mt-5 border-t border-slate-100 dark:border-[#1a2b22]">
-                        <div class="px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 truncate">Total Personnel</div>
-                            <div class="text-base font-black text-slate-900 dark:text-white mt-0.5"><?= number_format(count($cycleFolders)) ?></div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-4 sm:pt-5 mt-4 sm:mt-5 border-t border-zinc-100 dark:border-zinc-800">
+                        <div class="px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 truncate">Total Personnel</div>
+                            <div class="text-base font-black text-zinc-900 dark:text-white mt-0.5"><?= number_format(count($cycleFolders)) ?></div>
                         </div>
-                        <div class="px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 truncate">Permanent</div>
-                            <div class="text-base font-black text-emerald-700 dark:text-emerald-400 mt-0.5"><?= number_format($empStatusCounts['permanent'] ?? 0) ?></div>
+                        <div class="px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">Permanent</div>
+                            <div class="text-base font-black text-zinc-900 dark:text-white mt-0.5"><?= number_format($empStatusCounts['permanent'] ?? 0) ?></div>
                         </div>
-                        <div class="px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800">
+                        <div class="px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
                             <div class="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 truncate">Temporary</div>
                             <div class="text-base font-black text-amber-600 dark:text-amber-400 mt-0.5"><?= number_format($empStatusCounts['temporary'] ?? 0) ?></div>
                         </div>
-                        <div class="px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800">
+                        <div class="px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
                             <div class="text-[10px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 truncate" title="Casual &amp; Contractual">Casual &amp; Contr.</div>
                             <div class="text-base font-black text-sky-600 dark:text-sky-400 mt-0.5"><?= number_format(($empStatusCounts['casual'] ?? 0) + ($empStatusCounts['contractual'] ?? 0)) ?></div>
                         </div>
@@ -1554,22 +1156,22 @@
                 </div>
 
                 <!-- SEARCH & FILTER TOOLBAR (Desktop) -->
-                <div class="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] shadow-xs space-y-4">
+                <div class="p-4 sm:p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-4">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
                         <div class="relative flex-1 max-w-lg">
-                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                 </svg>
                             </div>
                             <input type="text" id="masterlist-search" onkeyup="filterMasterlist()"
                                    placeholder="Search personnel name, email, department, or position..."
-                                   class="w-full text-xs font-medium py-2.5 pl-10 pr-4 rounded-xl bg-slate-50 dark:bg-[#032316] border border-slate-200 dark:border-[#0c4a33] text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 shadow-2xs" />
+                                   class="w-full text-xs font-medium py-2.5 pl-10 pr-4 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/40 dark:focus:ring-zinc-600/40 shadow-2xs" />
                         </div>
 
                         <div class="flex items-center gap-2 flex-wrap">
                             <select id="masterlist-status-filter" onchange="filterMasterlist()"
-                                    class="text-xs font-semibold px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-[#032316] border border-slate-200 dark:border-[#0c4a33] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer shadow-2xs [color-scheme:light] dark:[color-scheme:dark]">
+                                    class="text-xs font-semibold px-3 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-400/40 dark:focus:ring-zinc-600/40 cursor-pointer shadow-2xs [color-scheme:light] dark:[color-scheme:dark]">
                                 <option value="">All Appointments</option>
                                 <option value="permanent">Permanent</option>
                                 <option value="temporary">Temporary</option>
@@ -1580,7 +1182,7 @@
                     </div>
 
                     <!-- Status Filter Pill Buttons (Desktop) -->
-                    <div class="flex items-center gap-2 pb-1 overflow-x-auto custom-scrollbar pt-2 border-t border-slate-100 dark:border-[#1a2b22]">
+                    <div class="flex items-center gap-2 pb-1 overflow-x-auto custom-scrollbar pt-2 border-t border-zinc-100 dark:border-zinc-800">
                         <button type="button" onclick="setMasterlistPill('all', this)"
                                 data-pill="all"
                                 class="masterlist-tab-btn active inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
@@ -1608,11 +1210,11 @@
                 </div>
 
                 <!-- MASTERLIST DATA CONTAINER (Desktop Table & Pagination) -->
-                <div id="masterlist-container" class="rounded-2xl bg-white dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] shadow-xs overflow-hidden">
+                <div id="masterlist-container" class="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs overflow-hidden">
                     <div class="overflow-x-auto custom-scrollbar">
                         <table class="w-full text-left border-collapse" id="masterlist-table">
                             <thead>
-                                <tr class="bg-slate-50 dark:bg-[#032316] border-b border-slate-200 dark:border-[#1a2b22] text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">
+                                <tr class="bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 text-[11px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-wider">
                                     <th class="py-3 px-3 w-10 text-center">#</th>
                                     <th class="py-3 px-3">Personnel / Ratee</th>
                                     <th class="py-3 px-3">College / Division</th>
@@ -1620,16 +1222,16 @@
                                     <th class="py-3 px-3 text-center whitespace-nowrap">Employment Status</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-100 dark:divide-[#1a2b22] text-xs">
+                            <tbody class="divide-y divide-zinc-100 dark:divide-[#1a2b22] text-xs">
                                 <?php if (empty($cycleFolders)): ?>
                                     <tr>
-                                        <td colspan="5" class="py-12 px-4 text-center text-slate-400 dark:text-slate-500 italic">
+                                        <td colspan="5" class="py-12 px-4 text-center text-zinc-400 dark:text-zinc-500 italic">
                                             No personnel records discovered for this evaluation period.
                                         </td>
                                     </tr>
                                 <?php else: ?>
                                     <?php foreach ($cycleFolders as $idx => $f): ?>
-                                        <tr class="masterlist-row hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                                        <tr class="masterlist-row hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
                                             data-name="<?= esc(strtolower($f['ratee_name'] ?? $f['full_name'] ?? '')) ?>"
                                             data-email="<?= esc(strtolower($f['ratee_email'] ?? $f['email'] ?? '')) ?>"
                                             data-dept="<?= esc(strtolower($f['department'] ?? '')) ?>"
@@ -1637,21 +1239,21 @@
                                             data-emp-status="<?= esc(strtolower($f['employment_status'] ?? 'permanent')) ?>">
                                             
                                             <!-- Index -->
-                                            <td class="py-3 px-3 text-center font-bold text-slate-400 dark:text-slate-500 w-10">
+                                            <td class="py-3 px-3 text-center font-bold text-zinc-400 dark:text-zinc-500 w-10">
                                                 <?= $idx + 1 ?>
                                             </td>
 
                                             <!-- Personnel Name & Email -->
                                             <td class="py-3 px-3">
                                                 <div class="flex items-center gap-2.5 min-w-0">
-                                                    <div class="w-7 h-7 rounded-full bg-slate-100 dark:bg-[#0b291c] border border-slate-200 dark:border-[#144730] flex items-center justify-center font-black text-[11px] text-slate-700 dark:text-[#00df82] shrink-0">
+                                                    <div class="w-7 h-7 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-black text-[11px] text-zinc-700 dark:text-zinc-200 shrink-0">
                                                         <?= esc(strtoupper(substr($f['ratee_name'] ?? $f['full_name'] ?? 'U', 0, 1))) ?>
                                                     </div>
                                                     <div class="min-w-0 max-w-[130px] sm:max-w-[170px] xl:max-w-none">
-                                                        <div class="font-bold text-slate-900 dark:text-white truncate">
+                                                        <div class="font-bold text-zinc-900 dark:text-white truncate">
                                                             <?= esc($f['ratee_name'] ?? $f['full_name'] ?? 'Personnel') ?>
                                                         </div>
-                                                        <div class="text-[11px] text-slate-400 truncate">
+                                                        <div class="text-[11px] text-zinc-400 truncate">
                                                             <?= esc($f['ratee_email'] ?? $f['email'] ?? '') ?>
                                                         </div>
                                                     </div>
@@ -1659,14 +1261,14 @@
                                             </td>
 
                                             <!-- College / Department -->
-                                            <td class="py-3 px-3 text-slate-700 dark:text-slate-300 font-medium">
+                                            <td class="py-3 px-3 text-zinc-700 dark:text-zinc-300 font-medium">
                                                 <span class="truncate block max-w-[130px] sm:max-w-[160px] xl:max-w-[220px]" title="<?= esc($f['department'] ?? '—') ?>">
                                                     <?= esc($f['department'] ?? '—') ?>
                                                 </span>
                                             </td>
 
                                             <!-- Plantilla Position -->
-                                            <td class="py-3 px-3 text-slate-500 dark:text-slate-400 font-medium">
+                                            <td class="py-3 px-3 text-zinc-500 dark:text-zinc-400 font-medium">
                                                 <span class="truncate block max-w-[110px] sm:max-w-[140px] xl:max-w-[180px]" title="<?= esc($f['position'] ?? '—') ?>">
                                                     <?= esc($f['position'] ?? '—') ?>
                                                 </span>
@@ -1684,7 +1286,7 @@
 
                                 <tr id="masterlist-empty-row" class="hidden">
                                     <td colspan="5" class="py-12 px-4 text-center">
-                                        <div class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+                                        <div class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500">
                                             <svg class="w-8 h-8 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                             </svg>
@@ -1697,16 +1299,16 @@
                     </div>
 
                     <!-- Masterlist Responsive Pagination Footer (Desktop) -->
-                    <div class="px-4 sm:px-6 py-3.5 border-t border-slate-100 dark:border-[#1a2b22] bg-slate-50/50 dark:bg-[#04170e] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                    <div class="px-4 sm:px-6 py-3.5 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
                         <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-                            <span class="text-slate-500 dark:text-[#7f998c]">
-                                Showing <span id="masterlist-visible-range" class="font-bold text-slate-800 dark:text-white">0</span> of <span id="masterlist-visible-total" class="font-bold text-slate-800 dark:text-white"><?= count($cycleFolders) ?></span> personnel
+                            <span class="text-zinc-500 dark:text-zinc-400">
+                                Showing <span id="masterlist-visible-range" class="font-bold text-zinc-800 dark:text-white">0</span> of <span id="masterlist-visible-total" class="font-bold text-zinc-800 dark:text-white"><?= count($cycleFolders) ?></span> personnel
                             </span>
                             
-                            <div class="flex items-center gap-1.5 text-slate-500 dark:text-[#7f998c]">
+                            <div class="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400">
                                 <span class="hidden sm:inline text-[11px] font-medium">Rows:</span>
                                 <select id="masterlist-per-page" onchange="changeMasterlistPerPage(this.value)"
-                                        class="text-[11px] font-bold px-2 py-1 rounded-lg bg-white dark:bg-[#061e14] border border-slate-200 dark:border-[#123d27] text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer shadow-2xs">
+                                        class="text-[11px] font-bold px-2 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-zinc-500 cursor-pointer shadow-2xs">
                                     <option value="25">25 / page</option>
                                     <option value="50" selected>50 / page</option>
                                     <option value="100">100 / page</option>
@@ -1964,7 +1566,7 @@ function renderMasterlistPagination(totalPages, currentPage, totalMatching) {
             </button>`;
 
     // Mobile indicator: "Page X of Y"
-    html += `<span class="sm:hidden px-2 text-xs font-bold text-slate-600 dark:text-[#7f998c]">
+    html += `<span class="sm:hidden px-2 text-xs font-bold text-zinc-600 dark:text-zinc-400">
                 ${currentPage} / ${totalPages}
             </span>`;
 
@@ -1988,7 +1590,7 @@ function renderMasterlistPagination(totalPages, currentPage, totalMatching) {
 
     pages.forEach(p => {
         if (p === '...') {
-            html += `<span class="hidden sm:inline-flex px-1.5 py-1 text-xs text-slate-400 dark:text-slate-600 font-bold">...</span>`;
+            html += `<span class="hidden sm:inline-flex px-1.5 py-1 text-xs text-zinc-400 dark:text-zinc-600 font-bold">...</span>`;
         } else {
             const isActive = p === currentPage;
             html += `<button type="button" onclick="goToMasterlistPage(${p})" 
@@ -2050,10 +1652,10 @@ let currentRosterFilter = 'all';
 function setRosterFilter(filterType, btn) {
     currentRosterFilter = filterType;
     document.querySelectorAll('.roster-tab-btn').forEach(b => {
-        b.className = 'roster-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-zinc-700';
+        b.className = 'roster-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700';
     });
     if (btn) {
-        btn.className = 'roster-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-emerald-500 text-white shadow-2xs';
+        btn.className = 'roster-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border border-zinc-900 dark:border-white shadow-2xs';
     }
     filterRoster();
 }

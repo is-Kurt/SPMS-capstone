@@ -1,69 +1,99 @@
-# CodeIgniter 4 Application Starter
+# Benguet State University — Strategic Performance Management System (BSU-SPMS)
 
-## What is CodeIgniter?
+> A web-based system built for Benguet State University to make evaluating faculty and staff simple, fair, and paperless—following official Civil Service Commission (CSC) guidelines.
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+---
 
-This repository holds a composer-installable app starter.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+## About the Project
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+Every semester, university professors and staff need to set work goals, show proof of what they accomplished, and receive fair performance ratings. In the past, this meant dealing with stacks of paper forms, lost document attachments, and complicated spreadsheet calculations.
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+BSU-SPMS moves this entire process online. Developed as an Information Technology capstone project for the Benguet State University Human Resource Development Office (HRDO), the system connects everyone—from university leaders down to individual faculty members—in one clear, organized place.
 
-## Installation & updates
+---
 
-`composer create-project codeigniter4/appstarter` then `composer update` whenever
-there is a new release of the framework.
+## How It Works: The 4-Stage Performance Cycle
 
-When updating, check the release notes to see if there are any changes you might need to apply
-to your `app` folder. The affected files can be copied or merged from
-`vendor/codeigniter4/framework/app`.
+The system guides users through the four official steps of the evaluation cycle:
 
-## Setup
+```
+┌──────────────────────┐        ┌──────────────────────┐
+│       Stage 1        │        │       Stage 2        │
+│     Goal Setting     │ ─────> │ Tracking & Guidance  │
+│  (Set work targets)  │        │ (Upload work proof)  │
+└──────────────────────┘        └──────────┬───────────┘
+           ▲                               │
+           │                               ▼
+┌──────────┴───────────┐        ┌──────────────────────┐
+│       Stage 4        │        │       Stage 3        │
+│  Rewards & Reports   │ <───── │   Grading & Review   │
+│ (Bonuses & exports)  │        │ (Calculate ratings)  │
+└──────────────────────┘        └──────────────────────┘
+```
 
-Copy `env` to `.env` and tailor for your app, specifically the baseURL
-and any database settings.
+| Stage | What Happens | Who Is Involved |
+| :--- | :--- | :--- |
+| **1. Goal Setting** | Top leaders set university goals first. Deans, department chairs, and teachers align their personal targets and get supervisor approval online. | Executives, Deans, Chairs, Faculty & Staff |
+| **2. Tracking & Guidance** | Employees upload digital proof of their work (reports, certificates, materials) while supervisors provide ongoing advice and coaching notes. | Employees & Immediate Supervisors |
+| **3. Grading & Review** | Employees rate their own accomplishments, and supervisors review and confirm the scores. The system calculates all official final ratings automatically. | Employees & Supervisors |
+| **4. Rewards & Reports** | The university checks who qualifies for government bonuses, sees where more training is needed, and exports official, ready-to-print Excel reports. | HRDO, Performance Committee, Employees |
 
-## Important Change with index.php
+---
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+## What the System Does
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+- **Custom views for every role:** University administrators, deans, department chairs, and individual teachers each get an interface showing only what they need to see.
+- **One-click official forms:** Creates official government Excel forms (OPCR, DPCR, and IPCR) with all formulas, titles, and headers already filled in.
+- **Account protection:** Offers two-factor login codes (2FA) and keeps a clear log of who made changes and when.
+- **Made for phones and computers:** Fully responsive so users can approve goals or check ratings from a phone, tablet, or laptop, with a comfortable dark mode option.
 
-**Please** read the user guide for a better explanation of how CI4 works!
+---
 
-## Repository Management
+## How the Technologies Fit Together
 
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
+```
+┌────────────────────────────────────────────────────────┐
+│               User Screen (Phones & PCs)               │
+│         Tailwind CSS, Vanilla CSS & JavaScript         │
+│   (Handles page design, buttons, drawers, and themes)  │
+└───────────────────────────┬────────────────────────────┘
+                            │
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│                  Main System Engine                    │
+│                 CodeIgniter 4 (PHP)                    │
+│     (Processes logins, scores, and evaluation rules)   │
+└───────────────┬────────────────────────┬───────────────┘
+                │                        │
+                ▼                        ▼
+┌──────────────────────────────┐ ┌───────────────────────┐
+│       Database Storage       │ │  Excel Report Builder │
+│       MySQL / MariaDB        │ │     PhpSpreadsheet    │
+│ (Stores accounts and grades) │ │ (Creates CSC reports) │
+└──────────────────────────────┘ └───────────────────────┘
+```
 
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
+| Part of System | Tool | Simple Explanation |
+| :--- | :--- | :--- |
+| **What You See (Look & Feel)** | Tailwind CSS & Modern CSS | Makes the website look clean and adjust smoothly to phone and computer screens. |
+| **Interactive Controls** | JavaScript | Powers clickable buttons, slide-out menus, and instant updates without reloading. |
+| **Text & Goal Editor** | TinyMCE | A familiar word-processing box to type and format comments and work targets. |
+| **Behind the Scenes (Engine)** | CodeIgniter 4 (PHP) | Connects all pages, checks user permissions, and runs the official rating calculations. |
+| **Information Storage** | MySQL / MariaDB | Safely stores all user accounts, uploaded targets, and final evaluation scores. |
+| **Report Generator** | PhpSpreadsheet | Automatically builds and formats official government Excel files for printing. |
 
-## Server Requirements
+---
 
-PHP version 8.2 or higher is required, with the following extensions installed:
+## Capstone Project Team
 
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
+Developed for **Benguet State University** by:
 
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - The end of life date for PHP 8.1 was December 31, 2025.
-> - If you are still using below PHP 8.2, you should upgrade immediately.
-> - The end of life date for PHP 8.2 will be December 31, 2026.
+- **Kurt** — System Architecture, Backend Logic, and Security
+- **Nanashi (`PeroroFaust`)** — User Experience, Mobile Design, and Interface Improvements
 
-Additionally, make sure that the following extensions are enabled in your PHP:
+---
 
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+## Context and Guidelines
+
+Built specifically for **Benguet State University (BSU)** in La Trinidad, Benguet.  
+All evaluation steps, scoring formulas, and rating categories follow the official rules of the Philippine **Civil Service Commission (CSC Memorandum Circular No. 6, s. 2012)**.

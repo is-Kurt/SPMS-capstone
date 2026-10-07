@@ -36,17 +36,17 @@
     <!-- Header -->
     <div class="px-5 py-4 border-b border-emerald-900/30 flex items-center justify-between shrink-0 bg-[#0e1713]">
         <div>
-            <h3 class="text-sm font-bold text-slate-100 tracking-tight flex items-center gap-2">
+            <h3 class="text-sm font-bold text-zinc-100 tracking-tight flex items-center gap-2">
                 <span>Scoring Rubric Reference</span>
                 <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">BSU</span>
             </h3>
-            <p class="text-xs text-slate-400 mt-0.5">
+            <p class="text-xs text-zinc-400 mt-0.5">
                 Sample Guide &amp; CSC MC No. 6, s. 2012
             </p>
         </div>
 
         <button type="button" onclick="toggleRubricDrawer(false)" 
-                class="w-8 h-8 rounded-lg hover:bg-white/10 text-slate-400 hover:text-slate-200 flex items-center justify-center transition-colors cursor-pointer"
+                class="w-8 h-8 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-zinc-200 flex items-center justify-center transition-colors cursor-pointer"
                 title="Close (Esc)">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -62,7 +62,7 @@
                 BSU Sample Guide (7 Examples)
             </button>
             <button type="button" id="tab-btn-csc-scales" onclick="switchRubricDrawerView('csc-scales')" 
-                    class="flex-1 py-1.5 px-3 rounded-md text-center transition-all text-slate-400 hover:text-slate-200 font-medium">
+                    class="flex-1 py-1.5 px-3 rounded-md text-center transition-all text-zinc-400 hover:text-zinc-200 font-medium">
                 CSC Core Scales
             </button>
         </div>
@@ -71,9 +71,9 @@
     <!-- Filter Pills for CSC Scales (only shown when csc-scales active) -->
     <div id="csc-filter-bar" class="hidden px-5 py-2 border-b border-emerald-900/20 flex items-center gap-1.5 shrink-0 bg-[#0f1914]">
         <button type="button" onclick="scrollToRubricSection('all')" class="rubric-filter-btn px-2.5 py-1 text-xs font-medium rounded-md bg-emerald-900/60 text-emerald-200 border border-emerald-700/50 transition-colors cursor-pointer" data-target="all">All</button>
-        <button type="button" onclick="scrollToRubricSection('section-e')" class="rubric-filter-btn px-2.5 py-1 text-xs font-medium rounded-md text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent transition-colors cursor-pointer" data-target="section-e">Efficiency</button>
-        <button type="button" onclick="scrollToRubricSection('section-q')" class="rubric-filter-btn px-2.5 py-1 text-xs font-medium rounded-md text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent transition-colors cursor-pointer" data-target="section-q">Quality</button>
-        <button type="button" onclick="scrollToRubricSection('section-t')" class="rubric-filter-btn px-2.5 py-1 text-xs font-medium rounded-md text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent transition-colors cursor-pointer" data-target="section-t">Timeliness</button>
+        <button type="button" onclick="scrollToRubricSection('section-e')" class="rubric-filter-btn px-2.5 py-1 text-xs font-medium rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-white/5 border border-transparent transition-colors cursor-pointer" data-target="section-e">Efficiency</button>
+        <button type="button" onclick="scrollToRubricSection('section-q')" class="rubric-filter-btn px-2.5 py-1 text-xs font-medium rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-white/5 border border-transparent transition-colors cursor-pointer" data-target="section-q">Quality</button>
+        <button type="button" onclick="scrollToRubricSection('section-t')" class="rubric-filter-btn px-2.5 py-1 text-xs font-medium rounded-md text-zinc-400 hover:text-zinc-200 hover:bg-white/5 border border-transparent transition-colors cursor-pointer" data-target="section-t">Timeliness</button>
     </div>
 
     <!-- Scrollable Content -->
@@ -98,7 +98,7 @@
                 <div class="flex items-start justify-between gap-2 border-b border-emerald-900/40 pb-2">
                     <div>
                         <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">Example 1 • Monitoring Database</span>
-                        <h4 class="text-xs font-bold text-slate-100 mt-0.5">
+                        <h4 class="text-xs font-bold text-zinc-100 mt-0.5">
                             100% of submitted/collected documents recorded within 5 working days
                         </h4>
                     </div>
@@ -106,23 +106,23 @@
                 <div class="text-[11px] space-y-1.5 font-sans">
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-emerald-300 shrink-0 w-4">5:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">T:</strong> 1–2 working days from receipt &bull; <strong class="text-slate-200">E:</strong> 100% recorded</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">T:</strong> 1–2 working days from receipt &bull; <strong class="text-zinc-200">E:</strong> 100% recorded</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-sky-300 shrink-0 w-4">4:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">T:</strong> 3–4 working days from receipt</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">T:</strong> 3–4 working days from receipt</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-amber-300 shrink-0 w-4">3:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">T:</strong> 5 working days from receipt</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">T:</strong> 5 working days from receipt</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-orange-300 shrink-0 w-4">2:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">T:</strong> 6–7 working days &bull; <strong class="text-slate-200">E:</strong> Less than 100% recorded</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">T:</strong> 6–7 working days &bull; <strong class="text-zinc-200">E:</strong> Less than 100% recorded</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-rose-400 shrink-0 w-4">1:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">T:</strong> >8 working days &bull; <strong class="text-slate-200">Q:</strong> N/A</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">T:</strong> >8 working days &bull; <strong class="text-zinc-200">Q:</strong> N/A</span>
                     </div>
                 </div>
             </div>
@@ -132,7 +132,7 @@
                 <div class="flex items-start justify-between gap-2 border-b border-emerald-900/40 pb-2">
                     <div>
                         <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">Example 2 • Issuances &amp; Routing</span>
-                        <h4 class="text-xs font-bold text-slate-100 mt-0.5">
+                        <h4 class="text-xs font-bold text-zinc-100 mt-0.5">
                             Issued/Routed 100% of approved issuances to personnel within 3 working days
                         </h4>
                     </div>
@@ -140,23 +140,23 @@
                 <div class="text-[11px] space-y-1.5">
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-emerald-300 shrink-0 w-4">5:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">T:</strong> within 1 working day &bull; <strong class="text-slate-200">E:</strong> 100% routed</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">T:</strong> within 1 working day &bull; <strong class="text-zinc-200">E:</strong> 100% routed</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-sky-300 shrink-0 w-4">4:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">T:</strong> within 2 working days</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">T:</strong> within 2 working days</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-amber-300 shrink-0 w-4">3:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">T:</strong> within 3 working days</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">T:</strong> within 3 working days</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-orange-300 shrink-0 w-4">2:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">T:</strong> within 4 working days &bull; <strong class="text-slate-200">E:</strong> less than 100%</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">T:</strong> within 4 working days &bull; <strong class="text-zinc-200">E:</strong> less than 100%</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-rose-400 shrink-0 w-4">1:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">T:</strong> >5 working days &bull; <strong class="text-slate-200">Q:</strong> N/A</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">T:</strong> >5 working days &bull; <strong class="text-zinc-200">Q:</strong> N/A</span>
                     </div>
                 </div>
             </div>
@@ -166,7 +166,7 @@
                 <div class="flex items-start justify-between gap-2 border-b border-emerald-900/40 pb-2">
                     <div>
                         <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">Example 3 • Requested Documents</span>
-                        <h4 class="text-xs font-bold text-slate-100 mt-0.5">
+                        <h4 class="text-xs font-bold text-zinc-100 mt-0.5">
                             100% of requested documents submitted in 5 working days (max 2 revisions)
                         </h4>
                     </div>
@@ -174,23 +174,23 @@
                 <div class="text-[11px] space-y-1.5">
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-emerald-300 shrink-0 w-4">5:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">Q:</strong> No revision &bull; <strong class="text-slate-200">T:</strong> 1–2 working days &bull; <strong class="text-slate-200">E:</strong> 100% prepared &amp; released</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">Q:</strong> No revision &bull; <strong class="text-zinc-200">T:</strong> 1–2 working days &bull; <strong class="text-zinc-200">E:</strong> 100% prepared &amp; released</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-sky-300 shrink-0 w-4">4:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">Q:</strong> 1 revision &bull; <strong class="text-slate-200">T:</strong> 3–4 working days</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">Q:</strong> 1 revision &bull; <strong class="text-zinc-200">T:</strong> 3–4 working days</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-amber-300 shrink-0 w-4">3:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">Q:</strong> 2 revisions &bull; <strong class="text-slate-200">T:</strong> 5 working days</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">Q:</strong> 2 revisions &bull; <strong class="text-zinc-200">T:</strong> 5 working days</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-orange-300 shrink-0 w-4">2:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">Q:</strong> 3 revisions &bull; <strong class="text-slate-200">T:</strong> 6–7 working days &bull; <strong class="text-slate-200">E:</strong> &lt;100%</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">Q:</strong> 3 revisions &bull; <strong class="text-zinc-200">T:</strong> 6–7 working days &bull; <strong class="text-zinc-200">E:</strong> &lt;100%</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-rose-400 shrink-0 w-4">1:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">Q:</strong> 4 revisions &bull; <strong class="text-slate-200">T:</strong> >8 working days</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">Q:</strong> 4 revisions &bull; <strong class="text-zinc-200">T:</strong> >8 working days</span>
                     </div>
                 </div>
             </div>
@@ -200,7 +200,7 @@
                 <div class="flex items-start justify-between gap-2 border-b border-emerald-900/40 pb-2">
                     <div>
                         <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">Example 4 • Certificates &amp; Transcripts</span>
-                        <h4 class="text-xs font-bold text-slate-100 mt-0.5">
+                        <h4 class="text-xs font-bold text-zinc-100 mt-0.5">
                             100% requests for certificates issued in 3 days (max 2 revisions)
                         </h4>
                     </div>
@@ -208,23 +208,23 @@
                 <div class="text-[11px] space-y-1.5">
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-emerald-300 shrink-0 w-4">5:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">Q:</strong> No revision &bull; <strong class="text-slate-200">T:</strong> 1 working day &bull; <strong class="text-slate-200">E:</strong> 100% prepared</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">Q:</strong> No revision &bull; <strong class="text-zinc-200">T:</strong> 1 working day &bull; <strong class="text-zinc-200">E:</strong> 100% prepared</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-sky-300 shrink-0 w-4">4:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">Q:</strong> 1 revision &bull; <strong class="text-slate-200">T:</strong> 2 working days</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">Q:</strong> 1 revision &bull; <strong class="text-zinc-200">T:</strong> 2 working days</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-amber-300 shrink-0 w-4">3:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">Q:</strong> 2 revisions &bull; <strong class="text-slate-200">T:</strong> 3 working days</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">Q:</strong> 2 revisions &bull; <strong class="text-zinc-200">T:</strong> 3 working days</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-orange-300 shrink-0 w-4">2:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">Q:</strong> 3 revisions &bull; <strong class="text-slate-200">T:</strong> 4 working days &bull; <strong class="text-slate-200">E:</strong> &lt;100%</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">Q:</strong> 3 revisions &bull; <strong class="text-zinc-200">T:</strong> 4 working days &bull; <strong class="text-zinc-200">E:</strong> &lt;100%</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-rose-400 shrink-0 w-4">1:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">Q:</strong> 4+ revisions &bull; <strong class="text-slate-200">T:</strong> >5 working days</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">Q:</strong> 4+ revisions &bull; <strong class="text-zinc-200">T:</strong> >5 working days</span>
                     </div>
                 </div>
             </div>
@@ -234,7 +234,7 @@
                 <div class="flex items-start justify-between gap-2 border-b border-emerald-900/40 pb-2">
                     <div>
                         <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">Example 5 • Minutes of Meetings</span>
-                        <h4 class="text-xs font-bold text-slate-100 mt-0.5">
+                        <h4 class="text-xs font-bold text-zinc-100 mt-0.5">
                             100% Minutes of Meetings submitted in 3 days (with at most 3 revisions)
                         </h4>
                     </div>
@@ -242,23 +242,23 @@
                 <div class="text-[11px] space-y-1.5">
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-emerald-300 shrink-0 w-4">5:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">Q:</strong> 1 revision &bull; <strong class="text-slate-200">T:</strong> 1 working day &bull; <strong class="text-slate-200">E:</strong> 100% submitted</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">Q:</strong> 1 revision &bull; <strong class="text-zinc-200">T:</strong> 1 working day &bull; <strong class="text-zinc-200">E:</strong> 100% submitted</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-sky-300 shrink-0 w-4">4:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">Q:</strong> 2 revisions &bull; <strong class="text-slate-200">T:</strong> 2 working days</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">Q:</strong> 2 revisions &bull; <strong class="text-zinc-200">T:</strong> 2 working days</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-amber-300 shrink-0 w-4">3:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">Q:</strong> 3 revisions &bull; <strong class="text-slate-200">T:</strong> 3 working days</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">Q:</strong> 3 revisions &bull; <strong class="text-zinc-200">T:</strong> 3 working days</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-orange-300 shrink-0 w-4">2:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">Q:</strong> 4 revisions &bull; <strong class="text-slate-200">T:</strong> 4 working days &bull; <strong class="text-slate-200">E:</strong> &lt;100%</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">Q:</strong> 4 revisions &bull; <strong class="text-zinc-200">T:</strong> 4 working days &bull; <strong class="text-zinc-200">E:</strong> &lt;100%</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-rose-400 shrink-0 w-4">1:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">Q:</strong> >4 revisions &bull; <strong class="text-slate-200">T:</strong> >4 working days</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">Q:</strong> >4 revisions &bull; <strong class="text-zinc-200">T:</strong> >4 working days</span>
                     </div>
                 </div>
             </div>
@@ -268,7 +268,7 @@
                 <div class="flex items-start justify-between gap-2 border-b border-emerald-900/40 pb-2">
                     <div>
                         <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">Example 6 • Inquiries &amp; Communications</span>
-                        <h4 class="text-xs font-bold text-slate-100 mt-0.5">
+                        <h4 class="text-xs font-bold text-zinc-100 mt-0.5">
                             100% queries on email &amp; messenger responded to within 3 working days
                         </h4>
                     </div>
@@ -276,23 +276,23 @@
                 <div class="text-[11px] space-y-1.5">
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-emerald-300 shrink-0 w-4">5:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">T:</strong> Within the day &bull; <strong class="text-slate-200">E:</strong> 100% responded</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">T:</strong> Within the day &bull; <strong class="text-zinc-200">E:</strong> 100% responded</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-sky-300 shrink-0 w-4">4:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">T:</strong> 1 working day</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">T:</strong> 1 working day</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-amber-300 shrink-0 w-4">3:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">T:</strong> 2 working days</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">T:</strong> 2 working days</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-orange-300 shrink-0 w-4">2:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">T:</strong> 3 working days &bull; <strong class="text-slate-200">E:</strong> less than 100%</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">T:</strong> 3 working days &bull; <strong class="text-zinc-200">E:</strong> less than 100%</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-rose-400 shrink-0 w-4">1:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">T:</strong> 4 or more working days &bull; <strong class="text-slate-200">Q:</strong> N/A</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">T:</strong> 4 or more working days &bull; <strong class="text-zinc-200">Q:</strong> N/A</span>
                     </div>
                 </div>
             </div>
@@ -302,7 +302,7 @@
                 <div class="flex items-start justify-between gap-2 border-b border-emerald-900/40 pb-2">
                     <div>
                         <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">Example 7 • Reports &amp; Liquidation</span>
-                        <h4 class="text-xs font-bold text-slate-100 mt-0.5">
+                        <h4 class="text-xs font-bold text-zinc-100 mt-0.5">
                             Accomplishment Report &amp; liquidation in 10 working days (with 3 revisions)
                         </h4>
                     </div>
@@ -310,19 +310,19 @@
                 <div class="text-[11px] space-y-1.5">
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-emerald-300 shrink-0 w-4">5:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">Q:</strong> 1 revision &bull; <strong class="text-slate-200">T:</strong> 2–4 working days after training</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">Q:</strong> 1 revision &bull; <strong class="text-zinc-200">T:</strong> 2–4 working days after training</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-sky-300 shrink-0 w-4">4:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">Q:</strong> 2 revisions &bull; <strong class="text-slate-200">T:</strong> 5–7 working days after training</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">Q:</strong> 2 revisions &bull; <strong class="text-zinc-200">T:</strong> 5–7 working days after training</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-amber-300 shrink-0 w-4">3:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">Q:</strong> 3 revisions &bull; <strong class="text-slate-200">T:</strong> 8–10 working days after training</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">Q:</strong> 3 revisions &bull; <strong class="text-zinc-200">T:</strong> 8–10 working days after training</span>
                     </div>
                     <div class="flex items-start gap-2 bg-black/20 p-2 rounded border border-emerald-900/30">
                         <span class="font-bold text-orange-300 shrink-0 w-4">2:</span>
-                        <span class="text-slate-300"><strong class="text-slate-200">Q:</strong> 4 revisions &bull; <strong class="text-slate-200">T:</strong> 11–13 working days after training</span>
+                        <span class="text-zinc-300"><strong class="text-zinc-200">Q:</strong> 4 revisions &bull; <strong class="text-zinc-200">T:</strong> 11–13 working days after training</span>
                     </div>
                 </div>
             </div>
@@ -337,11 +337,11 @@
                 <div class="flex items-center justify-between border-b border-emerald-900/30 pb-2">
                     <div class="flex items-center gap-2">
                         <span class="w-5 h-5 rounded flex items-center justify-center bg-emerald-900/50 text-emerald-300 font-bold text-xs border border-emerald-700/40">E</span>
-                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-200">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-zinc-200">
                             Efficiency (Quantity &amp; Targets)
                         </h4>
                     </div>
-                    <span class="text-[11px] text-slate-400 font-mono">
+                    <span class="text-[11px] text-zinc-400 font-mono">
                         (Actual ÷ Target) × 100%
                     </span>
                 </div>
@@ -352,7 +352,7 @@
                             <span class="text-xs font-bold text-emerald-300">5 — Outstanding</span>
                             <span class="text-xs font-medium text-emerald-200/90">&ge; 130% of target</span>
                         </div>
-                        <p class="text-xs text-slate-300 leading-relaxed">
+                        <p class="text-xs text-zinc-300 leading-relaxed">
                             Exceeds planned commitments by 30% or more.
                         </p>
                     </div>
@@ -362,7 +362,7 @@
                             <span class="text-xs font-bold text-sky-300">4 — Very Satisfactory</span>
                             <span class="text-xs font-medium text-sky-200/90">115% – 129% of target</span>
                         </div>
-                        <p class="text-xs text-slate-300 leading-relaxed">
+                        <p class="text-xs text-zinc-300 leading-relaxed">
                             Exceeds planned commitments by 15% to 29%.
                         </p>
                     </div>
@@ -372,7 +372,7 @@
                             <span class="text-xs font-bold text-amber-300">3 — Satisfactory</span>
                             <span class="text-xs font-medium text-amber-200/90">100% – 114% (Met)</span>
                         </div>
-                        <p class="text-xs text-slate-300 leading-relaxed">
+                        <p class="text-xs text-zinc-300 leading-relaxed">
                             Meets target commitment. Standard acceptable performance.
                         </p>
                     </div>
@@ -382,7 +382,7 @@
                             <span class="text-xs font-bold text-orange-300">2 — Unsatisfactory</span>
                             <span class="text-xs font-medium text-orange-200/90">51% – 99% of target</span>
                         </div>
-                        <p class="text-xs text-slate-300 leading-relaxed">
+                        <p class="text-xs text-zinc-300 leading-relaxed">
                             Falls short of target commitment by half to nearly full.
                         </p>
                     </div>
@@ -392,7 +392,7 @@
                             <span class="text-xs font-bold text-rose-400">1 — Poor</span>
                             <span class="text-xs font-medium text-rose-300/90">&le; 50% of target</span>
                         </div>
-                        <p class="text-xs text-slate-300 leading-relaxed">
+                        <p class="text-xs text-zinc-300 leading-relaxed">
                             Fails to meet commitments by 50% or more.
                         </p>
                     </div>
@@ -404,7 +404,7 @@
                 <div class="flex items-center justify-between border-b border-emerald-900/30 pb-2">
                     <div class="flex items-center gap-2">
                         <span class="w-5 h-5 rounded flex items-center justify-center bg-emerald-900/50 text-emerald-300 font-bold text-xs border border-emerald-700/40">Q</span>
-                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-200">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-zinc-200">
                             Quality (Excellence &amp; Accuracy)
                         </h4>
                     </div>
@@ -413,23 +413,23 @@
                 <div class="space-y-3">
                     <div class="p-3 rounded-lg bg-[#16241d] border border-emerald-900/30 space-y-1">
                         <span class="text-xs font-bold text-emerald-300">5 — Outstanding</span>
-                        <p class="text-xs text-slate-300 leading-relaxed">No errors or revisions; exceeds standards of technical excellence.</p>
+                        <p class="text-xs text-zinc-300 leading-relaxed">No errors or revisions; exceeds standards of technical excellence.</p>
                     </div>
                     <div class="p-3 rounded-lg bg-[#16241d] border border-emerald-900/30 space-y-1">
                         <span class="text-xs font-bold text-sky-300">4 — Very Satisfactory</span>
-                        <p class="text-xs text-slate-300 leading-relaxed">Minor defects with at most 1 revision; high degree of accuracy.</p>
+                        <p class="text-xs text-zinc-300 leading-relaxed">Minor defects with at most 1 revision; high degree of accuracy.</p>
                     </div>
                     <div class="p-3 rounded-lg bg-[#16241d] border border-emerald-900/30 space-y-1">
                         <span class="text-xs font-bold text-amber-300">3 — Satisfactory</span>
-                        <p class="text-xs text-slate-300 leading-relaxed">Meets basic quality requirements; with 2 minor revisions.</p>
+                        <p class="text-xs text-zinc-300 leading-relaxed">Meets basic quality requirements; with 2 minor revisions.</p>
                     </div>
                     <div class="p-3 rounded-lg bg-[#16241d] border border-emerald-900/30 space-y-1">
                         <span class="text-xs font-bold text-orange-300">2 — Unsatisfactory</span>
-                        <p class="text-xs text-slate-300 leading-relaxed">Notable errors needing 3 revisions; substantial corrections required.</p>
+                        <p class="text-xs text-zinc-300 leading-relaxed">Notable errors needing 3 revisions; substantial corrections required.</p>
                     </div>
                     <div class="p-3 rounded-lg bg-[#16241d] border border-emerald-900/30 space-y-1">
                         <span class="text-xs font-bold text-rose-400">1 — Poor</span>
-                        <p class="text-xs text-slate-300 leading-relaxed">Frequent errors, 4+ revisions or total rejection.</p>
+                        <p class="text-xs text-zinc-300 leading-relaxed">Frequent errors, 4+ revisions or total rejection.</p>
                     </div>
                 </div>
             </section>
@@ -439,7 +439,7 @@
                 <div class="flex items-center justify-between border-b border-emerald-900/30 pb-2">
                     <div class="flex items-center gap-2">
                         <span class="w-5 h-5 rounded flex items-center justify-center bg-emerald-900/50 text-emerald-300 font-bold text-xs border border-emerald-700/40">T</span>
-                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-200">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-zinc-200">
                             Timeliness (Speed &amp; Punctuality)
                         </h4>
                     </div>
@@ -448,23 +448,23 @@
                 <div class="space-y-3">
                     <div class="p-3 rounded-lg bg-[#16241d] border border-emerald-900/30 space-y-1">
                         <span class="text-xs font-bold text-emerald-300">5 — Outstanding</span>
-                        <p class="text-xs text-slate-300 leading-relaxed">Completed significantly ahead of deadline (within 1–2 days).</p>
+                        <p class="text-xs text-zinc-300 leading-relaxed">Completed significantly ahead of deadline (within 1–2 days).</p>
                     </div>
                     <div class="p-3 rounded-lg bg-[#16241d] border border-emerald-900/30 space-y-1">
                         <span class="text-xs font-bold text-sky-300">4 — Very Satisfactory</span>
-                        <p class="text-xs text-slate-300 leading-relaxed">Completed ahead of scheduled timeline.</p>
+                        <p class="text-xs text-zinc-300 leading-relaxed">Completed ahead of scheduled timeline.</p>
                     </div>
                     <div class="p-3 rounded-lg bg-[#16241d] border border-emerald-900/30 space-y-1">
                         <span class="text-xs font-bold text-amber-300">3 — Satisfactory</span>
-                        <p class="text-xs text-slate-300 leading-relaxed">Completed exactly on the prescribed target deadline.</p>
+                        <p class="text-xs text-zinc-300 leading-relaxed">Completed exactly on the prescribed target deadline.</p>
                     </div>
                     <div class="p-3 rounded-lg bg-[#16241d] border border-emerald-900/30 space-y-1">
                         <span class="text-xs font-bold text-orange-300">2 — Unsatisfactory</span>
-                        <p class="text-xs text-slate-300 leading-relaxed">Delayed past deadline by several working days.</p>
+                        <p class="text-xs text-zinc-300 leading-relaxed">Delayed past deadline by several working days.</p>
                     </div>
                     <div class="p-3 rounded-lg bg-[#16241d] border border-emerald-900/30 space-y-1">
                         <span class="text-xs font-bold text-rose-400">1 — Poor</span>
-                        <p class="text-xs text-slate-300 leading-relaxed">Severely overdue or not submitted.</p>
+                        <p class="text-xs text-zinc-300 leading-relaxed">Severely overdue or not submitted.</p>
                     </div>
                 </div>
             </section>
@@ -511,20 +511,20 @@
             filterBar?.classList.add('hidden');
 
             btnBsu?.classList.add('bg-emerald-700/80', 'text-white', 'shadow-sm', 'font-bold');
-            btnBsu?.classList.remove('text-slate-400');
+            btnBsu?.classList.remove('text-zinc-400');
 
             btnCsc?.classList.remove('bg-emerald-700/80', 'text-white', 'shadow-sm', 'font-bold');
-            btnCsc?.classList.add('text-slate-400');
+            btnCsc?.classList.add('text-zinc-400');
         } else {
             viewBsu?.classList.add('hidden');
             viewCsc?.classList.remove('hidden');
             filterBar?.classList.remove('hidden');
 
             btnCsc?.classList.add('bg-emerald-700/80', 'text-white', 'shadow-sm', 'font-bold');
-            btnCsc?.classList.remove('text-slate-400');
+            btnCsc?.classList.remove('text-zinc-400');
 
             btnBsu?.classList.remove('bg-emerald-700/80', 'text-white', 'shadow-sm', 'font-bold');
-            btnBsu?.classList.add('text-slate-400');
+            btnBsu?.classList.add('text-zinc-400');
         }
     }
 
@@ -547,12 +547,12 @@
 
         document.querySelectorAll('.rubric-filter-btn').forEach(btn => {
             btn.classList.remove('bg-emerald-900/60', 'text-emerald-200', 'border-emerald-700/50');
-            btn.classList.add('text-slate-400', 'border-transparent');
+            btn.classList.add('text-zinc-400', 'border-transparent');
         });
 
         const activeBtn = document.querySelector(`.rubric-filter-btn[data-target="${id}"]`);
         if (activeBtn) {
-            activeBtn.classList.remove('text-slate-400', 'border-transparent');
+            activeBtn.classList.remove('text-zinc-400', 'border-transparent');
             activeBtn.classList.add('bg-emerald-900/60', 'text-emerald-200', 'border-emerald-700/50');
         }
 

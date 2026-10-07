@@ -22,23 +22,23 @@
 
 <?php if (!$activeFolder): ?>
     <?php if (session()->get('role') === 'Admin'): ?>
-        <button onclick="document.getElementById('btn-create-folder-modal').click()" class="flex-1 w-full border-2 border-dashed border-surface-border hover:border-emerald-500 rounded-2xl flex flex-col items-center justify-center text-center p-12 bg-surface/50 hover:bg-emerald-500/5 transition-all group cursor-pointer min-h-[400px]">
-            <div class="inline-flex p-4 rounded-full bg-zinc-100 dark:bg-slate-800 text-text-muted group-hover:text-emerald-500 mb-4 shadow-sm transition-colors">
+        <button onclick="document.getElementById('btn-create-folder-modal').click()" class="flex-1 w-full border-2 border-dashed border-surface-border hover:border-accent rounded-2xl flex flex-col items-center justify-center text-center p-12 bg-surface/50 hover:bg-accent/5 transition-all group cursor-pointer min-h-[400px]">
+            <div class="inline-flex p-4 rounded-full bg-zinc-100 dark:bg-zinc-800 text-text-muted group-hover:text-accent mb-4 shadow-sm transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
             </div>
-            <h3 class="text-lg font-bold text-text group-hover:text-emerald-500 transition-colors mb-1">Create New Folder</h3>
+            <h3 class="text-lg font-bold text-text group-hover:text-accent transition-colors mb-1">Create New Folder</h3>
             <p class="text-sm text-text-muted max-w-sm">Click here to start a new evaluation period and create the initial folder.</p>
         </button>
     <?php else: ?>
-        <button onclick="toggleAppSidebar()" class="flex-1 w-full border-2 border-dashed border-surface-border hover:border-emerald-500 rounded-2xl flex flex-col items-center justify-center text-center p-12 bg-surface/50 hover:bg-emerald-500/5 transition-all group cursor-pointer lg:cursor-default min-h-[400px]">
-            <div class="inline-flex p-4 rounded-full bg-zinc-100 dark:bg-slate-800 text-text-muted group-hover:text-emerald-500 mb-4 shadow-sm transition-colors">
+        <button onclick="toggleAppSidebar()" class="flex-1 w-full border-2 border-dashed border-surface-border hover:border-accent rounded-2xl flex flex-col items-center justify-center text-center p-12 bg-surface/50 hover:bg-accent/5 transition-all group cursor-pointer lg:cursor-default min-h-[400px]">
+            <div class="inline-flex p-4 rounded-full bg-zinc-100 dark:bg-zinc-800 text-text-muted group-hover:text-accent mb-4 shadow-sm transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
             </div>
-            <h3 class="text-lg font-bold text-text group-hover:text-emerald-500 transition-colors mb-1">Select a Folder</h3>
+            <h3 class="text-lg font-bold text-text group-hover:text-accent transition-colors mb-1">Select a Folder</h3>
             <p class="text-sm text-text-muted max-w-sm">Choose an evaluation folder from the sidebar to view or manage its documents.</p>
         </button>
     <?php endif; ?>
@@ -48,34 +48,34 @@
     <div class="flex flex-col lg:flex-row flex-1 lg:absolute lg:inset-0 lg:min-h-[650px] bg-transparent lg:gap-6 lg:pb-6">
         
         <!-- CENTER / MAIN CONTENT CONTAINER -->
-        <div class="flex flex-col flex-1 min-w-0 min-h-0 relative bg-surface lg:rounded-2xl border border-surface-border shadow-xl overflow-visible lg:overflow-hidden dark:bg-[#02160e] dark:border-[#0d4a32]">
+        <div class="flex flex-col flex-1 min-w-0 min-h-0 relative bg-surface lg:rounded-xl border border-surface-border shadow-xs overflow-visible lg:overflow-hidden dark:bg-zinc-950 dark:border-zinc-800">
             
-            <!-- MOBILE ACTIVE EVALUATION CYCLE FOLDER DROPDOWN (PULL-DOWN MENU SPEC) -->
+            <!-- Mobile active folder selector dropdown -->
             <?= view('components/mobile_folder_dropdown', [
                 'activeFolder'     => $activeFolder ?? null,
                 'folders'          => $sidebarFolders ?? [],
                 'selectedFolderId' => $activeFolder['id'] ?? null,
                 'baseUrl'          => !empty($isArchivedView) ? 'folders/archived' : 'folders',
-                'containerClass'   => 'p-3.5 border-b border-surface-border dark:border-[#0d4a32] shrink-0 bg-surface dark:bg-[#02170f]'
+                'containerClass'   => 'p-3.5 border-b border-surface-border dark:border-zinc-800 shrink-0 bg-surface dark:bg-zinc-950'
             ]) ?>
 
             <?php if (!empty($groupedGuides) && session()->get('role') !== 'Admin'): ?>
                 <!-- TAB NAVIGATION (When superior guide exists) -->
-                <div class="flex items-center gap-6 px-6 lg:px-8 border-b border-surface-border dark:border-[#0d4a32] shrink-0 overflow-x-auto custom-scrollbar pt-2 bg-surface dark:bg-[#02170f]">
-                    <button id="tab-btn-mine" class="tab-btn-doc whitespace-nowrap pb-3 text-sm font-bold border-b-2 border-emerald-500 text-slate-900 dark:text-white transition-all cursor-pointer flex items-center gap-2" onclick="switchDocTab('mine')">
+                <div class="flex items-center gap-6 px-6 lg:px-8 border-b border-surface-border dark:border-zinc-800 shrink-0 overflow-x-auto custom-scrollbar pt-2 bg-surface dark:bg-zinc-950">
+                    <button id="tab-btn-mine" class="tab-btn-doc whitespace-nowrap pb-3 text-sm font-bold border-b-2 border-emerald-500 text-zinc-900 dark:text-white transition-all cursor-pointer flex items-center gap-2" onclick="switchDocTab('mine')">
                         Official Paper
                         <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 text-[10px] font-extrabold tab-badge transition-colors"><?= count($myDocs) ?></span>
                     </button>
 
-                    <button id="tab-btn-team" class="tab-btn-doc whitespace-nowrap pb-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-all cursor-pointer flex items-center gap-2" onclick="switchDocTab('team')">
+                    <button id="tab-btn-team" class="tab-btn-doc whitespace-nowrap pb-3 text-sm font-medium border-b-2 border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-all cursor-pointer flex items-center gap-2" onclick="switchDocTab('team')">
                         Superior Reference Guide
-                        <span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#032316] text-slate-500 dark:text-[#94A3B8] text-[10px] font-extrabold tab-badge transition-colors"><?= array_sum(array_map(fn($g) => count($g['docs']), $groupedGuides)) ?></span>
+                        <span class="px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-950 text-zinc-500 dark:text-[#94A3B8] text-[10px] font-extrabold tab-badge transition-colors"><?= array_sum(array_map(fn($g) => count($g['docs']), $groupedGuides)) ?></span>
                     </button>
                 </div>
             <?php endif; ?>
 
             <!-- TAB CONTENTS AREA -->
-            <div class="overflow-hidden flex flex-col flex-1 min-h-0 relative lg:h-auto bg-slate-50 dark:bg-[#02160e]">
+            <div class="overflow-hidden flex flex-col flex-1 min-h-0 relative lg:h-auto bg-zinc-50 dark:bg-zinc-950">
                 
                 <!-- 1. MY SUBMISSIONS TAB -->
                 <div id="tab-content-mine" class="tab-content-doc flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar p-3 sm:p-5 lg:p-7 pb-20 lg:pb-7 bg-transparent">
@@ -93,8 +93,8 @@
                             width: 100%;
                         }
                         .dark .spms-hub-card {
-                            background-color: #032115 !important;
-                            border: 1px solid #0d4a32 !important;
+                            background-color: #18181b !important;
+                            border: 1px solid #27272a !important;
                             box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.6) !important;
                         }
                         @media (min-width: 640px) {
@@ -143,7 +143,7 @@
                         }
 
                         .spms-hub-kicker {
-                            color: #059669;
+                            color: #71717a;
                             font-size: 10px;
                             font-weight: 800;
                             letter-spacing: 0.08em;
@@ -152,7 +152,7 @@
                             display: block;
                         }
                         .dark .spms-hub-kicker {
-                            color: #34d399 !important;
+                            color: #a1a1aa !important;
                         }
                         @media (min-width: 640px) {
                             .spms-hub-kicker {
@@ -192,7 +192,7 @@
                             margin-bottom: 0;
                         }
                         .dark .spms-hub-subtitle {
-                            color: #5a8b73 !important;
+                            color: #a1a1aa !important;
                         }
                         @media (min-width: 640px) {
                             .spms-hub-subtitle {
@@ -210,9 +210,9 @@
                         }
 
                         .spms-hub-status-pill {
-                            background-color: #ecfdf5;
-                            border: 1px solid #a7f3d0;
-                            color: #047857;
+                            background-color: #f4fdf7;
+                            border: 1px solid #bbf7d0;
+                            color: #166534;
                             border-radius: 9999px;
                             padding: 3px 8px;
                             font-size: 9px;
@@ -225,9 +225,9 @@
                             white-space: nowrap;
                         }
                         .dark .spms-hub-status-pill {
-                            background-color: #083321 !important;
-                            border: 1px solid #115337 !important;
-                            color: #34d399 !important;
+                            background-color: #0e291e !important;
+                            border: 1px solid #144630 !important;
+                            color: #86efac !important;
                         }
                         @media (min-width: 640px) {
                             .spms-hub-status-pill {
@@ -259,11 +259,11 @@
                             width: 5px;
                             height: 5px;
                             border-radius: 9999px;
-                            background-color: #10b981;
+                            background-color: #16a34a;
                             display: inline-block;
                         }
                         .dark .spms-hub-status-dot {
-                            background-color: #34d399 !important;
+                            background-color: #22c55e !important;
                         }
                         @media (min-width: 640px) {
                             .spms-hub-status-dot {
@@ -283,7 +283,7 @@
                             display: block;
                         }
                         .dark .spms-hub-tracker-label {
-                            color: #5a8b73 !important;
+                            color: #a1a1aa !important;
                         }
                         @media (min-width: 640px) {
                             .spms-hub-tracker-label {
@@ -351,7 +351,7 @@
                             background-color: #ffffff;
                         }
                         .dark .spms-hub-circle-active-dot {
-                            background-color: #032115 !important;
+                            background-color: #18181b !important;
                         }
 
                         .spms-hub-circle-inactive {
@@ -366,7 +366,7 @@
                             flex-shrink: 0;
                         }
                         .dark .spms-hub-circle-inactive {
-                            border: 1.5px solid #145235 !important;
+                            border: 1.5px solid #3f3f46 !important;
                             background-color: transparent !important;
                         }
 
@@ -408,7 +408,7 @@
                             margin-left: 6px;
                         }
                         .dark .spms-hub-step-text-inactive {
-                            color: #5a8b73 !important;
+                            color: #a1a1aa !important;
                         }
                         @media (min-width: 640px) {
                             .spms-hub-step-text-inactive {
@@ -453,8 +453,8 @@
                             overflow: hidden;
                         }
                         .dark .spms-hub-stat-tile {
-                            background-color: #062e1e !important;
-                            border: 1px solid #0d4a32 !important;
+                            background-color: #27272a !important;
+                            border: 1px solid #27272a !important;
                         }
                         @media (min-width: 640px) {
                             .spms-hub-stat-tile {
@@ -484,7 +484,7 @@
                             text-overflow: ellipsis;
                         }
                         .dark .spms-hub-tile-label {
-                            color: #5a8b73 !important;
+                            color: #a1a1aa !important;
                         }
                         @media (min-width: 640px) {
                             .spms-hub-tile-label {
@@ -537,9 +537,9 @@
                             flex-shrink: 0;
                         }
                         .dark .spms-hub-window-pill {
-                            background-color: #083b27 !important;
-                            border: 1px solid #10593b !important;
-                            color: #34d399 !important;
+                            background-color: #0e291e !important;
+                            border: 1px solid #144630 !important;
+                            color: #86efac !important;
                         }
                         @media (min-width: 640px) {
                             .spms-hub-window-pill {
@@ -559,7 +559,7 @@
                             flex-shrink: 0;
                         }
                         .dark .spms-hub-tile-dash {
-                            background-color: #1e5a3e !important;
+                            background-color: #3f3f46 !important;
                         }
                         @media (min-width: 640px) {
                             .spms-hub-tile-dash {
@@ -609,14 +609,14 @@
                             color: #065f46;
                         }
                         .dark .spms-hub-tile-btn {
-                            background-color: #083b27 !important;
-                            border: 1px solid #11593b !important;
-                            color: #82c8a6 !important;
+                            background-color: #27272a !important;
+                            border: 1px solid #3f3f46 !important;
+                            color: #34d399 !important;
                         }
                         .dark .spms-hub-tile-btn:hover {
-                            background-color: #0c4d33 !important;
+                            background-color: #3f3f46 !important;
                             color: #ffffff !important;
-                            border-color: #176a46 !important;
+                            border-color: #52525b !important;
                         }
                         @media (min-width: 640px) {
                             .spms-hub-tile-btn {
@@ -688,30 +688,30 @@
                             color: #000000;
                         }
                         .spms-hub-banner {
-                            background-color: #ecfdf5;
-                            border: 1px solid #a7f3d0;
-                            color: #065f46;
+                            background-color: #f4f4f5;
+                            border: 1px solid #e4e4e7;
+                            color: #27272a;
                         }
                         .dark .spms-hub-banner {
-                            background-color: #042a1b !important;
-                            border: 1px solid #0d4a32 !important;
-                            color: #d1fae5 !important;
+                            background-color: #18181b !important;
+                            border: 1px solid #27272a !important;
+                            color: #d4d4d8 !important;
                         }
                         .spms-hub-banner-icon {
-                            background-color: #d1fae5;
-                            border: 1px solid #a7f3d0;
-                            color: #059669;
+                            background-color: #fef3c7;
+                            border: 1px solid #fde68a;
+                            color: #d97706;
                         }
                         .dark .spms-hub-banner-icon {
-                            background-color: #073824 !important;
-                            border: 1px solid #116340 !important;
-                            color: #34d399 !important;
+                            background-color: #27272a !important;
+                            border: 1px solid #3f3f46 !important;
+                            color: #f59e0b !important;
                         }
                         .spms-hub-banner-title {
-                            color: #065f46;
+                            color: #09090b;
                         }
                         .dark .spms-hub-banner-title {
-                            color: #34d399 !important;
+                            color: #ffffff !important;
                         }
 
                         .spms-hub-btn-secondary {
@@ -735,8 +735,8 @@
                             line-height: 1.25;
                         }
                         .dark .spms-hub-btn-secondary {
-                            background-color: #062e1e !important;
-                            border: 1px solid #10593b !important;
+                            background-color: #27272a !important;
+                            border: 1px solid #3f3f46 !important;
                             color: #ffffff !important;
                         }
                         @media (min-width: 640px) {
@@ -760,8 +760,8 @@
                             color: #0f172a;
                         }
                         .dark .spms-hub-btn-secondary:hover {
-                            background-color: #0c4d33 !important;
-                            border-color: #176a46 !important;
+                            background-color: #3f3f46 !important;
+                            border-color: #52525b !important;
                             color: #ffffff !important;
                         }
 
@@ -799,289 +799,6 @@
                             }
                         }
 
-                        /* SPMS Modal Design System */
-                        .spms-modal-backdrop {
-                            position: fixed;
-                            top: 0;
-                            left: 0;
-                            right: 0;
-                            bottom: 0;
-                            z-index: 9999;
-                            background-color: rgba(0, 0, 0, 0.6);
-                            backdrop-filter: blur(6px);
-                            -webkit-backdrop-filter: blur(6px);
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            padding: 16px;
-                        }
-                        .spms-modal-backdrop.hidden {
-                            display: none !important;
-                        }
-                        .spms-modal-dialog {
-                            background-color: #ffffff;
-                            border: 1px solid #cbd5e1;
-                            border-radius: 16px;
-                            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-                            color: #0f172a;
-                            width: 100%;
-                            max-height: 90vh;
-                            display: flex;
-                            flex-direction: column;
-                            overflow: hidden;
-                            position: relative;
-                        }
-                        .dark .spms-modal-dialog {
-                            background-color: #032115 !important;
-                            border: 1px solid #0d4a32 !important;
-                            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85) !important;
-                            color: #ffffff !important;
-                        }
-                        .spms-modal-header {
-                            background-color: #f8fafc;
-                            border-bottom: 1px solid #e2e8f0;
-                            padding: 20px 24px;
-                            display: flex;
-                            align-items: center;
-                            justify-content: space-between;
-                            flex-shrink: 0;
-                        }
-                        .dark .spms-modal-header {
-                            background-color: #02170f !important;
-                            border-bottom: 1px solid #0d4a32 !important;
-                        }
-                        .spms-modal-body {
-                            background-color: #ffffff;
-                            padding: 24px;
-                            overflow-y: auto;
-                            flex: 1 1 auto;
-                        }
-                        .dark .spms-modal-body {
-                            background-color: #032115 !important;
-                        }
-                        .spms-modal-section {
-                            background-color: #f8fafc;
-                            border: 1px solid #e2e8f0;
-                            border-radius: 12px;
-                            padding: 16px;
-                            margin-bottom: 16px;
-                        }
-                        .dark .spms-modal-section {
-                            background-color: #062e1e !important;
-                            border: 1px solid #0d4a32 !important;
-                        }
-                        .spms-modal-card {
-                            background-color: #f1f5f9;
-                            border: 1px solid #cbd5e1;
-                            border-radius: 8px;
-                            padding: 12px 14px;
-                            color: #1e293b;
-                        }
-                        .dark .spms-modal-card {
-                            background-color: #083b27 !important;
-                            border: 1px solid #10593b !important;
-                            color: #d1fae5 !important;
-                        }
-                        .spms-modal-footer {
-                            background-color: #f8fafc;
-                            border-top: 1px solid #e2e8f0;
-                            padding: 16px 24px;
-                            display: flex;
-                            align-items: center;
-                            justify-content: space-between;
-                            flex-shrink: 0;
-                        }
-                        .dark .spms-modal-footer {
-                            background-color: #02170f !important;
-                            border-top: 1px solid #0d4a32 !important;
-                        }
-                        .spms-modal-btn-close {
-                            width: 32px;
-                            height: 32px;
-                            border-radius: 8px;
-                            background-color: #f1f5f9;
-                            border: 1px solid #cbd5e1;
-                            color: #64748b;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            cursor: pointer;
-                            transition: all 0.15s ease;
-                        }
-                        .spms-modal-btn-close:hover {
-                            background-color: #e2e8f0;
-                            color: #0f172a;
-                        }
-                        .dark .spms-modal-btn-close {
-                            background-color: #083b27 !important;
-                            border: 1px solid #11593b !important;
-                            color: #94a3b8 !important;
-                        }
-                        .dark .spms-modal-btn-close:hover {
-                            background-color: #0c4d33 !important;
-                            color: #ffffff !important;
-                            border-color: #176a46 !important;
-                        }
-
-                        /* Interactive Stepper Carousel Styles */
-                        .spms-guide-tabs {
-                            display: grid;
-                            grid-template-columns: repeat(4, 1fr);
-                            gap: 8px;
-                            margin-bottom: 20px;
-                        }
-                        @media (max-width: 640px) {
-                            .spms-guide-tabs {
-                                grid-template-columns: repeat(2, 1fr);
-                            }
-                        }
-                        .spms-guide-tab {
-                            background-color: #f8fafc;
-                            border: 1px solid #e2e8f0;
-                            border-radius: 10px;
-                            padding: 10px 12px;
-                            cursor: pointer;
-                            display: flex;
-                            align-items: center;
-                            gap: 8px;
-                            transition: all 0.15s ease;
-                            text-align: left;
-                        }
-                        .spms-guide-tab:hover {
-                            background-color: #f1f5f9;
-                            border-color: #cbd5e1;
-                        }
-                        .spms-guide-tab.active {
-                            background-color: #ecfdf5;
-                            border-color: #10b981;
-                            box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
-                        }
-                        .dark .spms-guide-tab {
-                            background-color: #062e1e !important;
-                            border: 1px solid #0d4a32 !important;
-                        }
-                        .dark .spms-guide-tab:hover {
-                            background-color: #083b27 !important;
-                            border-color: #156643 !important;
-                        }
-                        .dark .spms-guide-tab.active {
-                            background-color: #083b27 !important;
-                            border-color: #f59e0b !important;
-                            box-shadow: 0 0 12px rgba(245, 158, 11, 0.25) !important;
-                        }
-                        .spms-guide-tab-badge {
-                            width: 22px;
-                            height: 22px;
-                            border-radius: 9999px;
-                            background-color: #e2e8f0;
-                            border: 1px solid #cbd5e1;
-                            color: #475569;
-                            font-size: 11px;
-                            font-weight: 800;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            flex-shrink: 0;
-                        }
-                        .spms-guide-tab.active .spms-guide-tab-badge {
-                            background-color: #10b981;
-                            border-color: #10b981;
-                            color: #ffffff;
-                        }
-                        .dark .spms-guide-tab-badge {
-                            background-color: #032115 !important;
-                            border: 1px solid #0d4a32 !important;
-                            color: #82c8a6 !important;
-                        }
-                        .dark .spms-guide-tab.active .spms-guide-tab-badge {
-                            background-color: #f59e0b !important;
-                            border-color: #f59e0b !important;
-                            color: #000000 !important;
-                        }
-                        .spms-guide-tab-title {
-                            font-size: 11px;
-                            font-weight: 700;
-                            color: #64748b;
-                            line-height: 1.2;
-                        }
-                        .spms-guide-tab.active .spms-guide-tab-title {
-                            color: #047857;
-                        }
-                        .dark .spms-guide-tab-title {
-                            color: #94a3b8 !important;
-                        }
-                        .dark .spms-guide-tab.active .spms-guide-tab-title {
-                            color: #ffffff !important;
-                        }
-                        .spms-guide-slide {
-                            display: none;
-                        }
-                        .spms-guide-slide.active {
-                            display: block;
-                            animation: spmsFadeSlideIn 0.2s ease-out;
-                        }
-                        @keyframes spmsFadeSlideIn {
-                            from { opacity: 0; transform: translateY(6px); }
-                            to { opacity: 1; transform: translateY(0); }
-                        }
-                        .spms-guide-canvas {
-                            background-color: #f8fafc;
-                            border: 1px solid #e2e8f0;
-                            border-radius: 12px;
-                            padding: 18px;
-                            margin-bottom: 16px;
-                            position: relative;
-                            overflow: hidden;
-                        }
-                        .dark .spms-guide-canvas {
-                            background-color: #02170f !important;
-                            border: 1px solid #0d4a32 !important;
-                        }
-                        .spms-guide-instruction-card {
-                            background-color: #f8fafc;
-                            border: 1px solid #e2e8f0;
-                            border-radius: 12px;
-                            padding: 16px 18px;
-                        }
-                        .dark .spms-guide-instruction-card {
-                            background-color: #062e1e !important;
-                            border: 1px solid #0d4a32 !important;
-                        }
-                        .spms-guide-instruction-card ul {
-                            color: #334155;
-                        }
-                        .dark .spms-guide-instruction-card ul {
-                            color: #cbd5e1 !important;
-                        }
-                        .spms-guide-instruction-card strong {
-                            color: #0f172a;
-                        }
-                        .dark .spms-guide-instruction-card strong {
-                            color: #ffffff !important;
-                        }
-                        .spms-guide-retention-banner {
-                            background-color: #ecfdf5;
-                            border: 1px solid #a7f3d0;
-                            color: #065f46;
-                            margin-top: 16px;
-                            padding: 10px 14px;
-                            border-radius: 10px;
-                            display: flex;
-                            align-items: center;
-                            gap: 10px;
-                            font-size: 11px;
-                        }
-                        .dark .spms-guide-retention-banner {
-                            background-color: #062e1e !important;
-                            border: 1px solid #0d4a32 !important;
-                            color: #cbd5e1 !important;
-                        }
-                        .spms-guide-retention-banner strong {
-                            color: #064e3b;
-                        }
-                        .dark .spms-guide-retention-banner strong {
-                            color: #ffffff !important;
-                        }
                     </style>
 
                     <?php 
@@ -1095,9 +812,9 @@
                             <!-- HEADER -->
                             <div class="mb-3 sm:mb-5">
                                 <div class="flex items-center justify-between gap-2 mb-1 sm:mb-2">
-                                    <span class="spms-hub-kicker text-emerald-600 dark:text-[#34d399]">INSTITUTIONAL EVALUATION CYCLE</span>
-                                    <div class="spms-hub-status-pill border-emerald-200 text-emerald-700 bg-emerald-50 dark:border-[#059669] dark:text-[#34d399] dark:bg-[#064e3b]">
-                                        <span class="spms-hub-status-dot bg-emerald-500 dark:bg-[#34d399]"></span>
+                                    <span class="spms-hub-kicker text-zinc-500 dark:text-zinc-400">INSTITUTIONAL EVALUATION CYCLE</span>
+                                    <div class="spms-hub-status-pill">
+                                        <span class="spms-hub-status-dot"></span>
                                         <span>TARGET PHASE ACTIVE</span>
                                     </div>
                                 </div>
@@ -1132,7 +849,7 @@
                                     </div>
                                     <div>
                                         <div class="spms-hub-window-pill">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-[#34d399] inline-block"></span>
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400 inline-block"></span>
                                             <span>TARGET PHASE</span>
                                         </div>
                                     </div>
@@ -1162,7 +879,7 @@
                                     </div>
                                     <div>
                                         <?php if ($cascadedTeamId): ?>
-                                            <span class="spms-hub-status-text text-emerald-600 dark:text-[#34d399] font-medium">Distribution Active</span>
+                                            <span class="spms-hub-status-text text-emerald-700 dark:text-emerald-400 font-medium">Distribution Active</span>
                                         <?php else: ?>
                                             <span class="spms-hub-status-text text-amber-600 dark:text-[#f59e0b] font-medium">Select Team on Right</span>
                                         <?php endif; ?>
@@ -1205,13 +922,13 @@
                         </div>
 
                     <?php elseif (empty($myDocs)): ?>
-                        <div class="border-2 border-dashed border-slate-200 dark:border-[#0c4a33] bg-slate-50/50 dark:bg-[#032316]/30 rounded-2xl w-full flex-1 flex flex-col items-center justify-center p-8 sm:p-12 my-2 min-h-[380px] text-center">
+                        <div class="border-2 border-dashed border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/30 rounded-2xl w-full flex-1 flex flex-col items-center justify-center p-8 sm:p-12 my-2 min-h-[380px] text-center">
                             <div class="w-12 h-12 rounded-xl bg-[#d5e4d7] dark:bg-[#0c4a33] text-[#064e3b] dark:text-emerald-400 flex items-center justify-center mb-3.5 shadow-2xs">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                                 </svg>
                             </div>
-                            <h3 class="text-base font-bold text-slate-900 dark:text-white mb-1">No Document Available</h3>
+                            <h3 class="text-base font-bold text-zinc-900 dark:text-white mb-1">No Document Available</h3>
                             <p class="text-xs text-[#527961] dark:text-[#94A3B8] max-w-sm mb-2 leading-relaxed">
                                 No official performance paper is currently assigned to this folder.
                             </p>
@@ -1414,7 +1131,7 @@
                                             <polygon points="46,2 56,6 46,10" fill="#10b981" />
                                         </svg>
                                     <?php else: ?>
-                                        <svg class="spms-hub-stepper-arrow text-slate-300 dark:text-[#145235]" viewBox="0 0 60 12" fill="none">
+                                        <svg class="spms-hub-stepper-arrow text-zinc-300 dark:text-[#145235]" viewBox="0 0 60 12" fill="none">
                                             <line x1="0" y1="6" x2="48" y2="6" stroke="currentColor" stroke-width="1.5" />
                                             <polygon points="46,2 56,6 46,10" fill="currentColor" />
                                         </svg>
@@ -1450,7 +1167,7 @@
                                             <polygon points="46,2 56,6 46,10" fill="#10b981" />
                                         </svg>
                                     <?php else: ?>
-                                        <svg class="spms-hub-stepper-arrow text-slate-300 dark:text-[#145235]" viewBox="0 0 60 12" fill="none">
+                                        <svg class="spms-hub-stepper-arrow text-zinc-300 dark:text-[#145235]" viewBox="0 0 60 12" fill="none">
                                             <line x1="0" y1="6" x2="48" y2="6" stroke="currentColor" stroke-width="1.5" />
                                             <polygon points="46,2 56,6 46,10" fill="currentColor" />
                                         </svg>
@@ -1486,7 +1203,7 @@
                                             <polygon points="46,2 56,6 46,10" fill="#10b981" />
                                         </svg>
                                     <?php else: ?>
-                                        <svg class="spms-hub-stepper-arrow text-slate-300 dark:text-[#145235]" viewBox="0 0 60 12" fill="none">
+                                        <svg class="spms-hub-stepper-arrow text-zinc-300 dark:text-[#145235]" viewBox="0 0 60 12" fill="none">
                                             <line x1="0" y1="6" x2="48" y2="6" stroke="currentColor" stroke-width="1.5" />
                                             <polygon points="46,2 56,6 46,10" fill="currentColor" />
                                         </svg>
@@ -1518,7 +1235,7 @@
                                     </div>
                                     <div>
                                         <div class="spms-hub-window-pill">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-[#34d399] inline-block"></span>
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400 inline-block"></span>
                                             <span><?= esc($windowPillText) ?></span>
                                         </div>
                                     </div>
@@ -1651,10 +1368,10 @@
         ?>
 
         <!-- RIGHT SIDEBAR (CASCADE DISTRIBUTION FOR ADMINS / FOLDER DETAILS FOR USERS) -->
-        <div id="bottom-sheet" class="custom-scrollbar fixed inset-x-0 bottom-0 z-50 shadow-2xl lg:shadow-xl rounded-t-3xl lg:rounded-2xl transition-transform duration-300 transform spms-bottom-sheet-collapsed lg:static lg:translate-y-0 lg:w-80 lg:shrink-0 flex flex-col p-4 sm:p-5 gap-4 overflow-hidden lg:overflow-y-auto max-h-[85vh] lg:max-h-none bg-surface dark:bg-[#02160e] border border-surface-border dark:border-[#0d4a32]">
+        <div id="bottom-sheet" class="custom-scrollbar fixed inset-x-0 bottom-0 z-50 shadow-2xl lg:shadow-xl rounded-t-3xl lg:rounded-2xl transition-transform duration-300 transform spms-bottom-sheet-collapsed lg:static lg:translate-y-0 lg:w-80 lg:shrink-0 flex flex-col p-4 sm:p-5 gap-4 overflow-hidden lg:overflow-y-auto max-h-[85vh] lg:max-h-none bg-surface dark:bg-zinc-950 border border-surface-border dark:border-zinc-800">
             
             <div class="lg:hidden flex justify-center py-2 cursor-pointer touch-none" onclick="toggleBottomSheet()">
-                <div class="w-12 h-1 bg-zinc-300 dark:bg-slate-600 rounded-full"></div>
+                <div class="w-12 h-1 bg-zinc-300 dark:bg-zinc-600 rounded-full"></div>
             </div>
 
             <?php if ($canCascade): ?>
@@ -1664,7 +1381,7 @@
                     <div class="flex items-center justify-between shrink-0">
                         <h4 class="text-[10px] font-black uppercase text-text-muted tracking-wider">Cascade Management</h4>
                         <?php if ($cascadedTeamId): ?>
-                            <span class="text-[10px] font-bold text-emerald-600 dark:text-[#34d399] bg-emerald-50 dark:bg-[#102a1e] px-2 py-0.5 rounded-md border border-emerald-200 dark:border-[#1b4330]">Cascaded</span>
+                            <span class="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-[#0e291e] px-2 py-0.5 rounded-md border border-emerald-200 dark:border-[#144630]">Cascaded</span>
                         <?php endif; ?>
                     </div>
 
@@ -1695,7 +1412,7 @@
                         </div>
                     <?php elseif ($cascadedTeamId || !empty($cascadedChildren)): ?>
                         <div class="relative w-full shrink-0">
-                            <select id="team-cascade-select" disabled class="w-full bg-zinc-50 dark:bg-[#0c1510] text-xs font-bold text-text outline-none pl-3.5 pr-8 py-2.5 rounded-xl appearance-none border border-surface-border opacity-60 cursor-not-allowed">
+                            <select id="team-cascade-select" disabled class="w-full bg-zinc-50 dark:bg-zinc-900 text-xs font-bold text-text outline-none pl-3.5 pr-8 py-2.5 rounded-xl appearance-none border border-surface-border opacity-60 cursor-not-allowed">
                                 <?php foreach($presets as $preset): ?>
                                     <option value="<?= $preset['id'] ?>" <?= ($cascadedTeamId == $preset['id']) ? 'selected' : '' ?> class="bg-surface text-text">
                                         <?= esc($preset['name']) ?>
@@ -1753,7 +1470,7 @@
                             <div class="mt-1 flex flex-col gap-2 flex-1 min-h-0">
                                 <div class="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-text-muted shrink-0">
                                     <span>Cascaded Subordinates</span>
-                                    <span id="subordinates-count-badge" class="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-[#062e1e] text-emerald-700 dark:text-[#34d399] border border-emerald-200 dark:border-[#0d4a32] font-extrabold text-[9px]"><?= count($cascadedChildren) ?></span>
+                                    <span id="subordinates-count-badge" class="px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 font-extrabold text-[9px]"><?= count($cascadedChildren) ?></span>
                                 </div>
 
                                 <div id="cascaded-subordinates-list" class="space-y-2 overflow-y-auto custom-scrollbar flex-1 min-h-0 pr-0.5">
@@ -1765,17 +1482,17 @@
                                             $lInit = mb_substr($child['last_name'] ?? '', 0, 1);
                                             $initials = strtoupper($fInit . $lInit) ?: 'U';
                                         ?>
-                                        <div class="subordinate-card <?= ($cIndex >= $subPageSize) ? 'hidden' : '' ?> p-3 rounded-xl border border-slate-200 dark:border-[#1e382b] bg-slate-50 dark:bg-[#0c1510] hover:border-emerald-500/40 flex flex-col gap-1.5 text-xs transition-all duration-150" data-subordinate-index="<?= $cIndex ?>">
+                                        <div class="subordinate-card <?= ($cIndex >= $subPageSize) ? 'hidden' : '' ?> p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 flex flex-col gap-1.5 text-xs transition-all duration-150" data-subordinate-index="<?= $cIndex ?>">
                                             <div class="flex items-center justify-between gap-1.5">
                                                 <div class="flex items-center gap-2.5 min-w-0">
-                                                    <div class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-[#062e1e] border border-emerald-200 dark:border-[#0d4a32] text-emerald-700 dark:text-[#34d399] font-black text-[11px] flex items-center justify-center shrink-0">
+                                                    <div class="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 font-black text-[11px] flex items-center justify-center shrink-0">
                                                         <?= esc($initials) ?>
                                                     </div>
                                                     <div class="min-w-0">
-                                                        <span class="font-bold text-slate-800 dark:text-white block text-[11px] leading-tight truncate">
+                                                        <span class="font-bold text-zinc-800 dark:text-white block text-[11px] leading-tight truncate">
                                                             <?= esc($child['first_name'] . ' ' . $child['last_name']) ?>
                                                         </span>
-                                                        <span class="text-[9px] text-slate-500 dark:text-slate-400 block truncate">
+                                                        <span class="text-[9px] text-zinc-500 dark:text-zinc-400 block truncate">
                                                             <?= esc($child['position'] ?: $child['email']) ?>
                                                         </span>
                                                     </div>
@@ -1786,11 +1503,11 @@
                                                             Awaiting Approval
                                                         </span>
                                                     <?php elseif ($isApproved): ?>
-                                                        <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 shrink-0">
+                                                        <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-[#0e291e] text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-[#144630] shrink-0">
                                                             Target Approved
                                                         </span>
                                                     <?php else: ?>
-                                                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 shrink-0">
+                                                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 shrink-0">
                                                             Drafting
                                                         </span>
                                                     <?php endif; ?>
@@ -1809,7 +1526,7 @@
                                             </div>
                                             <?php if ($isPending): ?>
                                                 <a href="<?= site_url('ratings/show/' . $child['id']) ?>" 
-                                                    class="w-full py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-[10px] text-center flex items-center justify-center gap-1 shadow-xs transition-colors">
+                                                    class="w-full py-1.5 px-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg font-bold text-[10px] text-center flex items-center justify-center gap-1 shadow-xs transition-colors">
                                                     <span>Review Targets</span>
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
                                                 </a>
@@ -1819,12 +1536,12 @@
                                 </div>
 
                                 <div id="subordinates-pagination" class="shrink-0 pt-2 flex items-center justify-between text-xs <?= ($totalSubPages <= 1) ? 'hidden' : '' ?>">
-                                    <span id="sub-page-info" class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                    <span id="sub-page-info" class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                                         1–<?= min($subPageSize, count($cascadedChildren)) ?> of <?= count($cascadedChildren) ?>
                                     </span>
                                     <div class="flex items-center gap-1.5">
                                         <button type="button" id="sub-prev-btn" onclick="changeSubPage(-1)" 
-                                                class="p-1 px-2 rounded-lg border border-slate-200 dark:border-[#1e382b] bg-white dark:bg-[#0c1510] hover:bg-slate-100 dark:hover:bg-[#13271b] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer text-xs font-bold flex items-center gap-1"
+                                                class="p-1 px-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-[#13271b] text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer text-xs font-bold flex items-center gap-1"
                                                 title="Previous page">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
@@ -1834,7 +1551,7 @@
                                             1 / <?= $totalSubPages ?>
                                         </span>
                                         <button type="button" id="sub-next-btn" onclick="changeSubPage(1)" 
-                                                class="p-1 px-2 rounded-lg border border-slate-200 dark:border-[#1e382b] bg-white dark:bg-[#0c1510] hover:bg-slate-100 dark:hover:bg-[#13271b] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer text-xs font-bold flex items-center gap-1"
+                                                class="p-1 px-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-[#13271b] text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer text-xs font-bold flex items-center gap-1"
                                                 title="Next page">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
@@ -1850,7 +1567,7 @@
                                 Select Distribution Team
                             </label>
                             <div class="relative w-full">
-                                <select id="team-cascade-select" <?= ($isLocked || !$canActuallyCascade) ? 'disabled' : '' ?> class="w-full bg-zinc-50 dark:bg-[#0c1510] text-xs font-bold text-text outline-none pl-3.5 pr-8 py-2.5 rounded-xl appearance-none border border-surface-border <?= ($isLocked || !$canActuallyCascade) ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer focus:border-emerald-500/50' ?>">
+                                <select id="team-cascade-select" <?= ($isLocked || !$canActuallyCascade) ? 'disabled' : '' ?> class="w-full bg-zinc-50 dark:bg-zinc-900 text-xs font-bold text-text outline-none pl-3.5 pr-8 py-2.5 rounded-xl appearance-none border border-surface-border <?= ($isLocked || !$canActuallyCascade) ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer focus:border-emerald-500/50' ?>">
                                     <option value="" disabled selected class="bg-surface text-text-muted">-- Select a Team to Cascade --</option>
                                     <?php foreach($presets as $preset): ?>
                                         <?php $mCount = (int)($preset['member_count'] ?? 0); ?>
@@ -1871,7 +1588,7 @@
                         </div>
 
                         <?php if (!$isLocked && $canActuallyCascade): ?>
-                            <button onclick="triggerCascade('<?= $activeFolder['id'] ?>')" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-[#f59e0b] dark:hover:bg-[#d97706] dark:text-black rounded-xl shadow-md transition-all cursor-pointer flex justify-center items-center gap-1.5 font-black text-xs uppercase tracking-wider active:scale-98">
+                            <button onclick="triggerCascade('<?= $activeFolder['id'] ?>')" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-xl shadow-md transition-all cursor-pointer flex justify-center items-center gap-1.5 font-black text-xs uppercase tracking-wider active:scale-98">
                                 <?= $isOpcrFolder ? 'Cascade OPCR Commitments' : 'Cascade to Selected Team' ?>
                             </button>
                         <?php endif; ?>
@@ -1894,7 +1611,7 @@
 
                 <!-- FOLDER MANAGEMENT BUTTONS (Admin Only) -->
                 <?php if (session()->get('role') === 'Admin'): ?>
-                <div class="flex flex-col gap-3 border-t border-slate-200 dark:border-[#0d4a32]/60 pt-4 mt-auto shrink-0">
+                <div class="flex flex-col gap-3 border-t border-zinc-200 dark:border-zinc-800/60 pt-4 mt-auto shrink-0">
                     <h4 class="text-[10px] font-black uppercase text-text-muted tracking-wider">Folder Management</h4>
                     
                     <?php if (!empty($activeFolder['deleted_at'])): ?>
@@ -1926,7 +1643,7 @@
                                     <span class="text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
                                         CSC 5-Year Retention Protected
                                     </span>
-                                    <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                                    <p class="text-[10px] text-zinc-500 dark:text-zinc-400 leading-tight">
                                         Under CSC & National Archives policies, performance evaluations are retained for 5 years for audit and promotions. Permanent disposal unlocks after 5 years.
                                     </p>
                                 </div>
@@ -1958,7 +1675,7 @@
                                 "iperf_eval_start"  => $activeFolder["iperf_eval_start"] ?? "",
                                 "iperf_eval_end"    => $activeFolder["iperf_eval_end"] ?? ""
                             ]) ?>)'
-                                    class="w-full text-emerald-700 dark:text-[#34d399] hover:text-emerald-800 dark:hover:text-[#6ee7b7] bg-emerald-50 hover:bg-emerald-100 dark:bg-[#13271b] border border-emerald-200 dark:border-[#1e422f] py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs">
+                                    class="w-full text-emerald-700 dark:text-[#34d399] hover:text-emerald-800 dark:hover:text-[#6ee7b7] bg-emerald-50 hover:bg-emerald-100 dark:bg-zinc-800 border border-emerald-200 dark:border-zinc-700 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs">
                                 Edit
                             </button>
 
@@ -2030,8 +1747,8 @@
                 <!-- Submission Summary Card -->
                 <div class="flex flex-col gap-3">
                     <div class="flex items-center justify-between">
-                        <h4 class="text-[10px] font-black uppercase text-slate-400 dark:text-[#8ea396] tracking-wider">Submission Summary</h4>
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 dark:bg-[#0c1510] dark:border-[#1a2b22] dark:text-slate-300">
+                        <h4 class="text-[10px] font-black uppercase text-zinc-400 dark:text-[#8ea396] tracking-wider">Submission Summary</h4>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 text-zinc-700 border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300">
                             <span class="w-1.5 h-1.5 rounded-full <?= $phaseDotColor ?> animate-pulse"></span>
                             <?= esc($currentPhaseLabel) ?>
                         </span>
@@ -2039,20 +1756,20 @@
 
                     <!-- 2 Compact Metric Tiles -->
                     <div class="grid grid-cols-2 gap-2.5">
-                        <div class="bg-slate-50 dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] rounded-xl p-3 flex flex-col">
-                            <span class="text-[10px] font-medium text-slate-500 dark:text-[#8ea396]">Total Files</span>
-                            <span class="text-lg font-black text-slate-900 dark:text-white mt-0.5"><?= count($myDocs) ?></span>
+                        <div class="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 flex flex-col">
+                            <span class="text-[10px] font-medium text-zinc-500 dark:text-[#8ea396]">Total Files</span>
+                            <span class="text-lg font-black text-zinc-900 dark:text-white mt-0.5"><?= count($myDocs) ?></span>
                         </div>
-                        <div class="bg-slate-50 dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] rounded-xl p-3 flex flex-col">
-                            <span class="text-[10px] font-medium text-slate-500 dark:text-[#8ea396]">Folder Status</span>
-                            <span class="text-xs font-bold text-slate-800 dark:text-white mt-1.5 truncate"><?= esc($statusBadgeText) ?></span>
+                        <div class="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 flex flex-col">
+                            <span class="text-[10px] font-medium text-zinc-500 dark:text-[#8ea396]">Folder Status</span>
+                            <span class="text-xs font-bold text-zinc-800 dark:text-white mt-1.5 truncate"><?= esc($statusBadgeText) ?></span>
                         </div>
                     </div>
 
                     <!-- Form Commitment Tile -->
-                    <div class="bg-slate-50 dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] rounded-xl px-3 py-2.5 flex items-center justify-between">
-                        <span class="text-[10px] font-medium text-slate-500 dark:text-[#8ea396]">Commitment</span>
-                        <span class="text-[11px] font-bold text-slate-800 dark:text-white truncate pl-2"><?= esc($formTypeName) ?> • <?= esc($formTypeDesc) ?></span>
+                    <div class="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2.5 flex items-center justify-between">
+                        <span class="text-[10px] font-medium text-zinc-500 dark:text-[#8ea396]">Commitment</span>
+                        <span class="text-[11px] font-bold text-zinc-800 dark:text-white truncate pl-2"><?= esc($formTypeName) ?> • <?= esc($formTypeDesc) ?></span>
                     </div>
 
 
@@ -2080,9 +1797,9 @@
 
                     <?php if (!empty($parentFolder) && !$isOpcrFolder): ?>
                         <!-- Superior Basis Cascade Status Tile (Strict SPMS Mode) -->
-                        <div class="bg-slate-50 dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] rounded-xl px-3 py-2.5 flex flex-col gap-1.5">
+                        <div class="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2.5 flex flex-col gap-1.5">
                             <div class="flex items-center justify-between">
-                                <span class="text-[10px] font-medium text-slate-500 dark:text-[#8ea396]">Superior Basis</span>
+                                <span class="text-[10px] font-medium text-zinc-500 dark:text-[#8ea396]">Superior Basis</span>
                                 <?php 
                                     $isParentDocOpcr = !empty($isParentDocOpcr) || str_contains(strtoupper($parentFolder['title'] ?? ''), 'OPCR');
                                 ?>
@@ -2096,7 +1813,7 @@
                                     </span>
                                 <?php endif; ?>
                             </div>
-                            <span class="text-[11px] font-bold text-slate-800 dark:text-white truncate" title="<?= esc($parentFolder['title']) ?>">
+                            <span class="text-[11px] font-bold text-zinc-800 dark:text-white truncate" title="<?= esc($parentFolder['title']) ?>">
                                 <?= esc($parentFolder['title']) ?>
                             </span>
                             <?php if (!($isParentTargetApproved ?? false)): ?>
@@ -2109,28 +1826,28 @@
                 </div>
 
                 <!-- Folder Details Block (Matching user's reference mockup) -->
-                <div class="flex flex-col gap-3 pt-5 border-t border-slate-200 dark:border-[#1a2b22] mt-auto">
-                    <h4 class="text-[10px] font-black uppercase text-slate-400 dark:text-[#8ea396] tracking-wider">Folder Details</h4>
+                <div class="flex flex-col gap-3 pt-5 border-t border-zinc-200 dark:border-zinc-800 mt-auto">
+                    <h4 class="text-[10px] font-black uppercase text-zinc-400 dark:text-[#8ea396] tracking-wider">Folder Details</h4>
                     
                     <div class="flex flex-col gap-2">
                         <div class="flex items-center justify-between text-xs py-0.5">
-                            <span class="text-slate-500 dark:text-[#8ea396] font-medium">Target Date</span>
-                            <span class="text-slate-800 dark:text-white font-semibold text-right truncate pl-2"><?= esc($targetDateStr) ?></span>
+                            <span class="text-zinc-500 dark:text-[#8ea396] font-medium">Target Date</span>
+                            <span class="text-zinc-800 dark:text-white font-semibold text-right truncate pl-2"><?= esc($targetDateStr) ?></span>
                         </div>
 
                         <div class="flex items-center justify-between text-xs py-0.5">
-                            <span class="text-slate-500 dark:text-[#94A3B8] font-medium">Evaluation Date</span>
-                            <span class="text-slate-800 dark:text-white font-semibold text-right truncate pl-2"><?= esc($evalDateStr) ?></span>
+                            <span class="text-zinc-500 dark:text-[#94A3B8] font-medium">Evaluation Date</span>
+                            <span class="text-zinc-800 dark:text-white font-semibold text-right truncate pl-2"><?= esc($evalDateStr) ?></span>
                         </div>
 
                         <div class="flex items-center justify-between text-xs py-0.5">
-                            <span class="text-slate-500 dark:text-[#94A3B8] font-medium">Period</span>
-                            <span class="text-slate-800 dark:text-white font-semibold text-right truncate pl-2">Q3 <?= date('Y', strtotime($activeFolder['created_at'] ?? 'now')) ?></span>
+                            <span class="text-zinc-500 dark:text-[#94A3B8] font-medium">Period</span>
+                            <span class="text-zinc-800 dark:text-white font-semibold text-right truncate pl-2">Q3 <?= date('Y', strtotime($activeFolder['created_at'] ?? 'now')) ?></span>
                         </div>
 
                         <div class="flex items-center justify-between text-xs py-0.5">
-                            <span class="text-slate-500 dark:text-[#94A3B8] font-medium">Owner</span>
-                            <span class="text-slate-800 dark:text-white font-semibold text-right truncate pl-2 max-w-[150px]"><?= esc($displayName) ?></span>
+                            <span class="text-zinc-500 dark:text-[#94A3B8] font-medium">Owner</span>
+                            <span class="text-zinc-800 dark:text-white font-semibold text-right truncate pl-2 max-w-[150px]"><?= esc($displayName) ?></span>
                         </div>
                     </div>
                 </div>
@@ -2150,7 +1867,7 @@
             <div class="spms-modal-header">
                 <div>
                     <span class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-[#34d399] block mb-0.5">SUPPORTING EVIDENCE</span>
-                    <h3 class="text-lg font-extrabold text-slate-900 dark:text-white m-0">Document MOVs & Attachments</h3>
+                    <h3 class="text-lg font-extrabold text-zinc-900 dark:text-white m-0">Document MOVs & Attachments</h3>
                 </div>
                 <button type="button" onclick="closeAttachmentsModal()" class="spms-modal-btn-close">
                     <svg style="width: 16px; height: 16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -2164,12 +1881,12 @@
                         <?php foreach ($attachmentsList as $att): ?>
                             <div class="spms-modal-card" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
                                 <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
-                                    <div class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-[#032115] text-emerald-600 dark:text-[#34d399] flex items-center justify-center shrink-0">
+                                    <div class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-zinc-800 text-emerald-600 dark:text-[#34d399] flex items-center justify-center shrink-0">
                                         <svg style="width: 16px; height: 16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
                                     </div>
                                     <div style="display: flex; flex-direction: column; min-width: 0;">
-                                        <span class="text-xs font-bold text-slate-900 dark:text-white truncate" title="<?= esc($att['file_name']) ?>"><?= esc($att['file_name']) ?></span>
-                                        <span class="text-[10px] text-slate-500 dark:text-[#5a8b73]">
+                                        <span class="text-xs font-bold text-zinc-900 dark:text-white truncate" title="<?= esc($att['file_name']) ?>"><?= esc($att['file_name']) ?></span>
+                                        <span class="text-[10px] text-zinc-500 dark:text-[#5a8b73]">
                                             <?= date('M d, Y', strtotime($att['created_at'])) ?>
                                         </span>
                                     </div>
@@ -2184,11 +1901,11 @@
                     </div>
                 <?php else: ?>
                     <div style="padding: 36px 16px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-[#062e1e] border border-emerald-200 dark:border-[#0d4a32] text-emerald-600 dark:text-[#5a8b73] flex items-center justify-center mb-3">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-zinc-800 border border-emerald-200 dark:border-zinc-800 text-emerald-600 dark:text-[#5a8b73] flex items-center justify-center mb-3">
                             <svg style="width: 24px; height: 24px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
                         </div>
-                        <h4 class="text-sm font-bold text-slate-900 dark:text-white m-0 mb-1">No Files Attached Yet</h4>
-                        <p class="text-xs text-slate-500 dark:text-[#5a8b73] max-w-[320px] m-0 leading-relaxed">
+                        <h4 class="text-sm font-bold text-zinc-900 dark:text-white m-0 mb-1">No Files Attached Yet</h4>
+                        <p class="text-xs text-zinc-500 dark:text-[#5a8b73] max-w-[320px] m-0 leading-relaxed">
                             Supporting evidence and Means of Verification (MOVs) can be uploaded directly to each commitment row in your paper.
                         </p>
                     </div>
@@ -2567,7 +2284,7 @@
                 const badge = btn.querySelector('.tab-badge');
                 if(badge) {
                     badge.classList.remove('bg-emerald-500/10', 'text-emerald-600', 'dark:text-emerald-400');
-                    badge.classList.add('bg-zinc-100', 'dark:bg-slate-800', 'text-text-muted');
+                    badge.classList.add('bg-zinc-100', 'dark:bg-zinc-800', 'text-text-muted');
                 }
             });
 
@@ -2583,7 +2300,7 @@
                 btnElement.classList.add('border-emerald-500', 'text-emerald-600', 'dark:text-emerald-400');
                 const activeBadge = btnElement.querySelector('.tab-badge');
                 if(activeBadge) {
-                    activeBadge.classList.remove('bg-zinc-100', 'dark:bg-slate-800', 'text-text-muted');
+                    activeBadge.classList.remove('bg-zinc-100', 'dark:bg-zinc-800', 'text-text-muted');
                     activeBadge.classList.add('bg-emerald-500/10', 'text-emerald-600', 'dark:text-emerald-400');
                 }
             }

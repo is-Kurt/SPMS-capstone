@@ -71,7 +71,7 @@
     <meta name="csrf-token-name" content="<?= csrf_token() ?>">
     <meta name="csrf-token-hash" content="<?= csrf_hash() ?>">
 
-    <!-- Smooth Theme Transition Engine: active only during theme toggle to prevent flash on reload -->
+    <!-- Theme transition style for toggle animation -->
     <style>
         html.theme-transitioning,
         html.theme-transitioning *,

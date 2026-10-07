@@ -295,9 +295,9 @@
             if (textEl) textEl.innerText = `MOV (${count})`;
             if (iconEl) iconEl.className = 'w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400';
         } else {
-            btn.className = 'btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-1 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700';
+            btn.className = 'btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-1 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700';
             if (textEl) textEl.innerText = 'Attach MOV';
-            if (iconEl) iconEl.className = 'w-3.5 h-3.5 text-slate-500';
+            if (iconEl) iconEl.className = 'w-3.5 h-3.5 text-zinc-500';
         }
     }
 
@@ -327,7 +327,7 @@
                         DOC
                     </div>
                     <h4 class="text-sm font-bold text-white">${escapeHtml(fileName)}</h4>
-                    <p class="text-xs text-slate-400 max-w-sm mx-auto">Word and binary documents cannot be rendered in the browser. Download the file to view its contents.</p>
+                    <p class="text-xs text-zinc-400 max-w-sm mx-auto">Word and binary documents cannot be rendered in the browser. Download the file to view its contents.</p>
                     <a href="${downloadUrl}" download class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md">
                         Download Word Document
                     </a>

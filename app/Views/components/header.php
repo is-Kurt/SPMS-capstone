@@ -33,7 +33,6 @@
 
     if ($role === 'Admin') {
         $navItems['accounts'] = 'Accounts';
-        $navItems['templates'] = 'Templates';
         $navItems['audit-logs'] = 'Audit Trail';
     }
 
@@ -55,11 +54,10 @@
     $avatarLetter = session('avatar_letter') ?? (substr($displayName, 0, 1) ?: 'U');
 ?>
 
-<!-- GovHeader4: Ultra-Clean Unified Government & SPMS Workspace Navbar -->
-<nav class="antialiased relative z-[110] select-none print-hide"
-     style="background-color: #061a10; border-bottom: 1px solid #0f3d29; box-sizing: border-box;">
+<!-- Main institutional navigation bar -->
+<nav class="antialiased relative z-[110] select-none print-hide bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 transition-colors">
     <div class="mx-auto max-w-[100rem] px-3 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between gap-3 sm:gap-4" style="height: 64px;">
+        <div class="flex items-center justify-between gap-3 sm:gap-4 h-16">
             
             <!-- Left Side: GOVPH + Divider + Twin Official Seals + Gold SPMS Badge + Brand Text -->
             <div class="flex items-center gap-2.5 sm:gap-3.5 shrink-0 min-w-0" style="height: 100%;">
@@ -68,55 +66,52 @@
                 <div class="hidden sm:flex items-center gap-2 sm:gap-2.5 shrink-0">
                     <!-- GOVPH Link -->
                     <a href="https://www.gov.ph" target="_blank" rel="noopener noreferrer" 
-                       class="font-black tracking-wider uppercase underline underline-offset-2 shrink-0 transition-colors hover:text-amber-300"
-                       style="font-size: 11px; color: #ffffff;"
+                       class="font-black tracking-wider uppercase underline underline-offset-2 shrink-0 transition-colors text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white text-[11px]"
                        title="Official Gazette of the Republic of the Philippines">
                         GOVPH
                     </a>
 
                     <!-- Subtle Vertical Divider -->
-                    <span style="color: #15452d; font-size: 13px; line-height: 1;" class="select-none font-light shrink-0">|</span>
+                    <span class="text-zinc-300 dark:text-zinc-700 text-xs font-light select-none shrink-0">|</span>
 
                     <!-- Dual Official Seals: Bagong Pilipinas & Benguet State University -->
                     <div class="flex items-center gap-1.5 shrink-0">
                         <!-- Bagong Pilipinas Official Logo -->
                         <a href="https://www.gov.ph" target="_blank" rel="noopener noreferrer" title="Bagong Pilipinas - Republic of the Philippines" class="flex items-center">
                             <img src="<?= base_url('assets/images/bagong_pilipinas.png') ?>" alt="Bagong Pilipinas Logo" 
-                                 style="width: 22px; height: 22px; min-width: 22px; min-height: 22px; max-width: 22px; max-height: 22px; object-fit: contain; display: block;" />
+                                 class="w-[22px] h-[22px] min-w-[22px] min-h-[22px] max-w-[22px] max-h-[22px] object-contain block" />
                         </a>
                         <!-- BSU Official Seal -->
                         <a href="http://www.bsu.edu.ph" target="_blank" rel="noopener noreferrer" title="Benguet State University" class="flex items-center">
                             <img src="<?= base_url('assets/images/bsu_seal.png') ?>" alt="Benguet State University Seal" 
-                                 style="width: 22px; height: 22px; min-width: 22px; min-height: 22px; max-width: 22px; max-height: 22px; border-radius: 9999px; object-fit: contain; display: block;" />
+                                 class="w-[22px] h-[22px] min-w-[22px] min-h-[22px] max-w-[22px] max-h-[22px] rounded-full object-contain block" />
                         </a>
                     </div>
                     <!-- Subtle Vertical Divider -->
-                    <span style="color: #15452d; font-size: 13px; line-height: 1;" class="select-none font-light shrink-0">|</span>
+                    <span class="text-zinc-300 dark:text-zinc-700 text-xs font-light select-none shrink-0">|</span>
                 </div>
 
                 <!-- SPMS Institutional Brand Identity -->
-                <a href="<?= site_url(array_key_first($navItems) ?? 'folders') ?>" class="flex-shrink-0 flex items-center text-white hover:opacity-95 transition-opacity group min-w-0">
+                <a href="<?= site_url(array_key_first($navItems) ?? 'folders') ?>" class="shrink-0 flex items-center hover:opacity-90 transition-opacity group min-w-0">
                     <div class="flex flex-col min-w-0 leading-tight">
                         <div class="flex items-center gap-1.5 leading-none">
-                            <span class="font-heading font-black tracking-tight text-base sm:text-lg uppercase text-white">SPMS</span>
-                            <span class="font-bold text-sm" style="color: #34d399;">&bull;</span>
-                            <span class="font-heading font-black tracking-tight text-xs sm:text-sm uppercase" style="color: #34d399;">BSU</span>
+                            <span class="font-heading font-black tracking-tight text-base sm:text-lg uppercase text-zinc-900 dark:text-white">SPMS</span>
+                            <span class="font-bold text-sm text-emerald-600 dark:text-emerald-400">&bull;</span>
+                            <span class="font-heading font-black tracking-tight text-xs sm:text-sm uppercase text-emerald-600 dark:text-emerald-400">BSU</span>
                         </div>
-                        <span class="hidden sm:block font-bold uppercase tracking-wider truncate" style="font-size: 8px; color: rgba(209, 250, 229, 0.7); letter-spacing: 0.05em;">STRATEGIC PERFORMANCE MANAGEMENT SYSTEM</span>
+                        <span class="hidden sm:block font-bold uppercase tracking-wider truncate text-[8px] text-zinc-500 dark:text-zinc-400">STRATEGIC PERFORMANCE MANAGEMENT SYSTEM</span>
                     </div>
                 </a>
 
             </div>
 
             <!-- Center: Navigation Pills in Enclosed Capsule Container -->
-            <div class="hidden md:flex items-center p-1 rounded-2xl" 
-                 style="background-color: rgba(0, 0, 0, 0.28); border: 1px solid rgba(16, 185, 129, 0.25);">
+            <div class="hidden md:flex items-center p-1 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
                 <?php foreach ($navItems as $uri => $label):
                     $isActive = ($currentUri === $uri) || ($uri !== '' && strpos($currentUri, $uri) === 0);
                 ?>
                     <a href="<?= site_url($uri) ?>"
-                       class="px-4 py-1.5 transition-all text-xs <?= $isActive ? 'shadow-xs' : 'hover:text-white hover:bg-white/5' ?>"
-                       style="<?= $isActive ? 'background-color: #14532d; border: 1px solid rgba(52, 211, 153, 0.4); color: #ffffff; font-weight: 700; border-radius: 10px;' : 'color: rgba(209, 250, 229, 0.75); font-weight: 600; border-radius: 10px;' ?>">
+                       class="px-3.5 py-1.5 transition-all text-xs rounded-lg font-bold <?= $isActive ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs border border-zinc-200/80 dark:border-zinc-700/80' : 'text-zinc-600 hover:text-zinc-900 hover:bg-white/60 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/60 font-semibold' ?>">
                         <?= $label ?>
                     </a>
                 <?php endforeach; ?>
@@ -128,23 +123,21 @@
 
                 <!-- Theme Toggle Button (Desktop & Tablet) -->
                 <button type="button" id="theme-toggle" 
-                        class="hidden sm:flex relative w-8 h-8 rounded-xl text-slate-300 hover:text-white shadow-xs items-center justify-center transition-all cursor-pointer shrink-0"
-                        style="background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(16, 185, 129, 0.25);"
+                        class="hidden sm:flex relative w-8 h-8 rounded-xl text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 shadow-xs items-center justify-center transition-all cursor-pointer shrink-0"
                         title="Toggle Light / Dark Mode">
                     <!-- Sun icon: visible in dark mode, click to switch to light -->
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 hidden dark:block text-amber-400 hover:rotate-45 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
                     <!-- Moon icon: visible in light mode, click to switch to dark -->
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 block dark:hidden text-slate-300 hover:-rotate-12 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 block dark:hidden text-zinc-600 hover:-rotate-12 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                     </svg>
                 </button>
 
                 <!-- Notification Bell Direct Link -->
                 <a href="<?= site_url('notifications') ?>" id="notification-btn"
-                   class="relative w-8 h-8 rounded-xl text-slate-300 hover:text-white shadow-xs flex items-center justify-center transition-all cursor-pointer shrink-0 <?= (isset($currentUri) && strpos($currentUri, 'notifications') === 0) ? 'ring-2 ring-emerald-400 bg-[#0d3b28] text-emerald-300' : '' ?>"
-                   style="background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(16, 185, 129, 0.25);"
+                   class="relative w-8 h-8 rounded-xl text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 shadow-xs flex items-center justify-center transition-all cursor-pointer shrink-0 <?= (isset($currentUri) && strpos($currentUri, 'notifications') === 0) ? 'ring-2 ring-zinc-400 dark:ring-zinc-600 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-xs' : '' ?>"
                    title="Notifications"
                    aria-label="View Notifications">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -152,7 +145,7 @@
                     </svg>
                     <!-- Dynamic Notification Badge -->
                     <span id="notification-badge" 
-                          class="hidden absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 bg-rose-500 text-white font-black text-[9px] rounded-full flex items-center justify-center shadow-xs border border-[#061a10] animate-pulse">
+                          class="hidden absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 bg-rose-500 text-white font-black text-[9px] rounded-full flex items-center justify-center shadow-xs border border-white dark:border-zinc-900">
                         0
                     </span>
                 </a>
@@ -160,26 +153,24 @@
                 <!-- Profile Dropdown Button Capsule (Matching GovHeader4 with Fully Visible Name on sm+) -->
                 <div class="relative">
                     <button id="profile-btn-mobile" 
-                            class="relative flex items-center gap-1.5 sm:gap-2.5 text-white shadow-xs p-1 sm:pl-1.5 sm:pr-3 sm:py-1 cursor-pointer transition-all hover:bg-white/5"
-                            style="background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 12px;">
+                            class="relative flex items-center gap-1.5 sm:gap-2.5 text-zinc-800 dark:text-white bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 shadow-xs p-1 sm:pl-1.5 sm:pr-3 sm:py-1 cursor-pointer transition-all rounded-xl">
                         <?php if (session('avatar_image')): ?>
                             <img src="<?= base_url('uploads/avatars/' . session('avatar_image')) ?>" alt="User" 
-                                 style="width: 26px; height: 26px; min-width: 26px; min-height: 26px; max-width: 26px; max-height: 26px; border-radius: 8px; object-fit: cover; display: block;" />
+                                 class="w-[26px] h-[26px] min-w-[26px] min-h-[26px] max-w-[26px] max-h-[26px] rounded-lg object-cover block" />
                         <?php else: ?>
-                            <div class="flex items-center justify-center font-black text-xs shrink-0"
-                                 style="width: 26px; height: 26px; min-width: 26px; min-height: 26px; max-width: 26px; max-height: 26px; border-radius: 8px; background-color: #f59e0b; color: #000000;">
+                            <div class="flex items-center justify-center font-black text-xs shrink-0 w-[26px] h-[26px] min-w-[26px] min-h-[26px] max-w-[26px] max-h-[26px] rounded-lg bg-amber-400 text-zinc-950">
                                 <?= esc($avatarLetter) ?>
                             </div>
                         <?php endif; ?>
                         
                         <!-- Fully Visible Name & Role on sm and up -->
                         <div class="hidden sm:flex flex-col text-left leading-tight shrink-0">
-                            <span class="text-xs font-bold text-white whitespace-nowrap" style="font-size: 12px; font-weight: 700; color: #ffffff; white-space: nowrap;"><?= esc($displayName) ?></span>
-                            <span class="font-bold tracking-wider uppercase whitespace-nowrap" style="font-size: 8.5px; color: rgba(110, 231, 183, 0.85); letter-spacing: 0.05em; white-space: nowrap;"><?= esc($role ?? 'User') ?></span>
+                            <span class="text-xs font-bold text-zinc-900 dark:text-white whitespace-nowrap"><?= esc($displayName) ?></span>
+                            <span class="font-bold tracking-wider uppercase whitespace-nowrap text-[8.5px] text-emerald-600 dark:text-emerald-400"><?= esc($role ?? 'User') ?></span>
                         </div>
 
                         <!-- Dropdown Chevron on sm and up -->
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-300/70 shrink-0 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-400 shrink-0 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
@@ -240,8 +231,7 @@
                 <?php if ($showHamburger): ?>
                     <!-- Mobile Navigation Hamburger Toggle Button -->
                     <button type="button" id="mobile-menu-btn" 
-                            class="md:hidden w-8 h-8 rounded-xl text-slate-300 hover:text-white shadow-xs flex items-center justify-center transition-all cursor-pointer shrink-0"
-                            style="background-color: rgba(0, 0, 0, 0.25); border: 1px solid rgba(16, 185, 129, 0.25);"
+                            class="md:hidden w-8 h-8 rounded-xl text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 shadow-xs flex items-center justify-center transition-all cursor-pointer shrink-0"
                             title="Open Navigation Menu">
                         <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -291,8 +281,8 @@
                 overflow: hidden;
             }
             .dark #mobile-drawer {
-                background-color: #032115 !important;
-                border-right: 1px solid #0d4a32 !important;
+                background-color: #18181b !important;
+                border-right: 1px solid #27272a !important;
             }
             #mobile-drawer.drawer-open {
                 transform: translateX(0) !important;
@@ -300,13 +290,15 @@
 
             .spms-drawer-header {
                 padding: 24px 20px 16px 20px;
-                background: linear-gradient(145deg, #064e3b 0%, #022c1e 100%);
+                background-color: #f4f4f5;
+                border-bottom: 1px solid #e4e4e7;
                 position: relative;
                 overflow: hidden;
                 flex-shrink: 0;
             }
             .dark .spms-drawer-header {
-                background: linear-gradient(145deg, #042a1b 0%, #011910 100%) !important;
+                background-color: #09090b !important;
+                border-bottom: 1px solid #27272a !important;
             }
 
             .spms-drawer-body {
@@ -316,7 +308,7 @@
                 background-color: #ffffff;
             }
             .dark .spms-drawer-body {
-                background-color: #032115 !important;
+                background-color: #18181b !important;
             }
 
             .spms-drawer-item {
@@ -327,32 +319,34 @@
                 border-radius: 12px;
                 font-size: 14px;
                 font-weight: 700;
-                color: #1e293b;
+                color: #27272a;
                 text-decoration: none;
                 transition: all 0.15s ease;
                 cursor: pointer;
                 width: 100%;
             }
             .spms-drawer-item:hover {
-                background-color: #f1f5f9;
-                color: #0f172a;
+                background-color: #f4f4f5;
+                color: #09090b;
             }
             .dark .spms-drawer-item {
-                color: #e2e8f0 !important;
+                color: #fafafa !important;
             }
             .dark .spms-drawer-item:hover {
-                background-color: #073824 !important;
+                background-color: #27272a !important;
                 color: #ffffff !important;
             }
 
             .spms-drawer-item.active {
-                background-color: #ecfdf5;
-                color: #047857;
+                background-color: #f4f4f5;
+                color: #09090b;
                 font-weight: 800;
+                border: 1px solid #e4e4e7;
             }
             .dark .spms-drawer-item.active {
-                background-color: #083b27 !important;
-                color: #34d399 !important;
+                background-color: #27272a !important;
+                color: #ffffff !important;
+                border: 1px solid #3f3f46 !important;
             }
 
             .spms-drawer-icon {
@@ -362,7 +356,7 @@
                 color: #64748b;
             }
             .dark .spms-drawer-icon {
-                color: #5a8b73;
+                color: #94a3b8;
             }
             .spms-drawer-item.active .spms-drawer-icon {
                 color: #059669;
@@ -377,7 +371,7 @@
                 margin: 8px 0;
             }
             .dark .spms-drawer-divider {
-                background-color: #0d4a32 !important;
+                background-color: #1e293b !important;
             }
         </style>
 
@@ -462,10 +456,6 @@
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                 </svg>
-                            <?php elseif ($uri === 'templates'): ?>
-                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
                             <?php elseif ($uri === 'audit-logs'): ?>
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
@@ -483,7 +473,6 @@
                                     'folders' => 'Evaluation Folders',
                                     'ratings' => 'Performance Ratings',
                                     'accounts' => 'User Accounts',
-                                    'templates' => 'Document Templates',
                                     'audit-logs' => 'Audit Trail',
                                     default => $label
                                 };

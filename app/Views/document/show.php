@@ -507,10 +507,10 @@
     }
 </style>
 
-<div class="h-full flex flex-col bg-slate-100 dark:bg-bg">
+<div class="h-full flex flex-col bg-zinc-100 dark:bg-bg">
     <?= view('components/govph_masthead') ?>
     
-    <div class="flex-none flex items-center justify-between py-2 px-3 sm:px-6 bg-white dark:bg-[#0c1410] border-b border-slate-200 dark:border-surface-border gap-2 sm:gap-4 print-hide">
+    <div class="flex-none flex items-center justify-between py-2 px-3 sm:px-6 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-surface-border gap-2 sm:gap-4 print-hide">
         
         <?php if (!($isEmbed ?? false)): ?>
         <?php 
@@ -629,10 +629,10 @@
                     </svg>
                     <span class="hidden sm:inline">Save</span>
                 </button>
-                <div class="absolute top-full left-1/2 -translate-x-1/2 mt-2 hidden group-hover:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-900 text-white shadow-xl pointer-events-none whitespace-nowrap z-50">
+                <div class="absolute top-full left-1/2 -translate-x-1/2 mt-2 hidden group-hover:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-zinc-900 text-white shadow-xl pointer-events-none whitespace-nowrap z-50">
                     <span>Save</span>
-                    <span class="text-slate-400 font-mono text-[9px] bg-slate-800 px-1 py-0.5 rounded border border-slate-700">(Ctrl + S)</span>
-                    <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
+                    <span class="text-zinc-400 font-mono text-[9px] bg-zinc-800 px-1 py-0.5 rounded border border-zinc-700">(Ctrl + S)</span>
+                    <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-zinc-900 rotate-45"></div>
                 </div>
             </div>
             <?php endif; ?>
@@ -1085,7 +1085,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
                 <!-- Moon icon: visible in light mode, click to switch to dark -->
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 block dark:hidden text-slate-700 hover:-rotate-12 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 block dark:hidden text-zinc-700 hover:-rotate-12 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                 </svg>
             </button>
@@ -1169,7 +1169,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 hidden dark:block text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 block dark:hidden text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 block dark:hidden text-zinc-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
             </svg>
             <span>Theme</span>
@@ -1177,13 +1177,13 @@
     </div>
 
 
-    <div class="flex-none flex bg-white dark:bg-[#0c1410] border-b border-slate-200 dark:border-surface-border px-3 sm:px-6 <?= $isEditable ? 'gap-2' : 'gap-4' ?> text-sm font-bold pt-2 overflow-x-auto whitespace-nowrap scrollbar-hide print-hide" id="tab-bar">
+    <div class="flex-none flex bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-surface-border px-3 sm:px-6 <?= $isEditable ? 'gap-2' : 'gap-4' ?> text-sm font-bold pt-2 overflow-x-auto whitespace-nowrap scrollbar-hide print-hide" id="tab-bar">
         <!-- Tabs injected here via JS -->
     </div>
 
     <!-- Main Workspace Split Container: Form (Left ~3/4) & Rubric (Right ~1/4) -->
     <div class="flex-1 min-h-0 w-full relative flex flex-row overflow-hidden" id="workspace-split-container">
-        <div class="flex-1 min-h-0 h-full relative bg-slate-100 dark:bg-[#031c12] overflow-x-auto transition-all duration-300 ease-out" id="editor-container">
+        <div class="flex-1 min-h-0 h-full relative bg-zinc-100 dark:bg-zinc-950 overflow-x-auto transition-all duration-300 ease-out" id="editor-container">
         <?php if (!empty($basisDoc) && !$isGuide): ?>
         <!-- SUPERIOR BASIS STATIC FORM WORKSPACE -->
         <div id="spms-basis-workspace" class="hidden w-full h-full overflow-y-auto p-2 sm:p-6 lg:p-8 flex justify-center items-start custom-scrollbar print:p-0 print:bg-white print:overflow-visible">
@@ -1194,7 +1194,7 @@
                         <span class="px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-sky-100 text-sky-800 border border-sky-300">
                             Superior Basis Reference (Read-Only)
                         </span>
-                        <span class="text-xs font-bold text-slate-800" id="basis-header-doc-title">
+                        <span class="text-xs font-bold text-zinc-800" id="basis-header-doc-title">
                             <?= esc($basisDoc['title'] ?? '') ?>
                         </span>
                     </div>
@@ -1215,7 +1215,7 @@
                             </span>
                         <?php endif; ?>
                         <a href="<?= site_url('document/' . $basisDoc['id']) ?>" target="_blank" 
-                           class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[10px] font-bold text-slate-600 hover:text-sky-600 border border-slate-300 hover:border-sky-300 transition-colors print:hidden"
+                           class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[10px] font-bold text-zinc-600 hover:text-sky-600 border border-zinc-300 hover:border-sky-300 transition-colors print:hidden"
                            title="Open in new window or tab">
                             <span>Open in New Tab ↗</span>
                         </a>
@@ -1303,9 +1303,9 @@
 
                 <!-- MAIN TABLE OF DELIVERABLES & RATINGS (Static Read-Only) -->
                 <div class="spms-table-responsive-wrapper">
-                    <div class="lg:hidden flex items-center justify-between text-[11px] text-slate-500 bg-slate-100 dark:bg-slate-800/40 px-3 py-1.5 rounded border border-slate-200 dark:border-slate-700 mb-2 print-hide">
+                    <div class="lg:hidden flex items-center justify-between text-[11px] text-zinc-500 bg-zinc-100 dark:bg-zinc-800/40 px-3 py-1.5 rounded border border-zinc-200 dark:border-zinc-700 mb-2 print-hide">
                         <span class="flex items-center gap-1 font-medium">↔ Swipe matrix horizontally to view all cascaded targets</span>
-                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider" id="basis-col-count-badge"><?= ($isBasisOpcr || $isBasisDpcr) ? '10 Columns' : '8 Columns' ?></span>
+                        <span class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider" id="basis-col-count-badge"><?= ($isBasisOpcr || $isBasisDpcr) ? '10 Columns' : '8 Columns' ?></span>
                     </div>
                     <table class="spms-table" style="width: 100%; border-collapse: collapse; border: 2px solid #000; font-size: 11px;">
                         <colgroup id="basis-table-colgroup">
@@ -1387,7 +1387,7 @@
                 </div>
 
                 <!-- Custom HTML Container for older/TinyMCE templates if applicable -->
-                <div id="basis-html-fallback" class="hidden text-sm leading-relaxed p-4 bg-white text-slate-800"></div>
+                <div id="basis-html-fallback" class="hidden text-sm leading-relaxed p-4 bg-white text-zinc-800"></div>
             </article>
         </div>
         <?php endif; ?>
@@ -1549,9 +1549,9 @@
 
                 <!-- MAIN TABLE OF DELIVERABLES & RATINGS -->
                 <div class="spms-table-responsive-wrapper">
-                    <div class="lg:hidden flex items-center justify-between text-[11px] text-slate-500 bg-slate-100 dark:bg-slate-800/40 px-3 py-1.5 rounded border border-slate-200 dark:border-slate-700 mb-2 print-hide">
+                    <div class="lg:hidden flex items-center justify-between text-[11px] text-zinc-500 bg-zinc-100 dark:bg-zinc-800/40 px-3 py-1.5 rounded border border-zinc-200 dark:border-zinc-700 mb-2 print-hide">
                         <span class="flex items-center gap-1 font-medium">↔ Swipe matrix horizontally to view ratings & remarks</span>
-                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider"><?= ($isDocDpcr || $isDocOpcr) ? '10 Columns' : ($isDocIperf ? '8 Columns' : '9 Columns') ?></span>
+                        <span class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider"><?= ($isDocDpcr || $isDocOpcr) ? '10 Columns' : ($isDocIperf ? '8 Columns' : '9 Columns') ?></span>
                     </div>
                     <table class="spms-table">
                         <?php if ($isDocDpcr): ?>
@@ -1938,12 +1938,12 @@
                                     </td>
                                 </tr>
 
-                                <!-- Dark Navy Grand Total Banner (Matching Reference Mockup) -->
-                                <tr style="background: #0a192f; color: #ffffff;">
+                                <!-- Institutional Grand Total Banner -->
+                                <tr style="background: #062316; color: #ffffff;">
                                     <td style="padding: 12px 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px; color: #e2e8f0;">
                                         FINAL AVERAGE RATING
                                     </td>
-                                    <td style="padding: 12px 14px; font-weight: 900; font-size: 24px; color: #38bdf8; font-family: monospace;" id="grand-score">
+                                    <td style="padding: 12px 14px; font-weight: 900; font-size: 24px; color: #fbbf24; font-family: monospace;" id="grand-score">
                                         0.000
                                     </td>
                                     <td style="padding: 12px 14px; text-align: right;">
@@ -2244,10 +2244,10 @@
                                     </button>
                                     
                                     <!-- Hover Tooltip showing (Ctrl + S) -->
-                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-900 text-white shadow-xl pointer-events-none whitespace-nowrap z-50">
+                                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-zinc-900 text-white shadow-xl pointer-events-none whitespace-nowrap z-50">
                                         <span>Save changes</span>
-                                        <span class="text-slate-400 font-mono text-[9px] bg-slate-800 px-1 py-0.5 rounded border border-slate-700">(Ctrl + S)</span>
-                                        <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
+                                        <span class="text-zinc-400 font-mono text-[9px] bg-zinc-800 px-1 py-0.5 rounded border border-zinc-700">(Ctrl + S)</span>
+                                        <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-zinc-900 rotate-45"></div>
                                     </div>
                                 </div>
                                 <span id="rubrics-save-status" class="text-[10px] uppercase tracking-widest font-bold transition-all"></span>
@@ -2415,7 +2415,7 @@
             const isActive = tab.id === activeTabId;
             
             const btn = document.createElement('div');
-            btn.className = `group flex items-center gap-1 pb-2 border-b-2 transition-colors select-none ${isActive ? 'border-emerald-600 text-emerald-800 dark:border-amber-400 dark:text-amber-300 font-extrabold' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-text-muted dark:hover:text-text cursor-pointer'}`;
+            btn.className = `group flex items-center gap-1 pb-2 border-b-2 transition-colors select-none ${isActive ? 'border-emerald-600 text-emerald-800 dark:border-amber-400 dark:text-amber-300 font-extrabold' : 'border-transparent text-zinc-500 hover:text-zinc-800 dark:text-text-muted dark:hover:text-text cursor-pointer'}`;
             btn.onclick = () => switchEditorTab(tab.id);
             
             const span = document.createElement('span');
@@ -2465,7 +2465,7 @@
         // Digital Rubrics Matrix Tab
         const isRubricsActive = (activeTabId === 'rubrics-tab');
         const rubricsBtn = document.createElement('div');
-        rubricsBtn.className = `group flex items-center gap-1.5 pb-2 border-b-2 transition-colors select-none cursor-pointer ${isRubricsActive ? 'border-amber-500 text-amber-700 dark:text-amber-400 font-extrabold' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-text-muted dark:hover:text-text'}`;
+        rubricsBtn.className = `group flex items-center gap-1.5 pb-2 border-b-2 transition-colors select-none cursor-pointer ${isRubricsActive ? 'border-amber-500 text-amber-700 dark:text-amber-400 font-extrabold' : 'border-transparent text-zinc-500 hover:text-zinc-800 dark:text-text-muted dark:hover:text-text'}`;
         rubricsBtn.onclick = () => switchEditorTab('rubrics-tab');
         rubricsBtn.title = 'View and Edit Rubrics Matrix';
         rubricsBtn.innerHTML = `
@@ -2486,7 +2486,7 @@
         ?>
         const isBasisActive = (activeTabId === 'basis-tab');
         const basisBtn = document.createElement('div');
-        basisBtn.className = `group flex items-center gap-1.5 pb-2 border-b-2 transition-colors select-none cursor-pointer ${isBasisActive ? 'border-sky-600 text-sky-800 dark:border-sky-400 dark:text-sky-300 font-extrabold' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-text-muted dark:hover:text-text'}`;
+        basisBtn.className = `group flex items-center gap-1.5 pb-2 border-b-2 transition-colors select-none cursor-pointer ${isBasisActive ? 'border-sky-600 text-sky-800 dark:border-sky-400 dark:text-sky-300 font-extrabold' : 'border-transparent text-zinc-500 hover:text-zinc-800 dark:text-text-muted dark:hover:text-text'}`;
         basisBtn.onclick = () => switchEditorTab('basis-tab');
         basisBtn.title = 'View Superior Basis Document';
         basisBtn.innerHTML = `
@@ -3224,7 +3224,7 @@
     }
 
     // =========================================================================
-    // SPMS FORM BUILDER ENGINE (Matches templates/editor.php Exactly)
+    // SPMS Form Builder logic (Matches templates/editor.php)
     // =========================================================================
     window.isSpmsFormActive = false;
     const IS_DOC_DPCR = <?= $isDocDpcr ? 'true' : 'false' ?>;
@@ -3856,7 +3856,7 @@
                     
                     <!-- MOV Evidence Toolbar (Only visible during Evaluation Phase) -->
                     ${isEvaluationPhase ? `
-                    <div class="mov-toolbar flex items-center justify-between mt-1 pt-1 border-t border-slate-200 dark:border-slate-800 text-[10px] print-hide">
+                    <div class="mov-toolbar flex items-center justify-between mt-1 pt-1 border-t border-zinc-200 dark:border-zinc-800 text-[10px] print-hide">
                         ${hasFiles ? `
                         <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
                                 class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25" 
@@ -3868,17 +3868,17 @@
                         </button>
                         ` : (canEditEvaluation ? `
                         <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700" 
+                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
                                 title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                             </svg>
                             <span class="mov-btn-text">Attach MOV</span>
                         </button>
                         ` : `
-                        <span class="text-[9px] text-slate-400 italic">No MOV</span>
+                        <span class="text-[9px] text-zinc-400 italic">No MOV</span>
                         `)}
-                        <span class="text-[9px] text-slate-400 font-medium italic">Evidence</span>
+                        <span class="text-[9px] text-zinc-400 font-medium italic">Evidence</span>
                     </div>
                     ` : ''}
                 </td>
@@ -3921,7 +3921,7 @@
                 <!-- 8. Remarks -->
                 <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
                     <div class="flex items-center justify-between mb-1 print-hide">
-                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Remarks</span>
+                        <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-tight">Remarks</span>
                         ${!isOwner ? `
                             <button type="button" onclick="stampRoleTag(this)" class="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-800 transition-colors cursor-pointer" title="Stamp your role tag into remarks">
                                 + Tag [${escapeHtml(window.currentReviewerRole || 'Reviewer')}]
@@ -3972,7 +3972,7 @@
                     
                     <!-- MOV Evidence Toolbar (Only visible during Evaluation Phase) -->
                     ${isEvaluationPhase ? `
-                    <div class="mov-toolbar flex items-center justify-between mt-1 pt-1 border-t border-slate-200 dark:border-slate-800 text-[10px] print-hide">
+                    <div class="mov-toolbar flex items-center justify-between mt-1 pt-1 border-t border-zinc-200 dark:border-zinc-800 text-[10px] print-hide">
                         ${hasFiles ? `
                         <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
                                 class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25" 
@@ -3984,17 +3984,17 @@
                         </button>
                         ` : (canEditEvaluation ? `
                         <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700" 
+                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
                                 title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                             </svg>
                             <span class="mov-btn-text">Attach MOV</span>
                         </button>
                         ` : `
-                        <span class="text-[9px] text-slate-400 italic">No MOV</span>
+                        <span class="text-[9px] text-zinc-400 italic">No MOV</span>
                         `)}
-                        <span class="text-[9px] text-slate-400 font-medium italic">Evidence</span>
+                        <span class="text-[9px] text-zinc-400 font-medium italic">Evidence</span>
                     </div>
                     ` : ''}
                 </td>
@@ -4033,7 +4033,7 @@
                 <!-- Remarks -->
                 <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
                     <div class="flex items-center justify-between mb-1 print-hide">
-                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Remarks</span>
+                        <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-tight">Remarks</span>
                         ${!isOwner ? `
                             <button type="button" onclick="stampRoleTag(this)" class="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-800 transition-colors cursor-pointer" title="Stamp your role tag into remarks">
                                 + Tag [${escapeHtml(window.currentReviewerRole || 'Reviewer')}]
@@ -4084,7 +4084,7 @@
                     
                     <!-- MOV Evidence Toolbar (Only visible during Evaluation Phase) -->
                     ${isEvaluationPhase ? `
-                    <div class="mov-toolbar flex items-center justify-between mt-1 pt-1 border-t border-slate-200 dark:border-slate-800 text-[10px] print-hide">
+                    <div class="mov-toolbar flex items-center justify-between mt-1 pt-1 border-t border-zinc-200 dark:border-zinc-800 text-[10px] print-hide">
                         ${hasFiles ? `
                         <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
                                 class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25" 
@@ -4096,17 +4096,17 @@
                         </button>
                         ` : (canEditEvaluation ? `
                         <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700" 
+                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
                                 title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                             </svg>
                             <span class="mov-btn-text">Attach MOV</span>
                         </button>
                         ` : `
-                        <span class="text-[9px] text-slate-400 italic">No MOV</span>
+                        <span class="text-[9px] text-zinc-400 italic">No MOV</span>
                         `)}
-                        <span class="text-[9px] text-slate-400 font-medium italic">Evidence</span>
+                        <span class="text-[9px] text-zinc-400 font-medium italic">Evidence</span>
                     </div>
                     ` : ''}
                 </td>
@@ -4145,7 +4145,7 @@
                 <!-- Remarks -->
                 <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
                     <div class="flex items-center justify-between mb-1 print-hide">
-                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Remarks</span>
+                        <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-tight">Remarks</span>
                         ${!isOwner ? `
                             <button type="button" onclick="stampRoleTag(this)" class="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-800 transition-colors cursor-pointer" title="Stamp your role tag into remarks">
                                 + Tag [${escapeHtml(window.currentReviewerRole || 'Reviewer')}]
@@ -4183,7 +4183,7 @@
                 
                 <!-- MOV Evidence Toolbar (Only visible during Evaluation Phase) -->
                 ${isEvaluationPhase ? `
-                <div class="mov-toolbar flex items-center justify-between mt-1 pt-1 border-t border-slate-200 dark:border-slate-800 text-[10px] print-hide">
+                <div class="mov-toolbar flex items-center justify-between mt-1 pt-1 border-t border-zinc-200 dark:border-zinc-800 text-[10px] print-hide">
                     ${hasFiles ? `
                     <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
                             class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25" 
@@ -4195,17 +4195,17 @@
                     </button>
                     ` : (canEditEvaluation ? `
                     <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                            class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700" 
+                            class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
                             title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                         </svg>
                         <span class="mov-btn-text">Attach MOV</span>
                     </button>
                     ` : `
-                    <span class="text-[9px] text-slate-400 italic">No MOV</span>
+                    <span class="text-[9px] text-zinc-400 italic">No MOV</span>
                     `)}
-                    <span class="text-[9px] text-slate-400 font-medium italic">Evidence</span>
+                    <span class="text-[9px] text-zinc-400 font-medium italic">Evidence</span>
                 </div>
                 ` : ''}
             </td>
@@ -4244,7 +4244,7 @@
             <!-- Remarks -->
             <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
                 <div class="flex items-center justify-between mb-1 print-hide">
-                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Remarks</span>
+                    <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-tight">Remarks</span>
                     ${!isOwner ? `
                         <button type="button" onclick="stampRoleTag(this)" class="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-800 transition-colors cursor-pointer" title="Stamp your role tag into remarks">
                             + Tag [${escapeHtml(window.currentReviewerRole || 'Reviewer')}]
@@ -4726,7 +4726,7 @@
     };
 
     // -------------------------------------------------------------
-    // DIGITAL RUBRICS MATRIX & ATTACHMENTS ENGINE
+    // Digital Rubrics matrix & attachments handling
     // -------------------------------------------------------------
     function getFormDeliverables() {
         const deliverables = [];

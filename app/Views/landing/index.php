@@ -89,7 +89,7 @@
         }
     </style>
 </head>
-<body class="bg-[#f8fafc] text-slate-800 antialiased selection:bg-[#064e3b] selection:text-white">
+<body class="bg-[#f8fafc] text-zinc-800 antialiased selection:bg-[#064e3b] selection:text-white">
 
     <?= view('components/govph_masthead') ?>
 
@@ -207,15 +207,15 @@
                 <div class="lg:col-span-5 relative">
                     
                     <!-- 1. Portfolio Showcase Card (Active by Default) -->
-                    <div id="hero-portfolio-card" class="bg-white rounded-3xl p-6 sm:p-7 shadow-2xl text-slate-800 border-4 border-emerald-800/20 relative transition-all duration-300">
+                    <div id="hero-portfolio-card" class="bg-white rounded-3xl p-6 sm:p-7 shadow-2xl text-zinc-800 border-4 border-emerald-800/20 relative transition-all duration-300">
                         
                         <!-- Top Header -->
-                        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+                        <div class="flex items-center justify-between pb-4 mb-4 border-b border-zinc-100">
                             <div class="flex items-center gap-3">
                                 <img src="<?= base_url('assets/images/spms_logo.png') ?>" alt="Logo" class="w-9 h-9 rounded-full object-contain shrink-0" />
                                 <div>
-                                    <h3 class="text-xs font-bold text-slate-900">Individual Performance Portfolio</h3>
-                                    <p class="text-[10px] text-slate-500">IPCR Target Period: FY 2026</p>
+                                    <h3 class="text-xs font-bold text-zinc-900">Individual Performance Portfolio</h3>
+                                    <p class="text-[10px] text-zinc-500">IPCR Target Period: FY 2026</p>
                                 </div>
                             </div>
                             <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
@@ -225,32 +225,32 @@
 
                         <!-- Highlights Breakdown -->
                         <div class="space-y-3 mb-5">
-                            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                            <div class="flex items-center justify-between p-3 rounded-xl bg-zinc-50 border border-zinc-100 text-xs">
                                 <div>
-                                    <span class="font-bold text-slate-800">Core Mandated Functions</span>
-                                    <p class="text-[10px] text-slate-500">Instruction & Curriculum Delivery</p>
+                                    <span class="font-bold text-zinc-800">Core Mandated Functions</span>
+                                    <p class="text-[10px] text-zinc-500">Instruction & Curriculum Delivery</p>
                                 </div>
-                                <span class="font-bold text-emerald-700 bg-white px-2 py-1 rounded-lg border border-slate-200">
+                                <span class="font-bold text-emerald-700 bg-white px-2 py-1 rounded-lg border border-zinc-200">
                                     4.95 / 5.0
                                 </span>
                             </div>
 
-                            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                            <div class="flex items-center justify-between p-3 rounded-xl bg-zinc-50 border border-zinc-100 text-xs">
                                 <div>
-                                    <span class="font-bold text-slate-800">Strategic Research Outputs</span>
-                                    <p class="text-[10px] text-slate-500">Publications & Extension Works</p>
+                                    <span class="font-bold text-zinc-800">Strategic Research Outputs</span>
+                                    <p class="text-[10px] text-zinc-500">Publications & Extension Works</p>
                                 </div>
-                                <span class="font-bold text-teal-700 bg-white px-2 py-1 rounded-lg border border-slate-200">
+                                <span class="font-bold text-teal-700 bg-white px-2 py-1 rounded-lg border border-zinc-200">
                                     4.88 / 5.0
                                 </span>
                             </div>
 
-                            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                            <div class="flex items-center justify-between p-3 rounded-xl bg-zinc-50 border border-zinc-100 text-xs">
                                 <div>
-                                    <span class="font-bold text-slate-800">Support & Administrative</span>
-                                    <p class="text-[10px] text-slate-500">Committee Assignments & Service</p>
+                                    <span class="font-bold text-zinc-800">Support & Administrative</span>
+                                    <p class="text-[10px] text-zinc-500">Committee Assignments & Service</p>
                                 </div>
-                                <span class="font-bold text-amber-700 bg-white px-2 py-1 rounded-lg border border-slate-200">
+                                <span class="font-bold text-amber-700 bg-white px-2 py-1 rounded-lg border border-zinc-200">
                                     5.00 / 5.0
                                 </span>
                             </div>
@@ -259,7 +259,7 @@
                         <!-- Bottom Final Score Bar -->
                         <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 flex items-center justify-between">
                             <div>
-                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Overall Final Rating</span>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Overall Final Rating</span>
                                 <div class="text-xl font-heading font-black text-[#064e3b]">4.94 / 5.00</div>
                             </div>
                             <span class="text-xs font-black uppercase tracking-wider bg-emerald-600 text-white px-3 py-1.5 rounded-xl shadow-xs">
@@ -276,18 +276,18 @@
                     </div>
 
                     <!-- 2. Embedded Interactive Login Card -->
-                    <div id="hero-login-card" class="hidden bg-white rounded-3xl p-6 sm:p-7 shadow-2xl text-slate-800 border-4 border-amber-400 ring-4 ring-amber-400/20 relative transition-all duration-300">
+                    <div id="hero-login-card" class="hidden bg-white rounded-3xl p-6 sm:p-7 shadow-2xl text-zinc-800 border-4 border-amber-400 ring-4 ring-amber-400/20 relative transition-all duration-300">
                         
                         <!-- Top Header -->
-                        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+                        <div class="flex items-center justify-between pb-4 mb-4 border-b border-zinc-100">
                             <div class="flex items-center gap-3">
                                 <img src="<?= base_url('assets/images/spms_logo.png') ?>" alt="Logo" class="w-10 h-10 rounded-full object-contain shrink-0" />
                                 <div>
-                                    <h3 class="text-sm font-bold text-slate-900">SPMS Portal Access</h3>
-                                    <p class="text-[11px] text-slate-500">Benguet State University</p>
+                                    <h3 class="text-sm font-bold text-zinc-900">SPMS Portal Access</h3>
+                                    <p class="text-[11px] text-zinc-500">Benguet State University</p>
                                 </div>
                             </div>
-                            <button type="button" onclick="toggleHeroLogin(false)" class="text-slate-400 hover:text-slate-700 text-xs font-bold px-2.5 py-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer flex items-center gap-1" title="Back to Portfolio Showcase">
+                            <button type="button" onclick="toggleHeroLogin(false)" class="text-zinc-400 hover:text-zinc-700 text-xs font-bold px-2.5 py-1 rounded-lg hover:bg-zinc-100 transition-colors cursor-pointer flex items-center gap-1" title="Back to Portfolio Showcase">
                                 <span class="text-base leading-none">&times;</span>
                                 <span class="text-[10px] uppercase font-bold tracking-wider">Close</span>
                             </button>
@@ -309,11 +309,11 @@
                             <?php endif; ?>
 
                             <div>
-                                <label for="hero-email" class="block text-[10px] font-bold uppercase tracking-wider text-slate-700">Email Address</label>
+                                <label for="hero-email" class="block text-[10px] font-bold uppercase tracking-wider text-zinc-700">Email Address</label>
                                 <div class="mt-1">
                                     <input id="hero-email" type="email" name="email" required placeholder="user@bsu.edu.ph"
                                            value="<?= esc(old('email', '')) ?>"
-                                           class="w-full bg-slate-50 border-2 border-slate-200 focus:border-[#064e3b] rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-[#064e3b]/20 focus:outline-none text-slate-900 transition-all placeholder:text-slate-400 font-medium" />
+                                           class="w-full bg-zinc-50 border-2 border-zinc-200 focus:border-[#064e3b] rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-[#064e3b]/20 focus:outline-none text-zinc-900 transition-all placeholder:text-zinc-400 font-medium" />
                                 </div>
                                 <?php if (validation_show_error('email')): ?>
                                     <p class="text-rose-600 text-[10px] font-bold mt-1"><?= validation_show_error('email') ?></p>
@@ -322,12 +322,12 @@
 
                             <div>
                                 <div class="flex items-center justify-between">
-                                    <label for="hero-password" class="block text-[10px] font-bold uppercase tracking-wider text-slate-700">Password</label>
+                                    <label for="hero-password" class="block text-[10px] font-bold uppercase tracking-wider text-zinc-700">Password</label>
                                     <a href="<?= site_url('password/forgot') ?>" class="text-[10px] font-bold text-[#064e3b] hover:underline">Forgot password?</a>
                                 </div>
                                 <div class="mt-1">
                                     <input id="hero-password" type="password" name="password" required placeholder="••••••••"
-                                           class="w-full bg-slate-50 border-2 border-slate-200 focus:border-[#064e3b] rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-[#064e3b]/20 focus:outline-none text-slate-900 transition-all placeholder:text-slate-400 font-medium" />
+                                           class="w-full bg-zinc-50 border-2 border-zinc-200 focus:border-[#064e3b] rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-[#064e3b]/20 focus:outline-none text-zinc-900 transition-all placeholder:text-zinc-400 font-medium" />
                                 </div>
                                 <?php if (validation_show_error('password')): ?>
                                     <p class="text-rose-600 text-[10px] font-bold mt-1"><?= validation_show_error('password') ?></p>
@@ -336,8 +336,8 @@
 
                             <div class="flex items-center justify-between pt-1">
                                 <label class="flex items-center gap-2 cursor-pointer">
-                                    <input id="hero-remember-me" name="remember-me" type="checkbox" class="w-3.5 h-3.5 rounded border-slate-300 text-[#064e3b] focus:ring-[#064e3b]" />
-                                    <span class="text-[11px] font-medium text-slate-600">Remember me</span>
+                                    <input id="hero-remember-me" name="remember-me" type="checkbox" class="w-3.5 h-3.5 rounded border-zinc-300 text-[#064e3b] focus:ring-[#064e3b]" />
+                                    <span class="text-[11px] font-medium text-zinc-600">Remember me</span>
                                 </label>
                             </div>
 
@@ -355,7 +355,7 @@
                             </div>
 
                             <div class="pt-1 text-center">
-                                <p class="text-[10px] text-slate-400">
+                                <p class="text-[10px] text-zinc-400">
                                     Benguet State University • SPMS
                                 </p>
                             </div>
@@ -378,16 +378,16 @@
             <span class="text-xs font-bold uppercase tracking-wider text-[#064e3b] bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-full">
                 TYPES OF FORMS
             </span>
-            <h2 class="text-3xl sm:text-4xl font-heading font-black text-slate-900 tracking-tight mt-4 mb-3">
+            <h2 class="text-3xl sm:text-4xl font-heading font-black text-zinc-900 tracking-tight mt-4 mb-3">
                 BSU Performance Instruments
             </h2>
-            <p class="text-sm text-slate-500">
+            <p class="text-sm text-zinc-500">
                 Official evaluation instruments designated for institutional offices, permanent personnel, and contract-of-service appointments.
             </p>
         </div>
 
         <!-- Carousel Container with Side Peeking Cards -->
-        <div class="relative bg-slate-100/70 border border-slate-200/80 rounded-3xl p-6 sm:p-12 overflow-hidden">
+        <div class="relative bg-zinc-100/70 border border-zinc-200/80 rounded-3xl p-6 sm:p-12 overflow-hidden">
             
             <!-- Left Arrow Button -->
             <button type="button" id="form-prev-btn" aria-label="Previous Form" class="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 z-30 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-[#064e3b] text-white shadow-xl flex items-center justify-center hover:bg-[#085a3a] active:scale-90 transition-all cursor-pointer">
@@ -408,28 +408,28 @@
                 
                 <!-- Card 0: OPCR -->
                 <div class="form-slide transition-all duration-300 ease-out w-full max-w-xl mx-auto cursor-pointer" data-index="0">
-                    <div class="bg-white border-t-4 border-t-blue-600 border-x border-b border-slate-200 rounded-2xl p-7 sm:p-9 shadow-md flex flex-col justify-between h-full">
+                    <div class="bg-white border-t-4 border-t-blue-600 border-x border-b border-zinc-200 rounded-2xl p-7 sm:p-9 shadow-md flex flex-col justify-between h-full">
                         <div>
-                            <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+                            <div class="flex items-center justify-between pb-4 mb-4 border-b border-zinc-100">
                                 <div>
-                                    <span class="font-heading font-black text-3xl text-slate-900 tracking-tight">OPCR</span>
-                                    <p class="text-xs font-semibold text-slate-500 mt-0.5">Office Performance Commitment and Review</p>
+                                    <span class="font-heading font-black text-3xl text-zinc-900 tracking-tight">OPCR</span>
+                                    <p class="text-xs font-semibold text-zinc-500 mt-0.5">Office Performance Commitment and Review</p>
                                 </div>
                                 <span class="text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-800 border border-blue-200 px-2.5 py-1 rounded-md">
                                     Institutional
                                 </span>
                             </div>
 
-                            <p class="text-xs sm:text-sm text-slate-600 leading-relaxed mb-4">
+                            <p class="text-xs sm:text-sm text-zinc-600 leading-relaxed mb-4">
                                 The OPCR captures the overarching institutional targets and strategic deliverables for Benguet State University as a whole. Accomplished by executive leadership, it reflects the University Strategic Plan approved by the Board of Regents.
                             </p>
 
-                            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-500 leading-relaxed mb-6">
-                                <span class="font-bold text-slate-700">Governance Linkage:</span> Serves as the apex benchmark from which all sector, college, and department DPCR deliverables are cascaded.
+                            <div class="p-3.5 rounded-xl bg-zinc-50 border border-zinc-100 text-xs text-zinc-500 leading-relaxed mb-6">
+                                <span class="font-bold text-zinc-700">Governance Linkage:</span> Serves as the apex benchmark from which all sector, college, and department DPCR deliverables are cascaded.
                             </div>
                         </div>
 
-                        <div class="pt-4 border-t border-slate-100 text-xs font-semibold text-blue-700">
+                        <div class="pt-4 border-t border-zinc-100 text-xs font-semibold text-blue-700">
                             Level: Executive Offices
                         </div>
                     </div>
@@ -437,28 +437,28 @@
 
                 <!-- Card 1: DPCR -->
                 <div class="form-slide transition-all duration-300 ease-out w-full max-w-xl mx-auto cursor-pointer" data-index="1">
-                    <div class="bg-white border-t-4 border-t-teal-600 border-x border-b border-slate-200 rounded-2xl p-7 sm:p-9 shadow-md flex flex-col justify-between h-full">
+                    <div class="bg-white border-t-4 border-t-teal-600 border-x border-b border-zinc-200 rounded-2xl p-7 sm:p-9 shadow-md flex flex-col justify-between h-full">
                         <div>
-                            <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+                            <div class="flex items-center justify-between pb-4 mb-4 border-b border-zinc-100">
                                 <div>
-                                    <span class="font-heading font-black text-3xl text-slate-900 tracking-tight">DPCR</span>
-                                    <p class="text-xs font-semibold text-slate-500 mt-0.5">Division / Department Performance Commitment</p>
+                                    <span class="font-heading font-black text-3xl text-zinc-900 tracking-tight">DPCR</span>
+                                    <p class="text-xs font-semibold text-zinc-500 mt-0.5">Division / Department Performance Commitment</p>
                                 </div>
                                 <span class="text-[10px] font-black uppercase tracking-wider bg-teal-50 text-teal-800 border border-teal-200 px-2.5 py-1 rounded-md">
                                     Heads of Offices
                                 </span>
                             </div>
 
-                            <p class="text-xs sm:text-sm text-slate-600 leading-relaxed mb-4">
+                            <p class="text-xs sm:text-sm text-zinc-600 leading-relaxed mb-4">
                                 The DPCR is accomplished by heads of offices and captures the targets and expected deliverables of an office for each rating period — whether at the Sector, College/Division, or Department/Office/Unit level.
                             </p>
 
-                            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-500 leading-relaxed mb-6">
-                                <span class="font-bold text-slate-700">Governance Linkage:</span> It must be aligned with the University's Strategic Plan and the office's Operational Plan, and it serves as the primary reference for individual employees when preparing their own IPCRs or IPERFs.
+                            <div class="p-3.5 rounded-xl bg-zinc-50 border border-zinc-100 text-xs text-zinc-500 leading-relaxed mb-6">
+                                <span class="font-bold text-zinc-700">Governance Linkage:</span> It must be aligned with the University's Strategic Plan and the office's Operational Plan, and it serves as the primary reference for individual employees when preparing their own IPCRs or IPERFs.
                             </div>
                         </div>
 
-                        <div class="pt-4 border-t border-slate-100 text-xs font-semibold text-teal-700">
+                        <div class="pt-4 border-t border-zinc-100 text-xs font-semibold text-teal-700">
                             Level: Deans, Directors & Department Heads
                         </div>
                     </div>
@@ -466,28 +466,28 @@
 
                 <!-- Card 2: IPCR -->
                 <div class="form-slide transition-all duration-300 ease-out w-full max-w-xl mx-auto cursor-pointer" data-index="2">
-                    <div class="bg-white border-t-4 border-t-[#064e3b] border-x border-b border-slate-200 rounded-2xl p-7 sm:p-9 shadow-md flex flex-col justify-between h-full">
+                    <div class="bg-white border-t-4 border-t-[#064e3b] border-x border-b border-zinc-200 rounded-2xl p-7 sm:p-9 shadow-md flex flex-col justify-between h-full">
                         <div>
-                            <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+                            <div class="flex items-center justify-between pb-4 mb-4 border-b border-zinc-100">
                                 <div>
-                                    <span class="font-heading font-black text-3xl text-slate-900 tracking-tight">IPCR</span>
-                                    <p class="text-xs font-semibold text-slate-500 mt-0.5">Individual Performance Commitment and Review</p>
+                                    <span class="font-heading font-black text-3xl text-zinc-900 tracking-tight">IPCR</span>
+                                    <p class="text-xs font-semibold text-zinc-500 mt-0.5">Individual Performance Commitment and Review</p>
                                 </div>
                                 <span class="text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-[#064e3b] border border-emerald-200 px-2.5 py-1 rounded-md">
                                     CSC Appointments
                                 </span>
                             </div>
 
-                            <p class="text-xs sm:text-sm text-slate-600 leading-relaxed mb-4">
+                            <p class="text-xs sm:text-sm text-zinc-600 leading-relaxed mb-4">
                                 The IPCR is accomplished by University employees with CSC-validated appointments, including those under Permanent, Temporary, Coterminous, Contractual, Substitute, Provisional, and Casual status.
                             </p>
 
-                            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-500 leading-relaxed mb-6">
-                                <span class="font-bold text-slate-700">Governance Linkage:</span> Outlines expected deliverables covering the main position functions while ensuring individual outputs contribute to the overall success of the office. The IPCR must be linked to the office's DPCR.
+                            <div class="p-3.5 rounded-xl bg-zinc-50 border border-zinc-100 text-xs text-zinc-500 leading-relaxed mb-6">
+                                <span class="font-bold text-zinc-700">Governance Linkage:</span> Outlines expected deliverables covering the main position functions while ensuring individual outputs contribute to the overall success of the office. The IPCR must be linked to the office's DPCR.
                             </div>
                         </div>
 
-                        <div class="pt-4 border-t border-slate-100 text-xs font-semibold text-emerald-700">
+                        <div class="pt-4 border-t border-zinc-100 text-xs font-semibold text-emerald-700">
                             Level: Faculty & Regular Personnel
                         </div>
                     </div>
@@ -495,28 +495,28 @@
 
                 <!-- Card 3: IPERF -->
                 <div class="form-slide transition-all duration-300 ease-out w-full max-w-xl mx-auto cursor-pointer" data-index="3">
-                    <div class="bg-white border-t-4 border-t-amber-500 border-x border-b border-slate-200 rounded-2xl p-7 sm:p-9 shadow-md flex flex-col justify-between h-full">
+                    <div class="bg-white border-t-4 border-t-amber-500 border-x border-b border-zinc-200 rounded-2xl p-7 sm:p-9 shadow-md flex flex-col justify-between h-full">
                         <div>
-                            <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+                            <div class="flex items-center justify-between pb-4 mb-4 border-b border-zinc-100">
                                 <div>
-                                    <span class="font-heading font-black text-3xl text-slate-900 tracking-tight">IPERF</span>
-                                    <p class="text-xs font-semibold text-slate-500 mt-0.5">Individual Performance Evaluation & Review Form</p>
+                                    <span class="font-heading font-black text-3xl text-zinc-900 tracking-tight">IPERF</span>
+                                    <p class="text-xs font-semibold text-zinc-500 mt-0.5">Individual Performance Evaluation & Review Form</p>
                                 </div>
                                 <span class="text-[10px] font-black uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-md">
                                     COS / JOP Status
                                 </span>
                             </div>
 
-                            <p class="text-xs sm:text-sm text-slate-600 leading-relaxed mb-4">
+                            <p class="text-xs sm:text-sm text-zinc-600 leading-relaxed mb-4">
                                 The IPERF is accomplished by Contract of Service Personnel (COS/CSP), Job Order Personnel (JOP), and non-BSU Adjunct Faculty.
                             </p>
 
-                            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-500 leading-relaxed mb-6">
-                                <span class="font-bold text-slate-700">Governance Linkage:</span> Unlike the IPCR, it is focused primarily on the core functions of the position occupied by the personnel, rather than on broader office-level commitments.
+                            <div class="p-3.5 rounded-xl bg-zinc-50 border border-zinc-100 text-xs text-zinc-500 leading-relaxed mb-6">
+                                <span class="font-bold text-zinc-700">Governance Linkage:</span> Unlike the IPCR, it is focused primarily on the core functions of the position occupied by the personnel, rather than on broader office-level commitments.
                             </div>
                         </div>
 
-                        <div class="pt-4 border-t border-slate-100 text-xs font-semibold text-amber-700">
+                        <div class="pt-4 border-t border-zinc-100 text-xs font-semibold text-amber-700">
                             Level: Contract of Service & Adjunct Faculty
                         </div>
                     </div>
@@ -617,19 +617,19 @@
     </section>
 
     <!-- 5. INSTITUTIONAL CALL TO ACTION -->
-    <section id="guidelines" class="py-20 bg-slate-50 border-t border-slate-200 scroll-mt-20">
+    <section id="guidelines" class="py-20 bg-zinc-50 border-t border-zinc-200 scroll-mt-20">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-white border border-slate-200 rounded-3xl p-8 sm:p-12 shadow-sm flex flex-col md:flex-row items-center justify-between gap-8">
+            <div class="bg-white border border-zinc-200 rounded-3xl p-8 sm:p-12 shadow-sm flex flex-col md:flex-row items-center justify-between gap-8">
                 <div class="flex items-start gap-5">
                     <img src="<?= base_url('assets/images/spms_logo.png') ?>" alt="Logo" class="w-14 h-14 rounded-full object-contain shrink-0 shadow-xs hidden sm:block" />
                     <div>
                         <span class="text-[10px] font-bold uppercase tracking-wider text-[#064e3b] bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
                             Official Access
                         </span>
-                        <h3 class="text-2xl font-heading font-black text-slate-900 mt-3 mb-2">
+                        <h3 class="text-2xl font-heading font-black text-zinc-900 mt-3 mb-2">
                             Ready to Access Your Performance Folder?
                         </h3>
-                        <p class="text-xs sm:text-sm text-slate-600 max-w-lg leading-relaxed">
+                        <p class="text-xs sm:text-sm text-zinc-600 max-w-lg leading-relaxed">
                             Log in using your authorized Benguet State University user account to start your target commitments or evaluate subordinates.
                         </p>
                     </div>
@@ -651,7 +651,7 @@
     </section>
 
     <!-- FOOTER (Inspired by reference mockup) -->
-    <footer class="bg-[#02130b] border-t border-[#07301e] pt-16 pb-12 text-slate-400 antialiased">
+    <footer class="bg-[#02130b] border-t border-[#07301e] pt-16 pb-12 text-zinc-400 antialiased">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-12">
                 <!-- Col 1: Brand & Mission -->
@@ -664,7 +664,7 @@
                         </div>
                         <span class="font-heading font-black text-lg text-white tracking-tight">SPMS BSU</span>
                     </div>
-                    <p class="text-xs leading-relaxed text-slate-400 max-w-sm">
+                    <p class="text-xs leading-relaxed text-zinc-400 max-w-sm">
                         Advancing institutional excellence and transparency across Benguet State University through accessible, standardized performance management, cascading, and strategic evaluation.
                     </p>
                 </div>
@@ -672,7 +672,7 @@
                 <!-- Col 2: About Us (Option B) -->
                 <div class="md:col-span-3 lg:col-span-3 lg:col-start-7 flex flex-col">
                     <h4 class="text-xs font-bold text-white uppercase tracking-wider mb-4">About Us</h4>
-                    <div class="flex flex-col space-y-2.5 text-xs text-slate-400">
+                    <div class="flex flex-col space-y-2.5 text-xs text-zinc-400">
                         <a href="https://www.bsu.edu.ph" target="_blank" rel="noopener" class="hover:text-emerald-400 transition-colors">Benguet State University</a>
                         <a href="#overview" class="hover:text-emerald-400 transition-colors">SPMS Overview & Mandate</a>
                         <a href="#guidelines" class="hover:text-emerald-400 transition-colors">Performance Management Team</a>
@@ -683,7 +683,7 @@
                 <!-- Col 3: Support Links -->
                 <div class="md:col-span-3 lg:col-span-3 flex flex-col">
                     <h4 class="text-xs font-bold text-white uppercase tracking-wider mb-4">Support</h4>
-                    <div class="flex flex-col space-y-2.5 text-xs text-slate-400">
+                    <div class="flex flex-col space-y-2.5 text-xs text-zinc-400">
                         <a href="mailto:spms@bsu.edu.ph" class="hover:text-emerald-400 transition-colors">Contact PMT Support</a>
                         <button type="button" onclick="toggleHeroLogin(true)" class="text-left hover:text-emerald-400 transition-colors cursor-pointer">Faculty & Staff Portal</button>
                         <a href="https://www.csc.gov.ph" target="_blank" rel="noopener" class="hover:text-emerald-400 transition-colors">CSC Standards</a>
@@ -693,11 +693,11 @@
             </div>
 
             <!-- Bottom Row: Copyright & Legal -->
-            <div class="pt-8 mt-12 border-t border-[#07301e] flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
+            <div class="pt-8 mt-12 border-t border-[#07301e] flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-zinc-500">
                 <span>&copy; <?= date('Y') ?> Benguet State University SPMS. All rights reserved.</span>
                 <div class="flex items-center gap-6">
-                    <a href="#guidelines" class="hover:text-slate-300 transition-colors">Privacy Policy</a>
-                    <a href="#guidelines" class="hover:text-slate-300 transition-colors">Terms of Service</a>
+                    <a href="#guidelines" class="hover:text-zinc-300 transition-colors">Privacy Policy</a>
+                    <a href="#guidelines" class="hover:text-zinc-300 transition-colors">Terms of Service</a>
                 </div>
             </div>
         </div>
@@ -734,10 +734,10 @@
                 dots.forEach((dot, i) => {
                     if (i === currentIdx) {
                         dot.classList.add('bg-[#064e3b]', 'text-white', 'shadow-sm');
-                        dot.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+                        dot.classList.remove('bg-white', 'text-zinc-600', 'border', 'border-zinc-200');
                     } else {
                         dot.classList.remove('bg-[#064e3b]', 'text-white', 'shadow-sm');
-                        dot.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+                        dot.classList.add('bg-white', 'text-zinc-600', 'border', 'border-zinc-200');
                     }
                 });
             }

@@ -1,26 +1,38 @@
 # Recent Updates
 
-## Latest Changes (Ready to Push — Oct 5, 2026)
+## Latest Changes (Ready to Push — Oct 8, 2026)
 
-### Mobile Audit Trail
-- Replaced the wide table with mobile cards so no text gets cut off.
-- Shows user avatar, name, role, email, action badges, and device platform (`::1 (Win10)`).
-- Rearranged top counters into 2 clean rows on mobile screens.
-- Added quick category filter buttons and a collapsible date filter drawer.
-- Added a one-tap CSV export button next to the page title.
+### Unified Mobile Folder Navigation
+- Converted the mobile folder selector from a floating card popup into the unified off-canvas slide-out sidebar across Dashboard, Folders, and Ratings.
+- Added a high-contrast mobile trigger capsule displaying the active evaluation period, archive badges, and a quick sidebar drawer button.
+- Added a dedicated mobile close button (`✕`) in the drawer header, background backdrop blur, and Escape key dismissal.
 
-### Dark and Light Mode
-- Automatically matches device settings (uses your phone/PC default).
-- Added sun/moon theme switch to the document workspace (OPCR/DPCR/IPCR).
-- Added theme switch to all login and signup pages.
-- Fixed dashboard icons and badges so they use soft colors instead of dark boxes in light mode.
-- Removed harsh borders and shiny badge from login boxes.
+### Clean Mobile Lifecycle Display
+- Removed the overflowing horizontal stepper pills on mobile screens, completely eliminating sideways swiping.
+- Mobile screens now transition cleanly from the section title directly into the stage cards and collapsible accordions.
+- Preserved the full 4-stage stepper on desktop with dynamic completion checkmarks.
+
+### Theme & Palette Harmonization
+- Neutralized legacy dark green backgrounds and borders across folder navigation, empty states, and notification components to the unified Charcoal/Zinc and BSU Gold palette.
+- Recompiled Tailwind CSS bundle and verified all 15 stages pass 100% in the automated full-cycle test suite.
 
 ---
 
 ## Past Updates
 
 ### Oct 5, 2026
+- **Mobile Audit Trail**
+  - Replaced the wide table with mobile cards so no text gets cut off.
+  - Shows user avatar, name, role, email, action badges, and device platform (`::1 (Win10)`).
+  - Rearranged top counters into 2 clean rows on mobile screens.
+  - Added quick category filter buttons and a collapsible date filter drawer.
+  - Added a one-tap CSV export button next to the page title.
+- **Dark and Light Mode**
+  - Automatically matches device settings (uses your phone/PC default).
+  - Added sun/moon theme switch to the document workspace (OPCR/DPCR/IPCR).
+  - Added theme switch to all login and signup pages.
+  - Fixed dashboard icons and badges so they use soft colors instead of dark boxes in light mode.
+  - Removed harsh borders and shiny badge from login boxes.
 - **Mobile UI phase 2**
   - Added mobile notifications page.
   - Added mobile folder dropdown menu.

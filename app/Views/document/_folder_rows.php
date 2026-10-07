@@ -9,7 +9,7 @@
 <nav id="sidebar-nav" class="flex flex-col gap-2 h-full justify-between">
     <div class="flex flex-col gap-2">
         <?php if ($isArchivedRoute): ?>
-            <a href="<?= site_url('folders') ?>" class="px-3.5 py-2 rounded-xl text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-all flex items-center gap-2 mb-1">
+            <a href="<?= site_url('folders') ?>" class="px-3.5 py-2 rounded-xl text-xs font-bold text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all flex items-center gap-2 mb-1">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
@@ -28,16 +28,16 @@
                     <a href="<?= site_url($currentBaseUrl . '/' . $folder['id']) ?>"
                        class="sidebar-folder-item relative px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center gap-2.5 group
                         <?= $isActive ?
-                           'bg-white dark:bg-[#121d17] text-slate-900 dark:text-white border border-slate-200 dark:border-[#1e382b] shadow-xs' : 
-                           'text-[#3d5a47] dark:text-[#8ea396] hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5' ?>"
+                           'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700 shadow-xs' : 
+                           'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/60' ?>"
                        data-is-active="<?= $isActive ? '1' : '0' ?>"
                        data-index="<?= $index ?>">
                         
                         <?php if ($isActive): ?>
-                            <span class="absolute left-0 inset-y-2.5 w-1 bg-emerald-500 rounded-r-full"></span>
+                            <span class="absolute left-0 inset-y-2.5 w-1 bg-amber-500 rounded-r-full"></span>
                         <?php endif; ?>
 
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0 <?= $isActive ? 'text-[#064e3b] dark:text-emerald-400' : 'text-[#5a7b65] dark:text-[#8ea396] group-hover:text-slate-900 dark:group-hover:text-white' ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0 <?= $isActive ? 'text-zinc-900 dark:text-white' : 'text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-white' ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                         </svg>
                         <span class="truncate"><?= esc($folder['title']) ?></span>
@@ -48,22 +48,22 @@
 
             <?php if (count($folders) > 5): ?>
                 <!-- Minimalist Sidebar Paginator (Only appears when > 5 folders) -->
-                <div id="sidebar-folder-pagination" class="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0c1510] border border-slate-200 dark:border-[#1a2b22] mt-1 text-xs text-text-muted select-none">
+                <div id="sidebar-folder-pagination" class="flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 mt-1 text-xs text-text-muted select-none">
                     <button type="button" id="btn-sidebar-prev" 
-                            class="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs" 
+                            class="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white dark:hover:bg-white/10 hover:text-zinc-900 dark:hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs" 
                             title="Previous 5 Folders">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
 
-                    <div class="flex items-center gap-1.5 font-bold text-[10px] tracking-wider text-slate-600 dark:text-[#8ea396]">
+                    <div class="flex items-center gap-1.5 font-bold text-[10px] tracking-wider text-zinc-500 dark:text-zinc-400">
                         <span>Page</span>
-                        <span id="sidebar-page-indicator" class="px-1.5 py-0.5 rounded bg-white dark:bg-[#13271b] border border-slate-200 dark:border-[#1e422f] text-slate-900 dark:text-emerald-400 font-extrabold">1 / <?= ceil(count($folders) / 5) ?></span>
+                        <span id="sidebar-page-indicator" class="px-1.5 py-0.5 rounded bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white font-extrabold">1 / <?= ceil(count($folders) / 5) ?></span>
                     </div>
 
                     <button type="button" id="btn-sidebar-next" 
-                            class="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs" 
+                            class="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white dark:hover:bg-white/10 hover:text-zinc-900 dark:hover:text-white disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs" 
                             title="Next 5 Folders">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
@@ -77,10 +77,10 @@
 
     <!-- Archive Folder Link (Admin Only) -->
     <?php if (session()->get('role') === 'Admin'): ?>
-    <div class="pt-4 border-t border-slate-200/50 dark:border-white/5">
+    <div class="pt-4 border-t border-zinc-200/50 dark:border-white/5">
         <a href="<?= site_url($isArchivedRoute ? 'folders' : 'folders/archived') ?>" 
-           class="px-3.5 py-2.5 rounded-xl text-xs font-bold <?= $isArchivedRoute ? 'text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' ?> transition-all flex items-center gap-2.5 group">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0 text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+           class="px-3.5 py-2.5 rounded-xl text-xs font-bold <?= $isArchivedRoute ? 'text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white' ?> transition-all flex items-center gap-2.5 group">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0 text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
             </svg>
             <span><?= $isArchivedRoute ? 'Active Folders' : 'Archived Folders' ?></span>

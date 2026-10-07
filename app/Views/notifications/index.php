@@ -4,13 +4,13 @@
 <?= view('components/header') ?>
 
 <style>
-    /* Dedicated Dark & Light Mode Theme Tokens for Activity Center */
+    /* Dedicated Dark & Light Mode Theme Tokens for Activity Center (60-30-10 Palette) */
     .notif-page-bg {
-        background-color: #f1f5f9;
+        background-color: #f8fafc;
         color: #0f172a;
     }
     .dark .notif-page-bg {
-        background-color: #020d07;
+        background-color: #09090b;
         color: #f8fafc;
     }
 
@@ -25,19 +25,19 @@
         color: #64748b;
     }
     .dark .notif-subtext {
-        color: #94a3b8;
+        color: #a1a1aa;
     }
 
     /* Tag Pill */
     .notif-tag-pill {
-        background-color: #ecfdf5;
-        border: 1px solid #a7f3d0;
-        color: #047857;
+        background-color: #f4f4f5;
+        border: 1px solid #e4e4e7;
+        color: #52525b;
     }
     .dark .notif-tag-pill {
-        background-color: #062c1e;
-        border: 1px solid #0f593b;
-        color: #34d399;
+        background-color: #18181b;
+        border: 1px solid #27272a;
+        color: #d4d4d8;
     }
 
     /* Unread Badge (Header) */
@@ -47,8 +47,8 @@
         color: #b91c1c;
     }
     .dark .notif-badge-unread {
-        background-color: #3c1214;
-        border: 1px solid #6b1e25;
+        background-color: #271416;
+        border: 1px solid #571922;
         color: #f87171;
     }
 
@@ -56,19 +56,21 @@
     .notif-btn-top-green {
         background-color: #ffffff;
         border: 1px solid #cbd5e1;
-        color: #047857;
+        color: #0f172a;
     }
     .notif-btn-top-green:hover {
-        background-color: #ecfdf5;
-        border-color: #a7f3d0;
+        background-color: #f8fafc;
+        border-color: #94a3b8;
     }
     .dark .notif-btn-top-green {
-        background-color: #062c1e;
-        border: 1px solid #105e3e;
-        color: #34d399;
+        background-color: #18181b;
+        border: 1px solid #27272a;
+        color: #e4e4e7;
     }
     .dark .notif-btn-top-green:hover {
-        background-color: #0a3d2a;
+        background-color: #27272a;
+        border-color: #3f3f46;
+        color: #ffffff;
     }
 
     .notif-btn-top-red {
@@ -81,35 +83,36 @@
         border-color: #fecaca;
     }
     .dark .notif-btn-top-red {
-        background-color: #280c10;
-        border: 1px solid #571922;
+        background-color: #18181b;
+        border: 1px solid #27272a;
         color: #f87171;
     }
     .dark .notif-btn-top-red:hover {
-        background-color: #381117;
+        background-color: #2a1518;
+        border-color: #571922;
     }
 
     /* Filter Tab Segmented Capsule */
     .notif-tab-box {
-        background-color: #e2e8f0;
-        border: 1px solid #cbd5e1;
+        background-color: #f1f5f9;
+        border: 1px solid #e2e8f0;
     }
     .dark .notif-tab-box {
-        background-color: #041910;
-        border: 1px solid #0d3b27;
+        background-color: #18181b;
+        border: 1px solid #27272a;
     }
 
     .notif-tab-active {
         background-color: #ffffff;
         border: 1px solid #cbd5e1;
-        color: #047857;
+        color: #09090b;
         box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     }
     .dark .notif-tab-active {
-        background-color: #0a422a;
-        border: 1px solid #146642;
+        background-color: #27272a;
+        border: 1px solid #3f3f46;
         color: #ffffff;
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
     }
 
     .notif-tab-inactive {
@@ -121,7 +124,7 @@
         color: #0f172a;
     }
     .dark .notif-tab-inactive {
-        color: #94a3b8;
+        color: #a1a1aa;
     }
     .dark .notif-tab-inactive:hover {
         color: #ffffff;
@@ -141,35 +144,35 @@
         box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2);
     }
     .dark .notif-search-box {
-        background-color: #041910;
-        border: 1px solid #0d3b27;
+        background-color: #18181b;
+        border: 1px solid #27272a;
         color: #ffffff;
     }
     .dark .notif-search-box::placeholder {
-        color: #64748b;
+        color: #71717a;
     }
     .dark .notif-search-box:focus {
-        border-color: #10b981;
-        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
     }
 
     /* Notification Cards: Emerald (Normal/Approval) */
     .notif-card-emerald {
         background-color: #ffffff;
-        border: 1px solid #e2e8f0;
+        border: 1px solid #e4e4e7;
         box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03);
     }
     .notif-card-emerald:hover {
-        border-color: #a7f3d0;
+        border-color: #cbd5e1;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
     .dark .notif-card-emerald {
-        background-color: #031c12;
-        border: 1px solid #0e4b31;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2);
+        background-color: #18181b;
+        border: 1px solid #27272a;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
     }
     .dark .notif-card-emerald:hover {
-        border-color: #156e48;
+        border-color: #3f3f46;
     }
 
     .notif-icon-emerald {
@@ -178,8 +181,8 @@
         color: #059669;
     }
     .dark .notif-icon-emerald {
-        background-color: #062d1d;
-        border: 1px solid #0f5939;
+        background-color: #112a20;
+        border: 1px solid #1a4d39;
         color: #34d399;
     }
 
@@ -196,8 +199,8 @@
         color: #047857;
     }
     .dark .notif-phase-emerald {
-        background-color: #05291b;
-        border: 1px solid #0d4e32;
+        background-color: #12281e;
+        border: 1px solid #1a4e39;
         color: #34d399;
     }
 
@@ -210,12 +213,31 @@
         background-color: #047857;
     }
     .dark .notif-btn-emerald {
-        background-color: #073824;
-        border: 1px solid #115a3a;
-        color: #34d399;
+        background-color: #064e3b;
+        border: 1px solid #0e6c46;
+        color: #a7f3d0;
     }
     .dark .notif-btn-emerald:hover {
-        background-color: #0a472e;
+        background-color: #086142;
+        color: #ffffff;
+    }
+
+    /* Secondary Neutral Button */
+    .notif-btn-secondary {
+        background-color: #ffffff;
+        border: 1px solid #cbd5e1;
+        color: #0f172a;
+    }
+    .notif-btn-secondary:hover {
+        background-color: #f1f5f9;
+    }
+    .dark .notif-btn-secondary {
+        background-color: #27272a;
+        border: 1px solid #3f3f46;
+        color: #ffffff;
+    }
+    .dark .notif-btn-secondary:hover {
+        background-color: #3f3f46;
     }
 
     /* Notification Cards: Amber (Warning/Revoked/Returned) */
@@ -229,12 +251,12 @@
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
     .dark .notif-card-amber {
-        background-color: #181104;
-        border: 1px solid #483009;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2);
+        background-color: #18181b;
+        border: 1px solid #4a3410;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
     }
     .dark .notif-card-amber:hover {
-        border-color: #6a470d;
+        border-color: #714e13;
     }
 
     .notif-icon-amber {
@@ -243,8 +265,8 @@
         color: #d97706;
     }
     .dark .notif-icon-amber {
-        background-color: #281a05;
-        border: 1px solid #57390a;
+        background-color: #2b1d0a;
+        border: 1px solid #573a0d;
         color: #fbbf24;
     }
 
@@ -252,7 +274,7 @@
         color: #b45309;
     }
     .dark .notif-title-amber {
-        color: #f59e0b;
+        color: #fbbf24;
     }
 
     .notif-phase-amber {
@@ -261,8 +283,8 @@
         color: #b45309;
     }
     .dark .notif-phase-amber {
-        background-color: #2d1b06;
-        border: 1px solid #59390f;
+        background-color: #281a07;
+        border: 1px solid #4f3308;
         color: #fbbf24;
     }
 
@@ -275,12 +297,13 @@
         background-color: #b45309;
     }
     .dark .notif-btn-amber {
-        background-color: #2e1c05;
-        border: 1px solid #5a370a;
-        color: #fbbf24;
+        background-color: #78350f;
+        border: 1px solid #92400e;
+        color: #fef3c7;
     }
     .dark .notif-btn-amber:hover {
-        background-color: #3d2507;
+        background-color: #92400e;
+        color: #ffffff;
     }
 
     /* Message typography */
@@ -295,14 +318,14 @@
         color: #475569;
     }
     .dark .notif-text-body {
-        color: #cbd5e1;
+        color: #d4d4d8;
     }
 
     .notif-text-meta {
         color: #64748b;
     }
     .dark .notif-text-meta {
-        color: #94a3b8;
+        color: #a1a1aa;
     }
 
     /* Dismiss Cross */
@@ -313,7 +336,7 @@
         color: #0f172a;
     }
     .dark .notif-dismiss-btn {
-        color: #64748b;
+        color: #71717a;
     }
     .dark .notif-dismiss-btn:hover {
         color: #ffffff;
@@ -560,7 +583,7 @@
                             </div>
                             <h3 class="text-base font-bold notif-title-main">No matches found</h3>
                             <p class="text-xs notif-subtext max-w-sm">No notifications found matching "${escapeHtml(searchQuery)}".</p>
-                            <button type="button" id="btn-empty-clear-search" class="mt-2 px-4 py-2 rounded-xl text-xs font-bold notif-btn-emerald transition-all cursor-pointer shadow-xs">
+                            <button type="button" id="btn-empty-clear-search" class="mt-2 px-4 py-2 rounded-xl text-xs font-bold notif-btn-secondary transition-all cursor-pointer shadow-xs">
                                 Clear Search
                             </button>
                         </div>
@@ -581,7 +604,7 @@
                             </div>
                             <h3 class="text-base font-bold notif-title-main">All caught up!</h3>
                             <p class="text-xs notif-subtext max-w-sm">You have zero unread notifications.</p>
-                            <button type="button" id="btn-empty-view-all" class="mt-2 px-4 py-2 rounded-xl text-xs font-bold notif-btn-emerald transition-all cursor-pointer shadow-sm">
+                            <button type="button" id="btn-empty-view-all" class="mt-2 px-4 py-2 rounded-xl text-xs font-bold notif-btn-secondary transition-all cursor-pointer shadow-sm">
                                 View Notification History (${notifications.length})
                             </button>
                         </div>

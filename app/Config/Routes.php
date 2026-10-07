@@ -48,13 +48,9 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->post('account/unit/update', 'AccountManagement::updateUnit', ['filter' => 'role:Admin']);
     $routes->post('account/unit/delete', 'AccountManagement::deleteUnit', ['filter' => 'role:Admin']);
 
-    // Template Management
-    $routes->get('templates', 'Template::index', ['filter' => 'role:Admin']);
-    $routes->get('templates/create', 'Template::create', ['filter' => 'role:Admin']);
-    $routes->get('templates/edit/(:num)', 'Template::edit/$1', ['filter' => 'role:Admin']);
-    
-    $routes->post('templates/store', 'Template::store', ['filter' => 'role:Admin']);
-    $routes->post('templates/delete', 'Template::delete', ['filter' => 'role:Admin']);
+    // Template Management (Disabled / Standardized statutory forms)
+    $routes->addRedirect('templates', 'dashboard');
+    $routes->addRedirect('templates/(:any)', 'dashboard');
 
     // Profile
     $routes->get('profile', 'Profile');

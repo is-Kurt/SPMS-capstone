@@ -24,26 +24,43 @@
 <div class="p-2 sm:p-4 lg:p-5 xl:p-8 max-w-[100rem] mx-auto flex flex-col lg:flex-row gap-4 lg:gap-5 xl:gap-8 lg:min-h-[calc(100vh-6rem)] lg:pb-4">
     
     <!-- LEFT SIDEBAR -->
-    <div id="app-sidebar" class="fixed inset-y-0 left-0 z-[120] w-72 bg-surface lg:bg-transparent lg:w-60 lg:static lg:flex flex-shrink-0 flex-col h-full overflow-hidden transition-transform duration-300 transform -translate-x-full lg:translate-x-0 border-r border-surface-border lg:border-none shadow-2xl lg:shadow-none">
-        <div class="flex justify-between items-center px-4 pt-6 pb-3 lg:p-0 lg:mb-3 shrink-0">
-            <p class="text-[11px] font-extrabold uppercase tracking-wider text-text-muted">
-                <?= esc($sidebarTitle ?? 'Evaluation Folders') ?>
-            </p>
+    <div id="app-sidebar" class="fixed inset-y-0 left-0 z-[120] w-72 bg-white dark:bg-zinc-900 lg:bg-transparent lg:w-60 lg:static lg:flex flex-shrink-0 flex-col h-full overflow-hidden transition-transform duration-300 transform -translate-x-full lg:translate-x-0 border-r border-zinc-200 dark:border-zinc-800 lg:border-none shadow-2xl lg:shadow-none">
+        <div class="flex justify-between items-center px-4 pt-5 pb-3 lg:p-0 lg:mb-3 shrink-0 border-b border-zinc-200 dark:border-zinc-800 lg:border-none">
+            <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-amber-500 lg:hidden shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                </svg>
+                <p class="text-[11px] font-extrabold uppercase tracking-wider text-text-muted">
+                    <?= esc($sidebarTitle ?? 'Evaluation Folders') ?>
+                </p>
+            </div>
             
-            <!-- Dynamic Add Button -->
-            <?php if ($context === 'folders' && session()->get('role') === 'Admin'): ?>
-                <button id="btn-create-folder-modal" class="w-7 h-7 rounded-lg flex items-center justify-center text-accent hover:text-accent-hover hover:bg-accent/10 transition-colors cursor-pointer" title="New Folder">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            <div class="flex items-center gap-1.5">
+                <!-- Dynamic Add Button -->
+                <?php if ($context === 'folders' && session()->get('role') === 'Admin'): ?>
+                    <button id="btn-create-folder-modal" class="w-7 h-7 rounded-lg flex items-center justify-center text-accent hover:text-accent-hover hover:bg-accent/10 transition-colors cursor-pointer" title="New Folder">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </button>
+                <?php elseif ($context === 'teams'): ?>
+                    <button id="btn-create-team-modal" class="w-7 h-7 rounded-lg flex items-center justify-center text-accent hover:text-accent-hover hover:bg-accent/10 transition-colors cursor-pointer" title="New Team">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </button>
+                <?php endif; ?>
+
+                <!-- Mobile Close Drawer Button (lg:hidden) -->
+                <button type="button" 
+                        onclick="toggleAppSidebar()" 
+                        class="lg:hidden w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer" 
+                        aria-label="Close sidebar">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
-            <?php elseif ($context === 'teams'): ?>
-                <button id="btn-create-team-modal" class="w-7 h-7 rounded-lg flex items-center justify-center text-accent hover:text-accent-hover hover:bg-accent/10 transition-colors cursor-pointer" title="New Team">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                    </svg>
-                </button>
-            <?php endif; ?>
+            </div>
             
         </div>
         <div class="overflow-y-auto custom-scrollbar flex-1 px-3 pb-6 lg:p-0 lg:pr-2">
@@ -56,7 +73,7 @@
     </div>
 
     <!-- Mobile App Sidebar Overlay -->
-    <div id="app-sidebar-overlay" onclick="toggleAppSidebar()" class="fixed inset-0 bg-black/50 z-[115] hidden lg:hidden opacity-0 transition-opacity duration-300"></div>
+    <div id="app-sidebar-overlay" onclick="toggleAppSidebar()" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-[115] hidden lg:hidden opacity-0 transition-opacity duration-300"></div>
 
     <!-- MAIN CONTENT (Changed h-full to lg:h-full to FIX MOBILE SCROLLING) -->
     <div class="flex-1 flex flex-col min-w-0 overflow-visible relative">
@@ -83,12 +100,20 @@
             overlay.classList.remove('hidden');
             setTimeout(() => overlay.classList.add('opacity-100'), 10);
             sidebar.classList.remove('-translate-x-full');
+            document.body.classList.add('overflow-hidden');
         } else {
             sidebar.classList.add('-translate-x-full');
             overlay.classList.remove('opacity-100');
             setTimeout(() => overlay.classList.add('hidden'), 300);
+            document.body.classList.remove('overflow-hidden');
         }
     }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && isAppSidebarOpen) {
+            toggleAppSidebar();
+        }
+    });
 </script>
 
 <!-- Only load the JS relevant to the current context -->

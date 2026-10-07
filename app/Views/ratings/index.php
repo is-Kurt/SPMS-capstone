@@ -34,14 +34,6 @@
 @media (min-width: 1024px) {
     #ratings-sidebar { z-index: 0 !important; }
 }
-.spms-folder-card {
-    background-color: #061810 !important;
-    border-color: #14422b !important;
-}
-.dark .spms-folder-card,
-.dark [class*="dark:border-[#14422b]"] {
-    border-color: #14422b !important;
-}
 </style>
 
 <?php if (!$activeFolder): ?>
@@ -229,7 +221,7 @@
             </button>
         </div>
 
-        <!-- MOBILE ACTIVE EVALUATION CYCLE FOLDER DROPDOWN (PULL-DOWN MENU SPEC) -->
+        <!-- Mobile active folder selector dropdown -->
         <?= view('components/mobile_folder_dropdown', [
             'activeFolder'     => $activeFolder ?? null,
             'folders'          => $sidebarFolders ?? [],
