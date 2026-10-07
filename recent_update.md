@@ -1,6 +1,19 @@
 # Recent Updates
 
 
+### Smooth Sign-in Entrance Animation
+- Added gentle fade-in and slide-up animations to the login portal columns on page load with a subtle stagger between the advisory panel and sign-in card.
+- Automatically disables animations when a user has "Reduce Motion" enabled in their system settings.
+
+### Interactive Sign-In Button Animation
+- When clicking "Log In to Workspace", the button transitions smoothly into an active loading state with a spinning circular indicator and "Signing in..." feedback.
+- Prevents accidental double clicks or duplicate requests while waiting for the server.
+
+### Unified Top-Right Floating Notifications
+- Moved the sign-out notice into the existing top-right floating alert system so it shares the same space and styling as system warnings.
+- Features a green checkmark icon, manual dismiss button, and automatic 5-second fade-away.
+- Automatically blocks the sign-out banner if there is a failed sign-in attempt.
+
 ### Unified Mobile Folder Navigation
 - Converted the mobile folder selector from a floating card popup into the unified off-canvas slide-out sidebar across Dashboard, Folders, and Ratings.
 - Added a high-contrast mobile trigger capsule displaying the active evaluation period, archive badges, and a quick sidebar drawer button.
