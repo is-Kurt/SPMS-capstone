@@ -1418,7 +1418,7 @@
                 </div>
 
                 <?php if ($isDocIperf): ?>
-                <!-- IPERF 3-ROW METADATA MATRIX (EXACT REPLICA OF PHOTO) -->
+                <!-- IPERF Metadata Matrix -->
                 <table class="spms-meta-matrix" style="width: 100%; border-collapse: collapse; border: 1px solid #000000; margin-bottom: 18px; font-size: 11px;">
                     <tr style="border-bottom: 1px solid #000000;">
                         <td style="width: 18%; padding: 6px 8px; font-weight: bold; border-right: 1px solid #000000; background: #fafafa; color: #0f172a;">Name of Employee:</td>
@@ -1710,7 +1710,7 @@
                             </tr>
                         </tbody>
 
-                        <!-- OVERALL AVERAGE RATING ROW (EXACT REPLICA OF PHOTO) -->
+                        <!-- OVERALL AVERAGE RATING -->
                         <tfoot>
                             <tr style="background-color: #f8fafc; font-weight: bold; border-top: 2px solid #000; border-bottom: 2px solid #000;">
                                 <td colspan="6" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #000000; border: 1px solid #000; text-align: left;">
@@ -1980,7 +1980,7 @@
                 </div>
 
                 <?php if ($isDocIperf): ?>
-                <!-- IPERF TWO-PHASE SIGNATORIES & REFERENCE GUIDES (EXACT REPLICA OF PHOTO) -->
+                <!-- IPERF Signatories & Reference Guide -->
                 <table class="spms-signatories-matrix" style="width: 100%; border-collapse: collapse; border: 1px solid #000; margin-top: 18px; font-size: 11px;">
                     <tr>
                         <!-- Phase 1: Start of Period (Columns A-B) -->
@@ -2073,7 +2073,7 @@
                 <input type="hidden" id="sig-vp-name" value="">
                 <input type="hidden" id="sig-vp-date" value="">
                 <?php else: ?>
-                <!-- 2 BOTTOM SIGNATORIES (ROWS 32-35 EXCEL SPREADSHEET EXACT REPLICA) -->
+                <!-- Signatories -->
                 <table style="width: 100%; border-collapse: collapse; border: none; font-size: 11px; margin-top: 18px;">
                     <tr>
                         <!-- Left: Ratee (Columns A-C) -->

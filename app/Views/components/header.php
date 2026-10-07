@@ -71,27 +71,22 @@
                         GOVPH
                     </a>
 
-                    <!-- Subtle Vertical Divider -->
                     <span class="text-zinc-300 dark:text-zinc-700 text-xs font-light select-none shrink-0">|</span>
 
-                    <!-- Dual Official Seals: Bagong Pilipinas & Benguet State University -->
                     <div class="flex items-center gap-1.5 shrink-0">
-                        <!-- Bagong Pilipinas Official Logo -->
                         <a href="https://www.gov.ph" target="_blank" rel="noopener noreferrer" title="Bagong Pilipinas - Republic of the Philippines" class="flex items-center">
                             <img src="<?= base_url('assets/images/bagong_pilipinas.png') ?>" alt="Bagong Pilipinas Logo" 
                                  class="w-[22px] h-[22px] min-w-[22px] min-h-[22px] max-w-[22px] max-h-[22px] object-contain block" />
                         </a>
-                        <!-- BSU Official Seal -->
                         <a href="http://www.bsu.edu.ph" target="_blank" rel="noopener noreferrer" title="Benguet State University" class="flex items-center">
                             <img src="<?= base_url('assets/images/bsu_seal.png') ?>" alt="Benguet State University Seal" 
                                  class="w-[22px] h-[22px] min-w-[22px] min-h-[22px] max-w-[22px] max-h-[22px] rounded-full object-contain block" />
                         </a>
                     </div>
-                    <!-- Subtle Vertical Divider -->
                     <span class="text-zinc-300 dark:text-zinc-700 text-xs font-light select-none shrink-0">|</span>
                 </div>
 
-                <!-- SPMS Institutional Brand Identity -->
+                <!-- Brand -->
                 <a href="<?= site_url(array_key_first($navItems) ?? 'folders') ?>" class="shrink-0 flex items-center hover:opacity-90 transition-opacity group min-w-0">
                     <div class="flex flex-col min-w-0 leading-tight">
                         <div class="flex items-center gap-1.5 leading-none">
@@ -105,7 +100,7 @@
 
             </div>
 
-            <!-- Center: Navigation Pills in Enclosed Capsule Container -->
+            <!-- Navigation -->
             <div class="hidden md:flex items-center p-1 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
                 <?php foreach ($navItems as $uri => $label):
                     $isActive = ($currentUri === $uri) || ($uri !== '' && strpos($currentUri, $uri) === 0);
@@ -117,7 +112,7 @@
                 <?php endforeach; ?>
             </div>
             
-            <!-- Right: Theme Toggle, Notification Bell, User Profile Capsule, Mobile Menu -->
+            <!-- Controls -->
             <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
 
 
@@ -150,7 +145,7 @@
                     </span>
                 </a>
 
-                <!-- Profile Dropdown Button Capsule (Matching GovHeader4 with Fully Visible Name on sm+) -->
+                <!-- Profile Dropdown -->
                 <div class="relative">
                     <button id="profile-btn-mobile" 
                             class="relative flex items-center gap-1.5 sm:gap-2.5 text-zinc-800 dark:text-white bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 shadow-xs p-1 sm:pl-1.5 sm:pr-3 sm:py-1 cursor-pointer transition-all rounded-xl">

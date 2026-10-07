@@ -121,7 +121,7 @@ class UnitModel extends Model
             ],
         ];
 
-        // Legacy mapping to rename units seamlessly preserving IDs and plantilla links
+        // Legacy unit rename mapping
         $legacyRenames = [
             'Department of Agronomy'                                 => 'Bachelor of Science in Agriculture',
             'Department of Agricultural Economics & Agribusiness'    => 'Bachelor of Science in Agribusiness',

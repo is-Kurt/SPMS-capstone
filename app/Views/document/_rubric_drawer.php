@@ -28,7 +28,7 @@
     }
 </style>
 
-<!-- Eye-Friendly CSC & BSU Scoring Rubric Reference Panel -->
+<!-- Scoring Rubric Drawer -->
 <aside id="rubric-drawer" 
        class="h-full flex flex-col shrink-0 border-l border-emerald-900/30 transition-all duration-200 ease-out print-hide z-50 select-none"
        style="width: 440px; min-width: 360px; max-width: 34vw; background-color: #121c17; color: #cbd5e1; display: none;">

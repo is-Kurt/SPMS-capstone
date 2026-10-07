@@ -246,7 +246,7 @@ class Document extends BaseController
         }
         $data['rootFolderId'] = $rootFolderId;
 
-        // Seamless Ratee Navigation for Evaluators/Supervisors/TWG
+        // Ratee navigation for evaluators
         $rateeNav = null;
         if ($docOwnerId !== $userId && !$isGuide) {
             $siblingFolders = $folderModel->getRatingDashboardFolders($userId, $sysRole, $rootFolderId);

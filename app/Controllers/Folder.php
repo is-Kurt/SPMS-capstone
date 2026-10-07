@@ -95,7 +95,7 @@ class Folder extends BaseController
             if ($activeFolder['user_id'] != $userId) {
                 session()->remove('active_folder_id');
 
-                // If the viewer is an Admin, TWG, or routed evaluator, seamlessly route to ratings view
+                // Route authorized evaluators to ratings view
                 $routingModel = new \App\Models\EvaluationRoutingModel();
                 $isAuthorizedEvaluator = ($role === 'Admin') || 
                     ($role === 'TWG' && (new \App\Models\TwgUnitAssignmentModel())->isTwgAssignedToFolder($userId, $activeFolder['id'])) ||

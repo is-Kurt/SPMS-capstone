@@ -208,7 +208,7 @@
             </div>
         </div>
     </footer>
-    <!-- Seamless Screen Transition Overlay -->
+    <!-- Loading Overlay -->
     <div id="login-transition-overlay" class="fixed inset-0 z-[300] bg-zinc-950/80 hidden items-center justify-center transition-opacity duration-300 opacity-0 pointer-events-none">
         <style>
             @keyframes bsuSpinCircle {
@@ -222,24 +222,17 @@
             }
         </style>
         <div class="flex flex-col items-center justify-center gap-4 text-center">
-            <!-- Circular Loading Bar / Spinner Ring encircling BSU Seal -->
             <div class="relative flex items-center justify-center" style="width: 104px; height: 104px;">
-                <!-- Ambient emerald aura -->
                 <div style="position: absolute; inset: 0; border-radius: 9999px; background: rgba(16, 185, 129, 0.2); filter: blur(10px); pointer-events: none;"></div>
 
-                <!-- Circular Loading Bar SVG -->
                 <svg class="bsu-spinner-svg pointer-events-none" width="104" height="104" viewBox="0 0 104 104" fill="none" xmlns="http://www.w3.org/2000/svg" style="position: absolute; top: 0; left: 0; width: 104px; height: 104px; z-index: 5;">
-                    <!-- Circular Loading Bar Track Ring -->
                     <circle cx="52" cy="52" r="44" stroke="rgba(255, 255, 255, 0.2)" stroke-width="5" fill="none" />
-                    <!-- Circular Loading Bar Active Progress Arc -->
                     <circle cx="52" cy="52" r="44" stroke="#10b981" stroke-width="5" stroke-linecap="round" stroke-dasharray="276" stroke-dashoffset="190" fill="none" style="filter: drop-shadow(0 0 8px #10b981);" />
                 </svg>
 
-                <!-- Benguet State University Seal centered inside the ring -->
                 <img src="<?= base_url('assets/images/bsu_seal.png') ?>" alt="Benguet State University Seal" width="60" height="60" style="width: 60px; height: 60px; border-radius: 9999px; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.6)); position: relative; z-index: 10; pointer-events: none; user-select: none;" />
             </div>
 
-            <!-- Clean, Simple Title -->
             <p class="text-sm font-bold text-white tracking-wide">
                 Opening Workspace...
             </p>

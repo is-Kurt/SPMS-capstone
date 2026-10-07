@@ -361,7 +361,7 @@ class Attachment extends BaseController
         $rawContents = file_get_contents($filePath);
         $payload = $rawContents;
 
-        // Transparently decrypt with AES-256 if encrypted, fallback to raw for legacy files
+        // Decrypt if encrypted, or return raw contents
         try {
             $encrypter = \Config\Services::encrypter();
             $decrypted = $encrypter->decrypt($rawContents);

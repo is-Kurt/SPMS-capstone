@@ -1266,7 +1266,7 @@
                                 </div>
                             </div>
 
-                            <!-- 4 ACTION BUTTONS (Clean text, exact mockup match) -->
+                            <!-- Actions -->
                             <div class="spms-hub-actions-bar">
                                 <a href="<?= site_url('document/' . $primaryDoc['id']) ?>" class="spms-hub-btn-primary">
                                     OPEN & EDIT PAPER
@@ -1825,7 +1825,7 @@
                     <?php endif; ?>
                 </div>
 
-                <!-- Folder Details Block (Matching user's reference mockup) -->
+                <!-- Folder Details -->
                 <div class="flex flex-col gap-3 pt-5 border-t border-zinc-200 dark:border-zinc-800 mt-auto">
                     <h4 class="text-[10px] font-black uppercase text-zinc-400 dark:text-[#8ea396] tracking-wider">Folder Details</h4>
                     

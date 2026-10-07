@@ -47,7 +47,7 @@
             </div>
 
             <?php if (count($folders) > 5): ?>
-                <!-- Minimalist Sidebar Paginator (Only appears when > 5 folders) -->
+                <!-- Sidebar Pagination -->
                 <div id="sidebar-folder-pagination" class="flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500 dark:text-zinc-400 select-none mt-1">
                     <button type="button" id="btn-sidebar-prev" 
                             class="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white dark:hover:bg-zinc-800 disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs" 

@@ -282,7 +282,7 @@ class Rating extends BaseController
 
         $myDocs = $documentModel->where('document_folder_id', $subFolderId)->findAll();
 
-        // Seamless Review UX: Open the employee's document directly instead of an extra intermediate screen
+        // Open the employee's document directly
         if (!empty($myDocs)) {
             $targetDoc = null;
             foreach ($myDocs as $d) {

@@ -1143,7 +1143,7 @@ class CscExcelExporter
 
         $currentRow += 2;
 
-        // 7. Two-Phase Signatories & Reference Guide (Exact Replica of Photo)
+        // 7. Two-Phase Signatories & Reference Guide
         $defaultSupName = trim(($superiorInfo['first_name'] ?? '') . ' ' . ($superiorInfo['last_name'] ?? ''));
 
         $sigTargetsPreparedName = $formData['signatories']['targetsPreparedName'] ?? $rateeName;

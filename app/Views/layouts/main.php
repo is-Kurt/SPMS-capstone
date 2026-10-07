@@ -86,18 +86,16 @@
             transition-delay: 0s !important;
         }
 
-        /* Subtle micro-rotation for theme toggle buttons */
         .theme-toggle-spin {
             animation: theme-spin 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        /* Subtle adaptive auth card border & elevation */
         .spms-auth-card {
             border: 1px solid rgba(226, 232, 240, 0.75) !important;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02) !important;
         }
         .dark .spms-auth-card {
-            border: 1px solid rgba(16, 185, 129, 0.18) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
         }
 
