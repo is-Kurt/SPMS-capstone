@@ -100,6 +100,15 @@
             border: 1px solid rgba(16, 185, 129, 0.18) !important;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
         }
+
+        @keyframes spmsSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-smooth {
+            animation: spmsSpin 0.9s linear infinite;
+            transform-origin: center;
+        }
     </style>
 
     <title>SPMS</title>
@@ -110,7 +119,6 @@
     <?= view('components/user_guide_modal') ?>
 
     <?php 
-        $isJustLoggedIn = (bool) session()->getFlashdata('just_logged_in');
         $flashError = session('error') ?? session('errors.error') ?? session()->getFlashdata('error');
         $flashSuccess = session('success') ?? session()->getFlashdata('success');
         if (!$flashError && !$flashSuccess && request()->getGet('logged_out') && !session('errors') && !old('email') && !validation_errors()) {
@@ -141,62 +149,15 @@
                     window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : ''));
                 }
             }
-            <?php if ($isJustLoggedIn): ?>
-                const toast = document.getElementById('global-flash-banner');
-                if (toast) {
-                    toast.style.opacity = '0';
-                    toast.style.transform = 'translateY(-10px)';
-                    toast.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-                    setTimeout(() => {
-                        toast.style.opacity = '1';
-                        toast.style.transform = 'translateY(0)';
-                        setTimeout(() => {
-                            toast.style.opacity = '0';
-                            toast.style.transform = 'translateY(-10px)';
-                            setTimeout(() => toast.remove(), 400);
-                        }, 5000);
-                    }, 1000);
-                }
-            <?php else: ?>
-                setTimeout(() => {
-                    const b = document.getElementById('global-flash-banner');
-                    if (b) {
-                        b.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-                        b.style.opacity = '0';
-                        b.style.transform = 'translateY(-10px)';
-                        setTimeout(() => b.remove(), 400);
-                    }
-                }, 5000);
-            <?php endif; ?>
-        </script>
-    <?php endif; ?>
-
-    <?php if ($isJustLoggedIn): ?>
-        <!-- Seamless 1-Second Post-Login Transition Overlay with BSU Seal -->
-        <div id="post-login-transition-overlay" class="fixed inset-0 z-[300] bg-zinc-950/80 flex items-center justify-center transition-opacity duration-400 opacity-100">
-            <div class="flex flex-col items-center justify-center gap-4 text-center">
-                <!-- Glowing BSU Seal with Emerald Spinner Ring -->
-                <div class="relative w-20 h-20 flex items-center justify-center">
-                    <div class="absolute inset-0 rounded-full border-4 border-emerald-500/20"></div>
-                    <div class="absolute inset-0 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin"></div>
-                    <img src="<?= base_url('assets/images/bsu_seal.png') ?>" alt="Benguet State University Seal" class="w-12 h-12 rounded-full object-contain drop-shadow-md" />
-                </div>
-                <!-- Clean, Simple Title -->
-                <p class="text-sm font-bold text-white tracking-wide">
-                    Opening Workspace...
-                </p>
-            </div>
-        </div>
-        <script>
             setTimeout(() => {
-                const overlay = document.getElementById('post-login-transition-overlay');
-                if (overlay) {
-                    overlay.style.transition = 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                    overlay.style.opacity = '0';
-                    overlay.style.pointerEvents = 'none';
-                    setTimeout(() => overlay.remove(), 400);
+                const b = document.getElementById('global-flash-banner');
+                if (b) {
+                    b.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                    b.style.opacity = '0';
+                    b.style.transform = 'translateY(-10px)';
+                    setTimeout(() => b.remove(), 400);
                 }
-            }, 1000);
+            }, 5000);
         </script>
     <?php endif; ?>
 

@@ -292,18 +292,15 @@ class Session extends BaseController
             ]);
         }
 
-        session()->setFlashdata('just_logged_in', true);
-        $welcomeMsg = 'Welcome back, ' . $user['first_name'] . '!';
-
         if (session()->get('role') === 'TWG') {
-            return redirect()->to(site_url('ratings'))->with('success', $welcomeMsg);
+            return redirect()->to(site_url('ratings'));
         }
 
         if (session()->get('role') === 'Admin') {
-            return redirect()->to(site_url('dashboard'))->with('success', $welcomeMsg);
+            return redirect()->to(site_url('dashboard'));
         }
 
-        return redirect()->to(site_url('folders'))->with('success', $welcomeMsg);
+        return redirect()->to(site_url('folders'));
     }
 
 

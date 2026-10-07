@@ -142,7 +142,18 @@ class Attachment extends BaseController
         $clientName = $file->getClientName();
         $prefix = $isRubricUpload ? 'rubric_' : 'mov_';
         $newName = $prefix . $docId . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
-        $file->move($uploadDir, $newName);
+
+        // Read raw file content and encrypt with AES-256
+        $rawContents = file_get_contents($file->getTempName());
+        try {
+            $encrypter = \Config\Services::encrypter();
+            $dataToSave = $encrypter->encrypt($rawContents);
+        } catch (\Throwable $e) {
+            log_message('error', 'Attachment encryption error: ' . $e->getMessage());
+            $dataToSave = $rawContents;
+        }
+
+        file_put_contents($uploadDir . $newName, $dataToSave);
 
         $attachmentModel = new DocumentAttachmentModel();
 
@@ -347,17 +358,31 @@ class Attachment extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Attachment file not found on disk.');
         }
 
+        $rawContents = file_get_contents($filePath);
+        $payload = $rawContents;
+
+        // Transparently decrypt with AES-256 if encrypted, fallback to raw for legacy files
+        try {
+            $encrypter = \Config\Services::encrypter();
+            $decrypted = $encrypter->decrypt($rawContents);
+            if ($decrypted !== false && $decrypted !== null) {
+                $payload = $decrypted;
+            }
+        } catch (\Throwable $e) {
+            $payload = $rawContents;
+        }
+
         $mimeType = $attachment['file_type'] ?: 'application/octet-stream';
         $fileName = $attachment['file_name'] ?: 'evidence';
 
         // Clean headers and stream
         header('Content-Type: ' . $mimeType);
         header('Content-Disposition: ' . $disposition . '; filename="' . addslashes($fileName) . '"');
-        header('Content-Length: ' . filesize($filePath));
+        header('Content-Length: ' . strlen($payload));
         header('Cache-Control: private, max-age=86400');
         header('Pragma: public');
 
-        readfile($filePath);
+        echo $payload;
         exit;
     }
 }

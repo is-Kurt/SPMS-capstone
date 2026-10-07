@@ -1256,6 +1256,11 @@
   .animate-pulse {
     animation: var(--animate-pulse);
   }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
   .animate-spin {
     animation: var(--animate-spin);
   }

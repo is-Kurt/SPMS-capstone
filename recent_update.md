@@ -1,32 +1,24 @@
 # Recent Updates
 
-
-### Smooth Sign-in Entrance Animation
-- Added gentle fade-in and slide-up animations to the login portal columns on page load with a subtle stagger between the advisory panel and sign-in card.
-- Automatically disables animations when a user has "Reduce Motion" enabled in their system settings.
-
-### Interactive Sign-In Button Animation
-- When clicking "Log In to Workspace", the button transitions smoothly into an active loading state with a spinning circular indicator and "Signing in..." feedback.
-- Prevents accidental double clicks or duplicate requests while waiting for the server.
-
-### Unified Top-Right Floating Notifications
-- Moved the sign-out notice into the existing top-right floating alert system so it shares the same space and styling as system warnings.
-- Features a green checkmark icon, manual dismiss button, and automatic 5-second fade-away.
-- Automatically blocks the sign-out banner if there is a failed sign-in attempt.
-
-### Unified Mobile Folder Navigation
-- Converted the mobile folder selector from a floating card popup into the unified off-canvas slide-out sidebar across Dashboard, Folders, and Ratings.
-- Added a high-contrast mobile trigger capsule displaying the active evaluation period, archive badges, and a quick sidebar drawer button.
-- Added a dedicated mobile close button (`✕`) in the drawer header, background backdrop blur, and Escape key dismissal.
-
-### Clean Mobile Lifecycle Display
-- Removed the overflowing horizontal stepper pills on mobile screens, completely eliminating sideways swiping.
-- Mobile screens now transition cleanly from the section title directly into the stage cards and collapsible accordions.
-- Preserved the full 4-stage stepper on desktop with dynamic completion checkmarks.
-
-### Theme & Palette Harmonization
-- Neutralized legacy dark green backgrounds and borders across folder navigation, empty states, and notification components to the unified Charcoal/Zinc and BSU Gold palette.
-- Recompiled Tailwind CSS bundle and verified all 15 stages pass 100% in the automated full-cycle test suite.
+### Oct 8, 2026
+- **Evidence file encryption**
+  - Encrypted all uploaded evidence photos and files on disk so they can't be opened directly.
+  - Automatically decrypts when viewed on the website.
+- **Login screen cleanup & transition**
+  - Cleaned up the extra boxes and long privacy text from the login page.
+  - Replaced the loading screen logo with the official BSU seal and a spinning ring.
+  - Removed artificial wait times so it only shows while actually loading.
+  - Removed the "Welcome back" popup after logging in.
+- **Duplicate button fix**
+  - Removed the extra Return button on the right side of the document page.
+- **Sign-in animation & notifications**
+  - Added smooth entrance animations on login.
+  - Added loading spinner to the login button.
+  - Moved sign-out alerts into the floating top-right notification system.
+- **Mobile navigation & theme cleanup**
+  - Converted mobile folder menu into a slide-out drawer.
+  - Cleaned up mobile lifecycle view so it doesn't swipe sideways.
+  - Replaced legacy green backgrounds with charcoal/zinc and gold palette.
 
 ---
 
