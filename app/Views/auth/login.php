@@ -7,7 +7,7 @@
     <main class="flex-1 flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
         <div class="max-w-6xl w-full mx-auto">
 
-            <?php if (request()->getGet('logged_out')): ?>
+            <?php if (request()->getGet('logged_out') && !session('errors') && !session('errors.error') && !session('error') && !old('email') && !validation_errors()): ?>
                 <div id="logout-alert-banner" class="mb-6 p-3.5 rounded-xl text-xs font-semibold flex items-center justify-between gap-3 transition-all duration-350 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 shadow-2xs overflow-hidden max-h-24">
                     <div class="flex items-center gap-2.5 min-w-0">
                         <svg class="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
@@ -28,13 +28,12 @@
                         el.style.paddingTop = '0px';
                         el.style.paddingBottom = '0px';
                         setTimeout(() => el.remove(), 350);
-                        
-                        if (window.history.replaceState) {
-                            const url = new URL(window.location);
-                            if (url.searchParams.has('logged_out')) {
-                                url.searchParams.delete('logged_out');
-                                window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : ''));
-                            }
+                    }
+                    if (window.history.replaceState) {
+                        const url = new URL(window.location);
+                        if (url.searchParams.has('logged_out')) {
+                            url.searchParams.delete('logged_out');
+                            window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : ''));
                         }
                     }
                     setTimeout(() => {

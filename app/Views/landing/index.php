@@ -293,7 +293,7 @@
                             </button>
                         </div>
                         <?= form_open('login', ['id' => 'hero-login-form', 'class' => 'space-y-3']) ?>
-                            <?php if (isset($_GET['logged_out']) && $_GET['logged_out'] == '1' && !session('errors.error') && !session('error')): ?>
+                            <?php if (isset($_GET['logged_out']) && $_GET['logged_out'] == '1' && !session('errors') && !session('errors.error') && !session('error') && !old('email') && !validation_errors()): ?>
                                 <div id="hero-logout-alert" class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[#064e3b] text-xs font-bold mb-3 flex items-center justify-between gap-2 transition-all duration-300 overflow-hidden max-h-24">
                                     <div class="flex items-center gap-2 min-w-0">
                                         <svg class="w-4 h-4 shrink-0 text-[#064e3b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
