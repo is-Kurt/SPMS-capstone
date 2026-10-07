@@ -877,6 +877,15 @@
                             <span>Signing in...</span>
                         `;
                     }
+                    const overlay = document.getElementById('landing-login-overlay');
+                    if (overlay) {
+                        overlay.classList.remove('hidden');
+                        overlay.classList.add('flex');
+                        requestAnimationFrame(() => {
+                            overlay.classList.remove('opacity-0');
+                            overlay.classList.add('opacity-100');
+                        });
+                    }
                 });
             }
         });
@@ -900,6 +909,22 @@
                 .catch(() => {});
         }
     </script>
+
+    <!-- Seamless Screen Transition Overlay -->
+    <div id="landing-login-overlay" class="fixed inset-0 z-[300] bg-zinc-950/80 hidden items-center justify-center transition-opacity duration-300 opacity-0 pointer-events-none">
+        <div class="flex flex-col items-center justify-center gap-4 text-center">
+            <!-- Glowing Emblem with Spinner Ring -->
+            <div class="relative w-20 h-20 flex items-center justify-center">
+                <div class="absolute inset-0 rounded-full border-4 border-emerald-500/20"></div>
+                <div class="absolute inset-0 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin"></div>
+                <img src="<?= base_url('assets/images/bsu_seal.png') ?>" alt="Benguet State University Seal" class="w-12 h-12 rounded-full object-contain drop-shadow-md" />
+            </div>
+            <!-- Clean, Simple Title -->
+            <p class="text-sm font-bold text-white tracking-wide">
+                Opening Workspace...
+            </p>
+        </div>
+    </div>
 
 </body>
 </html>

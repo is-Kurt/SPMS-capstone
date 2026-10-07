@@ -73,24 +73,6 @@
                             In compliance with <strong class="text-zinc-900 dark:text-white">CSC Memorandum Circular No. 6, s. 2012</strong>, all faculty, department chairs, collegiate deans, and administrative personnel must formulate and submit their individual and divisional performance commitments for the active academic cycle.
                         </p>
 
-                        <!-- 4-Tier Cascading Summary -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                            <div class="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
-                                <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-1">Target Cascading</span>
-                                <p class="text-xs text-zinc-700 dark:text-zinc-300 leading-snug">
-                                    <strong class="text-emerald-700 dark:text-emerald-400">VPAA OPCR</strong> &rarr; 
-                                    <strong class="text-emerald-700 dark:text-emerald-400">Dean DPCR</strong> &rarr; 
-                                    <strong class="text-emerald-700 dark:text-emerald-400">Chair DPCR</strong> &rarr; 
-                                    <strong class="text-emerald-700 dark:text-emerald-400">Faculty IPCR</strong>
-                                </p>
-                            </div>
-                            <div class="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
-                                <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-1">Standard Scoring (1.00 &ndash; 5.00)</span>
-                                <p class="text-xs text-zinc-700 dark:text-zinc-300 leading-snug">
-                                    Quality (Q), Efficiency (E), &amp; Timeliness (T) with verifiable proof (MOV) uploads.
-                                </p>
-                            </div>
-                        </div>
 
                         <!-- Quick Resources Links -->
                         <div class="flex flex-wrap items-center gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
@@ -109,13 +91,6 @@
                         </div>
                     </div>
 
-                    <!-- Security & Legal Notice -->
-                    <div class="text-[11px] text-zinc-500 dark:text-zinc-400 flex items-start gap-2">
-                        <svg class="w-4 h-4 text-zinc-400 dark:text-zinc-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                        </svg>
-                        <span>Official Government Portal: Authorized access only. Activities are logged in accordance with the Data Privacy Act of 2012 (RA 10173) and the Electronic Commerce Act (RA 8792).</span>
-                    </div>
 
                 </div>
 
@@ -225,6 +200,21 @@
             </div>
         </div>
     </footer>
+    <!-- Seamless Screen Transition Overlay -->
+    <div id="login-transition-overlay" class="fixed inset-0 z-[300] bg-zinc-950/80 hidden items-center justify-center transition-opacity duration-300 opacity-0 pointer-events-none">
+        <div class="flex flex-col items-center justify-center gap-4 text-center">
+            <!-- Glowing Emblem with Spinner Ring -->
+            <div class="relative w-20 h-20 flex items-center justify-center">
+                <div class="absolute inset-0 rounded-full border-4 border-emerald-500/20"></div>
+                <div class="absolute inset-0 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin"></div>
+                <img src="<?= base_url('assets/images/bsu_seal.png') ?>" alt="Benguet State University Seal" class="w-12 h-12 rounded-full object-contain drop-shadow-md" />
+            </div>
+            <!-- Clean, Simple Title -->
+            <p class="text-sm font-bold text-white tracking-wide">
+                Opening Workspace...
+            </p>
+        </div>
+    </div>
 </div>
 
 <?php if (getenv('CI_ENVIRONMENT') !== 'development'): ?>
@@ -232,11 +222,12 @@
 <?php endif; ?>
 <script src="<?= base_url('assets/vendor/fingerprintjs/fp.min.js') ?>"></script>
 <script>
-    // Submit loading feedback with animated spinner
+    // Submit loading feedback with animated spinner & transition overlay
     document.addEventListener('DOMContentLoaded', function () {
         const form = document.getElementById('login-form') || document.querySelector('form');
         const btn = document.getElementById('login-submit-btn');
         const content = document.getElementById('login-btn-content');
+        const overlay = document.getElementById('login-transition-overlay');
 
         if (form && btn) {
             form.addEventListener('submit', function () {
@@ -252,6 +243,15 @@
                         </svg>
                         <span>Signing in...</span>
                     `;
+                }
+
+                if (overlay) {
+                    overlay.classList.remove('hidden');
+                    overlay.classList.add('flex');
+                    requestAnimationFrame(() => {
+                        overlay.classList.remove('opacity-0');
+                        overlay.classList.add('opacity-100');
+                    });
                 }
             });
         }
