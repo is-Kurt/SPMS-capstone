@@ -8,10 +8,39 @@
         <div class="max-w-6xl w-full mx-auto">
 
             <?php if (request()->getGet('logged_out')): ?>
-                <div class="mb-6 p-3.5 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-all bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 shadow-2xs">
-                    <svg class="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                    <span>You have been successfully signed out of the BSU-SPMS portal.</span>
+                <div id="logout-alert-banner" class="mb-6 p-3.5 rounded-xl text-xs font-semibold flex items-center justify-between gap-3 transition-all duration-350 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 shadow-2xs overflow-hidden max-h-24">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <svg class="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <span class="truncate sm:whitespace-normal">You have been successfully signed out of the BSU-SPMS portal.</span>
+                    </div>
+                    <button type="button" onclick="poofAlert(document.getElementById('logout-alert-banner'))" class="text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-200 text-base leading-none p-1 rounded-md hover:bg-emerald-100/50 dark:hover:bg-emerald-900/40 cursor-pointer transition-colors shrink-0" aria-label="Dismiss alert">
+                        &times;
+                    </button>
                 </div>
+                <script>
+                    function poofAlert(el) {
+                        if (!el) return;
+                        el.style.transition = 'opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.35s ease, margin 0.35s ease, padding 0.35s ease';
+                        el.style.opacity = '0';
+                        el.style.transform = 'scale(0.96) translateY(-8px)';
+                        el.style.maxHeight = '0px';
+                        el.style.marginBottom = '0px';
+                        el.style.paddingTop = '0px';
+                        el.style.paddingBottom = '0px';
+                        setTimeout(() => el.remove(), 350);
+                        
+                        if (window.history.replaceState) {
+                            const url = new URL(window.location);
+                            if (url.searchParams.has('logged_out')) {
+                                url.searchParams.delete('logged_out');
+                                window.history.replaceState({}, document.title, url.pathname + (url.search ? url.search : ''));
+                            }
+                        }
+                    }
+                    setTimeout(() => {
+                        poofAlert(document.getElementById('logout-alert-banner'));
+                    }, 5000);
+                </script>
             <?php endif; ?>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

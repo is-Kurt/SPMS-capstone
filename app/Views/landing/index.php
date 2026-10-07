@@ -294,12 +294,30 @@
                         </div>
                         <?= form_open('login', ['id' => 'hero-login-form', 'class' => 'space-y-3']) ?>
                             <?php if (isset($_GET['logged_out']) && $_GET['logged_out'] == '1' && !session('errors.error') && !session('error')): ?>
-                                <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[#064e3b] text-xs font-bold mb-3 flex items-center gap-2">
-                                    <svg class="w-4 h-4 shrink-0 text-[#064e3b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                    <span>You have signed out successfully.</span>
+                                <div id="hero-logout-alert" class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[#064e3b] text-xs font-bold mb-3 flex items-center justify-between gap-2 transition-all duration-300 overflow-hidden max-h-24">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <svg class="w-4 h-4 shrink-0 text-[#064e3b]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <span>You have signed out successfully.</span>
+                                    </div>
+                                    <button type="button" onclick="poofHeroAlert()" class="text-[#064e3b] opacity-60 hover:opacity-100 cursor-pointer p-0.5 leading-none text-base shrink-0">&times;</button>
                                 </div>
+                                <script>
+                                    function poofHeroAlert() {
+                                        const a = document.getElementById('hero-logout-alert');
+                                        if (!a) return;
+                                        a.style.transition = 'opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.35s ease, margin 0.35s ease, padding 0.35s ease';
+                                        a.style.opacity = '0';
+                                        a.style.transform = 'scale(0.96) translateY(-6px)';
+                                        a.style.maxHeight = '0px';
+                                        a.style.marginBottom = '0px';
+                                        a.style.paddingTop = '0px';
+                                        a.style.paddingBottom = '0px';
+                                        setTimeout(() => a.remove(), 350);
+                                    }
+                                    setTimeout(poofHeroAlert, 5000);
+                                </script>
                             <?php endif; ?>
 
                             <?php if (session('errors.error') || session('error')): ?>
