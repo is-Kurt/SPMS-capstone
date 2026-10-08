@@ -507,7 +507,7 @@
     }
 </style>
 
-<div class="h-full flex flex-col bg-zinc-100 dark:bg-bg">
+<div class="h-full flex flex-col bg-zinc-200 dark:bg-bg">
     <?= view('components/govph_masthead') ?>
     
     <div class="flex-none flex items-center justify-between py-2 px-3 sm:px-6 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-surface-border gap-2 sm:gap-4 print-hide">
@@ -677,23 +677,35 @@
 
                 <?php elseif ($status === FolderStatus::APPROVED->value || $status === FolderStatus::TWG_APPROVED->value || $status === FolderStatus::TWG_DISAPPROVED->value): ?>
                     <?php if (session()->get('role') === 'TWG'): ?>
-                        <div class="flex gap-1.5 sm:gap-2">
-                            <button id="btn-twg-disapprove" type="button" 
-                                    onclick="setTwgStatus('twg_disapproved')" 
-                                    class="<?= $status === FolderStatus::TWG_DISAPPROVED->value ? 'bg-danger-600 ring-2 ring-danger-400' : 'bg-danger-500 hover:bg-danger-600' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-danger-500/20 transition-all active:scale-[0.98] cursor-pointer">
-                                Disapprove
-                            </button>
-                            <button id="btn-twg-approve" type="button" 
-                                    onclick="setTwgStatus('twg_approved')" 
-                                    class="<?= $status === FolderStatus::TWG_APPROVED->value ? 'bg-success-600 ring-2 ring-success-400' : 'bg-success-500 hover:bg-success-600' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-success-500/20 transition-all active:scale-[0.98] cursor-pointer">
-                                Approve
-                            </button>
+                        <div class="flex gap-1.5 sm:gap-2 items-center">
+                            <?php if ($status === FolderStatus::TWG_APPROVED->value || $status === FolderStatus::TWG_DISAPPROVED->value): ?>
+                                <span class="text-[10px] sm:text-xs font-bold px-3 py-2 <?= $status === FolderStatus::TWG_APPROVED->value ? 'text-success-600 dark:text-success-400' : 'text-danger-600 dark:text-danger-400' ?>">
+                                    <?= $status === FolderStatus::TWG_APPROVED->value ? 'TWG Approved' : 'TWG Disapproved' ?>
+                                </span>
+                                <button id="btn-twg-revoke" type="button" 
+                                        onclick="setTwgStatus('revoke')" 
+                                        class="bg-warning-500 hover:bg-warning-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-warning-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                    Revoke
+                                </button>
+                            <?php else: ?>
+                                <button id="btn-twg-disapprove" type="button" 
+                                        onclick="setTwgStatus('twg_disapproved')" 
+                                        class="bg-danger-500 hover:bg-danger-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-danger-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                    Disapprove
+                                </button>
+                                <button id="btn-twg-approve" type="button" 
+                                        onclick="setTwgStatus('twg_approved')" 
+                                        class="bg-success-500 hover:bg-success-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-success-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                    Approve
+                                </button>
+                            <?php endif; ?>
                         </div>
                     <?php else: ?>
                         <?php 
                             $canRemoveEvalApproval = false;
-                            if (session()->get('role') === 'Admin' && $status === FolderStatus::APPROVED->value) $canRemoveEvalApproval = true;
-                            if (isset($routingStatus) && $routingStatus === FolderStatus::APPROVED->value && $status === FolderStatus::APPROVED->value) $canRemoveEvalApproval = true;
+                            $allowedRemoveStatuses = [FolderStatus::APPROVED->value, FolderStatus::TWG_DISAPPROVED->value];
+                            if (session()->get('role') === 'Admin' && in_array($status, $allowedRemoveStatuses)) $canRemoveEvalApproval = true;
+                            if (isset($routingStatus) && $routingStatus === FolderStatus::APPROVED->value && in_array($status, $allowedRemoveStatuses)) $canRemoveEvalApproval = true;
                         ?>
                         <?php if ($canRemoveEvalApproval): ?>
                             <?php 
@@ -701,11 +713,21 @@
                                 $evalEndCol = $ownerDocType . '_eval_end';
                                 $isEvalPeriodEnded = !empty($doc[$evalEndCol]) && date('Y-m-d H:i:s') > $doc[$evalEndCol]; 
                             ?>
-                            <button id="btn-unapprove-evaluation" type="button" 
-                                    <?= $isEvalPeriodEnded ? 'disabled' : 'onclick="unapproveFolderEvaluation()"' ?>
-                                    class="<?= $isEvalPeriodEnded ? 'bg-warning-500/50 cursor-not-allowed opacity-80' : 'bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg transition-all">
-                                Remove<span class="hidden sm:inline"> Approval</span>
-                            </button>
+                            <div class="flex items-center gap-1.5 sm:gap-2">
+                                <?php if ($status === FolderStatus::TWG_DISAPPROVED->value): ?>
+                                    <span class="text-[10px] sm:text-xs font-bold text-danger-600 dark:text-danger-400 border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950/50 px-3 py-2 sm:py-2.5 rounded-lg flex items-center gap-1.5">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                        </svg>
+                                        TWG Disapproved
+                                    </span>
+                                <?php endif; ?>
+                                <button id="btn-unapprove-evaluation" type="button" 
+                                        <?= $isEvalPeriodEnded ? 'disabled' : 'onclick="unapproveFolderEvaluation()"' ?>
+                                        class="<?= $isEvalPeriodEnded ? 'bg-warning-500/50 cursor-not-allowed opacity-80' : 'bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg transition-all">
+                                    Remove<span class="hidden sm:inline"> Approval</span>
+                                </button>
+                            </div>
                         <?php else: ?>
                             <button type="button" disabled class="bg-success-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
                                 <span class="hidden sm:inline">Folder </span><?= $status === FolderStatus::TWG_APPROVED->value ? 'TWG Approved' : ($status === FolderStatus::TWG_DISAPPROVED->value ? 'TWG Disapproved' : 'Approved') ?>
@@ -718,6 +740,12 @@
                             $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
                             $evalEndCol = $ownerDocType . '_eval_end';
                             $isEvalPeriodEnded = !empty($doc[$evalEndCol]) && date('Y-m-d H:i:s') > $doc[$evalEndCol]; 
+
+                            $routingModel = new \App\Models\EvaluationRoutingModel();
+                            $hasPartialApproval = $routingModel->where('folder_id', $doc['document_folder_id'])
+                                                               ->where('status', FolderStatus::APPROVED->value)
+                                                               ->countAllResults() > 0;
+                            $cannotUnsubmit = $isEvalPeriodEnded || $hasPartialApproval;
                         ?>
                         <div class="flex items-center gap-1.5 sm:gap-2">
                             <button type="button" disabled class="bg-amber-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-sm opacity-90 cursor-not-allowed flex items-center gap-1.5">
@@ -728,9 +756,9 @@
                                 <span class="sm:hidden">Awaiting Review</span>
                             </button>
                             <button id="btn-unsubmit-eval" type="button" 
-                                    <?= $isEvalPeriodEnded ? 'disabled' : 'onclick="unsubmitEvaluationDocument()"' ?>
-                                    class="<?= $isEvalPeriodEnded ? 'bg-rose-50/50 text-rose-300 border-rose-200 cursor-not-allowed opacity-60' : 'bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800 shadow-sm active:scale-[0.98] cursor-pointer' ?> text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg transition-all flex items-center gap-1"
-                                    title="<?= $isEvalPeriodEnded ? 'Evaluation period has ended' : 'Revoke your self-rating to make edits' ?>">
+                                    <?= $cannotUnsubmit ? 'disabled' : 'onclick="unsubmitEvaluationDocument()"' ?>
+                                    class="<?= $cannotUnsubmit ? 'bg-rose-50/50 text-rose-300 border-rose-200 cursor-not-allowed opacity-60' : 'bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800 shadow-sm active:scale-[0.98] cursor-pointer' ?> text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg transition-all flex items-center gap-1"
+                                    title="<?= $hasPartialApproval ? 'Cannot revoke: An evaluator has already approved it' : ($isEvalPeriodEnded ? 'Evaluation period has ended' : 'Revoke your self-rating to make edits') ?>">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                                 </svg>
@@ -772,7 +800,7 @@
                             <div class="flex gap-1.5 sm:gap-2">
                                 <button type="button" 
                                         onclick="rate()" 
-                                        class="flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer">
+                                        class="flex items-center justify-center bg-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1.5 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                                     </svg>
@@ -798,7 +826,7 @@
                         <div class="flex gap-1.5 sm:gap-2">
                             <button type="button" 
                                     onclick="rate()" 
-                                    class="flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer">
+                                    class="flex items-center justify-center bg-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1.5 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                                 </svg>
@@ -1174,7 +1202,7 @@
 
     <!-- Main Workspace Split Container: Form (Left ~3/4) & Rubric (Right ~1/4) -->
     <div class="flex-1 min-h-0 w-full relative flex flex-row overflow-hidden" id="workspace-split-container">
-        <div class="flex-1 min-h-0 h-full relative bg-zinc-100 dark:bg-zinc-950 overflow-x-auto transition-all duration-300 ease-out" id="editor-container">
+        <div class="flex-1 min-h-0 h-full relative bg-zinc-200 dark:bg-zinc-950 overflow-x-auto transition-all duration-300 ease-out" id="editor-container">
         <?php if (!empty($basisDoc) && !$isGuide): ?>
         <!-- SUPERIOR BASIS STATIC FORM WORKSPACE -->
         <div id="spms-basis-workspace" class="hidden w-full h-full overflow-y-auto p-2 sm:p-6 lg:p-8 flex justify-center items-start custom-scrollbar print:p-0 print:bg-white print:overflow-visible">
@@ -1294,7 +1322,7 @@
 
                 <!-- MAIN TABLE OF DELIVERABLES & RATINGS (Static Read-Only) -->
                 <div class="spms-table-responsive-wrapper">
-                    <div class="lg:hidden flex items-center justify-between text-[11px] text-zinc-500 bg-zinc-100 dark:bg-zinc-800/40 px-3 py-1.5 rounded border border-zinc-200 dark:border-zinc-700 mb-2 print-hide">
+                    <div class="lg:hidden flex items-center justify-between text-[11px] text-zinc-500 bg-zinc-200 dark:bg-zinc-800/40 px-3 py-1.5 rounded border border-zinc-200 dark:border-zinc-700 mb-2 print-hide">
                         <span class="flex items-center gap-1 font-medium">↔ Swipe matrix horizontally to view all cascaded targets</span>
                         <span class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider" id="basis-col-count-badge"><?= ($isBasisOpcr || $isBasisDpcr) ? '10 Columns' : '8 Columns' ?></span>
                     </div>
@@ -1540,7 +1568,7 @@
 
                 <!-- MAIN TABLE OF DELIVERABLES & RATINGS -->
                 <div class="spms-table-responsive-wrapper">
-                    <div class="lg:hidden flex items-center justify-between text-[11px] text-zinc-500 bg-zinc-100 dark:bg-zinc-800/40 px-3 py-1.5 rounded border border-zinc-200 dark:border-zinc-700 mb-2 print-hide">
+                    <div class="lg:hidden flex items-center justify-between text-[11px] text-zinc-500 bg-zinc-200 dark:bg-zinc-800/40 px-3 py-1.5 rounded border border-zinc-200 dark:border-zinc-700 mb-2 print-hide">
                         <span class="flex items-center gap-1 font-medium">↔ Swipe matrix horizontally to view ratings & remarks</span>
                         <span class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider"><?= ($isDocDpcr || $isDocOpcr) ? '10 Columns' : ($isDocIperf ? '8 Columns' : '9 Columns') ?></span>
                     </div>
@@ -2614,7 +2642,53 @@
     
     document.addEventListener('DOMContentLoaded', () => {
         autoSave();
+        if (typeof window.updateWeights === 'function') {
+            setTimeout(() => window.updateWeights(true), 500);
+        }
     });
+
+    window.updateWeights = function(isInitialLoad = false) {
+        const coreInput = document.querySelector('input[data-cat-weight="core"]');
+        const stratInput = document.querySelector('input[data-cat-weight="strategic"]');
+        const suppInput = document.querySelector('input[data-cat-weight="support"]');
+        
+        if (coreInput && stratInput && suppInput) {
+            const c = parseInt(coreInput.value || 0);
+            const s = parseInt(stratInput.value || 0);
+            const p = parseInt(suppInput.value || 0);
+            
+            CATEGORY_WEIGHTS.core = c / 100;
+            CATEGORY_WEIGHTS.strategic = s / 100;
+            CATEGORY_WEIGHTS.support = p / 100;
+            
+            const total = c + s + p;
+            const formulaText = document.getElementById('formula-desc-text');
+            if (formulaText) {
+                if (total !== 100) {
+                    formulaText.innerHTML = `<span style="color: #e11d48; font-weight: bold;">Error: Total weight is ${total}% (Must equal 100% exactly)</span>`;
+                    window.weightError = true;
+                } else {
+                    let cTitle = window.isCurrentDocOpcr ? 'Core Mandate' : 'Core Functions';
+                    formulaText.innerHTML = `${cTitle} (${c}%) + Strategic Functions (${s}%) + Support Functions (${p}%).`;
+                    window.weightError = false;
+                }
+            }
+            
+            if (!isInitialLoad) {
+                if (tabs[0] && !tabs[0].formData) tabs[0].formData = {};
+                if (tabs[0]) {
+                    tabs[0].formData.weights = CATEGORY_WEIGHTS;
+                    
+                    const currentHtml = document.getElementById('printable-form')?.innerHTML;
+                    if (currentHtml) tabs[0].content = currentHtml;
+                }
+                
+                if (typeof calculateAllTables === 'function') calculateAllTables();
+                if (typeof renderDigitalRubricsMatrix === 'function') renderDigitalRubricsMatrix(); 
+                if (typeof AppState !== 'undefined' && AppState.setDirty) AppState.setDirty(true);
+            }
+        }
+    };
 
     // Helper: sanitize budget input and cap at 12 whole digits (up to 999 Billion) + 2 decimal places
     function sanitizeBudgetInput(raw) {
@@ -2876,6 +2950,30 @@
     }
 
     async function setTwgStatus(status) {
+        let title = 'Verify TWG Action';
+        let msg = 'Are you sure you want to proceed?';
+        let isDanger = false;
+        
+        if (status === 'twg_approved') {
+            title = 'Verify Rating';
+            msg = 'Are you sure you want to finalize and approve this rating as the TWG?';
+        } else if (status === 'twg_disapproved') {
+            title = 'Disapprove Rating';
+            msg = 'Are you sure you want to disapprove this rating?';
+            isDanger = true;
+        } else if (status === 'revoke') {
+            title = 'Revoke TWG Decision';
+            msg = 'Are you sure you want to revoke your previous TWG decision?';
+            isDanger = true;
+        }
+
+        const ok = await window.appConfirm(msg, {
+            title: title,
+            confirmText: 'Proceed',
+            isDanger: isDanger
+        });
+        if (!ok) return;
+
         const formData = new FormData();
         formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
         formData.append('status', status);
@@ -3526,32 +3624,26 @@
             titleEl.innerText = titleToSet;
         }
 
+        function makeEditableWeight(cat, titlePrefix, currentWeight) {
+            const pct = Math.round(currentWeight * 100);
+            if (!canEditTargets || isIperf) return `${escapeHtml(titlePrefix)} (${pct}%)`;
+            return `${escapeHtml(titlePrefix)} (<input type="number" min="0" max="100" data-cat-weight="${cat}" value="${pct}" oninput="window.updateWeights()" class="spms-meta-input print-borderless" style="width:28px; text-align:center; font-weight:bold; font-size:inherit; color:inherit; background:transparent; border:none; border-bottom:1px solid #cbd5e1; outline:none; padding:0;">%)`;
+        }
+
         const elCore = document.getElementById('label-cat-core');
         if (elCore) {
             const hint = ' <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>';
-            if (!isDpcr && !isOpcr && !isIperf) {
-                elCore.innerHTML = 'CORE FUNCTIONS (70%)' + hint;
-            } else {
-                elCore.innerHTML = escapeHtml(coreTitle) + hint;
-            }
+            elCore.innerHTML = makeEditableWeight('core', isOpcr ? 'CORE MANDATE' : 'CORE FUNCTIONS', coreW) + hint;
         }
         const elStrat = document.getElementById('label-cat-strategic');
         if (elStrat) {
             const hint = ' <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>';
-            if (!isDpcr && !isOpcr && !isIperf) {
-                elStrat.innerHTML = 'STRATEGIC FUNCTIONS (20%)' + hint;
-            } else {
-                elStrat.innerHTML = escapeHtml(stratTitle) + hint;
-            }
+            elStrat.innerHTML = makeEditableWeight('strategic', 'STRATEGIC FUNCTIONS', stratW) + hint;
         }
         const elSupp = document.getElementById('label-cat-support');
         if (elSupp) {
             const hint = ' <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>';
-            if (!isDpcr && !isOpcr && !isIperf) {
-                elSupp.innerHTML = 'SUPPORT FUNCTIONS (10%)' + hint;
-            } else {
-                elSupp.innerHTML = escapeHtml(suppTitle) + hint;
-            }
+            elSupp.innerHTML = makeEditableWeight('support', 'SUPPORT FUNCTIONS', suppW) + hint;
         }
 
         const elRoleRatee = document.getElementById('sig-role-ratee');
@@ -3691,16 +3783,25 @@
         }
 
         // Update add buttons visibility based on phase permissions
-        ['core', 'strategic', 'support'].forEach(cat => {
-            const tfoot = document.getElementById(`tfoot-add-${cat}`);
-            if (tfoot) {
-                if (isIperf && (cat === 'strategic' || cat === 'support')) {
-                    tfoot.style.display = 'none';
-                } else {
-                    tfoot.style.display = canEditTargets ? '' : 'none';
-                }
+        document.querySelectorAll('.btn-add-dashed').forEach(btn => {
+            const tfoot = btn.closest('tbody') || btn.closest('tfoot');
+            if (!canEditTargets) {
+                btn.style.display = 'none';
+                if (tfoot) tfoot.style.display = 'none';
+            } else {
+                btn.style.display = '';
+                if (tfoot) tfoot.style.display = '';
             }
         });
+
+        // Specifically hide strategic and support for IPERF even if canEditTargets is true
+        if (isIperf) {
+            ['strategic', 'support'].forEach(cat => {
+                document.querySelectorAll(`#tfoot-add-${cat}`).forEach(tfoot => {
+                    tfoot.style.display = 'none';
+                });
+            });
+        }
 
         // Update header ratee inputs based on phase permissions and attach live styling listeners
         ['ratee-name', 'ratee-position', 'ratee-dept', 'ratee-period', 'ratee-sign-name', 'ratee-sign-date', 'approver-name', 'approver-pos', 'approver-date', 'sig-ratee-name', 'sig-ratee-pos', 'sig-ratee-date', 'sig-dean-name', 'sig-dean-pos', 'sig-dean-date', 'sig-targets-prepared-date', 'sig-targets-approved-date', 'sig-eval-rated-date', 'sig-eval-conforme-date'].forEach(id => {
@@ -3768,6 +3869,7 @@
     }
 
     function addTableRow(category, rowData = null) {
+        if (!canEditTargets && !rowData) return;
         const tbody = document.getElementById(`tbody-${category}`);
         if (!tbody) return;
 
@@ -3859,7 +3961,7 @@
                         </button>
                         ` : (canEditEvaluation ? `
                         <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
+                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
                                 title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
@@ -3875,30 +3977,36 @@
                 </td>
 
                 <!-- 4. Rating Q (Evaluation Phase) -->
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                    <input type="number" min="1" max="5" step="1" 
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.q === 'X' ? 'bg-zinc-200' : ''}">
+                    <button type="button" onclick="toggleQte(this, 'field-q')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.q === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: ${(canEditTargets || canEditEvaluation) ? 'pointer' : 'not-allowed'}; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: ${(canEditTargets || canEditEvaluation) ? '1' : '0.5'};" ${(canEditTargets || canEditEvaluation) ? '' : 'disabled'}>N/A</button>
+                    <input type="${data.q === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
                         value="${data.q !== undefined && data.q !== null && data.q !== '' ? data.q : ''}" 
                         placeholder="—" 
-                        ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 1 to 5. Erase or press Esc to clear" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
-                        class="spms-score-input field-q">
+                        data-eval-disabled="${evalDisabled}"
+                        ${(evalDisabled || data.q === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
+                        class="spms-score-input field-q ${data.q === 'X' ? 'bg-zinc-200' : ''}" style="${data.q === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
                 </td>
 
                 <!-- 5. Rating T (Evaluation Phase) -->
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                    <input type="number" min="1" max="5" step="1" 
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.t === 'X' ? 'bg-zinc-200' : ''}">
+                    <button type="button" onclick="toggleQte(this, 'field-t')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.t === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: ${(canEditTargets || canEditEvaluation) ? 'pointer' : 'not-allowed'}; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: ${(canEditTargets || canEditEvaluation) ? '1' : '0.5'};" ${(canEditTargets || canEditEvaluation) ? '' : 'disabled'}>N/A</button>
+                    <input type="${data.t === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
                         value="${data.t !== undefined && data.t !== null && data.t !== '' ? data.t : ''}" 
                         placeholder="—" 
-                        ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 1 to 5. Erase or press Esc to clear" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
-                        class="spms-score-input field-t">
+                        data-eval-disabled="${evalDisabled}"
+                        ${(evalDisabled || data.t === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
+                        class="spms-score-input field-t ${data.t === 'X' ? 'bg-zinc-200' : ''}" style="${data.t === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
                 </td>
 
                 <!-- 6. Rating E (Evaluation Phase) -->
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                    <input type="number" min="1" max="5" step="1" 
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.e === 'X' ? 'bg-zinc-200' : ''}">
+                    <button type="button" onclick="toggleQte(this, 'field-e')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.e === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: ${(canEditTargets || canEditEvaluation) ? 'pointer' : 'not-allowed'}; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: ${(canEditTargets || canEditEvaluation) ? '1' : '0.5'};" ${(canEditTargets || canEditEvaluation) ? '' : 'disabled'}>N/A</button>
+                    <input type="${data.e === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
                         value="${data.e !== undefined && data.e !== null && data.e !== '' ? data.e : ''}" 
                         placeholder="—" 
-                        ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 1 to 5. Erase or press Esc to clear" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
-                        class="spms-score-input field-e">
+                        data-eval-disabled="${evalDisabled}"
+                        ${(evalDisabled || data.e === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
+                        class="spms-score-input field-e ${data.e === 'X' ? 'bg-zinc-200' : ''}" style="${data.e === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
                 </td>
 
                 <!-- 7. Row Average -->
@@ -3975,7 +4083,7 @@
                         </button>
                         ` : (canEditEvaluation ? `
                         <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
+                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
                                 title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
@@ -3991,26 +4099,32 @@
                 </td>
 
                 <!-- Rating Q, T, E Inputs (Evaluation Phase) -->
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                    <input type="number" min="1" max="5" step="1" 
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.q === 'X' ? 'bg-zinc-200' : ''}">
+                    <button type="button" onclick="toggleQte(this, 'field-q')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.q === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: ${(canEditTargets || canEditEvaluation) ? 'pointer' : 'not-allowed'}; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: ${(canEditTargets || canEditEvaluation) ? '1' : '0.5'};" ${(canEditTargets || canEditEvaluation) ? '' : 'disabled'}>N/A</button>
+                    <input type="${data.q === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
                         value="${data.q !== undefined && data.q !== null && data.q !== '' ? data.q : ''}" 
                         placeholder="—" 
-                        ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 1 to 5. Erase or press Esc to clear" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
-                        class="spms-score-input field-q">
+                        data-eval-disabled="${evalDisabled}"
+                        ${(evalDisabled || data.q === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
+                        class="spms-score-input field-q ${data.q === 'X' ? 'bg-zinc-200' : ''}" style="${data.q === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
                 </td>
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                    <input type="number" min="1" max="5" step="1" 
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.t === 'X' ? 'bg-zinc-200' : ''}">
+                    <button type="button" onclick="toggleQte(this, 'field-t')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.t === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: ${(canEditTargets || canEditEvaluation) ? 'pointer' : 'not-allowed'}; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: ${(canEditTargets || canEditEvaluation) ? '1' : '0.5'};" ${(canEditTargets || canEditEvaluation) ? '' : 'disabled'}>N/A</button>
+                    <input type="${data.t === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
                         value="${data.t !== undefined && data.t !== null && data.t !== '' ? data.t : ''}" 
                         placeholder="—" 
-                        ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 1 to 5. Erase or press Esc to clear" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
-                        class="spms-score-input field-t">
+                        data-eval-disabled="${evalDisabled}"
+                        ${(evalDisabled || data.t === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
+                        class="spms-score-input field-t ${data.t === 'X' ? 'bg-zinc-200' : ''}" style="${data.t === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
                 </td>
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                    <input type="number" min="1" max="5" step="1" 
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.e === 'X' ? 'bg-zinc-200' : ''}">
+                    <button type="button" onclick="toggleQte(this, 'field-e')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.e === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: ${(canEditTargets || canEditEvaluation) ? 'pointer' : 'not-allowed'}; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: ${(canEditTargets || canEditEvaluation) ? '1' : '0.5'};" ${(canEditTargets || canEditEvaluation) ? '' : 'disabled'}>N/A</button>
+                    <input type="${data.e === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
                         value="${data.e !== undefined && data.e !== null && data.e !== '' ? data.e : ''}" 
                         placeholder="—" 
-                        ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 1 to 5. Erase or press Esc to clear" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
-                        class="spms-score-input field-e">
+                        data-eval-disabled="${evalDisabled}"
+                        ${(evalDisabled || data.e === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
+                        class="spms-score-input field-e ${data.e === 'X' ? 'bg-zinc-200' : ''}" style="${data.e === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
                 </td>
 
                 <!-- Row Average -->
@@ -4087,7 +4201,7 @@
                         </button>
                         ` : (canEditEvaluation ? `
                         <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
+                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
                                 title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
@@ -4103,26 +4217,32 @@
                 </td>
 
                 <!-- Rating Q, T, E Inputs (Evaluation Phase) -->
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                    <input type="number" min="1" max="5" step="1" 
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.q === 'X' ? 'bg-zinc-200' : ''}">
+                    <button type="button" onclick="toggleQte(this, 'field-q')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.q === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: ${(canEditTargets || canEditEvaluation) ? 'pointer' : 'not-allowed'}; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: ${(canEditTargets || canEditEvaluation) ? '1' : '0.5'};" ${(canEditTargets || canEditEvaluation) ? '' : 'disabled'}>N/A</button>
+                    <input type="${data.q === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
                         value="${data.q !== undefined && data.q !== null && data.q !== '' ? data.q : ''}" 
                         placeholder="—" 
-                        ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 1 to 5. Erase or press Esc to clear" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
-                        class="spms-score-input field-q">
+                        data-eval-disabled="${evalDisabled}"
+                        ${(evalDisabled || data.q === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
+                        class="spms-score-input field-q ${data.q === 'X' ? 'bg-zinc-200' : ''}" style="${data.q === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
                 </td>
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                    <input type="number" min="1" max="5" step="1" 
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.t === 'X' ? 'bg-zinc-200' : ''}">
+                    <button type="button" onclick="toggleQte(this, 'field-t')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.t === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: ${(canEditTargets || canEditEvaluation) ? 'pointer' : 'not-allowed'}; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: ${(canEditTargets || canEditEvaluation) ? '1' : '0.5'};" ${(canEditTargets || canEditEvaluation) ? '' : 'disabled'}>N/A</button>
+                    <input type="${data.t === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
                         value="${data.t !== undefined && data.t !== null && data.t !== '' ? data.t : ''}" 
                         placeholder="—" 
-                        ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 1 to 5. Erase or press Esc to clear" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
-                        class="spms-score-input field-t">
+                        data-eval-disabled="${evalDisabled}"
+                        ${(evalDisabled || data.t === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
+                        class="spms-score-input field-t ${data.t === 'X' ? 'bg-zinc-200' : ''}" style="${data.t === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
                 </td>
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                    <input type="number" min="1" max="5" step="1" 
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.e === 'X' ? 'bg-zinc-200' : ''}">
+                    <button type="button" onclick="toggleQte(this, 'field-e')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.e === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: ${(canEditTargets || canEditEvaluation) ? 'pointer' : 'not-allowed'}; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: ${(canEditTargets || canEditEvaluation) ? '1' : '0.5'};" ${(canEditTargets || canEditEvaluation) ? '' : 'disabled'}>N/A</button>
+                    <input type="${data.e === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
                         value="${data.e !== undefined && data.e !== null && data.e !== '' ? data.e : ''}" 
                         placeholder="—" 
-                        ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 1 to 5. Erase or press Esc to clear" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
-                        class="spms-score-input field-e">
+                        data-eval-disabled="${evalDisabled}"
+                        ${(evalDisabled || data.e === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
+                        class="spms-score-input field-e ${data.e === 'X' ? 'bg-zinc-200' : ''}" style="${data.e === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
                 </td>
 
                 <!-- Row Average -->
@@ -4186,7 +4306,7 @@
                     </button>
                     ` : (canEditEvaluation ? `
                     <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                            class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
+                            class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
                             title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
@@ -4202,26 +4322,32 @@
             </td>
 
             <!-- Rating Q, T, E Inputs (Unlocked during evaluation phase) -->
-            <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                <input type="number" min="1" max="5" step="1" 
+            <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.q === 'X' ? 'bg-zinc-200' : ''}">
+                <button type="button" onclick="toggleQte(this, 'field-q')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.q === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: ${(canEditTargets || canEditEvaluation) ? 'pointer' : 'not-allowed'}; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: ${(canEditTargets || canEditEvaluation) ? '1' : '0.5'};" ${(canEditTargets || canEditEvaluation) ? '' : 'disabled'}>N/A</button>
+                <input type="${data.q === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
                     value="${data.q !== undefined && data.q !== null && data.q !== '' ? data.q : ''}" 
                     placeholder="—" 
-                    ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 1 to 5. Erase or press Esc to clear" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
-                    class="spms-score-input field-q">
+                    data-eval-disabled="${evalDisabled}"
+                    ${(evalDisabled || data.q === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
+                    class="spms-score-input field-q ${data.q === 'X' ? 'bg-zinc-200' : ''}" style="${data.q === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
             </td>
-            <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                <input type="number" min="1" max="5" step="1" 
+            <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.t === 'X' ? 'bg-zinc-200' : ''}">
+                <button type="button" onclick="toggleQte(this, 'field-t')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.t === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: ${(canEditTargets || canEditEvaluation) ? 'pointer' : 'not-allowed'}; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: ${(canEditTargets || canEditEvaluation) ? '1' : '0.5'};" ${(canEditTargets || canEditEvaluation) ? '' : 'disabled'}>N/A</button>
+                <input type="${data.t === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
                     value="${data.t !== undefined && data.t !== null && data.t !== '' ? data.t : ''}" 
                     placeholder="—" 
-                    ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 1 to 5. Erase or press Esc to clear" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
-                    class="spms-score-input field-t">
+                    data-eval-disabled="${evalDisabled}"
+                    ${(evalDisabled || data.t === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
+                    class="spms-score-input field-t ${data.t === 'X' ? 'bg-zinc-200' : ''}" style="${data.t === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
             </td>
-            <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                <input type="number" min="1" max="5" step="1" 
+            <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.e === 'X' ? 'bg-zinc-200' : ''}">
+                <button type="button" onclick="toggleQte(this, 'field-e')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.e === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: ${(canEditTargets || canEditEvaluation) ? 'pointer' : 'not-allowed'}; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: ${(canEditTargets || canEditEvaluation) ? '1' : '0.5'};" ${(canEditTargets || canEditEvaluation) ? '' : 'disabled'}>N/A</button>
+                <input type="${data.e === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
                     value="${data.e !== undefined && data.e !== null && data.e !== '' ? data.e : ''}" 
                     placeholder="—" 
-                    ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : 'title="Enter 1 to 5. Erase or press Esc to clear" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)" ondblclick="clearScore(this)"'} 
-                    class="spms-score-input field-e">
+                    data-eval-disabled="${evalDisabled}"
+                    ${(evalDisabled || data.e === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
+                    class="spms-score-input field-e ${data.e === 'X' ? 'bg-zinc-200' : ''}" style="${data.e === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
             </td>
 
                 <!-- Row Average -->
@@ -4390,6 +4516,50 @@
         const num = parseInt(str, 10);
         if (isNaN(num) || num < 1 || num > 5) return null;
         return num;
+    }
+
+    function toggleQte(btn, fieldClass) {
+        const td = btn.closest('td');
+        const input = td.querySelector('.' + fieldClass);
+        const isX = input.value === 'X';
+        
+        if (isX) {
+            td.classList.remove('bg-zinc-200');
+            input.value = '';
+            input.type = 'number';
+            input.classList.remove('bg-zinc-200');
+            input.style.backgroundColor = '';
+            input.style.borderColor = '';
+            input.style.color = '';
+            input.style.textShadow = '';
+            input.style.fontWeight = '';
+            input.style.cursor = '';
+            const evalDisabled = input.getAttribute('data-eval-disabled') === 'true';
+            input.disabled = evalDisabled;
+            
+            btn.className = "print-hide flex items-center justify-center bg-zinc-200 text-zinc-500 hover:bg-zinc-300 transition-colors";
+        } else {
+            td.classList.add('bg-zinc-200');
+            input.type = 'text';
+            input.value = 'X';
+            input.style.backgroundColor = 'transparent';
+            input.style.borderColor = 'transparent';
+            input.style.color = 'transparent';
+            input.style.textShadow = '0 0 0 transparent';
+            input.style.fontWeight = 'bold';
+            input.style.cursor = 'not-allowed';
+            input.disabled = true;
+            
+            btn.className = "print-hide flex items-center justify-center bg-zinc-500 text-white hover:bg-zinc-600 transition-colors";
+        }
+        
+        recalculateForm();
+        if (typeof renderDigitalRubricsMatrix === 'function') {
+            renderDigitalRubricsMatrix();
+        }
+        if (typeof saveDocument === 'function') {
+            saveDocument(true);
+        }
     }
 
     function recalculateForm() {
@@ -4564,9 +4734,13 @@
         const result = [];
 
         rows.forEach(row => {
-            const q = parseWholeScore(row.querySelector('.field-q')?.value);
-            const t = parseWholeScore(row.querySelector('.field-t')?.value);
-            const e = parseWholeScore(row.querySelector('.field-e')?.value);
+            const rawQ = row.querySelector('.field-q')?.value;
+            const rawT = row.querySelector('.field-t')?.value;
+            const rawE = row.querySelector('.field-e')?.value;
+
+            const q = rawQ === 'X' ? 'X' : parseWholeScore(rawQ);
+            const t = rawT === 'X' ? 'X' : parseWholeScore(rawT);
+            const e = rawE === 'X' ? 'X' : parseWholeScore(rawE);
 
             const rowData = {
                 row_id: row.dataset.rowId || ('row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7)),
@@ -4731,28 +4905,30 @@
                 if (seenRows.has(rowId)) return;
                 seenRows.add(rowId);
 
-                const mfoEl = tr.querySelector('.field-mfo') || tr.querySelector('.spms-input-mfo') || tr.querySelector('.spms-input-paps');
                 const indEl = tr.querySelector('.field-indicators') || tr.querySelector('.spms-input-indicator') || tr.querySelector('.spms-input-success-indicator');
-                const ppaEl = tr.querySelector('.spms-input-office-ppa');
                 const expEl = tr.querySelector('.spms-input-expected-outputs');
                 
-                const ppa = ppaEl ? ppaEl.value.trim() : '';
-                const exp = expEl ? expEl.value.trim() : '';
-                const mfo = mfoEl ? mfoEl.value.trim() : '';
+                const qEl = tr.querySelector('.field-q');
+                const tEl = tr.querySelector('.field-t');
+                const eEl = tr.querySelector('.field-e');
+
                 const ind = indEl ? indEl.value.trim() : '';
+                const exp = expEl ? expEl.value.trim() : '';
                 
-                const parts = [mfo, ppa, exp, ind].filter(Boolean);
-                let text = parts.join(' — ');
+                let text = ind || exp;
                 
                 if (!text) {
-                    const firstInput = tr.querySelector('textarea, input[type="text"]');
-                    if (firstInput && firstInput.value.trim()) text = firstInput.value.trim();
+                    const mfoEl = tr.querySelector('.field-mfo') || tr.querySelector('.spms-input-mfo') || tr.querySelector('.spms-input-paps');
+                    if (mfoEl && mfoEl.value.trim()) text = mfoEl.value.trim();
                 }
                 
                 deliverables.push({
                     rowId: rowId,
                     cat: catName,
-                    title: text || `Deliverable #${deliverables.length + 1}`
+                    title: text || `Deliverable #${deliverables.length + 1}`,
+                    isQ_na: qEl ? qEl.value === 'X' : false,
+                    isT_na: tEl ? tEl.value === 'X' : false,
+                    isE_na: eEl ? eEl.value === 'X' : false
                 });
             });
         };
@@ -4778,7 +4954,10 @@
                             deliverables.push({
                                 rowId: r.row_id || `row-${cat}-${idx}`,
                                 cat: cat,
-                                title: text || `Deliverable #${deliverables.length + 1}`
+                                title: text || `Deliverable #${deliverables.length + 1}`,
+                                isQ_na: r.q === 'X',
+                                isT_na: r.t === 'X',
+                                isE_na: r.e === 'X'
                             });
                         });
                     }
@@ -5053,14 +5232,14 @@
         const isOpcr = (typeof window.isCurrentDocOpcr !== 'undefined') ? window.isCurrentDocOpcr : <?= $isDocOpcr ? 'true' : 'false' ?>;
 
         const catWeights = {
-            core: isIperf ? '100%' : (isDpcr ? '70%' : (isOpcr ? '70%' : '70%')),
-            strategic: isDpcr ? '30%' : (isOpcr ? '25%' : '20%'),
-            support: isDpcr ? '10%' : (isOpcr ? '15%' : '10%')
+            core: `${Math.round((CATEGORY_WEIGHTS.core || (isIperf ? 1 : 0.7)) * 100)}%`,
+            strategic: `${Math.round((CATEGORY_WEIGHTS.strategic || (isDpcr ? 0.3 : (isOpcr ? 0.25 : 0.2))) * 100)}%`,
+            support: `${Math.round((CATEGORY_WEIGHTS.support || (isDpcr ? 0.1 : (isOpcr ? 0.15 : 0.1))) * 100)}%`
         };
 
         const catConfigs = {
             core: {
-                title: isIperf ? 'Committed Outputs' : 'Core Functions',
+                title: isIperf ? 'Committed Outputs' : (isOpcr ? 'Core Mandate' : 'Core Functions'),
                 weight: catWeights.core,
                 badge: 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30',
                 dot: 'bg-emerald-500',
@@ -5226,37 +5405,9 @@
                                             </span>
                                         </div>
 
-                                        ${canEditTargets ? `
-                                        <div>
-                                            <label class="block text-[9px] font-black uppercase tracking-wider text-text-muted mb-1">Deliverable Title / Description</label>
-                                            <textarea rows="2" 
-                                                      placeholder="Enter deliverable description..."
-                                                      oninput="syncDeliverableTitleToForm('${escapeHtml(rowId)}', this.value); autoResizeTextarea(this);"
-                                                      class="rubric-title-input w-full bg-surface-border/20 hover:bg-surface-border/30 focus:bg-surface border border-surface-border/60 focus:border-amber-500 rounded-xl p-2 outline-none text-text font-bold text-xs leading-snug transition-all resize-none">${escapeHtml(del.title)}</textarea>
-                                        </div>
-                                        <div class="flex items-center gap-1.5 pt-1.5 flex-wrap">
-                                            <button type="button" onclick="clearRubricRow('${escapeHtml(rowId)}')"
-                                                    class="inline-flex items-center gap-1 px-2.5 py-1.2 rounded-lg text-[10px] font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 hover:border-amber-500/50 shadow-2xs transition-all active:scale-[0.96] cursor-pointer"
-                                                    title="Clear all scoring criteria for this deliverable">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                                </svg>
-                                                <span>Clear Criteria</span>
-                                            </button>
-                                            <button type="button" onclick="deleteDeliverableFromRubrics('${escapeHtml(rowId)}')"
-                                                    class="inline-flex items-center gap-1 px-2.5 py-1.2 rounded-lg text-[10px] font-bold bg-rose-500/15 hover:bg-rose-500/25 text-rose-700 dark:text-rose-300 border border-rose-500/30 hover:border-rose-500/50 shadow-2xs transition-all active:scale-[0.96] cursor-pointer"
-                                                    title="Delete this deliverable from both rubric and target form">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-rose-600 dark:text-rose-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                                <span>Delete Output</span>
-                                            </button>
-                                        </div>
-                                        ` : `
                                         <div class="font-bold text-xs text-text leading-snug break-words">
                                             ${escapeHtml(del.title)}
                                         </div>
-                                        `}
                                     </div>
                                 </td>
                             `;
@@ -5273,45 +5424,33 @@
                                     </span>
                                 </div>
                             </td>
-                            <td class="p-2 align-top border-r border-surface-border">
-                                <textarea data-row-id="${escapeHtml(rowId)}" data-score="${score}" data-dim="q" ${readonlyAttr}
-                                          placeholder="${canEditTargets ? 'e.g. No revisions / zero defect...' : '—'}"
+                            <td class="p-2 align-top border-r border-surface-border ${del.isQ_na ? 'bg-zinc-100 dark:bg-zinc-900/50' : ''}">
+                                <textarea data-row-id="${escapeHtml(rowId)}" data-score="${score}" data-dim="q" ${del.isQ_na ? 'disabled' : readonlyAttr}
+                                          placeholder="${del.isQ_na ? '' : (canEditTargets ? 'e.g. No revisions / zero defect...' : '—')}"
                                           rows="2"
                                           oninput="autoResizeTextarea(this); onDigitalRubricChange(this)"
-                                          class="w-full text-xs p-2.5 rounded-xl transition-all resize-none leading-relaxed font-sans ${inputBg}">${escapeHtml(scData.q || '')}</textarea>
+                                          class="w-full text-xs p-2.5 rounded-xl transition-all resize-none leading-relaxed font-sans ${del.isQ_na ? 'bg-transparent text-text-muted/40 cursor-not-allowed border-transparent font-black uppercase text-center' : inputBg}">${del.isQ_na ? 'N/A' : escapeHtml(scData.q || '')}</textarea>
                             </td>
-                            <td class="p-2 align-top border-r border-surface-border">
-                                <textarea data-row-id="${escapeHtml(rowId)}" data-score="${score}" data-dim="t" ${readonlyAttr}
-                                          placeholder="${canEditTargets ? 'e.g. within 1–2 working days ahead...' : '—'}"
+                            <td class="p-2 align-top border-r border-surface-border ${del.isT_na ? 'bg-zinc-100 dark:bg-zinc-900/50' : ''}">
+                                <textarea data-row-id="${escapeHtml(rowId)}" data-score="${score}" data-dim="t" ${del.isT_na ? 'disabled' : readonlyAttr}
+                                          placeholder="${del.isT_na ? '' : (canEditTargets ? 'e.g. within 1–2 working days ahead...' : '—')}"
                                           rows="2"
                                           oninput="autoResizeTextarea(this); onDigitalRubricChange(this)"
-                                          class="w-full text-xs p-2.5 rounded-xl transition-all resize-none leading-relaxed font-sans ${inputBg}">${escapeHtml(scData.t || '')}</textarea>
+                                          class="w-full text-xs p-2.5 rounded-xl transition-all resize-none leading-relaxed font-sans ${del.isT_na ? 'bg-transparent text-text-muted/40 cursor-not-allowed border-transparent font-black uppercase text-center' : inputBg}">${del.isT_na ? 'N/A' : escapeHtml(scData.t || '')}</textarea>
                             </td>
-                            <td class="p-2 align-top">
-                                <textarea data-row-id="${escapeHtml(rowId)}" data-score="${score}" data-dim="e" ${readonlyAttr}
-                                          placeholder="${canEditTargets ? 'e.g. 100% of target accomplished...' : '—'}"
+                            <td class="p-2 align-top ${del.isE_na ? 'bg-zinc-100 dark:bg-zinc-900/50' : ''}">
+                                <textarea data-row-id="${escapeHtml(rowId)}" data-score="${score}" data-dim="e" ${del.isE_na ? 'disabled' : readonlyAttr}
+                                          placeholder="${del.isE_na ? '' : (canEditTargets ? 'e.g. 100% of target accomplished...' : '—')}"
                                           rows="2"
                                           oninput="autoResizeTextarea(this); onDigitalRubricChange(this)"
-                                          class="w-full text-xs p-2.5 rounded-xl transition-all resize-none leading-relaxed font-sans ${inputBg}">${escapeHtml(scData.e || '')}</textarea>
+                                          class="w-full text-xs p-2.5 rounded-xl transition-all resize-none leading-relaxed font-sans ${del.isE_na ? 'bg-transparent text-text-muted/40 cursor-not-allowed border-transparent font-black uppercase text-center' : inputBg}">${del.isE_na ? 'N/A' : escapeHtml(scData.e || '')}</textarea>
                             </td>
                         </tr>`;
                     });
                 });
             }
 
-            // Category Add Button
-            if (canEditTargets) {
-                sheetHtml += `
-                    <tr class="border-b border-surface-border" data-category="${catKey}">
-                        <td colspan="5" class="p-2.5 text-center bg-surface-border/10">
-                            <button type="button" onclick="addDeliverableFromRubrics('${catKey}')"
-                                    class="w-full py-2 px-3 rounded-xl border border-dashed ${cfg.addBtn} text-xs font-bold transition-all cursor-pointer">
-                                ＋ Add Deliverable to ${cfg.title}
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            }
+
         });
 
         tbody.innerHTML = sheetHtml;

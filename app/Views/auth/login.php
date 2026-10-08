@@ -162,11 +162,9 @@
                                 </label>
                             </div>
 
-                            <?php if (getenv('CI_ENVIRONMENT') !== 'development'): ?>
                             <div class="pt-2 flex justify-center">
                                 <div class="cf-turnstile" data-sitekey="<?= esc(getenv('TURNSTILE_SITE_KEY')) ?>"></div>
                             </div>
-                            <?php endif; ?>
 
                             <div class="pt-2">
                                 <button id="login-submit-btn" type="submit" 
@@ -240,9 +238,7 @@
     </div>
 </div>
 
-<?php if (getenv('CI_ENVIRONMENT') !== 'development'): ?>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-<?php endif; ?>
 <script src="<?= base_url('assets/vendor/fingerprintjs/fp.min.js') ?>"></script>
 <script>
     // Submit loading feedback with animated spinner & transition overlay

@@ -180,6 +180,13 @@ window.addEventListener('beforeunload', (e) => {
 });
 
 async function saveWith({before, after}) {
+    if (window.weightError) {
+        if (typeof window.appAlert === 'function') {
+            await window.appAlert("Formula Weights must equal 100% exactly.", { title: 'Invalid Weights', variant: 'danger' });
+        }
+        return 'hasError';
+    }
+
     let result = null;
 
     // 1. Run the `rate()` calculation & validation first (awaited: rate() may show

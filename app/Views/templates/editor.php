@@ -1710,35 +1710,38 @@
                 </td>
 
                 <!-- Rating Q, T, E Inputs (Flat Whole Numbers 1 to 5) -->
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                    <input type="number" min="1" max="5" step="1" 
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.q === 'X' ? 'bg-zinc-200' : ''}">
+                    <button type="button" onclick="toggleQte(this, 'field-q')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.q === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid #cbd5e1;">N/A</button>
+                    <input type="${data.q === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
                         value="${data.q !== undefined && data.q !== null && data.q !== '' ? data.q : ''}" 
                         placeholder="—" 
                         title="Enter 1 to 5. Erase or press Esc to clear" 
                         oninput="handleScoreInput(this)" 
                         onkeydown="handleScoreKeydown(event, this)" 
-                        ondblclick="clearScore(this)" 
-                        class="spms-score-input field-q">
+                         
+                        class="spms-score-input field-q ${data.q === 'X' ? 'bg-zinc-200' : ''}" style="${data.q === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
                 </td>
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                    <input type="number" min="1" max="5" step="1" 
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.t === 'X' ? 'bg-zinc-200' : ''}">
+                    <button type="button" onclick="toggleQte(this, 'field-t')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.t === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid #cbd5e1;">N/A</button>
+                    <input type="${data.t === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
                         value="${data.t !== undefined && data.t !== null && data.t !== '' ? data.t : ''}" 
                         placeholder="—" 
                         title="Enter 1 to 5. Erase or press Esc to clear" 
                         oninput="handleScoreInput(this)" 
                         onkeydown="handleScoreKeydown(event, this)" 
-                        ondblclick="clearScore(this)" 
-                        class="spms-score-input field-t">
+                         
+                        class="spms-score-input field-t ${data.t === 'X' ? 'bg-zinc-200' : ''}" style="${data.t === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
                 </td>
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                    <input type="number" min="1" max="5" step="1" 
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.e === 'X' ? 'bg-zinc-200' : ''}">
+                    <button type="button" onclick="toggleQte(this, 'field-e')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.e === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid #cbd5e1;">N/A</button>
+                    <input type="${data.e === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
                         value="${data.e !== undefined && data.e !== null && data.e !== '' ? data.e : ''}" 
                         placeholder="—" 
                         title="Enter 1 to 5. Erase or press Esc to clear" 
                         oninput="handleScoreInput(this)" 
                         onkeydown="handleScoreKeydown(event, this)" 
-                        ondblclick="clearScore(this)" 
-                        class="spms-score-input field-e">
+                         
+                        class="spms-score-input field-e ${data.e === 'X' ? 'bg-zinc-200' : ''}" style="${data.e === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
                 </td>
 
                 <!-- Row Average -->
@@ -1801,7 +1804,7 @@
                         title="Enter 1 to 5. Erase or press Esc to clear" 
                         oninput="handleScoreInput(this)" 
                         onkeydown="handleScoreKeydown(event, this)" 
-                        ondblclick="clearScore(this)" 
+                         
                         class="spms-score-input field-q" style="background-color: #ffe599;">
                 </td>
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; background-color: #ffe599;">
@@ -1811,7 +1814,7 @@
                         title="Enter 1 to 5. Erase or press Esc to clear" 
                         oninput="handleScoreInput(this)" 
                         onkeydown="handleScoreKeydown(event, this)" 
-                        ondblclick="clearScore(this)" 
+                         
                         class="spms-score-input field-t" style="background-color: #ffe599;">
                 </td>
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; background-color: #ffe599;">
@@ -1821,7 +1824,7 @@
                         title="Enter 1 to 5. Erase or press Esc to clear" 
                         oninput="handleScoreInput(this)" 
                         onkeydown="handleScoreKeydown(event, this)" 
-                        ondblclick="clearScore(this)" 
+                         
                         class="spms-score-input field-e" style="background-color: #ffe599;">
                 </td>
 
@@ -1885,7 +1888,7 @@
                         title="Enter 1 to 5. Erase or press Esc to clear" 
                         oninput="handleScoreInput(this)" 
                         onkeydown="handleScoreKeydown(event, this)" 
-                        ondblclick="clearScore(this)" 
+                         
                         class="spms-score-input field-q" style="background-color: #ffe599;">
                 </td>
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; background-color: #ffe599;">
@@ -1895,7 +1898,7 @@
                         title="Enter 1 to 5. Erase or press Esc to clear" 
                         oninput="handleScoreInput(this)" 
                         onkeydown="handleScoreKeydown(event, this)" 
-                        ondblclick="clearScore(this)" 
+                         
                         class="spms-score-input field-t" style="background-color: #ffe599;">
                 </td>
                 <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; background-color: #ffe599;">
@@ -1905,7 +1908,7 @@
                         title="Enter 1 to 5. Erase or press Esc to clear" 
                         oninput="handleScoreInput(this)" 
                         onkeydown="handleScoreKeydown(event, this)" 
-                        ondblclick="clearScore(this)" 
+                         
                         class="spms-score-input field-e" style="background-color: #ffe599;">
                 </td>
 
@@ -1949,35 +1952,29 @@
                 </td>
 
                 <!-- Rating Q, T, E Inputs (Flat Whole Numbers 1 to 5) -->
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                    <input type="number" min="1" max="5" step="1" 
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.q === 'X' ? 'bg-zinc-200' : ''}">
+                    <button type="button" onclick="toggleQte(this, 'field-q')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.q === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: 1;">N/A</button>
+                    <input type="${data.q === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
                         value="${data.q !== undefined && data.q !== null && data.q !== '' ? data.q : ''}" 
                         placeholder="—" 
-                        title="Enter 1 to 5. Erase or press Esc to clear" 
-                        oninput="handleScoreInput(this)" 
-                        onkeydown="handleScoreKeydown(event, this)" 
-                        ondblclick="clearScore(this)" 
-                        class="spms-score-input field-q">
+                        ${data.q === 'X' ? 'disabled title="Locked"' : 'title="Enter 1 to 5. Erase or press Esc to clear" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
+                        class="spms-score-input field-q ${data.q === 'X' ? 'bg-zinc-200' : ''}" style="${data.q === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
                 </td>
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                    <input type="number" min="1" max="5" step="1" 
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.t === 'X' ? 'bg-zinc-200' : ''}">
+                    <button type="button" onclick="toggleQte(this, 'field-t')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.t === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: 1;">N/A</button>
+                    <input type="${data.t === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
                         value="${data.t !== undefined && data.t !== null && data.t !== '' ? data.t : ''}" 
                         placeholder="—" 
-                        title="Enter 1 to 5. Erase or press Esc to clear" 
-                        oninput="handleScoreInput(this)" 
-                        onkeydown="handleScoreKeydown(event, this)" 
-                        ondblclick="clearScore(this)" 
-                        class="spms-score-input field-t">
+                        ${data.t === 'X' ? 'disabled title="Locked"' : 'title="Enter 1 to 5. Erase or press Esc to clear" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
+                        class="spms-score-input field-t ${data.t === 'X' ? 'bg-zinc-200' : ''}" style="${data.t === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
                 </td>
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                    <input type="number" min="1" max="5" step="1" 
+                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.e === 'X' ? 'bg-zinc-200' : ''}">
+                    <button type="button" onclick="toggleQte(this, 'field-e')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.e === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: 1;">N/A</button>
+                    <input type="${data.e === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
                         value="${data.e !== undefined && data.e !== null && data.e !== '' ? data.e : ''}" 
                         placeholder="—" 
-                        title="Enter 1 to 5. Erase or press Esc to clear" 
-                        oninput="handleScoreInput(this)" 
-                        onkeydown="handleScoreKeydown(event, this)" 
-                        ondblclick="clearScore(this)" 
-                        class="spms-score-input field-e">
+                        ${data.e === 'X' ? 'disabled title="Locked"' : 'title="Enter 1 to 5. Erase or press Esc to clear" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
+                        class="spms-score-input field-e ${data.e === 'X' ? 'bg-zinc-200' : ''}" style="${data.e === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
                 </td>
 
                 <!-- Row Average -->
@@ -2541,35 +2538,29 @@
             </td>
 
             <!-- Rating Q, T, E Inputs (Flat Whole Numbers 0 to 5, Return to null via Esc, DblClick, or Backspace) -->
-            <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                <input type="number" min="0" max="5" step="1" 
+            <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.q === 'X' ? 'bg-zinc-200' : ''}">
+                <button type="button" onclick="toggleQte(this, 'field-q')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.q === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: 1;">N/A</button>
+                <input type="${data.q === 'X' ? 'text' : 'number'}" min="0" max="5" step="1" 
                     value="${data.q !== undefined && data.q !== null && data.q !== '' ? data.q : ''}" 
                     placeholder="—" 
-                    title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" 
-                    oninput="handleScoreInput(this)" 
-                    onkeydown="handleScoreKeydown(event, this)" 
-                    ondblclick="clearScore(this)" 
-                    class="spms-score-input field-q">
+                    ${data.q === 'X' ? 'disabled title="Locked"' : 'title="Enter 0 to 5. Press Esc or backspace to clear back to null" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
+                    class="spms-score-input field-q ${data.q === 'X' ? 'bg-zinc-200' : ''}" style="${data.q === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
             </td>
-            <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                <input type="number" min="0" max="5" step="1" 
+            <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.t === 'X' ? 'bg-zinc-200' : ''}">
+                <button type="button" onclick="toggleQte(this, 'field-t')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.t === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: 1;">N/A</button>
+                <input type="${data.t === 'X' ? 'text' : 'number'}" min="0" max="5" step="1" 
                     value="${data.t !== undefined && data.t !== null && data.t !== '' ? data.t : ''}" 
                     placeholder="—" 
-                    title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" 
-                    oninput="handleScoreInput(this)" 
-                    onkeydown="handleScoreKeydown(event, this)" 
-                    ondblclick="clearScore(this)" 
-                    class="spms-score-input field-t">
+                    ${data.t === 'X' ? 'disabled title="Locked"' : 'title="Enter 0 to 5. Press Esc or backspace to clear back to null" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
+                    class="spms-score-input field-t ${data.t === 'X' ? 'bg-zinc-200' : ''}" style="${data.t === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
             </td>
-            <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000;">
-                <input type="number" min="0" max="5" step="1" 
+            <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.e === 'X' ? 'bg-zinc-200' : ''}">
+                <button type="button" onclick="toggleQte(this, 'field-e')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.e === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: 1;">N/A</button>
+                <input type="${data.e === 'X' ? 'text' : 'number'}" min="0" max="5" step="1" 
                     value="${data.e !== undefined && data.e !== null && data.e !== '' ? data.e : ''}" 
                     placeholder="—" 
-                    title="Enter 0 to 5. Double-click, press Esc, or backspace to clear back to null" 
-                    oninput="handleScoreInput(this)" 
-                    onkeydown="handleScoreKeydown(event, this)" 
-                    ondblclick="clearScore(this)" 
-                    class="spms-score-input field-e">
+                    ${data.e === 'X' ? 'disabled title="Locked"' : 'title="Enter 0 to 5. Press Esc or backspace to clear back to null" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
+                    class="spms-score-input field-e ${data.e === 'X' ? 'bg-zinc-200' : ''}" style="${data.e === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
             </td>
 
             <!-- Row Average -->
@@ -2609,6 +2600,46 @@
     function clearScore(input) {
         input.value = '';
         recalculateForm();
+    }
+
+    function toggleQte(btn, fieldClass) {
+        const td = btn.closest('td');
+        const input = td.querySelector('.' + fieldClass);
+        const isX = input.value === 'X';
+        
+        if (isX) {
+            td.classList.remove('bg-zinc-200');
+            input.value = '';
+            input.type = 'number';
+            input.classList.remove('bg-zinc-200');
+            input.style.backgroundColor = '';
+            input.style.borderColor = '';
+            input.style.color = '';
+            input.style.textShadow = '';
+            input.style.fontWeight = '';
+            input.style.cursor = '';
+            input.disabled = false;
+            
+            btn.className = "print-hide flex items-center justify-center bg-zinc-200 text-zinc-500 hover:bg-zinc-300 transition-colors";
+        } else {
+            td.classList.add('bg-zinc-200');
+            input.type = 'text';
+            input.value = 'X';
+            input.style.backgroundColor = 'transparent';
+            input.style.borderColor = 'transparent';
+            input.style.color = 'transparent';
+            input.style.textShadow = '0 0 0 transparent';
+            input.style.fontWeight = 'bold';
+            input.style.cursor = 'not-allowed';
+            input.disabled = true;
+            
+            btn.className = "print-hide flex items-center justify-center bg-zinc-500 text-white hover:bg-zinc-600 transition-colors";
+        }
+        
+        recalculateForm();
+        if (typeof saveTemplate === 'function') {
+            saveTemplate();
+        }
     }
 
     function handleScoreKeydown(e, input) {

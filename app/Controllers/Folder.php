@@ -999,7 +999,7 @@ class Folder extends BaseController
         } elseif ($allApproved) {
             $folderModel->update($folderId, ['status' => FolderStatus::APPROVED->value, 'rated_at' => date('Y-m-d H:i:s')]);
         } else {
-            $folderModel->update($folderId, ['status' => FolderStatus::TO_EVALUATE->value, 'rated_at' => null]);
+            $folderModel->update($folderId, ['status' => FolderStatus::EVALUATED->value, 'rated_at' => null]);
         }
     }
 
@@ -1639,6 +1639,14 @@ class Folder extends BaseController
             $dates = $folderModel->getFolderDates($folder);
             if (!empty($dates['eval_date_end']) && date('Y-m-d H:i:s') > $dates['eval_date_end']) {
                 return $this->respondError("Cannot revoke: Evaluation window has already closed.", 400);
+            }
+
+            $routingModel = new \App\Models\EvaluationRoutingModel();
+            $hasApproval = $routingModel->where('folder_id', $folderId)
+                                        ->where('status', FolderStatus::APPROVED->value)
+                                        ->countAllResults() > 0;
+            if ($hasApproval) {
+                return $this->respondError("Cannot revoke: An evaluator has already approved your rating.", 400);
             }
 
             $folderModel->update($folderId, [
@@ -2484,7 +2492,7 @@ class Folder extends BaseController
             $folderId = $this->request->getPost('folder_id');
             $status = $this->request->getPost('status');
             
-            if (!in_array($status, [FolderStatus::TWG_APPROVED->value, FolderStatus::TWG_DISAPPROVED->value])) {
+            if (!in_array($status, [FolderStatus::TWG_APPROVED->value, FolderStatus::TWG_DISAPPROVED->value, 'revoke'])) {
                 return $this->fail('Invalid status');
             }
             
@@ -2501,6 +2509,12 @@ class Folder extends BaseController
                 }
             }
             
+            if ($status === 'revoke') {
+                $this->updateFolderConsensus($folderId);
+                audit_log('TWG_REVOKED', 'RATING', 'document_folder', (int) $folderId, "TWG approval/disapproval revoked for {$folder['title']}");
+                return $this->respond(['status' => 'success', 'message' => 'TWG decision revoked successfully!']);
+            }
+
             $folderModel->update($folderId, [
                 'status' => $status, 
                 'updated_at' => date('Y-m-d H:i:s')

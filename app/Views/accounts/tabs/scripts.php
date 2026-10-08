@@ -1585,7 +1585,7 @@
 
         const formData = new FormData(form);
 
-        apiPost('account/twg-assignments/update', formData, {
+        apiPost('<?= base_url('account/twg-assignments/update') ?>', formData, {
             onSuccess: (data) => {
                 closeTwgAssignmentModal();
                 if (submitBtn) {
