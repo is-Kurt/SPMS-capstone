@@ -522,9 +522,8 @@
         ?>
         <div class="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-1">
             <!-- Return to Folder Button -->
-            <a href="<?= site_url('folders/' . ($doc['document_folder_id'] ?? '')) ?>" 
-               onclick="if (window.history.length > 1) { history.back(); return false; }"
-               class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-xs font-bold rounded-lg border border-surface-border transition-colors shrink-0 shadow-sm mr-1 sm:mr-2 cursor-pointer"
+            <a href="<?= esc($returnUrl) ?>" 
+               class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 bg-surface-border/20 hover:bg-surface-border/40 active:scale-[0.96] text-text text-xs font-bold rounded-lg border border-surface-border transition-all shrink-0 shadow-sm mr-1 sm:mr-2 cursor-pointer"
                title="Return to <?= $isOwner ? 'Folder' : 'Ratings Dashboard' ?>">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -3251,6 +3250,7 @@
     }
 </script>
 
+<script src="<?= base_url('assets/vendor/tinymce/tinymce.min.js') ?>"></script>
 <script src="<?= base_url('assets/js/editor/plugins.js') ?>"></script>
 <script src="<?= base_url('assets/js/editor/TableTools.js') ?>"></script>
 <script src="<?= base_url('assets/js/editor/config.js') ?>"></script>

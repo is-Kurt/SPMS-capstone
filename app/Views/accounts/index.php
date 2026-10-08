@@ -3,7 +3,7 @@
 
 <?= view('components/header') ?>
 
-<div class="px-4 md:px-8 py-3 md:py-4 max-w-[1600px] mx-auto flex flex-col gap-3 md:gap-4 w-full lg:min-h-[calc(100vh-6rem)]">
+<div class="px-4 md:px-8 py-3 md:py-4 max-w-[1600px] mx-auto flex flex-col gap-3 md:gap-4 w-full lg:min-h-[calc(100vh-6rem)] spms-content-slide">
     
     <div class="shrink-0">
         <h1 class="text-xl md:text-2xl font-black tracking-tight text-text">User Management</h1>

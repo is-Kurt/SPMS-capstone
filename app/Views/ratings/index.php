@@ -749,8 +749,9 @@
 
         const target = document.getElementById('tab-content-' + tabId);
         if (target) {
-            target.classList.remove('hidden');
-            target.classList.add('flex', 'flex-col', 'flex-1', 'min-w-0', 'min-h-0', 'h-full');
+            target.classList.remove('hidden', 'spms-content-slide');
+            void target.offsetWidth;
+            target.classList.add('flex', 'flex-col', 'flex-1', 'min-w-0', 'min-h-0', 'h-full', 'spms-content-slide');
         }
 
         if (btnElement) {

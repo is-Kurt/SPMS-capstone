@@ -344,7 +344,7 @@
 </style>
 
 <main class="min-h-[calc(100vh-4.5rem)] notif-page-bg py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-200">
-    <div class="max-w-5xl mx-auto flex flex-col gap-6 pb-20">
+    <div class="max-w-5xl mx-auto flex flex-col gap-6 pb-20 spms-content-slide">
         
         <!-- Header & Global Actions (Clean, directly on background) -->
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">

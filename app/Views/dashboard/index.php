@@ -15,15 +15,20 @@
         <?php if ($sysRole === 'Admin'): ?>
         <!-- MOBILE VIEW SWITCHER (Analytics vs Masterlist) - Full Width Grid on Mobile directly under Folder Card -->
         <div class="lg:hidden mb-3.5">
-            <div class="grid grid-cols-2 p-1 rounded-xl border shadow-2xs w-full spms-tab-container dark:bg-zinc-950 dark:border-zinc-800">
+            <div id="dash-view-switcher-mobile" class="relative grid grid-cols-2 p-1 rounded-xl border shadow-2xs w-full spms-tab-container dark:bg-zinc-950 dark:border-zinc-800">
+                <!-- Sliding Indicator Pill (Mobile) -->
+                <div id="dash-view-indicator-mobile" 
+                     class="absolute rounded-lg bg-white dark:bg-zinc-800 shadow-xs border border-zinc-200/80 dark:border-zinc-700/80 pointer-events-none"
+                     style="top: 0; left: 0; width: 0; height: 0; opacity: 0; will-change: transform, width;"></div>
+
                 <button type="button" id="btn-view-analytics-mobile" onclick="switchDashboardView('analytics')"
-                        class="w-full py-2 px-3 rounded-lg text-xs font-bold text-center transition-all shadow-xs cursor-pointer border spms-tab-active">
+                        class="relative z-10 w-full py-2 px-3 rounded-lg text-xs font-bold transition-colors cursor-pointer inline-flex items-center justify-center leading-none spms-tab-active">
                     <span>Overview Analytics</span>
                 </button>
                 <button type="button" id="btn-view-masterlist-mobile" onclick="switchDashboardView('masterlist')"
-                        class="w-full py-2 px-3 rounded-lg text-xs font-bold text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 spms-tab-inactive">
+                        class="relative z-10 w-full py-2 px-3 rounded-lg text-xs font-bold transition-colors cursor-pointer inline-flex items-center justify-center gap-1.5 leading-none spms-tab-inactive">
                     <span>Master List</span>
-                    <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black spms-tab-badge">
+                    <span class="inline-flex items-center justify-center px-1.5 min-w-[18px] h-4 rounded-full text-[10px] font-black leading-none spms-tab-badge">
                         <?= count($cycleFolders) ?>
                     </span>
                 </button>
@@ -53,55 +58,135 @@
                     </svg>
                 </a>
             </div>
+            <?php
+            $colleges = [];
+            $adminOffices = [];
+            $subDepts = [];
+            $selectedUnitDisplayName = 'All Colleges & Divisions';
+            if (!empty($allUnits)) {
+                foreach ($allUnits as $u) {
+                    if (!empty($selectedUnitId) && (int)$selectedUnitId === (int)$u['id']) {
+                        $selectedUnitDisplayName = $u['name'];
+                    }
+                    if (empty($u['parent_id'])) {
+                        if (stripos($u['name'], 'College of') !== false || stripos($u['name'], 'Graduate School') !== false) {
+                            $colleges[] = $u;
+                        } else {
+                            $adminOffices[] = $u;
+                        }
+                    } else {
+                        $subDepts[] = $u;
+                    }
+                }
+            }
+            ?>
             <!-- Mobile College Filter Dropdown -->
             <?php if (!empty($allUnits)): ?>
             <div class="flex items-center gap-2">
-                <div class="flex-1 min-w-0">
-                    <select onchange="applyCollegeFilter(this.value)"
-                            class="w-full text-xs font-semibold px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-zinc-400/40 dark:focus:ring-zinc-600/40 cursor-pointer shadow-2xs spms-select-dark [color-scheme:light] dark:[color-scheme:dark]">
-                        <option value="">All Colleges &amp; Divisions</option>
-                        <?php
-                        $colleges = [];
-                        $adminOffices = [];
-                        $subDepts = [];
-                        foreach ($allUnits as $u) {
-                            if (empty($u['parent_id'])) {
-                                if (stripos($u['name'], 'College of') !== false || stripos($u['name'], 'Graduate School') !== false) {
-                                    $colleges[] = $u;
-                                } else {
-                                    $adminOffices[] = $u;
-                                }
-                            } else {
-                                $subDepts[] = $u;
-                            }
-                        }
-                        ?>
-                        <optgroup label="Colleges">
-                            <?php foreach ($colleges as $c): ?>
-                                <option value="<?= $c['id'] ?>" <?= (!empty($selectedUnitId) && (int)$selectedUnitId === (int)$c['id']) ? 'selected' : '' ?>>
-                                    <?= esc($c['name']) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </optgroup>
-                        <?php if (!empty($adminOffices)): ?>
-                        <optgroup label="Administrative Offices / Divisions">
-                            <?php foreach ($adminOffices as $ao): ?>
-                                <option value="<?= $ao['id'] ?>" <?= (!empty($selectedUnitId) && (int)$selectedUnitId === (int)$ao['id']) ? 'selected' : '' ?>>
-                                    <?= esc($ao['name']) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </optgroup>
-                        <?php endif; ?>
-                        <?php if (!empty($subDepts)): ?>
-                        <optgroup label="Degree Programs / Sub-Departments">
-                            <?php foreach ($subDepts as $sd): ?>
-                                <option value="<?= $sd['id'] ?>" <?= (!empty($selectedUnitId) && (int)$selectedUnitId === (int)$sd['id']) ? 'selected' : '' ?>>
-                                    <?= esc($sd['name']) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </optgroup>
-                        <?php endif; ?>
-                    </select>
+                <div class="flex-1 min-w-0 relative" id="college-dropdown-container-mobile">
+                    <button type="button" 
+                            id="college-dropdown-btn-mobile"
+                            onclick="toggleCollegeDropdown('mobile')"
+                            class="w-full flex items-center justify-between gap-3 text-xs font-semibold px-3.5 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-zinc-400/40 dark:focus:ring-zinc-600/40 cursor-pointer shadow-2xs spms-select-dark transition-all active:scale-[0.98]">
+                        <span id="college-dropdown-label-mobile" class="truncate text-left">
+                            <?= esc($selectedUnitDisplayName) ?>
+                        </span>
+                        <svg id="college-dropdown-chevron-mobile" xmlns="http://www.w3.org/2000/svg" 
+                             class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 shrink-0 transition-transform duration-200" 
+                             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Mobile Custom Slide-Down Menu -->
+                    <div id="college-dropdown-menu-mobile"
+                         class="hidden absolute left-0 right-0 mt-1.5 w-full rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl z-[120] overflow-hidden"
+                         style="transform-origin: top center;">
+                        
+                        <!-- Search Filter Input -->
+                        <div class="p-2 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-950/60">
+                            <div class="relative">
+                                <svg class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                <input type="text" 
+                                       id="college-dropdown-search-mobile" 
+                                       oninput="filterCollegeDropdownOptions(this.value, 'mobile')"
+                                       placeholder="Filter colleges & divisions..." 
+                                       class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500" />
+                            </div>
+                        </div>
+
+                        <!-- Scrollable Options List -->
+                        <div id="college-dropdown-list-mobile" class="max-h-60 overflow-y-auto p-1.5 space-y-0.5 text-xs">
+                            <!-- Reset / All Option -->
+                            <button type="button" 
+                                    onclick="selectCollegeOption('', 'All Colleges & Divisions')"
+                                    class="college-opt-item-mobile w-full flex items-center justify-between px-3 py-2 rounded-lg font-bold transition-colors <?= empty($selectedUnitId) ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800' ?>">
+                                <span class="truncate">All Colleges &amp; Divisions</span>
+                                <?php if (empty($selectedUnitId)): ?>
+                                    <svg class="w-3.5 h-3.5 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                <?php endif; ?>
+                            </button>
+
+                            <?php if (!empty($colleges)): ?>
+                                <div class="college-opt-group-mobile pt-1.5 pb-0.5 px-2 text-[10px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                                    Colleges
+                                </div>
+                                <?php foreach ($colleges as $c): 
+                                    $isSelected = (!empty($selectedUnitId) && (int)$selectedUnitId === (int)$c['id']);
+                                ?>
+                                    <button type="button"
+                                            onclick="selectCollegeOption('<?= $c['id'] ?>', '<?= esc(addslashes($c['name'])) ?>')"
+                                            data-opt-name="<?= esc(strtolower($c['name'])) ?>"
+                                            class="college-opt-item-mobile w-full flex items-center justify-between px-3 py-1.5 rounded-lg font-medium transition-colors <?= $isSelected ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold' : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800' ?>">
+                                        <span class="truncate text-left"><?= esc($c['name']) ?></span>
+                                        <?php if ($isSelected): ?>
+                                            <svg class="w-3.5 h-3.5 text-amber-500 shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                        <?php endif; ?>
+                                    </button>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+
+                            <?php if (!empty($adminOffices)): ?>
+                                <div class="college-opt-group-mobile pt-2 pb-0.5 px-2 text-[10px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                                    Administrative Offices / Divisions
+                                </div>
+                                <?php foreach ($adminOffices as $ao): 
+                                    $isSelected = (!empty($selectedUnitId) && (int)$selectedUnitId === (int)$ao['id']);
+                                ?>
+                                    <button type="button"
+                                            onclick="selectCollegeOption('<?= $ao['id'] ?>', '<?= esc(addslashes($ao['name'])) ?>')"
+                                            data-opt-name="<?= esc(strtolower($ao['name'])) ?>"
+                                            class="college-opt-item-mobile w-full flex items-center justify-between px-3 py-1.5 rounded-lg font-medium transition-colors <?= $isSelected ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold' : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800' ?>">
+                                        <span class="truncate text-left"><?= esc($ao['name']) ?></span>
+                                        <?php if ($isSelected): ?>
+                                            <svg class="w-3.5 h-3.5 text-amber-500 shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                        <?php endif; ?>
+                                    </button>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+
+                            <?php if (!empty($subDepts)): ?>
+                                <div class="college-opt-group-mobile pt-2 pb-0.5 px-2 text-[10px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                                    Degree Programs / Sub-Departments
+                                </div>
+                                <?php foreach ($subDepts as $sd): 
+                                    $isSelected = (!empty($selectedUnitId) && (int)$selectedUnitId === (int)$sd['id']);
+                                ?>
+                                    <button type="button"
+                                            onclick="selectCollegeOption('<?= $sd['id'] ?>', '<?= esc(addslashes($sd['name'])) ?>')"
+                                            data-opt-name="<?= esc(strtolower($sd['name'])) ?>"
+                                            class="college-opt-item-mobile w-full flex items-center justify-between px-3 py-1.5 rounded-lg font-medium transition-colors <?= $isSelected ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold' : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800' ?>">
+                                        <span class="truncate text-left"><?= esc($sd['name']) ?></span>
+                                        <?php if ($isSelected): ?>
+                                            <svg class="w-3.5 h-3.5 text-amber-500 shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                        <?php endif; ?>
+                                    </button>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                 </div>
                 <?php if (!empty($selectedUnitId)): ?>
                     <button onclick="applyCollegeFilter('')"
@@ -142,15 +227,20 @@
                 <div class="flex items-center gap-2.5 shrink-0">
                     <?php if ($sysRole === 'Admin'): ?>
                     <!-- Desktop View Switcher -->
-                    <div class="inline-flex p-1 rounded-xl border shadow-2xs spms-tab-container dark:bg-zinc-950 dark:border-zinc-800">
+                    <div id="dash-view-switcher" class="relative inline-flex p-1 rounded-xl border shadow-2xs spms-tab-container dark:bg-zinc-950 dark:border-zinc-800">
+                        <!-- Sliding Indicator Pill -->
+                        <div id="dash-view-indicator" 
+                             class="absolute rounded-lg bg-white dark:bg-zinc-800 shadow-xs border border-zinc-200/80 dark:border-zinc-700/80 pointer-events-none"
+                             style="top: 0; left: 0; width: 0; height: 0; opacity: 0; will-change: transform, width;"></div>
+
                         <button type="button" id="btn-view-analytics" onclick="switchDashboardView('analytics')"
-                                class="py-2 px-4 rounded-lg text-xs font-bold text-center transition-all shadow-xs cursor-pointer border spms-tab-active">
+                                class="relative z-10 py-2 px-4 rounded-lg text-xs font-bold transition-colors cursor-pointer inline-flex items-center justify-center leading-none spms-tab-active">
                             <span>Overview Analytics</span>
                         </button>
                         <button type="button" id="btn-view-masterlist" onclick="switchDashboardView('masterlist')"
-                                class="py-2 px-4 rounded-lg text-xs font-bold text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 spms-tab-inactive">
+                                class="relative z-10 py-2 px-4 rounded-lg text-xs font-bold transition-colors cursor-pointer inline-flex items-center justify-center gap-1.5 leading-none spms-tab-inactive">
                             <span>Master List</span>
-                            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black spms-tab-badge">
+                            <span class="inline-flex items-center justify-center px-1.5 min-w-[18px] h-4 rounded-full text-[10px] font-black leading-none spms-tab-badge">
                                 <?= count($cycleFolders) ?>
                             </span>
                         </button>
@@ -158,37 +248,113 @@
 
                     <!-- Desktop College Filter & Queue -->
                     <div class="flex items-center gap-2">
-                        <select id="college-filter" onchange="applyCollegeFilter(this.value)"
-                                class="text-xs font-semibold px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-zinc-400/40 dark:focus:ring-zinc-600/40 cursor-pointer shadow-2xs spms-select-dark [color-scheme:light] dark:[color-scheme:dark]">
-                            <option value="">All Colleges &amp; Divisions</option>
-                            <?php if (!empty($allUnits)): ?>
-                                <optgroup label="Colleges">
-                                    <?php foreach ($colleges as $c): ?>
-                                        <option value="<?= $c['id'] ?>" <?= (!empty($selectedUnitId) && (int)$selectedUnitId === (int)$c['id']) ? 'selected' : '' ?>>
-                                            <?= esc($c['name']) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </optgroup>
-                                <?php if (!empty($adminOffices)): ?>
-                                <optgroup label="Administrative Offices / Divisions">
-                                    <?php foreach ($adminOffices as $ao): ?>
-                                        <option value="<?= $ao['id'] ?>" <?= (!empty($selectedUnitId) && (int)$selectedUnitId === (int)$ao['id']) ? 'selected' : '' ?>>
-                                            <?= esc($ao['name']) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </optgroup>
-                                <?php endif; ?>
-                                <?php if (!empty($subDepts)): ?>
-                                <optgroup label="Degree Programs / Sub-Departments">
-                                    <?php foreach ($subDepts as $sd): ?>
-                                        <option value="<?= $sd['id'] ?>" <?= (!empty($selectedUnitId) && (int)$selectedUnitId === (int)$sd['id']) ? 'selected' : '' ?>>
-                                            <?= esc($sd['name']) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </optgroup>
-                                <?php endif; ?>
-                            <?php endif; ?>
-                        </select>
+                        <?php if (!empty($allUnits)): ?>
+                        <div class="relative" id="college-dropdown-container">
+                            <button type="button" 
+                                    id="college-dropdown-btn"
+                                    onclick="toggleCollegeDropdown('desktop')"
+                                    class="flex items-center justify-between gap-3 text-xs font-semibold px-3.5 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-zinc-400/40 dark:focus:ring-zinc-600/40 cursor-pointer shadow-2xs spms-select-dark w-56 sm:w-64 transition-all active:scale-[0.98]">
+                                <span id="college-dropdown-label" class="truncate text-left">
+                                    <?= esc($selectedUnitDisplayName) ?>
+                                </span>
+                                <svg id="college-dropdown-chevron" xmlns="http://www.w3.org/2000/svg" 
+                                     class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 shrink-0 transition-transform duration-200" 
+                                     fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+
+                            <!-- Custom Slide-Down Menu -->
+                            <div id="college-dropdown-menu"
+                                 class="hidden absolute left-0 mt-1.5 w-80 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl z-[120] overflow-hidden"
+                                 style="transform-origin: top left;">
+                                
+                                <!-- Search Filter Input -->
+                                <div class="p-2 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-950/60">
+                                    <div class="relative">
+                                        <svg class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                        <input type="text" 
+                                               id="college-dropdown-search" 
+                                               oninput="filterCollegeDropdownOptions(this.value, 'desktop')"
+                                               placeholder="Filter colleges & divisions..." 
+                                               class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500" />
+                                    </div>
+                                </div>
+
+                                <!-- Scrollable Options List -->
+                                <div id="college-dropdown-list" class="max-h-64 overflow-y-auto p-1.5 space-y-0.5 text-xs">
+                                    <!-- Reset / All Option -->
+                                    <button type="button" 
+                                            onclick="selectCollegeOption('', 'All Colleges & Divisions')"
+                                            class="college-opt-item-desktop w-full flex items-center justify-between px-3 py-2 rounded-lg font-bold transition-colors <?= empty($selectedUnitId) ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800' ?>">
+                                        <span class="truncate">All Colleges &amp; Divisions</span>
+                                        <?php if (empty($selectedUnitId)): ?>
+                                            <svg class="w-3.5 h-3.5 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                        <?php endif; ?>
+                                    </button>
+
+                                    <?php if (!empty($colleges)): ?>
+                                        <div class="college-opt-group-desktop pt-1.5 pb-0.5 px-2 text-[10px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                                            Colleges
+                                        </div>
+                                        <?php foreach ($colleges as $c): 
+                                            $isSelected = (!empty($selectedUnitId) && (int)$selectedUnitId === (int)$c['id']);
+                                        ?>
+                                            <button type="button"
+                                                    onclick="selectCollegeOption('<?= $c['id'] ?>', '<?= esc(addslashes($c['name'])) ?>')"
+                                                    data-opt-name="<?= esc(strtolower($c['name'])) ?>"
+                                                    class="college-opt-item-desktop w-full flex items-center justify-between px-3 py-1.5 rounded-lg font-medium transition-colors <?= $isSelected ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold' : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800' ?>">
+                                                <span class="truncate text-left"><?= esc($c['name']) ?></span>
+                                                <?php if ($isSelected): ?>
+                                                    <svg class="w-3.5 h-3.5 text-amber-500 shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                                <?php endif; ?>
+                                            </button>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+
+                                    <?php if (!empty($adminOffices)): ?>
+                                        <div class="college-opt-group-desktop pt-2 pb-0.5 px-2 text-[10px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                                            Administrative Offices / Divisions
+                                        </div>
+                                        <?php foreach ($adminOffices as $ao): 
+                                            $isSelected = (!empty($selectedUnitId) && (int)$selectedUnitId === (int)$ao['id']);
+                                        ?>
+                                            <button type="button"
+                                                    onclick="selectCollegeOption('<?= $ao['id'] ?>', '<?= esc(addslashes($ao['name'])) ?>')"
+                                                    data-opt-name="<?= esc(strtolower($ao['name'])) ?>"
+                                                    class="college-opt-item-desktop w-full flex items-center justify-between px-3 py-1.5 rounded-lg font-medium transition-colors <?= $isSelected ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold' : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800' ?>">
+                                                <span class="truncate text-left"><?= esc($ao['name']) ?></span>
+                                                <?php if ($isSelected): ?>
+                                                    <svg class="w-3.5 h-3.5 text-amber-500 shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                                <?php endif; ?>
+                                            </button>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+
+                                    <?php if (!empty($subDepts)): ?>
+                                        <div class="college-opt-group-desktop pt-2 pb-0.5 px-2 text-[10px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                                            Degree Programs / Sub-Departments
+                                        </div>
+                                        <?php foreach ($subDepts as $sd): 
+                                            $isSelected = (!empty($selectedUnitId) && (int)$selectedUnitId === (int)$sd['id']);
+                                        ?>
+                                            <button type="button"
+                                                    onclick="selectCollegeOption('<?= $sd['id'] ?>', '<?= esc(addslashes($sd['name'])) ?>')"
+                                                    data-opt-name="<?= esc(strtolower($sd['name'])) ?>"
+                                                    class="college-opt-item-desktop w-full flex items-center justify-between px-3 py-1.5 rounded-lg font-medium transition-colors <?= $isSelected ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold' : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800' ?>">
+                                                <span class="truncate text-left"><?= esc($sd['name']) ?></span>
+                                                <?php if ($isSelected): ?>
+                                                    <svg class="w-3.5 h-3.5 text-amber-500 shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                                <?php endif; ?>
+                                            </button>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endif; ?>
 
                         <?php if (!empty($selectedUnitId)): ?>
                             <button onclick="applyCollegeFilter('')"
@@ -1334,7 +1500,45 @@
 
 <script>
 // --- DASHBOARD VIEW SWITCHER (Analytics vs Masterlist) ---
-function switchDashboardView(view) {
+function updateDashboardPill(view, animate = true) {
+    const pairs = [
+        {
+            container: document.getElementById('dash-view-switcher'),
+            indicator: document.getElementById('dash-view-indicator'),
+            target: document.getElementById(view === 'masterlist' ? 'btn-view-masterlist' : 'btn-view-analytics')
+        },
+        {
+            container: document.getElementById('dash-view-switcher-mobile'),
+            indicator: document.getElementById('dash-view-indicator-mobile'),
+            target: document.getElementById(view === 'masterlist' ? 'btn-view-masterlist-mobile' : 'btn-view-analytics-mobile')
+        }
+    ];
+
+    pairs.forEach(({ container, indicator, target }) => {
+        if (!container || !indicator || !target) return;
+        if (container.offsetWidth === 0 || container.offsetHeight === 0) return;
+
+        const left = target.offsetLeft;
+        const top = target.offsetTop;
+        const width = target.offsetWidth;
+        const height = target.offsetHeight;
+
+        if (width === 0 || height === 0) return;
+
+        if (animate) {
+            indicator.style.transition = 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), width 0.24s cubic-bezier(0.16, 1, 0.3, 1), height 0.18s ease, opacity 0.15s ease';
+        } else {
+            indicator.style.transition = 'none';
+        }
+
+        indicator.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+        indicator.style.width = `${width}px`;
+        indicator.style.height = `${height}px`;
+        indicator.style.opacity = '1';
+    });
+}
+
+function switchDashboardView(view, animate = true) {
     const analyticsView = document.getElementById('dashboard-view-analytics');
     const masterlistView = document.getElementById('dashboard-view-masterlist');
     const mobileAnalyticsHeader = document.getElementById('analytics-mobile-header');
@@ -1353,16 +1557,23 @@ function switchDashboardView(view) {
     if (view === 'masterlist') {
         analyticsView.classList.add('hidden');
         masterlistView.classList.remove('hidden');
+        if (animate) {
+            masterlistView.classList.remove('spms-view-enter');
+            void masterlistView.offsetWidth;
+            masterlistView.classList.add('spms-view-enter');
+        }
         if (mobileAnalyticsHeader) mobileAnalyticsHeader.classList.add('hidden');
 
         btnsAnalytics.forEach(b => {
             if (b) {
-                b.className = b.className.replace('spms-tab-active', 'spms-tab-inactive');
+                b.classList.remove('spms-tab-active');
+                b.classList.add('spms-tab-inactive');
             }
         });
         btnsMasterlist.forEach(b => {
             if (b) {
-                b.className = b.className.replace('spms-tab-inactive', 'spms-tab-active');
+                b.classList.remove('spms-tab-inactive');
+                b.classList.add('spms-tab-active');
             }
         });
         localStorage.setItem('spms_dash_view', 'masterlist');
@@ -1370,21 +1581,36 @@ function switchDashboardView(view) {
     } else {
         masterlistView.classList.add('hidden');
         analyticsView.classList.remove('hidden');
+        if (animate) {
+            analyticsView.classList.remove('spms-view-enter');
+            void analyticsView.offsetWidth;
+            analyticsView.classList.add('spms-view-enter');
+        }
         if (mobileAnalyticsHeader) mobileAnalyticsHeader.classList.remove('hidden');
 
         btnsMasterlist.forEach(b => {
             if (b) {
-                b.className = b.className.replace('spms-tab-active', 'spms-tab-inactive');
+                b.classList.remove('spms-tab-active');
+                b.classList.add('spms-tab-inactive');
             }
         });
         btnsAnalytics.forEach(b => {
             if (b) {
-                b.className = b.className.replace('spms-tab-inactive', 'spms-tab-active');
+                b.classList.remove('spms-tab-inactive');
+                b.classList.add('spms-tab-active');
             }
         });
         localStorage.setItem('spms_dash_view', 'analytics');
     }
+
+    updateDashboardPill(view, animate);
 }
+
+// Immediate alignment on script load
+requestAnimationFrame(() => {
+    const initialView = localStorage.getItem('spms_dash_view') || 'analytics';
+    updateDashboardPill(initialView, false);
+});
 
 // --- STAGE ACCORDION TOGGLE (MOBILE) ---
 function toggleStageAccordion(stageNum) {
@@ -1632,9 +1858,11 @@ function changeMasterlistPerPage(val) {
 
 // Restore saved view & initialize responsive masterlist pagination on page load
 document.addEventListener('DOMContentLoaded', function() {
-    const savedView = localStorage.getItem('spms_dash_view');
+    const savedView = localStorage.getItem('spms_dash_view') || 'analytics';
     if (savedView === 'masterlist') {
-        switchDashboardView('masterlist');
+        switchDashboardView('masterlist', false);
+    } else {
+        updateDashboardPill('analytics', false);
     }
 
     const isMobile = window.innerWidth < 768;
@@ -1645,6 +1873,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     filterMasterlist(true);
 });
+
+window.addEventListener('load', function() {
+    const currentView = localStorage.getItem('spms_dash_view') || 'analytics';
+    updateDashboardPill(currentView, false);
+});
+
+window.addEventListener('resize', function() {
+    const currentView = localStorage.getItem('spms_dash_view') || 'analytics';
+    updateDashboardPill(currentView, false);
+}, { passive: true });
 
 // --- ROSTER / DEAN FILTERING ---
 let currentRosterFilter = 'all';
@@ -1717,6 +1955,112 @@ function applyCollegeFilter(unitId) {
     }
     window.location.href = url.toString();
 }
+
+// --- CUSTOM ANIMATED COLLEGE DROPDOWN CONTROLLER ---
+let openCollegeDropdownScope = null;
+
+function openCollegeDropdown(scope) {
+    const isMobile = scope === 'mobile';
+    const menu = document.getElementById(isMobile ? 'college-dropdown-menu-mobile' : 'college-dropdown-menu');
+    const chevron = document.getElementById(isMobile ? 'college-dropdown-chevron-mobile' : 'college-dropdown-chevron');
+    const search = document.getElementById(isMobile ? 'college-dropdown-search-mobile' : 'college-dropdown-search');
+    if (!menu) return;
+
+    if (openCollegeDropdownScope && openCollegeDropdownScope !== scope) {
+        closeCollegeDropdown(openCollegeDropdownScope);
+    }
+
+    openCollegeDropdownScope = scope;
+    menu.classList.remove('hidden', 'profile-dropdown-leave');
+    menu.classList.add('profile-dropdown-enter');
+    chevron?.classList.add('rotate-180');
+    if (search) {
+        search.value = '';
+        filterCollegeDropdownOptions('', scope);
+        setTimeout(() => search.focus(), 60);
+    }
+}
+
+function closeCollegeDropdown(scope) {
+    const targetScope = scope || openCollegeDropdownScope;
+    if (!targetScope) return;
+    const isMobile = targetScope === 'mobile';
+    const menu = document.getElementById(isMobile ? 'college-dropdown-menu-mobile' : 'college-dropdown-menu');
+    const chevron = document.getElementById(isMobile ? 'college-dropdown-chevron-mobile' : 'college-dropdown-chevron');
+    if (!menu) return;
+
+    openCollegeDropdownScope = null;
+    chevron?.classList.remove('rotate-180');
+    menu.classList.remove('profile-dropdown-enter');
+    menu.classList.add('profile-dropdown-leave');
+    setTimeout(() => {
+        if (!openCollegeDropdownScope) {
+            menu.classList.add('hidden');
+            menu.classList.remove('profile-dropdown-leave');
+        }
+    }, 120);
+}
+
+function toggleCollegeDropdown(scope = 'desktop') {
+    if (openCollegeDropdownScope === scope) {
+        closeCollegeDropdown(scope);
+    } else {
+        openCollegeDropdown(scope);
+    }
+}
+
+function selectCollegeOption(unitId, unitName) {
+    closeCollegeDropdown();
+    applyCollegeFilter(unitId);
+}
+
+function filterCollegeDropdownOptions(query, scope = 'desktop') {
+    const q = query.toLowerCase().trim();
+    const itemClass = scope === 'mobile' ? '.college-opt-item-mobile' : '.college-opt-item-desktop';
+    const groupClass = scope === 'mobile' ? '.college-opt-group-mobile' : '.college-opt-group-desktop';
+    const items = document.querySelectorAll(itemClass);
+    items.forEach(item => {
+        const name = item.getAttribute('data-opt-name') || item.textContent.toLowerCase();
+        if (!q || name.includes(q)) {
+            item.classList.remove('hidden');
+        } else {
+            item.classList.add('hidden');
+        }
+    });
+
+    document.querySelectorAll(groupClass).forEach(group => {
+        let next = group.nextElementSibling;
+        let hasVisible = false;
+        while (next && !next.classList.contains(groupClass.replace('.', ''))) {
+            if (!next.classList.contains('hidden')) {
+                hasVisible = true;
+                break;
+            }
+            next = next.nextElementSibling;
+        }
+        if (!q || hasVisible) {
+            group.classList.remove('hidden');
+        } else {
+            group.classList.add('hidden');
+        }
+    });
+}
+
+// Global click outside and Escape key listeners
+document.addEventListener('click', (e) => {
+    if (!openCollegeDropdownScope) return;
+    const isMobile = openCollegeDropdownScope === 'mobile';
+    const container = document.getElementById(isMobile ? 'college-dropdown-container-mobile' : 'college-dropdown-container');
+    if (container && !container.contains(e.target)) {
+        closeCollegeDropdown(openCollegeDropdownScope);
+    }
+});
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && openCollegeDropdownScope) {
+        closeCollegeDropdown(openCollegeDropdownScope);
+    }
+});
 
 function toggleStageAccordion(stageNum) {
     if (window.innerWidth >= 1024) return;

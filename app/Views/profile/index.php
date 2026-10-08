@@ -3,7 +3,7 @@
 
 <?= view('components/header') ?>
 
-<div class="p-4 md:p-8 max-w-5xl mx-auto flex flex-col gap-6 md:gap-8 pb-20 h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar">
+<div class="p-4 md:p-8 max-w-5xl mx-auto flex flex-col gap-6 md:gap-8 pb-20 h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar spms-content-slide">
     <div class="shrink-0">
         <h1 class="text-2xl md:text-3xl font-black tracking-tight text-text">My Account</h1>
         <p class="text-xs md:text-sm text-text-muted mt-1 font-medium italic">Manage your profile, avatar, and security settings.</p>

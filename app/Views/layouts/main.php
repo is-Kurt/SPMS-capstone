@@ -33,27 +33,60 @@
             }
         })();
 
-        // Global Theme Toggle Handler with smooth transition & micro-spin animation
+        // Global Theme Toggle Handler with smooth hardware-accelerated transition & micro-spin animation
+        let isThemeToggling = false;
         window.handleThemeToggle = function(btn) {
-            document.documentElement.classList.add('theme-transitioning');
+            if (isThemeToggling) return;
+            isThemeToggling = true;
+
             if (btn) {
+                btn.classList.remove('theme-toggle-spin');
+                void btn.offsetWidth;
                 btn.classList.add('theme-toggle-spin');
+                setTimeout(() => btn.classList.remove('theme-toggle-spin'), 380);
             }
 
-            document.documentElement.classList.toggle('dark');
-            const isDark = document.documentElement.classList.contains('dark');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            const toggleTheme = () => {
+                document.documentElement.classList.toggle('dark');
+                const isDark = document.documentElement.classList.contains('dark');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
 
-            if (typeof initEditor === 'function') {
-                initEditor();
-            }
-
-            setTimeout(() => {
-                document.documentElement.classList.remove('theme-transitioning');
-                if (btn) {
-                    btn.classList.remove('theme-toggle-spin');
+                if (typeof initEditor === 'function') {
+                    initEditor();
                 }
-            }, 380);
+            };
+
+            // Use native View Transitions API if supported for 60fps hardware-accelerated cross-fade
+            if (document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.documentElement.classList.add('no-transitions');
+                try {
+                    const transition = document.startViewTransition(() => {
+                        toggleTheme();
+                        void document.documentElement.offsetWidth;
+                    });
+
+                    transition.ready.finally(() => {
+                        document.documentElement.classList.remove('no-transitions');
+                    });
+
+                    transition.finished.finally(() => {
+                        document.documentElement.classList.remove('no-transitions');
+                        isThemeToggling = false;
+                    });
+                } catch (e) {
+                    document.documentElement.classList.remove('no-transitions');
+                    toggleTheme();
+                    isThemeToggling = false;
+                }
+            } else {
+                // Fallback: apply smooth class transition
+                document.documentElement.classList.add('theme-transitioning');
+                toggleTheme();
+                setTimeout(() => {
+                    document.documentElement.classList.remove('theme-transitioning');
+                    isThemeToggling = false;
+                }, 300);
+            }
         };
 
         // Lets static JS (which can't read the PHP ENVIRONMENT constant directly)
@@ -65,29 +98,68 @@
     <link rel="preload" href="<?= base_url('assets/fonts/Roboto/Roboto-VariableFont_wdth,wght.ttf') ?>" as="font" type="font/ttf" crossorigin>
     <link rel="stylesheet" href="<?= base_url('assets/css/main/style.css?v=' . filemtime(FCPATH . 'assets/css/main/style.css')) ?>">
 
-    <script src="<?= base_url('assets/vendor/tinymce/tinymce.min.js') ?>"></script>
-    <script src="<?= base_url('assets/vendor/axios/dist/axios.min.js') ?>"></script>
+    <script src="<?= base_url('assets/vendor/axios/dist/axios.min.js') ?>" defer></script>
 
     <meta name="csrf-token-name" content="<?= csrf_token() ?>">
     <meta name="csrf-token-hash" content="<?= csrf_hash() ?>">
 
     <!-- Theme transition style for toggle animation -->
     <style>
-        html.theme-transitioning,
-        html.theme-transitioning *,
-        html.theme-transitioning *::before,
-        html.theme-transitioning *::after {
-            transition: background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-                        border-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-                        color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-                        fill 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-                        stroke 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-                        box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
-            transition-delay: 0s !important;
+        @keyframes theme-spin {
+            0% { transform: rotate(0deg) scale(0.9); }
+            50% { transform: rotate(180deg) scale(1.12); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+        .theme-toggle-spin {
+            animation: theme-spin 0.35s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .theme-toggle-spin {
-            animation: theme-spin 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        /* Instantaneous state freeze during View Transition snapshot capture */
+        .no-transitions,
+        .no-transitions *,
+        .no-transitions *::before,
+        .no-transitions *::after {
+            transition: none !important;
+        }
+
+        /* View Transition API (Chrome, Edge, Safari 18+) */
+        ::view-transition-old(root),
+        ::view-transition-new(root) {
+            animation-duration: 0.25s;
+            animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+            mix-blend-mode: normal;
+        }
+        ::view-transition-old(root) {
+            animation: none;
+        }
+        ::view-transition-new(root) {
+            animation-name: vt-theme-fade-in;
+        }
+        @keyframes vt-theme-fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Fallback CSS transition for browsers without View Transitions */
+        html.theme-transitioning,
+        html.theme-transitioning body,
+        html.theme-transitioning nav,
+        html.theme-transitioning header,
+        html.theme-transitioning aside,
+        html.theme-transitioning main,
+        html.theme-transitioning div:not(#header-nav-indicator):not(#dash-view-indicator),
+        html.theme-transitioning section,
+        html.theme-transitioning table,
+        html.theme-transitioning tr,
+        html.theme-transitioning td,
+        html.theme-transitioning th,
+        html.theme-transitioning button,
+        html.theme-transitioning input,
+        html.theme-transitioning select {
+            transition: background-color 0.26s cubic-bezier(0.16, 1, 0.3, 1),
+                        border-color 0.26s cubic-bezier(0.16, 1, 0.3, 1),
+                        color 0.26s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            transition-delay: 0s !important;
         }
 
         .spms-auth-card {

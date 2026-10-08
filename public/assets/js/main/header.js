@@ -53,3 +53,162 @@ document.addEventListener('DOMContentLoaded', () => {
         processBackgroundEmails();
     }
 });
+
+// =========================================================================
+// 9. SLIDING ACTIVE INDICATOR FOR TOP NAVIGATION
+// =========================================================================
+function initHeaderNavIndicator() {
+    const container = document.getElementById('header-nav-container');
+    const indicator = document.getElementById('header-nav-indicator');
+    if (!container || !indicator) return;
+
+    const links = Array.from(container.querySelectorAll('.header-nav-link'));
+    if (links.length === 0) return;
+
+    const activeLink = container.querySelector('.header-nav-active');
+
+    function calculateRect(target) {
+        return {
+            left: target.offsetLeft,
+            top: target.offsetTop,
+            width: target.offsetWidth,
+            height: target.offsetHeight
+        };
+    }
+
+    function setIndicator(target, animate = true) {
+        if (!target) return;
+        const rect = calculateRect(target);
+        if (rect.width === 0) return;
+
+        if (animate) {
+            indicator.style.transition = 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), width 0.24s cubic-bezier(0.16, 1, 0.3, 1), height 0.18s ease, opacity 0.15s ease';
+        } else {
+            indicator.style.transition = 'none';
+        }
+
+        indicator.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
+        indicator.style.width = `${rect.width}px`;
+        indicator.style.height = `${rect.height}px`;
+        indicator.style.opacity = '1';
+    }
+
+    window.moveHeaderNavIndicator = function (target, animate = true) {
+        if (!target) return;
+        links.forEach(l => {
+            l.classList.remove('header-nav-active', 'text-zinc-900', 'dark:text-white');
+            l.classList.add('header-nav-inactive', 'text-zinc-500', 'dark:text-zinc-400');
+        });
+        target.classList.remove('header-nav-inactive', 'text-zinc-500', 'dark:text-zinc-400');
+        target.classList.add('header-nav-active', 'text-zinc-900', 'dark:text-white');
+
+        setIndicator(target, animate);
+
+        try {
+            const rect = calculateRect(target);
+            sessionStorage.setItem('spms_last_nav_pill', JSON.stringify({
+                uri: target.getAttribute('data-nav-uri') || '',
+                left: rect.left,
+                top: rect.top,
+                width: rect.width,
+                height: rect.height
+            }));
+        } catch {}
+    };
+
+    // Check if navigating from a different tab stored in sessionStorage
+    let lastPill = null;
+    try {
+        const raw = sessionStorage.getItem('spms_last_nav_pill');
+        if (raw) lastPill = JSON.parse(raw);
+    } catch {}
+
+    if (!activeLink) {
+        // Outside the primary nav tabs (e.g., Notifications, Profile)
+        // If coming from a nav tab, fade out the indicator gracefully from its last position
+        if (lastPill && typeof lastPill.left === 'number') {
+            indicator.style.transition = 'none';
+            indicator.style.transform = `translate3d(${lastPill.left}px, ${lastPill.top}px, 0)`;
+            indicator.style.width = `${lastPill.width}px`;
+            indicator.style.height = `${lastPill.height}px`;
+            indicator.style.opacity = '1';
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    indicator.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+                    indicator.style.opacity = '0';
+                });
+            });
+        } else {
+            indicator.style.opacity = '0';
+        }
+
+        try {
+            sessionStorage.removeItem('spms_last_nav_pill');
+        } catch {}
+
+        links.forEach(link => {
+            link.addEventListener('click', function () {
+                window.moveHeaderNavIndicator(link, true);
+            });
+        });
+
+        window.addEventListener('resize', () => {
+            const current = container.querySelector('.header-nav-active');
+            if (!current) {
+                indicator.style.opacity = '0';
+            } else {
+                setIndicator(current, false);
+            }
+        }, { passive: true });
+
+        return;
+    }
+
+    const currentUri = activeLink.getAttribute('data-nav-uri') || '';
+
+    if (lastPill && lastPill.uri && lastPill.uri !== currentUri && typeof lastPill.left === 'number') {
+        // Set pill at previous tab position with no transition
+        indicator.style.transition = 'none';
+        indicator.style.transform = `translate3d(${lastPill.left}px, ${lastPill.top}px, 0)`;
+        indicator.style.width = `${lastPill.width}px`;
+        indicator.style.height = `${lastPill.height}px`;
+        indicator.style.opacity = '1';
+
+        // Smoothly glide to the current active tab on next paint frame
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                setIndicator(activeLink, true);
+            });
+        });
+    } else {
+        // Render directly in place
+        setIndicator(activeLink, false);
+    }
+
+    // Save current active tab position
+    try {
+        const rect = calculateRect(activeLink);
+        sessionStorage.setItem('spms_last_nav_pill', JSON.stringify({
+            uri: currentUri,
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height
+        }));
+    } catch {}
+
+    // Attach click listener for instant sliding response
+    links.forEach(link => {
+        link.addEventListener('click', function () {
+            window.moveHeaderNavIndicator(link, true);
+        });
+    });
+
+    window.addEventListener('resize', () => {
+        const current = container.querySelector('.header-nav-active') || activeLink;
+        setIndicator(current, false);
+    }, { passive: true });
+}
+
+document.addEventListener('DOMContentLoaded', initHeaderNavIndicator);

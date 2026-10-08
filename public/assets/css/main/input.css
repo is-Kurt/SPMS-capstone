@@ -219,30 +219,32 @@ input[type="number"].spms-score-input::-webkit-inner-spin-button {
     border-color: #27272a;
 }
 .spms-tab-active {
-    background-color: #ffffff;
-    border-color: #e4e4e7;
-    color: #09090b;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    background-color: transparent !important;
+    border-color: transparent !important;
+    color: #09090b !important;
+    box-shadow: none !important;
 }
 .dark .spms-tab-active {
-    background-color: #27272a;
-    border-color: #3f3f46;
-    color: #fafafa;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    background-color: transparent !important;
+    border-color: transparent !important;
+    color: #fafafa !important;
+    box-shadow: none !important;
 }
 .spms-tab-inactive {
-    background-color: transparent;
-    border-color: transparent;
-    color: #71717a;
+    background-color: transparent !important;
+    border-color: transparent !important;
+    color: #71717a !important;
+    box-shadow: none !important;
 }
 .dark .spms-tab-inactive {
-    color: #a1a1aa;
+    color: #a1a1aa !important;
+    box-shadow: none !important;
 }
 .spms-tab-inactive:hover {
-    color: #09090b;
+    color: #09090b !important;
 }
 .dark .spms-tab-inactive:hover {
-    color: #ffffff;
+    color: #ffffff !important;
 }
 .spms-tab-badge {
     background-color: #e4e4e7;
@@ -251,6 +253,20 @@ input[type="number"].spms-score-input::-webkit-inner-spin-button {
 .dark .spms-tab-badge {
     background-color: #3f3f46;
     color: #d4d4d8;
+}
+
+@keyframes spmsViewFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.spms-view-enter {
+    animation: spmsViewFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .masterlist-tab-btn {
@@ -509,4 +525,141 @@ input[type="number"].spms-score-input::-webkit-inner-spin-button {
     border-color: #27272a;
     color: #fafafa;
 }
+
+/* Subtle Content-Only Slide & Fade (Keeps header & sidebar rock-solid with zero camera shake) */
+@keyframes spmsSlideIn {
+    from {
+        opacity: 0.82;
+        transform: translateX(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.spms-content-slide {
+    animation: spmsSlideIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+    will-change: transform, opacity;
+}
+
+/* Immediate Visual Response & Subtle Transition Phase */
+.spms-content-slide.spms-nav-transitioning {
+    opacity: 0.55 !important;
+    transform: translateY(2px) !important;
+    transition: opacity 0.14s cubic-bezier(0.4, 0, 0.2, 1), transform 0.14s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    pointer-events: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spms-content-slide {
+        animation: none !important;
+        transform: none !important;
+    }
+    .spms-content-slide.spms-nav-transitioning {
+        transform: none !important;
+    }
+}
+
+/* ==========================================================================
+   LAYOUT STABILITY (Stop Layout Jumping across pages, tabs & modals)
+   ========================================================================== */
+html {
+    scrollbar-width: thin;
+}
+
+/* ==========================================================================
+   IMMEDIATE BUTTON FEEDBACK (Buttons never feel dead after clicking)
+   ========================================================================== */
+button,
+[role="button"],
+.button,
+.btn,
+.btn-action,
+.tab-btn,
+.tab-btn-doc,
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+    transition: transform 0.1s cubic-bezier(0.16, 1, 0.3, 1),
+                filter 0.1s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.1s cubic-bezier(0.16, 1, 0.3, 1),
+                background-color 0.15s ease,
+                border-color 0.15s ease,
+                box-shadow 0.15s ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+button:active:not(:disabled),
+[role="button"]:active:not(:disabled),
+.button:active:not(:disabled),
+.btn:active:not(:disabled),
+.btn-action:active:not(:disabled),
+.tab-btn:active:not(:disabled),
+.tab-btn-doc:active:not(:disabled),
+input[type="button"]:active:not(:disabled),
+input[type="submit"]:active:not(:disabled) {
+    transform: scale(0.96) !important;
+    filter: brightness(0.92) !important;
+}
+
+.dark button:active:not(:disabled),
+.dark [role="button"]:active:not(:disabled),
+.dark .button:active:not(:disabled),
+.dark .btn:active:not(:disabled),
+.dark .btn-action:active:not(:disabled),
+.dark .tab-btn:active:not(:disabled),
+.dark .tab-btn-doc:active:not(:disabled) {
+    filter: brightness(1.18) !important;
+}
+
+/* Dynamic button press / feedback indicator */
+.btn-clicked-feedback {
+    transform: scale(0.95) !important;
+    filter: brightness(0.90) !important;
+    opacity: 0.85 !important;
+}
+.dark .btn-clicked-feedback {
+    filter: brightness(1.22) !important;
+}
+
+/* ==========================================================================
+   DROPDOWN SLIDE-DOWN ANIMATIONS
+   ========================================================================== */
+@keyframes spmsDropdownSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes spmsDropdownSlideUp {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-6px) scale(0.97);
+    }
+}
+
+.profile-dropdown-enter {
+    animation: spmsDropdownSlideDown 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    will-change: transform, opacity;
+}
+
+.profile-dropdown-leave {
+    animation: spmsDropdownSlideUp 0.12s cubic-bezier(0.4, 0, 1, 1) forwards;
+    will-change: transform, opacity;
+}
+
+
+
+
 

@@ -55,12 +55,12 @@
 ?>
 
 <!-- Main institutional navigation bar -->
-<nav class="antialiased relative z-[110] select-none print-hide bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 transition-colors">
+<nav class="antialiased relative z-[110] select-none print-hide bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
     <div class="mx-auto max-w-[100rem] px-3 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between gap-3 sm:gap-4 h-16">
             
             <!-- Left Side: GOVPH + Divider + Twin Official Seals + Gold SPMS Badge + Brand Text -->
-            <div class="flex items-center gap-2.5 sm:gap-3.5 shrink-0 min-w-0" style="height: 100%;">
+            <div class="flex items-center gap-2.5 sm:gap-3.5 flex-1 min-w-0" style="height: 100%;">
                 
                 <!-- Official GOVPH & Twin Seals (MC 24, s. 2023 / RA 10535 Compliance) - Visible on sm and up -->
                 <div class="hidden sm:flex items-center gap-2 sm:gap-2.5 shrink-0">
@@ -100,20 +100,26 @@
 
             </div>
 
-            <!-- Navigation -->
-            <div class="hidden md:flex items-center p-1 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+            <!-- Navigation with Sliding Active Indicator (Centered) -->
+            <div id="header-nav-container" class="relative hidden md:flex items-center p-1 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shrink-0">
+                <!-- Sliding Pill Indicator -->
+                <div id="header-nav-indicator" 
+                     class="absolute rounded-lg bg-white dark:bg-zinc-800 shadow-xs border border-zinc-200/80 dark:border-zinc-700/80 pointer-events-none"
+                     style="opacity: 0; transform: translate3d(0,0,0); top: 0; left: 0; width: 0; height: 0; will-change: transform, width;"></div>
+
                 <?php foreach ($navItems as $uri => $label):
-                    $isActive = ($currentUri === $uri) || ($uri !== '' && strpos($currentUri, $uri) === 0);
+                    $isActive = ($currentUri === $uri) || ($uri !== '' && strpos($currentUri, $uri) === 0) || ($uri === 'folders' && (strpos($currentUri, 'document') === 0 || strpos($currentUri, 'documents') === 0));
                 ?>
                     <a href="<?= site_url($uri) ?>"
-                       class="px-3.5 py-1.5 transition-all text-xs rounded-lg font-bold <?= $isActive ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs border border-zinc-200/80 dark:border-zinc-700/80' : 'text-zinc-600 hover:text-zinc-900 hover:bg-white/60 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800/60 font-semibold' ?>">
+                       data-nav-uri="<?= esc($uri) ?>"
+                       class="header-nav-link relative z-10 inline-flex items-center justify-center px-3.5 py-1.5 transition-colors text-xs rounded-lg font-bold leading-none <?= $isActive ? 'header-nav-active text-zinc-900 dark:text-white' : 'header-nav-inactive text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' ?>">
                         <?= $label ?>
                     </a>
                 <?php endforeach; ?>
             </div>
             
             <!-- Controls -->
-            <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+            <div class="flex items-center justify-end gap-1.5 sm:gap-2.5 flex-1 shrink-0">
 
 
                 <!-- Theme Toggle Button (Desktop & Tablet) -->
@@ -165,7 +171,7 @@
                         </div>
 
                         <!-- Dropdown Chevron on sm and up -->
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-400 shrink-0 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <svg id="profile-btn-chevron" xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-400 shrink-0 hidden sm:block transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
@@ -323,6 +329,9 @@
             .spms-drawer-item:hover {
                 background-color: #f4f4f5;
                 color: #09090b;
+            }
+            .spms-drawer-item:active {
+                transform: scale(0.97);
             }
             .dark .spms-drawer-item {
                 color: #fafafa !important;
@@ -582,30 +591,64 @@
             themeToggleBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 handleThemeToggle(themeToggleBtn);
-                profileMenu?.classList.add('hidden');
+                closeProfileMenu();
             });
         }
 
-        // Toggle Profile Dropdown
+        // Profile Dropdown Controller (Smooth Slide-Down Animation)
+        let isProfileMenuOpen = false;
+        const profileChevron = document.getElementById('profile-btn-chevron');
+
+        function openProfileMenu() {
+            if (!profileMenu) return;
+            isProfileMenuOpen = true;
+            profileMenu.classList.remove('hidden', 'profile-dropdown-leave');
+            profileMenu.classList.add('profile-dropdown-enter');
+            profileChevron?.classList.add('rotate-180');
+            window.closeMobileDrawer();
+        }
+
+        function closeProfileMenu() {
+            if (!profileMenu || !isProfileMenuOpen) return;
+            isProfileMenuOpen = false;
+            profileChevron?.classList.remove('rotate-180');
+            profileMenu.classList.remove('profile-dropdown-enter');
+            profileMenu.classList.add('profile-dropdown-leave');
+            setTimeout(() => {
+                if (!isProfileMenuOpen) {
+                    profileMenu.classList.add('hidden');
+                    profileMenu.classList.remove('profile-dropdown-leave');
+                }
+            }, 120);
+        }
+
+        function toggleProfileMenu() {
+            if (isProfileMenuOpen) {
+                closeProfileMenu();
+            } else {
+                openProfileMenu();
+            }
+        }
+
+        // Toggle Profile Dropdown with animation
         if (profileBtn && profileMenu) {
             profileBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                profileMenu.classList.toggle('hidden');
-                window.closeMobileDrawer();
+                toggleProfileMenu();
             });
         }
 
         // Close dropdowns & drawer when clicking anywhere outside of them or on Escape key
         document.addEventListener('click', (e) => {
-            if (profileMenu && !profileMenu.classList.contains('hidden') && !profileMenu.contains(e.target) && !profileBtn?.contains(e.target)) {
-                profileMenu.classList.add('hidden');
+            if (isProfileMenuOpen && !profileMenu.contains(e.target) && !profileBtn?.contains(e.target)) {
+                closeProfileMenu();
             }
         });
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 window.closeMobileDrawer();
-                profileMenu?.classList.add('hidden');
+                closeProfileMenu();
             }
         });
 
