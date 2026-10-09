@@ -98,7 +98,7 @@
     <link rel="preload" href="<?= base_url('assets/fonts/Roboto/Roboto-VariableFont_wdth,wght.ttf') ?>" as="font" type="font/ttf" crossorigin>
     <link rel="stylesheet" href="<?= base_url('assets/css/main/style.css?v=' . filemtime(FCPATH . 'assets/css/main/style.css')) ?>">
 
-    <script src="<?= base_url('assets/vendor/axios/dist/axios.min.js') ?>" defer></script>
+    <script src="<?= base_url('assets/vendor/axios/dist/axios.min.js') ?>"></script>
 
     <meta name="csrf-token-name" content="<?= csrf_token() ?>">
     <meta name="csrf-token-hash" content="<?= csrf_hash() ?>">
