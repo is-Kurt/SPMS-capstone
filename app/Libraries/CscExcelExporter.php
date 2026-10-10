@@ -67,30 +67,42 @@ class CscExcelExporter
         if ($isOpcr) {
             $sheetTitle = 'OPCR - Office';
             $formFullTitle = 'OFFICE PERFORMANCE COMMITMENT AND REVIEW (OPCR)';
-            $coreW = $formData['weights']['core'] ?? 0.60;
-            $stratW = $formData['weights']['strategic'] ?? 0.25;
-            $suppW = $formData['weights']['support'] ?? 0.15;
-            $coreLabel = 'CORE MANDATE (' . round($coreW * 100) . '%)';
-            $stratLabel = 'STRATEGIC FUNCTIONS (' . round($stratW * 100) . '%)';
-            $suppLabel = 'SUPPORT FUNCTIONS (' . round($suppW * 100) . '%)';
+            $hasExplicitWeights = isset($formData['weights']) && is_array($formData['weights']) && !empty($formData['weights']['core']);
+            $coreW = $hasExplicitWeights ? (float)$formData['weights']['core'] : 0.60;
+            $stratW = $hasExplicitWeights ? (float)$formData['weights']['strategic'] : 0.25;
+            $suppW = $hasExplicitWeights ? (float)$formData['weights']['support'] : 0.15;
+            
+            $corePctStr = $hasExplicitWeights ? ' (' . round($coreW * 100) . '%)' : ' (     %)';
+            $stratPctStr = $hasExplicitWeights ? ' (' . round($stratW * 100) . '%)' : ' (     %)';
+            $suppPctStr = $hasExplicitWeights ? ' (' . round($suppW * 100) . '%)' : ' (     %)';
+
+            $coreLabel = 'CORE FUNCTIONS' . $corePctStr;
+            $stratLabel = 'STRATEGIC FUNCTIONS' . $stratPctStr;
+            $suppLabel = 'SUPPORT FUNCTIONS' . $suppPctStr;
             $rateeRoleLabel = 'Vice President / Head of Office';
             $approverRoleLabel = 'University President / PMT Chair';
         } elseif ($isDpcr) {
             $sheetTitle = 'DPCR - Division';
             $formFullTitle = 'DIVISION / DEPARTMENT PERFORMANCE COMMITMENT AND REVIEW (DPCR)';
-            $coreW = $formData['weights']['core'] ?? 0.60;
-            $stratW = $formData['weights']['strategic'] ?? 0.30;
-            $suppW = $formData['weights']['support'] ?? 0.10;
-            $coreLabel = '1. Core Functions — Department Academic Operations (' . round($coreW * 100) . '%)';
-            $stratLabel = '2. Strategic Functions — Department Extension & Research (' . round($stratW * 100) . '%)';
-            $suppLabel = '3. Support Functions — Academic Support & Administration (' . round($suppW * 100) . '%)';
+            $hasExplicitWeights = isset($formData['weights']) && is_array($formData['weights']) && !empty($formData['weights']['core']);
+            $coreW = $hasExplicitWeights ? (float)$formData['weights']['core'] : 0.60;
+            $stratW = $hasExplicitWeights ? (float)$formData['weights']['strategic'] : 0.30;
+            $suppW = $hasExplicitWeights ? (float)$formData['weights']['support'] : 0.10;
+
+            $corePctStr = $hasExplicitWeights ? ' (' . round($coreW * 100) . '%)' : ' (     %)';
+            $stratPctStr = $hasExplicitWeights ? ' (' . round($stratW * 100) . '%)' : ' (     %)';
+            $suppPctStr = $hasExplicitWeights ? ' (' . round($suppW * 100) . '%)' : ' (     %)';
+
+            $coreLabel = '1. Core Functions — Department Academic Operations' . $corePctStr;
+            $stratLabel = '2. Strategic Functions — Department Extension & Research' . $stratPctStr;
+            $suppLabel = '3. Support Functions — Academic Support & Administration' . $suppPctStr;
             $rateeRoleLabel = 'Department Chairperson / Unit Head';
             $approverRoleLabel = 'College Dean / Approving Authority';
         } elseif ($isIperf) {
             $sheetTitle = 'IPERF - Non-Teaching';
             $formFullTitle = 'INDIVIDUAL PERFORMANCE EVALUATION AND REVIEW FORM (IPERF)';
             $coreW = 0.70; $stratW = 0.20; $suppW = 0.10;
-            $coreLabel = '1. Core Functions — Administrative & Technical Mandate (70%)';
+            $coreLabel = '1. Core Functions — Administrative & Technical Services (70%)';
             $stratLabel = '2. Strategic Functions — Process Improvement & Special Projects (20%)';
             $suppLabel = '3. Support Functions — Office Support & Cross-Functional Services (10%)';
             $rateeRoleLabel = 'Administrative Staff / Non-Teaching';
@@ -99,10 +111,18 @@ class CscExcelExporter
             // Default: IPCR
             $sheetTitle = 'IPCR';
             $formFullTitle = 'INDIVIDUAL PERFORMANCE COMMITMENT AND REVIEW';
-            $coreW = 0.70; $stratW = 0.20; $suppW = 0.10;
-            $coreLabel = 'CORE FUNCTIONS (70%)';
-            $stratLabel = 'STRATEGIC FUNCTIONS (20%)';
-            $suppLabel = 'SUPPORT FUNCTIONS (10%)';
+            $hasExplicitWeights = isset($formData['weights']) && is_array($formData['weights']) && !empty($formData['weights']['core']);
+            $coreW = $hasExplicitWeights ? (float)$formData['weights']['core'] : 0.70;
+            $stratW = $hasExplicitWeights ? (float)$formData['weights']['strategic'] : 0.20;
+            $suppW = $hasExplicitWeights ? (float)$formData['weights']['support'] : 0.10;
+
+            $corePctStr = $hasExplicitWeights ? ' (' . round($coreW * 100) . '%)' : ' (     %)';
+            $stratPctStr = $hasExplicitWeights ? ' (' . round($stratW * 100) . '%)' : ' (     %)';
+            $suppPctStr = $hasExplicitWeights ? ' (' . round($suppW * 100) . '%)' : ' (     %)';
+
+            $coreLabel = 'CORE FUNCTIONS' . $corePctStr;
+            $stratLabel = 'STRATEGIC FUNCTIONS' . $stratPctStr;
+            $suppLabel = 'SUPPORT FUNCTIONS' . $suppPctStr;
             $rateeRoleLabel = 'Ratee';
             $approverRoleLabel = 'College Dean / Unit Head';
         }
@@ -565,7 +585,10 @@ class CscExcelExporter
 
             // Formula Explanation Box (Cols A to E)
             $sheet->mergeCells("A{$summaryStartRow}:E" . ($summaryStartRow + 2));
-            $weightText = "Formula Weights:\nCore Mandate (" . ($coreW * 100) . "%) + Strategic Functions (" . ($stratW * 100) . "%) + Support Functions (" . ($suppW * 100) . "%).\nValidated against Benguet State University OPCR SPMS Guidelines.";
+            $wCoreText = ($hasExplicitWeights && $coreW > 0) ? ($coreW * 100) . "%" : "   %";
+            $wStratText = ($hasExplicitWeights && $stratW > 0) ? ($stratW * 100) . "%" : "   %";
+            $wSuppText = ($hasExplicitWeights && $suppW > 0) ? ($suppW * 100) . "%" : "   %";
+            $weightText = "Formula Weights:\nCore Functions ({$wCoreText}) + Strategic Functions ({$wStratText}) + Support Functions ({$wSuppText}).\nValidated against Benguet State University OPCR SPMS Guidelines.";
             $sheet->setCellValue("A{$summaryStartRow}", $weightText);
             $sheet->getStyle("A{$summaryStartRow}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
             $sheet->getStyle("A{$summaryStartRow}")->getFont()->setSize(8.5)->setItalic(true);
@@ -573,7 +596,7 @@ class CscExcelExporter
             $sheet->getStyle("A{$summaryStartRow}:E" . ($summaryStartRow + 2))->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
 
             // Category Breakdown Rows (Cols F to J)
-            $cats = ['core' => 'CORE MANDATE', 'strategic' => 'STRATEGIC FUNCTIONS', 'support' => 'SUPPORT FUNCTIONS'];
+            $cats = ['core' => 'CORE FUNCTIONS', 'strategic' => 'STRATEGIC FUNCTIONS', 'support' => 'SUPPORT FUNCTIONS'];
             $idx = 0;
             $subtotalRowRefs = [];
 
@@ -1402,30 +1425,32 @@ class CscExcelExporter
         $sheet->getColumnDimension('C')->setWidth(32);
         $sheet->getColumnDimension('D')->setWidth(28);
         $sheet->getColumnDimension('E')->setWidth(20);
+        $sheet->getColumnDimension('F')->setWidth(18);
+        $sheet->getColumnDimension('G')->setWidth(26);
 
         // University Header
-        $sheet->mergeCells('A1:E1');
+        $sheet->mergeCells('A1:G1');
         $sheet->setCellValue('A1', 'Republic of the Philippines');
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('A1')->getFont()->setSize(10)->setItalic(true);
 
-        $sheet->mergeCells('A2:E2');
+        $sheet->mergeCells('A2:G2');
         $sheet->setCellValue('A2', 'BENGUET STATE UNIVERSITY');
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('A2')->getFont()->setSize(14)->setBold(true)->getColor()->setRGB('0F3D29');
 
-        $sheet->mergeCells('A3:E3');
+        $sheet->mergeCells('A3:G3');
         $sheet->setCellValue('A3', 'Human Resource Development Office (HRDO)');
         $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('A3')->getFont()->setSize(10)->setBold(true);
 
-        $sheet->mergeCells('A4:E4');
+        $sheet->mergeCells('A4:G4');
         $sheet->setCellValue('A4', 'SPMS PERSONNEL ROSTER & MASTER LIST');
         $sheet->getStyle('A4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('A4')->getFont()->setSize(11)->setBold(true);
 
         $scopeText = $collegeFilterName ? "Scope: {$collegeFilterName}" : 'Scope: University-Wide (All Colleges & Offices)';
-        $sheet->mergeCells('A5:E5');
+        $sheet->mergeCells('A5:G5');
         $sheet->setCellValue('A5', "Evaluation Period: {$cycleTitle}  |  {$scopeText}  |  Generated on: " . date('F j, Y'));
         $sheet->getStyle('A5')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('A5')->getFont()->setSize(9)->getColor()->setRGB('4B5563');
@@ -1436,7 +1461,9 @@ class CscExcelExporter
             'B' => 'PERSONNEL NAME',
             'C' => 'COLLEGE / DEPARTMENT',
             'D' => 'POSITION / DESIGNATION',
-            'E' => 'EMPLOYMENT STATUS'
+            'E' => 'EMPLOYMENT STATUS',
+            'F' => 'NUMERICAL RATING',
+            'G' => 'ADJECTIVAL RATING'
         ];
 
         $headerRow = 7;
@@ -1452,7 +1479,7 @@ class CscExcelExporter
                 ->setFillType(Fill::FILL_SOLID)
                 ->getStartColor()->setRGB('0F3D29'); // Deep BSU Forest Green
         }
-        $sheet->getStyle("A{$headerRow}:E{$headerRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        $sheet->getStyle("A{$headerRow}:G{$headerRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
 
         // Data Rows
         $currentRow = 8;
@@ -1479,6 +1506,8 @@ class CscExcelExporter
             $sheet->setCellValue("C{$currentRow}", $r['department'] ?? 'General Administration');
             $sheet->setCellValue("D{$currentRow}", $r['position'] ?? 'Faculty / Staff');
             $sheet->setCellValue("E{$currentRow}", strtoupper($empStatus));
+            $sheet->setCellValue("F{$currentRow}", $r['rating_num'] !== null ? number_format($r['rating_num'], 2) : '—');
+            $sheet->setCellValue("G{$currentRow}", $r['adjectival_display'] ?? $r['adjectival_label'] ?? 'Not Yet Rated');
 
             // Alignment & Styling
             $sheet->getStyle("A{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -1486,13 +1515,16 @@ class CscExcelExporter
             $sheet->getStyle("C{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
             $sheet->getStyle("D{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
             $sheet->getStyle("E{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("F{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("G{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle("E{$currentRow}")->getFont()->setBold(true);
+            $sheet->getStyle("F{$currentRow}")->getFont()->setBold(true);
 
             // Font & Fill
-            $sheet->getStyle("A{$currentRow}:E{$currentRow}")->getFont()->setSize(9);
-            $sheet->getStyle("A{$currentRow}:E{$currentRow}")->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
-            $sheet->getStyle("A{$currentRow}:E{$currentRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB($bgRgb);
-            $sheet->getStyle("A{$currentRow}:E{$currentRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('E2E8F0');
+            $sheet->getStyle("A{$currentRow}:G{$currentRow}")->getFont()->setSize(9);
+            $sheet->getStyle("A{$currentRow}:G{$currentRow}")->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+            $sheet->getStyle("A{$currentRow}:G{$currentRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB($bgRgb);
+            $sheet->getStyle("A{$currentRow}:G{$currentRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('E2E8F0');
 
             $currentRow++;
             $idx++;
@@ -1500,7 +1532,7 @@ class CscExcelExporter
 
         // Summary Section
         $summaryStart = $currentRow + 1;
-        $sheet->mergeCells("A{$summaryStart}:D{$summaryStart}");
+        $sheet->mergeCells("A{$summaryStart}:G{$summaryStart}");
         $sheet->setCellValue("A{$summaryStart}", 'PERSONNEL & APPOINTMENT BREAKDOWN');
         $sheet->getStyle("A{$summaryStart}")->getFont()->setBold(true)->setSize(10)->getColor()->setRGB('0F3D29');
 

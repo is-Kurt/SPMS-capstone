@@ -445,7 +445,7 @@ class Folder extends BaseController
                     // Pre-generate the member's official evaluation paper based on profile doc_type
                     $this->ensureUserDocumentExists($newFolderId, $member['user_id'], $activeFolder['title']);
 
-                    // Register evaluator routing so member's OPCR submission routes to Admin for review
+                    // Register evaluator routing so member's OPCR submission routes to Admin for technical oversight
                     $routingExists = $routingModel->where('folder_id', $newFolderId)
                                                   ->where('evaluator_id', $userId)->first();
                     if (!$routingExists) {
@@ -455,6 +455,32 @@ class Folder extends BaseController
                             'evaluator_folder_id' => $folderId,
                             'status'              => FolderStatus::DRAFT->value
                         ]);
+                    }
+
+                    // Register evaluator routing to University President (Head of Agency / Executive Evaluator)
+                    $presidentUser = $userModel
+                        ->select('users.id')
+                        ->join('plantillas p', 'p.user_id = users.id AND p.ended_at IS NULL', 'inner')
+                        ->join('positions pos', 'pos.id = p.position_id', 'inner')
+                        ->where('users.is_active', 1)
+                        ->groupStart()
+                            ->like('pos.title', 'President', 'both')
+                            ->orLike('users.email', 'president', 'both')
+                        ->groupEnd()
+                        ->first();
+
+                    $presidentUserId = $presidentUser ? (int)$presidentUser['id'] : null;
+                    if ($presidentUserId && $presidentUserId != $member['user_id'] && $presidentUserId != $userId) {
+                        $presRoutingExists = $routingModel->where('folder_id', $newFolderId)
+                                                          ->where('evaluator_id', $presidentUserId)->first();
+                        if (!$presRoutingExists) {
+                            $routingModel->insert([
+                                'folder_id'           => $newFolderId,
+                                'evaluator_id'        => $presidentUserId,
+                                'evaluator_folder_id' => $folderId,
+                                'status'              => FolderStatus::DRAFT->value
+                            ]);
+                        }
                     }
 
                     if (!$exists) {
@@ -469,8 +495,8 @@ class Folder extends BaseController
                     }
                 }
                 $message = (count($members) === 1)
-                    ? "Evaluation cycle successfully cascaded to the Vice President for Academic Affairs (VPAA)."
-                    : "Evaluation cycle successfully cascaded to team members.";
+                    ? "Evaluation cycle successfully released to the Vice President."
+                    : "Evaluation cycle successfully released to the Vice Presidents (Executive Team).";
             } else {
                 $batchId = $activeFolder['id'];
 
@@ -686,7 +712,9 @@ class Folder extends BaseController
             }
 
             $folderModel->db->transComplete();
-            return $this->respond(['status' => 'success', 'message' => 'Cascade revoked successfully.']);
+            $isUserAdmin = (session()->get('role') === 'Admin');
+            $successMsg = $isUserAdmin ? 'Cycle release revoked successfully.' : 'Cascade revoked successfully.';
+            return $this->respond(['status' => 'success', 'message' => $successMsg]);
         });
     }
 
@@ -951,7 +979,9 @@ class Folder extends BaseController
                 'sender_id' => $userId,
                 'type'      => 'target_revoked',
                 'title'     => 'Evaluation Assignment Removed',
-                'message'   => "Your evaluation target assignment for \"{$parentFolder['title']}\" has been removed by your supervisor.",
+                'message'   => ($role === 'Admin')
+                    ? "Your evaluation assignment for \"{$parentFolder['title']}\" has been revoked by the Administrator."
+                    : "Your evaluation target assignment for \"{$parentFolder['title']}\" has been removed by your supervisor.",
                 'link'      => 'folders',
                 'icon'      => 'user-minus'
             ]);
@@ -966,9 +996,12 @@ class Folder extends BaseController
 
             $folderModel->db->transComplete();
 
+            $successMsg = ($role === 'Admin')
+                ? 'Recipient removed from this evaluation cycle successfully.'
+                : 'Subordinate removed from this evaluation cycle successfully.';
             return $this->respond([
                 'status'  => 'success',
-                'message' => 'Subordinate removed from this evaluation cycle successfully.'
+                'message' => $successMsg
             ]);
         });
     }
@@ -1135,10 +1168,15 @@ class Folder extends BaseController
 
             $docTypes = ['ipcr', 'cdpcr', 'dpcr', 'opcr', 'iperf'];
             foreach ($docTypes as $type) {
-                $payload["{$type}_target_start"] = str_replace('T', ' ', $this->request->getPost("{$type}_target_start")) ?: null;
-                $payload["{$type}_target_end"]   = str_replace('T', ' ', $this->request->getPost("{$type}_target_end")) ?: null;
-                $payload["{$type}_eval_start"]   = str_replace('T', ' ', $this->request->getPost("{$type}_eval_start")) ?: null;
-                $payload["{$type}_eval_end"]     = str_replace('T', ' ', $this->request->getPost("{$type}_eval_end")) ?: null;
+                $tStart = $this->request->getPost("{$type}_target_start");
+                $tEnd   = $this->request->getPost("{$type}_target_end");
+                $eStart = $this->request->getPost("{$type}_eval_start");
+                $eEnd   = $this->request->getPost("{$type}_eval_end");
+
+                $payload["{$type}_target_start"] = !empty($tStart) ? str_replace('T', ' ', (string) $tStart) : null;
+                $payload["{$type}_target_end"]   = !empty($tEnd)   ? str_replace('T', ' ', (string) $tEnd)   : null;
+                $payload["{$type}_eval_start"]   = !empty($eStart) ? str_replace('T', ' ', (string) $eStart) : null;
+                $payload["{$type}_eval_end"]     = !empty($eEnd)   ? str_replace('T', ' ', (string) $eEnd)   : null;
             }
             
             $newId = create_unique_row($documentFolderModel, $payload);
@@ -1421,10 +1459,15 @@ class Folder extends BaseController
             $folderData = ['title' => $title];
             
             foreach ($docTypes as $type) {
-                $folderData["{$type}_target_start"] = str_replace('T', ' ', $this->request->getPost("{$type}_target_start")) ?: null;
-                $folderData["{$type}_target_end"]   = str_replace('T', ' ', $this->request->getPost("{$type}_target_end")) ?: null;
-                $folderData["{$type}_eval_start"]   = str_replace('T', ' ', $this->request->getPost("{$type}_eval_start")) ?: null;
-                $folderData["{$type}_eval_end"]     = str_replace('T', ' ', $this->request->getPost("{$type}_eval_end")) ?: null;
+                $tStart = $this->request->getPost("{$type}_target_start");
+                $tEnd   = $this->request->getPost("{$type}_target_end");
+                $eStart = $this->request->getPost("{$type}_eval_start");
+                $eEnd   = $this->request->getPost("{$type}_eval_end");
+
+                $folderData["{$type}_target_start"] = !empty($tStart) ? str_replace('T', ' ', (string) $tStart) : null;
+                $folderData["{$type}_target_end"]   = !empty($tEnd)   ? str_replace('T', ' ', (string) $tEnd)   : null;
+                $folderData["{$type}_eval_start"]   = !empty($eStart) ? str_replace('T', ' ', (string) $eStart) : null;
+                $folderData["{$type}_eval_end"]     = !empty($eEnd)   ? str_replace('T', ' ', (string) $eEnd)   : null;
             }
 
             $now = date('Y-m-d H:i:s');
@@ -1778,12 +1821,30 @@ class Folder extends BaseController
 
             // --- Target Document Validation ---
             $documentModel = new \App\Models\DocumentModel();
-            $hasTarget = $documentModel->where('document_folder_id', $folderId)
+            $targetDoc = $documentModel->where('document_folder_id', $folderId)
                                        ->where('is_target', 1)
-                                       ->countAllResults();
+                                       ->first();
             
-            if ($hasTarget == 0) {
+            if (!$targetDoc) {
                 return $this->respondError("Submission Failed: You must set at least one document as the Basis Target before submitting targets.", 400);
+            }
+
+            // Category percentage weights are required on non-IPERF documents (must total 100%)
+            $docType = strtolower($targetDoc['doc_type'] ?? 'ipcr');
+            $docTitle = strtoupper($targetDoc['title'] ?? '');
+            $isIperfDoc = ($docType === 'iperf' || str_contains($docTitle, 'IPERF') || str_contains($docTitle, 'JOB ORDER') || str_contains($docTitle, 'CONTRACT OF SERVICE'));
+
+            if (!$isIperfDoc) {
+                $targetTabs = json_decode($targetDoc['tabs'] ?? '[]', true);
+                $weights = $targetTabs[0]['formData']['weights'] ?? null;
+                $core = isset($weights['core']) ? (float)$weights['core'] : 0.0;
+                $strat = isset($weights['strategic']) ? (float)$weights['strategic'] : 0.0;
+                $supp = isset($weights['support']) ? (float)$weights['support'] : 0.0;
+                $total = (int) round(($core + $strat + $supp) * 100);
+
+                if (empty($weights) || $core <= 0 || $total !== 100) {
+                    return $this->respondError("Submission Failed: Category percentage weights (Core, Strategic, Support) are required and must total 100% exactly.", 400);
+                }
             }
             // ---------------------------------------
 

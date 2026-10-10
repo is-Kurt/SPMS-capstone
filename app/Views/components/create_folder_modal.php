@@ -69,6 +69,7 @@
         ?>
 
         <form id="form-create-folder">
+            <?= csrf_field() ?>
             <div class="space-y-6">
                 <!-- FOLDER TITLE INPUT -->
                 <div class="bg-zinc-50 dark:bg-zinc-800/40 p-4 rounded-xl border border-surface-border">

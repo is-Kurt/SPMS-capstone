@@ -197,7 +197,7 @@ class UnitModel extends Model
 
         // 3. Clean up obsolete units that have no active plantillas assigned
         $validUnitNames = array_merge(
-            ['OVPAA', 'OVPAF', 'HRDO', 'Accounting Office', "Registrar's Office", 'General Services Office'],
+            ['Office of the President', 'OVPAA', 'OVPAF', 'HRDO', 'Accounting Office', "Registrar's Office", 'General Services Office'],
             array_keys($bsuHierarchy)
         );
         foreach ($bsuHierarchy as $programs) {
@@ -337,10 +337,11 @@ class UnitModel extends Model
     /**
      * Resolves the official organizational cascade target group for a given user.
      * Identifies the immediate subordinate targets according to the official SPMS Hierarchy:
-     * Tier 0 (System Admin) -> Vice President for Academic Affairs (VPAA)
-     * Tier 1 (VPAA / Exec)  -> 15 Academic College Deans
-     * Tier 2 (College Dean) -> Department Chairs of their College (plus direct faculty)
-     * Tier 3 (Dept Chair)   -> Faculty & Staff of their Department
+     * Tier 0 (System Admin)       -> Vice Presidents (Executive Leadership Team)
+     * Tier 0.5 (Univ. President)  -> Vice Presidents (Executive Leadership Team)
+     * Tier 1 (VPAA / Vice Pres)   -> 15 Academic College Deans
+     * Tier 2 (College Dean)       -> Department Chairs of their College (plus direct faculty)
+     * Tier 3 (Dept Chair)         -> Faculty & Staff of their Department
      */
     public function getOrganizationalCascadeTarget(int $userId, string $sysRole): array
     {
@@ -349,40 +350,70 @@ class UnitModel extends Model
         $posTitle = strtolower($plantilla['position'] ?? '');
         $userEmail = strtolower($plantilla['email'] ?? '');
         
-        $isVpaa = str_contains($posTitle, 'vpaa') 
-               || str_contains($posTitle, 'vice president')
-               || str_contains($posTitle, 'president')
-               || str_contains($userEmail, 'vpaa');
+        $isPresident = str_contains($posTitle, 'university president') 
+                    || (str_contains($posTitle, 'president') && !str_contains($posTitle, 'vice'))
+                    || str_contains($userEmail, 'president');
+
+        $isVpaa = str_contains($posTitle, 'vice president') 
+               || str_contains($posTitle, 'vpaa')
+               || str_contains($posTitle, 'cao')
+               || str_contains($userEmail, 'vpaa')
+               || str_contains($userEmail, 'cao');
 
         $isDean = str_contains($posTitle, 'dean') || str_contains($userEmail, 'dean');
         $isChair = str_contains($posTitle, 'chair') || str_contains($posTitle, 'head') || str_contains($userEmail, 'chair');
 
-        // Tier 0: System Admin -> Vice President for Academic Affairs (VPAA)
+        // Tier 0.5: University President -> Vice Presidents (Executive Leadership Team)
+        if ($isPresident) {
+            $vpUsers = $this->db->table('users u')
+                ->select('u.id as user_id, u.first_name, u.last_name, u.email, pos.title as position, un.name as department')
+                ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
+                ->join('positions pos', 'pos.id = p.position_id', 'left')
+                ->join('units un', 'un.id = p.unit_id', 'left')
+                ->where('u.is_active', 1)
+                ->where('u.id !=', $userId)
+                ->groupStart()
+                    ->like('pos.title', 'Vice President', 'both')
+                    ->orLike('u.email', 'vpaa', 'both')
+                    ->orLike('u.email', 'cao', 'both')
+                    ->orLike('un.name', 'OVPAA', 'both')
+                    ->orLike('un.name', 'OVPAF', 'both')
+                ->groupEnd()
+                ->groupBy('u.id')
+                ->get()->getResultArray();
+
+            return [
+                'tier_level'       => 0,
+                'tier_name'        => 'Executive Leadership Delegation',
+                'unit_name'        => 'Office of the President',
+                'subordinate_role' => 'Vice Presidents (Executive Leadership)',
+                'button_label'     => 'Cascade to Vice Presidents',
+                'member_count'     => count($vpUsers),
+                'members'          => $vpUsers
+            ];
+        }
+
+        // Tier 0: System Admin -> Vice Presidents (Executive Leadership Team)
         if ($sysRole === 'Admin' && !$isVpaa && !$isDean && !$isChair) {
-            $vpaaUsers = $this->db->table('users u')
+            $vpUsers = $this->db->table('users u')
                 ->select('u.id as user_id, u.first_name, u.last_name, u.email, pos.title as position, un.name as department')
                 ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
                 ->join('positions pos', 'pos.id = p.position_id', 'left')
                 ->join('units un', 'un.id = p.unit_id', 'left')
                 ->where('u.is_active', 1)
                 ->groupStart()
-                    ->like('u.email', 'vpaa', 'both')
-                    ->orLike('pos.title', 'VPAA', 'both')
-                    ->orGroupStart()
-                        ->like('pos.title', 'Vice President', 'both')
-                        ->groupStart()
-                            ->like('pos.title', 'Academic', 'both')
-                            ->orLike('un.name', 'OVPAA', 'both')
-                            ->orLike('un.name', 'Academic', 'both')
-                        ->groupEnd()
-                    ->groupEnd()
+                    ->like('pos.title', 'Vice President', 'both')
+                    ->orLike('u.email', 'vpaa', 'both')
+                    ->orLike('u.email', 'cao', 'both')
+                    ->orLike('un.name', 'OVPAA', 'both')
+                    ->orLike('un.name', 'OVPAF', 'both')
                 ->groupEnd()
                 ->groupBy('u.id')
                 ->get()->getResultArray();
 
-            // Fallback if specific VPAA title/unit filter didn't catch anything
-            if (empty($vpaaUsers)) {
-                $vpaaUsers = $this->db->table('users u')
+            // Fallback if specific VP title/unit filter didn't catch anything
+            if (empty($vpUsers)) {
+                $vpUsers = $this->db->table('users u')
                     ->select('u.id as user_id, u.first_name, u.last_name, u.email, pos.title as position, un.name as department')
                     ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
                     ->join('positions pos', 'pos.id = p.position_id', 'left')
@@ -398,17 +429,17 @@ class UnitModel extends Model
 
             return [
                 'tier_level'       => 0,
-                'tier_name'        => 'Apex Executive Delegation',
-                'unit_name'        => 'Office of the Vice President for Academic Affairs (OVPAA)',
-                'subordinate_role' => 'Vice President for Academic Affairs (VPAA)',
-                'button_label'     => 'Cascade to VPAA',
-                'member_count'     => count($vpaaUsers),
-                'members'          => $vpaaUsers
+                'tier_name'        => 'Apex Cycle Release',
+                'unit_name'        => 'Executive Leadership (Vice Presidents)',
+                'subordinate_role' => 'Vice Presidents (Executive Leadership)',
+                'button_label'     => 'Release Cycle to Vice Presidents',
+                'member_count'     => count($vpUsers),
+                'members'          => $vpUsers
             ];
         }
 
-        // Tier 1: VPAA / University Executive -> All College Deans
-        if (($isVpaa || $sysRole === 'Admin') && !$isDean && !$isChair) {
+        // Tier 1: VPAA / Vice Presidents -> All College Deans
+        if ($isVpaa && !$isDean && !$isChair) {
             $deans = $this->db->table('users u')
                 ->select('u.id as user_id, u.first_name, u.last_name, u.email, pos.title as position, un.name as department')
                 ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')

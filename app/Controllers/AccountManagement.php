@@ -212,8 +212,15 @@ class AccountManagement extends BaseController
      * cron commands instead, so this stays a no-op there even if called directly.
      */
     public function processQueueAjax() {
+        if (!$this->request->isAJAX()) {
+            return redirect()->to(site_url('accounts'));
+        }
         if (ENVIRONMENT !== 'development') return $this->response->setStatusCode(404);
-        if (!$this->request->isAJAX()) return $this->response->setStatusCode(403);
+        
+        if (isset($_SESSION['_ci_previous_url']) && str_contains($_SESSION['_ci_previous_url'], 'account/process-queue')) {
+            unset($_SESSION['_ci_previous_url']);
+        }
+
         session_write_close();
 
         $result = process_email_queue(5);

@@ -9,6 +9,19 @@
  */
 async function apiPost(url, data, { onSuccess, onError, onDefault, config = {} } = {}) {
     try {
+        const tokenName = document.querySelector('meta[name="csrf-token-name"]')?.getAttribute('content') || 'csrf_test_name';
+        const tokenHash = document.querySelector('meta[name="csrf-token-hash"]')?.getAttribute('content') || '';
+
+        if (data instanceof FormData) {
+            if (tokenName && tokenHash && !data.has(tokenName)) {
+                data.append(tokenName, tokenHash);
+            }
+        } else if (data && typeof data === 'object' && !(data instanceof Blob)) {
+            if (tokenName && tokenHash && !data[tokenName]) {
+                data[tokenName] = tokenHash;
+            }
+        }
+
         const response = await axios.post(url, data, config);
 
         if (response.data.status === 'success') {

@@ -28,15 +28,16 @@ class Rating extends BaseController
 
         $folderModel = new DocumentFolderModel();
 
-        // For TWG (who do not author personal folders) or Admins without personal folders,
-        // display institutional root evaluation cycle folders in the sidebar.
-        if ($sysRole === 'TWG' || ($sysRole === 'Admin' && empty($folderModel->where('user_id', $userId)->where('deleted_at IS NULL')->first()))) {
+        // For TWG (who do not author personal folders), Admins, or Supervisors without personal folders
+        // (such as the University President), display institutional root evaluation cycle folders in the sidebar.
+        $userPersonalFolders = $folderModel->where('user_id', $userId)->where('deleted_at IS NULL')->orderBy('created_at', 'DESC')->findAll();
+        if ($sysRole === 'TWG' || $sysRole === 'Admin' || empty($userPersonalFolders)) {
             $folders = $folderModel->where('parent_folder_id IS NULL')
                                    ->where('deleted_at IS NULL')
                                    ->orderBy('created_at', 'DESC')
                                    ->findAll();
         } else {
-            $folders = $folderModel->where('user_id', $userId)->where('deleted_at IS NULL')->orderBy('created_at', 'DESC')->findAll();
+            $folders = $userPersonalFolders;
         }
 
         if (!$folderId) {
@@ -213,13 +214,14 @@ class Rating extends BaseController
             return redirect()->to('account-mismatch');
         }
 
-        if ($sysRole === 'TWG' || ($sysRole === 'Admin' && empty($folderModel->where('user_id', $userId)->where('deleted_at IS NULL')->first()))) {
+        $userPersonalFolders = $folderModel->where('user_id', $userId)->where('deleted_at IS NULL')->orderBy('created_at', 'DESC')->findAll();
+        if ($sysRole === 'TWG' || $sysRole === 'Admin' || empty($userPersonalFolders)) {
             $folders = $folderModel->where('parent_folder_id IS NULL')
                                    ->where('deleted_at IS NULL')
                                    ->orderBy('created_at', 'DESC')
                                    ->findAll();
         } else {
-            $folders = $folderModel->where('user_id', $userId)->where('deleted_at IS NULL')->orderBy('created_at', 'DESC')->findAll();
+            $folders = $userPersonalFolders;
         }
 
         $groupedGuides = [];

@@ -14,11 +14,11 @@
                     <div class="flex items-center gap-2">
                         <h3 class="text-base sm:text-lg font-black text-text truncate">Means of Verification (MOV)</h3>
                         <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0" id="mov-badge-count">
-                            0 Files
+                            0 Items
                         </span>
                     </div>
                     <p class="text-xs text-text-muted truncate mt-0.5" id="mov-modal-subtitle">
-                        Verifiable evidence documents supporting this accomplishment
+                        Verifiable evidence documents &amp; cloud drive links supporting this accomplishment
                     </p>
                 </div>
             </div>
@@ -46,8 +46,8 @@
                         <span class="text-xs font-black text-text truncate" id="mov-preview-filename">Previewing Evidence</span>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
-                        <a id="mov-preview-external-link" href="#" target="_blank" class="inline-flex items-center gap-1.5 text-[11px] font-bold text-accent hover:underline px-2 py-1 rounded bg-accent/10 border border-accent/20 transition-colors">
-                            <span>Open in Tab</span>
+                        <a id="mov-preview-external-link" href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-[11px] font-bold text-accent hover:underline px-2.5 py-1 rounded-lg bg-accent/10 border border-accent/20 transition-colors">
+                            <span>Open Link</span>
                             <svg class="w-3 h-3 inline-block shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                         </a>
                         <button type="button" onclick="closeMovPreview()" class="inline-flex items-center gap-1 text-[11px] font-bold text-text-muted hover:text-text px-2 py-1 rounded hover:bg-surface-border/40 transition-colors cursor-pointer">
@@ -63,15 +63,15 @@
                 </div>
             </div>
 
-            <!-- EVIDENCE FILES LIST -->
+            <!-- EVIDENCE ATTACHMENTS LIST -->
             <div>
                 <h4 class="text-xs font-black uppercase tracking-wider text-text-muted mb-3 flex items-center justify-between">
-                    <span>Attached Proof Documents</span>
+                    <span>Attached Proof &amp; Verification</span>
                     <span class="text-[11px] font-normal normal-case text-text-muted" id="mov-list-meta"></span>
                 </h4>
 
                 <div id="mov-files-list" class="space-y-2.5">
-                    <!-- Dynamic file rows populated via JS -->
+                    <!-- Dynamic rows populated via JS -->
                 </div>
 
                 <!-- Empty State -->
@@ -82,38 +82,118 @@
                         </svg>
                     </div>
                     <p class="text-sm font-bold text-text">No evidence documents attached</p>
-                    <p class="text-xs text-text-muted mt-1"><?= empty($isEvaluationPhase) ? 'Means of Verification (MOV) is uploaded during the Evaluation Phase when reporting accomplishments.' : 'Attach certified grade sheets, publication papers, or official certificates as verifiable proof.' ?></p>
+                    <p class="text-xs text-text-muted mt-1"><?= empty($isEvaluationPhase) ? 'Means of Verification (MOV) is attached during the Evaluation Phase when reporting accomplishments.' : 'Upload proof files or attach a Google Drive link to support your accomplishment rating.' ?></p>
                 </div>
             </div>
 
-            <!-- UPLOAD DROPZONE (Only visible during Evaluation Phase when editable by owner) -->
+            <!-- ATTACH NEW EVIDENCE (Only visible during Evaluation Phase when editable by owner) -->
             <?php if (!empty($isOwner) && empty($isCycleArchived) && !empty($isEvaluationPhase) && !empty($canEditEvaluation)): ?>
-            <div id="mov-upload-zone" class="space-y-2 pt-2 border-t border-surface-border">
-                <h4 class="text-xs font-black uppercase tracking-wider text-text-muted">
-                    Attach New Evidence
-                </h4>
-                
-                <div id="mov-drop-target" 
-                     onclick="document.getElementById('mov-file-input').click()" 
-                     ondragover="event.preventDefault(); this.classList.add('border-emerald-500', 'bg-emerald-500/5');" 
-                     ondragleave="this.classList.remove('border-emerald-500', 'bg-emerald-500/5');" 
-                     ondrop="handleMovDrop(event)"
-                     class="border-2 border-dashed border-surface-border hover:border-emerald-500/60 rounded-xl p-5 text-center cursor-pointer transition-all bg-surface-header/30 hover:bg-emerald-500/5">
+            <div id="mov-upload-zone" class="space-y-3 pt-3 border-t border-surface-border">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-xs font-black uppercase tracking-wider text-text-muted">
+                        Attach New Evidence
+                    </h4>
                     
-                    <input type="file" id="mov-file-input" class="hidden" accept=".pdf,.png,.jpg,.jpeg,.webp,.docx,.doc" onchange="handleMovFileSelect(this)">
-                    
-                    <div class="flex flex-col items-center justify-center gap-1.5">
-                        <div class="p-2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                            </svg>
+                    <!-- Evidence Mode Switcher (File vs Google Drive Link) -->
+                    <div class="inline-flex p-0.5 rounded-lg bg-surface-border/30 border border-surface-border text-xs">
+                        <button type="button" id="tab-btn-mov-file" onclick="switchMovAttachTab('file')"
+                                class="px-3 py-1 rounded-md font-bold transition-all cursor-pointer bg-surface text-text shadow-xs">
+                            <span class="inline-flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                <span>Upload File</span>
+                            </span>
+                        </button>
+                        <button type="button" id="tab-btn-mov-link" onclick="switchMovAttachTab('link')"
+                                class="px-3 py-1 rounded-md font-semibold transition-all cursor-pointer text-text-muted hover:text-text">
+                            <span class="inline-flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 text-emerald-500" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12.01 1.99L4.99 14.16h4.52l7.02-12.17h-4.52zm7.02 0l-7.02 12.17 2.26 3.92 7.02-12.17h-2.26zm-10.42 14.17l-2.26 3.92h14.3l2.26-3.92H8.61z"/>
+                                </svg>
+                                <span>Google Drive / Link</span>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 1. FILE UPLOAD DROPZONE -->
+                <div id="mov-panel-file" class="space-y-2">
+                    <div id="mov-drop-target" 
+                         onclick="document.getElementById('mov-file-input').click()" 
+                         ondragover="event.preventDefault(); this.classList.add('border-emerald-500', 'bg-emerald-500/5');" 
+                         ondragleave="this.classList.remove('border-emerald-500', 'bg-emerald-500/5');" 
+                         ondrop="handleMovDrop(event)"
+                         class="border-2 border-dashed border-surface-border hover:border-emerald-500/60 rounded-xl p-5 text-center cursor-pointer transition-all bg-surface-header/30 hover:bg-emerald-500/5">
+                        
+                        <input type="file" id="mov-file-input" class="hidden" accept=".pdf,.png,.jpg,.jpeg,.webp,.docx,.doc" onchange="handleMovFileSelect(this)">
+                        
+                        <div class="flex flex-col items-center justify-center gap-1.5">
+                            <div class="p-2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                            </div>
+                            <span class="text-xs sm:text-sm font-bold text-text">
+                                Click to browse or drop proof file here
+                            </span>
+                            <span class="text-[11px] text-text-muted">
+                                Supported: PDF, PNG, JPG, WEBP, DOCX (Max: 20MB)
+                            </span>
                         </div>
-                        <span class="text-xs sm:text-sm font-bold text-text">
-                            Click to browse or drop proof file here
+                    </div>
+                </div>
+
+                <!-- 2. GOOGLE DRIVE & CLOUD LINK ATTACHMENT PANEL -->
+                <div id="mov-panel-link" class="hidden space-y-3 p-4 rounded-xl border border-surface-border bg-surface-header/50">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12.01 1.99L4.99 14.16h4.52l7.02-12.17h-4.52zm7.02 0l-7.02 12.17 2.26 3.92 7.02-12.17h-2.26zm-10.42 14.17l-2.26 3.92h14.3l2.26-3.92H8.61z"/>
+                                </svg>
+                            </div>
+                            <span class="text-xs font-bold text-text">Attach Google Drive / Cloud Evidence Link</span>
+                        </div>
+                        <span id="mov-link-provider-badge" class="hidden px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/30">
+                            Google Drive
                         </span>
-                        <span class="text-[11px] text-text-muted">
-                            Supported: PDF, PNG, JPG, WEBP, DOCX (Max: 15MB)
+                    </div>
+
+                    <div class="space-y-2">
+                        <!-- URL Input -->
+                        <div>
+                            <label for="mov-input-link-url" class="block text-[11px] font-bold text-text-muted mb-1">
+                                Shareable Link URL <span class="text-rose-500">*</span>
+                            </label>
+                            <input type="url" 
+                                   id="mov-input-link-url" 
+                                   oninput="handleMovLinkUrlInput(this.value)" 
+                                   placeholder="https://drive.google.com/drive/folders/... or https://docs.google.com/..."
+                                   class="w-full text-xs px-3 py-2 rounded-xl bg-surface border border-surface-border text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-emerald-500/40 shadow-xs" />
+                        </div>
+
+                        <!-- Optional Title / Description -->
+                        <div>
+                            <label for="mov-input-link-name" class="block text-[11px] font-bold text-text-muted mb-1">
+                                Link Label / Description <span class="text-text-muted font-normal">(Optional)</span>
+                            </label>
+                            <input type="text" 
+                                   id="mov-input-link-name" 
+                                   placeholder="e.g., Certificate of Presentation - Drive Folder"
+                                   class="w-full text-xs px-3 py-2 rounded-xl bg-surface border border-surface-border text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-emerald-500/40 shadow-xs" />
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2">
+                        <span class="text-[10px] text-text-muted italic">
+                            Ensure share permissions are set to "Anyone with the link can view".
                         </span>
+                        <button type="button" 
+                                id="btn-submit-mov-link" 
+                                onclick="submitMovLink()" 
+                                class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all shadow-xs cursor-pointer">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                            <span>Attach Link</span>
+                        </button>
                     </div>
                 </div>
 
@@ -124,7 +204,7 @@
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                         </svg>
-                        <span id="mov-upload-progress-text">Uploading proof document...</span>
+                        <span id="mov-upload-progress-text">Processing evidence attachment...</span>
                     </div>
                     <span class="text-[10px] font-black uppercase tracking-wider">Processing</span>
                 </div>
@@ -188,6 +268,58 @@
         }
     }
 
+    function switchMovAttachTab(tab) {
+        const btnFile = document.getElementById('tab-btn-mov-file');
+        const btnLink = document.getElementById('tab-btn-mov-link');
+        const panelFile = document.getElementById('mov-panel-file');
+        const panelLink = document.getElementById('mov-panel-link');
+
+        if (tab === 'link') {
+            if (btnFile) {
+                btnFile.className = 'px-3 py-1 rounded-md font-semibold transition-all cursor-pointer text-text-muted hover:text-text';
+            }
+            if (btnLink) {
+                btnLink.className = 'px-3 py-1 rounded-md font-bold transition-all cursor-pointer bg-surface text-text shadow-xs';
+            }
+            if (panelFile) panelFile.classList.add('hidden');
+            if (panelLink) panelLink.classList.remove('hidden');
+        } else {
+            if (btnLink) {
+                btnLink.className = 'px-3 py-1 rounded-md font-semibold transition-all cursor-pointer text-text-muted hover:text-text';
+            }
+            if (btnFile) {
+                btnFile.className = 'px-3 py-1 rounded-md font-bold transition-all cursor-pointer bg-surface text-text shadow-xs';
+            }
+            if (panelLink) panelLink.classList.add('hidden');
+            if (panelFile) panelFile.classList.remove('hidden');
+        }
+    }
+
+    function handleMovLinkUrlInput(val) {
+        const badge = document.getElementById('mov-link-provider-badge');
+        if (!badge) return;
+        const lower = (val || '').toLowerCase();
+        if (lower.includes('drive.google.com') || lower.includes('docs.google.com')) {
+            badge.innerText = 'Google Drive';
+            badge.className = 'px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30';
+            badge.classList.remove('hidden');
+        } else if (lower.includes('onedrive') || lower.includes('sharepoint')) {
+            badge.innerText = 'OneDrive';
+            badge.className = 'px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30';
+            badge.classList.remove('hidden');
+        } else if (lower.includes('dropbox')) {
+            badge.innerText = 'Dropbox';
+            badge.className = 'px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/30';
+            badge.classList.remove('hidden');
+        } else if (lower.startsWith('http://') || lower.startsWith('https://')) {
+            badge.innerText = 'Web Link';
+            badge.className = 'px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/30';
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+
     function renderMovFileList() {
         const rowId = window.activeMovRowId;
         const listEl = document.getElementById('mov-files-list');
@@ -199,7 +331,7 @@
         const count = files.length;
 
         if (badgeCountEl) {
-            badgeCountEl.innerText = `${count} ${count === 1 ? 'File' : 'Files'}`;
+            badgeCountEl.innerText = `${count} ${count === 1 ? 'Item' : 'Items'}`;
         }
 
         // Also update the row's paperclip button in the document sheet
@@ -215,69 +347,145 @@
 
         let html = '';
         files.forEach(file => {
-            const ext = (file.file_name.split('.').pop() || '').toLowerCase();
-            let iconColor = 'text-blue-500 bg-blue-500/10 border-blue-500/20';
-            let iconLabel = 'DOC';
-
-            if (['pdf'].includes(ext)) {
-                iconColor = 'text-rose-500 bg-rose-500/10 border-rose-500/20';
-                iconLabel = 'PDF';
-            } else if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
-                iconColor = 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20';
-                iconLabel = 'IMG';
-            }
-
+            const isLink = !!file.is_link || (file.file_type && file.file_type.startsWith('link/')) || (file.link_url && file.link_url.length > 0);
             const canDelete = <?= (!empty($isOwner) && empty($isCycleArchived) && !empty($isEvaluationPhase) && !empty($canEditEvaluation)) ? 'true' : 'false' ?>;
-            const viewUrl = `<?= site_url('attachments/view') ?>/${file.id}`;
-            const downloadUrl = `<?= site_url('attachments/download') ?>/${file.id}`;
 
-            html += `
-                <div class="flex items-center justify-between p-3 sm:p-3.5 rounded-xl border border-surface-border bg-surface-header hover:border-emerald-500/40 transition-all gap-3">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <span class="px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider border ${iconColor} shrink-0">
-                            ${iconLabel}
-                        </span>
-                        <div class="min-w-0">
-                            <p class="text-xs sm:text-sm font-bold text-text truncate" title="${escapeHtml(file.file_name)}">
-                                ${escapeHtml(file.file_name)}
-                            </p>
-                            <p class="text-[11px] text-text-muted flex items-center gap-2 mt-0.5">
-                                <span>${file.formatted_size || ''}</span>
-                                <span>•</span>
-                                <span>Uploaded by ${escapeHtml(file.uploader_name || 'Staff')}</span>
-                            </p>
+            if (isLink) {
+                const linkUrl = file.link_url || file.file_path;
+                const lowerUrl = (linkUrl || '').toLowerCase();
+                let iconColor = 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
+                let iconLabel = 'G-DRIVE';
+                let providerLabel = 'Google Drive';
+
+                if (lowerUrl.includes('onedrive') || lowerUrl.includes('sharepoint')) {
+                    iconColor = 'text-sky-600 dark:text-sky-400 bg-sky-500/10 border-sky-500/30';
+                    iconLabel = 'ONEDRIVE';
+                    providerLabel = 'OneDrive';
+                } else if (lowerUrl.includes('dropbox')) {
+                    iconColor = 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/30';
+                    iconLabel = 'DROPBOX';
+                    providerLabel = 'Dropbox';
+                } else if (!lowerUrl.includes('drive.google') && !lowerUrl.includes('docs.google')) {
+                    iconColor = 'text-zinc-600 dark:text-zinc-400 bg-zinc-500/10 border-zinc-500/30';
+                    iconLabel = 'LINK';
+                    providerLabel = 'Web Link';
+                }
+
+                html += `
+                    <div class="flex items-center justify-between p-3 sm:p-3.5 rounded-xl border border-surface-border bg-surface-header hover:border-emerald-500/40 transition-all gap-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <span class="px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider border ${iconColor} shrink-0 inline-flex items-center gap-1">
+                                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12.01 1.99L4.99 14.16h4.52l7.02-12.17h-4.52zm7.02 0l-7.02 12.17 2.26 3.92 7.02-12.17h-2.26zm-10.42 14.17l-2.26 3.92h14.3l2.26-3.92H8.61z"/>
+                                </svg>
+                                <span>${iconLabel}</span>
+                            </span>
+                            <div class="min-w-0">
+                                <a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" 
+                                   class="text-xs sm:text-sm font-bold text-text hover:text-accent hover:underline truncate block" title="${escapeHtml(file.file_name)}">
+                                    ${escapeHtml(file.file_name)}
+                                </a>
+                                <p class="text-[11px] text-text-muted flex items-center gap-2 mt-0.5 truncate">
+                                    <span class="font-semibold text-emerald-600 dark:text-emerald-400">${providerLabel}</span>
+                                    <span>•</span>
+                                    <span class="truncate max-w-[200px] sm:max-w-[320px]">${escapeHtml(linkUrl)}</span>
+                                    <span>•</span>
+                                    <span>Added by ${escapeHtml(file.uploader_name || 'Staff')}</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button type="button" onclick="previewMovLink('${escapeHtml(linkUrl)}', '${escapeHtml(file.file_name)}', '${providerLabel}')" 
+                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 transition-all cursor-pointer" title="Preview link in-app">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                                <span class="hidden sm:inline">Preview</span>
+                            </button>
+
+                            <a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" 
+                               class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-surface-border/30 hover:bg-surface-border/60 text-text border border-surface-border transition-all" title="Open external link">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                <span class="hidden sm:inline">Open</span>
+                            </a>
+
+                            ${canDelete ? `
+                                <button type="button" onclick="deleteMovAttachment(${file.id})" 
+                                        class="p-1.5 rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all cursor-pointer" title="Delete link">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            ` : ''}
                         </div>
                     </div>
+                `;
+            } else {
+                const ext = (file.file_name.split('.').pop() || '').toLowerCase();
+                let iconColor = 'text-blue-500 bg-blue-500/10 border-blue-500/20';
+                let iconLabel = 'DOC';
 
-                    <div class="flex items-center gap-1.5 shrink-0">
-                        <button type="button" onclick="previewMovAttachment(${file.id}, '${escapeHtml(file.file_name)}', '${file.file_type}')" 
-                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 transition-all cursor-pointer" title="Preview file in-app">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                            <span class="hidden sm:inline">Preview</span>
-                        </button>
+                if (['pdf'].includes(ext)) {
+                    iconColor = 'text-rose-500 bg-rose-500/10 border-rose-500/20';
+                    iconLabel = 'PDF';
+                } else if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
+                    iconColor = 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20';
+                    iconLabel = 'IMG';
+                }
 
-                        <a href="${downloadUrl}" download 
-                           class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-surface-border/30 hover:bg-surface-border/60 text-text border border-surface-border transition-all" title="Download file">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
-                            <span class="hidden sm:inline">Download</span>
-                        </a>
+                const viewUrl = `<?= site_url('attachments/view') ?>/${file.id}`;
+                const downloadUrl = `<?= site_url('attachments/download') ?>/${file.id}`;
 
-                        ${canDelete ? `
-                            <button type="button" onclick="deleteMovAttachment(${file.id})" 
-                                    class="p-1.5 rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all cursor-pointer" title="Delete attachment">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                html += `
+                    <div class="flex items-center justify-between p-3 sm:p-3.5 rounded-xl border border-surface-border bg-surface-header hover:border-emerald-500/40 transition-all gap-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <span class="px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider border ${iconColor} shrink-0">
+                                ${iconLabel}
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-xs sm:text-sm font-bold text-text truncate" title="${escapeHtml(file.file_name)}">
+                                    ${escapeHtml(file.file_name)}
+                                </p>
+                                <p class="text-[11px] text-text-muted flex items-center gap-2 mt-0.5">
+                                    <span>${file.formatted_size || ''}</span>
+                                    <span>•</span>
+                                    <span>Uploaded by ${escapeHtml(file.uploader_name || 'Staff')}</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button type="button" onclick="previewMovAttachment(${file.id}, '${escapeHtml(file.file_name)}', '${file.file_type}')" 
+                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 transition-all cursor-pointer" title="Preview file in-app">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                 </svg>
+                                <span class="hidden sm:inline">Preview</span>
                             </button>
-                        ` : ''}
+
+                            <a href="${downloadUrl}" download 
+                               class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-surface-border/30 hover:bg-surface-border/60 text-text border border-surface-border transition-all" title="Download file">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                <span class="hidden sm:inline">Download</span>
+                            </a>
+
+                            ${canDelete ? `
+                                <button type="button" onclick="deleteMovAttachment(${file.id})" 
+                                        class="p-1.5 rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all cursor-pointer" title="Delete attachment">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            ` : ''}
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
         });
 
         listEl.innerHTML = html;
@@ -329,9 +537,63 @@
                     <h4 class="text-sm font-bold text-white">${escapeHtml(fileName)}</h4>
                     <p class="text-xs text-zinc-400 max-w-sm mx-auto">Word and binary documents cannot be rendered in the browser. Download the file to view its contents.</p>
                     <a href="${downloadUrl}" download class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md">
-                        Download Word Document
+                        Download Document
                     </a>
                 </div>
+            `;
+        }
+
+        container.classList.remove('hidden');
+        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function previewMovLink(url, title, provider) {
+        const container = document.getElementById('mov-preview-container');
+        const viewport = document.getElementById('mov-preview-viewport');
+        const nameEl = document.getElementById('mov-preview-filename');
+        const extLink = document.getElementById('mov-preview-external-link');
+
+        if (!container || !viewport) return;
+
+        if (nameEl) nameEl.innerText = `${provider}: ${title}`;
+        if (extLink) extLink.href = url;
+
+        let embedUrl = url;
+        const lower = url.toLowerCase();
+
+        // Convert Google Drive view URLs to preview URLs for embeddable iframes
+        if (lower.includes('drive.google.com/file/d/')) {
+            embedUrl = url.replace(/\/view(\?.*)?$/i, '/preview');
+        } else if (lower.includes('docs.google.com/document/d/') || lower.includes('docs.google.com/spreadsheets/d/') || lower.includes('docs.google.com/presentation/d/')) {
+            embedUrl = url.replace(/\/edit(\?.*)?$/i, '/preview');
+        }
+
+        if (lower.includes('drive.google.com/drive/folders/')) {
+            // Folders cannot always be framed; offer interactive card with direct open
+            viewport.innerHTML = `
+                <div class="text-center p-8 space-y-4">
+                    <div class="w-16 h-16 mx-auto rounded-2xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center border border-emerald-500/30">
+                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12.01 1.99L4.99 14.16h4.52l7.02-12.17h-4.52zm7.02 0l-7.02 12.17 2.26 3.92 7.02-12.17h-2.26zm-10.42 14.17l-2.26 3.92h14.3l2.26-3.92H8.61z"/>
+                        </svg>
+                    </div>
+                    <div class="space-y-1">
+                        <h4 class="text-base font-bold text-white">${escapeHtml(title)}</h4>
+                        <p class="text-xs text-zinc-400 max-w-md mx-auto">This is a shared Google Drive folder. Click below to view all uploaded evidence files in Google Drive.</p>
+                    </div>
+                    <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" 
+                       class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-lg hover:scale-105 active:scale-95">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        <span>Open Folder in Google Drive</span>
+                    </a>
+                </div>
+            `;
+        } else {
+            viewport.innerHTML = `
+                <iframe src="${escapeHtml(embedUrl)}" 
+                        allow="autoplay" 
+                        sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                        class="w-full h-[500px] border-none bg-white rounded-lg"></iframe>
             `;
         }
 
@@ -368,6 +630,8 @@
         if (!rowId) return;
 
         const progressEl = document.getElementById('mov-upload-progress');
+        const progressText = document.getElementById('mov-upload-progress-text');
+        if (progressText) progressText.innerText = 'Uploading and encrypting proof document...';
         if (progressEl) progressEl.classList.remove('hidden');
 
         const formData = new FormData();
@@ -390,7 +654,7 @@
                 window.documentAttachments[rowId].push(res.data.attachment);
                 renderMovFileList();
                 if (typeof showToast === 'function') {
-                    showToast('Evidence attached successfully!', 'success');
+                    showToast('Evidence file attached successfully!', 'success');
                 }
             } else {
                 const errText = res.data?.message || 'Error uploading file.';
@@ -413,14 +677,102 @@
         }
     }
 
+    async function submitMovLink() {
+        const rowId = window.activeMovRowId;
+        if (!rowId) return;
+
+        const urlInput = document.getElementById('mov-input-link-url');
+        const nameInput = document.getElementById('mov-input-link-name');
+        const btnSubmit = document.getElementById('btn-submit-mov-link');
+
+        const linkUrl = urlInput ? urlInput.value.trim() : '';
+        const linkName = nameInput ? nameInput.value.trim() : '';
+
+        if (!linkUrl) {
+            if (urlInput) urlInput.focus();
+            if (window.appAlert) {
+                await window.appAlert('Please enter a valid Google Drive or web link URL.', { title: 'Link Required', variant: 'warning' });
+            } else {
+                alert('Please enter a valid link URL.');
+            }
+            return;
+        }
+
+        if (!linkUrl.startsWith('http://') && !linkUrl.startsWith('https://')) {
+            if (urlInput) urlInput.focus();
+            if (window.appAlert) {
+                await window.appAlert('Link URL must begin with http:// or https:// (e.g. https://drive.google.com/...)', { title: 'Invalid URL Format', variant: 'warning' });
+            } else {
+                alert('Link URL must begin with http:// or https://');
+            }
+            return;
+        }
+
+        const progressEl = document.getElementById('mov-upload-progress');
+        const progressText = document.getElementById('mov-upload-progress-text');
+        if (progressText) progressText.innerText = 'Attaching evidence link...';
+        if (progressEl) progressEl.classList.remove('hidden');
+
+        if (btnSubmit) btnSubmit.disabled = true;
+
+        const formData = new FormData();
+        formData.append('document_id', '<?= esc($doc['id'] ?? '') ?>');
+        formData.append('row_id', rowId);
+        formData.append('link_url', linkUrl);
+        formData.append('link_name', linkName);
+
+        try {
+            const res = await axios.post('<?= site_url('attachments/add-link') ?>', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (res.data && res.data.status === 'success') {
+                if (!window.documentAttachments[rowId]) {
+                    window.documentAttachments[rowId] = [];
+                }
+                window.documentAttachments[rowId].push(res.data.attachment);
+                renderMovFileList();
+
+                if (urlInput) urlInput.value = '';
+                if (nameInput) nameInput.value = '';
+                handleMovLinkUrlInput('');
+
+                if (typeof showToast === 'function') {
+                    showToast('Cloud evidence link attached successfully!', 'success');
+                }
+            } else {
+                const errText = res.data?.message || 'Error attaching link.';
+                if (window.appAlert) {
+                    await window.appAlert(errText, { title: 'Notice', variant: 'warning' });
+                } else {
+                    alert(errText);
+                }
+            }
+        } catch (err) {
+            console.error('MOV Link Attachment Error:', err);
+            const msg = err.response?.data?.message || err.message || 'Failed to attach evidence link.';
+            if (window.appAlert) {
+                await window.appAlert(msg, { title: 'Failed to Attach Link', variant: 'danger' });
+            } else {
+                alert(msg);
+            }
+        } finally {
+            if (progressEl) progressEl.classList.add('hidden');
+            if (btnSubmit) btnSubmit.disabled = false;
+        }
+    }
+
     async function deleteMovAttachment(id) {
         const ok = window.appConfirm
-            ? await window.appConfirm('Are you sure you want to permanently remove this evidence file?', {
+            ? await window.appConfirm('Are you sure you want to permanently remove this evidence attachment?', {
                 title: 'Remove Evidence',
-                confirmText: 'Remove File',
+                confirmText: 'Remove Attachment',
                 variant: 'danger'
             })
-            : confirm('Are you sure you want to remove this evidence file?');
+            : confirm('Are you sure you want to remove this evidence attachment?');
         if (!ok) return;
 
         try {

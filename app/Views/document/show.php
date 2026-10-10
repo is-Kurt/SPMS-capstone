@@ -51,6 +51,11 @@
         FolderStatus::TARGET_APPROVED->value
     ]) && !$isGuide && empty($isCycleArchived)));
 
+    $sysRole = session()->get('role');
+    $isTwg = ($sysRole === 'TWG');
+    $isAdmin = ($sysRole === 'Admin');
+    $canEditTwg = ($isTwg || $isAdmin) && empty($isCycleArchived) && !$isGuide;
+
     $canEditEvaluation = ($isEvaluationPhase && (
         ($isOwner && in_array($status, [FolderStatus::DRAFT->value, FolderStatus::TARGET_APPROVED->value, FolderStatus::TO_EVALUATE->value, FolderStatus::REEVALUATE->value])) ||
         (!$isOwner && isset($routingStatus) && in_array($status, [FolderStatus::SUBMITTED->value, FolderStatus::EVALUATED->value]))
@@ -60,12 +65,13 @@
         FolderStatus::DRAFT_TARGET->value,
         FolderStatus::TARGET_RETURNED->value
     ];
-    $isEditable = ($canEditTargets || $canEditEvaluation);
+    $isEditable = ($canEditTargets || $canEditEvaluation || $canEditTwg);
 
     if (!empty($isCycleArchived)) {
         $canEditTargets = false;
         $canEditEvaluation = false;
         $canEditApprover = false;
+        $canEditTwg = false;
         $isEditable = false;
     }
 ?>
@@ -73,7 +79,7 @@
 <style>
     .spms-sheet-container {
         width: 100%;
-        max-width: <?= $isDocDpcr ? '1400px' : ($isDocOpcr ? '1350px' : ($isDocIperf ? '1280px' : '1280px')) ?>;
+        max-width: <?= $isDocDpcr ? '1460px' : ($isDocOpcr ? '1420px' : '1360px') ?>;
         background: #ffffff;
         color: #0f172a;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
@@ -202,7 +208,7 @@
         background: #ffffff;
         border: 1px solid #cbd5e1;
         border-radius: 4px;
-        padding: 4px 2px;
+        padding: 3px 2px;
         box-sizing: border-box;
         -moz-appearance: textfield;
         appearance: textfield;
@@ -227,6 +233,55 @@
         border-color: #e2e8f0;
         color: #94a3b8;
         cursor: not-allowed;
+    }
+    /* Score Role Attribution Indicators (Minimal Corner Notification Marker) */
+    .spms-score-cell {
+        position: relative;
+        padding: 2px 2px !important;
+        vertical-align: middle !important;
+        text-align: center !important;
+    }
+    .score-notif-marker {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 14px;
+        height: 14px;
+        z-index: 2;
+        cursor: pointer;
+        border-radius: 9999px;
+        user-select: none;
+        transition: transform 0.15s ease;
+    }
+    #spms-score-audit-modal {
+        z-index: 99999 !important;
+    }
+    .score-notif-marker:hover {
+        transform: scale(1.25);
+    }
+    .score-notif-dot {
+        width: 6.5px;
+        height: 6.5px;
+        border-radius: 9999px;
+        display: inline-block;
+        pointer-events: none;
+    }
+    .score-notif-dot.dot-twg {
+        background-color: #f59e0b;
+        box-shadow: 0 0 0 1.5px #ffffff, 0 1px 3px rgba(245, 158, 11, 0.4);
+    }
+    .score-notif-dot.dot-head {
+        background-color: #10b981;
+        box-shadow: 0 0 0 1.5px #ffffff, 0 1px 3px rgba(16, 185, 129, 0.4);
+    }
+    .dark .score-notif-dot.dot-twg {
+        box-shadow: 0 0 0 1.5px #18181b, 0 1px 3px rgba(245, 158, 11, 0.6);
+    }
+    .dark .score-notif-dot.dot-head {
+        box-shadow: 0 0 0 1.5px #18181b, 0 1px 3px rgba(16, 185, 129, 0.6);
     }
     .budget-input-wrapper {
         display: flex;
@@ -439,7 +494,7 @@
             height: auto !important;
             overflow: visible !important;
         }
-        header, nav, aside, .print-hide, #tab-bar, .tox {
+        header, nav, aside, .print-hide, .twg-col, #tab-bar, .tox {
             display: none !important;
         }
         main, #editor-container, #spms-form-workspace {
@@ -497,7 +552,7 @@
         .spms-textarea::placeholder, .spms-score-input::placeholder, input::placeholder {
             color: transparent !important;
         }
-        .btn-add-dashed, .btn-del-row, #tfoot-add-core, #tfoot-add-strategic, #tfoot-add-support {
+        .btn-add-dashed, .btn-del-row, #tfoot-add-core, #tfoot-add-strategic, #tfoot-add-support, .score-notif-marker, .score-notif-dot, #spms-score-audit-modal {
             display: none !important;
         }
         .spms-textarea {
@@ -1565,27 +1620,49 @@
                 </table>
                 <?php endif; ?>
 
+                <!-- Rating Attribution & Audit Guide Notice (Evaluation Phase) -->
+                <?php if ($isEvaluationPhase && !$isGuide): ?>
+                <div class="mb-3.5 p-2.5 sm:p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/80 border border-slate-200/80 dark:border-zinc-800 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 text-xs text-slate-600 dark:text-zinc-400 print-hide shadow-xs">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 font-bold">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </div>
+                        <div class="min-w-0">
+                            <span class="font-extrabold text-slate-800 dark:text-zinc-200 text-xs">Score Adjustments:</span>
+                            <span class="text-slate-500 dark:text-zinc-400 text-[11px] ml-1">A corner dot appears when a rating is adjusted. Hover or click the dot to inspect history.</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-[10px] font-bold shrink-0">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> HoO Adjusted</span>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50/80 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800"><span class="w-2 h-2 rounded-full bg-amber-500"></span> TWG Calibrated</span>
+                    </div>
+                </div>
+                <?php endif; ?>
+
                 <!-- MAIN TABLE OF DELIVERABLES & RATINGS -->
                 <div class="spms-table-responsive-wrapper">
                     <div class="lg:hidden flex items-center justify-between text-[11px] text-zinc-500 bg-zinc-200 dark:bg-zinc-800/40 px-3 py-1.5 rounded border border-zinc-200 dark:border-zinc-700 mb-2 print-hide">
                         <span class="flex items-center gap-1 font-medium">↔ Swipe matrix horizontally to view ratings & remarks</span>
-                        <span class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider"><?= ($isDocDpcr || $isDocOpcr) ? '10 Columns' : ($isDocIperf ? '8 Columns' : '9 Columns') ?></span>
+                        <span class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider"><?= ($isDocDpcr || $isDocOpcr) ? ($canEditTargets ? '12 Columns' : '11 Columns') : ($canEditTargets ? '10 Columns' : '9 Columns') ?></span>
                     </div>
                     <table class="spms-table">
                         <?php if ($isDocDpcr): ?>
-                        <!-- Column Widths (10 columns matching standard DPCR Sheet) -->
+                        <!-- Column Widths (11 columns matching standard DPCR Sheet + TWG Comments) -->
                         <colgroup>
-                            <col style="width: 14%;"> <!-- PROGRAMS, PROJECTS, ACTIVITIES -->
-                            <col style="width: 17%;"> <!-- SUCCESS INDICATORS -->
-                            <col style="width: 10%;"> <!-- ALLOTTED BUDGET -->
-                            <col style="width: 13%;"> <!-- INDIVIDUALS / OFFICES ACCOUNTABLE -->
-                            <col style="width: 18%;"> <!-- ACTUAL ACCOMPLISHMENTS -->
+                            <col style="width: 13%;"> <!-- PROGRAMS, PROJECTS, ACTIVITIES -->
+                            <col style="width: 15%;"> <!-- SUCCESS INDICATORS -->
+                            <col style="width: 9%;">  <!-- ALLOTTED BUDGET -->
+                            <col style="width: 11%;"> <!-- INDIVIDUALS / OFFICES ACCOUNTABLE -->
+                            <col style="width: 15%;"> <!-- ACTUAL ACCOMPLISHMENTS -->
                             <col style="width: 3.5%;"> <!-- Q -->
                             <col style="width: 3.5%;"> <!-- T -->
                             <col style="width: 3.5%;"> <!-- E -->
                             <col style="width: 4.5%;"> <!-- Ave. -->
-                            <col style="width: 13%;"> <!-- REMARKS -->
-                            <col style="width: 3%;">  <!-- ACT -->
+                            <col style="width: 10%;"> <!-- REMARKS -->
+                            <col class="print-hide" style="width: 12%;"> <!-- TWG COMMENTS -->
+                            <?php if ($canEditTargets): ?>
+                            <col class="print-hide" style="width: 3%;">  <!-- ACT -->
+                            <?php endif; ?>
                         </colgroup>
 
                         <!-- Two-Row Header with Executive Neutral Slate Background -->
@@ -1603,7 +1680,10 @@
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENTS</th>
                                 <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;" class="print-hide">PTWG COMMENTS</th>
+                                <?php if ($canEditTargets): ?>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 4px;" class="print-hide">ACT</th>
+                                <?php endif; ?>
                             </tr>
                             <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
                                 <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
@@ -1613,19 +1693,22 @@
                             </tr>
                         </thead>
                         <?php elseif ($isDocOpcr): ?>
-                        <!-- Column Widths (10 columns matching Vice President OPCR Sheet) -->
+                        <!-- Column Widths (11 columns matching Vice President OPCR Sheet + TWG Comments) -->
                         <colgroup>
-                            <col style="width: 14%;"> <!-- PROJECT/ PROGRAM/ ACTIVITIES -->
-                            <col style="width: 17%;"> <!-- SUCCESS INDICATORS (TARGETS + MEASURES) PERFORMANCE -->
-                            <col style="width: 10%;"> <!-- ALLOTTED BUDGET -->
-                            <col style="width: 13%;"> <!-- DIVISIONS ACCOUNTABLE -->
-                            <col style="width: 18%;"> <!-- ACTUAL ACCOMPLISHMENT -->
+                            <col style="width: 13%;"> <!-- PROJECT/ PROGRAM/ ACTIVITIES -->
+                            <col style="width: 15%;"> <!-- SUCCESS INDICATORS (TARGETS + MEASURES) PERFORMANCE -->
+                            <col style="width: 9%;">  <!-- ALLOTTED BUDGET -->
+                            <col style="width: 11%;"> <!-- DIVISIONS ACCOUNTABLE -->
+                            <col style="width: 15%;"> <!-- ACTUAL ACCOMPLISHMENT -->
                             <col style="width: 3.5%;"> <!-- Q -->
                             <col style="width: 3.5%;"> <!-- T -->
                             <col style="width: 3.5%;"> <!-- E -->
                             <col style="width: 4.5%;"> <!-- AVE -->
-                            <col style="width: 13%;"> <!-- REMARKS -->
-                            <col style="width: 3%;">  <!-- ACT -->
+                            <col style="width: 10%;"> <!-- REMARKS -->
+                            <col class="print-hide" style="width: 12%;"> <!-- TWG COMMENTS -->
+                            <?php if ($canEditTargets): ?>
+                            <col class="print-hide" style="width: 3%;">  <!-- ACT -->
+                            <?php endif; ?>
                         </colgroup>
 
                         <!-- Two-Row Header with Executive Neutral Slate Background -->
@@ -1643,7 +1726,10 @@
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENT</th>
                                 <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATINGS</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;" class="print-hide">PTWG COMMENTS</th>
+                                <?php if ($canEditTargets): ?>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 4px;" class="print-hide">ACT</th>
+                                <?php endif; ?>
                             </tr>
                             <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
                                 <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
@@ -1653,17 +1739,20 @@
                             </tr>
                         </thead>
                         <?php elseif ($isDocIperf): ?>
-                        <!-- IPERF 8-Column Layout (+ Action column in web view) Matching COS & Job Order Sheet -->
+                        <!-- IPERF Layout (+ TWG Comments & Action column in web view) Matching COS & Job Order Sheet -->
                         <colgroup>
-                            <col style="width: 24%;"> <!-- OFFICE PPA -->
-                            <col style="width: 24%;"> <!-- EXPECTED OUTPUTS -->
-                            <col style="width: 24%;"> <!-- ACTUAL ACCOMPLISHMENTS -->
+                            <col style="width: 20%;"> <!-- OFFICE PPA -->
+                            <col style="width: 20%;"> <!-- EXPECTED OUTPUTS -->
+                            <col style="width: 20%;"> <!-- ACTUAL ACCOMPLISHMENTS -->
                             <col style="width: 4%;">  <!-- Q -->
                             <col style="width: 4%;">  <!-- T -->
                             <col style="width: 4%;">  <!-- E -->
                             <col style="width: 5%;">  <!-- Ave. -->
-                            <col style="width: 12%;"> <!-- REMARKS -->
-                            <col style="width: 3%;">  <!-- ACT -->
+                            <col style="width: 11%;"> <!-- REMARKS -->
+                            <col class="print-hide" style="width: 12%;"> <!-- TWG COMMENTS -->
+                            <?php if ($canEditTargets): ?>
+                            <col class="print-hide" style="width: 3%;">  <!-- ACT -->
+                            <?php endif; ?>
                         </colgroup>
 
                         <!-- Two-Row Header with Soft Neutral #f1f5f9 Background -->
@@ -1680,7 +1769,10 @@
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENTS</th>
                                 <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;" class="print-hide">PTWG COMMENTS</th>
+                                <?php if ($canEditTargets): ?>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 4px;" class="print-hide">ACT</th>
+                                <?php endif; ?>
                             </tr>
                             <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
                                 <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
@@ -1690,17 +1782,20 @@
                             </tr>
                         </thead>
                         <?php else: ?>
-                        <!-- Column Widths (9 total columns matching BSU Annex B IPCR) -->
+                        <!-- Column Widths (10 total columns matching BSU IPCR + TWG Comments) -->
                         <colgroup>
-                            <col style="width: 24%;">
-                            <col style="width: 24%;">
-                            <col style="width: 24%;">
+                            <col style="width: 20%;">
+                            <col style="width: 20%;">
+                            <col style="width: 20%;">
                             <col style="width: 4%;">
                             <col style="width: 4%;">
                             <col style="width: 4%;">
                             <col style="width: 5%;">
-                            <col style="width: 12%;">
-                            <col style="width: 3%;">
+                            <col style="width: 11%;">
+                            <col class="print-hide" style="width: 12%;">
+                            <?php if ($canEditTargets): ?>
+                            <col class="print-hide" style="width: 3%;">
+                            <?php endif; ?>
                         </colgroup>
 
                         <!-- Two-Row Header: Q, T, E, Ave side-by-side with Executive Neutral Slate Background -->
@@ -1711,7 +1806,10 @@
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENTS</th>
                                 <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;" class="print-hide">PTWG COMMENTS</th>
+                                <?php if ($canEditTargets): ?>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 4px;" class="print-hide">ACT</th>
+                                <?php endif; ?>
                             </tr>
                             <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
                                 <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
@@ -1729,7 +1827,7 @@
                         <!-- Add Row Footer for IPERF -->
                         <tbody class="print-hide" id="tfoot-add-core" style="<?= $canEditTargets ? '' : 'display: none;' ?>">
                             <tr>
-                                <td colspan="9" style="padding: 6px; background: #ffffff; text-align: center; border: 1px solid #000;">
+                                <td colspan="10" style="padding: 6px; background: #ffffff; text-align: center; border: 1px solid #000;">
                                     <button type="button" onclick="addTableRow('core')" class="btn-add-dashed">
                                         + Add Deliverable / Office PPA Row
                                     </button>
@@ -1752,6 +1850,9 @@
                                     </span>
                                 </td>
                                 <td style="border: 1px solid #000;" class="print-hide"></td>
+                                <?php if ($canEditTargets): ?>
+                                <td style="border: 1px solid #000;" class="print-hide"></td>
+                                <?php endif; ?>
                             </tr>
                         </tfoot>
 
@@ -1763,40 +1864,20 @@
                         <!-- 1. CORE FUNCTIONS -->
                         <tbody id="tbody-core">
                             <tr style="background-color: #f1f5f9; border-top: 2px solid #000; border-bottom: 1px solid #000; font-weight: bold;">
-                                <?php if ($isDocDpcr): ?>
                                 <td colspan="5" id="label-cat-core" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                                    CORE FUNCTIONS (60%) <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
+                                    CORE FUNCTIONS <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
                                 </td>
-                                <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
+                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? ($canEditTargets ? 7 : 6) : ($canEditTargets ? 5 : 4) ?>" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
                                     <span style="display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
                                         Core Subtotal: <span id="badge-core-subtotal" style="color: #047857;">0.000</span>
                                     </span>
                                 </td>
-                                <?php elseif ($isDocOpcr): ?>
-                                <td colspan="5" id="label-cat-core" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                                    CORE MANDATE (60%) <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
-                                </td>
-                                <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
-                                    <span style="display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
-                                        Core Subtotal: <span id="badge-core-subtotal" style="color: #047857;">0.000</span>
-                                    </span>
-                                </td>
-                                <?php else: ?>
-                                <td colspan="5" id="label-cat-core" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                                    CORE FUNCTIONS (70%) <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
-                                </td>
-                                <td colspan="4" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
-                                    <span style="display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
-                                        Core Subtotal: <span id="badge-core-subtotal" style="color: #047857;">0.000</span>
-                                    </span>
-                                </td>
-                                <?php endif; ?>
                             </tr>
                         </tbody>
                         <!-- Add Row Footer for Core -->
                         <tbody class="print-hide" id="tfoot-add-core" style="<?= $canEditTargets ? '' : 'display: none;' ?>">
                             <tr>
-                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? 11 : 9 ?>" style="padding: 6px; background: #ffffff; text-align: center; border: 1px solid #000;">
+                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? ($canEditTargets ? 12 : 11) : ($canEditTargets ? 10 : 9) ?>" style="padding: 6px; background: #ffffff; text-align: center; border: 1px solid #000;">
                                     <button type="button" onclick="addTableRow('core')" class="btn-add-dashed">
                                         + Add Deliverable Row to Core Functions
                                     </button>
@@ -1807,40 +1888,20 @@
                         <!-- 2. STRATEGIC FUNCTIONS -->
                         <tbody id="tbody-strategic">
                             <tr style="background-color: #f1f5f9; border-top: 2px solid #000; border-bottom: 1px solid #000; font-weight: bold;">
-                                <?php if ($isDocDpcr): ?>
                                 <td colspan="5" id="label-cat-strategic" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                                    STRATEGIC FUNCTIONS (30%) <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
+                                    STRATEGIC FUNCTIONS <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
                                 </td>
-                                <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
+                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? ($canEditTargets ? 7 : 6) : ($canEditTargets ? 5 : 4) ?>" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
                                     <span style="display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
                                         Strategic Subtotal: <span id="badge-strategic-subtotal" style="color: #047857;">0.000</span>
                                     </span>
                                 </td>
-                                <?php elseif ($isDocOpcr): ?>
-                                <td colspan="5" id="label-cat-strategic" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                                    STRATEGIC FUNCTIONS (25%) <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
-                                </td>
-                                <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
-                                    <span style="display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
-                                        Strategic Subtotal: <span id="badge-strategic-subtotal" style="color: #047857;">0.000</span>
-                                    </span>
-                                </td>
-                                <?php else: ?>
-                                <td colspan="5" id="label-cat-strategic" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                                    STRATEGIC FUNCTIONS (20%) <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
-                                </td>
-                                <td colspan="4" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
-                                    <span style="display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
-                                        Strategic Subtotal: <span id="badge-strategic-subtotal" style="color: #047857;">0.000</span>
-                                    </span>
-                                </td>
-                                <?php endif; ?>
                             </tr>
                         </tbody>
                         <!-- Add Row Footer for Strategic -->
                         <tbody class="print-hide" id="tfoot-add-strategic" style="<?= $canEditTargets ? '' : 'display: none;' ?>">
                             <tr>
-                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? 11 : 9 ?>" style="padding: 6px; background: #ffffff; text-align: center; border: 1px solid #000;">
+                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? ($canEditTargets ? 12 : 11) : ($canEditTargets ? 10 : 9) ?>" style="padding: 6px; background: #ffffff; text-align: center; border: 1px solid #000;">
                                     <button type="button" onclick="addTableRow('strategic')" class="btn-add-dashed">
                                         + Add Deliverable Row to Strategic Functions
                                     </button>
@@ -1851,40 +1912,20 @@
                         <!-- 3. SUPPORT FUNCTIONS -->
                         <tbody id="tbody-support">
                             <tr style="background-color: #f1f5f9; border-top: 2px solid #000; border-bottom: 1px solid #000; font-weight: bold;">
-                                <?php if ($isDocDpcr): ?>
                                 <td colspan="5" id="label-cat-support" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                                    SUPPORT FUNCTIONS (10%) <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
+                                    SUPPORT FUNCTIONS <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
                                 </td>
-                                <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
+                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? ($canEditTargets ? 7 : 6) : ($canEditTargets ? 5 : 4) ?>" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
                                     <span style="display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
                                         Support Subtotal: <span id="badge-support-subtotal" style="color: #047857;">0.000</span>
                                     </span>
                                 </td>
-                                <?php elseif ($isDocOpcr): ?>
-                                <td colspan="5" id="label-cat-support" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                                    SUPPORT FUNCTIONS (15%) <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
-                                </td>
-                                <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
-                                    <span style="display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
-                                        Support Subtotal: <span id="badge-support-subtotal" style="color: #047857;">0.000</span>
-                                    </span>
-                                </td>
-                                <?php else: ?>
-                                <td colspan="5" id="label-cat-support" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                                    SUPPORT FUNCTIONS (10%) <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
-                                </td>
-                                <td colspan="4" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
-                                    <span style="display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
-                                        Support Subtotal: <span id="badge-support-subtotal" style="color: #047857;">0.000</span>
-                                    </span>
-                                </td>
-                                <?php endif; ?>
                             </tr>
                         </tbody>
                         <!-- Add Row Footer for Support -->
                         <tbody class="print-hide" id="tfoot-add-support" style="<?= $canEditTargets ? '' : 'display: none;' ?>">
                             <tr>
-                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? 11 : 9 ?>" style="padding: 6px; background: #ffffff; text-align: center; border: 1px solid #000;">
+                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? ($canEditTargets ? 12 : 11) : ($canEditTargets ? 10 : 9) ?>" style="padding: 6px; background: #ffffff; text-align: center; border: 1px solid #000;">
                                     <button type="button" onclick="addTableRow('support')" class="btn-add-dashed">
                                         + Add Deliverable Row to Support Functions
                                     </button>
@@ -1903,11 +1944,7 @@
                         <td style="width: 35%; padding: 12px; border: 1px solid #000; vertical-align: top; background: #fafafa;">
                             <div style="font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Formula Weights:</div>
                             <div id="formula-desc-text" style="font-size: 11px; color: #334155; margin-top: 6px; line-height: 1.5;">
-                                <?= $isDocDpcr 
-                                    ? 'Core Functions (60%) + Strategic Functions (30%) + Support Functions (10%).' 
-                                    : ($isDocOpcr 
-                                        ? 'Core Mandate (60%) + Strategic Functions (25%) + Support Functions (15%).'
-                                        : 'Core Functions (70%) + Strategic Functions (20%) + Support Functions (10%).') ?>
+                                Core Functions ( ____ %) + Strategic Functions ( ____ %) + Support Functions ( ____ %).
                             </div>
                             <div style="font-size: 10px; color: #94a3b8; font-style: italic; margin-top: 14px; border-top: 1px solid #e2e8f0; padding-top: 6px;">
                                 Validated against standard Civil Service Commission SPMS Guidelines.
@@ -2118,16 +2155,26 @@
 
                         <!-- Right: Office Head (Columns D-H) -->
                         <td style="width: 50%; vertical-align: top; border: none; padding: 0 0 0 15px;">
-                            <div style="margin-bottom: 6px; color: #0f172a;">Final Rating by: 
-                                <input type="text" id="sig-dean-name" value="" placeholder="(name of office head)" class="spms-meta-input" style="font-weight: bold; width: 55%; padding: 2px 4px;">
+                            <div id="footer-approvers-container" style="display: flex; flex-direction: column; gap: 8px;">
+                                <div class="footer-approver-item" style="position: relative;">
+                                    <div style="margin-bottom: 6px; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                                        <span style="font-weight: bold;">Final Rating by:</span>
+                                        <button type="button" id="btn-add-footer-approver" onclick="addApproverBlock()" class="print-hide" style="display: <?= $canEditApprover ? 'inline-flex' : 'none' ?>; align-items: center; gap: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 4px; cursor: pointer;" title="Add another approving signatory">
+                                            + Add Signatory
+                                        </button>
+                                    </div>
+                                    <div style="margin-bottom: 6px; color: #0f172a;">
+                                        <input type="text" class="field-footer-approver-name spms-meta-input" id="sig-dean-name" value="" placeholder="(name of office head)" style="font-weight: bold; width: 65%; padding: 2px 4px;">
+                                    </div>
+                                    <div style="margin-bottom: 6px; color: #0f172a;">Position: 
+                                        <input type="text" class="field-footer-approver-pos spms-meta-input" id="sig-dean-pos" value="" placeholder="(position of office head)" style="width: 70%; padding: 2px 4px;">
+                                    </div>
+                                    <div style="margin-bottom: 6px; color: #0f172a;">
+                                        Date: <input type="date" class="field-footer-approver-date spms-meta-input" id="sig-dean-date" onclick="this.showPicker && this.showPicker()" style="width: 130px; cursor: pointer; padding: 1px 4px;">
+                                    </div>
+                                    <div style="color: #64748b; font-size: 10px; font-style: italic;">(may add signatories depending on position/designation)</div>
+                                </div>
                             </div>
-                            <div style="margin-bottom: 6px; color: #0f172a;">Position: 
-                                <input type="text" id="sig-dean-pos" value="" placeholder="(position of office head)" class="spms-meta-input" style="width: 70%; padding: 2px 4px;">
-                            </div>
-                            <div style="margin-bottom: 6px; color: #0f172a;">
-                                Date: <input type="date" id="sig-dean-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input" style="width: 130px; cursor: pointer; padding: 1px 4px;">
-                            </div>
-                            <div style="color: #64748b; font-size: 10px; font-style: italic;">(may add signatories depending on position/designation)</div>
                         </td>
                     </tr>
                 </table>
@@ -2652,31 +2699,69 @@
         const suppInput = document.querySelector('input[data-cat-weight="support"]');
         
         if (coreInput && stratInput && suppInput) {
-            const c = parseInt(coreInput.value || 0);
-            const s = parseInt(stratInput.value || 0);
-            const p = parseInt(suppInput.value || 0);
-            
-            CATEGORY_WEIGHTS.core = c / 100;
-            CATEGORY_WEIGHTS.strategic = s / 100;
-            CATEGORY_WEIGHTS.support = p / 100;
-            
-            const total = c + s + p;
+            const cVal = coreInput.value.trim();
+            const sVal = stratInput.value.trim();
+            const pVal = suppInput.value.trim();
             const formulaText = document.getElementById('formula-desc-text');
-            if (formulaText) {
+
+            const isAnyEmpty = (cVal === '' || sVal === '' || pVal === '');
+            const c = cVal !== '' ? parseInt(cVal, 10) : 0;
+            const s = sVal !== '' ? parseInt(sVal, 10) : 0;
+            const p = pVal !== '' ? parseInt(pVal, 10) : 0;
+
+            CATEGORY_WEIGHTS.core = cVal !== '' ? c / 100 : 0;
+            CATEGORY_WEIGHTS.strategic = sVal !== '' ? s / 100 : 0;
+            CATEGORY_WEIGHTS.support = pVal !== '' ? p / 100 : 0;
+
+            const cDisp = cVal !== '' ? `${c}%` : '____ %';
+            const sDisp = sVal !== '' ? `${s}%` : '____ %';
+            const pDisp = pVal !== '' ? `${p}%` : '____ %';
+
+            if (isAnyEmpty) {
+                window.weightError = true;
+                window.weightErrorMessage = 'Percentage weights for Core, Strategic, and Support Functions are required and must total 100%.';
+                if (formulaText) {
+                    formulaText.innerHTML = `Core Functions (${cDisp}) + Strategic Functions (${sDisp}) + Support Functions (${pDisp}). <span style="color: #ef4444; font-weight: bold; font-size: 11px;">(Required: All category weights must be entered and total 100%)</span>`;
+                }
+            } else {
+                const total = c + s + p;
                 if (total !== 100) {
-                    formulaText.innerHTML = `<span style="color: #e11d48; font-weight: bold;">Error: Total weight is ${total}% (Must equal 100% exactly)</span>`;
                     window.weightError = true;
+                    window.weightErrorMessage = `Total category weight is currently ${total}%. It must equal 100% exactly.`;
+                    if (formulaText) {
+                        formulaText.innerHTML = `Core Functions (${c}%) + Strategic Functions (${s}%) + Support Functions (${p}%). <span style="color: #ef4444; font-weight: bold;">Error: Total weight is ${total}% (Must equal 100% exactly)</span>`;
+                    }
                 } else {
-                    let cTitle = window.isCurrentDocOpcr ? 'Core Mandate' : 'Core Functions';
-                    formulaText.innerHTML = `${cTitle} (${c}%) + Strategic Functions (${s}%) + Support Functions (${p}%).`;
                     window.weightError = false;
+                    window.weightErrorMessage = null;
+                    if (formulaText) {
+                        formulaText.innerHTML = `Core Functions (${c}%) + Strategic Functions (${s}%) + Support Functions (${p}%). <span style="color: #10b981; font-weight: bold;">(Total: 100%)</span>`;
+                    }
                 }
             }
+
+            // Visual feedback on the inputs themselves
+            [
+                { el: coreInput, val: cVal },
+                { el: stratInput, val: sVal },
+                { el: suppInput, val: pVal }
+            ].forEach(({ el, val }) => {
+                if (val === '') {
+                    el.style.borderBottom = '2px dashed #ef4444';
+                    el.style.backgroundColor = 'rgba(239, 68, 68, 0.08)';
+                } else if (window.weightError) {
+                    el.style.borderBottom = '2px dashed #f59e0b';
+                    el.style.backgroundColor = 'transparent';
+                } else {
+                    el.style.borderBottom = '2px solid #10b981';
+                    el.style.backgroundColor = 'transparent';
+                }
+            });
             
             if (!isInitialLoad) {
                 if (tabs[0] && !tabs[0].formData) tabs[0].formData = {};
                 if (tabs[0]) {
-                    tabs[0].formData.weights = CATEGORY_WEIGHTS;
+                    tabs[0].formData.weights = isAnyEmpty ? null : CATEGORY_WEIGHTS;
                     
                     const currentHtml = document.getElementById('printable-form')?.innerHTML;
                     if (currentHtml) tabs[0].content = currentHtml;
@@ -2907,6 +2992,15 @@
             finalScore = editorBody?.getAttribute('data-final-score') || '';
         }
 
+        const btnApprove = document.getElementById('btn-approve');
+        if (btnApprove && btnApprove.disabled) {
+            await window.appAlert("Cannot approve evaluation directly while score adjustments exist.\n\nPlease click 'Return for Revision' to return the document to the employee with feedback, or revert your score adjustments to their original ratings to approve.", {
+                title: 'Score Adjustments Present',
+                variant: 'warning'
+            });
+            return;
+        }
+
         const ok = await window.appConfirm("Complete and approve this evaluation?", { 
             title: 'Approve Evaluation',
             confirmText: 'Approve',
@@ -2924,7 +3018,7 @@
         formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
         formData.append('final_score', finalScore);
 
-        document.getElementById('btn-approve').innerText = 'Approving...';
+        if (btnApprove) btnApprove.innerText = 'Approving...';
         apiPost('<?= site_url('folder/approve') ?>', formData, {
             onSuccess: () => window.location.reload()
         });
@@ -2949,6 +3043,17 @@
     }
 
     async function setTwgStatus(status) {
+        if (status === 'twg_approved') {
+            const btnTwgApprove = document.getElementById('btn-twg-approve');
+            if (btnTwgApprove && btnTwgApprove.disabled) {
+                await window.appAlert("Cannot approve evaluation directly while TWG calibration adjustments exist.\n\nPlease click 'Disapprove' to return the document with feedback, or revert your score calibrations to approve.", {
+                    title: 'Calibrations Present',
+                    variant: 'warning'
+                });
+                return;
+            }
+        }
+
         let title = 'Verify TWG Action';
         let msg = 'Are you sure you want to proceed?';
         let isDanger = false;
@@ -3011,6 +3116,30 @@
     }
 
     async function lockFolderTarget() {
+        if (!window.isCurrentDocIperf) {
+            const coreInp = document.querySelector('input[data-cat-weight="core"]');
+            const stratInp = document.querySelector('input[data-cat-weight="strategic"]');
+            const suppInp = document.querySelector('input[data-cat-weight="support"]');
+            if (coreInp && stratInp && suppInp) {
+                const cVal = coreInp.value.trim();
+                const sVal = stratInp.value.trim();
+                const pVal = suppInp.value.trim();
+                if (cVal === '' || sVal === '' || pVal === '') {
+                    await window.appAlert('Category percentage weights (Core, Strategic, Support) are required before submitting targets. Please enter all percentage weights totaling 100%.', { title: 'Missing Percentage Weights' });
+                    if (cVal === '') coreInp.focus();
+                    else if (sVal === '') stratInp.focus();
+                    else suppInp.focus();
+                    return;
+                }
+                const total = parseInt(cVal, 10) + parseInt(sVal, 10) + parseInt(pVal, 10);
+                if (total !== 100) {
+                    await window.appAlert(`Category percentage weights must total exactly 100% (currently ${total}%). Please adjust them before submitting targets.`, { title: 'Invalid Percentage Weights' });
+                    coreInp.focus();
+                    return;
+                }
+            }
+        }
+
         const hasFile = (window.rubricAttachments && window.rubricAttachments.length > 0);
         const rubricsData = window.digitalRubricsData || tabs[0]?.formData?.rubrics || {};
         let criteriaCount = 0;
@@ -3248,6 +3377,22 @@
         }
         AppState.setDirty(true);
     }
+
+    function stampTwgTag(btn) {
+        const td = btn.closest('td');
+        if (!td) return;
+        const ta = td.querySelector('.field-twg-comment');
+        if (!ta) return;
+        const tag = `[PTWG]: `;
+        if (!ta.value.includes(tag)) {
+            ta.value = ta.value ? `${ta.value.trim()}\n${tag}` : tag;
+        }
+        ta.focus();
+        if (typeof window.syncSpmsActiveTab === 'function') {
+            window.syncSpmsActiveTab();
+        }
+        AppState.setDirty(true);
+    }
 </script>
 
 <script src="<?= base_url('assets/vendor/tinymce/tinymce.min.js') ?>"></script>
@@ -3262,6 +3407,8 @@
     window.isOwner = <?= json_encode($doc['owner_id'] == session()->get('user_id')) ?>;
     window.currentReviewerRole = <?= json_encode($currentReviewerRole ?? 'Reviewer') ?>;
     window.currentReviewerName = <?= json_encode($currentReviewerName ?? '') ?>;
+    window.isTwgUser = <?= ($isTwg || $isAdmin) ? 'true' : 'false' ?>;
+    window.canEditTwg = <?= $canEditTwg ? 'true' : 'false' ?>;
 
     // Enum values exported for JS use
     window.FolderStatus = <?= json_encode([
@@ -3318,6 +3465,7 @@
     window.isSpmsFormActive = false;
     const IS_DOC_DPCR = <?= $isDocDpcr ? 'true' : 'false' ?>;
     const IS_DOC_OPCR = <?= $isDocOpcr ? 'true' : 'false' ?>;
+    const IS_DOC_IPERF = <?= $isDocIperf ? 'true' : 'false' ?>;
 
     // Default Seed Blueprint (Clean empty rows upon creation)
     const DEFAULT_BLUEPRINT = IS_DOC_DPCR ? {
@@ -3342,6 +3490,12 @@
         support: [
             { row_id: "row_supp_1", mfo: "", indicators: "", budget: "", accountable: "", accomplishments: "", q: "", t: "", e: "", remarks: "" }
         ]
+    } : (IS_DOC_IPERF ? {
+        core: [
+            { row_id: "row_core_1", mfo: "", indicators: "", accomplishments: "", q: "", t: "", e: "", remarks: "", twg_comment: "" }
+        ],
+        strategic: [],
+        support: []
     } : {
         core: [
             { row_id: "row_core_1", mfo: "", indicators: "", accomplishments: "", q: "", t: "", e: "", remarks: "" }
@@ -3352,21 +3506,17 @@
         support: [
             { row_id: "row_supp_1", mfo: "", indicators: "", accomplishments: "", q: "", t: "", e: "", remarks: "" }
         ]
-    });
+    }));
 
-    const CATEGORY_WEIGHTS = IS_DOC_DPCR ? {
-        core: 0.60,
-        strategic: 0.30,
-        support: 0.10
-    } : (IS_DOC_OPCR ? {
-        core: 0.60,
-        strategic: 0.25,
-        support: 0.15
+    const CATEGORY_WEIGHTS = IS_DOC_IPERF ? {
+        core: 1.00,
+        strategic: 0.00,
+        support: 0.00
     } : {
-        core: 0.70,
-        strategic: 0.20,
-        support: 0.10
-    });
+        core: 0,
+        strategic: 0,
+        support: 0
+    };
 
     function initActiveTabView() {
         const basisWorkspace = document.getElementById('spms-basis-workspace');
@@ -3434,8 +3584,9 @@
         }
     }
 
-    function addApproverBlock(name = '', position = '', date = '', isFirst = null) {
+    function addApproverBlock(name = '', position = '', date = '', isFirst = null, evalDate = '') {
         const container = document.getElementById('approvers-container');
+        const footerContainer = document.getElementById('footer-approvers-container');
         if (!container) return;
         const items = container.querySelectorAll('.approver-item');
         const index = items.length;
@@ -3445,13 +3596,15 @@
         const isOpcr = (typeof window.isCurrentDocOpcr !== 'undefined') ? window.isCurrentDocOpcr : <?= $isDocOpcr ? 'true' : 'false' ?>;
         const isDpcrOrOpcr = isDpcr || isOpcr;
 
-        const div = document.createElement('div');
-        div.className = 'approver-item';
-        div.style.cssText = (!isActuallyFirst ? 'border-top: 1px dashed #cbd5e1; margin-top: 6px; padding-top: 6px;' : '') + ' position: relative;';
-
         const namePlaceholder = isOpcr ? '(name of head of office / approving authority)' : (isDpcr ? '(name of office head)' : 'Name of Approving Authority');
         const posPlaceholder = isOpcr ? '(position / designation)' : (isDpcr ? '(position of office head)' : 'Official Designation');
         const disabledAttr = canEditTargets ? '' : 'disabled';
+
+        // 1. Top Approver Item
+        const div = document.createElement('div');
+        div.className = 'approver-item';
+        div.dataset.index = index;
+        div.style.cssText = (!isActuallyFirst ? 'border-top: 1px dashed #cbd5e1; margin-top: 6px; padding-top: 6px;' : '') + ' position: relative;';
 
         div.innerHTML = `
             <table style="width: 100%; border-collapse: collapse; border: none; font-size: 11px;">
@@ -3482,20 +3635,87 @@
         `;
         container.appendChild(div);
 
-        // Attach input listeners for dirty state, dynamic hint styling, and autosync
-        div.querySelectorAll('input').forEach(inp => {
-            const updateStyle = () => {
-                inp.style.color = '#0f172a';
-                inp.style.borderColor = inp.value.trim() !== '' ? '#94a3b8' : '#cbd5e1';
-            };
-            updateStyle();
-            const handleUpdate = () => {
+        // 2. Matching Footer Approver Item (in Final Rating by)
+        let footerDiv = null;
+        if (footerContainer) {
+            footerDiv = document.createElement('div');
+            footerDiv.className = 'footer-approver-item';
+            footerDiv.dataset.index = index;
+            footerDiv.style.cssText = (!isActuallyFirst ? 'border-top: 1px dashed #cbd5e1; margin-top: 8px; padding-top: 8px;' : '') + ' position: relative;';
+
+            const footerNamePlaceholder = isOpcr ? '(name of head of office / approving authority)' : (isDpcr ? '(name of office head)' : '(name of office head)');
+            const footerPosPlaceholder = isOpcr ? '(position / designation)' : (isDpcr ? '(position of office head)' : '(position of office head)');
+            const evalDateDisabled = canEditEvaluation ? '' : 'disabled';
+            const namePosDisabled = canEditTargets ? '' : 'disabled';
+
+            footerDiv.innerHTML = `
+                <div style="margin-bottom: 6px; color: #0f172a; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-weight: bold;">Final Rating by${!isActuallyFirst ? ` (Signatory ${index + 1})` : ''}:</span>
+                        ${isActuallyFirst ? `
+                        <button type="button" id="btn-add-footer-approver" onclick="addApproverBlock()" class="print-hide" style="display: ${canEditTargets ? 'inline-flex' : 'none'}; align-items: center; gap: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 4px; cursor: pointer;" title="Add another approving signatory">
+                            + Add Signatory
+                        </button>
+                        ` : ''}
+                    </div>
+                    ${!isActuallyFirst && canEditTargets ? `
+                    <button type="button" onclick="removeFooterApproverBlock(this)" class="print-hide" style="color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5; font-size: 9px; padding: 1px 5px; border-radius: 3px; cursor: pointer; font-weight: bold;" title="Remove this signatory">✕ Remove</button>
+                    ` : ''}
+                </div>
+                <div style="margin-bottom: 6px; color: #0f172a;">
+                    <input type="text" class="field-footer-approver-name spms-meta-input" ${isActuallyFirst ? 'id="sig-dean-name"' : ''} value="${escapeHtml(name)}" placeholder="${footerNamePlaceholder}" style="font-weight: bold; width: 65%; padding: 2px 4px;" ${namePosDisabled}>
+                </div>
+                <div style="margin-bottom: 6px; color: #0f172a;">Position: 
+                    <input type="text" class="field-footer-approver-pos spms-meta-input" ${isActuallyFirst ? 'id="sig-dean-pos"' : ''} value="${escapeHtml(position)}" placeholder="${footerPosPlaceholder}" style="width: 70%; padding: 2px 4px;" ${namePosDisabled}>
+                </div>
+                <div style="margin-bottom: 6px; color: #0f172a;">
+                    Date: <input type="date" class="field-footer-approver-date spms-meta-input" ${isActuallyFirst ? 'id="sig-dean-date"' : ''} value="${escapeHtml(evalDate)}" onclick="this.showPicker && this.showPicker()" style="width: 130px; cursor: pointer; padding: 1px 4px;" ${evalDateDisabled}>
+                </div>
+                ${isActuallyFirst ? `
+                <div style="color: #64748b; font-size: 10px; font-style: italic;">(may add signatories depending on position/designation)</div>
+                ` : ''}
+            `;
+            footerContainer.appendChild(footerDiv);
+        }
+
+        // 3. Attach Two-Way Live Name and Position Sync
+        const topName = div.querySelector('.field-approver-name');
+        const topPos = div.querySelector('.field-approver-pos');
+        const footName = footerDiv ? footerDiv.querySelector('.field-footer-approver-name') : null;
+        const footPos = footerDiv ? footerDiv.querySelector('.field-footer-approver-pos') : null;
+
+        const syncField = (src, dest) => {
+            if (!src || !dest) return;
+            dest.value = src.value;
+            dest.style.color = '#0f172a';
+            dest.style.borderColor = dest.value.trim() !== '' ? '#94a3b8' : '#cbd5e1';
+        };
+
+        if (topName && footName) {
+            topName.addEventListener('input', () => syncField(topName, footName));
+            footName.addEventListener('input', () => syncField(footName, topName));
+        }
+        if (topPos && footPos) {
+            topPos.addEventListener('input', () => syncField(topPos, footPos));
+            footPos.addEventListener('input', () => syncField(footPos, topPos));
+        }
+
+        // 4. Attach input listeners for dirty state and styling
+        [div, footerDiv].filter(Boolean).forEach(containerEl => {
+            containerEl.querySelectorAll('input').forEach(inp => {
+                const updateStyle = () => {
+                    inp.style.color = '#0f172a';
+                    inp.style.borderColor = inp.value.trim() !== '' ? '#94a3b8' : '#cbd5e1';
+                };
                 updateStyle();
-                window.syncSpmsActiveTab();
-                if (typeof AppState !== 'undefined') AppState.setDirty(true);
-            };
-            inp.addEventListener('input', handleUpdate);
-            inp.addEventListener('change', handleUpdate);
+                const handleUpdate = () => {
+                    updateStyle();
+                    window.syncSpmsActiveTab();
+                    if (typeof AppState !== 'undefined') AppState.setDirty(true);
+                };
+                inp.addEventListener('input', handleUpdate);
+                inp.addEventListener('change', handleUpdate);
+            });
         });
 
         if (isFirst === null) {
@@ -3506,29 +3726,47 @@
 
     function removeApproverBlock(btn) {
         const item = btn.closest('.approver-item');
-        if (item) {
-            item.remove();
-            window.syncSpmsActiveTab();
-            if (typeof AppState !== 'undefined') AppState.setDirty(true);
-        }
+        if (!item) return;
+        const index = Array.from(item.parentElement.children).indexOf(item);
+        removeApproverBlockByIndex(index);
+    }
+
+    function removeFooterApproverBlock(btn) {
+        const item = btn.closest('.footer-approver-item');
+        if (!item) return;
+        const index = Array.from(item.parentElement.children).indexOf(item);
+        removeApproverBlockByIndex(index);
+    }
+
+    function removeApproverBlockByIndex(index) {
+        const headerItems = document.querySelectorAll('#approvers-container .approver-item');
+        const footerItems = document.querySelectorAll('#footer-approvers-container .footer-approver-item');
+        if (headerItems[index]) headerItems[index].remove();
+        if (footerItems[index]) footerItems[index].remove();
+        window.syncSpmsActiveTab();
+        if (typeof AppState !== 'undefined') AppState.setDirty(true);
     }
 
     function extractApprovers() {
         const items = document.querySelectorAll('#approvers-container .approver-item');
+        const footerItems = document.querySelectorAll('#footer-approvers-container .footer-approver-item');
         const approvers = [];
-        items.forEach(item => {
+        items.forEach((item, idx) => {
             const name = item.querySelector('.field-approver-name')?.value || '';
             const position = item.querySelector('.field-approver-pos')?.value || '';
             const date = item.querySelector('.field-approver-date')?.value || '';
-            if (name || position || date || items.length === 1) {
-                approvers.push({ name, position, date });
+            const footerItem = footerItems[idx];
+            const evalDate = footerItem?.querySelector('.field-footer-approver-date')?.value || '';
+            if (name || position || date || evalDate || items.length === 1) {
+                approvers.push({ name, position, date, evalDate });
             }
         });
         if (approvers.length === 0) {
             approvers.push({
                 name: document.getElementById('approver-name')?.value || '',
                 position: document.getElementById('approver-pos')?.value || '',
-                date: document.getElementById('approver-date')?.value || ''
+                date: document.getElementById('approver-date')?.value || '',
+                evalDate: document.getElementById('sig-dean-date')?.value || ''
             });
         }
         return approvers;
@@ -3536,6 +3774,8 @@
 
     window.addApproverBlock = addApproverBlock;
     window.removeApproverBlock = removeApproverBlock;
+    window.removeFooterApproverBlock = removeFooterApproverBlock;
+    window.removeApproverBlockByIndex = removeApproverBlockByIndex;
 
     function populateSpmsForm(formData) {
         const data = formData || {};
@@ -3555,23 +3795,25 @@
         const isIperf = !isDpcr && !isOpcr && (isDocExplicitIperf || explicitDocTitle.includes('IPERF') || titleText.startsWith('IPERF') || titleText.includes('INDIVIDUAL PERFORMANCE EVALUATION RATING FORM') || docType === 'iperf');
         window.isCurrentDocIperf = isIperf;
 
-        let coreW = 0.70, stratW = 0.20, suppW = 0.10;
+        let coreW = data.weights?.core ?? null;
+        let stratW = data.weights?.strategic ?? null;
+        let suppW = data.weights?.support ?? null;
         let defaultDocTitle = 'INDIVIDUAL PERFORMANCE COMMITMENT AND REVIEW';
-        let coreTitle = "CORE FUNCTIONS (70%)";
-        let stratTitle = "STRATEGIC FUNCTIONS (20%)";
-        let suppTitle = "SUPPORT FUNCTIONS (10%)";
+        let coreTitle = coreW ? `CORE FUNCTIONS (${Math.round(coreW * 100)}%)` : "CORE FUNCTIONS ( ____ %)";
+        let stratTitle = stratW ? `STRATEGIC FUNCTIONS (${Math.round(stratW * 100)}%)` : "STRATEGIC FUNCTIONS ( ____ %)";
+        let suppTitle = suppW ? `SUPPORT FUNCTIONS (${Math.round(suppW * 100)}%)` : "SUPPORT FUNCTIONS ( ____ %)";
         let rateeRole = "Faculty Member / Professor";
         let deanRole = "College Dean / Unit Head";
         let vpRole = "Vice President for Academic Affairs";
 
         if (isOpcr) {
-            coreW = data.weights?.core ?? 0.60;
-            stratW = data.weights?.strategic ?? 0.25;
-            suppW = data.weights?.support ?? 0.15;
+            coreW = data.weights?.core ?? null;
+            stratW = data.weights?.strategic ?? null;
+            suppW = data.weights?.support ?? null;
             defaultDocTitle = "OFFICE PERFORMANCE COMMITMENT AND REVIEW (OPCR)";
-            coreTitle = `CORE MANDATE (${Math.round(coreW * 100)}%)`;
-            stratTitle = `STRATEGIC FUNCTIONS (${Math.round(stratW * 100)}%)`;
-            suppTitle = `SUPPORT FUNCTIONS (${Math.round(suppW * 100)}%)`;
+            coreTitle = coreW ? `CORE FUNCTIONS (${Math.round(coreW * 100)}%)` : 'CORE FUNCTIONS ( ____ %)';
+            stratTitle = stratW ? `STRATEGIC FUNCTIONS (${Math.round(stratW * 100)}%)` : 'STRATEGIC FUNCTIONS ( ____ %)';
+            suppTitle = suppW ? `SUPPORT FUNCTIONS (${Math.round(suppW * 100)}%)` : 'SUPPORT FUNCTIONS ( ____ %)';
             const posLower = (ownerAccountInfo.position || '').toLowerCase();
             rateeRole = posLower.includes('vice president') ? "Vice President / Sector Head" : "Vice President / College Dean";
             deanRole = "University President / PMT Chair";
@@ -3580,13 +3822,13 @@
                 data.title = defaultDocTitle;
             }
         } else if (isDpcr) {
-            coreW = data.weights?.core ?? 0.60;
-            stratW = data.weights?.strategic ?? 0.30;
-            suppW = data.weights?.support ?? 0.10;
+            coreW = data.weights?.core ?? null;
+            stratW = data.weights?.strategic ?? null;
+            suppW = data.weights?.support ?? null;
             defaultDocTitle = "DEPARTMENT PERFORMANCE COMMITMENT AND REVIEW (DPCR)";
-            coreTitle = `CORE FUNCTIONS (${Math.round(coreW * 100)}%)`;
-            stratTitle = `STRATEGIC FUNCTIONS (${Math.round(stratW * 100)}%)`;
-            suppTitle = `SUPPORT FUNCTIONS (${Math.round(suppW * 100)}%)`;
+            coreTitle = coreW ? `CORE FUNCTIONS (${Math.round(coreW * 100)}%)` : 'CORE FUNCTIONS ( ____ %)';
+            stratTitle = stratW ? `STRATEGIC FUNCTIONS (${Math.round(stratW * 100)}%)` : 'STRATEGIC FUNCTIONS ( ____ %)';
+            suppTitle = suppW ? `SUPPORT FUNCTIONS (${Math.round(suppW * 100)}%)` : 'SUPPORT FUNCTIONS ( ____ %)';
             const posLower = (ownerAccountInfo.position || '').toLowerCase();
             rateeRole = posLower.includes('dean') ? "College Dean / Supervisor" : "Department Chairperson / Unit Head";
             deanRole = posLower.includes('dean') ? "Vice President for Academic Affairs" : "College Dean / Supervisor";
@@ -3610,9 +3852,9 @@
             }
         }
 
-        CATEGORY_WEIGHTS.core = coreW;
-        CATEGORY_WEIGHTS.strategic = stratW;
-        CATEGORY_WEIGHTS.support = suppW;
+        CATEGORY_WEIGHTS.core = coreW || 0;
+        CATEGORY_WEIGHTS.strategic = stratW || 0;
+        CATEGORY_WEIGHTS.support = suppW || 0;
 
         // Header info
         const titleEl = document.getElementById('spms-doc-title');
@@ -3625,15 +3867,18 @@
         }
 
         function makeEditableWeight(cat, titlePrefix, currentWeight) {
-            const pct = Math.round(currentWeight * 100);
-            if (!canEditTargets || isIperf) return `${escapeHtml(titlePrefix)} (${pct}%)`;
-            return `${escapeHtml(titlePrefix)} (<input type="number" min="0" max="100" data-cat-weight="${cat}" value="${pct}" oninput="window.updateWeights()" class="spms-meta-input print-borderless" style="width:28px; text-align:center; font-weight:bold; font-size:inherit; color:inherit; background:transparent; border:none; border-bottom:1px solid #cbd5e1; outline:none; padding:0;">%)`;
+            const hasWeight = currentWeight !== undefined && currentWeight !== null && currentWeight !== '' && !isNaN(currentWeight) && Number(currentWeight) > 0;
+            const pct = hasWeight ? Math.round(currentWeight * 100) : '';
+            if (!canEditTargets || isIperf) {
+                return pct !== '' ? `${escapeHtml(titlePrefix)} (${pct}%)` : `${escapeHtml(titlePrefix)} ( ____ %)`;
+            }
+            return `${escapeHtml(titlePrefix)} (<input type="number" min="1" max="100" required data-cat-weight="${cat}" value="${pct}" placeholder="—" title="Required: Enter percentage weight" oninput="window.updateWeights()" class="spms-meta-input print-borderless" style="width:36px; text-align:center; font-weight:900; font-size:inherit; color:inherit; background:transparent; border:none; border-bottom:2px dashed #f59e0b; outline:none; padding:0 2px;">%) <span style="color:#ef4444; font-weight:bold;" title="Required">*</span>`;
         }
 
         const elCore = document.getElementById('label-cat-core');
         if (elCore) {
             const hint = ' <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>';
-            elCore.innerHTML = makeEditableWeight('core', isOpcr ? 'CORE MANDATE' : 'CORE FUNCTIONS', coreW) + hint;
+            elCore.innerHTML = makeEditableWeight('core', 'CORE FUNCTIONS', coreW) + hint;
         }
         const elStrat = document.getElementById('label-cat-strategic');
         if (elStrat) {
@@ -3654,14 +3899,25 @@
         if (elRoleVp) elRoleVp.innerText = vpRole;
 
         const elFDesc = document.getElementById('formula-desc-text');
-        if (elFDesc) elFDesc.innerText = `Core Function (${(coreW * 100).toFixed(0)}%) + Strategic Function (${(stratW * 100).toFixed(0)}%) + Support Functions (${(suppW * 100).toFixed(0)}%).`;
+        if (elFDesc) {
+            if (coreW && stratW && suppW) {
+                const totalW = Math.round((Number(coreW) + Number(stratW) + Number(suppW)) * 100);
+                if (totalW === 100) {
+                    elFDesc.innerHTML = `Core Functions (${(coreW * 100).toFixed(0)}%) + Strategic Functions (${(stratW * 100).toFixed(0)}%) + Support Functions (${(suppW * 100).toFixed(0)}%). <span style="color: #10b981; font-weight: bold;">(Total: 100%)</span>`;
+                } else {
+                    elFDesc.innerHTML = `Core Functions (${(coreW * 100).toFixed(0)}%) + Strategic Functions (${(stratW * 100).toFixed(0)}%) + Support Functions (${(suppW * 100).toFixed(0)}%). <span style="color: #ef4444; font-weight: bold;">Error: Total weight is ${totalW}% (Must equal 100% exactly)</span>`;
+                }
+            } else if (!isIperf) {
+                elFDesc.innerHTML = 'Core Functions ( ____ %) + Strategic Functions ( ____ %) + Support Functions ( ____ %). <span style="color: #ef4444; font-weight: bold; font-size: 11px;">(Required: All category weights must be entered and total 100%)</span>';
+            }
+        }
 
         const elMC = document.getElementById('mult-core-val');
-        if (elMC) elMC.innerText = coreW.toFixed(2);
+        if (elMC) elMC.innerText = (coreW !== null && coreW !== undefined && coreW !== '') ? Number(coreW).toFixed(2) : '—';
         const elMS = document.getElementById('mult-strategic-val');
-        if (elMS) elMS.innerText = stratW.toFixed(2);
+        if (elMS) elMS.innerText = (stratW !== null && stratW !== undefined && stratW !== '') ? Number(stratW).toFixed(2) : '—';
         const elMP = document.getElementById('mult-support-val');
-        if (elMP) elMP.innerText = suppW.toFixed(2);
+        if (elMP) elMP.innerText = (suppW !== null && suppW !== undefined && suppW !== '') ? Number(suppW).toFixed(2) : '—';
 
         const setVal = (id, val) => {
             const el = document.getElementById(id);
@@ -3692,16 +3948,29 @@
 
         // Populate Approver(s)
         const container = document.getElementById('approvers-container');
+        const footerContainer = document.getElementById('footer-approvers-container');
         if (container) {
             container.innerHTML = '';
+            if (footerContainer) footerContainer.innerHTML = '';
+
             let approversList = (data.approvers && Array.isArray(data.approvers) && data.approvers.length > 0)
                 ? data.approvers
                 : (data.approver && (data.approver.name || data.approver.position || data.approver.date)
                     ? [data.approver]
-                    : [{ name: '', position: '', date: '' }]);
+                    : [{ name: '', position: '', date: '', evalDate: '' }]);
+
+            if (approversList.length > 0 && !approversList[0].evalDate && data.signatories?.deanDate) {
+                approversList[0].evalDate = data.signatories.deanDate;
+            }
+            if (approversList.length > 0 && !approversList[0].name && data.signatories?.dean) {
+                approversList[0].name = data.signatories.dean;
+            }
+            if (approversList.length > 0 && !approversList[0].position && data.signatories?.deanPos) {
+                approversList[0].position = data.signatories.deanPos;
+            }
 
             approversList.forEach((appr, idx) => {
-                addApproverBlock(appr.name || '', appr.position || '', appr.date || '', idx === 0);
+                addApproverBlock(appr.name || '', appr.position || '', appr.date || '', idx === 0, appr.evalDate || '');
             });
         } else {
             setVal('approver-name', data.approver?.name || '');
@@ -3712,6 +3981,10 @@
         const addApprBtn = document.getElementById('btn-add-approver') || document.getElementById('btn-add-approver-ipcr');
         if (addApprBtn) {
             addApprBtn.style.display = canEditTargets ? 'inline-flex' : 'none';
+        }
+        const addFooterApprBtn = document.getElementById('btn-add-footer-approver');
+        if (addFooterApprBtn) {
+            addFooterApprBtn.style.display = canEditTargets ? 'inline-flex' : 'none';
         }
 
         setVal('ratee-sign-name', data.rateeSign?.name || '');
@@ -3864,8 +4137,345 @@
                 });
             }
         });
+    }
 
-        recalculateForm();
+    // ==========================================
+    // SCORE ATTRIBUTION & DISTINCTION HELPERS
+    // ==========================================
+    function getCurrentScoreActor() {
+        if (window.isTwgUser) return 'twg';
+        if (!window.isOwner) return 'head';
+        return 'self';
+    }
+
+    function getScoreAttribution(fieldKey, data) {
+        const val = (data[fieldKey] !== undefined && data[fieldKey] !== null && data[fieldKey] !== '') ? data[fieldKey] : '';
+        let selfVal = data[fieldKey + '_self'];
+        let headVal = data[fieldKey + '_head'];
+        let twgVal = data[fieldKey + '_twg'];
+        let lastActor = data['last_rated_by_' + fieldKey] || '';
+
+        // Backward compatibility: If selfVal is not set, initialize based on current data
+        if (selfVal === undefined || selfVal === null) {
+            if (val !== '' && val !== 'X') {
+                if (headVal || twgVal) {
+                    selfVal = '';
+                } else {
+                    selfVal = val;
+                    if (!lastActor) lastActor = 'self';
+                }
+            } else {
+                selfVal = '';
+            }
+        }
+        headVal = (headVal !== undefined && headVal !== null) ? headVal : '';
+        twgVal = (twgVal !== undefined && twgVal !== null) ? twgVal : '';
+
+        if (!lastActor && val !== '' && val !== 'X') {
+            if (twgVal !== '') lastActor = 'twg';
+            else if (headVal !== '') lastActor = 'head';
+            else if (selfVal !== '') lastActor = 'self';
+        }
+
+        return {
+            val: val,
+            self: selfVal,
+            head: headVal,
+            twg: twgVal,
+            lastActor: lastActor
+        };
+    }
+
+    function checkAdjustmentsAndToggleApproveButton() {
+        const actor = getCurrentScoreActor();
+        if (actor === 'self') return; // Ratee submits, doesn't approve
+
+        const scoreInputs = document.querySelectorAll('.spms-score-input');
+        let adjustedCount = 0;
+
+        scoreInputs.forEach(input => {
+            const val = String(input.value || '').trim();
+            if (!val || val === 'X' || val === 'N/A' || val === '—') return;
+
+            const selfScore = String(input.dataset.selfScore || '').trim();
+            const headScore = String(input.dataset.headScore || '').trim();
+
+            if (actor === 'twg') {
+                const baseline = headScore || selfScore;
+                if (baseline && baseline !== 'X' && baseline !== 'N/A' && baseline !== val) {
+                    adjustedCount++;
+                }
+            } else if (actor === 'head') {
+                if (selfScore && selfScore !== 'X' && selfScore !== 'N/A' && selfScore !== val) {
+                    adjustedCount++;
+                }
+            }
+        });
+
+        // Supervisor / HoO Approve Rating button
+        const btnApprove = document.getElementById('btn-approve');
+        if (btnApprove) {
+            if (adjustedCount > 0) {
+                btnApprove.disabled = true;
+                btnApprove.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+                btnApprove.classList.remove('hover:bg-success-600', 'active:scale-[0.98]', 'cursor-pointer');
+                btnApprove.title = `Cannot approve directly: ${adjustedCount} adjusted score(s) present. Return for revision to notify the ratee, or revert adjustments to approve.`;
+            } else {
+                btnApprove.disabled = false;
+                btnApprove.classList.remove('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+                btnApprove.classList.add('hover:bg-success-600', 'active:scale-[0.98]', 'cursor-pointer');
+                btnApprove.title = 'Approve Rating';
+            }
+        }
+
+        // TWG Approve button
+        const btnTwgApprove = document.getElementById('btn-twg-approve');
+        if (btnTwgApprove) {
+            if (adjustedCount > 0) {
+                btnTwgApprove.disabled = true;
+                btnTwgApprove.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+                btnTwgApprove.classList.remove('hover:bg-success-600', 'active:scale-[0.98]', 'cursor-pointer');
+                btnTwgApprove.title = `Cannot approve directly: ${adjustedCount} calibrated score(s) present. Return/Disapprove for revision, or revert calibrations to approve.`;
+            } else {
+                btnTwgApprove.disabled = false;
+                btnTwgApprove.classList.remove('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+                btnTwgApprove.classList.add('hover:bg-success-600', 'active:scale-[0.98]', 'cursor-pointer');
+                btnTwgApprove.title = 'Approve';
+            }
+        }
+    }
+
+    function renderScoreBadgeHtml(attr, currentScore) {
+        if (!currentScore || currentScore === 'X' || currentScore === 'N/A') {
+            return '';
+        }
+
+        const val = String(currentScore);
+        const selfVal = attr.self ? String(attr.self) : '';
+        const headVal = attr.head ? String(attr.head) : '';
+        const twgVal = attr.twg ? String(attr.twg) : '';
+        const last = attr.lastActor;
+
+        // Only show indicator mark when score was adjusted by TWG or Head of Office (HoO)
+        if (twgVal !== '' || last === 'twg') {
+            const prev = headVal || selfVal;
+            if (prev && prev !== val && prev !== 'X') {
+                return `<div class="score-notif-marker print-hide" onclick="openScoreAuditModal(this, event)" title="TWG Calibrated: was ${prev} ➔ now ${val} (Click to inspect)">
+                    <span class="score-notif-dot dot-twg"></span>
+                </div>`;
+            }
+        } else if (headVal !== '' || last === 'head') {
+            const prev = selfVal;
+            if (prev && prev !== val && prev !== 'X') {
+                return `<div class="score-notif-marker print-hide" onclick="openScoreAuditModal(this, event)" title="Head of Office Adjusted: Ratee was ${prev} ➔ now ${val} (Click to inspect)">
+                    <span class="score-notif-dot dot-head"></span>
+                </div>`;
+            }
+        }
+
+        return '';
+    }
+
+    function renderScoreCellTdHtml(fieldKey, data, evalDisabled, canEditTargets, canEditEvaluation) {
+        const attr = getScoreAttribution(fieldKey, data);
+        const isX = attr.val === 'X' || attr.val === 'N/A';
+        const fieldClass = 'field-' + fieldKey;
+
+        // In Target Drafting mode: Document owner can toggle dimension N/A status
+        if (canEditTargets) {
+            return `
+                <td style="padding: 2px 2px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="spms-score-cell ${isX ? 'bg-zinc-100 dark:bg-zinc-800/40' : ''}">
+                    <button type="button" onclick="toggleQte(this, '${fieldClass}')" title="Toggle Not Applicable (N/A) for this dimension" 
+                        class="print-hide flex items-center justify-center ${isX ? 'bg-zinc-700 text-white hover:bg-zinc-800' : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'} transition-all" 
+                        style="position: absolute; top: 2px; right: 2px; width: 22px; height: 13px; font-size: 8px; font-weight: 900; border-radius: 3px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid ${isX ? '#52525b' : '#cbd5e1'};">N/A</button>
+                    
+                    <input type="text" 
+                        value="${isX ? 'N/A' : (attr.val || '')}" 
+                        placeholder="—" 
+                        data-field="${fieldKey}"
+                        data-self-score="${escapeHtml(attr.self)}"
+                        data-head-score="${escapeHtml(attr.head)}"
+                        data-twg-score="${escapeHtml(attr.twg)}"
+                        data-last-actor="${escapeHtml(attr.lastActor)}"
+                        data-eval-disabled="${evalDisabled}"
+                        disabled
+                        title="${isX ? 'Dimension disabled (N/A)' : 'Locked (Scores are entered during Evaluation Phase)'}" 
+                        class="spms-score-input ${fieldClass} ${isX ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 font-bold border-dashed border-zinc-300 dark:border-zinc-700 cursor-not-allowed' : ''}">
+                    
+                    ${renderScoreBadgeHtml(attr, attr.val)}
+                </td>
+            `;
+        }
+
+        // In Evaluation Phase / Review / Viewing / Printing (when NOT editing targets):
+        // NO toggle button is rendered at all!
+        if (isX) {
+            return `
+                <td style="padding: 2px 2px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="spms-score-cell bg-zinc-100/60 dark:bg-zinc-800/40">
+                    <input type="text" 
+                        value="N/A" 
+                        data-field="${fieldKey}"
+                        data-self-score="X"
+                        data-head-score="X"
+                        data-twg-score="X"
+                        data-last-actor=""
+                        data-eval-disabled="true"
+                        disabled 
+                        title="Not Applicable for this deliverable" 
+                        class="spms-score-input ${fieldClass} bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 font-bold border-dashed border-zinc-200 dark:border-zinc-700 cursor-not-allowed">
+                </td>
+            `;
+        }
+
+        return `
+            <td style="padding: 2px 2px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="spms-score-cell">
+                <input type="number" min="1" max="5" step="1" 
+                    value="${attr.val}" 
+                    placeholder="—" 
+                    data-field="${fieldKey}"
+                    data-self-score="${escapeHtml(attr.self)}"
+                    data-head-score="${escapeHtml(attr.head)}"
+                    data-twg-score="${escapeHtml(attr.twg)}"
+                    data-last-actor="${escapeHtml(attr.lastActor)}"
+                    data-eval-disabled="${evalDisabled}"
+                    ${evalDisabled ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
+                    class="spms-score-input ${fieldClass}">
+                
+                ${renderScoreBadgeHtml(attr, attr.val)}
+            </td>
+        `;
+    }
+
+    function updateScoreCellBadge(td, input) {
+        if (!td) return;
+        input = input || td.querySelector('.spms-score-input');
+        if (!input) return;
+
+        const val = input.value;
+        const existingMarker = td.querySelector('.score-notif-marker');
+
+        if (val === 'X' || val === 'N/A' || !val) {
+            if (existingMarker) existingMarker.remove();
+            return;
+        }
+
+        const fieldKey = input.dataset.field || (input.classList.contains('field-q') ? 'q' : (input.classList.contains('field-t') ? 't' : 'e'));
+        const attr = {
+            val: val,
+            self: input.dataset.selfScore || '',
+            head: input.dataset.headScore || '',
+            twg: input.dataset.twgScore || '',
+            lastActor: input.dataset.lastActor || ''
+        };
+
+        const badgeHtml = renderScoreBadgeHtml(attr, val);
+        if (badgeHtml) {
+            if (existingMarker) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = badgeHtml;
+                const newMarker = tempDiv.firstElementChild;
+                if (newMarker) {
+                    existingMarker.replaceWith(newMarker);
+                }
+            } else {
+                td.insertAdjacentHTML('beforeend', badgeHtml);
+            }
+        } else {
+            if (existingMarker) existingMarker.remove();
+        }
+
+        if (typeof checkAdjustmentsAndToggleApproveButton === 'function') {
+            checkAdjustmentsAndToggleApproveButton();
+        }
+    }
+
+    function openScoreAuditModal(el, event) {
+        if (event) event.stopPropagation();
+        const td = el.closest('td');
+        if (!td) return;
+        const tr = td.closest('tr');
+        const input = td.querySelector('.spms-score-input');
+        if (!input) return;
+
+        const fieldKey = input.dataset.field || (input.classList.contains('field-q') ? 'q' : (input.classList.contains('field-t') ? 't' : 'e'));
+        const fieldName = fieldKey.toUpperCase() === 'Q' ? 'Quality (Q)' : (fieldKey.toUpperCase() === 'T' ? 'Timeliness (T)' : 'Efficiency (E)');
+        
+        const indVal = tr.querySelector('.field-indicators')?.value || tr.querySelector('.field-mfo')?.value || 'Deliverable Item';
+        const formatScoreDisplay = (v) => {
+            if (!v || v === '—') return '—';
+            if (v === 'X' || v === 'N/A') return 'N/A';
+            return v;
+        };
+        const selfVal = formatScoreDisplay(input.dataset.selfScore);
+        const headVal = formatScoreDisplay(input.dataset.headScore);
+        const twgVal = formatScoreDisplay(input.dataset.twgScore);
+        const curVal = formatScoreDisplay(input.value);
+
+        const modal = document.getElementById('spms-score-audit-modal');
+        if (!modal) return;
+
+        document.getElementById('score-audit-title').innerText = `Rating Attribution: ${fieldName}`;
+        document.getElementById('score-audit-subtitle').innerText = indVal.length > 80 ? (indVal.substring(0, 80) + '...') : indVal;
+
+        const body = document.getElementById('score-audit-body');
+        body.innerHTML = `
+            <div class="space-y-2">
+                <div class="flex items-center justify-between p-2.5 rounded-lg bg-blue-50/70 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/50">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center font-black text-xs">🔵</span>
+                        <div>
+                            <div class="font-extrabold text-zinc-900 dark:text-zinc-100">Ratee (Self-Rating)</div>
+                            <div class="text-[10px] text-zinc-500">Initial score evaluated by document owner</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-block px-2.5 py-1 rounded font-black text-sm ${selfVal !== '—' ? 'bg-blue-600 text-white' : 'text-zinc-400 bg-zinc-100 dark:bg-zinc-800'}">${selfVal}</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between p-2.5 rounded-lg bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/50">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-black text-xs">🟢</span>
+                        <div>
+                            <div class="font-extrabold text-zinc-900 dark:text-zinc-100">Head of Office Evaluation</div>
+                            <div class="text-[10px] text-zinc-500">${headVal !== '—' && selfVal !== '—' && headVal !== selfVal ? 'Adjusted from Ratee initial rating' : 'Head of Office evaluation rating'}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-block px-2.5 py-1 rounded font-black text-sm ${headVal !== '—' ? 'bg-emerald-600 text-white' : 'text-zinc-400 bg-zinc-100 dark:bg-zinc-800'}">${headVal}</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between p-2.5 rounded-lg bg-amber-50/70 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-900/50">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center font-black text-xs">🟡</span>
+                        <div>
+                            <div class="font-extrabold text-zinc-900 dark:text-zinc-100">Technical Working Group (TWG) Calibration</div>
+                            <div class="text-[10px] text-zinc-500">${twgVal !== '—' ? 'Calibrated by TWG committee' : 'No TWG adjustment applied'}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-block px-2.5 py-1 rounded font-black text-sm ${twgVal !== '—' ? 'bg-amber-600 text-white' : 'text-zinc-400 bg-zinc-100 dark:bg-zinc-800'}">${twgVal}</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between p-3 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 mt-3">
+                    <div class="font-black text-zinc-900 dark:text-white uppercase tracking-wider text-[11px]">Active Applied Rating</div>
+                    <div class="text-right flex items-center gap-1.5">
+                        <span class="text-xs font-bold text-zinc-500">Official Score:</span>
+                        <span class="px-3 py-1 rounded bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-black text-base">${curVal}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        modal.classList.remove('hidden');
+    }
+
+    function closeScoreAuditModal(event) {
+        if (event) event.stopPropagation();
+        const modal = document.getElementById('spms-score-audit-modal');
+        if (modal) modal.classList.add('hidden');
     }
 
     function addTableRow(category, rowData = null) {
@@ -3879,7 +4489,8 @@
             indicators: "",
             accomplishments: "",
             q: "", t: "", e: "",
-            remarks: ""
+            remarks: "",
+            twg_comment: ""
         } : (window.isCurrentDocDpcr ? {
             row_id: 'row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7),
             mfo: "",
@@ -3890,6 +4501,7 @@
             accomplishments: "",
             q: "", t: "", e: "",
             remarks: "",
+            twg_comment: "",
             std_5: "", std_4: "", std_3: "", std_2: "", std_1: ""
         } : (window.isCurrentDocOpcr ? {
             row_id: 'row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7),
@@ -3900,14 +4512,16 @@
             accountable: "",
             accomplishments: "",
             q: "", t: "", e: "",
-            remarks: ""
+            remarks: "",
+            twg_comment: ""
         } : {
             row_id: 'row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7),
             mfo: "",
             indicators: "",
             accomplishments: "",
             q: "", t: "", e: "",
-            remarks: ""
+            remarks: "",
+            twg_comment: ""
         })));
 
         const rowId = data.row_id || ('row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7));
@@ -3924,6 +4538,8 @@
 
         const mfoDisabled = !canEditTargets;
         const evalDisabled = !canEditEvaluation;
+        const canEditTwg = window.canEditTwg;
+        const isTwgUser = window.isTwgUser;
 
         const tr = document.createElement('tr');
         tr.className = `table-row-${category}`;
@@ -3977,37 +4593,13 @@
                 </td>
 
                 <!-- 4. Rating Q (Evaluation Phase) -->
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.q === 'X' ? 'bg-zinc-200' : ''}">
-                    ${canEditTargets ? `<button type="button" onclick="toggleQte(this, 'field-q')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.q === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: 1;">N/A</button>` : ''}
-                    <input type="${data.q === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
-                        value="${data.q !== undefined && data.q !== null && data.q !== '' ? data.q : ''}" 
-                        placeholder="—" 
-                        data-eval-disabled="${evalDisabled}"
-                        ${(evalDisabled || data.q === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
-                        class="spms-score-input field-q ${data.q === 'X' ? 'bg-zinc-200' : ''}" style="${data.q === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
-                </td>
+                ${renderScoreCellTdHtml('q', data, evalDisabled, canEditTargets, canEditEvaluation)}
 
                 <!-- 5. Rating T (Evaluation Phase) -->
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.t === 'X' ? 'bg-zinc-200' : ''}">
-                    ${canEditTargets ? `<button type="button" onclick="toggleQte(this, 'field-t')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.t === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: 1;">N/A</button>` : ''}
-                    <input type="${data.t === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
-                        value="${data.t !== undefined && data.t !== null && data.t !== '' ? data.t : ''}" 
-                        placeholder="—" 
-                        data-eval-disabled="${evalDisabled}"
-                        ${(evalDisabled || data.t === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
-                        class="spms-score-input field-t ${data.t === 'X' ? 'bg-zinc-200' : ''}" style="${data.t === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
-                </td>
+                ${renderScoreCellTdHtml('t', data, evalDisabled, canEditTargets, canEditEvaluation)}
 
                 <!-- 6. Rating E (Evaluation Phase) -->
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.e === 'X' ? 'bg-zinc-200' : ''}">
-                    ${canEditTargets ? `<button type="button" onclick="toggleQte(this, 'field-e')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.e === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: 1;">N/A</button>` : ''}
-                    <input type="${data.e === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
-                        value="${data.e !== undefined && data.e !== null && data.e !== '' ? data.e : ''}" 
-                        placeholder="—" 
-                        data-eval-disabled="${evalDisabled}"
-                        ${(evalDisabled || data.e === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
-                        class="spms-score-input field-e ${data.e === 'X' ? 'bg-zinc-200' : ''}" style="${data.e === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
-                </td>
+                ${renderScoreCellTdHtml('e', data, evalDisabled, canEditTargets, canEditEvaluation)}
 
                 <!-- 7. Row Average -->
                 <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f8fafc; border: 1px solid #000;">
@@ -4030,15 +4622,31 @@
                     <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." ${isOwner && (status === FolderStatus.PENDING_TARGET_APPROVAL || status === FolderStatus.SUBMITTED || status === FolderStatus.TARGET_APPROVED || status === FolderStatus.APPROVED) ? 'disabled title="Locked while submitted or approved"' : ''}>${escapeHtml(data.remarks)}</textarea>
                 </td>
 
-                <!-- 9. Delete Action (Target Phase) -->
+                <!-- PTWG Comments (Screen-only, omitted from printed papers) -->
+                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;" class="print-hide twg-col">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-tight flex items-center gap-1">
+                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
+                            PTWG
+                        </span>
+                        ${isTwgUser ? `
+                            <button type="button" onclick="stampTwgTag(this)" class="text-[8.5px] font-extrabold text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 px-1 py-0.5 rounded border border-amber-300 dark:border-amber-800 transition-colors cursor-pointer" title="Stamp PTWG tag">
+                                + [PTWG]
+                            </button>
+                        ` : ''}
+                    </div>
+                    <textarea class="spms-textarea field-twg-comment print-borderless" rows="3" placeholder="${isTwgUser ? 'Enter PTWG calibration comment...' : 'No PTWG comment'}" ${canEditTwg ? '' : 'disabled title="Only editable by Performance Technical Working Group (PTWG)"'} style="font-size: 11px; color: #b45309; background: ${canEditTwg ? '#fffbeb' : '#fafafa'}; border: 1px solid ${canEditTwg ? '#fde68a' : 'transparent'}; border-radius: 3px;">${escapeHtml(data.twg_comment || '')}</textarea>
+                </td>
+
+                ${canEditTargets ? `
+                <!-- 9. Delete Action (Target Phase Only) -->
                 <td style="padding: 2px; text-align: center; vertical-align: middle; border: 1px solid #000;" class="print-hide">
-                    ${canEditTargets ? `
                     <button type="button" onclick="deleteTableRow(this)" title="Delete Row" class="btn-del-row">
                         <svg xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
-                    </button>` : ''}
-                </td>
+                    </button>
+                </td>` : ''}
             `;
         } else if (window.isCurrentDocDpcr) {
             tr.innerHTML = `
@@ -4099,33 +4707,9 @@
                 </td>
 
                 <!-- Rating Q, T, E Inputs (Evaluation Phase) -->
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.q === 'X' ? 'bg-zinc-200' : ''}">
-                    ${canEditTargets ? `<button type="button" onclick="toggleQte(this, 'field-q')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.q === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: 1;">N/A</button>` : ''}
-                    <input type="${data.q === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
-                        value="${data.q !== undefined && data.q !== null && data.q !== '' ? data.q : ''}" 
-                        placeholder="—" 
-                        data-eval-disabled="${evalDisabled}"
-                        ${(evalDisabled || data.q === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
-                        class="spms-score-input field-q ${data.q === 'X' ? 'bg-zinc-200' : ''}" style="${data.q === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
-                </td>
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.t === 'X' ? 'bg-zinc-200' : ''}">
-                    ${canEditTargets ? `<button type="button" onclick="toggleQte(this, 'field-t')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.t === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: 1;">N/A</button>` : ''}
-                    <input type="${data.t === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
-                        value="${data.t !== undefined && data.t !== null && data.t !== '' ? data.t : ''}" 
-                        placeholder="—" 
-                        data-eval-disabled="${evalDisabled}"
-                        ${(evalDisabled || data.t === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
-                        class="spms-score-input field-t ${data.t === 'X' ? 'bg-zinc-200' : ''}" style="${data.t === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
-                </td>
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.e === 'X' ? 'bg-zinc-200' : ''}">
-                    ${canEditTargets ? `<button type="button" onclick="toggleQte(this, 'field-e')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.e === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: 1;">N/A</button>` : ''}
-                    <input type="${data.e === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
-                        value="${data.e !== undefined && data.e !== null && data.e !== '' ? data.e : ''}" 
-                        placeholder="—" 
-                        data-eval-disabled="${evalDisabled}"
-                        ${(evalDisabled || data.e === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
-                        class="spms-score-input field-e ${data.e === 'X' ? 'bg-zinc-200' : ''}" style="${data.e === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
-                </td>
+                ${renderScoreCellTdHtml('q', data, evalDisabled, canEditTargets, canEditEvaluation)}
+                ${renderScoreCellTdHtml('t', data, evalDisabled, canEditTargets, canEditEvaluation)}
+                ${renderScoreCellTdHtml('e', data, evalDisabled, canEditTargets, canEditEvaluation)}
 
                 <!-- Row Average -->
                 <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f8fafc; border: 1px solid #000;">
@@ -4148,15 +4732,31 @@
                     <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." ${isOwner && (status === FolderStatus.PENDING_TARGET_APPROVAL || status === FolderStatus.SUBMITTED || status === FolderStatus.TARGET_APPROVED || status === FolderStatus.APPROVED) ? 'disabled title="Locked while submitted or approved"' : ''}>${escapeHtml(data.remarks)}</textarea>
                 </td>
 
-                <!-- Delete Action (Target Phase) -->
+                <!-- PTWG Comments (Screen-only, omitted from printed papers) -->
+                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;" class="print-hide twg-col">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-tight flex items-center gap-1">
+                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
+                            PTWG
+                        </span>
+                        ${isTwgUser ? `
+                            <button type="button" onclick="stampTwgTag(this)" class="text-[8.5px] font-extrabold text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 px-1 py-0.5 rounded border border-amber-300 dark:border-amber-800 transition-colors cursor-pointer" title="Stamp PTWG tag">
+                                + [PTWG]
+                            </button>
+                        ` : ''}
+                    </div>
+                    <textarea class="spms-textarea field-twg-comment print-borderless" rows="3" placeholder="${isTwgUser ? 'Enter PTWG calibration comment...' : 'No PTWG comment'}" ${canEditTwg ? '' : 'disabled title="Only editable by Performance Technical Working Group (PTWG)"'} style="font-size: 11px; color: #b45309; background: ${canEditTwg ? '#fffbeb' : '#fafafa'}; border: 1px solid ${canEditTwg ? '#fde68a' : 'transparent'}; border-radius: 3px;">${escapeHtml(data.twg_comment || '')}</textarea>
+                </td>
+
+                ${canEditTargets ? `
+                <!-- Delete Action (Target Phase Only) -->
                 <td style="padding: 2px; text-align: center; vertical-align: middle; border: 1px solid #000;" class="print-hide">
-                    ${canEditTargets ? `
                     <button type="button" onclick="deleteTableRow(this)" title="Delete Row" class="btn-del-row">
                         <svg xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
-                    </button>` : ''}
-                </td>
+                    </button>
+                </td>` : ''}
             `;
         } else if (window.isCurrentDocOpcr) {
             tr.innerHTML = `
@@ -4217,33 +4817,9 @@
                 </td>
 
                 <!-- Rating Q, T, E Inputs (Evaluation Phase) -->
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.q === 'X' ? 'bg-zinc-200' : ''}">
-                    ${canEditTargets ? `<button type="button" onclick="toggleQte(this, 'field-q')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.q === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: 1;">N/A</button>` : ''}
-                    <input type="${data.q === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
-                        value="${data.q !== undefined && data.q !== null && data.q !== '' ? data.q : ''}" 
-                        placeholder="—" 
-                        data-eval-disabled="${evalDisabled}"
-                        ${(evalDisabled || data.q === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
-                        class="spms-score-input field-q ${data.q === 'X' ? 'bg-zinc-200' : ''}" style="${data.q === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
-                </td>
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.t === 'X' ? 'bg-zinc-200' : ''}">
-                    ${canEditTargets ? `<button type="button" onclick="toggleQte(this, 'field-t')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.t === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: 1;">N/A</button>` : ''}
-                    <input type="${data.t === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
-                        value="${data.t !== undefined && data.t !== null && data.t !== '' ? data.t : ''}" 
-                        placeholder="—" 
-                        data-eval-disabled="${evalDisabled}"
-                        ${(evalDisabled || data.t === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
-                        class="spms-score-input field-t ${data.t === 'X' ? 'bg-zinc-200' : ''}" style="${data.t === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
-                </td>
-                <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.e === 'X' ? 'bg-zinc-200' : ''}">
-                    ${canEditTargets ? `<button type="button" onclick="toggleQte(this, 'field-e')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.e === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: 1;">N/A</button>` : ''}
-                    <input type="${data.e === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
-                        value="${data.e !== undefined && data.e !== null && data.e !== '' ? data.e : ''}" 
-                        placeholder="—" 
-                        data-eval-disabled="${evalDisabled}"
-                        ${(evalDisabled || data.e === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
-                        class="spms-score-input field-e ${data.e === 'X' ? 'bg-zinc-200' : ''}" style="${data.e === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
-                </td>
+                ${renderScoreCellTdHtml('q', data, evalDisabled, canEditTargets, canEditEvaluation)}
+                ${renderScoreCellTdHtml('t', data, evalDisabled, canEditTargets, canEditEvaluation)}
+                ${renderScoreCellTdHtml('e', data, evalDisabled, canEditTargets, canEditEvaluation)}
 
                 <!-- Row Average -->
                 <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f8fafc; border: 1px solid #000;">
@@ -4266,15 +4842,31 @@
                     <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." ${isOwner && (status === FolderStatus.PENDING_TARGET_APPROVAL || status === FolderStatus.SUBMITTED || status === FolderStatus.TARGET_APPROVED || status === FolderStatus.APPROVED) ? 'disabled title="Locked while submitted or approved"' : ''}>${escapeHtml(data.remarks)}</textarea>
                 </td>
 
-                <!-- Delete Action (Target Phase) -->
+                <!-- PTWG Comments (Screen-only, omitted from printed papers) -->
+                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;" class="print-hide twg-col">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-tight flex items-center gap-1">
+                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
+                            PTWG
+                        </span>
+                        ${isTwgUser ? `
+                            <button type="button" onclick="stampTwgTag(this)" class="text-[8.5px] font-extrabold text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 px-1 py-0.5 rounded border border-amber-300 dark:border-amber-800 transition-colors cursor-pointer" title="Stamp PTWG tag">
+                                + [PTWG]
+                            </button>
+                        ` : ''}
+                    </div>
+                    <textarea class="spms-textarea field-twg-comment print-borderless" rows="3" placeholder="${isTwgUser ? 'Enter PTWG calibration comment...' : 'No PTWG comment'}" ${canEditTwg ? '' : 'disabled title="Only editable by Performance Technical Working Group (PTWG)"'} style="font-size: 11px; color: #b45309; background: ${canEditTwg ? '#fffbeb' : '#fafafa'}; border: 1px solid ${canEditTwg ? '#fde68a' : 'transparent'}; border-radius: 3px;">${escapeHtml(data.twg_comment || '')}</textarea>
+                </td>
+
+                ${canEditTargets ? `
+                <!-- Delete Action (Target Phase Only) -->
                 <td style="padding: 2px; text-align: center; vertical-align: middle; border: 1px solid #000;" class="print-hide">
-                    ${canEditTargets ? `
                     <button type="button" onclick="deleteTableRow(this)" title="Delete Row" class="btn-del-row">
                         <svg xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
-                    </button>` : ''}
-                </td>
+                    </button>
+                </td>` : ''}
             `;
         } else {
             tr.innerHTML = `
@@ -4322,33 +4914,9 @@
             </td>
 
             <!-- Rating Q, T, E Inputs (Unlocked during evaluation phase) -->
-            <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.q === 'X' ? 'bg-zinc-200' : ''}">
-                ${canEditTargets ? `<button type="button" onclick="toggleQte(this, 'field-q')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.q === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: 1;">N/A</button>` : ''}
-                <input type="${data.q === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
-                    value="${data.q !== undefined && data.q !== null && data.q !== '' ? data.q : ''}" 
-                    placeholder="—" 
-                    data-eval-disabled="${evalDisabled}"
-                    ${(evalDisabled || data.q === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
-                    class="spms-score-input field-q ${data.q === 'X' ? 'bg-zinc-200' : ''}" style="${data.q === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
-            </td>
-            <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.t === 'X' ? 'bg-zinc-200' : ''}">
-                ${canEditTargets ? `<button type="button" onclick="toggleQte(this, 'field-t')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.t === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: 1;">N/A</button>` : ''}
-                <input type="${data.t === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
-                    value="${data.t !== undefined && data.t !== null && data.t !== '' ? data.t : ''}" 
-                    placeholder="—" 
-                    data-eval-disabled="${evalDisabled}"
-                    ${(evalDisabled || data.t === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
-                    class="spms-score-input field-t ${data.t === 'X' ? 'bg-zinc-200' : ''}" style="${data.t === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
-            </td>
-            <td style="padding: 3px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="${data.e === 'X' ? 'bg-zinc-200' : ''}">
-                ${canEditTargets ? `<button type="button" onclick="toggleQte(this, 'field-e')" title="Toggle Not Applicable (N/A)" class="print-hide flex items-center justify-center ${data.e === 'X' ? 'bg-zinc-500 text-white hover:bg-zinc-600' : 'bg-zinc-200 text-zinc-500 hover:bg-zinc-300'} transition-colors" style="position: absolute; top: 1px; right: 1px; width: 22px; height: 14px; font-size: 8px; font-weight: 900; border-radius: 2px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid #cbd5e1; opacity: 1;">N/A</button>` : ''}
-                <input type="${data.e === 'X' ? 'text' : 'number'}" min="1" max="5" step="1" 
-                    value="${data.e !== undefined && data.e !== null && data.e !== '' ? data.e : ''}" 
-                    placeholder="—" 
-                    data-eval-disabled="${evalDisabled}"
-                    ${(evalDisabled || data.e === 'X') ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
-                    class="spms-score-input field-e ${data.e === 'X' ? 'bg-zinc-200' : ''}" style="${data.e === 'X' ? 'color: transparent; text-shadow: 0 0 0 transparent; font-weight: bold; cursor: not-allowed; background-color: transparent; border-color: transparent;' : ''}">
-            </td>
+            ${renderScoreCellTdHtml('q', data, evalDisabled, canEditTargets, canEditEvaluation)}
+            ${renderScoreCellTdHtml('t', data, evalDisabled, canEditTargets, canEditEvaluation)}
+            ${renderScoreCellTdHtml('e', data, evalDisabled, canEditTargets, canEditEvaluation)}
 
                 <!-- Row Average -->
                 <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f8fafc; border: 1px solid #000;">
@@ -4371,15 +4939,31 @@
                 <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." ${isOwner && (status === FolderStatus.PENDING_TARGET_APPROVAL || status === FolderStatus.SUBMITTED || status === FolderStatus.TARGET_APPROVED || status === FolderStatus.APPROVED) ? 'disabled title="Locked while submitted or approved"' : ''}>${escapeHtml(data.remarks)}</textarea>
             </td>
 
-            <!-- Delete Action (Only available during Target Phase) -->
+            <!-- PTWG Comments (Screen-only, omitted from printed papers) -->
+            <td style="padding: 4px; vertical-align: top; border: 1px solid #000;" class="print-hide twg-col">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-tight flex items-center gap-1">
+                        <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
+                        PTWG
+                    </span>
+                    ${isTwgUser ? `
+                        <button type="button" onclick="stampTwgTag(this)" class="text-[8.5px] font-extrabold text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 px-1 py-0.5 rounded border border-amber-300 dark:border-amber-800 transition-colors cursor-pointer" title="Stamp PTWG tag">
+                            + [PTWG]
+                        </button>
+                    ` : ''}
+                </div>
+                <textarea class="spms-textarea field-twg-comment print-borderless" rows="3" placeholder="${isTwgUser ? 'Enter PTWG calibration comment...' : 'No PTWG comment'}" ${canEditTwg ? '' : 'disabled title="Only editable by Performance Technical Working Group (PTWG)"'} style="font-size: 11px; color: #b45309; background: ${canEditTwg ? '#fffbeb' : '#fafafa'}; border: 1px solid ${canEditTwg ? '#fde68a' : 'transparent'}; border-radius: 3px;">${escapeHtml(data.twg_comment || '')}</textarea>
+            </td>
+
+            ${canEditTargets ? `
+            <!-- Delete Action (Target Phase Only) -->
             <td style="padding: 2px; text-align: center; vertical-align: middle; border: 1px solid #000;" class="print-hide">
-                ${canEditTargets ? `
                 <button type="button" onclick="deleteTableRow(this)" title="Delete Row" class="btn-del-row">
                     <svg xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
-                </button>` : ''}
-            </td>
+                </button>
+            </td>` : ''}
             `;
         }
 
@@ -4439,6 +5023,13 @@
 
     function clearScore(input) {
         input.value = '';
+        const actor = getCurrentScoreActor();
+        if (actor === 'self') input.dataset.selfScore = '';
+        else if (actor === 'head') input.dataset.headScore = '';
+        else if (actor === 'twg') input.dataset.twgScore = '';
+        input.dataset.lastActor = actor;
+
+        updateScoreCellBadge(input.closest('td'), input);
         recalculateForm();
         window.syncSpmsActiveTab();
         AppState.setDirty(true);
@@ -4484,6 +5075,13 @@
         let raw = input.value.trim();
         if (raw === '') {
             input.value = '';
+            const actor = getCurrentScoreActor();
+            if (actor === 'self') input.dataset.selfScore = '';
+            else if (actor === 'head') input.dataset.headScore = '';
+            else if (actor === 'twg') input.dataset.twgScore = '';
+            input.dataset.lastActor = actor;
+
+            updateScoreCellBadge(input.closest('td'), input);
             recalculateForm();
             window.syncSpmsActiveTab();
             AppState.setDirty(true);
@@ -4504,6 +5102,15 @@
         } else {
             input.value = num;
         }
+
+        const actor = getCurrentScoreActor();
+        if (actor === 'self') input.dataset.selfScore = input.value;
+        else if (actor === 'head') input.dataset.headScore = input.value;
+        else if (actor === 'twg') input.dataset.twgScore = input.value;
+        input.dataset.lastActor = actor;
+
+        updateScoreCellBadge(input.closest('td'), input);
+
         recalculateForm();
         window.syncSpmsActiveTab();
         AppState.setDirty(true);
@@ -4519,40 +5126,46 @@
     }
 
     function toggleQte(btn, fieldClass) {
+        if (!canEditTargets) return;
         const td = btn.closest('td');
         const input = td.querySelector('.' + fieldClass);
-        const isX = input.value === 'X';
+        const isX = (input.value === 'X' || input.value === 'N/A');
+        const actor = getCurrentScoreActor();
         
         if (isX) {
-            td.classList.remove('bg-zinc-200');
+            td.classList.remove('bg-zinc-100', 'dark:bg-zinc-800/40');
             input.value = '';
-            input.type = 'number';
-            input.classList.remove('bg-zinc-200');
-            input.style.backgroundColor = '';
-            input.style.borderColor = '';
-            input.style.color = '';
-            input.style.textShadow = '';
-            input.style.fontWeight = '';
-            input.style.cursor = '';
-            const evalDisabled = input.getAttribute('data-eval-disabled') === 'true';
-            input.disabled = evalDisabled;
-            
-            btn.className = "print-hide flex items-center justify-center bg-zinc-200 text-zinc-500 hover:bg-zinc-300 transition-colors";
-        } else {
-            td.classList.add('bg-zinc-200');
             input.type = 'text';
-            input.value = 'X';
-            input.style.backgroundColor = 'transparent';
-            input.style.borderColor = 'transparent';
-            input.style.color = 'transparent';
-            input.style.textShadow = '0 0 0 transparent';
-            input.style.fontWeight = 'bold';
-            input.style.cursor = 'not-allowed';
+            input.placeholder = '—';
+            input.title = 'Locked (Scores are entered during Evaluation Phase)';
+            input.className = `spms-score-input ${fieldClass}`;
             input.disabled = true;
             
-            btn.className = "print-hide flex items-center justify-center bg-zinc-500 text-white hover:bg-zinc-600 transition-colors";
+            btn.className = "print-hide flex items-center justify-center bg-zinc-100 text-zinc-500 hover:bg-zinc-200 transition-all";
+            btn.style.borderColor = '#cbd5e1';
+            
+            if (actor === 'self') input.dataset.selfScore = '';
+            else if (actor === 'head') input.dataset.headScore = '';
+            else if (actor === 'twg') input.dataset.twgScore = '';
+            input.dataset.lastActor = actor;
+        } else {
+            td.classList.add('bg-zinc-100', 'dark:bg-zinc-800/40');
+            input.type = 'text';
+            input.value = 'N/A';
+            input.title = 'Dimension disabled (N/A)';
+            input.className = `spms-score-input ${fieldClass} bg-zinc-100 dark:bg-zinc-800 text-zinc-400 font-bold border-dashed border-zinc-300 dark:border-zinc-700 cursor-not-allowed`;
+            input.disabled = true;
+            
+            btn.className = "print-hide flex items-center justify-center bg-zinc-700 text-white hover:bg-zinc-800 transition-all";
+            btn.style.borderColor = '#52525b';
+
+            if (actor === 'self') input.dataset.selfScore = 'X';
+            else if (actor === 'head') input.dataset.headScore = 'X';
+            else if (actor === 'twg') input.dataset.twgScore = 'X';
+            input.dataset.lastActor = actor;
         }
         
+        updateScoreCellBadge(td, input);
         recalculateForm();
         if (typeof renderDigitalRubricsMatrix === 'function') {
             renderDigitalRubricsMatrix();
@@ -4609,6 +5222,9 @@
                 badgeEl.innerText = adjectival.text;
                 badgeEl.style.background = adjectival.color;
             }
+            if (typeof checkAdjustmentsAndToggleApproveButton === 'function') {
+                checkAdjustmentsAndToggleApproveButton();
+            }
             return;
         }
 
@@ -4662,6 +5278,10 @@
         if (gFormulaEl) {
             gFormulaEl.innerText = 
                 `(Core ${categoryResults.core.subtotal.toFixed(3)} + Strategic ${categoryResults.strategic.subtotal.toFixed(3)} + Support ${categoryResults.support.subtotal.toFixed(3)})`;
+        }
+
+        if (typeof checkAdjustmentsAndToggleApproveButton === 'function') {
+            checkAdjustmentsAndToggleApproveButton();
         }
     }
 
@@ -4734,13 +5354,17 @@
         const result = [];
 
         rows.forEach(row => {
-            const rawQ = row.querySelector('.field-q')?.value;
-            const rawT = row.querySelector('.field-t')?.value;
-            const rawE = row.querySelector('.field-e')?.value;
+            const qInput = row.querySelector('.field-q');
+            const tInput = row.querySelector('.field-t');
+            const eInput = row.querySelector('.field-e');
 
-            const q = rawQ === 'X' ? 'X' : parseWholeScore(rawQ);
-            const t = rawT === 'X' ? 'X' : parseWholeScore(rawT);
-            const e = rawE === 'X' ? 'X' : parseWholeScore(rawE);
+            const rawQ = qInput?.value;
+            const rawT = tInput?.value;
+            const rawE = eInput?.value;
+
+            const q = (rawQ === 'X' || rawQ === 'N/A') ? 'X' : parseWholeScore(rawQ);
+            const t = (rawT === 'X' || rawT === 'N/A') ? 'X' : parseWholeScore(rawT);
+            const e = (rawE === 'X' || rawE === 'N/A') ? 'X' : parseWholeScore(rawE);
 
             const rowData = {
                 row_id: row.dataset.rowId || ('row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7)),
@@ -4750,7 +5374,20 @@
                 q: q !== null ? q : '',
                 t: t !== null ? t : '',
                 e: e !== null ? e : '',
-                remarks: row.querySelector('.field-remarks')?.value || ''
+                q_self: qInput?.dataset?.selfScore || '',
+                q_head: qInput?.dataset?.headScore || '',
+                q_twg: qInput?.dataset?.twgScore || '',
+                last_rated_by_q: qInput?.dataset?.lastActor || '',
+                t_self: tInput?.dataset?.selfScore || '',
+                t_head: tInput?.dataset?.headScore || '',
+                t_twg: tInput?.dataset?.twgScore || '',
+                last_rated_by_t: tInput?.dataset?.lastActor || '',
+                e_self: eInput?.dataset?.selfScore || '',
+                e_head: eInput?.dataset?.headScore || '',
+                e_twg: eInput?.dataset?.twgScore || '',
+                last_rated_by_e: eInput?.dataset?.lastActor || '',
+                remarks: row.querySelector('.field-remarks')?.value || '',
+                twg_comment: row.querySelector('.field-twg-comment')?.value || ''
             };
 
             if (window.isCurrentDocDpcr || window.isCurrentDocOpcr) {
@@ -4825,7 +5462,20 @@
                         std_4: orig.std_4 !== undefined ? orig.std_4 : row.std_4,
                         std_3: orig.std_3 !== undefined ? orig.std_3 : row.std_3,
                         std_2: orig.std_2 !== undefined ? orig.std_2 : row.std_2,
-                        std_1: orig.std_1 !== undefined ? orig.std_1 : row.std_1
+                        std_1: orig.std_1 !== undefined ? orig.std_1 : row.std_1,
+                        q_self: row.q_self !== undefined ? row.q_self : (orig.q_self || ''),
+                        q_head: row.q_head !== undefined ? row.q_head : (orig.q_head || ''),
+                        q_twg: row.q_twg !== undefined ? row.q_twg : (orig.q_twg || ''),
+                        last_rated_by_q: row.last_rated_by_q !== undefined ? row.last_rated_by_q : (orig.last_rated_by_q || ''),
+                        t_self: row.t_self !== undefined ? row.t_self : (orig.t_self || ''),
+                        t_head: row.t_head !== undefined ? row.t_head : (orig.t_head || ''),
+                        t_twg: row.t_twg !== undefined ? row.t_twg : (orig.t_twg || ''),
+                        last_rated_by_t: row.last_rated_by_t !== undefined ? row.last_rated_by_t : (orig.last_rated_by_t || ''),
+                        e_self: row.e_self !== undefined ? row.e_self : (orig.e_self || ''),
+                        e_head: row.e_head !== undefined ? row.e_head : (orig.e_head || ''),
+                        e_twg: row.e_twg !== undefined ? row.e_twg : (orig.e_twg || ''),
+                        last_rated_by_e: row.last_rated_by_e !== undefined ? row.last_rated_by_e : (orig.last_rated_by_e || ''),
+                        twg_comment: row.twg_comment !== undefined ? row.twg_comment : (orig.twg_comment || '')
                     };
                 });
             };
@@ -4841,7 +5491,9 @@
             currency: document.querySelector('.header-budget-currency')?.value.trim() || '₱',
             budget_currency: document.querySelector('.header-budget-currency')?.value.trim() || '₱',
             classification: window.isCurrentDocIperf ? getVal('ratee-classification') : undefined,
-            weights: CATEGORY_WEIGHTS,
+            weights: window.isCurrentDocIperf 
+                ? { core: 1.00, strategic: 0.00, support: 0.00 }
+                : ((CATEGORY_WEIGHTS && (CATEGORY_WEIGHTS.core > 0 || CATEGORY_WEIGHTS.strategic > 0 || CATEGORY_WEIGHTS.support > 0)) ? CATEGORY_WEIGHTS : null),
             ratee: {
                 name: getVal('ratee-name'),
                 position: getVal('ratee-position'),
@@ -4875,9 +5527,11 @@
                 evalConformeDate: getVal('sig-eval-conforme-date')
             } : {
                 ratee: getVal('sig-ratee-name'),
+                rateePos: getVal('sig-ratee-pos'),
                 rateeDate: getVal('sig-ratee-date'),
-                dean: getVal('sig-dean-name'),
-                deanDate: getVal('sig-dean-date'),
+                dean: approversList[0]?.name || getVal('sig-dean-name'),
+                deanPos: approversList[0]?.position || getVal('sig-dean-pos'),
+                deanDate: approversList[0]?.evalDate || getVal('sig-dean-date'),
                 vp: getVal('sig-vp-name'),
                 vpDate: getVal('sig-vp-date')
             },
@@ -4926,9 +5580,9 @@
                     rowId: rowId,
                     cat: catName,
                     title: text || `Deliverable #${deliverables.length + 1}`,
-                    isQ_na: qEl ? qEl.value === 'X' : false,
-                    isT_na: tEl ? tEl.value === 'X' : false,
-                    isE_na: eEl ? eEl.value === 'X' : false
+                    isQ_na: qEl ? (qEl.value === 'X' || qEl.value === 'N/A') : false,
+                    isT_na: tEl ? (tEl.value === 'X' || tEl.value === 'N/A') : false,
+                    isE_na: eEl ? (eEl.value === 'X' || eEl.value === 'N/A') : false
                 });
             });
         };
@@ -4955,9 +5609,9 @@
                                 rowId: r.row_id || `row-${cat}-${idx}`,
                                 cat: cat,
                                 title: text || `Deliverable #${deliverables.length + 1}`,
-                                isQ_na: r.q === 'X',
-                                isT_na: r.t === 'X',
-                                isE_na: r.e === 'X'
+                                isQ_na: r.q === 'X' || r.q === 'N/A',
+                                isT_na: r.t === 'X' || r.t === 'N/A',
+                                isE_na: r.e === 'X' || r.e === 'N/A'
                             });
                         });
                     }
@@ -5232,20 +5886,20 @@
         const isOpcr = (typeof window.isCurrentDocOpcr !== 'undefined') ? window.isCurrentDocOpcr : <?= $isDocOpcr ? 'true' : 'false' ?>;
 
         const catWeights = {
-            core: `${Math.round((CATEGORY_WEIGHTS.core || (isIperf ? 1 : 0.7)) * 100)}%`,
-            strategic: `${Math.round((CATEGORY_WEIGHTS.strategic || (isDpcr ? 0.3 : (isOpcr ? 0.25 : 0.2))) * 100)}%`,
-            support: `${Math.round((CATEGORY_WEIGHTS.support || (isDpcr ? 0.1 : (isOpcr ? 0.15 : 0.1))) * 100)}%`
+            core: (CATEGORY_WEIGHTS.core && CATEGORY_WEIGHTS.core > 0) ? `${Math.round(CATEGORY_WEIGHTS.core * 100)}%` : '—',
+            strategic: (CATEGORY_WEIGHTS.strategic && CATEGORY_WEIGHTS.strategic > 0) ? `${Math.round(CATEGORY_WEIGHTS.strategic * 100)}%` : '—',
+            support: (CATEGORY_WEIGHTS.support && CATEGORY_WEIGHTS.support > 0) ? `${Math.round(CATEGORY_WEIGHTS.support * 100)}%` : '—'
         };
 
         const catConfigs = {
             core: {
-                title: isIperf ? 'Committed Outputs' : (isOpcr ? 'Core Mandate' : 'Core Functions'),
+                title: isIperf ? 'Committed Outputs' : 'Core Functions',
                 weight: catWeights.core,
                 badge: 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30',
                 dot: 'bg-emerald-500',
                 borderL: 'border-l-emerald-500',
                 addBtn: 'border-emerald-500/30 hover:border-emerald-500/60 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-                emptyHint: 'Add your primary operational and mandated deliverables.'
+                emptyHint: 'Add your primary operational deliverables.'
             },
             strategic: {
                 title: 'Strategic Functions',
@@ -5966,9 +6620,9 @@
         }
 
         const catLabels = {
-            core: isOpcr ? "Core Office Mandate (60%)" : (isDpcr ? "Core Division Functions (60%)" : "Core Functions (70%)"),
-            strategic: isOpcr ? "Strategic Functions (25%)" : (isDpcr ? "Strategic Functions (25%)" : "Strategic Functions (20%)"),
-            support: isOpcr ? "Support Functions (15%)" : (isDpcr ? "Support Functions (15%)" : "Support Functions (10%)")
+            core: "Core Functions",
+            strategic: "Strategic Functions",
+            support: "Support Functions"
         };
 
         const colCount = (isOpcr || isDpcr) ? 10 : 8;
@@ -6084,6 +6738,34 @@
         }
     });
 </script>
+
+<!-- Score Attribution Audit Modal (Screen Only) -->
+<div id="spms-score-audit-modal" style="z-index: 99999 !important;" class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden print-hide" onclick="closeScoreAuditModal(event)">
+    <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl max-w-md w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150" onclick="event.stopPropagation()">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-5 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
+            <div>
+                <h3 id="score-audit-title" class="font-extrabold text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                    Rating Attribution Breakdown
+                </h3>
+                <p id="score-audit-subtitle" class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 line-clamp-1"></p>
+            </div>
+            <button type="button" onclick="closeScoreAuditModal(event)" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <!-- Body -->
+        <div id="score-audit-body" class="p-5"></div>
+        <!-- Footer -->
+        <div class="px-5 py-3 bg-zinc-50 dark:bg-zinc-800/50 border-t border-zinc-200 dark:border-zinc-800 flex justify-end">
+            <button type="button" onclick="closeScoreAuditModal(event)" class="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 font-bold text-xs rounded-lg shadow-sm transition-colors cursor-pointer">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
 
 <?= view('document/_mov_modal', [
     'isOwner'           => $isOwner ?? false,

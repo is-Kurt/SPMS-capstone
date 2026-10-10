@@ -175,7 +175,7 @@ class Team extends BaseController
                 if ($this->request->isAJAX() || $this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest' || str_contains($this->request->getHeaderLine('Accept'), 'application/json')) {
                     return $this->response->setJSON(['status' => 'error', 'message' => 'Could not generate unique team ID.'])->setStatusCode(400);
                 }
-                return redirect()->back()->with('error', 'Could not generate unique team ID.');
+                return redirect()->to(site_url('teams'))->with('error', 'Could not generate unique team ID.');
             }
         }
 
@@ -213,7 +213,7 @@ class Team extends BaseController
             if ($isJsonRequest) {
                 return $this->response->setJSON(['status' => 'error', 'message' => 'Failed to save distribution team.'])->setStatusCode(500);
             }
-            return redirect()->back()->with('error', 'Failed to update team.');
+            return redirect()->to(site_url('teams' . ($teamId ? ('?team_id=' . $teamId) : '')))->with('error', 'Failed to update team.');
         }
 
         if ($isJsonRequest) {
@@ -229,7 +229,7 @@ class Team extends BaseController
             ]);
         }
 
-        return redirect()->back()->with('success', 'Distribution list saved successfully!');
+        return redirect()->to(site_url('teams?team_id=' . $teamId))->with('success', 'Distribution list saved successfully!');
     }
 
     /** POST /teams/delete - Archives (soft-deletes) a team if cascaded, or hard-deletes if unused. */

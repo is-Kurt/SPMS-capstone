@@ -12,6 +12,7 @@
         </div>
 
         <form id="form-create-file">
+            <?= csrf_field() ?>
             <div class="space-y-5">
                 <div class="space-y-2">
                     <label for="new-doc-title" class="block text-[10px] font-bold uppercase tracking-widest text-text-muted">Document Name</label>

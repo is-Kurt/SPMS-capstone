@@ -94,7 +94,18 @@ if (formCreateFolder) {
         e.preventDefault();
         if (isCreatingFolder) return;
 
+        const tokenName = document.querySelector('meta[name="csrf-token-name"]')?.getAttribute('content') || 'csrf_test_name';
+        const tokenHash = document.querySelector('meta[name="csrf-token-hash"]')?.getAttribute('content') || '';
+
+        const csrfInput = e.target.querySelector(`input[name="${tokenName}"]`);
+        if (csrfInput && tokenHash) {
+            csrfInput.value = tokenHash;
+        }
+
         const formData = new FormData(e.target);
+        if (tokenName && tokenHash && (!formData.has(tokenName) || !formData.get(tokenName))) {
+            formData.set(tokenName, tokenHash);
+        }
 
         isCreatingFolder = true;
         submitBtn.innerText = 'Creating...';
@@ -110,9 +121,12 @@ if (formCreateFolder) {
                     window.location.reload();
                 }
             },
-            onError: () => {
+            onError: (errorMsg) => {
                 isCreatingFolder = false;
                 submitBtn.innerText = 'Create Folder';
+                if (typeof window.showToast === 'function') {
+                    window.showToast(errorMsg || 'Failed to create folder. Please check inputs and try again.', 'danger');
+                }
             }
         });
     });

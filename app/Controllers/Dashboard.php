@@ -358,6 +358,18 @@ class Dashboard extends BaseController
             }
         }
 
+        // 6. Top Performing Employees (Leaderboard sorted by numerical rating DESC)
+        $ratedPersonnel = array_filter($cycleFolders, function ($f) {
+            return !empty($f['rating_num']) && (float)$f['rating_num'] > 0;
+        });
+        usort($ratedPersonnel, function ($a, $b) {
+            if ((float)$b['rating_num'] == (float)$a['rating_num']) {
+                return strcmp($a['full_name'] ?? '', $b['full_name'] ?? '');
+            }
+            return ((float)$b['rating_num'] > (float)$a['rating_num']) ? 1 : -1;
+        });
+        $topPerformers = array_values($ratedPersonnel);
+
         return view('components/app_shell', [
             'context'          => 'dashboard',
             'sidebarFolders'   => $rootFolders,
@@ -379,6 +391,8 @@ class Dashboard extends BaseController
                 'targetComplianceRate' => $targetComplianceRate,
                 'evalCompletionRate'   => $evalCompletionRate,
                 'cscDistribution'      => $cscDistribution,
+                'deptLeaderboard'      => $deptLeaderboard,
+                'topPerformers'        => $topPerformers,
                 'empStatusCounts'      => $empStatusCounts,
                 'isChairScope'          => $isChairScope,
                 'supervisorCollegeName' => $supervisorCollegeName,
@@ -718,36 +732,44 @@ class Dashboard extends BaseController
 
                 if ($score >= 4.50) {
                     $f['adjectival_label'] = 'Outstanding';
+                    $f['adjectival_code']  = 'O';
                     $f['adjectival_badge'] = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30';
                     $f['pbb_status']       = 'Eligible (O)';
                     $f['pbb_badge']        = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30';
                 } elseif ($score >= 3.50) {
                     $f['adjectival_label'] = 'Very Satisfactory';
+                    $f['adjectival_code']  = 'VS';
                     $f['adjectival_badge'] = 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-info-500/15 dark:text-blue-400 dark:border-info-500/30';
                     $f['pbb_status']       = 'Eligible (VS)';
                     $f['pbb_badge']        = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30';
                 } elseif ($score >= 2.50) {
                     $f['adjectival_label'] = 'Satisfactory';
+                    $f['adjectival_code']  = 'S';
                     $f['adjectival_badge'] = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30';
                     $f['pbb_status']       = 'Ineligible';
                     $f['pbb_badge']        = 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700';
                 } elseif ($score >= 1.50) {
                     $f['adjectival_label'] = 'Unsatisfactory';
+                    $f['adjectival_code']  = 'US';
                     $f['adjectival_badge'] = 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-500/15 dark:text-orange-400 dark:border-orange-500/30';
                     $f['pbb_status']       = 'Ineligible';
                     $f['pbb_badge']        = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-danger-500/15 dark:text-rose-400 dark:border-danger-500/30';
                 } else {
                     $f['adjectival_label'] = 'Poor';
+                    $f['adjectival_code']  = 'P';
                     $f['adjectival_badge'] = 'bg-red-50 text-red-700 border-red-200 dark:bg-danger-500/15 dark:text-danger-400 dark:border-danger-500/30';
                     $f['pbb_status']       = 'Ineligible';
                     $f['pbb_badge']        = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-danger-500/15 dark:text-rose-400 dark:border-danger-500/30';
                 }
+                $f['adjectival_display'] = "{$f['adjectival_label']} ({$f['adjectival_code']})";
             } else {
-                $f['rating_num']       = null;
-                $f['adjectival_label'] = 'Not Yet Rated';
-                $f['adjectival_badge'] = 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-zinc-800/60 dark:text-zinc-400 dark:border-zinc-700/60';
-                $f['pbb_status']       = 'Pending';
-                $f['pbb_badge']        = 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-zinc-800/60 dark:text-zinc-400 dark:border-zinc-700/60';
+                $f['rating_num']          = null;
+                $f['adjectival_label']    = 'Not Yet Rated';
+                $f['adjectival_code']     = 'NR';
+                $f['adjectival_badge']    = 'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-800/60 dark:text-zinc-400 dark:border-zinc-700/60';
+                $f['pbb_status']          = 'Pending';
+                $f['pbb_badge']           = 'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-800/60 dark:text-zinc-400 dark:border-zinc-700/60';
+                $f['adjectival_display']  = 'Not Yet Rated';
             }
         }
         unset($f);

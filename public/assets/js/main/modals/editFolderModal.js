@@ -97,7 +97,18 @@ if (formEditFolder) {
         e.preventDefault();
         if (isSavingFolder) return;
 
+        const tokenName = document.querySelector('meta[name="csrf-token-name"]')?.getAttribute('content') || 'csrf_test_name';
+        const tokenHash = document.querySelector('meta[name="csrf-token-hash"]')?.getAttribute('content') || '';
+
+        const csrfInput = e.target.querySelector(`input[name="${tokenName}"]`);
+        if (csrfInput && tokenHash) {
+            csrfInput.value = tokenHash;
+        }
+
         const formData = new FormData(e.target);
+        if (tokenName && tokenHash && (!formData.has(tokenName) || !formData.get(tokenName))) {
+            formData.set(tokenName, tokenHash);
+        }
 
         isSavingFolder = true;
         submitBtn.innerText = 'Saving...';
@@ -108,9 +119,12 @@ if (formEditFolder) {
                 folderModal.close();
                 window.location.reload();
             },
-            onError: () => {
+            onError: (errorMsg) => {
                 isSavingFolder = false;
                 submitBtn.innerText = 'Save Changes';
+                if (typeof window.showToast === 'function') {
+                    window.showToast(errorMsg || 'Failed to update folder. Please try again.', 'danger');
+                }
             }
         });
     });

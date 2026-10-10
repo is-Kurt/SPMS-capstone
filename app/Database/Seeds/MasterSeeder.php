@@ -39,7 +39,7 @@ class MasterSeeder extends Seeder
         // Keyed by positional slug (matches email prefix) instead of last_name,
         // so there are no collisions and plantillaData below can't reference a
         // user that doesn't exist.
-        $supervisorSlugs = ['vpaa', 'dean', 'deptchair', 'cao'];
+        $supervisorSlugs = ['president', 'vpaa', 'dean', 'deptchair', 'cao'];
         
         $adminEmail = getenv('admin.email') ?: 'admin@test.com';
         $adminPasswordRaw = getenv('admin.password') ?: (getenv('ADMIN_DEFAULT_PASSWORD') ?: '123');
@@ -48,17 +48,19 @@ class MasterSeeder extends Seeder
         $usersData = [
             'admin'     => ['email' => $adminEmail,          'first_name' => 'System',    'last_name' => 'Admin',    'password' => $adminPassword, 'is_active' => 1, 'doc_type' => null],
             'admin2'    => ['email' => 'admin2@test.com',    'first_name' => 'Secondary', 'last_name' => 'Admin',    'password' => $adminPassword, 'is_active' => 1, 'doc_type' => null],
+            'president' => ['email' => 'president@test.com', 'first_name' => 'Felipe',    'last_name' => 'Comila',   'password' => $password, 'is_active' => 1, 'doc_type' => null],
             'twg'       => ['email' => 'twg@test.com',       'first_name' => 'System',    'last_name' => 'TWG',      'password' => password_hash('123', PASSWORD_DEFAULT), 'is_active' => 1, 'doc_type' => null],
-            'vpaa'      => ['email' => 'vpaa@test.com',      'first_name' => 'Ana',       'last_name' => 'Santos',   'password' => $password, 'is_active' => 1, 'doc_type' => 'IPCR'],
-            'dean'      => ['email' => 'dean@test.com',      'first_name' => 'Roberto',   'last_name' => 'Reyes',    'password' => $password, 'is_active' => 1, 'doc_type' => 'OPCR'],
+            'vpaa'      => ['email' => 'vpaa@test.com',      'first_name' => 'Ana',       'last_name' => 'Santos',   'password' => $password, 'is_active' => 1, 'doc_type' => 'OPCR'],
+            'dean'      => ['email' => 'dean@test.com',      'first_name' => 'Roberto',   'last_name' => 'Reyes',    'password' => $password, 'is_active' => 1, 'doc_type' => 'DPCR'],
             'deptchair' => ['email' => 'deptchair@test.com', 'first_name' => 'Miguel',    'last_name' => 'Cruz',     'password' => $password, 'is_active' => 1, 'doc_type' => 'DPCR'],
             'inst1'     => ['email' => 'inst1@test.com',     'first_name' => 'Carlos',    'last_name' => 'Lim',      'password' => $password, 'is_active' => 1, 'doc_type' => 'IPCR'],
             'instg2a'   => ['email' => 'instg2a@test.com',   'first_name' => 'Teresa',    'last_name' => 'Garcia',   'password' => $password, 'is_active' => 1, 'doc_type' => 'IPCR'],
             'vpadfin'   => ['email' => 'vpadfin@test.com',   'first_name' => 'Michael',   'last_name' => 'Tan',      'password' => $password, 'is_active' => 1, 'doc_type' => 'IPCR'],
-            'cao'       => ['email' => 'cao@test.com',       'first_name' => 'Elena',     'last_name' => 'Navarro', 'password' => $password, 'is_active' => 1, 'doc_type' => 'IPCR'],
+            'cao'       => ['email' => 'cao@test.com',       'first_name' => 'Elena',     'last_name' => 'Navarro', 'password' => $password, 'is_active' => 1, 'doc_type' => 'OPCR'],
             'hrdohead'  => ['email' => 'hrdohead@test.com',  'first_name' => 'Patricia',  'last_name' => 'Aquino',   'password' => $password, 'is_active' => 1, 'doc_type' => 'OPCR'],
             'hrdo1'     => ['email' => 'hrdo1@test.com',     'first_name' => 'Grace',     'last_name' => 'Bautista', 'password' => $password, 'is_active' => 1, 'doc_type' => 'IPCR'],
             'hrdo2'     => ['email' => 'hrdo2@test.com',     'first_name' => 'Ramon',     'last_name' => 'Delgado',  'password' => $password, 'is_active' => 1, 'doc_type' => 'IPCR'],
+            'iperf'     => ['email' => 'iperf@test.com',     'first_name' => 'Danilo',    'last_name' => 'Ocampo',   'password' => $password, 'is_active' => 1, 'doc_type' => 'IPERF'],
         ];
 
         $userMap = [];
@@ -90,6 +92,7 @@ class MasterSeeder extends Seeder
         // 4. SEED POSITIONS (HR Titles)
         // ==========================================
         $positionsData = [
+            ['title' => 'University President',     'is_teaching' => 0],
             ['title' => 'Vice President',           'is_teaching' => 0],
             ['title' => 'Dean',                     'is_teaching' => 1],
             ['title' => 'Department Chair',         'is_teaching' => 1],
@@ -111,6 +114,9 @@ class MasterSeeder extends Seeder
         // ==========================================
         // 5. SEED UNITS (The Org Chart - Top Level)
         // ==========================================
+        $db->table('units')->insert(['name' => 'Office of the President', 'parent_id' => null]);
+        $opId = $db->insertID();
+
         $db->table('units')->insert(['name' => 'OVPAA', 'parent_id' => null]);
         $ovpaaId = $db->insertID();
 
@@ -133,6 +139,7 @@ class MasterSeeder extends Seeder
         // 6. SEED PLANTILLA (The Connective Tissue)
         // ==========================================
         $plantillaData = [
+            ['user_id' => $userMap['president'], 'position_id' => $posMap['University President'],     'unit_id' => $opId,    'started_at' => '2019-01-01', 'ended_at' => null],
             ['user_id' => $userMap['vpaa'],      'position_id' => $posMap['Vice President'],           'unit_id' => $ovpaaId, 'started_at' => '2020-01-01', 'ended_at' => null],
             ['user_id' => $userMap['dean'],      'position_id' => $posMap['Dean'],                     'unit_id' => $coeId,   'started_at' => '2021-06-01', 'ended_at' => null],
             ['user_id' => $userMap['deptchair'], 'position_id' => $posMap['Department Chair'],         'unit_id' => $coeId,   'started_at' => '2022-08-15', 'ended_at' => null],
@@ -143,6 +150,7 @@ class MasterSeeder extends Seeder
             ['user_id' => $userMap['hrdohead'],  'position_id' => $posMap['HRDO Head'],                'unit_id' => $hrdoId,  'started_at' => '2016-01-01', 'ended_at' => null],
             ['user_id' => $userMap['hrdo1'],     'position_id' => $posMap['Administrative Assistant'], 'unit_id' => $hrdoId,  'started_at' => '2021-09-01', 'ended_at' => null],
             ['user_id' => $userMap['hrdo2'],     'position_id' => $posMap['Administrative Assistant'], 'unit_id' => $hrdoId,  'started_at' => '2022-01-01', 'ended_at' => null],
+            ['user_id' => $userMap['iperf'],     'position_id' => $posMap['Administrative Aide'],      'unit_id' => $hrdoId,  'started_at' => '2022-01-01', 'ended_at' => null],
         ];
 
         $db->table('plantillas')->insertBatch($plantillaData);

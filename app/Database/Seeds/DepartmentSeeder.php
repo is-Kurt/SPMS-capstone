@@ -28,6 +28,14 @@ class DepartmentSeeder extends Seeder
         // ==========================================
         // 2. ENSURE PARENT EXECUTIVE UNITS EXIST
         // ==========================================
+        $opUnit = $db->table('units')->where('name', 'Office of the President')->get()->getRowArray();
+        if (!$opUnit) {
+            $db->table('units')->insert(['name' => 'Office of the President', 'parent_id' => null, 'created_at' => date('Y-m-d H:i:s')]);
+            $opUnitId = (int)$db->insertID();
+        } else {
+            $opUnitId = (int)$opUnit['id'];
+        }
+
         $ovpaa = $db->table('units')->where('name', 'OVPAA')->get()->getRowArray();
         if (!$ovpaa) {
             $db->table('units')->insert(['name' => 'OVPAA', 'parent_id' => null, 'created_at' => date('Y-m-d H:i:s')]);
@@ -48,6 +56,7 @@ class DepartmentSeeder extends Seeder
         // 3. SEED / RESOLVE POSITIONS
         // ==========================================
         $positionsToEnsure = [
+            ['title' => 'University President',     'is_teaching' => 0],
             ['title' => 'Vice President',           'is_teaching' => 0],
             ['title' => 'Dean',                     'is_teaching' => 1],
             ['title' => 'Department Chair',         'is_teaching' => 1],
@@ -71,6 +80,52 @@ class DepartmentSeeder extends Seeder
                 $db->table('positions')->insert($p);
                 $posMap[$p['title']] = (int)$db->insertID();
             }
+        }
+
+        // Ensure University President User & Plantilla
+        $presUser = $db->table('users')->where('email', 'president@test.com')->get()->getRowArray();
+        $presPassword = password_hash('123', PASSWORD_DEFAULT);
+        if (!$presUser) {
+            $db->table('users')->insert([
+                'email'      => 'president@test.com',
+                'first_name' => 'Felipe',
+                'last_name'  => 'Comila',
+                'password'   => $presPassword,
+                'is_active'  => 1,
+                'doc_type'   => null,
+            ]);
+            $presUserId = (int)$db->insertID();
+        } else {
+            $presUserId = (int)$presUser['id'];
+            $db->table('users')->where('id', $presUserId)->update([
+                'first_name' => 'Felipe',
+                'last_name'  => 'Comila',
+                'is_active'  => 1,
+            ]);
+        }
+
+        $presRole = $roleMap['Supervisor'] ?? 2;
+        $presUserRole = $db->table('user_roles')->where('user_id', $presUserId)->get()->getRowArray();
+        if (!$presUserRole) {
+            $db->table('user_roles')->insert(['user_id' => $presUserId, 'role_id' => $presRole]);
+        } else {
+            $db->table('user_roles')->where('user_id', $presUserId)->update(['role_id' => $presRole]);
+        }
+
+        $presPlantilla = $db->table('plantillas')->where('user_id', $presUserId)->where('ended_at IS NULL')->get()->getRowArray();
+        if (!$presPlantilla) {
+            $db->table('plantillas')->insert([
+                'user_id'     => $presUserId,
+                'position_id' => $posMap['University President'],
+                'unit_id'     => $opUnitId,
+                'started_at'  => '2019-01-01',
+                'ended_at'    => null,
+            ]);
+        } else {
+            $db->table('plantillas')->where('id', $presPlantilla['id'])->update([
+                'position_id' => $posMap['University President'],
+                'unit_id'     => $opUnitId,
+            ]);
         }
 
         // Cache templates for form cloning
@@ -569,6 +624,23 @@ class DepartmentSeeder extends Seeder
                     ->where('user_id', $vpaaUser['id'])
                     ->where('deleted_at IS NULL')
                     ->get()->getRowArray();
+
+                if ($vpaaFolder && !empty($presUserId)) {
+                    $existingVpRouting = $db->table('evaluation_routings')
+                        ->where('folder_id', $vpaaFolder['id'])
+                        ->where('evaluator_id', $presUserId)
+                        ->get()->getRowArray();
+                    if (!$existingVpRouting) {
+                        $db->table('evaluation_routings')->insert([
+                            'folder_id'           => $vpaaFolder['id'],
+                            'evaluator_id'        => $presUserId,
+                            'evaluator_folder_id' => $activeCycle['id'],
+                            'status'              => $vpaaFolder['status'] ?? 'Draft',
+                            'created_at'          => $now,
+                            'updated_at'          => $now
+                        ]);
+                    }
+                }
             }
         }
 

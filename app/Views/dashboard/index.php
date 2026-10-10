@@ -570,6 +570,87 @@
 
         </div>
 
+        <!-- 2.5 TOP PERFORMING PERSONNEL -->
+        <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-4">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-black text-sm">
+                            ★
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Top Performing Personnel</h3>
+                            <p class="text-[11px] text-zinc-500 dark:text-zinc-400">Highest rated faculty &amp; staff in this unit</p>
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800">
+                        <?= count($topPerformers) ?> Ranked
+                    </span>
+                </div>
+
+                <?php if (!empty($topPerformers)): ?>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[320px] overflow-y-auto custom-scrollbar pr-1">
+                        <?php 
+                        $topList = array_slice($topPerformers, 0, 6);
+                        foreach ($topList as $idx => $tp): 
+                            $rank = $idx + 1;
+                            $rankBadge = 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700';
+                            $rankEmoji = "#{$rank}";
+                            if ($rank === 1) {
+                                $rankBadge = 'bg-amber-400 text-zinc-950 font-black shadow-xs border-amber-300';
+                                $rankEmoji = '1 🥇';
+                            } elseif ($rank === 2) {
+                                $rankBadge = 'bg-slate-300 text-zinc-900 font-black shadow-xs border-slate-400';
+                                $rankEmoji = '2 🥈';
+                            } elseif ($rank === 3) {
+                                $rankBadge = 'bg-amber-700 text-amber-50 font-black shadow-xs border-amber-800';
+                                $rankEmoji = '3 🥉';
+                            }
+                        ?>
+                            <div class="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800 flex items-center justify-between gap-3 transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <span class="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] border <?= $rankBadge ?> shrink-0">
+                                        <?= $rankEmoji ?>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <div class="font-bold text-xs text-zinc-900 dark:text-white truncate">
+                                            <?= esc($tp['full_name'] ?? 'Personnel') ?>
+                                        </div>
+                                        <div class="text-[10px] text-zinc-400 truncate">
+                                            <?= esc($tp['position'] ?? '') ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <div class="text-right">
+                                        <div class="text-xs font-black text-zinc-900 dark:text-white tabular-nums">
+                                            <?= number_format($tp['rating_num'], 2) ?>
+                                        </div>
+                                        <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[8.5px] font-extrabold uppercase border <?= $tp['adjectival_badge'] ?? 'bg-emerald-50 text-emerald-700 border-emerald-200' ?>">
+                                            <?= esc($tp['adjectival_label'] ?? 'Outstanding') ?>
+                                        </span>
+                                    </div>
+                                    <?php if (!empty($tp['folder_id'])): ?>
+                                        <a href="<?= site_url('ratings/show/' . $tp['folder_id']) ?>" class="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="py-8 text-center text-zinc-400 dark:text-zinc-500 italic text-xs">
+                        Performance ratings in progress. Top performers will appear here upon completion.
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <div class="pt-3 mt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+                <span>PBB Eligible: <strong class="text-emerald-600 dark:text-emerald-400"><?= $pipeline['stage4']['pbb_eligible'] ?? 0 ?> personnel</strong></span>
+            </div>
+        </div>
+
         <!-- 3. "WHO HAS SUBMITTED & WHO HAS NOT" COMPLIANCE ROSTER TABLE -->
         <div class="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
             <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
@@ -1045,6 +1126,262 @@
             </div>
         </div>
 
+        <!-- 3. TOP PERFORMING PERSONNEL LEADERBOARD -->
+        <div class="p-4 sm:p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-4">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-black text-sm">
+                            ★
+                        </div>
+                        <div>
+                            <h3 class="text-sm sm:text-base font-bold text-zinc-900 dark:text-white">Top Performing Personnel</h3>
+                            <p class="text-[10px] sm:text-xs text-zinc-500 dark:text-zinc-400">Dean &amp; Institutional Honor Roster (Ratings ≥ 4.50)</p>
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800">
+                        <svg class="w-3 h-3 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        <span><?= count($topPerformers) ?> Ranked</span>
+                    </span>
+                </div>
+
+                <?php if (!empty($topPerformers)): ?>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[380px] overflow-y-auto custom-scrollbar pr-1">
+                        <?php 
+                        $topList = array_slice($topPerformers, 0, 9);
+                        foreach ($topList as $idx => $tp): 
+                            $rank = $idx + 1;
+                            $rankBadge = 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700';
+                            $rankEmoji = "#{$rank}";
+                            if ($rank === 1) {
+                                $rankBadge = 'bg-amber-400 text-zinc-950 font-black shadow-xs border-amber-300';
+                                $rankEmoji = '1 🥇';
+                            } elseif ($rank === 2) {
+                                $rankBadge = 'bg-slate-300 text-zinc-900 font-black shadow-xs border-slate-400';
+                                $rankEmoji = '2 🥈';
+                            } elseif ($rank === 3) {
+                                $rankBadge = 'bg-amber-700 text-amber-50 font-black shadow-xs border-amber-800';
+                                $rankEmoji = '3 🥉';
+                            }
+                        ?>
+                            <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800 flex items-center justify-between gap-3 transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <!-- Rank Badge -->
+                                    <span class="w-8 h-8 rounded-lg flex items-center justify-center text-xs border <?= $rankBadge ?> shrink-0">
+                                        <?= $rankEmoji ?>
+                                    </span>
+
+                                    <!-- User Details -->
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white truncate">
+                                                <?= esc($tp['full_name'] ?? 'Personnel') ?>
+                                            </span>
+                                            <span class="px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider <?= ($tp['is_teaching'] == 1) ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300' : 'bg-zinc-200/80 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300' ?>">
+                                                <?= ($tp['is_teaching'] == 1) ? 'Faculty' : 'Staff' ?>
+                                            </span>
+                                        </div>
+                                        <div class="text-[11px] text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
+                                            <?= esc($tp['department'] ?? 'Department') ?> &bull; <span class="text-zinc-400 dark:text-zinc-500"><?= esc($tp['position'] ?? '') ?></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Rating & Badge -->
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <div class="text-right">
+                                        <div class="text-sm font-black text-zinc-900 dark:text-white tabular-nums">
+                                            <?= number_format($tp['rating_num'], 2) ?>
+                                        </div>
+                                        <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[8.5px] font-extrabold uppercase tracking-wider border <?= $tp['adjectival_badge'] ?? 'bg-emerald-50 text-emerald-700 border-emerald-200' ?>">
+                                            <?= esc($tp['adjectival_label'] ?? 'Outstanding') ?>
+                                        </span>
+                                    </div>
+                                    <?php if (!empty($tp['folder_id'])): ?>
+                                        <a href="<?= site_url('ratings/show/' . $tp['folder_id']) ?>" 
+                                           class="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-white dark:hover:bg-zinc-800 transition-colors shadow-2xs"
+                                           title="Inspect evaluation details">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="py-12 px-4 text-center rounded-xl bg-zinc-50/50 dark:bg-zinc-950/40 border border-dashed border-zinc-200 dark:border-zinc-800">
+                        <div class="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-500 mx-auto flex items-center justify-center mb-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <h4 class="text-xs font-bold text-zinc-800 dark:text-zinc-200">Evaluations In Progress</h4>
+                        <p class="text-[11px] text-zinc-400 dark:text-zinc-500 max-w-xs mx-auto mt-1">
+                            Top performing personnel will populate automatically as soon as accomplishment ratings are finalized and approved.
+                        </p>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <!-- Footer Action -->
+            <div class="pt-3 mt-4 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+                <span>Incentive &amp; PBB Eligible: <strong class="text-emerald-600 dark:text-emerald-400"><?= $pipeline['stage4']['pbb_eligible'] ?? 0 ?> personnel</strong></span>
+                <button type="button" onclick="switchDashboardView('masterlist')" class="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer">
+                    View All in Master List &rarr;
+                </button>
+            </div>
+        </div>
+
+        <!-- 4. STAGE 2: MONITORING, COACHING & TARGET CALIBRATION (PER-OFFICE VIEW) -->
+        <div class="p-4 sm:p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-100 dark:border-zinc-800">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                            STAGE 2 MONITORING
+                        </span>
+                        <h3 class="text-base font-bold text-zinc-900 dark:text-white">Target Calibration &amp; Per-Office Compliance</h3>
+                    </div>
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        Monitoring and coaching status across all academic colleges and administrative delivery units.
+                    </p>
+                </div>
+
+                <!-- Search Bar for Offices -->
+                <div class="relative w-full sm:w-64">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+                    <input type="text" id="office-table-search" onkeyup="filterOfficeLeaderboard()"
+                           placeholder="Search college or office..."
+                           class="w-full text-xs font-medium py-2 pl-9 pr-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/40 shadow-2xs" />
+                </div>
+            </div>
+
+            <!-- 4 Mini Metric Cards for Stage 2 Calibration -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+                <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800">
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Calibrated Targets</div>
+                    <div class="text-xl font-black text-zinc-900 dark:text-white mt-0.5"><?= $pipeline['stage1']['approved'] ?></div>
+                    <div class="text-[10px] text-zinc-400 mt-0.5">Locked target commitments</div>
+                </div>
+                <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800">
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Under Coaching / Review</div>
+                    <div class="text-xl font-black text-zinc-900 dark:text-white mt-0.5"><?= $pipeline['stage1']['pending'] ?></div>
+                    <div class="text-[10px] text-zinc-400 mt-0.5">Awaiting supervisor review</div>
+                </div>
+                <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800">
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Calibration Adjustments</div>
+                    <div class="text-xl font-black text-zinc-900 dark:text-white mt-0.5"><?= $pipeline['stage1']['returned'] ?></div>
+                    <div class="text-[10px] text-zinc-400 mt-0.5">Returned for target alignment</div>
+                </div>
+                <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800">
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Evidence Attachments</div>
+                    <div class="text-xl font-black text-zinc-900 dark:text-white mt-0.5"><?= $pipeline['stage2']['mov_count'] ?? 0 ?></div>
+                    <div class="text-[10px] text-zinc-400 mt-0.5">MOV files &amp; cloud drive links</div>
+                </div>
+            </div>
+
+            <!-- Per-Office Table -->
+            <div class="overflow-x-auto custom-scrollbar rounded-xl border border-zinc-200 dark:border-zinc-800">
+                <table class="w-full text-left border-collapse" id="office-leaderboard-table">
+                    <thead>
+                        <tr class="bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 text-[10px] sm:text-[11px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-wider">
+                            <th class="py-3 px-3.5">Office / Academic College</th>
+                            <th class="py-3 px-3 text-center">Headcount</th>
+                            <th class="py-3 px-3 text-center">Target Calibration</th>
+                            <th class="py-3 px-3 text-center">Revisions</th>
+                            <th class="py-3 px-3 text-center">Final Evaluations</th>
+                            <th class="py-3 px-3 text-center">Average Rating</th>
+                            <th class="py-3 px-3 text-center">Status</th>
+                            <th class="py-3 px-3.5 text-right">Drill Down</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-zinc-100 dark:divide-[#1a2b22] text-xs">
+                        <?php if (empty($deptLeaderboard)): ?>
+                            <tr>
+                                <td colspan="8" class="py-8 px-4 text-center text-zinc-400 italic">
+                                    No office records available for this cycle.
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($deptLeaderboard as $dept): ?>
+                                <tr class="office-row hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors" data-name="<?= strtolower(esc($dept['name'])) ?>">
+                                    <td class="py-3 px-3.5 font-bold text-zinc-900 dark:text-white whitespace-nowrap">
+                                        <span class="truncate block max-w-[220px]" title="<?= esc($dept['name']) ?>">
+                                            <?= esc($dept['name']) ?>
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3 text-center font-semibold text-zinc-700 dark:text-zinc-300">
+                                        <?= $dept['headcount'] ?>
+                                    </td>
+                                    <td class="py-3 px-3 text-center whitespace-nowrap">
+                                        <?php 
+                                        $tPct = $dept['headcount'] > 0 ? round(($dept['target_approved'] / $dept['headcount']) * 100) : 0;
+                                        ?>
+                                        <div class="flex items-center justify-center gap-2">
+                                            <div class="w-16 bg-zinc-200 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                                                <div class="bg-emerald-500 h-1.5 rounded-full" style="width: <?= min(100, $tPct) ?>%;"></div>
+                                            </div>
+                                            <span class="font-bold text-[11px] text-zinc-900 dark:text-white"><?= $dept['target_approved'] ?>/<?= $dept['headcount'] ?></span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-3 text-center whitespace-nowrap">
+                                        <?php if ($dept['revisions_needed'] > 0): ?>
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800">
+                                                <?= $dept['revisions_needed'] ?> notes
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="text-zinc-400 dark:text-zinc-500 text-[11px]">—</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="py-3 px-3 text-center whitespace-nowrap">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <div class="w-16 bg-zinc-200 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                                                <div class="bg-indigo-600 h-1.5 rounded-full" style="width: <?= min(100, $dept['compliance_pct']) ?>%;"></div>
+                                            </div>
+                                            <span class="font-bold text-[11px] text-zinc-900 dark:text-white"><?= $dept['eval_completed'] ?>/<?= $dept['headcount'] ?></span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-3 text-center whitespace-nowrap font-black text-zinc-900 dark:text-white">
+                                        <?= $dept['average_rating'] > 0 ? number_format($dept['average_rating'], 2) : '——' ?>
+                                    </td>
+                                    <td class="py-3 px-3 text-center whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border <?= $dept['badge_class'] ?>">
+                                            <?= esc($dept['status_badge']) ?>
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3.5 text-right whitespace-nowrap">
+                                        <?php
+                                        $matchedUnitId = '';
+                                        foreach ($allUnits as $u) {
+                                            if (trim(strtolower($u['name'])) === trim(strtolower($dept['name']))) {
+                                                $matchedUnitId = $u['id'];
+                                                break;
+                                            }
+                                        }
+                                        ?>
+                                        <?php if (!empty($matchedUnitId)): ?>
+                                            <button type="button" onclick="selectCollegeOption('<?= $matchedUnitId ?>', '<?= esc(addslashes($dept['name'])) ?>')"
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all shadow-2xs cursor-pointer">
+                                                <span>Drill Down</span>
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                            </button>
+                                        <?php else: ?>
+                                            <span class="text-[11px] text-zinc-400 italic">—</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                        <tr id="office-empty-row" class="hidden">
+                            <td colspan="8" class="py-8 px-4 text-center text-zinc-400 italic">
+                                No offices matching search query.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         </div>
         <!-- /END OF #dashboard-view-analytics -->
 
@@ -1196,7 +1533,9 @@
                                  data-email="<?= esc(strtolower($f['ratee_email'] ?? $f['email'] ?? '')) ?>"
                                  data-dept="<?= esc(strtolower($f['department'] ?? '')) ?>"
                                  data-pos="<?= esc(strtolower($f['position'] ?? '')) ?>"
-                                 data-emp-status="<?= esc(strtolower($f['employment_status'] ?? 'permanent')) ?>">
+                                 data-emp-status="<?= esc(strtolower($f['employment_status'] ?? 'permanent')) ?>"
+                                 data-rating="<?= esc($f['rating_num'] ?? '') ?>"
+                                 data-adjectival="<?= esc(strtolower($f['adjectival_display'] ?? $f['adjectival_label'] ?? '')) ?>">
                                 
                                 <!-- Top Row: Avatar + Name + Email | Status Badge -->
                                 <div class="flex items-center justify-between gap-2">
@@ -1219,13 +1558,32 @@
                                     </span>
                                 </div>
 
-                                <!-- Bottom Row: Department (left) | Position (right) -->
+                                <!-- Middle Row: Department (left) | Position (right) -->
                                 <div class="flex items-center justify-between text-[11px] pt-1.5 border-t border-zinc-100 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400">
                                     <div class="truncate min-w-0 flex-1 pr-2 text-[11px] font-medium">
                                         <?= esc($f['department'] ?? '—') ?>
                                     </div>
                                     <div class="font-bold text-[11px] text-zinc-900 dark:text-white shrink-0 text-right">
                                         <?= esc($f['position'] ?? '—') ?>
+                                    </div>
+                                </div>
+
+                                <!-- Bottom Row: Grade (Numerical Rating) & Evaluation (Adjectival Rating) -->
+                                <div class="flex items-center justify-between text-[11px] pt-1.5 border-t border-zinc-100 dark:border-zinc-800/60">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Grade:</span>
+                                        <?php if ($f['rating_num'] !== null): ?>
+                                            <span class="font-black text-xs text-zinc-900 dark:text-white tabular-nums">
+                                                <?= number_format($f['rating_num'], 2) ?>
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="text-xs text-zinc-400 dark:text-zinc-500 italic">—</span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border <?= $f['adjectival_badge'] ?? 'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-800/60 dark:text-zinc-400 dark:border-zinc-700/60' ?>">
+                                            <?= esc($f['adjectival_display'] ?? $f['adjectival_label'] ?? 'Not Yet Rated') ?>
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -1386,12 +1744,14 @@
                                     <th class="py-3 px-3">College / Division</th>
                                     <th class="py-3 px-3">Position</th>
                                     <th class="py-3 px-3 text-center whitespace-nowrap">Employment Status</th>
+                                    <th class="py-3 px-3 text-center whitespace-nowrap">Numerical Rating</th>
+                                    <th class="py-3 px-3 text-center whitespace-nowrap">Adjectival Rating</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-zinc-100 dark:divide-[#1a2b22] text-xs">
                                 <?php if (empty($cycleFolders)): ?>
                                     <tr>
-                                        <td colspan="5" class="py-12 px-4 text-center text-zinc-400 dark:text-zinc-500 italic">
+                                        <td colspan="7" class="py-12 px-4 text-center text-zinc-400 dark:text-zinc-500 italic">
                                             No personnel records discovered for this evaluation period.
                                         </td>
                                     </tr>
@@ -1402,7 +1762,9 @@
                                             data-email="<?= esc(strtolower($f['ratee_email'] ?? $f['email'] ?? '')) ?>"
                                             data-dept="<?= esc(strtolower($f['department'] ?? '')) ?>"
                                             data-pos="<?= esc(strtolower($f['position'] ?? '')) ?>"
-                                            data-emp-status="<?= esc(strtolower($f['employment_status'] ?? 'permanent')) ?>">
+                                            data-emp-status="<?= esc(strtolower($f['employment_status'] ?? 'permanent')) ?>"
+                                            data-rating="<?= esc($f['rating_num'] ?? '') ?>"
+                                            data-adjectival="<?= esc(strtolower($f['adjectival_display'] ?? $f['adjectival_label'] ?? '')) ?>">
                                             
                                             <!-- Index -->
                                             <td class="py-3 px-3 text-center font-bold text-zinc-400 dark:text-zinc-500 w-10">
@@ -1446,12 +1808,30 @@
                                                     <?= esc($f['employment_status'] ?? 'Permanent') ?>
                                                 </span>
                                             </td>
+
+                                            <!-- Numerical Rating (Grade) -->
+                                            <td class="py-3 px-3 text-center whitespace-nowrap">
+                                                <?php if ($f['rating_num'] !== null): ?>
+                                                    <span class="font-black text-xs text-zinc-900 dark:text-white tabular-nums tracking-tight">
+                                                        <?= number_format($f['rating_num'], 2) ?>
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="text-zinc-400 dark:text-zinc-500 text-xs font-normal italic">—</span>
+                                                <?php endif; ?>
+                                            </td>
+
+                                            <!-- Adjectival Rating (Evaluation) -->
+                                            <td class="py-3 px-3 text-center whitespace-nowrap">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border <?= $f['adjectival_badge'] ?? 'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-800/60 dark:text-zinc-400 dark:border-zinc-700/60' ?>">
+                                                    <?= esc($f['adjectival_display'] ?? $f['adjectival_label'] ?? 'Not Yet Rated') ?>
+                                                </span>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
 
                                 <tr id="masterlist-empty-row" class="hidden">
-                                    <td colspan="5" class="py-12 px-4 text-center">
+                                    <td colspan="7" class="py-12 px-4 text-center">
                                         <div class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500">
                                             <svg class="w-8 h-8 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -1677,6 +2057,8 @@ function filterMasterlist(resetPage = true) {
         const dept         = row.getAttribute('data-dept') || '';
         const pos          = row.getAttribute('data-pos') || '';
         const rowEmpStatus = (row.getAttribute('data-emp-status') || '').toLowerCase();
+        const rating       = row.getAttribute('data-rating') || '';
+        const adjectival   = (row.getAttribute('data-adjectival') || '').toLowerCase();
 
         // Pill filter
         let matchesPill = false;
@@ -1695,7 +2077,7 @@ function filterMasterlist(resetPage = true) {
         }
 
         // Search match
-        const matchesSearch = !query || name.includes(query) || email.includes(query) || dept.includes(query) || pos.includes(query);
+        const matchesSearch = !query || name.includes(query) || email.includes(query) || dept.includes(query) || pos.includes(query) || rating.includes(query) || adjectival.includes(query);
 
         // Employment status dropdown match
         const matchesStatus = !empStatus || rowEmpStatus === empStatus;
@@ -2061,6 +2443,21 @@ document.addEventListener('keydown', (e) => {
         closeCollegeDropdown(openCollegeDropdownScope);
     }
 });
+
+function filterOfficeLeaderboard() {
+    const input = document.getElementById('office-table-search');
+    const q = input ? input.value.toLowerCase().trim() : '';
+    const rows = document.querySelectorAll('.office-row');
+    let visible = 0;
+    rows.forEach(r => {
+        const name = r.getAttribute('data-name') || '';
+        const show = !q || name.includes(q);
+        r.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+    const empty = document.getElementById('office-empty-row');
+    if (empty) empty.classList.toggle('hidden', visible > 0);
+}
 
 function toggleStageAccordion(stageNum) {
     if (window.innerWidth >= 1024) return;

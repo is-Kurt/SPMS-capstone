@@ -716,34 +716,14 @@
                 <!-- 1. CORE FUNCTIONS -->
                 <tbody id="tbody-core">
                     <tr style="background-color: #fce5cd; border-top: 2px solid #000; border-bottom: 1px solid #000; font-weight: bold;">
-                        <?php if ($isDpcr): ?>
                         <td colspan="5" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                            CORE FUNCTIONS (60%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
+                            CORE FUNCTIONS <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
                         </td>
-                        <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
+                        <td colspan="<?= ($isDpcr || $isOpcr) ? 6 : 4 ?>" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
                             <span style="display: inline-block; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
                                 Core Subtotal: <span id="badge-core-subtotal">0.000</span>
                             </span>
                         </td>
-                        <?php elseif ($isOpcr): ?>
-                        <td colspan="5" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                            CORE MANDATE (60%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
-                        </td>
-                        <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
-                            <span style="display: inline-block; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
-                                Core Subtotal: <span id="badge-core-subtotal">0.000</span>
-                            </span>
-                        </td>
-                        <?php else: ?>
-                        <td colspan="5" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                            CORE FUNCTIONS (70%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
-                        </td>
-                        <td colspan="4" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
-                            <span style="display: inline-block; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
-                                Core Subtotal: <span id="badge-core-subtotal">0.000</span>
-                            </span>
-                        </td>
-                        <?php endif; ?>
                     </tr>
                 </tbody>
                 <!-- Add Row Footer for Core -->
@@ -760,34 +740,14 @@
                 <!-- 2. STRATEGIC FUNCTIONS -->
                 <tbody id="tbody-strategic">
                     <tr style="background-color: #fce5cd; border-top: 2px solid #000; border-bottom: 1px solid #000; font-weight: bold;">
-                        <?php if ($isDpcr): ?>
                         <td colspan="5" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                            STRATEGIC FUNCTIONS (30%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
+                            STRATEGIC FUNCTIONS <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
                         </td>
-                        <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
+                        <td colspan="<?= ($isDpcr || $isOpcr) ? 6 : 4 ?>" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
                             <span style="display: inline-block; background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
                                 Strategic Subtotal: <span id="badge-strategic-subtotal">0.000</span>
                             </span>
                         </td>
-                        <?php elseif ($isOpcr): ?>
-                        <td colspan="5" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                            STRATEGIC FUNCTIONS (25%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
-                        </td>
-                        <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
-                            <span style="display: inline-block; background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
-                                Strategic Subtotal: <span id="badge-strategic-subtotal">0.000</span>
-                            </span>
-                        </td>
-                        <?php else: ?>
-                        <td colspan="5" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                            STRATEGIC FUNCTIONS (20%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
-                        </td>
-                        <td colspan="4" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
-                            <span style="display: inline-block; background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
-                                Strategic Subtotal: <span id="badge-strategic-subtotal">0.000</span>
-                            </span>
-                        </td>
-                        <?php endif; ?>
                     </tr>
                 </tbody>
                 <!-- Add Row Footer for Strategic -->
@@ -804,34 +764,14 @@
                 <!-- 3. SUPPORT FUNCTIONS -->
                 <tbody id="tbody-support">
                     <tr style="background-color: #fce5cd; border-top: 2px solid #000; border-bottom: 1px solid #000; font-weight: bold;">
-                        <?php if ($isDpcr): ?>
                         <td colspan="5" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                            SUPPORT FUNCTIONS (10%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
+                            SUPPORT FUNCTIONS <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
                         </td>
-                        <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
+                        <td colspan="<?= ($isDpcr || $isOpcr) ? 6 : 4 ?>" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
                             <span style="display: inline-block; background: #fffbeb; color: #92400e; border: 1px solid #fde68a; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
                                 Support Subtotal: <span id="badge-support-subtotal">0.000</span>
                             </span>
                         </td>
-                        <?php elseif ($isOpcr): ?>
-                        <td colspan="5" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                            SUPPORT FUNCTIONS (15%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
-                        </td>
-                        <td colspan="6" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
-                            <span style="display: inline-block; background: #fffbeb; color: #92400e; border: 1px solid #fde68a; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
-                                Support Subtotal: <span id="badge-support-subtotal">0.000</span>
-                            </span>
-                        </td>
-                        <?php else: ?>
-                        <td colspan="5" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
-                            SUPPORT FUNCTIONS (10%) <span style="font-weight: normal; font-size: 9px; color: #ba372a;">(depending on position/designation)</span>
-                        </td>
-                        <td colspan="4" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
-                            <span style="display: inline-block; background: #fffbeb; color: #92400e; border: 1px solid #fde68a; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px;">
-                                Support Subtotal: <span id="badge-support-subtotal">0.000</span>
-                            </span>
-                        </td>
-                        <?php endif; ?>
                     </tr>
                 </tbody>
                 <!-- Add Row Footer for Support -->
@@ -856,11 +796,7 @@
                 <td style="width: 35%; padding: 12px; border: 1px solid #000; vertical-align: top; background: #fafafa;">
                     <div style="font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Formula Weights:</div>
                     <div style="font-size: 11px; color: #334155; margin-top: 6px; line-height: 1.5;">
-                        <?= $isDpcr 
-                            ? 'Core Functions (60%) + Strategic Functions (30%) + Support Functions (10%).' 
-                            : ($isOpcr 
-                                ? 'Core Mandate (60%) + Strategic Functions (25%) + Support Functions (15%).'
-                                : 'Core Functions (70%) + Strategic Functions (20%) + Support Functions (10%).') ?>
+                        Core Functions ( ____ %) + Strategic Functions ( ____ %) + Support Functions ( ____ %).
                     </div>
                     <div style="font-size: 10px; color: #94a3b8; font-style: italic; margin-top: 14px; border-top: 1px solid #e2e8f0; padding-top: 6px;">
                         Validated against standard Civil Service Commission SPMS Guidelines.
@@ -1066,14 +1002,37 @@
 
                 <!-- Right: Office Head (Columns D-H) -->
                 <td style="width: 50%; vertical-align: top; border: none; padding: 0 0 0 15px;">
-                    <div style="margin-bottom: 6px;">Final Rating by: 
-                        <input type="text" id="sig-dean-name" value="<?= esc($existingFormData['signatories']['dean'] ?? '') ?>" placeholder="(name of office head)" style="color: #ba372a; font-weight: bold; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: 55%;">
+                    <div id="footer-approvers-container" style="display: flex; flex-direction: column; gap: 8px;">
+                        <?php 
+                            foreach ($approversList as $idx => $appr): 
+                        ?>
+                        <div class="footer-approver-item" style="<?= $idx > 0 ? 'border-top: 1px dashed #cbd5e1; margin-top: 8px; padding-top: 8px;' : '' ?> position: relative;">
+                            <div style="margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-weight: bold;">Final Rating by<?= $idx > 0 ? " (Signatory " . ($idx + 1) . ")" : "" ?>:</span>
+                                    <?php if ($idx === 0): ?>
+                                    <button type="button" onclick="addApproverBlock()" class="print-hide" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: #0284c7; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 4px; cursor: pointer;" title="Add another approving signatory">
+                                        + Add Signatory
+                                    </button>
+                                    <?php endif; ?>
+                                </div>
+                                <?php if ($idx > 0): ?>
+                                <button type="button" onclick="removeFooterApproverBlock(this)" class="print-hide" style="color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5; font-size: 9px; padding: 1px 5px; border-radius: 3px; cursor: pointer; font-weight: bold;" title="Remove this signatory">✕ Remove</button>
+                                <?php endif; ?>
+                            </div>
+                            <div style="margin-bottom: 6px;">
+                                <input type="text" class="field-footer-approver-name" <?= $idx === 0 ? 'id="sig-dean-name"' : '' ?> value="<?= esc($appr['name'] ?? ($idx === 0 ? ($existingFormData['signatories']['dean'] ?? '') : '')) ?>" placeholder="(name of office head)" style="color: #ba372a; font-weight: bold; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: 65%;">
+                            </div>
+                            <div style="margin-bottom: 6px;">Position: 
+                                <input type="text" class="field-footer-approver-pos" <?= $idx === 0 ? 'id="sig-dean-pos"' : '' ?> value="<?= esc($appr['position'] ?? '') ?>" placeholder="(position of office head)" style="color: #ba372a; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: 70%;">
+                            </div>
+                            <div style="margin-bottom: 6px;">Date: <input type="date" class="field-footer-approver-date" <?= $idx === 0 ? 'id="sig-dean-date"' : '' ?> value="<?= esc($appr['evalDate'] ?? ($idx === 0 ? ($existingFormData['signatories']['dean_date'] ?? '') : '')) ?>" onclick="this.showPicker && this.showPicker()" style="border: none; border-bottom: 1px solid #cbd5e1; width: 130px; outline: none; font-size: 11px; background: transparent; font-family: inherit; cursor: pointer;"></div>
+                            <?php if ($idx === 0): ?>
+                            <div style="color: #ba372a; font-size: 10px; font-style: italic;">(may add signatories depending on position/designation)</div>
+                            <?php endif; ?>
+                        </div>
+                        <?php endforeach; ?>
                     </div>
-                    <div style="margin-bottom: 6px;">Position: 
-                        <input type="text" id="sig-dean-pos" value="" placeholder="(position of office head)" style="color: #ba372a; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: 70%;">
-                    </div>
-                    <div style="margin-bottom: 6px;">Date: <input type="date" id="sig-dean-date" value="<?= esc($existingFormData['signatories']['dean_date'] ?? '') ?>" onclick="this.showPicker && this.showPicker()" style="border: none; border-bottom: 1px solid #cbd5e1; width: 130px; outline: none; font-size: 11px; background: transparent; font-family: inherit; cursor: pointer;"></div>
-                    <div style="color: #ba372a; font-size: 10px; font-style: italic;">(may add signatories depending on position/designation)</div>
                 </td>
             </tr>
         </table>
@@ -1264,8 +1223,6 @@
         ]
     } : (IS_IPERF ? {
         core: [
-            { mfo: "", indicators: "", accomplishments: "", q: "", t: "", e: "", remarks: "" },
-            { mfo: "", indicators: "", accomplishments: "", q: "", t: "", e: "", remarks: "" },
             { mfo: "", indicators: "", accomplishments: "", q: "", t: "", e: "", remarks: "" }
         ],
         strategic: [],
@@ -1282,24 +1239,16 @@
         ]
     }));
 
-    // Category Weights: DPCR (60/30/10) vs OPCR (60/25/15) vs IPERF (100% flat) vs IPCR (70/20/10)
-    const CATEGORY_WEIGHTS = IS_DPCR ? {
-        core: 0.60,
-        strategic: 0.30,
-        support: 0.10
-    } : (IS_OPCR ? {
-        core: 0.60,
-        strategic: 0.25,
-        support: 0.15
-    } : (IS_IPERF ? {
+    // Category Weights: Empty by default for DPCR/OPCR/IPCR (IPERF remains flat 100% Core)
+    const CATEGORY_WEIGHTS = IS_IPERF ? {
         core: 1.0,
         strategic: 0,
         support: 0
     } : {
-        core: 0.70,
-        strategic: 0.20,
-        support: 0.10
-    }));
+        core: 0,
+        strategic: 0,
+        support: 0
+    };
 
     // Helper: sanitize budget input and cap at 12 whole digits (up to 999 Billion) + 2 decimal places
     function sanitizeBudgetInput(raw) {
@@ -1468,8 +1417,6 @@
         ]
     } : (IS_IPERF ? {
         core: [
-            { mfo: "", indicators: "", accomplishments: "", q: "", t: "", e: "", remarks: "" },
-            { mfo: "", indicators: "", accomplishments: "", q: "", t: "", e: "", remarks: "" },
             { mfo: "", indicators: "", accomplishments: "", q: "", t: "", e: "", remarks: "" }
         ],
         strategic: [],
@@ -1486,24 +1433,16 @@
         ]
     }));
 
-    // Category Weights: DPCR (60/30/10) vs OPCR (60/25/15) vs IPERF (100% flat) vs IPCR (70/20/10)
-    const CATEGORY_WEIGHTS = IS_DPCR ? {
-        core: 0.60,
-        strategic: 0.30,
-        support: 0.10
-    } : (IS_OPCR ? {
-        core: 0.60,
-        strategic: 0.25,
-        support: 0.15
-    } : (IS_IPERF ? {
+    // Category Weights: Empty by default for DPCR/OPCR/IPCR (IPERF remains flat 100% Core)
+    const CATEGORY_WEIGHTS = IS_IPERF ? {
         core: 1.0,
         strategic: 0,
         support: 0
     } : {
-        core: 0.70,
-        strategic: 0.20,
-        support: 0.10
-    }));
+        core: 0,
+        strategic: 0,
+        support: 0
+    };
 
     // Helper: sanitize budget input and cap at 12 whole digits (up to 999 Billion) + 2 decimal places
     function sanitizeBudgetInput(raw) {
@@ -2306,25 +2245,30 @@
         document.querySelectorAll('.field-budget').forEach(adjustBudgetFontSize);
     });
 
-    function addApproverBlock(name = '', position = '', date = '') {
+    function addApproverBlock(name = '', position = '', date = '', evalDate = '') {
         const container = document.getElementById('approvers-container');
+        const footerContainer = document.getElementById('footer-approvers-container');
         if (!container) return;
         const index = container.querySelectorAll('.approver-item').length;
-        const div = document.createElement('div');
-        div.className = 'approver-item';
-        div.style.cssText = (index > 0 ? 'border-top: 1px dashed #cbd5e1; margin-top: 6px; padding-top: 6px;' : '') + ' position: relative;';
+        const isActuallyFirst = (index === 0);
 
         const namePlaceholder = IS_DPCR ? '(name of office head)' : 'Name of Approving Authority';
         const posPlaceholder = IS_DPCR ? '(position of office head)' : 'Official Designation';
         const nameColor = IS_DPCR ? '#ba372a' : '#dc2626';
+
+        // 1. Top Approver Item
+        const div = document.createElement('div');
+        div.className = 'approver-item';
+        div.dataset.index = index;
+        div.style.cssText = (!isActuallyFirst ? 'border-top: 1px dashed #cbd5e1; margin-top: 6px; padding-top: 6px;' : '') + ' position: relative;';
 
         div.innerHTML = `
             <table style="width: 100%; border-collapse: collapse; border: none; font-size: 11px;">
                 <tr>
                     <td style="width: ${IS_DPCR ? '65px' : '60px'}; border: none; padding: 3px 0; font-weight: bold; color: ${IS_DPCR ? '#000' : '#64748b'};">Name:</td>
                     <td style="border: none; padding: 3px 0;">
-                        <input type="text" class="field-approver-name" ${index === 0 ? 'id="approver-name"' : ''} value="${escapeHtml(name)}" placeholder="${namePlaceholder}" style="font-weight: bold; color: ${nameColor}; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: ${IS_DPCR ? '60%' : '100%'};">
-                        ${index > 0 ? `
+                        <input type="text" class="field-approver-name" ${isActuallyFirst ? 'id="approver-name"' : ''} value="${escapeHtml(name)}" placeholder="${namePlaceholder}" style="font-weight: bold; color: ${nameColor}; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: ${IS_DPCR ? '60%' : '100%'};">
+                        ${!isActuallyFirst ? `
                         <button type="button" onclick="removeApproverBlock(this)" class="print-hide" style="margin-left: 6px; color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5; font-size: 9px; padding: 1px 5px; border-radius: 3px; cursor: pointer; font-weight: bold;" title="Remove this signatory">✕ Remove</button>
                         ` : (IS_DPCR ? `
                         <span style="color: #ba372a; font-style: italic; font-size: 10px; margin-left: 6px;">(may add signatories depending on position)</span>
@@ -2334,47 +2278,126 @@
                 <tr>
                     <td style="border: none; padding: 3px 0; font-weight: bold; color: ${IS_DPCR ? '#000' : '#64748b'};">Position:</td>
                     <td style="border: none; padding: 3px 0;">
-                        <input type="text" class="field-approver-pos" ${index === 0 ? 'id="approver-pos"' : ''} value="${escapeHtml(position)}" placeholder="${posPlaceholder}" style="color: ${IS_DPCR ? '#ba372a' : '#1e293b'}; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: ${IS_DPCR ? '80%' : '100%'};">
+                        <input type="text" class="field-approver-pos" ${isActuallyFirst ? 'id="approver-pos"' : ''} value="${escapeHtml(position)}" placeholder="${posPlaceholder}" style="color: ${IS_DPCR ? '#ba372a' : '#1e293b'}; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: ${IS_DPCR ? '80%' : '100%'};">
                     </td>
                 </tr>
                 <tr>
                     <td style="border: none; padding: 3px 0; font-weight: bold; color: ${IS_DPCR ? '#000' : '#64748b'};">Date:</td>
                     <td style="border: none; padding: 3px 0;">
-                        <input type="date" class="field-approver-date" ${index === 0 ? 'id="approver-date"' : ''} value="${escapeHtml(date)}" onclick="this.showPicker && this.showPicker()" style="color: ${date ? '#0f172a' : '#ba372a'}; border: none; border-bottom: 1px solid ${date ? '#cbd5e1' : '#ba372a'}; outline: none; font-size: 11px; width: 130px; background: transparent; font-family: inherit; cursor: pointer;">
+                        <input type="date" class="field-approver-date" ${isActuallyFirst ? 'id="approver-date"' : ''} value="${escapeHtml(date)}" onclick="this.showPicker && this.showPicker()" style="color: ${date ? '#0f172a' : '#ba372a'}; border: none; border-bottom: 1px solid ${date ? '#cbd5e1' : '#ba372a'}; outline: none; font-size: 11px; width: 130px; background: transparent; font-family: inherit; cursor: pointer;">
                     </td>
                 </tr>
             </table>
         `;
         container.appendChild(div);
+
+        // 2. Matching Footer Approver Item
+        let footerDiv = null;
+        if (footerContainer) {
+            footerDiv = document.createElement('div');
+            footerDiv.className = 'footer-approver-item';
+            footerDiv.dataset.index = index;
+            footerDiv.style.cssText = (!isActuallyFirst ? 'border-top: 1px dashed #cbd5e1; margin-top: 8px; padding-top: 8px;' : '') + ' position: relative;';
+
+            footerDiv.innerHTML = `
+                <div style="margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-weight: bold;">Final Rating by${!isActuallyFirst ? ` (Signatory ${index + 1})` : ''}:</span>
+                        ${isActuallyFirst ? `
+                        <button type="button" onclick="addApproverBlock()" class="print-hide" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: #0284c7; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 4px; cursor: pointer;" title="Add another approving signatory">
+                            + Add Signatory
+                        </button>
+                        ` : ''}
+                    </div>
+                    ${!isActuallyFirst ? `
+                    <button type="button" onclick="removeFooterApproverBlock(this)" class="print-hide" style="color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5; font-size: 9px; padding: 1px 5px; border-radius: 3px; cursor: pointer; font-weight: bold;" title="Remove this signatory">✕ Remove</button>
+                    ` : ''}
+                </div>
+                <div style="margin-bottom: 6px;">
+                    <input type="text" class="field-footer-approver-name" ${isActuallyFirst ? 'id="sig-dean-name"' : ''} value="${escapeHtml(name)}" placeholder="(name of office head)" style="color: #ba372a; font-weight: bold; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: 65%;">
+                </div>
+                <div style="margin-bottom: 6px;">Position: 
+                    <input type="text" class="field-footer-approver-pos" ${isActuallyFirst ? 'id="sig-dean-pos"' : ''} value="${escapeHtml(position)}" placeholder="(position of office head)" style="color: #ba372a; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: 70%;">
+                </div>
+                <div style="margin-bottom: 6px;">Date: <input type="date" class="field-footer-approver-date" ${isActuallyFirst ? 'id="sig-dean-date"' : ''} value="${escapeHtml(evalDate)}" onclick="this.showPicker && this.showPicker()" style="border: none; border-bottom: 1px solid #cbd5e1; width: 130px; outline: none; font-size: 11px; background: transparent; font-family: inherit; cursor: pointer;"></div>
+                ${isActuallyFirst ? `
+                <div style="color: #ba372a; font-size: 10px; font-style: italic;">(may add signatories depending on position/designation)</div>
+                ` : ''}
+            `;
+            footerContainer.appendChild(footerDiv);
+        }
+
+        // 3. Two-Way Real-time Sync
+        const topName = div.querySelector('.field-approver-name');
+        const topPos = div.querySelector('.field-approver-pos');
+        const footName = footerDiv ? footerDiv.querySelector('.field-footer-approver-name') : null;
+        const footPos = footerDiv ? footerDiv.querySelector('.field-footer-approver-pos') : null;
+
+        const syncInputs = (src, dest) => {
+            if (!src || !dest) return;
+            dest.value = src.value;
+        };
+
+        if (topName && footName) {
+            topName.addEventListener('input', () => syncInputs(topName, footName));
+            footName.addEventListener('input', () => syncInputs(footName, topName));
+        }
+        if (topPos && footPos) {
+            topPos.addEventListener('input', () => syncInputs(topPos, footPos));
+            footPos.addEventListener('input', () => syncInputs(footPos, topPos));
+        }
     }
 
     function removeApproverBlock(btn) {
         const item = btn.closest('.approver-item');
-        if (item) {
-            item.remove();
-        }
+        if (!item) return;
+        const index = Array.from(item.parentElement.children).indexOf(item);
+        removeApproverBlockByIndex(index);
+    }
+
+    function removeFooterApproverBlock(btn) {
+        const item = btn.closest('.footer-approver-item');
+        if (!item) return;
+        const index = Array.from(item.parentElement.children).indexOf(item);
+        removeApproverBlockByIndex(index);
+    }
+
+    function removeApproverBlockByIndex(index) {
+        const headerItems = document.querySelectorAll('#approvers-container .approver-item');
+        const footerItems = document.querySelectorAll('#footer-approvers-container .footer-approver-item');
+        if (headerItems[index]) headerItems[index].remove();
+        if (footerItems[index]) footerItems[index].remove();
     }
 
     function extractApprovers() {
         const items = document.querySelectorAll('#approvers-container .approver-item');
+        const footerItems = document.querySelectorAll('#footer-approvers-container .footer-approver-item');
         const approvers = [];
-        items.forEach(item => {
+        items.forEach((item, idx) => {
             const name = item.querySelector('.field-approver-name')?.value || '';
             const position = item.querySelector('.field-approver-pos')?.value || '';
             const date = item.querySelector('.field-approver-date')?.value || '';
-            if (name || position || date || items.length === 1) {
-                approvers.push({ name, position, date });
+            const footerItem = footerItems[idx];
+            const evalDate = footerItem?.querySelector('.field-footer-approver-date')?.value || '';
+            if (name || position || date || evalDate || items.length === 1) {
+                approvers.push({ name, position, date, evalDate });
             }
         });
         if (approvers.length === 0) {
             approvers.push({
                 name: document.getElementById('approver-name')?.value || '',
                 position: document.getElementById('approver-pos')?.value || '',
-                date: document.getElementById('approver-date')?.value || ''
+                date: document.getElementById('approver-date')?.value || '',
+                evalDate: document.getElementById('sig-dean-date')?.value || ''
             });
         }
         return approvers;
     }
+
+    window.addApproverBlock = addApproverBlock;
+    window.removeApproverBlock = removeApproverBlock;
+    window.removeFooterApproverBlock = removeFooterApproverBlock;
+    window.removeApproverBlockByIndex = removeApproverBlockByIndex;
 
     function saveTemplateForm() {
         const saveBtn = document.getElementById('btn-save-template');
@@ -2395,7 +2418,7 @@
             doc_type: IS_DPCR ? 'dpcr' : (IS_OPCR ? 'opcr' : (IS_IPERF ? 'iperf' : 'ipcr')),
             currency: document.querySelector('.header-budget-currency')?.value.trim() || '₱',
             budget_currency: document.querySelector('.header-budget-currency')?.value.trim() || '₱',
-            weights: CATEGORY_WEIGHTS,
+            weights: IS_IPERF ? CATEGORY_WEIGHTS : ((CATEGORY_WEIGHTS.core > 0 || CATEGORY_WEIGHTS.strategic > 0 || CATEGORY_WEIGHTS.support > 0) ? CATEGORY_WEIGHTS : null),
             classification: document.getElementById('ratee-classification')?.value || '',
             ratee: {
                 name: document.getElementById('ratee-name')?.value || '',
@@ -2827,25 +2850,30 @@
         document.querySelectorAll('.field-budget').forEach(adjustBudgetFontSize);
     });
 
-    function addApproverBlock(name = '', position = '', date = '') {
+    function addApproverBlock(name = '', position = '', date = '', evalDate = '') {
         const container = document.getElementById('approvers-container');
+        const footerContainer = document.getElementById('footer-approvers-container');
         if (!container) return;
         const index = container.querySelectorAll('.approver-item').length;
-        const div = document.createElement('div');
-        div.className = 'approver-item';
-        div.style.cssText = (index > 0 ? 'border-top: 1px dashed #cbd5e1; margin-top: 6px; padding-top: 6px;' : '') + ' position: relative;';
+        const isActuallyFirst = (index === 0);
 
         const namePlaceholder = IS_DPCR ? '(name of office head)' : 'Name of Approving Authority';
         const posPlaceholder = IS_DPCR ? '(position of office head)' : 'Official Designation';
         const nameColor = IS_DPCR ? '#ba372a' : '#dc2626';
+
+        // 1. Top Approver Item
+        const div = document.createElement('div');
+        div.className = 'approver-item';
+        div.dataset.index = index;
+        div.style.cssText = (!isActuallyFirst ? 'border-top: 1px dashed #cbd5e1; margin-top: 6px; padding-top: 6px;' : '') + ' position: relative;';
 
         div.innerHTML = `
             <table style="width: 100%; border-collapse: collapse; border: none; font-size: 11px;">
                 <tr>
                     <td style="width: ${IS_DPCR ? '65px' : '60px'}; border: none; padding: 3px 0; font-weight: bold; color: ${IS_DPCR ? '#000' : '#64748b'};">Name:</td>
                     <td style="border: none; padding: 3px 0;">
-                        <input type="text" class="field-approver-name" ${index === 0 ? 'id="approver-name"' : ''} value="${escapeHtml(name)}" placeholder="${namePlaceholder}" style="font-weight: bold; color: ${nameColor}; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: ${IS_DPCR ? '60%' : '100%'};">
-                        ${index > 0 ? `
+                        <input type="text" class="field-approver-name" ${isActuallyFirst ? 'id="approver-name"' : ''} value="${escapeHtml(name)}" placeholder="${namePlaceholder}" style="font-weight: bold; color: ${nameColor}; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: ${IS_DPCR ? '60%' : '100%'};">
+                        ${!isActuallyFirst ? `
                         <button type="button" onclick="removeApproverBlock(this)" class="print-hide" style="margin-left: 6px; color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5; font-size: 9px; padding: 1px 5px; border-radius: 3px; cursor: pointer; font-weight: bold;" title="Remove this signatory">✕ Remove</button>
                         ` : (IS_DPCR ? `
                         <span style="color: #ba372a; font-style: italic; font-size: 10px; margin-left: 6px;">(may add signatories depending on position)</span>
@@ -2855,47 +2883,126 @@
                 <tr>
                     <td style="border: none; padding: 3px 0; font-weight: bold; color: ${IS_DPCR ? '#000' : '#64748b'};">Position:</td>
                     <td style="border: none; padding: 3px 0;">
-                        <input type="text" class="field-approver-pos" ${index === 0 ? 'id="approver-pos"' : ''} value="${escapeHtml(position)}" placeholder="${posPlaceholder}" style="color: ${IS_DPCR ? '#ba372a' : '#1e293b'}; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: ${IS_DPCR ? '80%' : '100%'};">
+                        <input type="text" class="field-approver-pos" ${isActuallyFirst ? 'id="approver-pos"' : ''} value="${escapeHtml(position)}" placeholder="${posPlaceholder}" style="color: ${IS_DPCR ? '#ba372a' : '#1e293b'}; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: ${IS_DPCR ? '80%' : '100%'};">
                     </td>
                 </tr>
                 <tr>
                     <td style="border: none; padding: 3px 0; font-weight: bold; color: ${IS_DPCR ? '#000' : '#64748b'};">Date:</td>
                     <td style="border: none; padding: 3px 0;">
-                        <input type="date" class="field-approver-date" ${index === 0 ? 'id="approver-date"' : ''} value="${escapeHtml(date)}" onclick="this.showPicker && this.showPicker()" style="color: ${date ? '#0f172a' : '#ba372a'}; border: none; border-bottom: 1px solid ${date ? '#cbd5e1' : '#ba372a'}; outline: none; font-size: 11px; width: 130px; background: transparent; font-family: inherit; cursor: pointer;">
+                        <input type="date" class="field-approver-date" ${isActuallyFirst ? 'id="approver-date"' : ''} value="${escapeHtml(date)}" onclick="this.showPicker && this.showPicker()" style="color: ${date ? '#0f172a' : '#ba372a'}; border: none; border-bottom: 1px solid ${date ? '#cbd5e1' : '#ba372a'}; outline: none; font-size: 11px; width: 130px; background: transparent; font-family: inherit; cursor: pointer;">
                     </td>
                 </tr>
             </table>
         `;
         container.appendChild(div);
+
+        // 2. Matching Footer Approver Item
+        let footerDiv = null;
+        if (footerContainer) {
+            footerDiv = document.createElement('div');
+            footerDiv.className = 'footer-approver-item';
+            footerDiv.dataset.index = index;
+            footerDiv.style.cssText = (!isActuallyFirst ? 'border-top: 1px dashed #cbd5e1; margin-top: 8px; padding-top: 8px;' : '') + ' position: relative;';
+
+            footerDiv.innerHTML = `
+                <div style="margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-weight: bold;">Final Rating by${!isActuallyFirst ? ` (Signatory ${index + 1})` : ''}:</span>
+                        ${isActuallyFirst ? `
+                        <button type="button" onclick="addApproverBlock()" class="print-hide" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: #0284c7; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 4px; cursor: pointer;" title="Add another approving signatory">
+                            + Add Signatory
+                        </button>
+                        ` : ''}
+                    </div>
+                    ${!isActuallyFirst ? `
+                    <button type="button" onclick="removeFooterApproverBlock(this)" class="print-hide" style="color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5; font-size: 9px; padding: 1px 5px; border-radius: 3px; cursor: pointer; font-weight: bold;" title="Remove this signatory">✕ Remove</button>
+                    ` : ''}
+                </div>
+                <div style="margin-bottom: 6px;">
+                    <input type="text" class="field-footer-approver-name" ${isActuallyFirst ? 'id="sig-dean-name"' : ''} value="${escapeHtml(name)}" placeholder="(name of office head)" style="color: #ba372a; font-weight: bold; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: 65%;">
+                </div>
+                <div style="margin-bottom: 6px;">Position: 
+                    <input type="text" class="field-footer-approver-pos" ${isActuallyFirst ? 'id="sig-dean-pos"' : ''} value="${escapeHtml(position)}" placeholder="(position of office head)" style="color: #ba372a; border: none; border-bottom: 1px solid #cbd5e1; outline: none; font-size: 11px; width: 70%;">
+                </div>
+                <div style="margin-bottom: 6px;">Date: <input type="date" class="field-footer-approver-date" ${isActuallyFirst ? 'id="sig-dean-date"' : ''} value="${escapeHtml(evalDate)}" onclick="this.showPicker && this.showPicker()" style="border: none; border-bottom: 1px solid #cbd5e1; width: 130px; outline: none; font-size: 11px; background: transparent; font-family: inherit; cursor: pointer;"></div>
+                ${isActuallyFirst ? `
+                <div style="color: #ba372a; font-size: 10px; font-style: italic;">(may add signatories depending on position/designation)</div>
+                ` : ''}
+            `;
+            footerContainer.appendChild(footerDiv);
+        }
+
+        // 3. Two-Way Real-time Sync
+        const topName = div.querySelector('.field-approver-name');
+        const topPos = div.querySelector('.field-approver-pos');
+        const footName = footerDiv ? footerDiv.querySelector('.field-footer-approver-name') : null;
+        const footPos = footerDiv ? footerDiv.querySelector('.field-footer-approver-pos') : null;
+
+        const syncInputs = (src, dest) => {
+            if (!src || !dest) return;
+            dest.value = src.value;
+        };
+
+        if (topName && footName) {
+            topName.addEventListener('input', () => syncInputs(topName, footName));
+            footName.addEventListener('input', () => syncInputs(footName, topName));
+        }
+        if (topPos && footPos) {
+            topPos.addEventListener('input', () => syncInputs(topPos, footPos));
+            footPos.addEventListener('input', () => syncInputs(footPos, topPos));
+        }
     }
 
     function removeApproverBlock(btn) {
         const item = btn.closest('.approver-item');
-        if (item) {
-            item.remove();
-        }
+        if (!item) return;
+        const index = Array.from(item.parentElement.children).indexOf(item);
+        removeApproverBlockByIndex(index);
+    }
+
+    function removeFooterApproverBlock(btn) {
+        const item = btn.closest('.footer-approver-item');
+        if (!item) return;
+        const index = Array.from(item.parentElement.children).indexOf(item);
+        removeApproverBlockByIndex(index);
+    }
+
+    function removeApproverBlockByIndex(index) {
+        const headerItems = document.querySelectorAll('#approvers-container .approver-item');
+        const footerItems = document.querySelectorAll('#footer-approvers-container .footer-approver-item');
+        if (headerItems[index]) headerItems[index].remove();
+        if (footerItems[index]) footerItems[index].remove();
     }
 
     function extractApprovers() {
         const items = document.querySelectorAll('#approvers-container .approver-item');
+        const footerItems = document.querySelectorAll('#footer-approvers-container .footer-approver-item');
         const approvers = [];
-        items.forEach(item => {
+        items.forEach((item, idx) => {
             const name = item.querySelector('.field-approver-name')?.value || '';
             const position = item.querySelector('.field-approver-pos')?.value || '';
             const date = item.querySelector('.field-approver-date')?.value || '';
-            if (name || position || date || items.length === 1) {
-                approvers.push({ name, position, date });
+            const footerItem = footerItems[idx];
+            const evalDate = footerItem?.querySelector('.field-footer-approver-date')?.value || '';
+            if (name || position || date || evalDate || items.length === 1) {
+                approvers.push({ name, position, date, evalDate });
             }
         });
         if (approvers.length === 0) {
             approvers.push({
                 name: document.getElementById('approver-name')?.value || '',
                 position: document.getElementById('approver-pos')?.value || '',
-                date: document.getElementById('approver-date')?.value || ''
+                date: document.getElementById('approver-date')?.value || '',
+                evalDate: document.getElementById('sig-dean-date')?.value || ''
             });
         }
         return approvers;
     }
+
+    window.addApproverBlock = addApproverBlock;
+    window.removeApproverBlock = removeApproverBlock;
+    window.removeFooterApproverBlock = removeFooterApproverBlock;
+    window.removeApproverBlockByIndex = removeApproverBlockByIndex;
 
     function saveTemplateForm() {
         const saveBtn = document.getElementById('btn-save-template');
@@ -2916,7 +3023,7 @@
             doc_type: IS_DPCR ? 'dpcr' : (IS_OPCR ? 'opcr' : (IS_IPERF ? 'iperf' : 'ipcr')),
             currency: document.querySelector('.header-budget-currency')?.value.trim() || '₱',
             budget_currency: document.querySelector('.header-budget-currency')?.value.trim() || '₱',
-            weights: CATEGORY_WEIGHTS,
+            weights: IS_IPERF ? CATEGORY_WEIGHTS : ((CATEGORY_WEIGHTS.core > 0 || CATEGORY_WEIGHTS.strategic > 0 || CATEGORY_WEIGHTS.support > 0) ? CATEGORY_WEIGHTS : null),
             classification: document.getElementById('ratee-classification')?.value || '',
             ratee: {
                 name: document.getElementById('ratee-name')?.value || '',

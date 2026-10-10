@@ -68,6 +68,7 @@
         ?>
 
         <form id="form-edit-folder">
+            <?= csrf_field() ?>
             <input type="hidden" name="folder_id" id="edit-folder-id">
 
             <div class="space-y-6">

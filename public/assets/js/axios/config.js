@@ -1,14 +1,32 @@
-const csrfName = document.querySelector('meta[name="csrf-token-name"]').getAttribute('content');
-let csrfHash = document.querySelector('meta[name="csrf-token-hash"]').getAttribute('content');
+const csrfName = document.querySelector('meta[name="csrf-token-name"]')?.getAttribute('content') || 'csrf_test_name';
+let csrfHash = document.querySelector('meta[name="csrf-token-hash"]')?.getAttribute('content') || '';
+
+function getCsrfInfo() {
+    const metaName = document.querySelector('meta[name="csrf-token-name"]')?.getAttribute('content') || csrfName;
+    const metaHash = document.querySelector('meta[name="csrf-token-hash"]')?.getAttribute('content') || csrfHash;
+    return { name: metaName, hash: metaHash };
+}
 
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
 axios.interceptors.request.use((config) => {
-    const method = config.method.toLowerCase();
+    const method = (config.method || 'get').toLowerCase();
     const protectedMethods = ['post', 'put', 'patch', 'delete'];
 
     if (protectedMethods.includes(method)) {
-        config.headers['x-csrf-token'] = csrfHash;
+        const { name, hash } = getCsrfInfo();
+        config.headers['x-csrf-token'] = hash;
+        config.headers['X-CSRF-TOKEN'] = hash;
+
+        if (config.data instanceof FormData) {
+            if (!config.data.has(name)) {
+                config.data.append(name, hash);
+            } else {
+                config.data.set(name, hash);
+            }
+        } else if (config.data && typeof config.data === 'object' && !(config.data instanceof Blob)) {
+            config.data[name] = hash;
+        }
     }
     return config;
 }, error => Promise.reject(error));
@@ -29,10 +47,10 @@ function addCsrfSubscriber(callback) {
 // Response Interceptor
 axios.interceptors.response.use((response) => {
     // 1. Success - Update token if the server sent a new one in the headers
-    const newHeaderHash = response.headers['x-csrf-token'];
+    const newHeaderHash = response.headers['x-csrf-token'] || response.headers['X-CSRF-TOKEN'];
     if (newHeaderHash) {
         csrfHash = newHeaderHash;
-        document.querySelector('meta[name="csrf-token-hash"]').setAttribute('content', newHeaderHash);
+        document.querySelector('meta[name="csrf-token-hash"]')?.setAttribute('content', newHeaderHash);
         document.querySelectorAll(`input[name="${csrfName}"]`).forEach(input => {
             input.value = newHeaderHash;
         });
@@ -55,7 +73,7 @@ axios.interceptors.response.use((response) => {
                 
                 // Update global variables and DOM
                 csrfHash = newToken;
-                document.querySelector('meta[name="csrf-token-hash"]').setAttribute('content', newToken);
+                document.querySelector('meta[name="csrf-token-hash"]')?.setAttribute('content', newToken);
                 document.querySelectorAll(`input[name="${csrfName}"]`).forEach(input => {
                     input.value = newToken;
                 });
@@ -71,7 +89,14 @@ axios.interceptors.response.use((response) => {
         // Add the failed request to the queue and wait for the new token
         return new Promise(resolve => {
             addCsrfSubscriber(newToken => {
+                const { name } = getCsrfInfo();
                 originalRequest.headers['x-csrf-token'] = newToken;
+                originalRequest.headers['X-CSRF-TOKEN'] = newToken;
+                if (originalRequest.data instanceof FormData) {
+                    originalRequest.data.set(name, newToken);
+                } else if (originalRequest.data && typeof originalRequest.data === 'object' && !(originalRequest.data instanceof Blob)) {
+                    originalRequest.data[name] = newToken;
+                }
                 resolve(axios(originalRequest)); // Retry the original request!
             });
         });
@@ -81,7 +106,7 @@ axios.interceptors.response.use((response) => {
     const errorHash = error.response?.headers?.['x-csrf-token'] || error.response?.headers?.['X-CSRF-TOKEN'];
     if (errorHash) {
         csrfHash = errorHash;
-        document.querySelector('meta[name="csrf-token-hash"]').setAttribute('content', errorHash);
+        document.querySelector('meta[name="csrf-token-hash"]')?.setAttribute('content', errorHash);
         document.querySelectorAll(`input[name="${csrfName}"]`).forEach(input => {
             input.value = errorHash;
         });

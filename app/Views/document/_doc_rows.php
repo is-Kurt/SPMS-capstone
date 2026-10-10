@@ -833,7 +833,7 @@
                                 </div>
                                 <div class="text-[10px] sm:text-xs leading-relaxed">
                                     <span class="spms-hub-banner-title font-extrabold block mb-0.5 text-[11px] sm:text-sm">Target Setting Window is Active</span>
-                                    As Administrator, you oversee the evaluation schedule and cascade targets downward. You have <strong>no personal evaluation paper to fill</strong>. Use the <strong>Cascade Management</strong> panel on the right to distribute this cycle to the <strong>Vice President (Executive Team)</strong> so OPCR commitments can be formulated.
+                                    As Administrator, you oversee the evaluation schedule and release cycles to executive leadership. You have <strong>no personal evaluation paper to fill</strong>. Use the <strong>Cycle Release</strong> panel on the right to release this cycle to the <strong>Vice Presidents (Executive Team)</strong> so OPCR commitments can be formulated.
                                 </div>
                             </div>
 
@@ -868,20 +868,20 @@
                                     </div>
                                 </div>
 
-                                <!-- 3. Cascade Status -->
+                                <!-- 3. Release Status (Admin) -->
                                 <?php $cascadedTeamId = $activeFolder['routing_preset_id'] ?? null; ?>
                                 <div class="spms-hub-stat-tile">
                                     <div>
-                                        <div class="spms-hub-tile-label">Cascade Status</div>
+                                        <div class="spms-hub-tile-label">Release Status</div>
                                         <div class="spms-hub-tile-value">
-                                            <?= $cascadedTeamId ? 'Cascaded to Subordinates' : 'Awaiting Cascade' ?>
+                                            <?= $cascadedTeamId ? 'Released to Vice Presidents' : 'Awaiting Release' ?>
                                         </div>
                                     </div>
                                     <div>
                                         <?php if ($cascadedTeamId): ?>
-                                            <span class="spms-hub-status-text text-emerald-700 dark:text-emerald-400 font-medium">Distribution Active</span>
+                                            <span class="spms-hub-status-text text-emerald-700 dark:text-emerald-400 font-medium">Cycle Released</span>
                                         <?php else: ?>
-                                            <span class="spms-hub-status-text text-amber-600 dark:text-[#f59e0b] font-medium">Select Team on Right</span>
+                                            <span class="spms-hub-status-text text-amber-600 dark:text-[#f59e0b] font-medium">Select VP Team on Right</span>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -1377,16 +1377,18 @@
             <?php if ($canCascade): ?>
                 <!-- CASCADE MANAGEMENT SECTION (For Admins & Supervisors) -->
                 <div class="flex flex-col gap-3 flex-1 min-h-0">
-                    <?php $cascadedTeamId = $activeFolder['routing_preset_id'] ?? null; ?>
+                    <?php 
+                        $isUserAdmin = (session()->get('role') === 'Admin');
+                        $cascadedTeamId = $activeFolder['routing_preset_id'] ?? null; 
+                    ?>
                     <div class="flex items-center justify-between shrink-0">
-                        <h4 class="text-[10px] font-black uppercase text-text-muted tracking-wider">Cascade Management</h4>
+                        <h4 class="text-[10px] font-black uppercase text-text-muted tracking-wider"><?= $isUserAdmin ? 'Cycle Release Management' : 'Cascade Management' ?></h4>
                         <?php if ($cascadedTeamId): ?>
-                            <span class="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-[#0e291e] px-2 py-0.5 rounded-md border border-emerald-200 dark:border-[#144630]">Cascaded</span>
+                            <span class="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-[#0e291e] px-2 py-0.5 rounded-md border border-emerald-200 dark:border-[#144630]"><?= $isUserAdmin ? 'Released' : 'Cascaded' ?></span>
                         <?php endif; ?>
                     </div>
 
                     <?php 
-                        $isUserAdmin = (session()->get('role') === 'Admin');
                         // Supervisors can cascade immediately once formulating commitments in target phase
                         $inTargetPhase = in_array($activeFolder['status'], [
                             \App\Enums\FolderStatus::DRAFT_TARGET->value,
@@ -1404,10 +1406,10 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                 </svg>
-                                <span>Cascade Closed</span>
+                                <span><?= $isUserAdmin ? 'Release Period Closed' : 'Cascade Closed' ?></span>
                             </div>
                             <p class="text-[10px] leading-tight text-amber-700 dark:text-amber-400">
-                                The target setting phase has ended for this cycle. Subordinates can no longer be cascaded.
+                                <?= $isUserAdmin ? 'The target setting phase has ended for this cycle. Evaluation folders can no longer be released to recipients.' : 'The target setting phase has ended for this cycle. Subordinates can no longer be cascaded.' ?>
                             </p>
                         </div>
                     <?php elseif ($cascadedTeamId || !empty($cascadedChildren)): ?>
@@ -1447,19 +1449,19 @@
                                     </span>
                                 </div>
                                 <p class="text-[10px] leading-relaxed text-emerald-700 dark:text-emerald-400 font-medium">
-                                    <?= $pendingCount ?> member<?= $pendingCount === 1 ? ' was' : 's were' ?> added to this team. Sync to provision their target folders without affecting existing cascaded members.
+                                    <?= $pendingCount ?> member<?= $pendingCount === 1 ? ' was' : 's were' ?> added to this team. <?= $isUserAdmin ? 'Sync to release evaluation folders to new members.' : 'Sync to provision their target folders without affecting existing cascaded members.' ?>
                                 </p>
                                 <button id="btn-sync-cascade" onclick="triggerSyncCascade('<?= $activeFolder['id'] ?>')" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs shadow-xs transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-1.5">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                     </svg>
-                                    <span>Sync Team (+<?= $pendingCount ?> New)</span>
+                                    <span><?= $isUserAdmin ? "Sync & Release (+{$pendingCount} New)" : "Sync Team (+{$pendingCount} New)" ?></span>
                                 </button>
                             </div>
                         <?php endif; ?>
 
                         <button onclick="triggerUncascade('<?= $activeFolder['id'] ?>')" class="w-full py-2.5 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-300 dark:border-[#361a1f] bg-rose-50 dark:bg-[#1c1214] hover:bg-rose-600 dark:hover:bg-[#261619] rounded-xl transition-colors cursor-pointer flex justify-center items-center gap-1.5 font-bold text-xs uppercase tracking-wider shrink-0">
-                            Revoke Cascade
+                            <?= $isUserAdmin ? 'Revoke Cycle Release' : 'Revoke Cascade' ?>
                         </button>
 
                         <?php if (!empty($cascadedChildren)): ?>
@@ -1469,7 +1471,7 @@
                             ?>
                             <div class="mt-1 flex flex-col gap-2 flex-1 min-h-0">
                                 <div class="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-text-muted shrink-0">
-                                    <span>Cascaded Subordinates</span>
+                                    <span><?= $isUserAdmin ? 'Released Recipients' : 'Cascaded Subordinates' ?></span>
                                     <span id="subordinates-count-badge" class="px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 font-extrabold text-[9px]"><?= count($cascadedChildren) ?></span>
                                 </div>
 
@@ -1515,7 +1517,7 @@
                                                     <?php if ($canActuallyCascade): ?>
                                                         <button type="button"
                                                                 onclick="triggerRemoveCascadedSubordinate('<?= $child['id'] ?>', '<?= esc(addslashes($child['first_name'] . ' ' . $child['last_name'])) ?>', '<?= $activeFolder['id'] ?>')"
-                                                                title="Remove from this cycle"
+                                                                title="<?= $isUserAdmin ? 'Revoke cycle release for this recipient' : 'Remove from this cycle' ?>"
                                                                 class="p-1 rounded-md text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer shrink-0">
                                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -1564,11 +1566,11 @@
                     <?php elseif ($hasPresets): ?>
                         <div class="flex flex-col gap-2">
                             <label for="team-cascade-select" class="text-[10px] font-bold text-text-muted uppercase tracking-wider">
-                                Select Distribution Team
+                                <?= $isUserAdmin ? 'Select Recipient Team' : 'Select Distribution Team' ?>
                             </label>
                             <div class="relative w-full">
                                 <select id="team-cascade-select" <?= ($isLocked || !$canActuallyCascade) ? 'disabled' : '' ?> class="w-full bg-zinc-50 dark:bg-zinc-900 text-xs font-bold text-text outline-none pl-3.5 pr-8 py-2.5 rounded-xl appearance-none border border-surface-border <?= ($isLocked || !$canActuallyCascade) ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer focus:border-emerald-500/50' ?>">
-                                    <option value="" disabled selected class="bg-surface text-text-muted">-- Select a Team to Cascade --</option>
+                                    <option value="" disabled selected class="bg-surface text-text-muted"><?= $isUserAdmin ? '-- Select a Team to Release --' : '-- Select a Team to Cascade --' ?></option>
                                     <?php foreach($presets as $preset): ?>
                                         <?php $mCount = (int)($preset['member_count'] ?? 0); ?>
                                         <option value="<?= $preset['id'] ?>" class="bg-surface text-text">
@@ -1589,7 +1591,7 @@
 
                         <?php if (!$isLocked && $canActuallyCascade): ?>
                             <button onclick="triggerCascade('<?= $activeFolder['id'] ?>')" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-xl shadow-md transition-all cursor-pointer flex justify-center items-center gap-1.5 font-black text-xs uppercase tracking-wider active:scale-98">
-                                <?= $isOpcrFolder ? 'Cascade OPCR Commitments' : 'Cascade to Selected Team' ?>
+                                <?= $isUserAdmin ? 'Release to Selected Team' : ($isOpcrFolder ? 'Cascade OPCR Commitments' : 'Cascade to Selected Team') ?>
                             </button>
                         <?php endif; ?>
                     <?php else: ?>
@@ -1599,8 +1601,8 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                 </svg>
                             </div>
-                            <div class="text-xs font-bold text-text">No Teams Created Yet</div>
-                            <p class="text-[10px] text-text-muted leading-tight">Create a distribution team with members in Teams before you can cascade targets.</p>
+                            <div class="text-xs font-bold text-text"><?= $isUserAdmin ? 'No Recipient Teams Created Yet' : 'No Teams Created Yet' ?></div>
+                            <p class="text-[10px] text-text-muted leading-tight"><?= $isUserAdmin ? 'Create a recipient team with members in Teams before you can release evaluation cycles.' : 'Create a distribution team with members in Teams before you can cascade targets.' ?></p>
                             <a href="<?= site_url('teams') ?>" class="mt-1 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs transition-colors shadow-xs inline-flex items-center gap-1.5">
                                 <span>Go to Teams Builder</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
@@ -2047,6 +2049,7 @@
             });
         }
 
+        const isUserAdmin = <?= json_encode((session()->get('role') === 'Admin')) ?>;
         let sending = false;
 
         function triggerCascade(folderId) {
@@ -2055,7 +2058,7 @@
             const selectEl = document.getElementById('team-cascade-select');
             const teamId = selectEl ? selectEl.value : '';
             if (!teamId) {
-                window.appAlert("Please select a team to cascade to.");
+                window.appAlert(isUserAdmin ? "Please select a team to release the cycle to." : "Please select a team to cascade to.");
                 return;
             }
 
@@ -2078,10 +2081,17 @@
         async function triggerUncascade(folderId) {
             if (sending) return;
 
-            const ok = await window.appConfirm("Are you sure you want to revoke the cascade for this evaluation cycle? All cascaded subordinate folders and their assigned draft evaluation forms will be permanently removed.", {
-                title: 'Revoke Cascade',
-                confirmText: 'Revoke Cascade',
-                cancelText: 'Keep Cascaded',
+            const confirmMessage = isUserAdmin
+                ? "Are you sure you want to revoke the cycle release? All released recipient folders and their assigned draft evaluation forms will be permanently removed."
+                : "Are you sure you want to revoke the cascade for this evaluation cycle? All cascaded subordinate folders and their assigned draft evaluation forms will be permanently removed.";
+            const confirmTitle = isUserAdmin ? 'Revoke Cycle Release' : 'Revoke Cascade';
+            const confirmBtn = isUserAdmin ? 'Revoke Release' : 'Revoke Cascade';
+            const cancelBtn = isUserAdmin ? 'Keep Released' : 'Keep Cascaded';
+
+            const ok = await window.appConfirm(confirmMessage, {
+                title: confirmTitle,
+                confirmText: confirmBtn,
+                cancelText: cancelBtn,
                 variant: 'danger'
             });
             if (!ok) return;
@@ -2195,10 +2205,16 @@
 
         function triggerRemoveCascadedSubordinate(childFolderId, subordinateName, parentFolderId) {
             if (sending) return;
+            const confirmTitle = isUserAdmin ? 'Revoke Recipient Cycle Release' : 'Remove Subordinate from Cycle';
+            const confirmMsg = isUserAdmin
+                ? `Are you sure you want to revoke the cycle release for ${subordinateName}? This will delete their evaluation folder for this cycle.`
+                : `Are you sure you want to remove ${subordinateName} from this evaluation cycle? This will delete their target folder and evaluation paper for this cycle.`;
+            const confirmBtn = isUserAdmin ? 'Revoke Release' : 'Remove Subordinate';
+
             window.appConfirm({
-                title: 'Remove Subordinate from Cycle',
-                message: `Are you sure you want to remove ${subordinateName} from this evaluation cycle? This will delete their target folder and evaluation paper for this cycle.`,
-                confirmText: 'Remove Subordinate',
+                title: confirmTitle,
+                message: confirmMsg,
+                confirmText: confirmBtn,
                 variant: 'danger'
             }).then(ok => {
                 if (!ok) return;

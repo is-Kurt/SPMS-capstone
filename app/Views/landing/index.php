@@ -234,7 +234,7 @@
                         <div class="space-y-3 mb-5">
                             <div class="flex items-center justify-between p-3 rounded-xl bg-zinc-50 border border-zinc-100 text-xs">
                                 <div>
-                                    <span class="font-bold text-zinc-800">Core Mandated Functions</span>
+                                    <span class="font-bold text-zinc-800">Core Functions</span>
                                     <p class="text-[10px] text-zinc-500">Instruction & Curriculum Delivery</p>
                                 </div>
                                 <span class="font-bold text-emerald-700 bg-white px-2 py-1 rounded-lg border border-zinc-200">

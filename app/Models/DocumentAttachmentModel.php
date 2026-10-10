@@ -19,6 +19,8 @@ class DocumentAttachmentModel extends Model
         'file_path',
         'file_type',
         'file_size',
+        'is_link',
+        'link_url',
         'uploaded_by',
     ];
 
@@ -51,7 +53,28 @@ class DocumentAttachmentModel extends Model
                 $grouped[$rowId] = [];
             }
             $row['uploader_name'] = trim(($row['uploader_first_name'] ?? '') . ' ' . ($row['uploader_last_name'] ?? ''));
-            $row['formatted_size'] = $this->formatBytes($row['file_size']);
+            $isLink = !empty($row['is_link']) || !empty($row['link_url']) || str_starts_with($row['file_type'] ?? '', 'link/');
+            $row['is_link'] = $isLink;
+            if ($isLink) {
+                $row['link_url'] = $row['link_url'] ?: $row['file_path'];
+                $url = strtolower($row['link_url']);
+                if (str_contains($url, 'drive.google.com') || str_contains($url, 'docs.google.com')) {
+                    $row['link_provider'] = 'google_drive';
+                    $row['formatted_size'] = 'Google Drive';
+                } elseif (str_contains($url, 'onedrive.live.com') || str_contains($url, 'sharepoint.com')) {
+                    $row['link_provider'] = 'onedrive';
+                    $row['formatted_size'] = 'OneDrive';
+                } elseif (str_contains($url, 'dropbox.com')) {
+                    $row['link_provider'] = 'dropbox';
+                    $row['formatted_size'] = 'Dropbox';
+                } else {
+                    $row['link_provider'] = 'web_link';
+                    $row['formatted_size'] = 'Web Link';
+                }
+            } else {
+                $row['link_provider'] = null;
+                $row['formatted_size'] = $this->formatBytes((int)$row['file_size']);
+            }
             $grouped[$rowId][] = $row;
         }
 

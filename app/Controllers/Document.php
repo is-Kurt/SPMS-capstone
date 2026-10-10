@@ -384,7 +384,7 @@ class Document extends BaseController
 
         $isAuthorized = false;
 
-        if ((string)$docOwnerInfo['owner_id'] === (string)$userId || $sysRole === 'Admin') {
+        if ((string)$docOwnerInfo['owner_id'] === (string)$userId || $sysRole === 'Admin' || $sysRole === 'TWG') {
             $isAuthorized = true; 
         } else {
             $routingModel = new EvaluationRoutingModel();
