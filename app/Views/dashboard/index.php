@@ -1292,7 +1292,7 @@
                             <th class="py-3 px-3 text-center">Final Evaluations</th>
                             <th class="py-3 px-3 text-center">Average Rating</th>
                             <th class="py-3 px-3 text-center">Status</th>
-                            <th class="py-3 px-3.5 text-right">Drill Down</th>
+                            <th class="py-3 px-3.5 text-right">View Office</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-zinc-100 dark:divide-[#1a2b22] text-xs">
@@ -1362,7 +1362,7 @@
                                         <?php if (!empty($matchedUnitId)): ?>
                                             <button type="button" onclick="selectCollegeOption('<?= $matchedUnitId ?>', '<?= esc(addslashes($dept['name'])) ?>')"
                                                     class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all shadow-2xs cursor-pointer">
-                                                <span>Drill Down</span>
+                                                <span>View Office</span>
                                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                                             </button>
                                         <?php else: ?>
