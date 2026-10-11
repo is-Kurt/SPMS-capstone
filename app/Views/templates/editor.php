@@ -257,7 +257,7 @@
         }
         @page {
             size: letter landscape;
-            margin: 8mm 6mm;
+            margin: 8mm 12mm;
         }
         html, body {
             background: #ffffff !important;
@@ -290,11 +290,16 @@
         }
         .spms-table {
             width: 100% !important;
+            min-width: 0 !important;
             border-collapse: collapse !important;
             font-size: 9.5px !important;
             page-break-inside: auto;
         }
         .spms-table tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+        .spms-meta-matrix, .spms-navy-bar, .spms-summary-matrix, .spms-summary-matrix tr, .spms-signatories-matrix, .spms-sheet-container > div, .spms-table-responsive-wrapper {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
         }
@@ -312,6 +317,9 @@
             resize: none !important;
             box-shadow: none !important;
             padding: 2px !important;
+        }
+        .spms-meta-input, #ratee-name, #ratee-position, #ratee-dept, #ratee-period, .field-approver-name, .field-approver-pos, .field-approver-date, #ratee-sign-name, #ratee-sign-date {
+            border-bottom: 1px solid #000000 !important;
         }
         .spms-textarea::placeholder, .spms-score-input::placeholder, input::placeholder {
             color: transparent !important;
@@ -348,14 +356,6 @@
 
     <!-- Action Buttons -->
     <div class="flex items-center gap-2.5 shrink-0">
-        <!-- Export PDF -->
-        <button type="button" onclick="exportToPdf()" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white text-xs font-bold rounded-lg border border-zinc-700 transition-all cursor-pointer shadow-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[#FFB800]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-            </svg>
-            <span>Export PDF</span>
-        </button>
-
         <!-- Save Template -->
         <button type="button" id="btn-save-template" onclick="saveTemplateForm()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-[#059669] hover:bg-[#047857] text-white text-xs font-black rounded-lg shadow-md shadow-emerald-950/40 transition-all active:scale-95 cursor-pointer">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

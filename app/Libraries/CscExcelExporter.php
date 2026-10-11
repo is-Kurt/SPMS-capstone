@@ -57,7 +57,7 @@ class CscExcelExporter
             header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             header('Content-Disposition: attachment; filename="' . $fileName . '"');
             header('Cache-Control: max-age=0');
-            header('Pragma: public');
+            self::applyProtection($spreadsheet, $spreadsheet->getActiveSheet());
 
             $writer = new Xlsx($spreadsheet);
             $writer->save('php://output');
@@ -947,6 +947,7 @@ class CscExcelExporter
         header('Content-Disposition: attachment; filename="' . $fileName . '"');
         header('Cache-Control: max-age=0');
         header('Pragma: public');
+        self::applyProtection($spreadsheet, $sheet);
 
         $writer = new Xlsx($spreadsheet);
         $writer->save('php://output');
@@ -1581,10 +1582,42 @@ class CscExcelExporter
         header('Content-Disposition: attachment; filename="' . $filename . '"');
         header('Cache-Control: max-age=0');
         header('Pragma: public');
+        self::applyProtection($spreadsheet, $sheet);
 
         $writer = new Xlsx($spreadsheet);
         $writer->save('php://output');
         exit;
+    }
+
+    /**
+     * Apply worksheet and workbook protection to make exported files uneditable.
+     * Prevents modifying cells, formulas, or structure while allowing viewing, copying, and printing.
+     *
+     * @param \PhpOffice\PhpSpreadsheet\Spreadsheet $spreadsheet
+     * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet
+     * @param string $password Default password to unlock (e.g. 'spms')
+     * @return void
+     */
+    private static function applyProtection(Spreadsheet $spreadsheet, \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, string $password = 'spms'): void
+    {
+        $protection = $sheet->getProtection();
+        $protection->setSheet(true);
+        $protection->setSort(true);
+        $protection->setInsertRows(true);
+        $protection->setInsertColumns(true);
+        $protection->setDeleteRows(true);
+        $protection->setDeleteColumns(true);
+        $protection->setFormatCells(true);
+        $protection->setFormatRows(true);
+        $protection->setFormatColumns(true);
+        $protection->setAutoFilter(true);
+        $protection->setPivotTables(true);
+
+        if ($password !== '') {
+            $protection->setPassword($password);
+            $spreadsheet->getSecurity()->setLockStructure(true);
+            $spreadsheet->getSecurity()->setWorkbookPassword($password);
+        }
     }
 }
 

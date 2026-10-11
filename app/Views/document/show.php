@@ -153,7 +153,7 @@
         .spms-sheet-container {
             max-width: 100% !important;
             width: 100% !important;
-            min-width: <?= $isDocDpcr ? '1180px' : ($isDocOpcr ? '1050px' : ($isDocIperf ? '850px' : '880px')) ?> !important;
+            min-width: 0 !important;
             box-shadow: none !important;
         }
     }
@@ -484,7 +484,7 @@
     @media print {
         @page {
             size: letter landscape;
-            margin: 8mm 6mm;
+            margin: 8mm 12mm;
         }
         html, body {
             background: #ffffff !important;
@@ -521,7 +521,7 @@
         }
         .spms-table {
             width: 100% !important;
-            min-width: 100% !important;
+            min-width: 0 !important;
             border-collapse: collapse !important;
             font-size: 9.5px !important;
             page-break-inside: auto;
@@ -530,7 +530,7 @@
             page-break-inside: avoid !important;
             break-inside: avoid !important;
         }
-        .spms-meta-matrix, .spms-navy-bar, .spms-signatories-matrix, .spms-sheet-container > div, .spms-table-responsive-wrapper {
+        .spms-meta-matrix, .spms-navy-bar, .spms-summary-matrix, .spms-summary-matrix tr, .spms-signatories-matrix, .spms-sheet-container > div, .spms-table-responsive-wrapper {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
         }
@@ -548,6 +548,9 @@
             resize: none !important;
             box-shadow: none !important;
             padding: 2px !important;
+        }
+        .spms-meta-input {
+            border-bottom: 1px solid #000000 !important;
         }
         .spms-textarea::placeholder, .spms-score-input::placeholder, input::placeholder {
             color: transparent !important;
@@ -692,16 +695,6 @@
             <?php endif; ?>
 
             <?php if ($isOwner || session()->get('role') === 'Admin'): ?>
-            <!-- Print / Export PDF Button (Desktop - hidden on mobile) -->
-            <button type="button" onclick="exportToPdf()" 
-                    class="hidden md:inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 sm:py-2.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-[10px] sm:text-xs font-bold rounded-lg border border-surface-border transition-all cursor-pointer shadow-sm print-hide"
-                    title="Print Document or Export to PDF">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[#FFB800]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                </svg>
-                <span>Print / Export PDF</span>
-            </button>
-
             <!-- Export to Excel Button (Desktop - hidden on mobile) -->
             <button type="button" onclick="exportToExcel()" 
                     class="hidden md:inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[10px] sm:text-xs font-bold rounded-lg border border-emerald-500/30 hover:border-emerald-500/50 transition-all cursor-pointer shadow-sm active:scale-[0.98] print-hide"
@@ -1206,15 +1199,6 @@
         <?php endif; ?>
 
         <?php if ($isOwner || session()->get('role') === 'Admin'): ?>
-            <button type="button" onclick="exportToPdf()" 
-                    class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-[10px] font-bold rounded-lg border border-surface-border transition-all cursor-pointer shadow-xs shrink-0"
-                    title="Print Document or Export to PDF">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-[#FFB800]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                </svg>
-                <span>PDF</span>
-            </button>
-
             <button type="button" onclick="exportToExcel()" 
                     class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold rounded-lg border border-emerald-500/30 transition-all cursor-pointer shadow-xs shrink-0"
                     title="Export document to Excel (.xlsx)">
