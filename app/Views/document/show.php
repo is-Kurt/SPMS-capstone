@@ -2440,7 +2440,7 @@
     window.canEditEvaluation = canEditEvaluation;
 
     window.rubricAttachments = <?= json_encode($attachmentsByRow['rubric'] ?? []) ?>;
-    window.digitalRubricsData = tabs[0]?.formData?.rubrics || {};
+    window.digitalRubricsData = (tabs[0]?.formData?.rubrics && !Array.isArray(tabs[0]?.formData?.rubrics)) ? tabs[0].formData.rubrics : {};
     
     // Set initial content for TinyMCE initialization
     document.getElementById('editable-doc').value = tabs[0].content;
@@ -3547,12 +3547,17 @@
         const hasSpmsContent = activeTab.content && (activeTab.content.includes('spms-table') || activeTab.content.includes('printable-form') || activeTab.content.includes('ACADEMIC') || activeTab.content.includes('MAJOR FINAL OUTPUT'));
         const isEmptyTab = !activeTab.content || activeTab.content.trim() === '';
 
+        const isPerformanceDoc = Boolean(window.isCurrentDocDpcr || window.isCurrentDocOpcr || window.isCurrentDocIperf || IS_DOC_DPCR || IS_DOC_OPCR || IS_DOC_IPERF);
+
         // SPMS Form is default for performance documents
-        if (hasSpmsData || hasSpmsContent || isEmptyTab) {
+        if (hasSpmsData || hasSpmsContent || isEmptyTab || isPerformanceDoc) {
             window.isSpmsFormActive = true;
             document.getElementById('spms-form-workspace').classList.remove('hidden');
             document.getElementById('tinymce-wrapper').classList.add('hidden');
             populateSpmsForm(activeTab.formData);
+            if (typeof window.syncSpmsActiveTab === 'function') {
+                window.syncSpmsActiveTab();
+            }
         } else {
             window.isSpmsFormActive = false;
             document.getElementById('spms-form-workspace').classList.add('hidden');
@@ -4020,7 +4025,12 @@
         document.querySelectorAll('.table-row-core, .table-row-strategic, .table-row-support').forEach(tr => tr.remove());
 
         // Populate category rows
-        const hasSavedCategories = Boolean(data && data.categories && typeof data.categories === 'object');
+        const hasSavedCategories = Boolean(data && data.categories && typeof data.categories === 'object' && (
+            (Array.isArray(data.categories.core) && data.categories.core.length > 0) ||
+            (Array.isArray(data.categories.strategic) && data.categories.strategic.length > 0) ||
+            (Array.isArray(data.categories.support) && data.categories.support.length > 0) ||
+            window._userExplicitlyDeletedRow
+        ));
         const cats = data.categories || DEFAULT_BLUEPRINT;
         const coreRows = Array.isArray(cats.core) 
             ? (hasSavedCategories ? cats.core : (cats.core.length > 0 ? cats.core : DEFAULT_BLUEPRINT.core))
@@ -4037,6 +4047,10 @@
                 ? (hasSavedCategories ? cats.support : (cats.support.length > 0 ? cats.support : DEFAULT_BLUEPRINT.support))
                 : (DEFAULT_BLUEPRINT.support || []);
             suppRows.forEach(row => addTableRow('support', row));
+        }
+
+        if (tabs[0] && (!tabs[0].formData || !tabs[0].formData.categories) && typeof window.syncSpmsActiveTab === 'function') {
+            window.syncSpmsActiveTab();
         }
 
         // Update add buttons visibility based on phase permissions
@@ -5424,10 +5438,12 @@
         // Safeguard against wiping out existing categories:
         // 1. If form workspace is hidden or inactive, or
         // 2. If extracted rows are empty while existing rows exist (and the user hasn't explicitly clicked delete)
-        if (!isFormWorkspaceVisible || (extractedCore.length === 0 && (existingCats.core?.length || 0) > 0 && !window._userExplicitlyDeletedRow)) {
-            extractedCore = (extractedCore.length > 0) ? extractedCore : (existingCats.core || []);
-            extractedStrat = (extractedStrat.length > 0) ? extractedStrat : (existingCats.strategic || []);
-            extractedSupp = (extractedSupp.length > 0) ? extractedSupp : (existingCats.support || []);
+        if (!isFormWorkspaceVisible || (extractedCore.length === 0 && !window._userExplicitlyDeletedRow)) {
+            extractedCore = (extractedCore.length > 0) ? extractedCore : (existingCats.core?.length ? existingCats.core : (DEFAULT_BLUEPRINT.core || []));
+            if (!window.isCurrentDocIperf) {
+                extractedStrat = (extractedStrat.length > 0) ? extractedStrat : (existingCats.strategic?.length ? existingCats.strategic : (DEFAULT_BLUEPRINT.strategic || []));
+                extractedSupp = (extractedSupp.length > 0) ? extractedSupp : (existingCats.support?.length ? existingCats.support : (DEFAULT_BLUEPRINT.support || []));
+            }
         } else if (!canEditTargets && (existingCats.core?.length || 0) > 0) {
             // When user cannot edit targets (e.g. reviewer/evaluator), preserve original target fields
             // while updating reviewer fields (q, t, e, accomplishments, remarks)
@@ -5580,14 +5596,15 @@
         // Fallback to activeTab.formData if table DOM is not yet populated
         if (deliverables.length === 0) {
             const activeTab = tabs[0];
-            const cats = activeTab?.formData?.categories;
+            const cats = activeTab?.formData?.categories || DEFAULT_BLUEPRINT;
             if (cats) {
-                ['core', 'strategic', 'support'].forEach(cat => {
+                const catKeys = window.isCurrentDocIperf ? ['core'] : ['core', 'strategic', 'support'];
+                catKeys.forEach(cat => {
                     if (Array.isArray(cats[cat])) {
                         cats[cat].forEach((r, idx) => {
                             const ppa = r.office_ppa || '';
                             const exp = r.expected_outputs || r.indicators || r.success_indicators || '';
-                            const mfo = r.mfo_title || r.paps || '';
+                            const mfo = r.mfo || r.mfo_title || r.paps || '';
                             const text = [mfo, ppa, exp].filter(Boolean).join(' — ');
                             deliverables.push({
                                 rowId: r.row_id || `row-${cat}-${idx}`,
@@ -5705,7 +5722,14 @@
 
         if (tabs[0]) {
             if (!tabs[0].formData) tabs[0].formData = {};
-            if (!tabs[0].formData.categories) tabs[0].formData.categories = { core: [], strategic: [], support: [] };
+            if (!tabs[0].formData.categories) {
+                if (typeof window.syncSpmsActiveTab === 'function') {
+                    window.syncSpmsActiveTab();
+                }
+            }
+            if (!tabs[0].formData.categories) {
+                tabs[0].formData.categories = JSON.parse(JSON.stringify(DEFAULT_BLUEPRINT));
+            }
             if (!tabs[0].formData.categories[category]) tabs[0].formData.categories[category] = [];
             tabs[0].formData.categories[category].push(rowData);
         }
@@ -5760,6 +5784,7 @@
         });
         if (!ok) return;
 
+        window._userExplicitlyDeletedRow = true;
         const rowEl = document.querySelector(`tr[data-row-id="${rowId}"]`) || document.getElementById(rowId);
         if (rowEl) rowEl.remove();
 
@@ -6145,8 +6170,8 @@
         const container = document.getElementById('spms-rubrics-workspace');
         if (!container) return;
 
-        if (!window.digitalRubricsData) {
-            window.digitalRubricsData = tabs[0]?.formData?.rubrics || {};
+        if (!window.digitalRubricsData || Array.isArray(window.digitalRubricsData)) {
+            window.digitalRubricsData = (tabs[0]?.formData?.rubrics && !Array.isArray(tabs[0]?.formData?.rubrics)) ? tabs[0].formData.rubrics : {};
         }
 
         container.querySelectorAll('textarea[data-row-id]').forEach(ta => {
@@ -6166,6 +6191,9 @@
 
         if (tabs[0]) {
             if (!tabs[0].formData) tabs[0].formData = {};
+            if (!tabs[0].formData.categories && typeof window.syncSpmsActiveTab === 'function') {
+                window.syncSpmsActiveTab();
+            }
             tabs[0].formData.rubrics = window.digitalRubricsData;
         }
 
@@ -6716,6 +6744,9 @@
     // Launch active view on page load
     document.addEventListener('DOMContentLoaded', () => {
         initActiveTabView();
+        if (window.isSpmsFormActive && typeof window.syncSpmsActiveTab === 'function') {
+            window.syncSpmsActiveTab();
+        }
         updateRubricsTabBadge();
         if (new URLSearchParams(window.location.search).get('print') === '1') {
             setTimeout(() => exportToPdf(), 700);

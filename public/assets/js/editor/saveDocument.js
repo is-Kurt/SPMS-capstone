@@ -21,8 +21,8 @@ async function saveDocument(manualSave = true) {
         if (!editor && !window.isSpmsFormActive && !isRubricsActive && !hasTabs) return resolve(); // Fail gracefully if neither editor is ready
 
         if (hasTabs) {
-            const isSpmsFormVisible = window.isSpmsFormActive && !document.getElementById('spms-form-workspace')?.classList.contains('hidden');
-            if (isSpmsFormVisible && typeof window.syncSpmsActiveTab === 'function') {
+            const isSpmsFormActiveDoc = window.isSpmsFormActive || isRubricsActive || Boolean(document.getElementById('printable-form'));
+            if (isSpmsFormActiveDoc && typeof window.syncSpmsActiveTab === 'function') {
                 window.syncSpmsActiveTab();
             }
             if (typeof window.syncDigitalRubricsData === 'function') {
