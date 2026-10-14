@@ -10,7 +10,7 @@ class Landing extends BaseController
         // The public marketing landing page has been decommissioned in favor of
         // the official institutional BSU-SPMS portal gateway at /login.
         if ($session->get('user_id') && !$this->request->getGet('logged_out')) {
-            $dest = ($session->get('role') === 'TWG') ? 'ratings' : 'folders';
+            $dest = in_array($session->get('role'), ['TWG', 'PMT']) ? 'ratings' : 'folders';
             return redirect()->to(site_url($dest));
         }
 

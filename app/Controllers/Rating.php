@@ -28,10 +28,10 @@ class Rating extends BaseController
 
         $folderModel = new DocumentFolderModel();
 
-        // For TWG (who do not author personal folders), Admins, or Supervisors without personal folders
+        // For TWG/PMT (who do not author personal folders), Admins, or Supervisors without personal folders
         // (such as the University President), display institutional root evaluation cycle folders in the sidebar.
         $userPersonalFolders = $folderModel->where('user_id', $userId)->where('deleted_at IS NULL')->orderBy('created_at', 'DESC')->findAll();
-        if ($sysRole === 'TWG' || $sysRole === 'Admin' || empty($userPersonalFolders)) {
+        if (in_array($sysRole, ['TWG', 'PMT', 'Admin']) || empty($userPersonalFolders)) {
             $folders = $folderModel->where('parent_folder_id IS NULL')
                                    ->where('deleted_at IS NULL')
                                    ->orderBy('created_at', 'DESC')
@@ -188,7 +188,7 @@ class Rating extends BaseController
 
         $isAuthorized = false;
 
-        if ($sysRole === 'Admin') {
+        if (in_array($sysRole, ['Admin', 'PMT'])) {
             $isAuthorized = true;
         } elseif ($sysRole === 'TWG') {
             $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
@@ -215,7 +215,7 @@ class Rating extends BaseController
         }
 
         $userPersonalFolders = $folderModel->where('user_id', $userId)->where('deleted_at IS NULL')->orderBy('created_at', 'DESC')->findAll();
-        if ($sysRole === 'TWG' || $sysRole === 'Admin' || empty($userPersonalFolders)) {
+        if (in_array($sysRole, ['TWG', 'PMT', 'Admin']) || empty($userPersonalFolders)) {
             $folders = $folderModel->where('parent_folder_id IS NULL')
                                    ->where('deleted_at IS NULL')
                                    ->orderBy('created_at', 'DESC')

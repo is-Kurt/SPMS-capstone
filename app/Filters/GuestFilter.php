@@ -29,7 +29,7 @@ class GuestFilter implements FilterInterface
 
         if (session()->get('user_id') || restore_session_from_cookie()) {
             $role = session()->get('role');
-            if ($role === 'TWG') {
+            if (in_array($role, ['TWG', 'PMT'])) {
                 $dest = 'ratings';
             } elseif ($role === 'Admin') {
                 $dest = 'dashboard';

@@ -49,6 +49,7 @@ class Register extends BaseController
         $role = $invitation['role_id'] ? $roleModel->find($invitation['role_id']) : null;
         $isAdminInvite = $role && strtolower($role['name']) === 'admin';
         $isTwgInvite = $role && strtolower($role['name']) === 'twg';
+        $isPmtInvite = $role && strtolower($role['name']) === 'pmt';
 
         $units = $unitModel->orderBy('name', 'ASC')->findAll();
         $positions = $positionModel->orderBy('title', 'ASC')->findAll();
@@ -58,7 +59,8 @@ class Register extends BaseController
             'units'         => $units,
             'positions'     => $positions,
             'isAdminInvite' => $isAdminInvite,
-            'isTwgInvite'   => $isTwgInvite
+            'isTwgInvite'   => $isTwgInvite,
+            'isPmtInvite'   => $isPmtInvite
         ]);
     }
 
@@ -82,11 +84,12 @@ class Register extends BaseController
                                       
         if (!$invitation) return redirect()->to('/login');
 
-        // Determine if admin or twg invite
+        // Determine if admin, twg, or pmt invite
         $role = $invitation['role_id'] ? $roleModel->find($invitation['role_id']) : null;
         $isAdminInvite = $role && strtolower($role['name']) === 'admin';
         $isTwgInvite = $role && strtolower($role['name']) === 'twg';
-        $skipDetails = $isAdminInvite || $isTwgInvite;
+        $isPmtInvite = $role && strtolower($role['name']) === 'pmt';
+        $skipDetails = $isAdminInvite || $isTwgInvite || $isPmtInvite;
 
         $validation = \Config\Services::validation();
         $rules = [

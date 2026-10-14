@@ -42,7 +42,7 @@ class Document extends BaseController
             
             if ($routing) {
                 $routingStatus = is_object($routing) ? $routing->status : $routing['status'];
-            } elseif ($sysRole === 'Admin') {
+            } elseif (in_array($sysRole, ['Admin', 'PMT'])) {
                 $routingStatus = null;
             } elseif ($sysRole === 'TWG') {
                 if ((new \App\Models\TwgUnitAssignmentModel())->isTwgAssignedToFolder($userId, $docInfo['document_folder_id'])) {
@@ -384,7 +384,7 @@ class Document extends BaseController
 
         $isAuthorized = false;
 
-        if ((string)$docOwnerInfo['owner_id'] === (string)$userId || $sysRole === 'Admin' || $sysRole === 'TWG') {
+        if ((string)$docOwnerInfo['owner_id'] === (string)$userId || in_array($sysRole, ['Admin', 'TWG', 'PMT'])) {
             $isAuthorized = true; 
         } else {
             $routingModel = new EvaluationRoutingModel();
@@ -558,8 +558,8 @@ class Document extends BaseController
 
         $docOwnerId = $docInfo['owner_id'];
 
-        // Authorization: Owner, Evaluator/Supervisor, Admin, or TWG
-        if ($docOwnerId !== $userId && !in_array($sysRole, ['Admin', 'Supervisor', 'TWG'])) {
+        // Authorization: Owner, Evaluator/Supervisor, Admin, TWG, or PMT
+        if ($docOwnerId !== $userId && !in_array($sysRole, ['Admin', 'Supervisor', 'TWG', 'PMT'])) {
             return redirect()->back()->with('error', 'Unauthorized to export rubrics for this document.');
         }
 

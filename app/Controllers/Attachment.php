@@ -503,7 +503,7 @@ class Attachment extends BaseController
 
         // Authorization check: Owner, Admin, TWG (assigned), or assigned Evaluator
         $docOwnerId = $doc['owner_id'];
-        $hasAccess  = ($docOwnerId == $userId) || ($sysRole === 'Admin') ||
+        $hasAccess  = ($docOwnerId == $userId) || in_array($sysRole, ['Admin', 'PMT']) ||
             ($sysRole === 'TWG' && (new \App\Models\TwgUnitAssignmentModel())->isTwgAssignedToFolder($userId, $doc['document_folder_id']));
 
         if (!$hasAccess) {

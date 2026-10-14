@@ -29,7 +29,7 @@ class Folder extends BaseController
      * their commitments alongside their own.
      */
     public function index($folderId = null) {
-        if (session()->get('role') === 'TWG') {
+        if (in_array(session()->get('role'), ['TWG', 'PMT'])) {
             return redirect()->to(site_url('ratings'));
         }
 
@@ -97,7 +97,7 @@ class Folder extends BaseController
 
                 // Route authorized evaluators to ratings view
                 $routingModel = new \App\Models\EvaluationRoutingModel();
-                $isAuthorizedEvaluator = ($role === 'Admin') || 
+                $isAuthorizedEvaluator = in_array($role, ['Admin', 'PMT']) || 
                     ($role === 'TWG' && (new \App\Models\TwgUnitAssignmentModel())->isTwgAssignedToFolder($userId, $activeFolder['id'])) ||
                     ($routingModel->where('folder_id', $activeFolder['id'])->where('evaluator_id', $userId)->countAllResults() > 0);
 
@@ -2580,8 +2580,8 @@ class Folder extends BaseController
     public function twgApprove() {
         return $this->tryOrFail(function() {
             $role = session()->get('role');
-            if (!in_array($role, ['TWG', 'Admin'])) {
-                return $this->respondError('Unauthorized. Only Technical Working Group (TWG) members or Administrators can perform this action.', 403);
+            if (!in_array($role, ['TWG', 'PMT', 'Admin'])) {
+                return $this->respondError('Unauthorized. Only Technical Working Group (TWG) / PMT members or Administrators can perform this action.', 403);
             }
 
             $folderId = $this->request->getPost('folder_id');

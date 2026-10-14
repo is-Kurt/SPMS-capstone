@@ -106,7 +106,7 @@ class  DocumentFolderModel extends Model
             } else {
                 $builder->where('df.id', -1);
             }
-        } elseif ($sysRole !== 'Admin') {
+        } elseif (!in_array($sysRole, ['Admin', 'PMT'])) {
             $builder->join('evaluation_routings er_me', 'er_me.folder_id = df.id')
                     ->where('er_me.evaluator_id', $userId);
         }

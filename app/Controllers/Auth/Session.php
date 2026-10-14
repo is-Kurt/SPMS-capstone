@@ -293,7 +293,7 @@ class Session extends BaseController
             ]);
         }
 
-        if (session()->get('role') === 'TWG') {
+        if (in_array(session()->get('role'), ['TWG', 'PMT'])) {
             return redirect()->to(site_url('ratings'));
         }
 

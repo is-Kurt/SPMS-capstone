@@ -33,6 +33,7 @@ class Profile extends BaseController
 
         $isAdmin = $userModel->hasRole($userId, 'Admin');
         $isTwg = $userModel->hasRole($userId, 'TWG');
+        $isPmt = $userModel->hasRole($userId, 'PMT');
 
         $data = [
             'user'             => $userModel->find($userId),
@@ -40,7 +41,8 @@ class Profile extends BaseController
             'positions'        => $positionModel->orderBy('title', 'ASC')->findAll(),
             'currentPlantilla' => $currentPlantilla,
             'isAdmin'          => $isAdmin,
-            'isTwg'            => $isTwg
+            'isTwg'            => $isTwg,
+            'isPmt'            => $isPmt
         ];
 
         return view('profile/index', $data);

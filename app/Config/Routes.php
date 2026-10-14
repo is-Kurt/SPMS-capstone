@@ -8,11 +8,11 @@ use CodeIgniter\Router\RouteCollection;
 
 
 $routes->group('', ['filter' => 'auth'], function($routes) {
-    // Executive Analytics Dashboard (Admin) / College Submission Monitor (Supervisor)
-    $routes->get('dashboard/export-masterlist', 'Dashboard::exportMasterlist', ['filter' => 'role:Admin,Supervisor']);
-    $routes->get('dashboard/export-masterlist/(:segment)', 'Dashboard::exportMasterlist/$1', ['filter' => 'role:Admin,Supervisor']);
-    $routes->get('dashboard', 'Dashboard::index', ['filter' => 'role:Admin,Supervisor']);
-    $routes->get('dashboard/(:segment)', 'Dashboard::index/$1', ['filter' => 'role:Admin,Supervisor']);
+    // Executive Analytics Dashboard (Admin, Supervisor, PMT)
+    $routes->get('dashboard/export-masterlist', 'Dashboard::exportMasterlist', ['filter' => 'role:Admin,Supervisor,PMT']);
+    $routes->get('dashboard/export-masterlist/(:segment)', 'Dashboard::exportMasterlist/$1', ['filter' => 'role:Admin,Supervisor,PMT']);
+    $routes->get('dashboard', 'Dashboard::index', ['filter' => 'role:Admin,Supervisor,PMT']);
+    $routes->get('dashboard/(:segment)', 'Dashboard::index/$1', ['filter' => 'role:Admin,Supervisor,PMT']);
 
     // Ratings
     $routes->get('ratings', 'Rating::index');

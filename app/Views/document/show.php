@@ -52,7 +52,7 @@
     ]) && !$isGuide && empty($isCycleArchived)));
 
     $sysRole = session()->get('role');
-    $isTwg = ($sysRole === 'TWG');
+    $isTwg = in_array($sysRole, ['TWG', 'PMT']);
     $isAdmin = ($sysRole === 'Admin');
     $canEditTwg = ($isTwg || $isAdmin) && empty($isCycleArchived) && !$isGuide;
 
@@ -573,7 +573,7 @@
         <?php if (!($isEmbed ?? false)): ?>
         <?php 
             $sysRole = session()->get('role');
-            $homeUrl = ($sysRole === 'TWG') ? site_url('ratings') : site_url('folders');
+            $homeUrl = in_array($sysRole, ['TWG', 'PMT']) ? site_url('ratings') : site_url('folders');
             $returnUrl = $isOwner 
                 ? site_url('folders/' . ($doc['document_folder_id'] ?? ''))
                 : site_url('ratings' . (!empty($rootFolderId) ? '/' . $rootFolderId : ''));
@@ -714,7 +714,7 @@
                     </button>
 
                 <?php elseif ($status === FolderStatus::APPROVED->value || $status === FolderStatus::TWG_APPROVED->value || $status === FolderStatus::TWG_DISAPPROVED->value): ?>
-                    <?php if (session()->get('role') === 'TWG'): ?>
+                    <?php if (in_array(session()->get('role'), ['TWG', 'PMT'])): ?>
                         <div class="flex gap-1.5 sm:gap-2 items-center">
                             <?php if ($status === FolderStatus::TWG_APPROVED->value || $status === FolderStatus::TWG_DISAPPROVED->value): ?>
                                 <span class="text-[10px] sm:text-xs font-bold px-3 py-2 <?= $status === FolderStatus::TWG_APPROVED->value ? 'text-success-600 dark:text-success-400' : 'text-danger-600 dark:text-danger-400' ?>">
@@ -810,7 +810,7 @@
                                 Monitoring<span class="hidden sm:inline"> View</span>
                             </button>
                         
-                        <?php elseif (session()->get('role') === 'TWG'): ?>
+                        <?php elseif (in_array(session()->get('role'), ['TWG', 'PMT'])): ?>
                             <div class="flex gap-1.5 sm:gap-2">
                                 <button id="btn-twg-disapprove" type="button" 
                                         onclick="setTwgStatus('twg_disapproved')" 
@@ -2030,7 +2030,7 @@
                     <div style="font-weight: bold; font-size: 11px; color: #000000; margin-bottom: 4px;">
                         Remarks/Suggestions/Recommendations on Ratee's Performance:
                     </div>
-                    <textarea id="pmt-remarks" rows="2" placeholder="Enter remarks/suggestions/recommendations on ratee's performance..." class="spms-textarea" style="width: 100%; border: 1px solid transparent; font-style: italic; font-size: 11px;" <?= $canEditEvaluation ? '' : ($isOwner ? 'disabled' : '') ?>></textarea>
+                    <textarea id="pmt-remarks" rows="2" placeholder="Enter remarks/suggestions/recommendations on ratee's performance..." class="spms-textarea" style="width: 100%; border: 1px solid transparent; font-style: italic; font-size: 11px;" <?= ($canEditEvaluation || $canEditTwg) ? '' : ($isOwner ? 'disabled' : '') ?>></textarea>
                 </div>
 
                 <?php if ($isDocIperf): ?>

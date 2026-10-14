@@ -98,6 +98,15 @@
                 </div>
                 <h3 class="text-sm font-black tracking-tight text-info-900 dark:text-info-300">TWG Account Setup</h3>
             </div>
+        <?php elseif (isset($isPmtInvite) && $isPmtInvite): ?>
+            <div class="border border-indigo-200 dark:border-indigo-500/20 p-6 rounded-2xl bg-indigo-50/50 dark:bg-indigo-500/5 shadow-sm text-center">
+                <div class="inline-flex p-3 rounded-full bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                </div>
+                <h3 class="text-sm font-black tracking-tight text-indigo-900 dark:text-indigo-300">PMT Committee Account Setup</h3>
+            </div>
         <?php else: ?>
             <div class="border border-surface-border p-8 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm mb-6">
                 <h3 class="text-[10px] font-black uppercase tracking-widest text-text-muted mb-6 flex items-center justify-between">

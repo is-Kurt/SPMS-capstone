@@ -558,7 +558,7 @@ class Dashboard extends BaseController
                     $builder->join('evaluation_routings er_sc', 'er_sc.folder_id = df.id')
                             ->where('er_sc.evaluator_id', $userId);
                 }
-            } elseif (!in_array($sysRole, ['Admin', 'HR', 'TWG'])) {
+            } elseif (!in_array($sysRole, ['Admin', 'HR', 'TWG', 'PMT'])) {
                 $builder->where('df.user_id', $userId);
             }
 
@@ -570,7 +570,7 @@ class Dashboard extends BaseController
         $unstartedScopedUnitIds = [];
         if ($sysRole === 'Supervisor' && !empty($scopedUnitIds)) {
             $unstartedScopedUnitIds = $scopedUnitIds;
-        } elseif ($sysRole === 'Admin') {
+        } elseif (in_array($sysRole, ['Admin', 'PMT'])) {
             if ($selectedUnitId) {
                 $filteredUnitIds = $unitModel->getDescendantIds([$selectedUnitId]);
                 $filteredUnitIds[] = $selectedUnitId;

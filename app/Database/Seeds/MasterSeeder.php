@@ -33,6 +33,9 @@ class MasterSeeder extends Seeder
         $db->table('roles')->ignore(true)->insert(['name' => 'TWG']);
         $twgRoleId = $db->table('roles')->where('name', 'TWG')->get()->getRow()->id;
 
+        $db->table('roles')->ignore(true)->insert(['name' => 'PMT']);
+        $pmtRoleId = $db->table('roles')->where('name', 'PMT')->get()->getRow()->id;
+
         // ==========================================
         // 2. SEED SYSTEM USERS (Identity Only)
         // ==========================================
@@ -50,6 +53,7 @@ class MasterSeeder extends Seeder
             'admin2'    => ['email' => 'admin2@test.com',    'first_name' => 'Secondary', 'last_name' => 'Admin',    'password' => $adminPassword, 'is_active' => 1, 'doc_type' => null],
             'president' => ['email' => 'president@test.com', 'first_name' => 'Felipe',    'last_name' => 'Comila',   'password' => $password, 'is_active' => 1, 'doc_type' => null],
             'twg'       => ['email' => 'twg@test.com',       'first_name' => 'System',    'last_name' => 'TWG',      'password' => password_hash('123', PASSWORD_DEFAULT), 'is_active' => 1, 'doc_type' => null],
+            'pmt'       => ['email' => 'pmt@test.com',       'first_name' => 'PMT',       'last_name' => 'Chair / Reviewer', 'password' => password_hash('123', PASSWORD_DEFAULT), 'is_active' => 1, 'doc_type' => null],
             'vpaa'      => ['email' => 'vpaa@test.com',      'first_name' => 'Ana',       'last_name' => 'Santos',   'password' => $password, 'is_active' => 1, 'doc_type' => 'OPCR'],
             'dean'      => ['email' => 'dean@test.com',      'first_name' => 'Roberto',   'last_name' => 'Reyes',    'password' => $password, 'is_active' => 1, 'doc_type' => 'DPCR'],
             'deptchair' => ['email' => 'deptchair@test.com', 'first_name' => 'Miguel',    'last_name' => 'Cruz',     'password' => $password, 'is_active' => 1, 'doc_type' => 'DPCR'],
@@ -76,6 +80,8 @@ class MasterSeeder extends Seeder
                 $roleId = $adminRoleId;
             } elseif ($slug === 'twg') {
                 $roleId = $twgRoleId;
+            } elseif ($slug === 'pmt') {
+                $roleId = $pmtRoleId;
             } elseif (in_array($slug, $supervisorSlugs)) {
                 $roleId = $supervisorRoleId;
             } else {

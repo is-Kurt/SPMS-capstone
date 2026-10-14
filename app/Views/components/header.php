@@ -4,13 +4,13 @@
 
     $navItems = [];
 
-    // Executive Analytics Dashboard (Admin) / College Submission Monitor (Supervisor)
-    if (in_array($role, ['Admin', 'Supervisor'])) {
+    // Executive Analytics Dashboard (Admin, PMT) / College Submission Monitor (Supervisor)
+    if (in_array($role, ['Admin', 'Supervisor', 'PMT'])) {
         $navItems['dashboard'] = 'Dashboard';
     }
 
-    // TWG only sees Ratings, they don't see Folders.
-    if ($role !== 'TWG') {
+    // TWG and PMT only review institutional performance, they don't author personal folders.
+    if (!in_array($role, ['TWG', 'PMT'])) {
         $navItems['folders'] = 'Folders';
     }
 
@@ -20,7 +20,7 @@
     if ($sessUserId) {
         $isEvaluator = (new \App\Models\EvaluationRoutingModel())->where('evaluator_id', $sessUserId)->countAllResults() > 0;
     }
-    if (in_array($role, ['Admin', 'Supervisor', 'HR', 'TWG']) || $isEvaluator) {
+    if (in_array($role, ['Admin', 'Supervisor', 'HR', 'TWG', 'PMT']) || $isEvaluator) {
         $navItems['ratings'] = 'Ratings';
     }
 

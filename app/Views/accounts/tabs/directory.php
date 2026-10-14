@@ -226,6 +226,9 @@
                                                     class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-accent/10 text-accent border border-accent/20 cursor-pointer self-end">
                                                 <span><?= $assignedCount > 0 ? "{$assignedCount} Offices" : 'Assign Offices' ?></span>
                                             </button>
+                                        <?php elseif (str_contains($u['role_name'] ?? '', 'PMT')): ?>
+                                            <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400">Institutional Oversight</span>
+                                            <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate">PMT Committee</span>
                                         <?php else: ?>
                                             <span class="text-xs font-bold text-text truncate"><?= esc($u['department'] ?? 'No Unit') ?></span>
                                             <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate"><?= esc($u['position'] ?? 'No Position') ?></span>
@@ -251,6 +254,14 @@
                                             <span class="group-hover:underline"><?= $assignedCount > 0 ? "{$assignedCount} Assigned Office" . ($assignedCount > 1 ? 's' : '') : 'Assign Offices' ?></span>
                                         </button>
                                         <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate mt-0.5">TWG Reviewer</span>
+                                    <?php elseif (str_contains($u['role_name'] ?? '', 'PMT')): ?>
+                                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 w-fit">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 shrink-0 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                            </svg>
+                                            <span>Institutional Calibration</span>
+                                        </div>
+                                        <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate mt-0.5">PMT Reviewer</span>
                                     <?php else: ?>
                                         <span class="text-xs font-bold text-text truncate"><?= esc($u['department'] ?? 'No Unit') ?></span>
                                         <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate"><?= esc($u['position'] ?? 'No Position') ?></span>

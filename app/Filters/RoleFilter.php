@@ -31,7 +31,7 @@ class RoleFilter implements FilterInterface
         $isAllowed = ($role && in_array($role, $arguments)) || ($isChair && in_array('Supervisor', $arguments));
 
         if (!$isAllowed) {
-            $dest = ($role === 'TWG') ? 'ratings' : 'folders';
+            $dest = in_array($role, ['TWG', 'PMT']) ? 'ratings' : 'folders';
             return redirect()->to(site_url($dest))->with('error', 'Unauthorized access.');
         }
     }
