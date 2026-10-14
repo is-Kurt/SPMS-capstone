@@ -628,7 +628,7 @@
 
                         .spms-hub-actions-bar {
                             display: grid;
-                            grid-template-columns: repeat(3, minmax(0, 1fr));
+                            grid-template-columns: repeat(2, minmax(0, 1fr));
                             gap: 8px;
                             width: 100%;
                         }
@@ -648,7 +648,7 @@
                         }
 
                         .spms-hub-btn-primary {
-                            grid-column: span 3;
+                            grid-column: 1 / -1;
                             width: 100%;
                             background-color: #f59e0b;
                             color: #000000;
@@ -1289,9 +1289,6 @@
                                 <a href="<?= site_url('document/' . $primaryDoc['id'] . '/export-excel') ?>" class="spms-hub-btn-secondary">
                                     Export Excel
                                 </a>
-                                <button type="button" onclick="triggerPrintPdf('<?= site_url('document/' . $primaryDoc['id']) ?>')" class="spms-hub-btn-secondary">
-                                    Print / PDF
-                                </button>
                                 <button type="button" onclick="openUserGuideModal()" class="spms-hub-btn-secondary">
                                     User Guide
                                 </button>
@@ -1951,9 +1948,6 @@
         }
         function closeAttachmentsModal() {
             document.getElementById('movAttachmentsModal')?.classList.add('hidden');
-        }
-        function triggerPrintPdf(docUrl) {
-            window.open(docUrl + '?print=1', '_blank');
         }
 
         document.addEventListener("DOMContentLoaded", function() {
