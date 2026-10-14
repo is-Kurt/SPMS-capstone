@@ -8,6 +8,7 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 
 class CscExcelExporter
 {
@@ -170,19 +171,36 @@ class CscExcelExporter
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         $sheet->mergeCells("A2:{$lastCol}2");
-        $sheet->setCellValue('A2', 'BENGUET STATE UNIVERSITY');
-        $sheet->getStyle('A2')->getFont()->setSize(13)->setBold(true);
+        $sheet->setCellValue('A2', 'Benguet State University');
+        $sheet->getStyle('A2')->getFont()->setName('Old English Text MT')->setSize(17);
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getRowDimension(2)->setRowHeight(28);
 
         $sheet->mergeCells("A3:{$lastCol}3");
-        $sheet->setCellValue('A3', 'La Trinidad, Benguet • Strategic Performance Management System');
+        $sheet->setCellValue('A3', 'La Trinidad, 2601 Benguet');
         $sheet->getStyle('A3')->getFont()->setSize(9)->setItalic(true)->getColor()->setRGB('475569');
         $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getRowDimension(3)->setRowHeight(16);
+
+        // Office / College Masthead Subtitle (e.g. Office of the University President / College of Nursing)
+        $officeTitle = !empty($formData['ratee']['dept']) 
+            ? $formData['ratee']['dept'] 
+            : (!empty($ownerInfo['dept']) ? $ownerInfo['dept'] : 'Office of the University President');
 
         $sheet->mergeCells("A4:{$lastCol}4");
-        $sheet->setCellValue('A4', $formFullTitle);
-        $sheet->getStyle('A4')->getFont()->setSize(11.5)->setBold(true);
+        $sheet->setCellValue('A4', $officeTitle);
+        $sheet->getStyle('A4')->getFont()->setName('Monotype Corsiva')->setSize(13)->setItalic(true)->getColor()->setRGB('1E293B');
         $sheet->getStyle('A4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getRowDimension(4)->setRowHeight(20);
+
+        $sheet->mergeCells("A5:{$lastCol}5");
+        $sheet->setCellValue('A5', $formFullTitle);
+        $sheet->getStyle('A5')->getFont()->setSize(10.5)->setBold(true);
+        $sheet->getStyle('A5')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getRowDimension(5)->setRowHeight(19);
+
+        // Add BSU Seal (Left) and Bagong Pilipinas (Right)
+        self::addOfficialSeals($sheet, $lastCol);
 
         // ---------------------------------------------------------------------
         // 4. RATEE COMMITMENT STATEMENT (Rows 6 to 7)
@@ -992,14 +1010,16 @@ class CscExcelExporter
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         $sheet->mergeCells('A2:H2');
-        $sheet->setCellValue('A2', 'BENGUET STATE UNIVERSITY');
-        $sheet->getStyle('A2')->getFont()->setSize(13)->setBold(true);
+        $sheet->setCellValue('A2', 'Benguet State University');
+        $sheet->getStyle('A2')->getFont()->setName('Old English Text MT')->setSize(17);
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getRowDimension(2)->setRowHeight(28);
 
         $sheet->mergeCells('A3:H3');
-        $sheet->setCellValue('A3', 'La Trinidad, Benguet');
+        $sheet->setCellValue('A3', 'La Trinidad, 2601 Benguet');
         $sheet->getStyle('A3')->getFont()->setSize(9)->setItalic(true)->getColor()->setRGB('475569');
         $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getRowDimension(3)->setRowHeight(16);
 
         // Title & Subtitle
         $sheet->mergeCells('A4:H4');
@@ -1011,6 +1031,9 @@ class CscExcelExporter
         $sheet->setCellValue('A5', '(attach rubrics for the rating of actual accomplishments vis-à-vis expected outputs)');
         $sheet->getStyle('A5')->getFont()->setSize(8.5)->setItalic(true);
         $sheet->getStyle('A5')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // Add BSU Seal (Left) and Bagong Pilipinas (Right)
+        self::addOfficialSeals($sheet, 'H');
 
         // 2. 3-Row Metadata Matrix (Rows 6-8)
         $rateeName = $formData['ratee']['name'] ?? ($ownerInfo['name'] ?? '');
@@ -1436,9 +1459,10 @@ class CscExcelExporter
         $sheet->getStyle('A1')->getFont()->setSize(10)->setItalic(true);
 
         $sheet->mergeCells('A2:G2');
-        $sheet->setCellValue('A2', 'BENGUET STATE UNIVERSITY');
+        $sheet->setCellValue('A2', 'Benguet State University');
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet->getStyle('A2')->getFont()->setSize(14)->setBold(true)->getColor()->setRGB('0F3D29');
+        $sheet->getStyle('A2')->getFont()->setName('Old English Text MT')->setSize(17);
+        $sheet->getRowDimension(2)->setRowHeight(28);
 
         $sheet->mergeCells('A3:G3');
         $sheet->setCellValue('A3', 'Human Resource Development Office (HRDO)');
@@ -1455,6 +1479,9 @@ class CscExcelExporter
         $sheet->setCellValue('A5', "Evaluation Period: {$cycleTitle}  |  {$scopeText}  |  Generated on: " . date('F j, Y'));
         $sheet->getStyle('A5')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getStyle('A5')->getFont()->setSize(9)->getColor()->setRGB('4B5563');
+
+        // Add BSU Seal (Left) and Bagong Pilipinas (Right)
+        self::addOfficialSeals($sheet, 'G');
 
         // Table Header
         $headers = [
@@ -1617,6 +1644,46 @@ class CscExcelExporter
             $protection->setPassword($password);
             $spreadsheet->getSecurity()->setLockStructure(true);
             $spreadsheet->getSecurity()->setWorkbookPassword($password);
+        }
+    }
+
+    /**
+     * Embeds the official BSU Seal (left) and Bagong Pilipinas (right) logos into the spreadsheet header.
+     *
+     * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet
+     * @param string $lastCol Rightmost column letter (e.g. 'H' or 'J')
+     * @return void
+     */
+    private static function addOfficialSeals(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, string $lastCol): void
+    {
+        $publicPath = defined('FCPATH') ? FCPATH : realpath(__DIR__ . '/../../public') . DIRECTORY_SEPARATOR;
+        
+        // 1. Left: Benguet State University Official Seal
+        $bsuSealPath = $publicPath . 'assets/images/bsu_seal.png';
+        if (file_exists($bsuSealPath)) {
+            $drawingBsu = new Drawing();
+            $drawingBsu->setName('BSU Seal');
+            $drawingBsu->setDescription('Benguet State University Official Seal');
+            $drawingBsu->setPath($bsuSealPath);
+            $drawingBsu->setCoordinates('A1');
+            $drawingBsu->setHeight(68);
+            $drawingBsu->setOffsetX(18);
+            $drawingBsu->setOffsetY(3);
+            $drawingBsu->setWorksheet($sheet);
+        }
+
+        // 2. Right: Bagong Pilipinas Official Logo (MC 24, s. 2023 Compliance)
+        $bpPath = $publicPath . 'assets/images/bagong_pilipinas.png';
+        if (file_exists($bpPath)) {
+            $drawingBp = new Drawing();
+            $drawingBp->setName('Bagong Pilipinas');
+            $drawingBp->setDescription('Bagong Pilipinas Official Logo');
+            $drawingBp->setPath($bpPath);
+            $drawingBp->setCoordinates("{$lastCol}1");
+            $drawingBp->setHeight(64);
+            $drawingBp->setOffsetX(15);
+            $drawingBp->setOffsetY(4);
+            $drawingBp->setWorksheet($sheet);
         }
     }
 }

@@ -837,6 +837,18 @@
                                 </div>
                             </div>
 
+                            <?php
+                                $hubTargetStart = $activeFolder['ipcr_target_start'] ?? $activeFolder['opcr_target_start'] ?? $activeFolder['dpcr_target_start'] ?? $activeFolder['iperf_target_start'] ?? null;
+                                $hubTargetEnd   = $activeFolder['ipcr_target_end'] ?? $activeFolder['opcr_target_end'] ?? $activeFolder['dpcr_target_end'] ?? $activeFolder['iperf_target_end'] ?? null;
+                                $hubEvalStart   = $activeFolder['ipcr_eval_start'] ?? $activeFolder['opcr_eval_start'] ?? $activeFolder['dpcr_eval_start'] ?? $activeFolder['iperf_eval_start'] ?? null;
+                                $hubEvalEnd     = $activeFolder['ipcr_eval_end'] ?? $activeFolder['opcr_eval_end'] ?? $activeFolder['dpcr_eval_end'] ?? $activeFolder['iperf_eval_end'] ?? null;
+
+                                $isUnifiedSchedule = (!empty($hubTargetStart) &&
+                                    ($activeFolder['opcr_target_start'] ?? $hubTargetStart) === $hubTargetStart &&
+                                    ($activeFolder['dpcr_target_start'] ?? $hubTargetStart) === $hubTargetStart &&
+                                    ($activeFolder['iperf_target_start'] ?? $hubTargetStart) === $hubTargetStart
+                                );
+                            ?>
                             <!-- 3 STAT TILES -->
                             <div class="spms-hub-stat-grid">
                                 <!-- 1. Target Period -->
@@ -844,13 +856,13 @@
                                     <div>
                                         <div class="spms-hub-tile-label">Target Setting Period</div>
                                         <div class="spms-hub-tile-value">
-                                            <?= !empty($activeFolder['ipcr_target_start']) && !empty($activeFolder['ipcr_target_end']) ? date('M j', strtotime($activeFolder['ipcr_target_start'])) . ' – ' . date('M j, Y', strtotime($activeFolder['ipcr_target_end'])) : 'Dates Not Configured' ?>
+                                            <?= !empty($hubTargetStart) && !empty($hubTargetEnd) ? date('M j', strtotime($hubTargetStart)) . ' – ' . date('M j, Y', strtotime($hubTargetEnd)) : 'Dates Not Configured' ?>
                                         </div>
                                     </div>
                                     <div>
                                         <div class="spms-hub-window-pill">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400 inline-block"></span>
-                                            <span>TARGET PHASE</span>
+                                            <span class="w-1.5 h-1.5 rounded-full <?= $isUnifiedSchedule ? 'bg-emerald-600 dark:bg-emerald-400' : 'bg-amber-500' ?> inline-block"></span>
+                                            <span><?= $isUnifiedSchedule ? 'UNIFIED RANGE' : 'STAGGERED' ?></span>
                                         </div>
                                     </div>
                                 </div>
@@ -860,11 +872,14 @@
                                     <div>
                                         <div class="spms-hub-tile-label">Evaluation Period</div>
                                         <div class="spms-hub-tile-value">
-                                            <?= !empty($activeFolder['ipcr_eval_start']) && !empty($activeFolder['ipcr_eval_end']) ? date('M j', strtotime($activeFolder['ipcr_eval_start'])) . ' – ' . date('M j, Y', strtotime($activeFolder['ipcr_eval_end'])) : 'Scheduled Following Targets' ?>
+                                            <?= !empty($hubEvalStart) && !empty($hubEvalEnd) ? date('M j', strtotime($hubEvalStart)) . ' – ' . date('M j, Y', strtotime($hubEvalEnd)) : 'Scheduled Following Targets' ?>
                                         </div>
                                     </div>
                                     <div>
-                                        <div class="spms-hub-tile-dash"></div>
+                                        <div class="spms-hub-window-pill">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-sky-600 dark:bg-sky-400 inline-block"></span>
+                                            <span>EVAL PHASE</span>
+                                        </div>
                                     </div>
                                 </div>
 

@@ -372,6 +372,29 @@
     <!-- Centered Printable Document Sheet -->
     <article id="printable-form" class="spms-sheet-container block space-y-5">
         
+        <!-- INSTITUTIONAL OFFICIAL LETTERHEAD (BSU Seal, Gothic Masthead & Bagong Pilipinas) -->
+        <div class="spms-official-letterhead flex items-center justify-between gap-3 sm:gap-6 mb-4 pb-3 border-b border-zinc-200 dark:border-zinc-800">
+            <!-- Left: BSU Official Seal -->
+            <div class="shrink-0 flex items-center justify-center">
+                <img src="<?= base_url('assets/images/bsu_seal.png') ?>" alt="Benguet State University Seal" class="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-xs" />
+            </div>
+
+            <!-- Center: Republic & University Letterhead -->
+            <div class="flex-1 text-center min-w-0">
+                <p class="text-[11px] sm:text-xs font-semibold tracking-wider text-zinc-700 dark:text-zinc-300 uppercase">Republic of the Philippines</p>
+                <h1 class="text-xl sm:text-2xl md:text-3xl text-zinc-900 dark:text-zinc-100 font-normal leading-tight my-0.5 tracking-normal" style="font-family: 'Old English Text MT', 'UnifrakturMaguntia', 'Chaucer', serif;">Benguet State University</h1>
+                <p class="text-[10px] sm:text-xs italic text-zinc-600 dark:text-zinc-400">La Trinidad, 2601 Benguet</p>
+                <p class="text-xs sm:text-sm italic font-medium text-zinc-800 dark:text-zinc-200 mt-0.5" style="font-family: 'Monotype Corsiva', 'Italianno', 'Lucida Calligraphy', cursive, serif;">
+                    <?= esc(!empty($existingFormData['ratee']['dept']) ? $existingFormData['ratee']['dept'] : ($isOpcr ? 'Office of the University President' : 'Office of the University President')) ?>
+                </p>
+            </div>
+
+            <!-- Right: Bagong Pilipinas Official Logo (MC 24, s. 2023 Compliance) -->
+            <div class="shrink-0 flex items-center justify-center">
+                <img src="<?= base_url('assets/images/bagong_pilipinas.png') ?>" alt="Bagong Pilipinas" class="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-xs" />
+            </div>
+        </div>
+
         <!-- INSTITUTIONAL FORM HEADER -->
         <div style="text-align: center; margin-bottom: 20px;">
             <h2 style="font-size: 14px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: 0.05em; color: #000000; line-height: 1.4;">

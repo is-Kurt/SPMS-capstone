@@ -1154,17 +1154,41 @@ class Folder extends BaseController
                 'target_approved_at' => null,
             ];
 
-            $docTypes = ['ipcr', 'cdpcr', 'dpcr', 'opcr', 'iperf'];
-            foreach ($docTypes as $type) {
-                $tStart = $this->request->getPost("{$type}_target_start");
-                $tEnd   = $this->request->getPost("{$type}_target_end");
-                $eStart = $this->request->getPost("{$type}_eval_start");
-                $eEnd   = $this->request->getPost("{$type}_eval_end");
+            $scheduleMode   = $this->request->getPost('schedule_mode');
+            $genTargetStart = $this->request->getPost('general_target_start');
+            $genTargetEnd   = $this->request->getPost('general_target_end');
+            $genEvalStart   = $this->request->getPost('general_eval_start');
+            $genEvalEnd     = $this->request->getPost('general_eval_end');
 
-                $payload["{$type}_target_start"] = !empty($tStart) ? str_replace('T', ' ', (string) $tStart) : null;
-                $payload["{$type}_target_end"]   = !empty($tEnd)   ? str_replace('T', ' ', (string) $tEnd)   : null;
-                $payload["{$type}_eval_start"]   = !empty($eStart) ? str_replace('T', ' ', (string) $eStart) : null;
-                $payload["{$type}_eval_end"]     = !empty($eEnd)   ? str_replace('T', ' ', (string) $eEnd)   : null;
+            $docTypes = ['ipcr', 'cdpcr', 'dpcr', 'opcr', 'iperf'];
+
+            // If general schedule mode is active or general dates are provided without specific dates
+            $isGeneralMode = ($scheduleMode === 'general') || (!empty($genTargetStart) && empty($this->request->getPost('opcr_target_start')));
+
+            if ($isGeneralMode && (!empty($genTargetStart) || !empty($genTargetEnd) || !empty($genEvalStart) || !empty($genEvalEnd))) {
+                $cleanGenTStart = !empty($genTargetStart) ? str_replace('T', ' ', (string) $genTargetStart) : null;
+                $cleanGenTEnd   = !empty($genTargetEnd)   ? str_replace('T', ' ', (string) $genTargetEnd)   : null;
+                $cleanGenEStart = !empty($genEvalStart)   ? str_replace('T', ' ', (string) $genEvalStart)   : null;
+                $cleanGenEEnd   = !empty($genEvalEnd)     ? str_replace('T', ' ', (string) $genEvalEnd)     : null;
+
+                foreach ($docTypes as $type) {
+                    $payload["{$type}_target_start"] = $cleanGenTStart;
+                    $payload["{$type}_target_end"]   = $cleanGenTEnd;
+                    $payload["{$type}_eval_start"]   = $cleanGenEStart;
+                    $payload["{$type}_eval_end"]     = $cleanGenEEnd;
+                }
+            } else {
+                foreach ($docTypes as $type) {
+                    $tStart = $this->request->getPost("{$type}_target_start") ?: $genTargetStart;
+                    $tEnd   = $this->request->getPost("{$type}_target_end")   ?: $genTargetEnd;
+                    $eStart = $this->request->getPost("{$type}_eval_start")   ?: $genEvalStart;
+                    $eEnd   = $this->request->getPost("{$type}_eval_end")     ?: $genEvalEnd;
+
+                    $payload["{$type}_target_start"] = !empty($tStart) ? str_replace('T', ' ', (string) $tStart) : null;
+                    $payload["{$type}_target_end"]   = !empty($tEnd)   ? str_replace('T', ' ', (string) $tEnd)   : null;
+                    $payload["{$type}_eval_start"]   = !empty($eStart) ? str_replace('T', ' ', (string) $eStart) : null;
+                    $payload["{$type}_eval_end"]     = !empty($eEnd)   ? str_replace('T', ' ', (string) $eEnd)   : null;
+                }
             }
             
             $newId = create_unique_row($documentFolderModel, $payload);
@@ -1443,19 +1467,41 @@ class Folder extends BaseController
 
             $title = $this->request->getPost('title');
             
+            $scheduleMode   = $this->request->getPost('schedule_mode');
+            $genTargetStart = $this->request->getPost('general_target_start');
+            $genTargetEnd   = $this->request->getPost('general_target_end');
+            $genEvalStart   = $this->request->getPost('general_eval_start');
+            $genEvalEnd     = $this->request->getPost('general_eval_end');
+
             $docTypes = ['ipcr', 'cdpcr', 'dpcr', 'opcr', 'iperf'];
             $folderData = ['title' => $title];
             
-            foreach ($docTypes as $type) {
-                $tStart = $this->request->getPost("{$type}_target_start");
-                $tEnd   = $this->request->getPost("{$type}_target_end");
-                $eStart = $this->request->getPost("{$type}_eval_start");
-                $eEnd   = $this->request->getPost("{$type}_eval_end");
+            $isGeneralMode = ($scheduleMode === 'general') || (!empty($genTargetStart) && empty($this->request->getPost('opcr_target_start')));
 
-                $folderData["{$type}_target_start"] = !empty($tStart) ? str_replace('T', ' ', (string) $tStart) : null;
-                $folderData["{$type}_target_end"]   = !empty($tEnd)   ? str_replace('T', ' ', (string) $tEnd)   : null;
-                $folderData["{$type}_eval_start"]   = !empty($eStart) ? str_replace('T', ' ', (string) $eStart) : null;
-                $folderData["{$type}_eval_end"]     = !empty($eEnd)   ? str_replace('T', ' ', (string) $eEnd)   : null;
+            if ($isGeneralMode && (!empty($genTargetStart) || !empty($genTargetEnd) || !empty($genEvalStart) || !empty($genEvalEnd))) {
+                $cleanGenTStart = !empty($genTargetStart) ? str_replace('T', ' ', (string) $genTargetStart) : null;
+                $cleanGenTEnd   = !empty($genTargetEnd)   ? str_replace('T', ' ', (string) $genTargetEnd)   : null;
+                $cleanGenEStart = !empty($genEvalStart)   ? str_replace('T', ' ', (string) $genEvalStart)   : null;
+                $cleanGenEEnd   = !empty($genEvalEnd)     ? str_replace('T', ' ', (string) $genEvalEnd)     : null;
+
+                foreach ($docTypes as $type) {
+                    $folderData["{$type}_target_start"] = $cleanGenTStart;
+                    $folderData["{$type}_target_end"]   = $cleanGenTEnd;
+                    $folderData["{$type}_eval_start"]   = $cleanGenEStart;
+                    $folderData["{$type}_eval_end"]     = $cleanGenEEnd;
+                }
+            } else {
+                foreach ($docTypes as $type) {
+                    $tStart = $this->request->getPost("{$type}_target_start") ?: $genTargetStart;
+                    $tEnd   = $this->request->getPost("{$type}_target_end")   ?: $genTargetEnd;
+                    $eStart = $this->request->getPost("{$type}_eval_start")   ?: $genEvalStart;
+                    $eEnd   = $this->request->getPost("{$type}_eval_end")     ?: $genEvalEnd;
+
+                    $folderData["{$type}_target_start"] = !empty($tStart) ? str_replace('T', ' ', (string) $tStart) : null;
+                    $folderData["{$type}_target_end"]   = !empty($tEnd)   ? str_replace('T', ' ', (string) $tEnd)   : null;
+                    $folderData["{$type}_eval_start"]   = !empty($eStart) ? str_replace('T', ' ', (string) $eStart) : null;
+                    $folderData["{$type}_eval_end"]     = !empty($eEnd)   ? str_replace('T', ' ', (string) $eEnd)   : null;
+                }
             }
 
             $now = date('Y-m-d H:i:s');
