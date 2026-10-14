@@ -167,18 +167,18 @@ class CscExcelExporter
         // ---------------------------------------------------------------------
         $sheet->mergeCells("A1:{$lastCol}1");
         $sheet->setCellValue('A1', 'Republic of the Philippines');
-        $sheet->getStyle('A1')->getFont()->setSize(10)->setBold(true);
+        $sheet->getStyle('A1')->getFont()->setName('Bookman Old Style')->setSize(10)->setBold(true)->getColor()->setRGB('111827');
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         $sheet->mergeCells("A2:{$lastCol}2");
         $sheet->setCellValue('A2', 'Benguet State University');
-        $sheet->getStyle('A2')->getFont()->setName('Old English Text MT')->setSize(17);
+        $sheet->getStyle('A2')->getFont()->setName('Old English Text MT')->setSize(17)->getColor()->setRGB('436531');
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getRowDimension(2)->setRowHeight(28);
 
         $sheet->mergeCells("A3:{$lastCol}3");
         $sheet->setCellValue('A3', 'La Trinidad, 2601 Benguet');
-        $sheet->getStyle('A3')->getFont()->setSize(9)->setItalic(true)->getColor()->setRGB('475569');
+        $sheet->getStyle('A3')->getFont()->setName('Bookman Old Style')->setSize(9.5)->setItalic(true)->getColor()->setRGB('1F2937');
         $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getRowDimension(3)->setRowHeight(16);
 
@@ -189,7 +189,7 @@ class CscExcelExporter
 
         $sheet->mergeCells("A4:{$lastCol}4");
         $sheet->setCellValue('A4', $officeTitle);
-        $sheet->getStyle('A4')->getFont()->setName('Monotype Corsiva')->setSize(13)->setItalic(true)->getColor()->setRGB('1E293B');
+        $sheet->getStyle('A4')->getFont()->setName('Monotype Corsiva')->setSize(14)->setItalic(true)->setBold(true)->getColor()->setRGB('111827');
         $sheet->getStyle('A4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getRowDimension(4)->setRowHeight(20);
 
@@ -1006,18 +1006,18 @@ class CscExcelExporter
         // 1. Institutional Header
         $sheet->mergeCells('A1:H1');
         $sheet->setCellValue('A1', 'Republic of the Philippines');
-        $sheet->getStyle('A1')->getFont()->setSize(10)->setBold(true);
+        $sheet->getStyle('A1')->getFont()->setName('Bookman Old Style')->setSize(10)->setBold(true)->getColor()->setRGB('111827');
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         $sheet->mergeCells('A2:H2');
         $sheet->setCellValue('A2', 'Benguet State University');
-        $sheet->getStyle('A2')->getFont()->setName('Old English Text MT')->setSize(17);
+        $sheet->getStyle('A2')->getFont()->setName('Old English Text MT')->setSize(17)->getColor()->setRGB('436531');
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getRowDimension(2)->setRowHeight(28);
 
         $sheet->mergeCells('A3:H3');
         $sheet->setCellValue('A3', 'La Trinidad, 2601 Benguet');
-        $sheet->getStyle('A3')->getFont()->setSize(9)->setItalic(true)->getColor()->setRGB('475569');
+        $sheet->getStyle('A3')->getFont()->setName('Bookman Old Style')->setSize(9.5)->setItalic(true)->getColor()->setRGB('1F2937');
         $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getRowDimension(3)->setRowHeight(16);
 
@@ -1456,18 +1456,18 @@ class CscExcelExporter
         $sheet->mergeCells('A1:G1');
         $sheet->setCellValue('A1', 'Republic of the Philippines');
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet->getStyle('A1')->getFont()->setSize(10)->setItalic(true);
+        $sheet->getStyle('A1')->getFont()->setName('Bookman Old Style')->setSize(10)->setBold(true)->getColor()->setRGB('111827');
 
         $sheet->mergeCells('A2:G2');
         $sheet->setCellValue('A2', 'Benguet State University');
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet->getStyle('A2')->getFont()->setName('Old English Text MT')->setSize(17);
+        $sheet->getStyle('A2')->getFont()->setName('Old English Text MT')->setSize(17)->getColor()->setRGB('436531');
         $sheet->getRowDimension(2)->setRowHeight(28);
 
         $sheet->mergeCells('A3:G3');
         $sheet->setCellValue('A3', 'Human Resource Development Office (HRDO)');
         $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet->getStyle('A3')->getFont()->setSize(10)->setBold(true);
+        $sheet->getStyle('A3')->getFont()->setName('Bookman Old Style')->setSize(10.5)->setBold(true)->getColor()->setRGB('111827');
 
         $sheet->mergeCells('A4:G4');
         $sheet->setCellValue('A4', 'SPMS PERSONNEL ROSTER & MASTER LIST');

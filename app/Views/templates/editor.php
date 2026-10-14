@@ -373,7 +373,7 @@
     <article id="printable-form" class="spms-sheet-container block space-y-5">
         
         <!-- INSTITUTIONAL OFFICIAL LETTERHEAD (BSU Seal, Gothic Masthead & Bagong Pilipinas) -->
-        <div class="spms-official-letterhead flex items-center justify-between gap-3 sm:gap-6 mb-4 pb-3 border-b border-zinc-200 dark:border-zinc-800">
+        <div class="spms-official-letterhead flex items-center justify-between gap-3 sm:gap-6 mb-4 pb-3 border-b border-zinc-300">
             <!-- Left: BSU Official Seal -->
             <div class="shrink-0 flex items-center justify-center">
                 <img src="<?= base_url('assets/images/bsu_seal.png') ?>" alt="Benguet State University Seal" class="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-xs" />
@@ -381,10 +381,10 @@
 
             <!-- Center: Republic & University Letterhead -->
             <div class="flex-1 text-center min-w-0">
-                <p class="text-[11px] sm:text-xs font-semibold tracking-wider text-zinc-700 dark:text-zinc-300 uppercase">Republic of the Philippines</p>
-                <h1 class="text-xl sm:text-2xl md:text-3xl text-zinc-900 dark:text-zinc-100 font-normal leading-tight my-0.5 tracking-normal" style="font-family: 'Old English Text MT', 'UnifrakturMaguntia', 'Chaucer', serif;">Benguet State University</h1>
-                <p class="text-[10px] sm:text-xs italic text-zinc-600 dark:text-zinc-400">La Trinidad, 2601 Benguet</p>
-                <p class="text-xs sm:text-sm italic font-medium text-zinc-800 dark:text-zinc-200 mt-0.5" style="font-family: 'Monotype Corsiva', 'Italianno', 'Lucida Calligraphy', cursive, serif;">
+                <p style="font-family: 'Bookman Old Style', 'Century Schoolbook', 'Times New Roman', serif; font-size: 12px; font-weight: 600; color: #111827 !important; margin: 0; line-height: 1.3;">Republic of the Philippines</p>
+                <h1 style="font-family: 'Old English Text MT', 'UnifrakturMaguntia', 'Chaucer', serif; font-size: 26px; font-weight: 700; line-height: 1.25; color: #436531 !important; margin: 3px 0;">Benguet State University</h1>
+                <p style="font-family: 'Bookman Old Style', 'Century Schoolbook', 'Times New Roman', serif; font-size: 11px; font-style: italic; font-weight: 600; color: #1f2937 !important; margin: 0; line-height: 1.3;">La Trinidad, 2601 Benguet</p>
+                <p id="spms-letterhead-dept" style="font-family: 'Monotype Corsiva', 'Lucida Calligraphy', 'Brush Script MT', 'Dancing Script', cursive, serif; font-size: 15.5px; font-style: italic; font-weight: 700; color: #111827 !important; margin: 2px 0 0 0;">
                     <?= esc(!empty($existingFormData['ratee']['dept']) ? $existingFormData['ratee']['dept'] : ($isOpcr ? 'Office of the University President' : 'Office of the University President')) ?>
                 </p>
             </div>
@@ -1402,6 +1402,15 @@
         populateInitialRows();
         document.querySelectorAll('.field-budget').forEach(adjustBudgetFontSize);
         recalculateForm();
+        const deptInput = document.getElementById('ratee-dept');
+        if (deptInput) {
+            deptInput.addEventListener('input', function() {
+                const lhDept = document.getElementById('spms-letterhead-dept');
+                if (lhDept) {
+                    lhDept.textContent = this.value.trim() || 'Office of the University President';
+                }
+            });
+        }
     });
     // Initial Blueprint Data
     <?php
