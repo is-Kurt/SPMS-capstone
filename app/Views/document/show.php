@@ -706,15 +706,6 @@
             </button>
             <?php endif; ?>
 
-            <!-- CSC Scoring Rubric Button (Desktop - hidden on mobile) -->
-            <button type="button" id="btn-toggle-rubric" onclick="toggleRubricDrawer()" 
-                    class="hidden md:inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-2.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-[10px] sm:text-xs font-bold rounded-lg border border-surface-border transition-all cursor-pointer shadow-sm active:scale-[0.98] print-hide"
-                    title="View official CSC 5-point rating rubric for Quality, Timeliness, and Efficiency">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-500 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-                <span>Rubric Guide</span>
-            </button>
 
             <?php if (!$isGuide): ?>
                 <?php if ($doc['is_target'] == 0 && !in_array($status, [FolderStatus::DRAFT->value, FolderStatus::REEVALUATE->value])): ?>
@@ -1209,14 +1200,6 @@
             </button>
         <?php endif; ?>
 
-        <button type="button" onclick="toggleRubricDrawer()" 
-                class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-surface-border/20 hover:bg-surface-border/40 text-text text-[10px] font-bold rounded-lg border border-surface-border transition-all cursor-pointer shadow-xs shrink-0"
-                title="View CSC 5-point rating rubric">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-            <span>Rubric</span>
-        </button>
 
         <!-- Mobile Theme Toggle Button -->
         <button type="button" onclick="window.handleThemeToggle(this)" 
@@ -2351,45 +2334,6 @@
 
             </div>
 
-            <?php if ($canEditTargets): ?>
-            <!-- Floating Action Button (FAB) for Rubrics Quick Add -->
-            <div id="rubric-fab-container" class="hidden fixed bottom-6 right-6 z-40">
-                <div class="relative">
-                    <!-- Dropup Menu for FAB -->
-                    <div id="rubric-fab-menu" class="hidden absolute bottom-full right-0 mb-3 w-56 rounded-2xl bg-surface/95 backdrop-blur-md border border-surface-border shadow-2xl p-2 space-y-1 text-xs font-bold transition-all">
-                        <div class="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-text-muted border-b border-surface-border/60">
-                            Add Deliverable
-                        </div>
-                        <button type="button" onclick="addDeliverableFromRubrics('core'); toggleRubricFabMenu(false);"
-                                class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-emerald-500/10 text-text hover:text-emerald-700 dark:hover:text-emerald-300 flex items-center gap-2.5 transition-colors cursor-pointer">
-                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
-                            <span>Core Functions</span>
-                        </button>
-                        <?php if (!$isDocIperf): ?>
-                        <button type="button" onclick="addDeliverableFromRubrics('strategic'); toggleRubricFabMenu(false);"
-                                class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-sky-500/10 text-text hover:text-sky-700 dark:hover:text-sky-300 flex items-center gap-2.5 transition-colors cursor-pointer">
-                            <span class="w-2.5 h-2.5 rounded-full bg-sky-500 shrink-0"></span>
-                            <span>Strategic Functions</span>
-                        </button>
-                        <button type="button" onclick="addDeliverableFromRubrics('support'); toggleRubricFabMenu(false);"
-                                class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-amber-500/10 text-text hover:text-amber-700 dark:hover:text-amber-300 flex items-center gap-2.5 transition-colors cursor-pointer">
-                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
-                            <span>Support Functions</span>
-                        </button>
-                        <?php endif; ?>
-                    </div>
-
-                    <!-- Primary FAB Button -->
-                    <button type="button" onclick="handleRubricFabClick()"
-                            id="rubric-fab-btn"
-                            title="Add new deliverable"
-                            class="flex items-center gap-2 px-4 py-3 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-xl hover:shadow-emerald-600/30 hover:scale-105 active:scale-95 transition-all cursor-pointer font-bold text-xs">
-                        <span class="text-base font-black leading-none">＋</span>
-                        <span>Add Deliverable</span>
-                    </button>
-                </div>
-            </div>
-            <?php endif; ?>
         </div>
 
         <!-- Fallback TinyMCE Editor Container for Free-Form Documents -->
@@ -2397,7 +2341,6 @@
             <textarea id="editable-doc" name="content"></textarea>
         </div>
     </div>
-    <?= view('document/_rubric_drawer') ?>
     <?= view('document/_cascade_modal') ?>
 </div>
 </div>
@@ -2440,7 +2383,7 @@
     window.canEditEvaluation = canEditEvaluation;
 
     window.rubricAttachments = <?= json_encode($attachmentsByRow['rubric'] ?? []) ?>;
-    window.digitalRubricsData = tabs[0]?.formData?.rubrics || {};
+    window.digitalRubricsData = (tabs[0]?.formData?.rubrics && !Array.isArray(tabs[0]?.formData?.rubrics)) ? tabs[0].formData.rubrics : {};
     
     // Set initial content for TinyMCE initialization
     document.getElementById('editable-doc').value = tabs[0].content;
@@ -3525,14 +3468,11 @@
             if (basisWorkspace) basisWorkspace.classList.add('hidden');
             if (rubricsWorkspace) {
                 rubricsWorkspace.classList.remove('hidden');
-                document.getElementById('rubric-fab-container')?.classList.remove('hidden');
                 renderDigitalRubricsMatrix();
                 renderRubricAttachmentCard();
             }
             return;
         }
-
-        document.getElementById('rubric-fab-container')?.classList.add('hidden');
         if (basisWorkspace) {
             basisWorkspace.classList.add('hidden');
         }
@@ -3547,12 +3487,17 @@
         const hasSpmsContent = activeTab.content && (activeTab.content.includes('spms-table') || activeTab.content.includes('printable-form') || activeTab.content.includes('ACADEMIC') || activeTab.content.includes('MAJOR FINAL OUTPUT'));
         const isEmptyTab = !activeTab.content || activeTab.content.trim() === '';
 
+        const isPerformanceDoc = Boolean(window.isCurrentDocDpcr || window.isCurrentDocOpcr || window.isCurrentDocIperf || IS_DOC_DPCR || IS_DOC_OPCR || IS_DOC_IPERF);
+
         // SPMS Form is default for performance documents
-        if (hasSpmsData || hasSpmsContent || isEmptyTab) {
+        if (hasSpmsData || hasSpmsContent || isEmptyTab || isPerformanceDoc) {
             window.isSpmsFormActive = true;
             document.getElementById('spms-form-workspace').classList.remove('hidden');
             document.getElementById('tinymce-wrapper').classList.add('hidden');
             populateSpmsForm(activeTab.formData);
+            if (typeof window.syncSpmsActiveTab === 'function') {
+                window.syncSpmsActiveTab();
+            }
         } else {
             window.isSpmsFormActive = false;
             document.getElementById('spms-form-workspace').classList.add('hidden');
@@ -4020,7 +3965,12 @@
         document.querySelectorAll('.table-row-core, .table-row-strategic, .table-row-support').forEach(tr => tr.remove());
 
         // Populate category rows
-        const hasSavedCategories = Boolean(data && data.categories && typeof data.categories === 'object');
+        const hasSavedCategories = Boolean(data && data.categories && typeof data.categories === 'object' && (
+            (Array.isArray(data.categories.core) && data.categories.core.length > 0) ||
+            (Array.isArray(data.categories.strategic) && data.categories.strategic.length > 0) ||
+            (Array.isArray(data.categories.support) && data.categories.support.length > 0) ||
+            window._userExplicitlyDeletedRow
+        ));
         const cats = data.categories || DEFAULT_BLUEPRINT;
         const coreRows = Array.isArray(cats.core) 
             ? (hasSavedCategories ? cats.core : (cats.core.length > 0 ? cats.core : DEFAULT_BLUEPRINT.core))
@@ -4037,6 +3987,10 @@
                 ? (hasSavedCategories ? cats.support : (cats.support.length > 0 ? cats.support : DEFAULT_BLUEPRINT.support))
                 : (DEFAULT_BLUEPRINT.support || []);
             suppRows.forEach(row => addTableRow('support', row));
+        }
+
+        if (tabs[0] && (!tabs[0].formData || !tabs[0].formData.categories) && typeof window.syncSpmsActiveTab === 'function') {
+            window.syncSpmsActiveTab();
         }
 
         // Update add buttons visibility based on phase permissions
@@ -5424,10 +5378,12 @@
         // Safeguard against wiping out existing categories:
         // 1. If form workspace is hidden or inactive, or
         // 2. If extracted rows are empty while existing rows exist (and the user hasn't explicitly clicked delete)
-        if (!isFormWorkspaceVisible || (extractedCore.length === 0 && (existingCats.core?.length || 0) > 0 && !window._userExplicitlyDeletedRow)) {
-            extractedCore = (extractedCore.length > 0) ? extractedCore : (existingCats.core || []);
-            extractedStrat = (extractedStrat.length > 0) ? extractedStrat : (existingCats.strategic || []);
-            extractedSupp = (extractedSupp.length > 0) ? extractedSupp : (existingCats.support || []);
+        if (!isFormWorkspaceVisible || (extractedCore.length === 0 && !window._userExplicitlyDeletedRow)) {
+            extractedCore = (extractedCore.length > 0) ? extractedCore : (existingCats.core?.length ? existingCats.core : (DEFAULT_BLUEPRINT.core || []));
+            if (!window.isCurrentDocIperf) {
+                extractedStrat = (extractedStrat.length > 0) ? extractedStrat : (existingCats.strategic?.length ? existingCats.strategic : (DEFAULT_BLUEPRINT.strategic || []));
+                extractedSupp = (extractedSupp.length > 0) ? extractedSupp : (existingCats.support?.length ? existingCats.support : (DEFAULT_BLUEPRINT.support || []));
+            }
         } else if (!canEditTargets && (existingCats.core?.length || 0) > 0) {
             // When user cannot edit targets (e.g. reviewer/evaluator), preserve original target fields
             // while updating reviewer fields (q, t, e, accomplishments, remarks)
@@ -5580,14 +5536,15 @@
         // Fallback to activeTab.formData if table DOM is not yet populated
         if (deliverables.length === 0) {
             const activeTab = tabs[0];
-            const cats = activeTab?.formData?.categories;
+            const cats = activeTab?.formData?.categories || DEFAULT_BLUEPRINT;
             if (cats) {
-                ['core', 'strategic', 'support'].forEach(cat => {
+                const catKeys = window.isCurrentDocIperf ? ['core'] : ['core', 'strategic', 'support'];
+                catKeys.forEach(cat => {
                     if (Array.isArray(cats[cat])) {
                         cats[cat].forEach((r, idx) => {
                             const ppa = r.office_ppa || '';
                             const exp = r.expected_outputs || r.indicators || r.success_indicators || '';
-                            const mfo = r.mfo_title || r.paps || '';
+                            const mfo = r.mfo || r.mfo_title || r.paps || '';
                             const text = [mfo, ppa, exp].filter(Boolean).join(' — ');
                             deliverables.push({
                                 rowId: r.row_id || `row-${cat}-${idx}`,
@@ -5663,151 +5620,6 @@
         }
     }
 
-    function handleRubricFabClick() {
-        if (window.isCurrentDocIperf) {
-            addDeliverableFromRubrics('core');
-            return;
-        }
-        const menu = document.getElementById('rubric-fab-menu');
-        if (menu) menu.classList.toggle('hidden');
-    }
-
-    function toggleRubricFabMenu(show = false) {
-        const menu = document.getElementById('rubric-fab-menu');
-        if (!menu) return;
-        if (show) menu.classList.remove('hidden');
-        else menu.classList.add('hidden');
-    }
-
-    document.addEventListener('click', (e) => {
-        const fabContainer = document.getElementById('rubric-fab-container');
-        if (fabContainer && !fabContainer.contains(e.target)) {
-            toggleRubricFabMenu(false);
-        }
-    });
-
-    function addDeliverableFromRubrics(category = 'core') {
-        toggleRubricFabMenu(false);
-
-        const newRowId = 'row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7);
-        const rowData = {
-            row_id: newRowId,
-            mfo: "",
-            indicators: "",
-            accomplishments: "",
-            q: "", t: "", e: "",
-            remarks: ""
-        };
-
-        if (typeof addTableRow === 'function') {
-            addTableRow(category, rowData);
-        }
-
-        if (tabs[0]) {
-            if (!tabs[0].formData) tabs[0].formData = {};
-            if (!tabs[0].formData.categories) tabs[0].formData.categories = { core: [], strategic: [], support: [] };
-            if (!tabs[0].formData.categories[category]) tabs[0].formData.categories[category] = [];
-            tabs[0].formData.categories[category].push(rowData);
-        }
-
-        AppState.setDirty(true);
-        renderDigitalRubricsMatrix();
-
-        setTimeout(() => {
-            const rowEl = document.querySelector(`#digital-rubrics-tbody tr[data-deliverable-id="${newRowId}"]`);
-            if (rowEl) {
-                rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                rowEl.classList.add('bg-emerald-500/10');
-                setTimeout(() => rowEl.classList.remove('bg-emerald-500/10'), 2500);
-
-                const titleInput = rowEl.querySelector('.rubric-title-input');
-                if (titleInput) {
-                    titleInput.focus();
-                    titleInput.select();
-                }
-            }
-        }, 80);
-    }
-
-    function syncDeliverableTitleToForm(rowId, newTitle) {
-        const rowEl = document.querySelector(`tr[data-row-id="${rowId}"]`) || document.getElementById(rowId);
-        if (rowEl) {
-            const targetInput = rowEl.querySelector('.field-mfo') || rowEl.querySelector('.spms-input-office-ppa') || rowEl.querySelector('.field-indicators') || rowEl.querySelector('textarea, input[type="text"]');
-            if (targetInput) {
-                targetInput.value = newTitle;
-            }
-        }
-        if (tabs[0]?.formData?.categories) {
-            Object.values(tabs[0].formData.categories).forEach(catRows => {
-                if (Array.isArray(catRows)) {
-                    const found = catRows.find(r => (r.row_id === rowId || r.id === rowId));
-                    if (found) {
-                        if ('mfo' in found) found.mfo = newTitle;
-                        else if ('office_ppa' in found) found.office_ppa = newTitle;
-                        else if ('mfo_title' in found) found.mfo_title = newTitle;
-                    }
-                }
-            });
-        }
-        AppState.setDirty(true);
-    }
-
-    async function deleteDeliverableFromRubrics(rowId) {
-        const ok = await window.appConfirm("Delete this deliverable from both the Target Form and Rubrics Matrix?", {
-            title: 'Delete Deliverable',
-            confirmText: 'Delete',
-            isDanger: true
-        });
-        if (!ok) return;
-
-        const rowEl = document.querySelector(`tr[data-row-id="${rowId}"]`) || document.getElementById(rowId);
-        if (rowEl) rowEl.remove();
-
-        if (window.digitalRubricsData && window.digitalRubricsData[rowId]) {
-            delete window.digitalRubricsData[rowId];
-        }
-        if (tabs[0]?.formData?.rubrics?.[rowId]) {
-            delete tabs[0].formData.rubrics[rowId];
-        }
-
-        if (tabs[0]?.formData?.categories) {
-            ['core', 'strategic', 'support'].forEach(cat => {
-                if (Array.isArray(tabs[0].formData.categories[cat])) {
-                    tabs[0].formData.categories[cat] = tabs[0].formData.categories[cat].filter(r => r.row_id !== rowId && r.id !== rowId);
-                }
-            });
-        }
-
-        AppState.setDirty(true);
-        if (typeof recalculateForm === 'function') recalculateForm();
-        renderDigitalRubricsMatrix();
-    }
-
-    async function clearRubricRow(rowId) {
-        const ok = await window.appConfirm("Clear all scoring criteria for this deliverable?", {
-            title: 'Clear Rubrics',
-            confirmText: 'Clear',
-            isDanger: true
-        });
-        if (!ok) return;
-
-        if (!window.digitalRubricsData) window.digitalRubricsData = tabs[0]?.formData?.rubrics || {};
-        window.digitalRubricsData[rowId] = {
-            5: { q: '', t: '', e: '' },
-            4: { q: '', t: '', e: '' },
-            3: { q: '', t: '', e: '' },
-            2: { q: '', t: '', e: '' },
-            1: { q: '', t: '', e: '' }
-        };
-
-        if (tabs[0]) {
-            if (!tabs[0].formData) tabs[0].formData = {};
-            tabs[0].formData.rubrics = window.digitalRubricsData;
-        }
-
-        AppState.setDirty(true);
-        renderDigitalRubricsMatrix();
-    }
 
     function updateSingleDeliverableBadge(rowId) {
         const badge = document.getElementById(`rubric-count-badge-${rowId}`);
@@ -5881,27 +5693,21 @@
                 weight: catWeights.core,
                 badge: 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30',
                 dot: 'bg-emerald-500',
-                borderL: 'border-l-emerald-500',
-                addBtn: 'border-emerald-500/30 hover:border-emerald-500/60 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-                emptyHint: 'Add your primary operational deliverables.'
+                borderL: 'border-l-emerald-500'
             },
             strategic: {
                 title: 'Strategic Functions',
                 weight: catWeights.strategic,
                 badge: 'bg-sky-500/15 text-sky-800 dark:text-sky-300 border-sky-500/30',
                 dot: 'bg-sky-500',
-                borderL: 'border-l-sky-500',
-                addBtn: 'border-sky-500/30 hover:border-sky-500/60 bg-sky-500/5 hover:bg-sky-500/10 text-sky-700 dark:text-sky-300',
-                emptyHint: 'Add strategic priority projects and institutional development targets.'
+                borderL: 'border-l-sky-500'
             },
             support: {
                 title: 'Support Functions',
                 weight: catWeights.support,
                 badge: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30',
                 dot: 'bg-amber-500',
-                borderL: 'border-l-amber-500',
-                addBtn: 'border-amber-500/30 hover:border-amber-500/60 bg-amber-500/5 hover:bg-amber-500/10 text-amber-700 dark:text-amber-300',
-                emptyHint: 'Add administrative, cross-functional, or support committee outputs.'
+                borderL: 'border-l-amber-500'
             }
         };
 
@@ -6145,8 +5951,8 @@
         const container = document.getElementById('spms-rubrics-workspace');
         if (!container) return;
 
-        if (!window.digitalRubricsData) {
-            window.digitalRubricsData = tabs[0]?.formData?.rubrics || {};
+        if (!window.digitalRubricsData || Array.isArray(window.digitalRubricsData)) {
+            window.digitalRubricsData = (tabs[0]?.formData?.rubrics && !Array.isArray(tabs[0]?.formData?.rubrics)) ? tabs[0].formData.rubrics : {};
         }
 
         container.querySelectorAll('textarea[data-row-id]').forEach(ta => {
@@ -6166,6 +5972,9 @@
 
         if (tabs[0]) {
             if (!tabs[0].formData) tabs[0].formData = {};
+            if (!tabs[0].formData.categories && typeof window.syncSpmsActiveTab === 'function') {
+                window.syncSpmsActiveTab();
+            }
             tabs[0].formData.rubrics = window.digitalRubricsData;
         }
 
@@ -6716,6 +6525,9 @@
     // Launch active view on page load
     document.addEventListener('DOMContentLoaded', () => {
         initActiveTabView();
+        if (window.isSpmsFormActive && typeof window.syncSpmsActiveTab === 'function') {
+            window.syncSpmsActiveTab();
+        }
         updateRubricsTabBadge();
         if (new URLSearchParams(window.location.search).get('print') === '1') {
             setTimeout(() => exportToPdf(), 700);
