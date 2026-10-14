@@ -176,6 +176,7 @@ function restore_session_from_cookie(): bool {
             'department' => $plantilla ? $plantilla['department'] : null,
             'position'   => $plantilla ? $plantilla['position'] : null,
             'username'   => $user['first_name'] . ' ' . $user['last_name'],
+            'doc_type'   => $user['doc_type'] ?? null,
             'isLoggedIn' => true,
             'avatar_image'  => $user['avatar_image'],
             'avatar_color'  => $user['avatar_color'] ?? '#' . substr(md5($user['email']), 0, 6),
@@ -185,4 +186,260 @@ function restore_session_from_cookie(): bool {
     }
     
     return false;
+}
+
+/**
+ * Converts an existing document to a target performance paper type (IPCR, DPCR, OPCR, IPERF).
+ * Preserves user-entered targets (MFOs, indicators, remarks) while adapting category
+ * weights, fields, and signatories to match the target form structure.
+ *
+ * @param string $docId Document ID to convert
+ * @param string $targetPaperType Target paper type ('IPCR', 'DPCR', 'OPCR', 'IPERF')
+ * @return bool True if document was converted/updated, False if no change needed or invalid.
+ */
+function convert_document_paper_type(string $docId, string $targetPaperType): bool
+{
+    $documentModel = new \App\Models\DocumentModel();
+    $templateModel = new \App\Models\TemplateModel();
+
+    $doc = $documentModel->find($docId);
+    if (!$doc) return false;
+
+    $targetPaperType = strtoupper(trim($targetPaperType));
+    if (!in_array($targetPaperType, ['IPCR', 'DPCR', 'OPCR', 'IPERF'], true)) {
+        return false;
+    }
+
+    $currentTitleUpper = strtoupper(trim($doc['title'] ?? ''));
+    $tabs = !empty($doc['tabs']) ? (is_string($doc['tabs']) ? json_decode($doc['tabs'], true) : $doc['tabs']) : [];
+
+    // Identify current paper type
+    $currentDocType = null;
+    if (str_contains($currentTitleUpper, 'OPCR') || str_contains($currentTitleUpper, 'OFFICE')) {
+        $currentDocType = 'OPCR';
+    } elseif (str_contains($currentTitleUpper, 'DPCR') || str_contains($currentTitleUpper, 'DIVISION') || str_contains($currentTitleUpper, 'DEPARTMENT')) {
+        $currentDocType = 'DPCR';
+    } elseif (str_contains($currentTitleUpper, 'IPERF') || str_contains($currentTitleUpper, 'NON-TEACHING')) {
+        $currentDocType = 'IPERF';
+    } elseif (str_contains($currentTitleUpper, 'IPCR')) {
+        $currentDocType = 'IPCR';
+    }
+
+    $tabDocType = !empty($tabs[0]['formData']['doc_type']) ? strtoupper(trim($tabs[0]['formData']['doc_type'])) : null;
+
+    // If both title and tab formData doc_type already match target, no conversion needed
+    if ($currentDocType === $targetPaperType && $tabDocType === $targetPaperType) {
+        return false;
+    }
+
+    $officialTitles = [
+        'OPCR'  => 'OFFICE PERFORMANCE COMMITMENT AND REVIEW (OPCR)',
+        'DPCR'  => 'DEPARTMENT PERFORMANCE COMMITMENT AND REVIEW (DPCR)',
+        'IPCR'  => 'INDIVIDUAL PERFORMANCE COMMITMENT AND REVIEW (IPCR)',
+        'IPERF' => 'INDIVIDUAL PERFORMANCE EVALUATION RATING FORM FOR CONTRACT OF SERVICE AND JOB ORDER PERSONNEL',
+    ];
+
+    // Load official template for the target form
+    $tpl = $templateModel->where('title', $targetPaperType)->first() 
+        ?? $templateModel->like('title', $targetPaperType)->first() 
+        ?? $templateModel->first();
+    $tplTabs = !empty($tpl['tabs']) ? (is_string($tpl['tabs']) ? json_decode($tpl['tabs'], true) : $tpl['tabs']) : [];
+    $tplFormData = $tplTabs[0]['formData'] ?? [];
+
+    // Check if document has user-entered content
+    $hasExistingContent = false;
+    if (!empty($tabs)) {
+        foreach ($tabs as $t) {
+            if (!empty($t['content']) && trim(strip_tags($t['content'])) !== '') {
+                $hasExistingContent = true;
+                break;
+            }
+            if (!empty($t['formData']['categories'])) {
+                foreach (['core', 'strategic', 'support'] as $c) {
+                    if (!empty($t['formData']['categories'][$c])) {
+                        foreach ($t['formData']['categories'][$c] as $r) {
+                            if (!empty($r['mfo']) || !empty($r['indicators']) || !empty($r['accomplishments'])) {
+                                $hasExistingContent = true;
+                                break 3;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (!$hasExistingContent || empty($tabs)) {
+        // Document is empty: replace with clean official template tabs
+        $newTabs = !empty($tplTabs) ? $tplTabs : [
+            [
+                'id'       => 'tab-' . uniqid(),
+                'title'    => 'Target Form',
+                'formData' => [
+                    'doc_type' => strtolower($targetPaperType),
+                    'title'    => $officialTitles[$targetPaperType] ?? $targetPaperType
+                ],
+                'content'  => ''
+            ]
+        ];
+        return $documentModel->update($docId, [
+            'title' => $targetPaperType,
+            'tabs'  => $newTabs
+        ]);
+    }
+
+    // Document has user-entered targets: adapt rows to the target form type
+    foreach ($tabs as &$t) {
+        if (!isset($t['formData']) || !is_array($t['formData'])) {
+            $t['formData'] = [];
+        }
+
+        $t['formData']['doc_type'] = strtolower($targetPaperType);
+        $t['formData']['title']    = $officialTitles[$targetPaperType] ?? $targetPaperType;
+
+        if ($targetPaperType === 'IPERF') {
+            // Flatten strategic and support rows into core
+            $coreRows = $t['formData']['categories']['core'] ?? [];
+            foreach (['strategic', 'support'] as $cat) {
+                if (!empty($t['formData']['categories'][$cat])) {
+                    foreach ($t['formData']['categories'][$cat] as $row) {
+                        if (!empty($row['mfo']) || !empty($row['indicators'])) {
+                            $coreRows[] = $row;
+                        }
+                    }
+                }
+            }
+            foreach ($coreRows as $idx => &$cr) {
+                $cr['row_id'] = $cr['row_id'] ?? ('row_core_' . ($idx + 1));
+                if (!isset($cr['twg_comment'])) $cr['twg_comment'] = '';
+            }
+            unset($cr);
+
+            $t['formData']['categories'] = [
+                'core'      => $coreRows,
+                'strategic' => [],
+                'support'   => []
+            ];
+            $t['formData']['weights'] = [
+                'core'      => 1,
+                'strategic' => 0,
+                'support'   => 0
+            ];
+            if (!empty($tplFormData['signatories'])) {
+                $t['formData']['signatories'] = $tplFormData['signatories'];
+            }
+        } else {
+            // Converting to IPCR, DPCR, or OPCR
+            if (!isset($t['formData']['categories']) || !is_array($t['formData']['categories'])) {
+                $t['formData']['categories'] = ['core' => [], 'strategic' => [], 'support' => []];
+            } else {
+                foreach (['core', 'strategic', 'support'] as $cat) {
+                    if (!isset($t['formData']['categories'][$cat])) {
+                        $t['formData']['categories'][$cat] = [];
+                    }
+                }
+            }
+            // Reset IPERF 100% flat weights
+            if (isset($t['formData']['weights']) && ($t['formData']['weights']['core'] ?? 0) == 1 && ($t['formData']['weights']['strategic'] ?? 0) == 0) {
+                unset($t['formData']['weights']);
+            }
+            if (!empty($tplFormData['signatories'])) {
+                $t['formData']['signatories'] = $tplFormData['signatories'];
+            }
+        }
+    }
+    unset($t);
+
+    return $documentModel->update($docId, [
+        'title' => $targetPaperType,
+        'tabs'  => $tabs
+    ]);
+}
+
+/**
+ * Synchronizes all document folders belonging to a user that are currently
+ * in the target setting phase to match the user's new/current paper type.
+ *
+ * @param int $userId Target user ID
+ * @param string|null $targetPaperType Explicit paper type ('IPCR', 'DPCR', 'OPCR', 'IPERF'). If null, resolved from profile/position.
+ * @return array Summary of updated folders and documents count
+ */
+function sync_user_papers_mid_target_setting(int $userId, ?string $targetPaperType = null): array
+{
+    $userModel     = new \App\Models\UserModel();
+    $folderModel   = new \App\Models\DocumentFolderModel();
+    $documentModel = new \App\Models\DocumentModel();
+
+    $user = $userModel->find($userId);
+    if (!$user) return ['updated_docs' => 0, 'updated_folders' => 0];
+
+    // Determine target paper type if not provided
+    if (empty($targetPaperType)) {
+        if (!empty($user['doc_type'])) {
+            $targetPaperType = strtoupper(trim($user['doc_type']));
+        } else {
+            $plantilla = $userModel->getActivePlantillaDetails($userId);
+            $posTitle = strtolower($plantilla['position'] ?? '');
+            $userEmail = strtolower($user['email'] ?? '');
+            if (str_contains($posTitle, 'president') || str_contains($posTitle, 'vice president') || str_contains($userEmail, 'vpaa') || str_contains($userEmail, 'cao')) {
+                $targetPaperType = 'OPCR';
+            } elseif (str_contains($posTitle, 'dean') || str_contains($posTitle, 'chair') || str_contains($posTitle, 'head') || str_contains($userEmail, 'dean') || str_contains($userEmail, 'chair')) {
+                $targetPaperType = 'DPCR';
+            } elseif (($plantilla['is_teaching'] ?? 1) == 0) {
+                $targetPaperType = 'IPERF';
+            } else {
+                $targetPaperType = 'IPCR';
+            }
+        }
+    }
+
+    $targetPaperType = strtoupper(trim($targetPaperType));
+    if (!in_array($targetPaperType, ['IPCR', 'DPCR', 'OPCR', 'IPERF'], true)) {
+        $targetPaperType = 'IPCR';
+    }
+
+    // Mid target setting statuses (before targets are approved or evaluation begins)
+    $targetSettingStatuses = [
+        \App\Enums\FolderStatus::DRAFT_TARGET->value,
+        \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
+        \App\Enums\FolderStatus::TARGET_RETURNED->value,
+        \App\Enums\FolderStatus::TARGET_UNAPPROVED->value,
+        \App\Enums\FolderStatus::DRAFT->value,
+        \App\Enums\FolderStatus::UNEVALUATED->value,
+    ];
+
+    $folders = $folderModel->where('user_id', $userId)
+                           ->whereIn('status', $targetSettingStatuses)
+                           ->where('deleted_at IS NULL')
+                           ->findAll();
+
+    $updatedDocs = 0;
+    $updatedFolders = 0;
+
+    foreach ($folders as $folder) {
+        $docs = $documentModel->where('document_folder_id', $folder['id'])->findAll();
+        $folderHadDocUpdated = false;
+
+        foreach ($docs as $doc) {
+            $changed = convert_document_paper_type($doc['id'], $targetPaperType);
+            if ($changed) {
+                $updatedDocs++;
+                $folderHadDocUpdated = true;
+            }
+        }
+
+        // If paper type changed while pending approval, revert folder to draft_target so ratee can review & resubmit
+        if ($folderHadDocUpdated && $folder['status'] === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value) {
+            $folderModel->update($folder['id'], [
+                'status'              => \App\Enums\FolderStatus::DRAFT_TARGET->value,
+                'target_submitted_at' => null
+            ]);
+            $updatedFolders++;
+        }
+    }
+
+    return [
+        'updated_docs'    => $updatedDocs,
+        'updated_folders' => $updatedFolders
+    ];
 }

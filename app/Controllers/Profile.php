@@ -56,10 +56,18 @@ class Profile extends BaseController
 
             $userModel->db->transStart();
 
+            $existingUser = $userModel->find($userId);
+            $postedDocType = $this->request->getPost('doc_type');
+            if (!empty($postedDocType) && in_array(strtoupper(trim($postedDocType)), ['IPCR', 'DPCR', 'OPCR', 'IPERF'], true)) {
+                $newDocType = strtoupper(trim($postedDocType));
+            } else {
+                $newDocType = !empty($existingUser['doc_type']) ? $existingUser['doc_type'] : 'IPCR';
+            }
+
             $saved = $userModel->update($userId, [
                 'first_name' => $this->request->getPost('first_name'),
                 'last_name'  => $this->request->getPost('last_name'),
-                'doc_type'   => $this->request->getPost('doc_type') ?: 'IPCR'
+                'doc_type'   => $newDocType
             ]);
 
             if (!$saved) {
@@ -97,8 +105,12 @@ class Profile extends BaseController
                 'first_name' => $this->request->getPost('first_name'),
                 'last_name'  => $this->request->getPost('last_name'),
                 'email'      => $user['email'],
-                'username'   => $this->request->getPost('first_name') . ' ' . $this->request->getPost('last_name')
+                'username'   => $this->request->getPost('first_name') . ' ' . $this->request->getPost('last_name'),
+                'doc_type'   => $newDocType
             ]);
+
+            // If account changed paper type mid target setting, synchronize their papers immediately
+            sync_user_papers_mid_target_setting($userId, $newDocType);
 
             return $this->respond(['status' => 'success', 'message' => 'Profile updated successfully.']);
         });

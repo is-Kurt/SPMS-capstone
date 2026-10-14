@@ -91,7 +91,21 @@
                     <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Document Type</label>
                     <div class="relative js-custom-select">
                         <?php 
-                            $oldDocType = $user['doc_type'] ?? 'IPCR';
+                            $oldDocType = !empty($user['doc_type']) ? $user['doc_type'] : null;
+                            if (!$oldDocType) {
+                                $plantillaDetails = (new \App\Models\UserModel())->getActivePlantillaDetails($user['id']);
+                                $pTitle = strtolower($plantillaDetails['position'] ?? '');
+                                $uEmail = strtolower($user['email'] ?? '');
+                                if (str_contains($pTitle, 'president') || str_contains($pTitle, 'vice president') || str_contains($uEmail, 'vpaa') || str_contains($uEmail, 'cao')) {
+                                    $oldDocType = 'OPCR';
+                                } elseif (str_contains($pTitle, 'dean') || str_contains($pTitle, 'chair') || str_contains($pTitle, 'head') || str_contains($uEmail, 'dean') || str_contains($uEmail, 'chair')) {
+                                    $oldDocType = 'DPCR';
+                                } elseif (($plantillaDetails['is_teaching'] ?? 1) == 0) {
+                                    $oldDocType = 'IPERF';
+                                } else {
+                                    $oldDocType = 'IPCR';
+                                }
+                            }
                             $docTypes = ['IPCR', 'DPCR', 'OPCR', 'IPERF'];
                         ?>
                         <input type="hidden" name="doc_type" value="<?= $oldDocType ?>" required>

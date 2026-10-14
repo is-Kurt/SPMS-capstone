@@ -265,6 +265,7 @@ class Session extends BaseController
             'department' => $department,
             'position'   => $position,
             'username'   => $user['first_name'] . ' ' . $user['last_name'],
+            'doc_type'   => $user['doc_type'] ?? null,
             'isLoggedIn' => true,
             'avatar_image'  => $user['avatar_image'],
             'avatar_color'  => $user['avatar_color'] ?? '#' . substr(md5($user['email']), 0, 6),

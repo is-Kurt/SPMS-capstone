@@ -1046,7 +1046,9 @@ class Folder extends BaseController
         $templateModel = new TemplateModel();
 
         $user = $userModel->find($userId);
-        $role = session()->get('role');
+        if (!$user) return null;
+
+        $targetUserIsAdmin = $userModel->hasRole($userId, 'Admin');
 
         // Check if user is an Executive (VPAA, VP, President), Dean, or Department Chair
         $plantilla = $userModel->getActivePlantillaDetails($userId);
@@ -1055,67 +1057,53 @@ class Folder extends BaseController
         $isExecutive = str_contains($posTitle, 'vpaa') 
                     || str_contains($posTitle, 'vice president') 
                     || str_contains($posTitle, 'president')
-                    || str_contains($userEmail, 'vpaa');
+                    || str_contains($userEmail, 'vpaa')
+                    || str_contains($userEmail, 'cao');
         $isDean = str_contains($posTitle, 'dean') || str_contains($userEmail, 'dean');
         $isChair = str_contains($posTitle, 'chair') 
                 || str_contains($posTitle, 'head')
                 || str_contains($userEmail, 'chair');
 
         $defaultDoc = 'IPCR';
-        if ($role === 'Admin' || $isExecutive) {
+        if ($targetUserIsAdmin || $isExecutive) {
             $defaultDoc = 'OPCR';
         } elseif ($isDean || $isChair) {
             $defaultDoc = 'DPCR';
+        } elseif (($plantilla['is_teaching'] ?? 1) == 0) {
+            $defaultDoc = 'IPERF';
         }
 
         $docType = $overrideDocType 
-                ?: ((!empty($user['doc_type']) && $user['doc_type'] !== 'IPCR') 
+                ?: (!empty($user['doc_type']) 
                     ? strtoupper(trim($user['doc_type'])) 
                     : $defaultDoc);
 
         // Check if document already exists in this folder
         $existing = $documentModel->where('document_folder_id', $folderId)->first();
         if ($existing) {
-            $existingTabs = !empty($existing['tabs']) ? (is_string($existing['tabs']) ? json_decode($existing['tabs'], true) : $existing['tabs']) : [];
-            $hasExistingContent = false;
-            if (!empty($existingTabs)) {
-                foreach ($existingTabs as $t) {
-                    if (!empty($t['content']) && trim(strip_tags($t['content'])) !== '') {
-                        $hasExistingContent = true;
-                        break;
-                    }
-                    if (!empty($t['formData']['categories'])) {
-                        foreach (['core', 'strategic', 'support'] as $c) {
-                            if (!empty($t['formData']['categories'][$c])) {
-                                foreach ($t['formData']['categories'][$c] as $r) {
-                                    if (!empty($r['mfo']) || !empty($r['indicators']) || !empty($r['accomplishments'])) {
-                                        $hasExistingContent = true;
-                                        break 3;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            $folderModel = new DocumentFolderModel();
+            $folder = $folderModel->find($folderId);
+            $status = $folder['status'] ?? 'draft_target';
 
-            // Auto-upgrade title from IPCR to OPCR/DPCR if user role changed, but NEVER overwrite filled user tabs
-            if ($isExecutive && strtoupper($existing['title']) === 'IPCR') {
-                $updateData = ['title' => 'OPCR'];
-                if (!$hasExistingContent) {
-                    $opcrTemplate = $templateModel->where('title', 'OPCR')->first() ?? $templateModel->first();
-                    $opcrTabs = !empty($opcrTemplate['tabs']) ? (is_string($opcrTemplate['tabs']) ? json_decode($opcrTemplate['tabs'], true) : $opcrTemplate['tabs']) : [];
-                    if (!empty($opcrTabs)) $updateData['tabs'] = $opcrTabs;
+            // Check if folder is mid target setting
+            $isMidTargetSetting = in_array($status, [
+                FolderStatus::DRAFT_TARGET->value,
+                FolderStatus::PENDING_TARGET_APPROVAL->value,
+                FolderStatus::TARGET_RETURNED->value,
+                FolderStatus::TARGET_UNAPPROVED->value,
+                FolderStatus::DRAFT->value,
+                FolderStatus::UNEVALUATED->value,
+            ]);
+
+            // If account changed paper type mid target setting, synchronize their paper to match
+            if ($isMidTargetSetting) {
+                $changed = convert_document_paper_type($existing['id'], $docType);
+                if ($changed && $status === FolderStatus::PENDING_TARGET_APPROVAL->value) {
+                    $folderModel->update($folderId, [
+                        'status'              => FolderStatus::DRAFT_TARGET->value,
+                        'target_submitted_at' => null
+                    ]);
                 }
-                $documentModel->update($existing['id'], $updateData);
-            } elseif (($isDean || $isChair) && strtoupper($existing['title']) === 'IPCR') {
-                $updateData = ['title' => 'DPCR'];
-                if (!$hasExistingContent) {
-                    $dpcrTemplate = $templateModel->where('title', 'DPCR')->first() ?? $templateModel->first();
-                    $dpcrTabs = !empty($dpcrTemplate['tabs']) ? (is_string($dpcrTemplate['tabs']) ? json_decode($dpcrTemplate['tabs'], true) : $dpcrTemplate['tabs']) : [];
-                    if (!empty($dpcrTabs)) $updateData['tabs'] = $dpcrTabs;
-                }
-                $documentModel->update($existing['id'], $updateData);
             }
             return $existing['id'];
         }

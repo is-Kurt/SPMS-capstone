@@ -11,6 +11,14 @@ All notable changes, features, and fixes across the Benguet State University Str
 
 ---
 
+### Oct 13, 2026
+- **[Changed]** Upgraded In-App User Guide Modal & Complete Operations Manual — *Committed by @Nanashi*
+  - Upgraded in-app guide modal (`user_guide_modal.php`) with 6 streamlined steps, role-aware quick-jump shortcuts (Faculty & Staff, Deans & Chairs, Evidence & Drive, and Quick FAQs).
+  - Aligned documentation with recent CSC Excel Exporter updates (removed deprecated browser print/PDF instructions, added `.xlsx` direct printing tips and default unlock password `spms`).
+  - Added full Google Drive, OneDrive, and Dropbox cloud storage link guidance for large file portfolios in the MOV drawer.
+  - Documented score adjustment indicator dots (🟢 HoO / 🟡 PTWG), dynamic approval disabling rules, and dimension gating (`N/A`).
+  - Created comprehensive `docs/USER_OPERATIONS_MANUAL.md` covering end-to-end operational workflows for Faculty (IPCR/IPERF), Supervisors (DPCR), and HRDO Admins (cycles, plantilla, units, accounts), completing Capstone Phase 7.3.
+
 ### Oct 11, 2026
 - **[Changed]** Standardized Official CSC Excel Export & Read-Only Protected Spreadsheets — *Committed by @Nanashi*
   - Removed the browser print / "Export PDF" button from document viewers and template editor headers to eliminate cropped margins, awkward page breaks, and browser print discrepancies.
