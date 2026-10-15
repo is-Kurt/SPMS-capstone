@@ -258,7 +258,6 @@ if (btnCreateFolder) {
         targetEnd.setHours(23, 59, 0, 0);
 
         const evalStart = new Date(targetEnd);
-        evalStart.setHours(8, 0, 0, 0);
 
         const evalEnd = new Date(evalStart);
         evalEnd.setDate(evalEnd.getDate() + 14);

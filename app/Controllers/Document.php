@@ -25,7 +25,9 @@ class Document extends BaseController
 
         $documentModel = new DocumentModel();
         $userModel     = new \App\Models\UserModel();
-        
+        $folderModel   = new DocumentFolderModel();
+        $folderModel->updateTimeBasedStatuses();
+
         $docInfo = $documentModel->getDocumentWithFolderInfo($docId);
 
         if (!$docInfo) throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
@@ -42,14 +44,8 @@ class Document extends BaseController
             
             if ($routing) {
                 $routingStatus = is_object($routing) ? $routing->status : $routing['status'];
-            } elseif (in_array($sysRole, ['Admin', 'PMT'])) {
+            } elseif (in_array($sysRole, ['Admin', 'PMT', 'TWG'])) {
                 $routingStatus = null;
-            } elseif ($sysRole === 'TWG') {
-                if ((new \App\Models\TwgUnitAssignmentModel())->isTwgAssignedToFolder($userId, $docInfo['document_folder_id'])) {
-                    $routingStatus = null;
-                } else {
-                    $isGuide = true;
-                }
             } else {
                 $isGuide = true;
             }

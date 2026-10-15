@@ -28,7 +28,7 @@
    - [3.2 Managing Organizational Units & Colleges](#32-managing-organizational-units--colleges)
    - [3.3 Managing Plantilla Positions](#33-managing-plantilla-positions)
    - [3.4 Inviting, Role Assignment & Account Security](#34-inviting-role-assignment--account-security)
-   - [3.5 Technical Working Group (PTWG) Calibration Assignments](#35-technical-working-group-ptwg-calibration-assignments)
+   - [3.5 Technical Working Group / Performance Management Team (TWG/PMT) Calibration Assignments](#35-technical-working-group--performance-management-team-twgpmt-calibration-assignments)
 5. [Part 4: Official CSC Excel Exporter & Printing Rules](#5-part-4-official-csc-excel-exporter--printing-rules)
 6. [Part 5: Troubleshooting & Frequently Asked Questions (FAQ)](#6-part-5-troubleshooting--frequently-asked-questions-faq)
 
@@ -46,7 +46,7 @@ University Goals (OPCR) ➔ College Deans (DPCR) ➔ Department Chairs (DPCR) �
                                         │
                                         ▼ (Review & Lock)
                               [ Phase 2: Evaluation ]
-Accomplishments Reported ➔ MOVs / Drive Proof Attached ➔ Q-E-T Scoring ➔ PTWG Audit ➔ Official CSC Excel
+Accomplishments Reported ➔ MOVs / Drive Proof Attached ➔ Q-E-T Scoring ➔ TWG/PMT Audit ➔ Official CSC Excel
 ```
 
 ### Core Forms Summary
@@ -166,11 +166,11 @@ Score each deliverable row across the standard 3 dimensions:
 | **1** | **Poor** | Severe failures across multiple key duties. |
 
 ### 2.5 Calibrating Ratings, Score Adjustments & Audit Dots
-When a supervisor or Technical Working Group (PTWG) reviewer modifies a ratee's self-rating:
+When a supervisor or Technical Working Group / Performance Management Team (TWG/PMT) reviewer modifies a ratee's self-rating:
 1. Enter the calibrated score directly into the evaluator rating cell.
 2. The system flags the cell with an elegant **corner notification dot**:
    - 🟢 **Emerald Dot:** Score adjusted by the Head of Office (Immediate Supervisor).
-   - 🟡 **Amber Dot:** Score calibrated by the Technical Working Group (PTWG).
+   - 🟡 **Amber Dot:** Score calibrated by the Technical Working Group / Performance Management Team (TWG/PMT).
 3. **Hover Tooltip:** Hovering over the corner dot displays the exact revision trail (`was 4 ➔ now 3`).
 4. **3-Tier Rating Attribution Audit Modal:** Clicking the corner dot opens the comprehensive audit popup showing timestamps, previous scores, calibrator identity, and justification notes.
 
@@ -219,10 +219,10 @@ To protect transparency and due process under CSC guidelines:
    - **Admin:** Complete HRDO institutional configuration and override privileges.
 4. **Account Toggle:** Click **Toggle Status** to immediately disable or re-enable employee portal access upon separation or leave of absence.
 
-### 4.5 Technical Working Group (PTWG) Calibration Assignments
-1. In the admin directory, select personnel designated as PTWG reviewers.
+### 4.5 Technical Working Group / Performance Management Team (TWG/PMT) Calibration Assignments
+1. In the admin directory, select personnel designated as TWG or PMT reviewers.
 2. Assign colleges or units under their monitoring remit.
-3. PTWG members gain inspection rights to Stage 2 Target Calibration dashboards and the **+ [PTWG]** official feedback stamp.
+3. TWG/PMT members gain inspection rights to Stage 2 Target Calibration dashboards and the **+ [TWG]** or **+ [PMT]** official feedback stamp.
 
 ---
 

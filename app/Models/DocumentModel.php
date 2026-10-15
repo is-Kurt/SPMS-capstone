@@ -64,6 +64,8 @@ class DocumentModel extends Model
                       df.dpcr_target_start, df.dpcr_target_end, df.dpcr_eval_start, df.dpcr_eval_end,
                       df.opcr_target_start, df.opcr_target_end, df.opcr_eval_start, df.opcr_eval_end,
                       df.iperf_target_start, df.iperf_target_end, df.iperf_eval_start, df.iperf_eval_end,
+                      df.target_submitted_at, df.target_approved_at, df.target_approved_by, df.target_approver_role,
+                      df.routing_preset_id, df.final_rating,
                       u.doc_type')
             ->join('document_folders df', 'df.id = d.document_folder_id')
             ->join('users u', 'u.id = df.user_id', 'left')

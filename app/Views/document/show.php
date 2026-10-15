@@ -714,64 +714,122 @@
                     </button>
 
                 <?php elseif ($status === FolderStatus::APPROVED->value || $status === FolderStatus::TWG_APPROVED->value || $status === FolderStatus::TWG_DISAPPROVED->value): ?>
-                    <?php if (in_array(session()->get('role'), ['TWG', 'PMT'])): ?>
-                        <div class="flex gap-1.5 sm:gap-2 items-center">
+                    <?php
+                        $isTargetApproved = !empty($doc['target_approved_at']) 
+                            || ($status === FolderStatus::TARGET_APPROVED->value) 
+                            || (($isDocOpcr || $isTrueOpcr) && (!empty($doc['routing_preset_id']) || !empty($doc['target_approved_at'])));
+                        
+                        $targetRole = $doc['target_approver_role'] ?? '';
+                        $isTargetTwg = $isTargetApproved && in_array($targetRole, ['TWG', 'PMT']);
+                        if ($targetRole === 'PMT') {
+                            $targetBadgeText = 'Targets PMT Approved';
+                            $targetBadgeShort = 'Targets PMT Ok';
+                        } elseif ($targetRole === 'TWG') {
+                            $targetBadgeText = 'Targets TWG Approved';
+                            $targetBadgeShort = 'Targets TWG Ok';
+                        } elseif ($isTargetApproved) {
+                            $targetBadgeText = 'Targets Approved';
+                            $targetBadgeShort = 'Targets Ok';
+                        } else {
+                            $targetBadgeText = 'Targets Pending';
+                            $targetBadgeShort = 'Targets Pending';
+                        }
+                        
+                        $isEvalTwg = ($status === FolderStatus::TWG_APPROVED->value);
+                        $isEvalDisapproved = ($status === FolderStatus::TWG_DISAPPROVED->value);
+                        $evalBadgeText = $isEvalTwg ? 'Evaluation TWG Approved' : ($isEvalDisapproved ? 'Evaluation TWG Disapproved' : 'Evaluation Approved');
+                    ?>
+                    <div class="flex items-center gap-1.5 sm:gap-2">
+                        <!-- Dual Phase Status Indicator (Targets & Evaluation) -->
+                        <div class="inline-flex items-center rounded-lg border <?= ($isTargetApproved && $isEvalTwg) ? 'border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300' : ($isEvalDisapproved ? 'border-danger-500/30 bg-danger-500/10 dark:bg-danger-950/40 text-danger-700 dark:text-danger-300' : 'border-surface-border bg-surface-border/20 text-text') ?> p-0.5 sm:p-1 text-[10px] sm:text-xs font-bold shadow-xs shrink-0">
+                            <!-- Target Phase Status -->
+                            <span class="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-md <?= $isTargetApproved ? 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-200' : 'bg-amber-500/20 text-amber-800 dark:text-amber-200' ?>">
+                                <?php if ($isTargetApproved): ?>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                <?php else: ?>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                <?php endif; ?>
+                                <span class="hidden sm:inline"><?= $targetBadgeText ?></span>
+                                <span class="sm:hidden"><?= $targetBadgeShort ?></span>
+                            </span>
+                            
+                            <span class="mx-1 opacity-40 font-normal">|</span>
+                            
+                            <!-- Evaluation Phase Status -->
+                            <span class="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-md <?= $isEvalDisapproved ? 'bg-danger-500/20 text-danger-800 dark:text-danger-200' : ($isEvalTwg ? 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-200' : 'bg-amber-500/20 text-amber-800 dark:text-amber-200') ?>">
+                                <?php if ($isEvalTwg): ?>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                    </svg>
+                                <?php elseif ($isEvalDisapproved): ?>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-danger-600 dark:text-danger-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                <?php else: ?>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                <?php endif; ?>
+                                <span class="hidden sm:inline"><?= $evalBadgeText ?></span>
+                                <span class="sm:hidden"><?= $isEvalTwg ? 'Eval TWG Ok' : ($isEvalDisapproved ? 'TWG Disapproved' : 'Eval Approved') ?></span>
+                            </span>
+                        </div>
+
+                        <?php if (in_array(session()->get('role'), ['TWG', 'PMT'])): ?>
+                            <?php if ($isTargetApproved && (empty($doc['target_approver_role']) || !in_array($doc['target_approver_role'], ['TWG', 'PMT']))): ?>
+                                <button id="btn-twg-verify-target-top" type="button" 
+                                        onclick="approveFolderTarget(null)" 
+                                        class="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-2.5 sm:px-3 rounded-lg shadow-xs transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1"
+                                        title="Verify and stamp targets as <?= esc(session()->get('role')) ?>">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                    </svg>
+                                    <span><?= session()->get('role') === 'PMT' ? 'PMT Verify Targets' : 'TWG Verify Targets' ?></span>
+                                </button>
+                            <?php endif; ?>
                             <?php if ($status === FolderStatus::TWG_APPROVED->value || $status === FolderStatus::TWG_DISAPPROVED->value): ?>
-                                <span class="text-[10px] sm:text-xs font-bold px-3 py-2 <?= $status === FolderStatus::TWG_APPROVED->value ? 'text-success-600 dark:text-success-400' : 'text-danger-600 dark:text-danger-400' ?>">
-                                    <?= $status === FolderStatus::TWG_APPROVED->value ? 'TWG Approved' : 'TWG Disapproved' ?>
-                                </span>
                                 <button id="btn-twg-revoke" type="button" 
                                         onclick="setTwgStatus('revoke')" 
-                                        class="bg-warning-500 hover:bg-warning-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-warning-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                        class="bg-warning-500 hover:bg-warning-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg shadow-warning-500/20 transition-all active:scale-[0.98] cursor-pointer">
                                     Revoke
                                 </button>
                             <?php else: ?>
                                 <button id="btn-twg-disapprove" type="button" 
                                         onclick="setTwgStatus('twg_disapproved')" 
-                                        class="bg-danger-500 hover:bg-danger-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-danger-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                        class="bg-danger-500 hover:bg-danger-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg shadow-danger-500/20 transition-all active:scale-[0.98] cursor-pointer">
                                     Disapprove
                                 </button>
                                 <button id="btn-twg-approve" type="button" 
                                         onclick="setTwgStatus('twg_approved')" 
-                                        class="bg-success-500 hover:bg-success-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-success-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                        class="bg-success-500 hover:bg-success-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg shadow-success-500/20 transition-all active:scale-[0.98] cursor-pointer">
                                     Approve
                                 </button>
                             <?php endif; ?>
-                        </div>
-                    <?php else: ?>
-                        <?php 
-                            $canRemoveEvalApproval = false;
-                            $allowedRemoveStatuses = [FolderStatus::APPROVED->value, FolderStatus::TWG_DISAPPROVED->value];
-                            if (session()->get('role') === 'Admin' && in_array($status, $allowedRemoveStatuses)) $canRemoveEvalApproval = true;
-                            if (isset($routingStatus) && $routingStatus === FolderStatus::APPROVED->value && in_array($status, $allowedRemoveStatuses)) $canRemoveEvalApproval = true;
-                        ?>
-                        <?php if ($canRemoveEvalApproval): ?>
+                        <?php else: ?>
                             <?php 
-                                $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
-                                $evalEndCol = $ownerDocType . '_eval_end';
-                                $isEvalPeriodEnded = !empty($doc[$evalEndCol]) && date('Y-m-d H:i:s') > $doc[$evalEndCol]; 
+                                $canRemoveEvalApproval = false;
+                                $allowedRemoveStatuses = [FolderStatus::APPROVED->value, FolderStatus::TWG_DISAPPROVED->value];
+                                if (session()->get('role') === 'Admin' && in_array($status, $allowedRemoveStatuses)) $canRemoveEvalApproval = true;
+                                if (isset($routingStatus) && $routingStatus === FolderStatus::APPROVED->value && in_array($status, $allowedRemoveStatuses)) $canRemoveEvalApproval = true;
                             ?>
-                            <div class="flex items-center gap-1.5 sm:gap-2">
-                                <?php if ($status === FolderStatus::TWG_DISAPPROVED->value): ?>
-                                    <span class="text-[10px] sm:text-xs font-bold text-danger-600 dark:text-danger-400 border border-danger-200 dark:border-danger-800 bg-danger-50 dark:bg-danger-950/50 px-3 py-2 sm:py-2.5 rounded-lg flex items-center gap-1.5">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                        </svg>
-                                        TWG Disapproved
-                                    </span>
-                                <?php endif; ?>
+                            <?php if ($canRemoveEvalApproval): ?>
+                                <?php 
+                                    $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
+                                    $evalEndCol = $ownerDocType . '_eval_end';
+                                    $isEvalPeriodEnded = !empty($doc[$evalEndCol]) && date('Y-m-d H:i:s') > $doc[$evalEndCol]; 
+                                ?>
                                 <button id="btn-unapprove-evaluation" type="button" 
                                         <?= $isEvalPeriodEnded ? 'disabled' : 'onclick="unapproveFolderEvaluation()"' ?>
-                                        class="<?= $isEvalPeriodEnded ? 'bg-warning-500/50 cursor-not-allowed opacity-80' : 'bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg transition-all">
+                                        class="<?= $isEvalPeriodEnded ? 'bg-warning-500/50 cursor-not-allowed opacity-80' : 'bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg transition-all">
                                     Remove<span class="hidden sm:inline"> Approval</span>
                                 </button>
-                            </div>
-                        <?php else: ?>
-                            <button type="button" disabled class="bg-success-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
-                                <span class="hidden sm:inline">Folder </span><?= $status === FolderStatus::TWG_APPROVED->value ? 'TWG Approved' : ($status === FolderStatus::TWG_DISAPPROVED->value ? 'TWG Disapproved' : 'Approved') ?>
-                            </button>
+                            <?php endif; ?>
                         <?php endif; ?>
-                    <?php endif; ?>                    
+                    </div>                    
                 <?php elseif ($status === FolderStatus::EVALUATED->value): ?>
                     <?php if ($isOwner): ?>
                         <?php 
@@ -811,15 +869,72 @@
                             </button>
                         
                         <?php elseif (in_array(session()->get('role'), ['TWG', 'PMT'])): ?>
-                            <div class="flex gap-1.5 sm:gap-2">
+                            <?php
+                                $isTargetApproved = !empty($doc['target_approved_at']) 
+                                    || ($status === FolderStatus::TARGET_APPROVED->value) 
+                                    || (($isDocOpcr || $isTrueOpcr) && (!empty($doc['routing_preset_id']) || !empty($doc['target_approved_at'])));
+                                
+                                $targetRole = $doc['target_approver_role'] ?? '';
+                                $isTargetTwg = $isTargetApproved && in_array($targetRole, ['TWG', 'PMT']);
+                                if ($targetRole === 'PMT') {
+                                    $targetBadgeText = 'Targets PMT Approved';
+                                    $targetBadgeShort = 'Targets PMT Ok';
+                                } elseif ($targetRole === 'TWG') {
+                                    $targetBadgeText = 'Targets TWG Approved';
+                                    $targetBadgeShort = 'Targets TWG Ok';
+                                } elseif ($isTargetApproved) {
+                                    $targetBadgeText = 'Targets Approved';
+                                    $targetBadgeShort = 'Targets Ok';
+                                } else {
+                                    $targetBadgeText = 'Targets Pending';
+                                    $targetBadgeShort = 'Targets Pending';
+                                }
+                            ?>
+                            <div class="flex items-center gap-1.5 sm:gap-2">
+                                <div class="inline-flex items-center rounded-lg border border-surface-border bg-surface-border/20 text-text p-0.5 sm:p-1 text-[10px] sm:text-xs font-bold shadow-xs shrink-0">
+                                    <span class="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-md <?= $isTargetApproved ? 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-200' : 'bg-amber-500/20 text-amber-800 dark:text-amber-200' ?>">
+                                        <?php if ($isTargetApproved): ?>
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        <?php else: ?>
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                            </svg>
+                                        <?php endif; ?>
+                                        <span class="hidden sm:inline"><?= $targetBadgeText ?></span>
+                                        <span class="sm:hidden"><?= $targetBadgeShort ?></span>
+                                    </span>
+                                    <span class="mx-1 opacity-40 font-normal">|</span>
+                                    <span class="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-md bg-amber-500/20 text-amber-800 dark:text-amber-200">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span class="hidden sm:inline">Eval Pending Review</span>
+                                        <span class="sm:hidden">Pending Review</span>
+                                    </span>
+                                </div>
+
+                                <?php if ($isTargetApproved && (empty($doc['target_approver_role']) || !in_array($doc['target_approver_role'], ['TWG', 'PMT']))): ?>
+                                    <button id="btn-twg-verify-target-eval" type="button" 
+                                            onclick="approveFolderTarget(null)" 
+                                            class="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-2.5 sm:px-3 rounded-lg shadow-xs transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1"
+                                            title="Verify and stamp targets as <?= esc(session()->get('role')) ?>">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                        </svg>
+                                        <span><?= session()->get('role') === 'PMT' ? 'PMT Verify Targets' : 'TWG Verify Targets' ?></span>
+                                    </button>
+                                <?php endif; ?>
+
                                 <button id="btn-twg-disapprove" type="button" 
                                         onclick="setTwgStatus('twg_disapproved')" 
-                                        class="bg-danger-500 hover:bg-danger-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-danger-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                        class="bg-danger-500 hover:bg-danger-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg shadow-danger-500/20 transition-all active:scale-[0.98] cursor-pointer">
                                     Disapprove
                                 </button>
                                 <button id="btn-twg-approve" type="button" 
                                         onclick="setTwgStatus('twg_approved')" 
-                                        class="bg-success-500 hover:bg-success-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-success-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                        class="bg-success-500 hover:bg-success-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg shadow-success-500/20 transition-all active:scale-[0.98] cursor-pointer">
                                     Approve
                                 </button>
                             </div>
@@ -1079,6 +1194,12 @@
                             }
                         ?>
                         <div class="flex items-center gap-1.5 sm:gap-2">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-lg text-[10px] sm:text-xs font-bold shadow-xs">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span><?= (!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'PMT') ? 'Targets PMT Approved' : ((!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'TWG') ? 'Targets TWG Approved' : 'Targets Approved') ?></span>
+                            </span>
                             <?php if ($canRelease): ?>
                                 <button id="btn-release-subordinates" type="button" 
                                         <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="approveFolderTarget(\'' . $releaseScope . '\')"' ?>
@@ -1088,6 +1209,18 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                                     </svg>
                                     <span>Release<span class="hidden sm:inline"> <?= esc($releaseLabel) ?></span></span>
+                                </button>
+                            <?php endif; ?>
+
+                            <?php if (in_array(session()->get('role'), ['TWG', 'PMT']) && (empty($doc['target_approver_role']) || !in_array($doc['target_approver_role'], ['TWG', 'PMT']))): ?>
+                                <button id="btn-twg-verify-target" type="button" 
+                                        <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="approveFolderTarget(null)"' ?>
+                                        class="<?= $isTargetPeriodEnded ? 'bg-success-500/50 cursor-not-allowed opacity-80' : 'bg-success-500 hover:bg-success-600 shadow-success-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg transition-all flex items-center gap-1.5"
+                                        title="Verify and stamp targets as <?= esc(session()->get('role')) ?>">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                    </svg>
+                                    <span><?= session()->get('role') === 'PMT' ? 'PMT Verify Targets' : 'TWG Verify Targets' ?></span>
                                 </button>
                             <?php endif; ?>
 
@@ -1110,9 +1243,18 @@
                             </a>
                         </div>
                     <?php else: ?>
-                        <button type="button" disabled class="bg-highlight-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
-                            Awaiting Eval<span class="hidden sm:inline"> Window</span>
-                        </button>
+                        <div class="inline-flex items-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-950/40 p-0.5 sm:p-1 text-[10px] sm:text-xs font-bold shadow-xs shrink-0">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-800 dark:text-emerald-200">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span><?= (!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'PMT') ? 'Targets PMT Approved' : ((!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'TWG') ? 'Targets TWG Approved' : 'Targets Approved') ?></span>
+                            </span>
+                            <span class="mx-1 opacity-40 font-normal">|</span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-zinc-600 dark:text-zinc-400">
+                                <span>Awaiting Eval Window</span>
+                            </span>
+                        </div>
                     <?php endif; ?>
                 <?php elseif ($status === \App\Enums\FolderStatus::TARGET_UNAPPROVED->value): ?>
                     <button type="button" disabled class="bg-revision-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
@@ -1670,7 +1812,7 @@
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENTS</th>
                                 <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
-                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;" class="print-hide">PTWG COMMENTS</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;" class="print-hide">TWG/PMT COMMENTS</th>
                                 <?php if ($canEditTargets): ?>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 4px;" class="print-hide">ACT</th>
                                 <?php endif; ?>
@@ -1716,7 +1858,7 @@
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENT</th>
                                 <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATINGS</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
-                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;" class="print-hide">PTWG COMMENTS</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;" class="print-hide">TWG/PMT COMMENTS</th>
                                 <?php if ($canEditTargets): ?>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 4px;" class="print-hide">ACT</th>
                                 <?php endif; ?>
@@ -1759,7 +1901,7 @@
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENTS</th>
                                 <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
-                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;" class="print-hide">PTWG COMMENTS</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;" class="print-hide">TWG/PMT COMMENTS</th>
                                 <?php if ($canEditTargets): ?>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 4px;" class="print-hide">ACT</th>
                                 <?php endif; ?>
@@ -1796,7 +1938,7 @@
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENTS</th>
                                 <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
-                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;" class="print-hide">PTWG COMMENTS</th>
+                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;" class="print-hide">TWG/PMT COMMENTS</th>
                                 <?php if ($canEditTargets): ?>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 4px;" class="print-hide">ACT</th>
                                 <?php endif; ?>
@@ -2030,7 +2172,7 @@
                     <div style="font-weight: bold; font-size: 11px; color: #000000; margin-bottom: 4px;">
                         Remarks/Suggestions/Recommendations on Ratee's Performance:
                     </div>
-                    <textarea id="pmt-remarks" rows="2" placeholder="Enter remarks/suggestions/recommendations on ratee's performance..." class="spms-textarea" style="width: 100%; border: 1px solid transparent; font-style: italic; font-size: 11px;" <?= ($canEditEvaluation || $canEditTwg) ? '' : ($isOwner ? 'disabled' : '') ?>></textarea>
+                    <textarea id="pmt-remarks" rows="2" placeholder="Enter remarks/suggestions/recommendations on ratee's performance..." class="spms-textarea" style="width: 100%; border: 1px solid transparent; font-style: italic; font-size: 11px;" <?= (!$isOwner && !$isTwg && ($canEditEvaluation || $isAdmin)) ? '' : 'disabled title="Official recommendations are entered by the Immediate Supervisor / Head of Office evaluator."' ?>></textarea>
                 </div>
 
                 <?php if ($isDocIperf): ?>
@@ -2373,6 +2515,12 @@
     $tabsJson = '[]';
     if ($doc && !empty($doc['tabs'])) {
         $tabsJson = is_string($doc['tabs']) ? $doc['tabs'] : json_encode($doc['tabs']);
+        // Normalize any legacy PTWG strings in stored tab HTML to standard TWG/PMT
+        $tabsJson = str_replace(
+            ['PTWG COMMENTS', 'PTWG Comments', '+ [PTWG]', 'Enter PTWG calibration comment...', 'No PTWG comment', 'Performance Technical Working Group (PTWG)', 'PTWG tag', 'PTWG'],
+            ['TWG/PMT COMMENTS', 'TWG/PMT Comments', '+ [' . ($sysRole === 'PMT' ? 'PMT' : ($sysRole === 'TWG' ? 'TWG' : 'TWG/PMT')) . ']', 'Enter TWG/PMT calibration comment...', 'No TWG/PMT comment', 'Technical Working Group / Performance Management Team (TWG/PMT)', ($sysRole === 'PMT' ? 'PMT' : 'TWG') . ' tag', 'TWG/PMT'],
+            $tabsJson
+        );
     }
     ?>
     let tabs = <?= $tabsJson ?>;
@@ -2993,10 +3141,11 @@
     }
 
     async function setTwgStatus(status) {
+        const roleLabel = (window.sysRole === 'PMT') ? 'PMT' : (window.sysRole === 'TWG' ? 'TWG' : 'TWG/PMT');
         if (status === 'twg_approved') {
             const btnTwgApprove = document.getElementById('btn-twg-approve');
             if (btnTwgApprove && btnTwgApprove.disabled) {
-                await window.appAlert("Cannot approve evaluation directly while TWG calibration adjustments exist.\n\nPlease click 'Disapprove' to return the document with feedback, or revert your score calibrations to approve.", {
+                await window.appAlert(`Cannot approve evaluation directly while ${roleLabel} calibration adjustments exist.\n\nPlease click 'Disapprove' to return the document with feedback, or revert your score calibrations to approve.`, {
                     title: 'Calibrations Present',
                     variant: 'warning'
                 });
@@ -3004,27 +3153,33 @@
             }
         }
 
-        let title = 'Verify TWG Action';
+        let title = `Verify ${roleLabel} Action`;
         let msg = 'Are you sure you want to proceed?';
-        let isDanger = false;
+        let variant = 'success';
+        let confirmText = 'Verify & Approve';
         
         if (status === 'twg_approved') {
             title = 'Verify Rating';
-            msg = 'Are you sure you want to finalize and approve this rating as the TWG?';
+            msg = `Are you sure you want to finalize and approve this rating as the ${roleLabel}?`;
+            variant = 'success';
+            confirmText = 'Verify & Approve';
         } else if (status === 'twg_disapproved') {
             title = 'Disapprove Rating';
-            msg = 'Are you sure you want to disapprove this rating?';
-            isDanger = true;
+            msg = `Are you sure you want to disapprove this rating as the ${roleLabel}?`;
+            variant = 'warning';
+            confirmText = 'Disapprove Rating';
         } else if (status === 'revoke') {
-            title = 'Revoke TWG Decision';
-            msg = 'Are you sure you want to revoke your previous TWG decision?';
-            isDanger = true;
+            title = `Revoke ${roleLabel} Decision`;
+            msg = `Are you sure you want to revoke your previous ${roleLabel} decision?`;
+            variant = 'undo';
+            confirmText = 'Revoke Decision';
         }
 
         const ok = await window.appConfirm(msg, {
             title: title,
-            confirmText: 'Proceed',
-            isDanger: isDanger
+            confirmText: confirmText,
+            cancelText: 'Cancel',
+            variant: variant
         });
         if (!ok) return;
 
@@ -3045,7 +3200,8 @@
         const ok = await window.appConfirm("Return this evaluation to the employee for revision?\n\nAll notes and feedback entered in the Remarks column will be saved and returned to the employee.", {
             title: 'Return Evaluation for Revision',
             confirmText: 'Return for Revision',
-            isDanger: true
+            cancelText: 'Cancel',
+            variant: 'warning'
         });
         if (!ok) return;
         
@@ -3292,7 +3448,8 @@
         const ok = await window.appConfirm("Return targets to the employee for revision?\n\nAll notes and feedback entered in the Remarks column will be saved and returned to the employee.", {
             title: 'Return Targets for Revision',
             confirmText: 'Return for Revision',
-            isDanger: true
+            cancelText: 'Cancel',
+            variant: 'warning'
         });
         if (!ok) return;
         
@@ -3332,8 +3489,9 @@
         const td = btn.closest('td');
         if (!td) return;
         const ta = td.querySelector('.field-twg-comment');
-        if (!ta) return;
-        const tag = `[PTWG]: `;
+        if (!ta || ta.disabled) return;
+        const role = (window.sysRole === 'PMT') ? 'PMT' : (window.sysRole === 'TWG' ? 'TWG' : 'TWG/PMT');
+        const tag = `[${role}]: `;
         if (!ta.value.includes(tag)) {
             ta.value = ta.value ? `${ta.value.trim()}\n${tag}` : tag;
         }
@@ -3357,6 +3515,8 @@
     window.isOwner = <?= json_encode($doc['owner_id'] == session()->get('user_id')) ?>;
     window.currentReviewerRole = <?= json_encode($currentReviewerRole ?? 'Reviewer') ?>;
     window.currentReviewerName = <?= json_encode($currentReviewerName ?? '') ?>;
+    window.sysRole = <?= json_encode($sysRole ?? '') ?>;
+    window.isTwg = <?= $isTwg ? 'true' : 'false' ?>;
     window.isTwgUser = <?= ($isTwg || $isAdmin) ? 'true' : 'false' ?>;
     window.canEditTwg = <?= $canEditTwg ? 'true' : 'false' ?>;
 
@@ -4236,11 +4396,11 @@
         const twgVal = attr.twg ? String(attr.twg) : '';
         const last = attr.lastActor;
 
-        // Only show indicator mark when score was adjusted by TWG or Head of Office (HoO)
+        // Only show indicator mark when score was adjusted by TWG/PMT or Head of Office (HoO)
         if (twgVal !== '' || last === 'twg') {
             const prev = headVal || selfVal;
             if (prev && prev !== val && prev !== 'X') {
-                return `<div class="score-notif-marker print-hide" onclick="openScoreAuditModal(this, event)" title="TWG Calibrated: was ${prev} ➔ now ${val} (Click to inspect)">
+                return `<div class="score-notif-marker print-hide" onclick="openScoreAuditModal(this, event)" title="TWG/PMT Calibrated: was ${prev} ➔ now ${val} (Click to inspect)">
                     <span class="score-notif-dot dot-twg"></span>
                 </div>`;
             }
@@ -4430,8 +4590,8 @@
                     <div class="flex items-center gap-2">
                         <span class="w-6 h-6 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center font-black text-xs">🟡</span>
                         <div>
-                            <div class="font-extrabold text-zinc-900 dark:text-zinc-100">Technical Working Group (TWG) Calibration</div>
-                            <div class="text-[10px] text-zinc-500">${twgVal !== '—' ? 'Calibrated by TWG committee' : 'No TWG adjustment applied'}</div>
+                            <div class="font-extrabold text-zinc-900 dark:text-zinc-100">Technical Working Group / Performance Management Team (TWG/PMT) Calibration</div>
+                            <div class="text-[10px] text-zinc-500">${twgVal !== '—' ? 'Calibrated by TWG/PMT committee' : 'No TWG/PMT adjustment applied'}</div>
                         </div>
                     </div>
                     <div class="text-right">
@@ -4593,29 +4753,29 @@
                 <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
                     <div class="flex items-center justify-between mb-1 print-hide">
                         <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-tight">Remarks</span>
-                        ${!isOwner ? `
+                        ${!isOwner && !window.isTwg ? `
                             <button type="button" onclick="stampRoleTag(this)" class="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-800 transition-colors cursor-pointer" title="Stamp your role tag into remarks">
                                 + Tag [${escapeHtml(window.currentReviewerRole || 'Reviewer')}]
                             </button>
                         ` : ''}
                     </div>
-                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." ${isOwner && (status === FolderStatus.PENDING_TARGET_APPROVAL || status === FolderStatus.SUBMITTED || status === FolderStatus.TARGET_APPROVED || status === FolderStatus.APPROVED) ? 'disabled title="Locked while submitted or approved"' : ''}>${escapeHtml(data.remarks)}</textarea>
+                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." ${window.isTwg ? 'disabled title="Official remarks are entered by the ratee or supervisor. Use TWG/PMT Comments for calibration notes."' : (isOwner && (status === FolderStatus.PENDING_TARGET_APPROVAL || status === FolderStatus.SUBMITTED || status === FolderStatus.TARGET_APPROVED || status === FolderStatus.APPROVED) ? 'disabled title="Locked while submitted or approved"' : '')}>${escapeHtml(data.remarks)}</textarea>
                 </td>
 
-                <!-- PTWG Comments (Screen-only, omitted from printed papers) -->
+                <!-- TWG/PMT Comments (Screen-only, omitted from printed papers) -->
                 <td style="padding: 4px; vertical-align: top; border: 1px solid #000;" class="print-hide twg-col">
                     <div class="flex items-center justify-between mb-1">
                         <span class="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-tight flex items-center gap-1">
                             <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
-                            PTWG
+                            TWG/PMT
                         </span>
                         ${isTwgUser ? `
-                            <button type="button" onclick="stampTwgTag(this)" class="text-[8.5px] font-extrabold text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 px-1 py-0.5 rounded border border-amber-300 dark:border-amber-800 transition-colors cursor-pointer" title="Stamp PTWG tag">
-                                + [PTWG]
+                            <button type="button" onclick="stampTwgTag(this)" class="text-[8.5px] font-extrabold text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 px-1 py-0.5 rounded border border-amber-300 dark:border-amber-800 transition-colors cursor-pointer" title="Stamp ${window.sysRole === 'PMT' ? 'PMT' : 'TWG'} tag">
+                                + [${window.sysRole === 'PMT' ? 'PMT' : (window.sysRole === 'TWG' ? 'TWG' : 'TWG/PMT')}]
                             </button>
                         ` : ''}
                     </div>
-                    <textarea class="spms-textarea field-twg-comment print-borderless" rows="3" placeholder="${isTwgUser ? 'Enter PTWG calibration comment...' : 'No PTWG comment'}" ${canEditTwg ? '' : 'disabled title="Only editable by Performance Technical Working Group (PTWG)"'} style="font-size: 11px; color: #b45309; background: ${canEditTwg ? '#fffbeb' : '#fafafa'}; border: 1px solid ${canEditTwg ? '#fde68a' : 'transparent'}; border-radius: 3px;">${escapeHtml(data.twg_comment || '')}</textarea>
+                    <textarea class="spms-textarea field-twg-comment print-borderless" rows="3" placeholder="${isTwgUser ? 'Enter TWG/PMT calibration comment...' : 'No TWG/PMT comment'}" ${canEditTwg ? '' : 'disabled title="Only editable by Technical Working Group / Performance Management Team (TWG/PMT)"'} style="font-size: 11px; color: #b45309; background: ${canEditTwg ? '#fffbeb' : '#fafafa'}; border: 1px solid ${canEditTwg ? '#fde68a' : 'transparent'}; border-radius: 3px;">${escapeHtml(data.twg_comment || '')}</textarea>
                 </td>
 
                 ${canEditTargets ? `
@@ -4703,29 +4863,29 @@
                 <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
                     <div class="flex items-center justify-between mb-1 print-hide">
                         <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-tight">Remarks</span>
-                        ${!isOwner ? `
+                        ${!isOwner && !window.isTwg ? `
                             <button type="button" onclick="stampRoleTag(this)" class="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-800 transition-colors cursor-pointer" title="Stamp your role tag into remarks">
                                 + Tag [${escapeHtml(window.currentReviewerRole || 'Reviewer')}]
                             </button>
                         ` : ''}
                     </div>
-                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." ${isOwner && (status === FolderStatus.PENDING_TARGET_APPROVAL || status === FolderStatus.SUBMITTED || status === FolderStatus.TARGET_APPROVED || status === FolderStatus.APPROVED) ? 'disabled title="Locked while submitted or approved"' : ''}>${escapeHtml(data.remarks)}</textarea>
+                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." ${window.isTwg ? 'disabled title="Official remarks are entered by the ratee or supervisor. Use TWG/PMT Comments for calibration notes."' : (isOwner && (status === FolderStatus.PENDING_TARGET_APPROVAL || status === FolderStatus.SUBMITTED || status === FolderStatus.TARGET_APPROVED || status === FolderStatus.APPROVED) ? 'disabled title="Locked while submitted or approved"' : '')}>${escapeHtml(data.remarks)}</textarea>
                 </td>
 
-                <!-- PTWG Comments (Screen-only, omitted from printed papers) -->
+                <!-- TWG/PMT Comments (Screen-only, omitted from printed papers) -->
                 <td style="padding: 4px; vertical-align: top; border: 1px solid #000;" class="print-hide twg-col">
                     <div class="flex items-center justify-between mb-1">
                         <span class="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-tight flex items-center gap-1">
                             <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
-                            PTWG
+                            TWG/PMT
                         </span>
                         ${isTwgUser ? `
-                            <button type="button" onclick="stampTwgTag(this)" class="text-[8.5px] font-extrabold text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 px-1 py-0.5 rounded border border-amber-300 dark:border-amber-800 transition-colors cursor-pointer" title="Stamp PTWG tag">
-                                + [PTWG]
+                            <button type="button" onclick="stampTwgTag(this)" class="text-[8.5px] font-extrabold text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 px-1 py-0.5 rounded border border-amber-300 dark:border-amber-800 transition-colors cursor-pointer" title="Stamp ${window.sysRole === 'PMT' ? 'PMT' : 'TWG'} tag">
+                                + [${window.sysRole === 'PMT' ? 'PMT' : (window.sysRole === 'TWG' ? 'TWG' : 'TWG/PMT')}]
                             </button>
                         ` : ''}
                     </div>
-                    <textarea class="spms-textarea field-twg-comment print-borderless" rows="3" placeholder="${isTwgUser ? 'Enter PTWG calibration comment...' : 'No PTWG comment'}" ${canEditTwg ? '' : 'disabled title="Only editable by Performance Technical Working Group (PTWG)"'} style="font-size: 11px; color: #b45309; background: ${canEditTwg ? '#fffbeb' : '#fafafa'}; border: 1px solid ${canEditTwg ? '#fde68a' : 'transparent'}; border-radius: 3px;">${escapeHtml(data.twg_comment || '')}</textarea>
+                    <textarea class="spms-textarea field-twg-comment print-borderless" rows="3" placeholder="${isTwgUser ? 'Enter TWG/PMT calibration comment...' : 'No TWG/PMT comment'}" ${canEditTwg ? '' : 'disabled title="Only editable by Technical Working Group / Performance Management Team (TWG/PMT)"'} style="font-size: 11px; color: #b45309; background: ${canEditTwg ? '#fffbeb' : '#fafafa'}; border: 1px solid ${canEditTwg ? '#fde68a' : 'transparent'}; border-radius: 3px;">${escapeHtml(data.twg_comment || '')}</textarea>
                 </td>
 
                 ${canEditTargets ? `
@@ -4813,29 +4973,29 @@
                 <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
                     <div class="flex items-center justify-between mb-1 print-hide">
                         <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-tight">Remarks</span>
-                        ${!isOwner ? `
+                        ${!isOwner && !window.isTwg ? `
                             <button type="button" onclick="stampRoleTag(this)" class="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-800 transition-colors cursor-pointer" title="Stamp your role tag into remarks">
                                 + Tag [${escapeHtml(window.currentReviewerRole || 'Reviewer')}]
                             </button>
                         ` : ''}
                     </div>
-                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." ${isOwner && (status === FolderStatus.PENDING_TARGET_APPROVAL || status === FolderStatus.SUBMITTED || status === FolderStatus.TARGET_APPROVED || status === FolderStatus.APPROVED) ? 'disabled title="Locked while submitted or approved"' : ''}>${escapeHtml(data.remarks)}</textarea>
+                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." ${window.isTwg ? 'disabled title="Official remarks are entered by the ratee or supervisor. Use TWG/PMT Comments for calibration notes."' : (isOwner && (status === FolderStatus.PENDING_TARGET_APPROVAL || status === FolderStatus.SUBMITTED || status === FolderStatus.TARGET_APPROVED || status === FolderStatus.APPROVED) ? 'disabled title="Locked while submitted or approved"' : '')}>${escapeHtml(data.remarks)}</textarea>
                 </td>
 
-                <!-- PTWG Comments (Screen-only, omitted from printed papers) -->
+                <!-- TWG/PMT Comments (Screen-only, omitted from printed papers) -->
                 <td style="padding: 4px; vertical-align: top; border: 1px solid #000;" class="print-hide twg-col">
                     <div class="flex items-center justify-between mb-1">
                         <span class="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-tight flex items-center gap-1">
                             <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
-                            PTWG
+                            TWG/PMT
                         </span>
                         ${isTwgUser ? `
-                            <button type="button" onclick="stampTwgTag(this)" class="text-[8.5px] font-extrabold text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 px-1 py-0.5 rounded border border-amber-300 dark:border-amber-800 transition-colors cursor-pointer" title="Stamp PTWG tag">
-                                + [PTWG]
+                            <button type="button" onclick="stampTwgTag(this)" class="text-[8.5px] font-extrabold text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 px-1 py-0.5 rounded border border-amber-300 dark:border-amber-800 transition-colors cursor-pointer" title="Stamp ${window.sysRole === 'PMT' ? 'PMT' : 'TWG'} tag">
+                                + [${window.sysRole === 'PMT' ? 'PMT' : (window.sysRole === 'TWG' ? 'TWG' : 'TWG/PMT')}]
                             </button>
                         ` : ''}
                     </div>
-                    <textarea class="spms-textarea field-twg-comment print-borderless" rows="3" placeholder="${isTwgUser ? 'Enter PTWG calibration comment...' : 'No PTWG comment'}" ${canEditTwg ? '' : 'disabled title="Only editable by Performance Technical Working Group (PTWG)"'} style="font-size: 11px; color: #b45309; background: ${canEditTwg ? '#fffbeb' : '#fafafa'}; border: 1px solid ${canEditTwg ? '#fde68a' : 'transparent'}; border-radius: 3px;">${escapeHtml(data.twg_comment || '')}</textarea>
+                    <textarea class="spms-textarea field-twg-comment print-borderless" rows="3" placeholder="${isTwgUser ? 'Enter TWG/PMT calibration comment...' : 'No TWG/PMT comment'}" ${canEditTwg ? '' : 'disabled title="Only editable by Technical Working Group / Performance Management Team (TWG/PMT)"'} style="font-size: 11px; color: #b45309; background: ${canEditTwg ? '#fffbeb' : '#fafafa'}; border: 1px solid ${canEditTwg ? '#fde68a' : 'transparent'}; border-radius: 3px;">${escapeHtml(data.twg_comment || '')}</textarea>
                 </td>
 
                 ${canEditTargets ? `
@@ -4910,29 +5070,29 @@
             <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
                 <div class="flex items-center justify-between mb-1 print-hide">
                     <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-tight">Remarks</span>
-                    ${!isOwner ? `
+                    ${!isOwner && !window.isTwg ? `
                         <button type="button" onclick="stampRoleTag(this)" class="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-800 transition-colors cursor-pointer" title="Stamp your role tag into remarks">
                             + Tag [${escapeHtml(window.currentReviewerRole || 'Reviewer')}]
                         </button>
                     ` : ''}
                 </div>
-                <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." ${isOwner && (status === FolderStatus.PENDING_TARGET_APPROVAL || status === FolderStatus.SUBMITTED || status === FolderStatus.TARGET_APPROVED || status === FolderStatus.APPROVED) ? 'disabled title="Locked while submitted or approved"' : ''}>${escapeHtml(data.remarks)}</textarea>
+                <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." ${window.isTwg ? 'disabled title="Official remarks are entered by the ratee or supervisor. Use TWG/PMT Comments for calibration notes."' : (isOwner && (status === FolderStatus.PENDING_TARGET_APPROVAL || status === FolderStatus.SUBMITTED || status === FolderStatus.TARGET_APPROVED || status === FolderStatus.APPROVED) ? 'disabled title="Locked while submitted or approved"' : '')}>${escapeHtml(data.remarks)}</textarea>
             </td>
 
-            <!-- PTWG Comments (Screen-only, omitted from printed papers) -->
+            <!-- TWG/PMT Comments (Screen-only, omitted from printed papers) -->
             <td style="padding: 4px; vertical-align: top; border: 1px solid #000;" class="print-hide twg-col">
                 <div class="flex items-center justify-between mb-1">
                     <span class="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-tight flex items-center gap-1">
                         <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
-                        PTWG
+                        TWG/PMT
                     </span>
                     ${isTwgUser ? `
-                        <button type="button" onclick="stampTwgTag(this)" class="text-[8.5px] font-extrabold text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 px-1 py-0.5 rounded border border-amber-300 dark:border-amber-800 transition-colors cursor-pointer" title="Stamp PTWG tag">
-                            + [PTWG]
+                        <button type="button" onclick="stampTwgTag(this)" class="text-[8.5px] font-extrabold text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 px-1 py-0.5 rounded border border-amber-300 dark:border-amber-800 transition-colors cursor-pointer" title="Stamp ${window.sysRole === 'PMT' ? 'PMT' : 'TWG'} tag">
+                            + [${window.sysRole === 'PMT' ? 'PMT' : (window.sysRole === 'TWG' ? 'TWG' : 'TWG/PMT')}]
                         </button>
                     ` : ''}
                 </div>
-                <textarea class="spms-textarea field-twg-comment print-borderless" rows="3" placeholder="${isTwgUser ? 'Enter PTWG calibration comment...' : 'No PTWG comment'}" ${canEditTwg ? '' : 'disabled title="Only editable by Performance Technical Working Group (PTWG)"'} style="font-size: 11px; color: #b45309; background: ${canEditTwg ? '#fffbeb' : '#fafafa'}; border: 1px solid ${canEditTwg ? '#fde68a' : 'transparent'}; border-radius: 3px;">${escapeHtml(data.twg_comment || '')}</textarea>
+                <textarea class="spms-textarea field-twg-comment print-borderless" rows="3" placeholder="${isTwgUser ? 'Enter TWG/PMT calibration comment...' : 'No TWG/PMT comment'}" ${canEditTwg ? '' : 'disabled title="Only editable by Technical Working Group / Performance Management Team (TWG/PMT)"'} style="font-size: 11px; color: #b45309; background: ${canEditTwg ? '#fffbeb' : '#fafafa'}; border: 1px solid ${canEditTwg ? '#fde68a' : 'transparent'}; border-radius: 3px;">${escapeHtml(data.twg_comment || '')}</textarea>
             </td>
 
             ${canEditTargets ? `

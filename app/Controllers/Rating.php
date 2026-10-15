@@ -188,11 +188,8 @@ class Rating extends BaseController
 
         $isAuthorized = false;
 
-        if (in_array($sysRole, ['Admin', 'PMT'])) {
+        if (in_array($sysRole, ['Admin', 'PMT', 'TWG'])) {
             $isAuthorized = true;
-        } elseif ($sysRole === 'TWG') {
-            $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
-            $isAuthorized = $twgAssignmentModel->isTwgAssignedToFolder($userId, $subFolderId);
         } else {
             $routingCount = $routingModel->where('folder_id', $subFolderId)
                                          ->where('evaluator_id', $userId)
@@ -201,15 +198,6 @@ class Rating extends BaseController
         }
 
         if (!$isAuthorized) {
-            if ($sysRole === 'TWG') {
-                session()->setFlashdata('error', 'You are not assigned to review folders from this office/college.');
-                return redirect()->to(site_url('ratings'));
-            }
-            // Unlike Folder::index() (a folder always has exactly one owner), this
-            // route can legitimately belong to several accounts - a folder may have
-            // multiple routed evaluators, and "Pending Review" emails the same link
-            // to all of them. There's no single correct account to name here, so the
-            // mismatch screen shows its generic wording instead of guessing one.
             session()->setFlashdata('mismatch_detected', true);
             return redirect()->to('account-mismatch');
         }

@@ -180,7 +180,7 @@ window.appConfirm = function (message, options = {}) {
         options = message;
         message = options.message || '';
     }
-    const variant = options.variant || 'danger';
+    const variant = options.variant || (options.isDanger === false ? 'info' : (options.isDanger === true ? 'danger' : 'warning'));
     return open({
         title: options.title || 'Are you sure?',
         message,

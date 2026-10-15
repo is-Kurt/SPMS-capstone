@@ -37,6 +37,7 @@ class Folder extends BaseController
         $role     = session()->get('role');
 
         $folderModel   = new DocumentFolderModel();
+        $folderModel->updateTimeBasedStatuses();
         $documentModel = new DocumentModel();
         $presetModel   = new RoutingPresetModel();
         $userModel     = new UserModel();
@@ -97,8 +98,7 @@ class Folder extends BaseController
 
                 // Route authorized evaluators to ratings view
                 $routingModel = new \App\Models\EvaluationRoutingModel();
-                $isAuthorizedEvaluator = in_array($role, ['Admin', 'PMT']) || 
-                    ($role === 'TWG' && (new \App\Models\TwgUnitAssignmentModel())->isTwgAssignedToFolder($userId, $activeFolder['id'])) ||
+                $isAuthorizedEvaluator = in_array($role, ['Admin', 'PMT', 'TWG']) || 
                     ($routingModel->where('folder_id', $activeFolder['id'])->where('evaluator_id', $userId)->countAllResults() > 0);
 
                 if ($isAuthorizedEvaluator) {
@@ -393,8 +393,10 @@ class Folder extends BaseController
             $updateFolderPayload = ['routing_preset_id' => $teamId];
             if ($isFolderOpcr) {
                 // OPCR commitments are finalized and approved upon cascading downward
-                $updateFolderPayload['status'] = FolderStatus::TARGET_APPROVED->value;
-                $updateFolderPayload['target_approved_at'] = date('Y-m-d H:i:s');
+                $updateFolderPayload['status']               = FolderStatus::TARGET_APPROVED->value;
+                $updateFolderPayload['target_approved_at']   = date('Y-m-d H:i:s');
+                $updateFolderPayload['target_approved_by']   = $userId;
+                $updateFolderPayload['target_approver_role'] = $role ?: 'President';
             }
 
             $folderModel->update($folderId, $updateFolderPayload);
@@ -1759,6 +1761,7 @@ class Folder extends BaseController
             $finalRating = $this->request->getPost('final_rating');
             $userId = session()->get('user_id');
             $folderModel = new DocumentFolderModel();
+            $folderModel->updateTimeBasedStatuses();
 
             $folder = $folderModel->find($folderId);
 
@@ -1886,9 +1889,11 @@ class Folder extends BaseController
             if ($isFolderOpcr) {
                 // Under CSC SPMS guidelines, OPCR is the apex institutional commitment and does not require superior target approval
                 $folderModel->update($folderId, [
-                    'status'              => FolderStatus::TARGET_APPROVED->value,
-                    'target_approved_at'  => date('Y-m-d H:i:s'),
-                    'target_submitted_at' => date('Y-m-d H:i:s')
+                    'status'               => FolderStatus::TARGET_APPROVED->value,
+                    'target_approved_at'   => date('Y-m-d H:i:s'),
+                    'target_approved_by'   => $userId,
+                    'target_approver_role' => session()->get('role') ?: 'President',
+                    'target_submitted_at'  => date('Y-m-d H:i:s')
                 ]);
                 audit_log('TARGET_FINALIZED', 'TARGET', 'document_folder', (int) $folderId, "OPCR institutional targets finalized: {$folder['title']}");
                 return $this->respond(['status' => 'success', 'message' => 'OPCR institutional targets finalized. You can now cascade commitments to subordinates.']);
@@ -1983,9 +1988,19 @@ class Folder extends BaseController
                 return $this->respondError("The target setting period has already ended.", 400);
             }
             
+            $evalStatuses = [
+                FolderStatus::EVALUATED->value, 
+                FolderStatus::APPROVED->value, 
+                FolderStatus::TWG_APPROVED->value, 
+                FolderStatus::TWG_DISAPPROVED->value
+            ];
+            $targetStatus = in_array($folder['status'], $evalStatuses) ? $folder['status'] : FolderStatus::TARGET_APPROVED->value;
+
             $folderModel->update($folderId, [
-                'status' => FolderStatus::TARGET_APPROVED->value,
-                'target_approved_at' => date('Y-m-d H:i:s')
+                'status'               => $targetStatus,
+                'target_approved_at'   => date('Y-m-d H:i:s'),
+                'target_approved_by'   => session()->get('user_id'),
+                'target_approver_role' => session()->get('role')
             ]);
 
 
@@ -2353,8 +2368,10 @@ class Folder extends BaseController
             }
             
             $folderModel->update($folderId, [
-                'status' => FolderStatus::PENDING_TARGET_APPROVAL->value,
-                'target_approved_at' => null
+                'status'               => FolderStatus::PENDING_TARGET_APPROVAL->value,
+                'target_approved_at'   => null,
+                'target_approved_by'   => null,
+                'target_approver_role' => null
             ]);
             
             notify_user((int) $folder['user_id'], [
@@ -2598,13 +2615,6 @@ class Folder extends BaseController
                 return $this->respondError("Cannot perform TWG review: This evaluation cycle is closed/archived.", 400);
             }
 
-            if ($role === 'TWG') {
-                $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
-                if (!$twgAssignmentModel->isTwgAssignedToFolder((int) session()->get('user_id'), $folderId)) {
-                    return $this->respondError('Unauthorized. You are not assigned to review folders from this office/college.', 403);
-                }
-            }
-            
             if ($status === 'revoke') {
                 $this->updateFolderConsensus($folderId);
                 audit_log('TWG_REVOKED', 'RATING', 'document_folder', (int) $folderId, "TWG approval/disapproval revoked for {$folder['title']}");

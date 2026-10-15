@@ -26,6 +26,8 @@ class  DocumentFolderModel extends Model
         'iperf_target_start', 'iperf_target_end', 'iperf_eval_start', 'iperf_eval_end',
         'target_submitted_at',
         'target_approved_at',
+        'target_approved_by',
+        'target_approver_role',
         'submitted_at',
         'rated_at',
         'deadline_reminder_sent_at',
@@ -98,15 +100,7 @@ class  DocumentFolderModel extends Model
             }
         }
 
-        if ($sysRole === 'TWG') {
-            $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
-            $assignedUnitIds = $twgAssignmentModel->getAssignedUnitIdsWithDescendants($userId);
-            if (!empty($assignedUnitIds)) {
-                $builder->whereIn('p.unit_id', $assignedUnitIds);
-            } else {
-                $builder->where('df.id', -1);
-            }
-        } elseif (!in_array($sysRole, ['Admin', 'PMT'])) {
+        if (!in_array($sysRole, ['Admin', 'PMT', 'TWG'])) {
             $builder->join('evaluation_routings er_me', 'er_me.folder_id = df.id')
                     ->where('er_me.evaluator_id', $userId);
         }
@@ -250,7 +244,7 @@ class  DocumentFolderModel extends Model
         $docTypes = ['ipcr', 'cdpcr', 'dpcr', 'opcr', 'iperf'];
         foreach ($docTypes as $type) {
             if (empty($data['data']["{$type}_eval_start"]) && empty($data['data']["{$type}_eval_end"])) {
-                $data['data']["{$type}_eval_start"] = $today . ' 23:59:59';
+                $data['data']["{$type}_eval_start"] = $today . ' 00:00:00';
                 $data['data']["{$type}_eval_end"] = $tomorrow . ' 23:59:59';
             }
         }

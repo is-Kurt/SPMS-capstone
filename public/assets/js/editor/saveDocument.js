@@ -294,6 +294,28 @@ function getEditorData() {
 }
 
 async function rate() {
+    if (window.isSpmsFormActive || document.getElementById('printable-form')) {
+        if (typeof recalculateForm === 'function') {
+            recalculateForm();
+        }
+        if (typeof window.syncSpmsActiveTab === 'function') {
+            window.syncSpmsActiveTab();
+        }
+        if (typeof AppState !== 'undefined' && typeof AppState.setDirty === 'function') {
+            AppState.setDirty(true);
+        }
+
+        const scoreEl = document.getElementById('grand-score') || document.getElementById('iperf-overall-average');
+        const badgeEl = document.getElementById('adjectival-badge') || document.getElementById('iperf-adjectival-badge');
+        const score = scoreEl?.innerText?.trim() || '0.000';
+        const badge = badgeEl?.innerText?.trim() || '';
+
+        if (typeof window.showToast === 'function') {
+            window.showToast(`Calculations verified: Final Rating is ${score}${badge ? ' (' + badge + ')' : ''}`, 'success');
+        }
+        return 'success';
+    }
+
     let hasError = false;
 
     const editor = tinymce.get('editable-doc');
