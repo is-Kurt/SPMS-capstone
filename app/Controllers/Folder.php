@@ -1869,7 +1869,8 @@ class Folder extends BaseController
             $isIperfDoc = ($docType === 'iperf' || str_contains($docTitle, 'IPERF') || str_contains($docTitle, 'JOB ORDER') || str_contains($docTitle, 'CONTRACT OF SERVICE'));
 
             if (!$isIperfDoc) {
-                $targetTabs = json_decode($targetDoc['tabs'] ?? '[]', true);
+                $targetTabs = is_string($targetDoc['tabs'] ?? null) ? json_decode($targetDoc['tabs'], true) : ($targetDoc['tabs'] ?? []);
+                if (!is_array($targetTabs)) $targetTabs = [];
                 $weights = $targetTabs[0]['formData']['weights'] ?? null;
                 $core = isset($weights['core']) ? (float)$weights['core'] : 0.0;
                 $strat = isset($weights['strategic']) ? (float)$weights['strategic'] : 0.0;

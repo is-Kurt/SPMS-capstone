@@ -75,7 +75,7 @@ abstract class BaseController extends Controller
     protected function tryOrFail(callable $fn) {
         try {
             return $fn();
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return $this->respondError($e->getMessage());
         }
     }
