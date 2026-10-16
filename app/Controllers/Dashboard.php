@@ -88,21 +88,33 @@ class Dashboard extends BaseController
         $isChairScope = false;
 
         // Role Scoping for Supervisors:
+        $isPresidentScope = false;
         if ($sysRole === 'Supervisor') {
             $ownPlantilla  = $userModel->getActivePlantillaDetails($userId);
             if ($ownPlantilla) {
                 $posTitle = strtolower($ownPlantilla['position'] ?? '');
-                $isChairScope = str_contains($posTitle, 'chair') || str_contains($posTitle, 'head');
-                
-                if ($isChairScope) {
-                    // Department Chair: Scope strictly to own department
-                    $scopedUnitIds = [(int)$ownPlantilla['unit_id']];
-                    $supervisorCollegeName = $ownPlantilla['department'] ?? 'Department';
+                $userEmail = strtolower(session()->get('email') ?? '');
+                $isPresident = session()->get('is_president') 
+                            || (str_contains($posTitle, 'president') && !str_contains($posTitle, 'vice')) 
+                            || str_contains($userEmail, 'president');
+
+                if ($isPresident) {
+                    $isPresidentScope = true;
+                    $scopedUnitIds = []; // President has university-wide executive oversight
+                    $supervisorCollegeName = 'Executive Oversight';
                 } else {
-                    // College Dean: Scope to college and all sub-departments
-                    $scopedUnitIds = $unitModel->getDescendantIds([$ownPlantilla['unit_id']]);
-                    $scopedUnitIds[] = (int)$ownPlantilla['unit_id'];
-                    $supervisorCollegeName = $ownPlantilla['department'] ?? 'College';
+                    $isChairScope = str_contains($posTitle, 'chair') || str_contains($posTitle, 'head');
+                    
+                    if ($isChairScope) {
+                        // Department Chair: Scope strictly to own department
+                        $scopedUnitIds = [(int)$ownPlantilla['unit_id']];
+                        $supervisorCollegeName = $ownPlantilla['department'] ?? 'Department';
+                    } else {
+                        // College Dean: Scope to college and all sub-departments
+                        $scopedUnitIds = $unitModel->getDescendantIds([$ownPlantilla['unit_id']]);
+                        $scopedUnitIds[] = (int)$ownPlantilla['unit_id'];
+                        $supervisorCollegeName = $ownPlantilla['department'] ?? 'College';
+                    }
                 }
             }
             $scopedUnitIds = array_unique(array_filter($scopedUnitIds));
@@ -395,6 +407,7 @@ class Dashboard extends BaseController
                 'topPerformers'        => $topPerformers,
                 'empStatusCounts'      => $empStatusCounts,
                 'isChairScope'          => $isChairScope,
+                'isPresidentScope'      => $isPresidentScope,
                 'supervisorCollegeName' => $supervisorCollegeName,
                 'collegeDepartments'    => $collegeDepartments,
                 'cycleFolders'          => $cycleFolders,

@@ -75,7 +75,7 @@ class  DocumentFolderModel extends Model
      * only sees folders they've actually been routed to evaluate via a cascaded Team
      * (evaluation_routings.evaluator_id), not everyone in the organization.
      */
-    public function getRatingDashboardFolders(int $userId, string $sysRole, ?string $parentFolderId = null): array
+    public function getRatingDashboardFolders(int $userId, string $sysRole, ?string $parentFolderId = null, bool $isPresident = false): array
     {
         $builder = $this->db->table('document_folders df')
             ->select("df.id as folder_id, df.user_id, (u.first_name || ' ' || u.last_name) as username,
@@ -100,7 +100,15 @@ class  DocumentFolderModel extends Model
             }
         }
 
-        if (!in_array($sysRole, ['Admin', 'PMT', 'TWG'])) {
+        if ($isPresident) {
+            // President's exclusive scope: Executive review of Vice Presidents' institutional OPCRs
+            $builder->groupStart()
+                ->where('LOWER(u.doc_type)', 'opcr')
+                ->orLike('pos.title', 'Vice President', 'both')
+                ->orLike('u.email', 'vp', 'both')
+                ->orLike('u.email', 'cao', 'both')
+            ->groupEnd();
+        } elseif (!in_array($sysRole, ['Admin', 'PMT', 'TWG'])) {
             $builder->join('evaluation_routings er_me', 'er_me.folder_id = df.id')
                     ->where('er_me.evaluator_id', $userId);
         }

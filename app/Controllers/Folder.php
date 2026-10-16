@@ -29,7 +29,13 @@ class Folder extends BaseController
      * their commitments alongside their own.
      */
     public function index($folderId = null) {
-        if (in_array(session()->get('role'), ['TWG', 'PMT'])) {
+        $userPos = strtolower(session()->get('position') ?? '');
+        $userEmail = strtolower(session()->get('email') ?? '');
+        $isPresident = session()->get('is_president') 
+                    || (str_contains($userPos, 'president') && !str_contains($userPos, 'vice')) 
+                    || str_contains($userEmail, 'president');
+
+        if (in_array(session()->get('role'), ['TWG', 'PMT']) || $isPresident) {
             return redirect()->to(site_url('ratings'));
         }
 
@@ -138,13 +144,17 @@ class Folder extends BaseController
             }
 
 
-            // Reconcile unsubmitted folders that were previously auto-approved for Admin (excluding OPCR which requires no approval)
-            if (!$isFolderOpcr && $activeFolder && $activeFolder['status'] === FolderStatus::TARGET_APPROVED->value && empty($activeFolder['target_submitted_at'])) {
+            // Reconcile unsubmitted folders that were previously auto-approved for Admin or OPCR
+            if ($activeFolder && $activeFolder['status'] === FolderStatus::TARGET_APPROVED->value && empty($activeFolder['target_submitted_at'])) {
                 $folderModel->update($folderId, [
                     'status' => FolderStatus::DRAFT_TARGET->value,
                     'target_approved_at' => null
                 ]);
                 $activeFolder['status'] = FolderStatus::DRAFT_TARGET->value;
+            }
+
+            if ($isFolderOpcr) {
+                $this->ensurePresidentRoutingForExecutiveFolder($folderId, (int) $userId);
             }
 
             // Ensure the user's official performance paper exists automatically based on their profile doc_type (Admins only initiate cycles)
@@ -251,8 +261,8 @@ class Folder extends BaseController
                     $parentFolder = null;
                     $basisDoc = null;
                 } else {
-                    // Under CSC SPMS guidelines, OPCR is the apex institutional commitment and does not require superior target approval
-                    $isParentTargetApproved = $isParentDocOpcr || ($parentFolder['status'] === FolderStatus::TARGET_APPROVED->value);
+                    // Under CSC SPMS guidelines, subordinates require their superior's approved targets as a basis
+                    $isParentTargetApproved = ($parentFolder['status'] === FolderStatus::TARGET_APPROVED->value);
                     $basisDoc = $candidateBasis;
                 }
             }
@@ -387,18 +397,13 @@ class Folder extends BaseController
 
             $folderModel->db->transStart();
 
-            // Detect if this folder is OPCR (Apex institutional paper requiring no superior approval)
+            // Detect if this folder is OPCR (Requires University President target approval before cascading)
             $isFolderOpcr = $this->isOpcrFolder($activeFolder, $userId);
-
-            $updateFolderPayload = ['routing_preset_id' => $teamId];
-            if ($isFolderOpcr) {
-                // OPCR commitments are finalized and approved upon cascading downward
-                $updateFolderPayload['status']               = FolderStatus::TARGET_APPROVED->value;
-                $updateFolderPayload['target_approved_at']   = date('Y-m-d H:i:s');
-                $updateFolderPayload['target_approved_by']   = $userId;
-                $updateFolderPayload['target_approver_role'] = $role ?: 'President';
+            if ($isFolderOpcr && $activeFolder['status'] !== FolderStatus::TARGET_APPROVED->value) {
+                return $this->respondError("Cannot cascade yet: Your OPCR target commitments must be submitted to and approved by the University President before cascading to subordinates.", 400);
             }
 
+            $updateFolderPayload = ['routing_preset_id' => $teamId];
             $folderModel->update($folderId, $updateFolderPayload);
             $emailsQueued = 0;
             if ($role === 'Admin') {
@@ -466,9 +471,14 @@ class Folder extends BaseController
                         ->join('positions pos', 'pos.id = p.position_id', 'inner')
                         ->where('users.is_active', 1)
                         ->groupStart()
-                            ->like('pos.title', 'President', 'both')
-                            ->orLike('users.email', 'president', 'both')
+                            ->like('pos.title', 'University President', 'both')
+                            ->orGroupStart()
+                                ->like('pos.title', 'President', 'both')
+                                ->notLike('pos.title', 'Vice', 'both')
+                            ->groupEnd()
+                            ->orLike('users.email', 'president@', 'both')
                         ->groupEnd()
+                        ->orderBy("CASE WHEN pos.title LIKE '%University President%' THEN 1 WHEN users.email LIKE '%president%' THEN 2 ELSE 3 END", 'ASC')
                         ->first();
 
                     $presidentUserId = $presidentUser ? (int)$presidentUser['id'] : null;
@@ -669,13 +679,7 @@ class Folder extends BaseController
             $folderModel->db->transStart();
 
             // 1. Clear the routing_preset_id on this active folder
-            $isFolderOpcr = $this->isOpcrFolder($activeFolder, $userId);
-
             $uncascadeUpdate = ['routing_preset_id' => null];
-            if ($isFolderOpcr) {
-                $uncascadeUpdate['status'] = FolderStatus::DRAFT_TARGET->value;
-                $uncascadeUpdate['target_approved_at'] = null;
-            }
             $folderModel->update($folderId, $uncascadeUpdate);
 
             if (!empty($allFolderIds)) {
@@ -1849,7 +1853,7 @@ class Folder extends BaseController
                         $isParentDocOpcr = true;
                     }
 
-                    if (!$isParentDocOpcr && $parentFolder['status'] !== FolderStatus::TARGET_APPROVED->value) {
+                    if ($parentFolder['status'] !== FolderStatus::TARGET_APPROVED->value) {
                         $parentTitle = $parentFolder['title'] ?? 'Superior';
                         return $this->respondError("Cannot submit targets yet: The superior basis commitments (\"{$parentTitle}\") have not been approved by the higher-up yet. Under SPMS cascading rules, individual commitments require approved superior targets as a basis.", 400);
                     }
@@ -1886,21 +1890,8 @@ class Folder extends BaseController
             }
             // ---------------------------------------
 
-            if ($isFolderOpcr) {
-                // Under CSC SPMS guidelines, OPCR is the apex institutional commitment and does not require superior target approval
-                $folderModel->update($folderId, [
-                    'status'               => FolderStatus::TARGET_APPROVED->value,
-                    'target_approved_at'   => date('Y-m-d H:i:s'),
-                    'target_approved_by'   => $userId,
-                    'target_approver_role' => session()->get('role') ?: 'President',
-                    'target_submitted_at'  => date('Y-m-d H:i:s')
-                ]);
-                audit_log('TARGET_FINALIZED', 'TARGET', 'document_folder', (int) $folderId, "OPCR institutional targets finalized: {$folder['title']}");
-                return $this->respond(['status' => 'success', 'message' => 'OPCR institutional targets finalized. You can now cascade commitments to subordinates.']);
-            }
-
             $folderModel->update($folderId, [
-                'status' => FolderStatus::PENDING_TARGET_APPROVAL->value,
+                'status'              => FolderStatus::PENDING_TARGET_APPROVAL->value,
                 'target_submitted_at' => date('Y-m-d H:i:s')
             ]);
             
@@ -1916,7 +1907,11 @@ class Folder extends BaseController
                 'file'
             );
 
-            return $this->respond(['status' => 'success', 'message' => 'Targets submitted for approval.']);
+            $submitMsg = $isFolderOpcr 
+                ? 'OPCR target commitments submitted to the University President for approval.' 
+                : 'Targets submitted for approval.';
+
+            return $this->respond(['status' => 'success', 'message' => $submitMsg]);
         });
     }
 
@@ -1996,11 +1991,12 @@ class Folder extends BaseController
             ];
             $targetStatus = in_array($folder['status'], $evalStatuses) ? $folder['status'] : FolderStatus::TARGET_APPROVED->value;
 
+            $approverRole = session()->get('is_president') ? 'University President' : (session()->get('role') ?: 'Supervisor');
             $folderModel->update($folderId, [
                 'status'               => $targetStatus,
                 'target_approved_at'   => date('Y-m-d H:i:s'),
                 'target_approved_by'   => session()->get('user_id'),
-                'target_approver_role' => session()->get('role')
+                'target_approver_role' => $approverRole
             ]);
 
 
@@ -2750,6 +2746,9 @@ class Folder extends BaseController
      * Helper to send an in-app notification to evaluators/supervisors of a folder.
      */
     private function notifyFolderEvaluators($folder, $title, $message, $type, $icon = 'bell') {
+        if (!empty($folder['user_id'])) {
+            $this->ensurePresidentRoutingForExecutiveFolder($folder['id'], (int) $folder['user_id']);
+        }
         $routingModel = new EvaluationRoutingModel();
         $routings = $routingModel->where('folder_id', $folder['id'])->findAll();
         $senderId = session()->get('user_id');
@@ -2852,5 +2851,66 @@ class Folder extends BaseController
         }
 
         return false;
+    }
+
+    /**
+     * Helper to ensure that Vice Presidential OPCR folders are routed to the University President.
+     */
+    private function ensurePresidentRoutingForExecutiveFolder(int|string $folderId, int $folderUserId): void
+    {
+        $userModel = new UserModel();
+        $plantilla = $userModel->getActivePlantillaDetails($folderUserId);
+        $pos = strtolower($plantilla['position'] ?? '');
+        $user = $userModel->find($folderUserId);
+        $email = strtolower($user['email'] ?? '');
+
+        $docType = strtoupper($user['doc_type'] ?? '');
+        $isVp = str_contains($pos, 'vice president') 
+             || str_contains($pos, 'vpaa') 
+             || str_contains($pos, 'cao')
+             || str_contains($email, 'vpaa') 
+             || str_contains($email, 'cao')
+             || $docType === 'OPCR';
+
+        if (!$isVp) return;
+
+        // Find President user
+        $presidentUser = $userModel
+            ->select('users.id')
+            ->join('plantillas p', 'p.user_id = users.id AND p.ended_at IS NULL', 'inner')
+            ->join('positions pos', 'pos.id = p.position_id', 'inner')
+            ->where('users.is_active', 1)
+            ->groupStart()
+                ->like('pos.title', 'University President', 'both')
+                ->orGroupStart()
+                    ->like('pos.title', 'President', 'both')
+                    ->notLike('pos.title', 'Vice', 'both')
+                ->groupEnd()
+                ->orLike('users.email', 'president@', 'both')
+            ->groupEnd()
+            ->orderBy("CASE WHEN pos.title LIKE '%University President%' THEN 1 WHEN users.email LIKE '%president%' THEN 2 ELSE 3 END", 'ASC')
+            ->first();
+
+        if ($presidentUser && (int)$presidentUser['id'] !== $folderUserId) {
+            $presId = (int)$presidentUser['id'];
+            $routingModel = new EvaluationRoutingModel();
+            $exists = $routingModel->where('folder_id', $folderId)
+                                  ->where('evaluator_id', $presId)
+                                  ->first();
+            if (!$exists) {
+                $folderModel = new DocumentFolderModel();
+                $fRec = $folderModel->find($folderId);
+                $evalFolderId = $fRec['parent_folder_id'] ?? $folderId;
+
+                $routingModel->insert([
+                    'folder_id'           => $folderId,
+                    'evaluator_id'        => $presId,
+                    'evaluator_folder_id' => $evalFolderId,
+                    'status'              => FolderStatus::DRAFT->value,
+                    'created_at'          => date('Y-m-d H:i:s'),
+                    'updated_at'          => date('Y-m-d H:i:s')
+                ]);
+            }
+        }
     }
 }

@@ -247,6 +247,11 @@ class Session extends BaseController
         $position   = $plantillaData ? $plantillaData['position'] : null;
 
         $posLower = strtolower($position ?? '');
+        $emailLower = strtolower($user['email'] ?? '');
+        $isPresident = str_contains($posLower, 'university president') 
+                    || (str_contains($posLower, 'president') && !str_contains($posLower, 'vice'))
+                    || str_contains($emailLower, 'president');
+
         if (($systemRole === 'Employee') && (str_contains($posLower, 'chair') || str_contains($posLower, 'head'))) {
             $systemRole = 'Supervisor';
             $supRole = $userModel->db->table('roles')->where('name', 'Supervisor')->get()->getRowArray();
@@ -259,14 +264,15 @@ class Session extends BaseController
         session()->regenerate();
 
         session()->set([
-            'user_id'    => $user['id'],
-            'email'      => $user['email'],
-            'role'       => $systemRole, 
-            'department' => $department,
-            'position'   => $position,
-            'username'   => $user['first_name'] . ' ' . $user['last_name'],
-            'doc_type'   => $user['doc_type'] ?? null,
-            'isLoggedIn' => true,
+            'user_id'       => $user['id'],
+            'email'         => $user['email'],
+            'role'          => $systemRole, 
+            'department'    => $department,
+            'position'      => $position,
+            'is_president'  => $isPresident,
+            'username'      => $user['first_name'] . ' ' . $user['last_name'],
+            'doc_type'      => $user['doc_type'] ?? null,
+            'isLoggedIn'    => true,
             'avatar_image'  => $user['avatar_image'],
             'avatar_color'  => $user['avatar_color'] ?? '#' . substr(md5($user['email']), 0, 6),
             'avatar_letter' => $user['avatar_letter'] ?? strtoupper(substr($user['first_name'], 0, 1)),
@@ -293,7 +299,7 @@ class Session extends BaseController
             ]);
         }
 
-        if (in_array(session()->get('role'), ['TWG', 'PMT'])) {
+        if (in_array(session()->get('role'), ['TWG', 'PMT']) || $isPresident) {
             return redirect()->to(site_url('ratings'));
         }
 

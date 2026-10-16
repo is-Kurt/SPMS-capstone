@@ -128,6 +128,23 @@
         color: #334155;
         cursor: not-allowed;
     }
+    /* Hide number input spinners / up-down arrows for weights and meta inputs */
+    input[data-cat-weight]::-webkit-outer-spin-button,
+    input[data-cat-weight]::-webkit-inner-spin-button,
+    .spms-cat-weight-input::-webkit-outer-spin-button,
+    .spms-cat-weight-input::-webkit-inner-spin-button,
+    .spms-meta-input::-webkit-outer-spin-button,
+    .spms-meta-input::-webkit-inner-spin-button {
+        -webkit-appearance: none !important;
+        margin: 0 !important;
+        display: none !important;
+    }
+    input[data-cat-weight],
+    .spms-cat-weight-input,
+    .spms-meta-input[type="number"] {
+        -moz-appearance: textfield !important;
+        appearance: textfield !important;
+    }
     .spms-table-responsive-wrapper {
         width: 100%;
         overflow-x: auto;
@@ -716,8 +733,7 @@
                 <?php elseif ($status === FolderStatus::APPROVED->value || $status === FolderStatus::TWG_APPROVED->value || $status === FolderStatus::TWG_DISAPPROVED->value): ?>
                     <?php
                         $isTargetApproved = !empty($doc['target_approved_at']) 
-                            || ($status === FolderStatus::TARGET_APPROVED->value) 
-                            || (($isDocOpcr || $isTrueOpcr) && (!empty($doc['routing_preset_id']) || !empty($doc['target_approved_at'])));
+                            || ($status === FolderStatus::TARGET_APPROVED->value);
                         
                         $targetRole = $doc['target_approver_role'] ?? '';
                         $isTargetTwg = $isTargetApproved && in_array($targetRole, ['TWG', 'PMT']);
@@ -727,6 +743,9 @@
                         } elseif ($targetRole === 'TWG') {
                             $targetBadgeText = 'Targets TWG Approved';
                             $targetBadgeShort = 'Targets TWG Ok';
+                        } elseif ($targetRole === 'University President') {
+                            $targetBadgeText = 'Targets President Approved';
+                            $targetBadgeShort = 'Targets President Ok';
                         } elseif ($isTargetApproved) {
                             $targetBadgeText = 'Targets Approved';
                             $targetBadgeShort = 'Targets Ok';
@@ -871,8 +890,7 @@
                         <?php elseif (in_array(session()->get('role'), ['TWG', 'PMT'])): ?>
                             <?php
                                 $isTargetApproved = !empty($doc['target_approved_at']) 
-                                    || ($status === FolderStatus::TARGET_APPROVED->value) 
-                                    || (($isDocOpcr || $isTrueOpcr) && (!empty($doc['routing_preset_id']) || !empty($doc['target_approved_at'])));
+                                    || ($status === FolderStatus::TARGET_APPROVED->value);
                                 
                                 $targetRole = $doc['target_approver_role'] ?? '';
                                 $isTargetTwg = $isTargetApproved && in_array($targetRole, ['TWG', 'PMT']);
@@ -882,6 +900,9 @@
                                 } elseif ($targetRole === 'TWG') {
                                     $targetBadgeText = 'Targets TWG Approved';
                                     $targetBadgeShort = 'Targets TWG Ok';
+                                } elseif ($targetRole === 'University President') {
+                                    $targetBadgeText = 'Targets President Approved';
+                                    $targetBadgeShort = 'Targets President Ok';
                                 } elseif ($isTargetApproved) {
                                     $targetBadgeText = 'Targets Approved';
                                     $targetBadgeShort = 'Targets Ok';
@@ -1012,32 +1033,7 @@
                                     </svg>
                                     <span>Master Cycle Template</span>
                                 </div>
-                            <?php elseif ($isDocOpcr || $isTrueOpcr): ?>
-                                <!-- Under CSC SPMS rules, OPCR is the apex institutional commitment and requires NO superior approval. Once done, they can just cascade it! -->
-                                <?php $isOpcrCascaded = ($status === FolderStatus::TARGET_APPROVED->value) || !empty($doc['routing_preset_id']); ?>
-                                <?php if ($isOpcrCascaded): ?>
-                                    <div class="flex items-center gap-1.5 sm:gap-2">
-                                        <span class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 dark:bg-[#102a1e] border border-emerald-300 dark:border-[#1b4330] text-emerald-700 dark:text-[#34d399] rounded-lg text-[10px] sm:text-xs font-bold shadow-xs">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-[#34d399]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                            </svg>
-                                            <span>OPCR Cascaded</span>
-                                        </span>
-                                        <a href="<?= site_url('folders/' . $doc['document_folder_id']) ?>" class="bg-surface hover:bg-surface-border text-text text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg border border-surface-border transition-all">
-                                            Manage Cascade
-                                        </a>
-                                    </div>
-                                <?php else: ?>
-                                    <button id="btn-cascade-opcr" type="button" 
-                                            onclick="saveWith({ after: () => openCascadeModal() })" 
-                                            class="bg-gradient-to-r from-emerald-600 to-[#064e3b] hover:from-emerald-700 hover:to-[#085a3a] text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg shadow-emerald-600/30 transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1.5"
-                                            title="Cascade OPCR targets to a distribution team as their reference basis without requiring approval.">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                        </svg>
-                                        <span>Cascade Targets</span>
-                                    </button>
-                                <?php endif; ?>
+
                             <?php elseif (isset($isParentTargetApproved) && !$isParentTargetApproved): ?>
                                 <button type="button" disabled 
                                         class="bg-amber-500/70 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-sm cursor-not-allowed flex items-center gap-1.5" 
@@ -1062,19 +1058,7 @@
                     </div>
 
                 <?php elseif ($status === FolderStatus::PENDING_TARGET_APPROVAL->value): ?>
-                    <?php if ($isDocOpcr || $isTrueOpcr): ?>
-                        <div class="flex items-center gap-1.5 sm:gap-2">
-                            <button id="btn-cascade-opcr" type="button" 
-                                    onclick="saveWith({ after: () => openCascadeModal() })" 
-                                    class="bg-gradient-to-r from-emerald-600 to-[#064e3b] hover:from-emerald-700 hover:to-[#085a3a] text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg shadow-emerald-600/30 transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1.5"
-                                    title="Cascade OPCR targets to a distribution team as their reference basis without requiring approval.">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                </svg>
-                                <span>Cascade Targets</span>
-                            </button>
-                        </div>
-                    <?php elseif ($isOwner): ?>
+                    <?php if ($isOwner): ?>
                         <div class="flex items-center gap-1.5 sm:gap-2">
                             <button type="button" disabled class="bg-amber-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-sm opacity-90 cursor-not-allowed flex items-center gap-1.5">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1115,21 +1099,6 @@
                             $isSupervisor = session()->get('role') === 'Supervisor' || str_contains($userPosLower, 'chair') || str_contains($userPosLower, 'head');
                             $docTitleUpper = strtoupper(trim($doc['title'] ?? ''));
                             $isTrueOpcr = str_contains($docTitleUpper, 'OPCR') || str_contains($docTitleUpper, 'OFFICE') || (strtoupper($doc['doc_type'] ?? '') === 'OPCR');
-                            $isTrueDpcr = str_contains($docTitleUpper, 'DPCR') || str_contains($docTitleUpper, 'DIVISION') || str_contains($docTitleUpper, 'DEPARTMENT') || (strtoupper($doc['doc_type'] ?? '') === 'DPCR');
-
-                            $canRelease = false;
-                            $releaseScope = null;
-                            $releaseLabel = '';
-                            $releaseTitle = '';
-
-                            if ($isTrueOpcr && $isAdmin) {
-                                $canRelease = true;
-                                $releaseScope = 'deans';
-                                $releaseLabel = 'to Deans';
-                                $releaseTitle = 'Approve this OPCR and automatically distribute it to all College Deans as their target basis';
-                            } elseif ($isTrueDpcr && ($isAdmin || $isSupervisor)) {
-                                $canRelease = false;
-                            }
                         ?>
                         <div class="flex items-center gap-1.5 sm:gap-2">
                             <button id="btn-return-target" type="button" 
@@ -1137,18 +1106,6 @@
                                     class="<?= $isTargetPeriodEnded ? 'bg-revision-500/50 cursor-not-allowed opacity-80' : 'bg-revision-500 hover:bg-revision-600 shadow-revision-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg transition-all">
                                 Return<span class="hidden sm:inline"> Target for Revision</span>
                             </button>
-
-                            <?php if ($canRelease): ?>
-                                <button id="btn-approve-release-target" type="button" 
-                                        <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="approveFolderTarget(\'' . $releaseScope . '\')"' ?>
-                                        class="<?= $isTargetPeriodEnded ? 'bg-emerald-600/50 cursor-not-allowed opacity-80' : 'bg-gradient-to-r from-emerald-600 to-[#064e3b] hover:from-emerald-700 hover:to-[#085a3a] shadow-emerald-600/30 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg transition-all flex items-center gap-1.5"
-                                        title="<?= esc($releaseTitle) ?>">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                    </svg>
-                                    <span>Approve & Release<span class="hidden sm:inline"> <?= esc($releaseLabel) ?></span></span>
-                                </button>
-                            <?php endif; ?>
 
                             <button id="btn-approve-target" type="button" 
                                     <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="approveFolderTarget(null)"' ?>
@@ -1178,39 +1135,14 @@
                             $docTitleUpper = strtoupper(trim($doc['title'] ?? ''));
                             $isTrueOpcr = str_contains($docTitleUpper, 'OPCR') || str_contains($docTitleUpper, 'OFFICE') || (strtoupper($doc['doc_type'] ?? '') === 'OPCR');
                             $isTrueDpcr = str_contains($docTitleUpper, 'DPCR') || str_contains($docTitleUpper, 'DIVISION') || str_contains($docTitleUpper, 'DEPARTMENT') || (strtoupper($doc['doc_type'] ?? '') === 'DPCR');
-
-                            $canRelease = false;
-                            $releaseScope = null;
-                            $releaseLabel = '';
-                            $releaseTitle = '';
-
-                            if ($isTrueOpcr && $isAdmin) {
-                                $canRelease = true;
-                                $releaseScope = 'deans';
-                                $releaseLabel = 'to Deans';
-                                $releaseTitle = 'Distribute this approved OPCR to all College Deans as their target basis';
-                            } elseif ($isTrueDpcr && ($isAdmin || $isSupervisor)) {
-                                $canRelease = false;
-                            }
                         ?>
                         <div class="flex items-center gap-1.5 sm:gap-2">
                             <span class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-lg text-[10px] sm:text-xs font-bold shadow-xs">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                 </svg>
-                                <span><?= (!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'PMT') ? 'Targets PMT Approved' : ((!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'TWG') ? 'Targets TWG Approved' : 'Targets Approved') ?></span>
+                                <span><?= (!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'PMT') ? 'Targets PMT Approved' : ((!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'TWG') ? 'Targets TWG Approved' : ((!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'University President') ? 'Targets President Approved' : 'Targets Approved')) ?></span>
                             </span>
-                            <?php if ($canRelease): ?>
-                                <button id="btn-release-subordinates" type="button" 
-                                        <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="approveFolderTarget(\'' . $releaseScope . '\')"' ?>
-                                        class="<?= $isTargetPeriodEnded ? 'bg-emerald-600/50 cursor-not-allowed opacity-80' : 'bg-gradient-to-r from-emerald-600 to-[#064e3b] hover:from-emerald-700 hover:to-[#085a3a] shadow-emerald-600/30 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg transition-all flex items-center gap-1.5"
-                                        title="<?= esc($releaseTitle) ?>">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                    </svg>
-                                    <span>Release<span class="hidden sm:inline"> <?= esc($releaseLabel) ?></span></span>
-                                </button>
-                            <?php endif; ?>
 
                             <?php if (in_array(session()->get('role'), ['TWG', 'PMT']) && (empty($doc['target_approver_role']) || !in_array($doc['target_approver_role'], ['TWG', 'PMT']))): ?>
                                 <button id="btn-twg-verify-target" type="button" 
@@ -1232,15 +1164,33 @@
                         </div>
                     <?php elseif ($isDocOpcr || $isTrueOpcr): ?>
                         <div class="flex items-center gap-1.5 sm:gap-2">
-                            <span class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 dark:bg-[#102a1e] border border-emerald-300 dark:border-[#1b4330] text-emerald-700 dark:text-[#34d399] rounded-lg text-[10px] sm:text-xs font-bold shadow-xs">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-[#34d399]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>OPCR Cascaded</span>
-                            </span>
-                            <a href="<?= site_url('folders/' . $doc['document_folder_id']) ?>" class="bg-surface hover:bg-surface-border text-text text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg border border-surface-border transition-all">
-                                Manage Cascade
-                            </a>
+                            <?php if (!empty($doc['routing_preset_id'])): ?>
+                                <span class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 dark:bg-[#102a1e] border border-emerald-300 dark:border-[#1b4330] text-emerald-700 dark:text-[#34d399] rounded-lg text-[10px] sm:text-xs font-bold shadow-xs">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-[#34d399]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <span>OPCR Cascaded</span>
+                                </span>
+                                <a href="<?= site_url('folders/' . $doc['document_folder_id']) ?>" class="bg-surface hover:bg-surface-border text-text text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg border border-surface-border transition-all">
+                                    Manage Cascade
+                                </a>
+                            <?php else: ?>
+                                <span class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-lg text-[10px] sm:text-xs font-bold shadow-xs">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <span><?= (!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'PMT') ? 'Targets PMT Approved' : ((!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'TWG') ? 'Targets TWG Approved' : ((!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'University President') ? 'Targets President Approved' : 'Targets Approved')) ?></span>
+                                </span>
+                                <button id="btn-cascade-opcr" type="button" 
+                                        onclick="saveWith({ after: () => openCascadeModal() })" 
+                                        class="bg-gradient-to-r from-emerald-600 to-[#064e3b] hover:from-emerald-700 hover:to-[#085a3a] text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg shadow-emerald-600/30 transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1.5"
+                                        title="Cascade approved OPCR targets to a distribution team as their reference basis.">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                    </svg>
+                                    <span>Cascade Targets</span>
+                                </button>
+                            <?php endif; ?>
                         </div>
                     <?php else: ?>
                         <div class="inline-flex items-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-950/40 p-0.5 sm:p-1 text-[10px] sm:text-xs font-bold shadow-xs shrink-0">
@@ -1248,7 +1198,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                 </svg>
-                                <span><?= (!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'PMT') ? 'Targets PMT Approved' : ((!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'TWG') ? 'Targets TWG Approved' : 'Targets Approved') ?></span>
+                                <span><?= (!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'PMT') ? 'Targets PMT Approved' : ((!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'TWG') ? 'Targets TWG Approved' : ((!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'University President') ? 'Targets President Approved' : 'Targets Approved')) ?></span>
                             </span>
                             <span class="mx-1 opacity-40 font-normal">|</span>
                             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-zinc-600 dark:text-zinc-400">
@@ -2322,93 +2272,6 @@
         <div id="spms-rubrics-workspace" class="hidden w-full h-full overflow-y-auto p-2 sm:p-6 lg:p-8 flex flex-col items-center custom-scrollbar print:p-0 print:bg-white print:overflow-visible">
             <div class="w-full max-w-[1280px] flex flex-col gap-6 print:w-full print:block">
                 
-                <!-- External File Attachment Section -->
-                <div class="p-4 sm:p-5 rounded-2xl bg-surface border border-surface-border shadow-sm space-y-4">
-                    <div class="flex items-center justify-between border-b border-surface-border pb-3">
-                        <div class="flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                            <h3 class="text-xs font-black uppercase tracking-wider text-text">Rubric Document Attachment</h3>
-                            <span class="text-[10px] text-text-muted font-medium">(Optional external file: XLSX, PDF, DOCX)</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <a href="<?= site_url('document/' . $doc['id'] . '/export-rubric') ?>" target="_blank"
-                               class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all"
-                               title="Download official Excel rubric sheet with your current deliverables pre-filled in Column A">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                </svg>
-                                <span>Download Template (.xlsx)</span>
-                            </a>
-                            <div id="rubric-file-status-badge"></div>
-                        </div>
-                    </div>
-
-                    <!-- Current Attached File Card -->
-                    <div id="rubric-attached-file-card" class="hidden p-3.5 rounded-xl bg-surface-border/20 border border-surface-border flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-3 overflow-hidden">
-                            <div class="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                            </div>
-                            <div class="overflow-hidden">
-                                <div class="text-xs font-bold text-text truncate" id="rubric-file-name">—</div>
-                                <div class="text-[10px] text-text-muted mt-0.5" id="rubric-file-meta">—</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <a id="rubric-file-download-link" href="#" target="_blank" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-accent/10 hover:bg-accent/20 text-accent transition-colors">
-                                Download
-                            </a>
-                            <button type="button" id="rubric-file-view-btn" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-surface-border/40 hover:bg-surface-border text-text transition-colors">
-                                View
-                            </button>
-                            <?php if ($canEditTargets): ?>
-                            <button type="button" onclick="deleteRubricAttachment()" class="px-2.5 py-1.5 rounded-lg text-xs font-bold text-rose-500 hover:bg-rose-500/10 transition-colors" title="Delete attachment">
-                                ✕
-                            </button>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <!-- Upload Dropzone (if canEditTargets) -->
-                    <?php if ($canEditTargets): ?>
-                    <div id="rubric-upload-zone" class="space-y-2">
-                        <div id="rubric-drop-target"
-                             onclick="document.getElementById('rubric-file-input').click()"
-                             ondragover="event.preventDefault(); this.classList.add('border-emerald-500', 'bg-emerald-500/5');"
-                             ondragleave="this.classList.remove('border-emerald-500', 'bg-emerald-500/5');"
-                             ondrop="handleRubricDrop(event)"
-                             class="border-2 border-dashed border-surface-border hover:border-emerald-500/60 rounded-xl p-5 text-center cursor-pointer transition-all bg-surface-border/5 hover:bg-emerald-500/5 flex flex-col items-center justify-center gap-2">
-                            <div class="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                </svg>
-                            </div>
-                            <div>
-                                <span class="text-xs font-bold text-text">Click to attach completed rubric file</span>
-                                <span class="text-xs text-text-muted"> or drag &amp; drop</span>
-                            </div>
-                            <span class="text-[10px] text-text-muted">Accepted formats: .xlsx, .xls, .pdf, .docx, .doc, .csv (Max 20MB)</span>
-                            <input type="file" id="rubric-file-input" class="hidden" accept=".xlsx,.xls,.pdf,.docx,.doc,.csv" onchange="handleRubricFileSelect(this)">
-                        </div>
-                        <div id="rubric-upload-progress" class="hidden p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-300 font-bold animate-pulse">
-                            <span>Uploading rubric document...</span>
-                        </div>
-                    </div>
-                    <?php endif; ?>
-
-                    <!-- Helpful Guidance Note -->
-                    <div class="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 text-xs leading-relaxed">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <p class="text-text-muted">
-                            <strong class="text-emerald-700 dark:text-emerald-300 font-bold">Note:</strong> If you already have your rubrics finished in an external PDF, Word, or Excel file, you can simply attach it here and leave the matrix boxes below blank — having the file attached satisfies the rubric requirement for submission!
-                        </p>
-                    </div>
-                </div>
-
                 <!-- Interactive Digital Rubrics Matrix Section -->
                 <div class="space-y-5">
                     <!-- Rubric Matrix Header & Controls Card -->
@@ -2427,6 +2290,14 @@
                             </div>
                             
                             <div class="flex items-center gap-2.5 shrink-0">
+                                <a href="<?= site_url('document/' . $doc['id'] . '/export-rubric') ?>" target="_blank"
+                                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all"
+                                   title="Download official Excel rubric sheet with your current deliverables pre-filled in Column A">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    <span>Download Template (.xlsx)</span>
+                                </a>
                                 <?php if ($canEditTargets): ?>
                                 <div class="relative group inline-flex items-center">
                                     <button type="button" 
@@ -2553,7 +2424,7 @@
     window.canEditApprover = canEditApprover;
     window.canEditEvaluation = canEditEvaluation;
 
-    window.rubricAttachments = <?= json_encode($attachmentsByRow['rubric'] ?? []) ?>;
+    window.rubricAttachments = [];
     window.digitalRubricsData = (tabs[0]?.formData?.rubrics && !Array.isArray(tabs[0]?.formData?.rubrics)) ? tabs[0].formData.rubrics : {};
     
     // Set initial content for TinyMCE initialization
@@ -3246,7 +3117,6 @@
             }
         }
 
-        const hasFile = (window.rubricAttachments && window.rubricAttachments.length > 0);
         const rubricsData = window.digitalRubricsData || tabs[0]?.formData?.rubrics || {};
         let criteriaCount = 0;
         Object.values(rubricsData).forEach(scores => {
@@ -3258,25 +3128,21 @@
         });
 
         let rubricNotice = '';
-        if (hasFile && criteriaCount > 0) {
-            rubricNotice = 'Rubrics Matrix configured & external file attached.';
-        } else if (hasFile) {
-            rubricNotice = 'External Rubrics file attached.';
-        } else if (criteriaCount > 0) {
+        if (criteriaCount > 0) {
             rubricNotice = `Rubrics Matrix configured (${criteriaCount} criteria set).`;
         } else {
-            rubricNotice = 'Caution: No Rubrics standards configured or attached yet.';
+            rubricNotice = 'Caution: No Rubrics standards configured yet.';
         }
 
         const confirmMsg = `Submit targets and rubrics for supervisor approval?\n\n` +
             `• Rubrics Status: ${rubricNotice}\n\n` +
-            `Note: Always attach your rubrics to your DPCR/IPCR/IPERF when submitting. Also, the targets in your rubrics should match the targets in this form.`;
+            `Note: The targets in your rubrics should match the targets in this form.`;
 
         const ok = await window.appConfirm(confirmMsg, { 
             title: 'Submit Targets & Rubrics',
             confirmText: 'Submit Now',
             cancelText: 'Keep Editing',
-            variant: (hasFile || criteriaCount > 0) ? 'primary' : 'warning'
+            variant: (criteriaCount > 0) ? 'primary' : 'warning'
         });
         if (!ok) return;
         
@@ -3652,7 +3518,6 @@
             if (rubricsWorkspace) {
                 rubricsWorkspace.classList.remove('hidden');
                 renderDigitalRubricsMatrix();
-                renderRubricAttachmentCard();
             }
             return;
         }
@@ -3984,7 +3849,7 @@
             if (!canEditTargets || isIperf) {
                 return pct !== '' ? `${escapeHtml(titlePrefix)} (${pct}%)` : `${escapeHtml(titlePrefix)} ( ____ %)`;
             }
-            return `${escapeHtml(titlePrefix)} (<input type="number" min="1" max="100" required data-cat-weight="${cat}" value="${pct}" placeholder="—" title="Required: Enter percentage weight" oninput="window.updateWeights()" class="spms-meta-input print-borderless" style="width:36px; text-align:center; font-weight:900; font-size:inherit; color:inherit; background:transparent; border:none; border-bottom:2px dashed #f59e0b; outline:none; padding:0 2px;">%) <span style="color:#ef4444; font-weight:bold;" title="Required">*</span>`;
+            return `${escapeHtml(titlePrefix)} (<input type="number" min="1" max="100" required data-cat-weight="${cat}" value="${pct}" placeholder="—" title="Required: Enter percentage weight" oninput="window.updateWeights()" class="spms-meta-input spms-cat-weight-input print-borderless" style="width:36px; text-align:center; font-weight:900; font-size:inherit; color:inherit; background:transparent; border:none; border-bottom:2px dashed #f59e0b; outline:none; padding:0 2px; -moz-appearance:textfield; appearance:textfield;">%) <span style="color:#ef4444; font-weight:bold;" title="Required">*</span>`;
         }
 
         const elCore = document.getElementById('label-cat-core');
@@ -6183,131 +6048,10 @@
         updateRubricsTabBadge();
     };
 
-    function renderRubricAttachmentCard() {
-        const fileCard = document.getElementById('rubric-attached-file-card');
-        const statusBadge = document.getElementById('rubric-file-status-badge');
-        const nameEl = document.getElementById('rubric-file-name');
-        const metaEl = document.getElementById('rubric-file-meta');
-        const dlLink = document.getElementById('rubric-file-download-link');
-        const viewBtn = document.getElementById('rubric-file-view-btn');
-
-        const rubrics = window.rubricAttachments || [];
-        const active = rubrics.length > 0 ? rubrics[rubrics.length - 1] : null;
-
-        if (active) {
-            fileCard?.classList.remove('hidden');
-            if (nameEl) nameEl.textContent = active.file_name;
-            if (metaEl) metaEl.textContent = `${active.formatted_size || ''} • Uploaded on ${active.created_at || ''}`;
-            if (dlLink) dlLink.href = '<?= site_url('attachments/download/') ?>' + active.id;
-            if (viewBtn) {
-                viewBtn.onclick = () => {
-                    window.open('<?= site_url('attachments/view/') ?>' + active.id, '_blank');
-                };
-            }
-            if (statusBadge) {
-                statusBadge.innerHTML = `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">File Attached</span>`;
-            }
-        } else {
-            fileCard?.classList.add('hidden');
-            if (statusBadge) {
-                statusBadge.innerHTML = `<span class="px-2 py-0.5 rounded-full text-[10px] font-medium text-text-muted bg-surface-border/30">No File Attached</span>`;
-            }
-        }
-        updateRubricsTabBadge();
-    }
-
-    async function handleRubricFileSelect(input) {
-        if (input.files && input.files[0]) {
-            await uploadRubricAttachment(input.files[0]);
-            input.value = '';
-        }
-    }
-
-    function handleRubricDrop(e) {
-        e.preventDefault();
-        const dt = document.getElementById('rubric-drop-target');
-        dt?.classList.remove('border-emerald-500', 'bg-emerald-500/5');
-        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
-            uploadRubricAttachment(e.dataTransfer.files[0]);
-        }
-    }
-
-    async function uploadRubricAttachment(file) {
-        const progressEl = document.getElementById('rubric-upload-progress');
-        try {
-            progressEl?.classList.remove('hidden');
-            const formData = new FormData();
-            formData.append('document_id', '<?= $doc['id'] ?>');
-            formData.append('row_id', 'rubric');
-            formData.append('file', file);
-
-            const res = await axios.post('<?= site_url('attachments/upload') ?>', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-
-            if (res.data?.status === 'success') {
-                window.rubricAttachments = [res.data.attachment];
-                renderRubricAttachmentCard();
-                if (typeof showToast === 'function') {
-                    showToast('Rubric attached successfully!', 'success');
-                }
-            } else {
-                const errMsg = res.data?.message || 'Upload failed.';
-                if (window.appAlert) {
-                    await window.appAlert(errMsg, { title: 'Upload Notice', variant: 'warning' });
-                } else {
-                    alert(errMsg);
-                }
-            }
-        } catch (err) {
-            console.error('Rubric upload error:', err);
-            const errMsg = err.response?.data?.message || 'Failed to upload rubric document.';
-            if (window.appAlert) {
-                await window.appAlert(errMsg, { title: 'Upload Failed', variant: 'danger' });
-            } else {
-                alert(errMsg);
-            }
-        } finally {
-            progressEl?.classList.add('hidden');
-        }
-    }
-
-    async function deleteRubricAttachment() {
-        const rubrics = window.rubricAttachments || [];
-        const active = rubrics.length > 0 ? rubrics[rubrics.length - 1] : null;
-        if (!active) return;
-
-        const ok = await window.appConfirm('Are you sure you want to remove this attached rubric file?', {
-            title: 'Remove Rubric File',
-            confirmText: 'Remove',
-            variant: 'danger'
-        });
-        if (!ok) return;
-
-        try {
-            const res = await axios.delete('<?= site_url('attachments/') ?>' + active.id);
-            if (res.data?.status === 'success') {
-                window.rubricAttachments = [];
-                renderRubricAttachmentCard();
-                if (typeof showToast === 'function') {
-                    showToast('Rubric attachment removed.', 'info');
-                }
-            }
-        } catch (err) {
-            console.error('Delete error:', err);
-            if (window.appAlert) {
-                await window.appAlert('Failed to remove attachment.', { title: 'Delete Failed', variant: 'danger' });
-            } else {
-                alert('Failed to remove attachment.');
-            }
-        }
-    }
-
     function updateRubricsTabBadge() {
         const badge = document.getElementById('tab-rubrics-badge');
         if (!badge) return;
 
-        const hasFile = (window.rubricAttachments && window.rubricAttachments.length > 0);
         const rubricsData = window.digitalRubricsData || tabs[0]?.formData?.rubrics || {};
         let criteriaCount = 0;
         Object.values(rubricsData).forEach(scores => {
@@ -6318,13 +6062,7 @@
             }
         });
 
-        if (hasFile && criteriaCount > 0) {
-            badge.innerHTML = 'Matrix &amp; File Configured';
-            badge.className = 'px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30';
-        } else if (hasFile) {
-            badge.innerHTML = 'File Attached';
-            badge.className = 'px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30';
-        } else if (criteriaCount > 0) {
+        if (criteriaCount > 0) {
             badge.innerHTML = `${criteriaCount} Criteria Set`;
             badge.className = 'px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30';
         } else {

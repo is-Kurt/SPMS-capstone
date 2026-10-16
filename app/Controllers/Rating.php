@@ -58,7 +58,8 @@ class Rating extends BaseController
             $rootFolderId = null;
         }
 
-        $rawFolders = $folderModel->getRatingDashboardFolders($userId, $sysRole, $rootFolderId);
+        $isPresident = (bool) (session()->get('is_president') ?? false);
+        $rawFolders = $folderModel->getRatingDashboardFolders($userId, $sysRole, $rootFolderId, $isPresident);
 
         foreach ($rawFolders as &$f) {
             if ($f['position'])   $f['position']   = str_replace(',', ', ', $f['position']);
@@ -265,8 +266,8 @@ class Rating extends BaseController
                 $candidateTitleUpper = strtoupper($candidateBasis['title'] ?? '');
                 $isParentDocOpcr = str_contains($candidateTitleUpper, 'OPCR') || str_contains($candidateTitleUpper, 'OFFICE') || (strtoupper($candidateBasis['doc_type'] ?? '') === 'OPCR');
 
-                // Under CSC SPMS guidelines, OPCR is the apex institutional commitment and does not require superior target approval
-                $isParentTargetApproved = $isParentDocOpcr || ($parentFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
+                // Under CSC SPMS guidelines, subordinates require their superior's approved targets as a basis
+                $isParentTargetApproved = ($parentFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
             }
         }
 

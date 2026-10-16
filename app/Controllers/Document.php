@@ -83,8 +83,8 @@ class Document extends BaseController
                         $isParentDocOpcr = str_contains($candidateTitleUpper, 'OPCR') || str_contains($candidateTitleUpper, 'OFFICE') || (strtoupper($candidateBasis['doc_type'] ?? '') === 'OPCR');
                         $isParentDocDpcr = str_contains($candidateTitleUpper, 'DPCR') || str_contains($candidateTitleUpper, 'DEPARTMENT') || str_contains($candidateTitleUpper, 'DIVISION') || (strtoupper($candidateBasis['doc_type'] ?? '') === 'DPCR');
 
-                        // Under CSC SPMS guidelines, OPCR is the apex institutional commitment and does not require superior target approval
-                        $isParentTargetApproved = $isParentDocOpcr || ($parentFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
+                        // Under CSC SPMS guidelines, subordinates require their superior's approved targets as a basis
+                        $isParentTargetApproved = ($parentFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
                         $basisDoc = $candidateBasis;
                         $superiorUser = $userModel->find($parentFolder['user_id']);
                         if ($superiorUser) {

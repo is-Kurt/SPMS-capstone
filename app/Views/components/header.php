@@ -1,6 +1,11 @@
 <?php
     $currentUri = uri_string();
     $role = session()->get('role');
+    $userPos = strtolower(session()->get('position') ?? '');
+    $userEmail = strtolower(session()->get('email') ?? '');
+    $isPresident = session()->get('is_president') 
+                || (str_contains($userPos, 'president') && !str_contains($userPos, 'vice')) 
+                || str_contains($userEmail, 'president');
 
     $navItems = [];
 
@@ -9,8 +14,8 @@
         $navItems['dashboard'] = 'Dashboard';
     }
 
-    // TWG and PMT only review institutional performance, they don't author personal folders.
-    if (!in_array($role, ['TWG', 'PMT'])) {
+    // TWG, PMT, and the University President only review performance; they don't author personal folders.
+    if (!in_array($role, ['TWG', 'PMT']) && !$isPresident) {
         $navItems['folders'] = 'Folders';
     }
 
@@ -20,13 +25,13 @@
     if ($sessUserId) {
         $isEvaluator = (new \App\Models\EvaluationRoutingModel())->where('evaluator_id', $sessUserId)->countAllResults() > 0;
     }
-    if (in_array($role, ['Admin', 'Supervisor', 'HR', 'TWG', 'PMT']) || $isEvaluator) {
+    if (in_array($role, ['Admin', 'Supervisor', 'HR', 'TWG', 'PMT']) || $isEvaluator || $isPresident) {
         $navItems['ratings'] = 'Ratings';
     }
 
     // Admins, Supervisors, and Department Chairs create Distribution Lists (Teams)
-    $userPos = strtolower(session()->get('position') ?? '');
-    $canManageTeams = in_array($role, ['Admin', 'Supervisor']) || str_contains($userPos, 'chair') || str_contains($userPos, 'head');
+    // Note: The President doesn't manage subordinate distribution teams.
+    $canManageTeams = !$isPresident && (in_array($role, ['Admin', 'Supervisor']) || str_contains($userPos, 'chair') || str_contains($userPos, 'head'));
     if ($canManageTeams) {
         $navItems['teams'] = 'My Teams';
     }

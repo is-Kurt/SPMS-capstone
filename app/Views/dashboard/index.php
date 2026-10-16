@@ -40,15 +40,15 @@
         <div id="analytics-mobile-header" class="lg:hidden space-y-2.5 mb-1">
             <div class="flex items-center justify-between gap-2">
                 <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
-                    <?= ($sysRole === 'Supervisor') ? (!empty($isChairScope) ? 'Department Submission Compliance' : 'College Submission Compliance') : 'Executive Performance Analytics' ?>
+                    <?= ($sysRole === 'Supervisor' && empty($isPresidentScope)) ? (!empty($isChairScope) ? 'Department Submission Compliance' : 'College Submission Compliance') : 'Executive Performance Analytics' ?>
                 </span>
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-700 border border-zinc-300 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700 shrink-0">
-                    <?= ($sysRole === 'Supervisor') ? esc($supervisorCollegeName ?? (!empty($isChairScope) ? 'Departmental Oversight' : 'Collegiate Oversight')) : 'University-Wide Oversight' ?>
+                    <?= ($sysRole === 'Supervisor' && empty($isPresidentScope)) ? esc($supervisorCollegeName ?? (!empty($isChairScope) ? 'Departmental Oversight' : 'Collegiate Oversight')) : (!empty($isPresidentScope) ? 'Office of the President' : 'University-Wide Oversight') ?>
                 </span>
             </div>
             <div class="flex items-center justify-between gap-2">
                 <h1 class="text-xl font-black tracking-tight text-zinc-900 dark:text-white truncate">
-                    <?= ($sysRole === 'Supervisor') ? (!empty($isChairScope) ? 'Department Overview' : 'College Overview') : 'Executive Overview' ?>
+                    <?= ($sysRole === 'Supervisor' && empty($isPresidentScope)) ? (!empty($isChairScope) ? 'Department Overview' : 'College Overview') : 'Executive Overview' ?>
                 </h1>
                 <a href="<?= site_url('ratings') ?>" 
                    class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shadow-2xs shrink-0 spms-btn-queue">
@@ -204,10 +204,10 @@
             <!-- Eyebrow Row -->
             <div class="flex items-center justify-between gap-2 mb-1">
                 <span class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
-                    <?= ($sysRole === 'Supervisor') ? (!empty($isChairScope) ? 'Department Submission Compliance' : 'College Submission Compliance') : 'Executive Performance Analytics' ?>
+                    <?= ($sysRole === 'Supervisor' && empty($isPresidentScope)) ? (!empty($isChairScope) ? 'Department Submission Compliance' : 'College Submission Compliance') : 'Executive Performance Analytics' ?>
                 </span>
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-700 border border-zinc-300 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700 shrink-0">
-                    <?= ($sysRole === 'Supervisor') ? esc($supervisorCollegeName ?? (!empty($isChairScope) ? 'Departmental Oversight' : 'Collegiate Oversight')) : 'University-Wide Oversight' ?>
+                    <?= ($sysRole === 'Supervisor' && empty($isPresidentScope)) ? esc($supervisorCollegeName ?? (!empty($isChairScope) ? 'Departmental Oversight' : 'Collegiate Oversight')) : (!empty($isPresidentScope) ? 'Office of the President' : 'University-Wide Oversight') ?>
                 </span>
             </div>
             
@@ -215,11 +215,15 @@
             <div class="flex items-center justify-between gap-4">
                 <div class="min-w-0">
                     <h1 class="text-2xl lg:text-3xl font-black tracking-tight text-zinc-900 dark:text-white truncate">
-                        <?= ($sysRole === 'Supervisor') ? (!empty($isChairScope) ? 'Department Overview' : 'College Overview') : 'Executive Overview' ?>
+                        <?= ($sysRole === 'Supervisor' && empty($isPresidentScope)) ? (!empty($isChairScope) ? 'Department Overview' : 'College Overview') : 'Executive Overview' ?>
                     </h1>
                     <?php if ($sysRole === 'Supervisor'): ?>
                         <p class="text-xs font-medium text-zinc-500 dark:text-zinc-400 mt-0.5">
-                            Tracking faculty &amp; staff submissions for <span class="font-bold text-zinc-700 dark:text-zinc-200"><?= esc($supervisorCollegeName ?? (!empty($isChairScope) ? 'Your Department' : 'Your College')) ?></span>
+                            <?php if (!empty($isPresidentScope)): ?>
+                                Executive oversight tracking sector &amp; Vice Presidential OPCR performance across <span class="font-bold text-zinc-700 dark:text-zinc-200">Benguet State University</span>
+                            <?php else: ?>
+                                Tracking faculty &amp; staff submissions for <span class="font-bold text-zinc-700 dark:text-zinc-200"><?= esc($supervisorCollegeName ?? (!empty($isChairScope) ? 'Your Department' : 'Your College')) ?></span>
+                            <?php endif; ?>
                         </p>
                     <?php endif; ?>
                 </div>
