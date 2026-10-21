@@ -11,6 +11,45 @@ All notable changes, features, and fixes across the Benguet State University Str
 
 ---
 
+### Oct 21, 2026
+- **[Changed]** Folder Supervising Authorities & Dashboard Master List UI Streamlining — *Committed by @is-Kurt*
+  - Reorganized Supervising Authorities & Approval Status card in Folder view into clean subtabs (**Target Setting** vs **Evaluation Phase**) with dedicated sections for supervising authorities and TWG calibration.
+  - Removed supervisor consensus summary pill badge from folder supervising authorities card header.
+  - Streamlined Admin Dashboard Master List: unified header card, full-width search input, and personnel table into a single cohesive card container directly below Executive Overview.
+  - Removed redundant 4-stat metric boxes and appointments dropdown from Master List toolbar in favor of interactive pill filter buttons with live counts.
+  - Removed redundant CSC description paragraph, executive eyebrow oversight badge, and `Evaluator Queue` toolbar button.
+- **[Fixed]** Cascaded by Admin Scope Isolation & Subordinate Routing Cleanup — *Committed by @Nanashi*
+  - Corrected `is_cascaded_by_me` logic in `DocumentFolderModel.php` to strictly require `pf.parent_folder_id IS NULL`, ensuring only folders directly cascaded from the root evaluation cycle by the Administrator (e.g. Vice Presidents / executive direct reports) appear under **Cascaded by Admin**.
+  - Prevented intermediate supervisor cascades (e.g. Vice President cascading to Deans, or Deans cascading to Chairs) from attaching the root cycle container owner as a Next-in-Rank Calibrator routing in `Folder::cascadeTeam()`.
+  - Added strict executive role guards (`doc_type === 'opcr'` / Vice President / CAO) to `ensureAdminRoutingForExecutiveFolder()`, preventing automated Admin routing attachments on non-executive subordinate submissions (Deans, Chairs, Faculty).
+  - Added self-healing routine to purge any legacy or erroneous Admin evaluation routings on subordinate folders (`pf.parent_folder_id IS NOT NULL`), cleanly isolating Deans and departmental staff into the **Overall (All Users)** scope.
+- **[Added]** Admin Ratings Dashboard Dual Scope: Cascaded vs. Overall (All Users) — *Committed by @Nanashi*
+  - Enhanced Admin Ratings dashboard (`/ratings`) to provide complete institutional oversight across all colleges, departments, and subordinates in an evaluation cycle.
+  - Divided the Admin view into two intuitive scopes via a segmented toggle button:
+    1. **Cascaded by Admin**: Focuses on direct subordinates and commitments directly cascaded by the Administrator/President with full approval authority.
+    2. **Overall (All Users)**: Shows all employee submissions across the entire university (including subordinate levels cascaded by Deans and Department Chairs).
+  - Added visual tags on table rows (`Directly Cascaded` vs `Subordinate Review`) and customized action buttons (`Review Targets` / `Open Evaluation` for direct reviews vs `Monitor Targets` / `Monitor Review` for subordinate oversight).
+  - Subordinate rows open in the established read-only **Monitoring View** via existing RBAC logic in `Document.php` and `document/show.php`.
+  - Dynamically updates queue tab counter badges and institutional header banners when switching between scopes without requiring page reloads.
+
+### Oct 20, 2026
+- **[Changed]** Admin Cascaded Approval & Executive Gating Alignment — *Committed by @Nanashi*
+  - Aligned executive evaluation workflow with the institutional configuration where the University President and System Administrator are the same entity.
+  - Updated `Folder::cascadeTeam()` and `ensureAdminRoutingForExecutiveFolder()` so Vice Presidential OPCR folders and any folders cascaded by Admin route directly to the Admin evaluator in `evaluation_routings`, removing the redirection to a separate President user account.
+  - Enabled **Approve Target**, **Return Target for Revision**, **Calculate**, **Return Evaluation**, and **Approve Rating** actions for the Admin on folders cascaded by the Admin (`$isCascadedByMe`), while maintaining read-only `Monitoring View` on folders cascaded by other supervisors (Deans and Department Chairs).
+  - Configured `/ratings` dashboard to cleanly display the Admin's cascaded commitments and executive OPCR review queue with an executive banner.
+  - Added migration `2026-10-20-230000_UpdateAdminCascadedRoutings.php` and automated synchronization on `/ratings` to re-point existing VP evaluation routings to the active Admin.
+- **[Removed]** Separate President Account (`president@test.com`) Decommissioning — *Committed by @Nanashi*
+  - Fully deleted and purged the separate `president@test.com` (*Felipe Comila*) account, plantilla, user roles, notifications, and evaluator assignments.
+  - Removed president account seeding from `MasterSeeder.php` and `DepartmentSeeder.php` to prevent recreation upon database seeding.
+  - Added automatic purge routine `BaseController::purgeRetiredPresidentAccount()` executed on all requests to ensure `president@test.com` is permanently cleaned from active databases and all evaluation routings transfer seamlessly to the active Admin.
+- **[Added]** Evaluation Folder Deletion in Folder Management & Database Purge — *Committed by @Nanashi*
+  - Added a dedicated **Delete Folder** action button in Folder Management for both **Active Folders** (alongside Edit and Close & Archive) and **Archived Folders** (alongside Restore Folder).
+  - Updated `Folder::destroy()` to permit Administrators to permanently delete any evaluation cycle (active or archived) on demand, removing the previous 5-year retention lockout.
+  - Automatically cascades folder deletion through all child/grandchild folders, documents, attachments, evaluation routings, and notifications, resetting active folder session context smoothly.
+  - Enhanced delete confirmation modal (`deleteModal.js`) with smart redirect support when deleting from the archived view.
+  - Executed a complete database purge of all existing evaluation folders, child documents, attachments, and routings to provide a fresh start.
+
 ### Oct 13, 2026
 - **[Changed]** Upgraded In-App User Guide Modal & Complete Operations Manual — *Committed by @Nanashi*
   - Upgraded in-app guide modal (`user_guide_modal.php`) with 6 streamlined steps, role-aware quick-jump shortcuts (Faculty & Staff, Deans & Chairs, Evidence & Drive, and Quick FAQs).

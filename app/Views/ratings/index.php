@@ -1,33 +1,6 @@
 <?php 
     $sysRole = $sysRole ?? session()->get('role');
-    $firstPeriodKey = array_key_first($periods);
-
-    // Attempt to get a representative folder to determine the phase
-    $representativeFolder = $activeFolder;
-    if (!$representativeFolder) {
-        foreach ($periods as $period) {
-            foreach ($period['tabs'] as $tab) {
-                if (!empty($tab['folders'])) {
-                    $representativeFolder = $tab['folders'][0];
-                    break 2;
-                }
-            }
-        }
-    }
-
-    if ($representativeFolder) {
-        $folderModel = new \App\Models\DocumentFolderModel();
-        $dates = $folderModel->getFolderDates($representativeFolder);
-        if ($dates && isset($dates['target_date_end'])) {
-            $now = date('Y-m-d H:i:s');
-            if ($now <= $dates['target_date_end']) {
-                $firstPeriodKey = 'target';
-            } else {
-                $firstPeriodKey = 'evaluation';
-            }
-        }
-    }
-
+    $firstPeriodKey = 'target';
     $firstTabKey = array_key_first($periods[$firstPeriodKey]['tabs']);
 ?>
 <style>
@@ -269,6 +242,17 @@
                             Institutional Scope: University-Wide Calibration & Executive Committee Review
                         </span>
                     </div>
+                <?php elseif ($sysRole === 'Admin'): ?>
+                    <div class="mt-2.5 flex items-center gap-1.5">
+                        <span id="admin-scope-banner-cascaded" class="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 shadow-xs">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1.5 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                            Office of the President / Administrator — Review of Cascaded Commitments &amp; Executive OPCRs
+                        </span>
+                        <span id="admin-scope-banner-overall" class="hidden inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20 shadow-xs">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1.5 text-sky-600 dark:text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+                            Institutional Scope: University-Wide Submissions Across All Colleges &amp; Offices
+                        </span>
+                    </div>
                 <?php elseif (session()->get('is_president') || (str_contains(strtolower(session()->get('position') ?? ''), 'president') && !str_contains(strtolower(session()->get('position') ?? ''), 'vice')) || str_contains(strtolower(session()->get('email') ?? ''), 'president')): ?>
                     <div class="mt-2.5 flex items-center gap-1.5">
                         <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 shadow-xs">
@@ -279,23 +263,52 @@
                 <?php endif; ?>
             </div>
             <div class="shrink-0">
-                <div class="relative w-full lg:w-64 js-custom-select" id="period-custom-select">
-                    <input type="hidden" id="period-input" value="<?= $firstPeriodKey ?>">
-                    <button type="button" class="js-select-button w-full bg-surface dark:bg-zinc-900 border border-surface-border rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text cursor-pointer font-bold flex justify-between items-center transition-colors hover:border-accent/50 shadow-sm">
-                        <span class="js-select-label"><?= esc($periods[$firstPeriodKey]['label']) ?></span>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-text-muted transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                    </button>
-                    <ul class="js-select-dropdown absolute right-0 z-50 w-full mt-2 bg-surface dark:bg-zinc-900 border border-surface-border rounded-xl shadow-lg shadow-black/5 dark:shadow-black/20 overflow-hidden hidden transform origin-top transition-all duration-200 scale-95 opacity-0">
-                        <?php foreach($periods as $pKey => $period): ?>
-                            <?php $isSelected = ($pKey === $firstPeriodKey); ?>
-                            <li class="px-4 py-3 text-sm font-bold text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 cursor-pointer transition-colors js-select-option <?= $isSelected ? 'bg-accent/10 text-accent' : '' ?>" data-value="<?= $pKey ?>" data-label="<?= esc($period['label']) ?>">
-                                <?= esc($period['label']) ?>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
+                <input type="hidden" id="period-input" value="<?= $firstPeriodKey ?>">
+                <div class="inline-flex p-1 bg-surface-border/40 dark:bg-zinc-800/60 rounded-xl border border-surface-border/80 shadow-xs" id="ratings-period-subtabs">
+                    <?php foreach($periods as $pKey => $period): ?>
+                        <?php $isActive = ($pKey === $firstPeriodKey); ?>
+                        <button type="button" 
+                                id="period-subtab-btn-<?= $pKey ?>" 
+                                onclick="switchPeriod('<?= $pKey ?>')"
+                                class="ratings-period-tab-btn px-4 py-2 text-xs rounded-lg transition-all cursor-pointer <?= $isActive ? 'bg-accent text-zinc-950 shadow-xs font-black' : 'font-bold text-text-muted hover:text-text' ?>">
+                            <?= esc($period['label']) ?>
+                        </button>
+                    <?php endforeach; ?>
                 </div>
             </div>
         </div>
+
+        <?php if ($sysRole === 'Admin'): ?>
+            <!-- ADMIN SCOPE SEGMENTED CONTROL: CASCADED vs OVERALL -->
+            <div class="px-4 lg:px-8 pb-3 pt-1 shrink-0 flex items-center justify-between gap-3">
+                <div class="inline-flex p-1 bg-surface-border/40 dark:bg-zinc-800/60 rounded-xl border border-surface-border/80 shadow-xs">
+                    <button type="button" 
+                            id="admin-scope-btn-cascaded" 
+                            onclick="switchAdminScope('cascaded')"
+                            class="admin-scope-tab-btn inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer bg-accent text-zinc-950 shadow-xs">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                        <span>Cascaded by Admin</span>
+                        <span id="scope-count-cascaded" class="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-zinc-950/15 text-zinc-950">
+                            <?= ($firstPeriodKey === 'target') ? ($targetCascadedCount ?? 0) : ($evalCascadedCount ?? 0) ?>
+                        </span>
+                    </button>
+                    <button type="button" 
+                            id="admin-scope-btn-overall" 
+                            onclick="switchAdminScope('overall')"
+                            class="admin-scope-tab-btn inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer text-text-muted hover:text-text">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                        </svg>
+                        <span>Overall (All Users)</span>
+                        <span id="scope-count-overall" class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-surface-border text-text-muted">
+                            <?= ($firstPeriodKey === 'target') ? ($targetOverallCount ?? 0) : ($evalOverallCount ?? 0) ?>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <!-- QUEUE NAVIGATION TABS -->
         <!-- QUEUE NAVIGATION TABS -->
@@ -305,7 +318,9 @@
                     <?php foreach ($period['tabs'] as $key => $group): ?>
                         <?php 
                             $isActive = ($pKey === $firstPeriodKey && $key === $firstTabKey);
-                            $count = count($group['folders']);
+                            $cascadedTabCount = $group['cascaded_count'] ?? count(array_filter($group['folders'], fn($r) => !empty($r['is_cascaded_by_me'])));
+                            $overallTabCount = $group['overall_count'] ?? count($group['folders']);
+                            $displayTabCount = ($sysRole === 'Admin') ? $cascadedTabCount : $overallTabCount;
                             
                             $defaultColor = match($key) {
                                 'action', 'target_approval' => 'text-amber-500',
@@ -378,8 +393,10 @@
                             <span class="hidden sm:inline"><?= esc($group['label']) ?></span>
 
                             <!-- Badge -->
-                            <span class="tab-badge ml-0.5 <?= $isActive ? $activeBadgeClass : $defaultBadgeClass ?>">
-                                <?= $count ?>
+                            <span class="tab-badge ml-0.5 <?= $isActive ? $activeBadgeClass : $defaultBadgeClass ?>"
+                                  data-count-cascaded="<?= $cascadedTabCount ?>"
+                                  data-count-overall="<?= $overallTabCount ?>">
+                                <?= $displayTabCount ?>
                             </span>
                         </button>
                     <?php endforeach; ?>
@@ -443,7 +460,8 @@
                                             data-unit="<?= esc($row['department'] ?? '') ?>" 
                                             data-pos="<?= esc($row['position'] ?? '') ?>"
                                             data-teaching="<?= esc($row['is_teaching'] ?? 0) ?>"
-                                            data-status="<?= strtolower(esc($row['folder_status'])) ?>"> 
+                                            data-status="<?= strtolower(esc($row['folder_status'])) ?>"
+                                            data-cascaded="<?= !empty($row['is_cascaded_by_me']) ? '1' : '0' ?>"> 
                                             
                                             <td class="block lg:table-cell px-0 lg:px-6 py-1 lg:py-4">
                                                 <div class="flex justify-between items-start lg:items-center">
@@ -451,10 +469,21 @@
                                                         <span class="text-sm font-bold text-text truncate">
                                                             <?= esc($row['username']) ?>
                                                         </span>
-                                                        <div class="flex items-center gap-2 mt-0.5">
+                                                        <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
                                                             <span class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest <?= ($row['is_teaching'] == 1) ? 'bg-highlight-100 text-highlight-700 dark:bg-highlight-500/20 dark:text-highlight-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400' ?>">
                                                                 <?= ($row['is_teaching'] == 1) ? 'Teaching' : 'Non-Teaching' ?>
                                                             </span>
+                                                            <?php if ($sysRole === 'Admin'): ?>
+                                                                <?php if (!empty($row['is_cascaded_by_me'])): ?>
+                                                                    <span class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/25">
+                                                                        Directly Cascaded
+                                                                    </span>
+                                                                <?php else: ?>
+                                                                    <span class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20">
+                                                                        Subordinate Review
+                                                                    </span>
+                                                                <?php endif; ?>
+                                                            <?php endif; ?>
                                                             <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate">
                                                                 <?= esc($row['position'] ?? 'No Position') ?>
                                                             </span>
@@ -522,9 +551,24 @@
                                             <?php endif; ?>
 
                                             <td class="block lg:table-cell px-0 lg:px-6 pt-1 pb-0 lg:py-4 text-right lg:min-w-[135px]">
+                                                <?php 
+                                                    $isDirect = empty($sysRole) || $sysRole !== 'Admin' || !empty($row['is_cascaded_by_me']);
+                                                    $actionLabel = $isDirect 
+                                                        ? (($pKey === 'target') ? 'Review Targets' : 'Open Evaluation') 
+                                                        : (($pKey === 'target') ? 'Monitor Targets' : 'Monitor Review');
+                                                    $btnClass = $isDirect
+                                                        ? 'bg-accent hover:bg-accent-hover text-zinc-950 font-black'
+                                                        : 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-text font-bold border border-surface-border';
+                                                ?>
                                                 <a href="<?= site_url('ratings/show/' . $row['folder_id']) ?>" 
-                                                class="w-full lg:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 lg:py-2 bg-accent hover:bg-accent-hover text-zinc-950 rounded-xl font-black text-xs transition-all shadow-sm active:scale-95 cursor-pointer whitespace-nowrap">
-                                                    <?= ($pKey === 'target') ? 'Review Targets' : 'Open Evaluation' ?>
+                                                class="w-full lg:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 lg:py-2 <?= $btnClass ?> rounded-xl text-xs transition-all shadow-sm active:scale-95 cursor-pointer whitespace-nowrap">
+                                                    <?php if (!$isDirect): ?>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                        </svg>
+                                                    <?php endif; ?>
+                                                    <span><?= esc($actionLabel) ?></span>
                                                 </a>
                                             </td>
 
@@ -703,12 +747,94 @@
         });
     });
 
+    window.CURRENT_ADMIN_SCOPE = '<?= (!empty($adminCascadedTotalCount) || empty($overallTotalCount)) ? 'cascaded' : 'overall' ?>';
+    window.ADMIN_PERIOD_COUNTS = {
+        target: {
+            cascaded: <?= (int)($targetCascadedCount ?? 0) ?>,
+            overall:  <?= (int)($targetOverallCount ?? 0) ?>
+        },
+        evaluation: {
+            cascaded: <?= (int)($evalCascadedCount ?? 0) ?>,
+            overall:  <?= (int)($evalOverallCount ?? 0) ?>
+        }
+    };
+
+    function switchAdminScope(scope) {
+        window.CURRENT_ADMIN_SCOPE = scope;
+
+        const btnCascaded = document.getElementById('admin-scope-btn-cascaded');
+        const btnOverall  = document.getElementById('admin-scope-btn-overall');
+        const countCascaded = document.getElementById('scope-count-cascaded');
+        const countOverall  = document.getElementById('scope-count-overall');
+        const bannerCascaded = document.getElementById('admin-scope-banner-cascaded');
+        const bannerOverall  = document.getElementById('admin-scope-banner-overall');
+
+        if (btnCascaded && btnOverall) {
+            if (scope === 'cascaded') {
+                btnCascaded.className = 'admin-scope-tab-btn inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer bg-accent text-zinc-950 shadow-xs';
+                if (countCascaded) countCascaded.className = 'px-1.5 py-0.5 rounded-full text-[10px] font-black bg-zinc-950/15 text-zinc-950';
+
+                btnOverall.className = 'admin-scope-tab-btn inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer text-text-muted hover:text-text';
+                if (countOverall) countOverall.className = 'px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-surface-border text-text-muted';
+
+                if (bannerCascaded) bannerCascaded.classList.remove('hidden');
+                if (bannerOverall) bannerOverall.classList.add('hidden');
+            } else {
+                btnOverall.className = 'admin-scope-tab-btn inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer bg-accent text-zinc-950 shadow-xs';
+                if (countOverall) countOverall.className = 'px-1.5 py-0.5 rounded-full text-[10px] font-black bg-zinc-950/15 text-zinc-950';
+
+                btnCascaded.className = 'admin-scope-tab-btn inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer text-text-muted hover:text-text';
+                if (countCascaded) countCascaded.className = 'px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-surface-border text-text-muted';
+
+                if (bannerCascaded) bannerCascaded.classList.add('hidden');
+                if (bannerOverall) bannerOverall.classList.remove('hidden');
+            }
+        }
+
+        // Update tab badges
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            const badge = btn.querySelector('.tab-badge');
+            if (badge) {
+                const count = (scope === 'overall') ? badge.getAttribute('data-count-overall') : badge.getAttribute('data-count-cascaded');
+                if (count !== null && count !== undefined) {
+                    badge.textContent = count;
+                }
+            }
+        });
+
+        if (typeof filterRatings === 'function') {
+            filterRatings();
+        }
+    }
+    window.switchAdminScope = switchAdminScope;
+
     // Tab Switching Logic 
     function switchPeriod(periodKey) {
         document.querySelectorAll('.period-subtabs').forEach(el => {
             el.classList.add('hidden');
             el.classList.remove('flex');
         });
+
+        // Update active styling on period subtab buttons
+        document.querySelectorAll('.ratings-period-tab-btn').forEach(btn => {
+            btn.className = 'ratings-period-tab-btn px-4 py-2 text-xs rounded-lg transition-all cursor-pointer font-bold text-text-muted hover:text-text';
+        });
+        const activePeriodBtn = document.getElementById('period-subtab-btn-' + periodKey);
+        if (activePeriodBtn) {
+            activePeriodBtn.className = 'ratings-period-tab-btn px-4 py-2 text-xs rounded-lg transition-all cursor-pointer bg-accent text-zinc-950 shadow-xs font-black';
+        }
+
+        const periodInput = document.getElementById('period-input');
+        if (periodInput) periodInput.value = periodKey;
+
+        // Update scope counts for this period
+        if (window.ADMIN_PERIOD_COUNTS && window.ADMIN_PERIOD_COUNTS[periodKey]) {
+            const counts = window.ADMIN_PERIOD_COUNTS[periodKey];
+            const cEl = document.getElementById('scope-count-cascaded');
+            const oEl = document.getElementById('scope-count-overall');
+            if (cEl) cEl.textContent = counts.cascaded;
+            if (oEl) oEl.textContent = counts.overall;
+        }
 
         const targetSubtabs = document.getElementById('period-subtabs-' + periodKey);
         if (targetSubtabs) {
@@ -1010,15 +1136,20 @@
                 let visibleCards = 0;
 
                 cards.forEach(card => {
-                    const name   = (card.getAttribute('data-name') || '').toLowerCase();
-                    const unit   = (card.getAttribute('data-unit') || '').toLowerCase();
-                    const pos    = (card.getAttribute('data-pos') || '').toLowerCase();
-                    const type   = card.getAttribute('data-teaching') || '0';
-                    
+                    const name       = (card.getAttribute('data-name') || '').toLowerCase();
+                    const unit       = (card.getAttribute('data-unit') || '').toLowerCase();
+                    const pos        = (card.getAttribute('data-pos') || '').toLowerCase();
+                    const type       = card.getAttribute('data-teaching') || '0';
+                    const isCascaded = (card.getAttribute('data-cascaded') === '1');
+
                     const matchesSearch = name.includes(searchTerm);
                     const matchesPos    = checkedPos.length === 0 || checkedPos.some(p => pos.includes(p));
                     const matchesType   = checkedTypes.length === 0 || checkedTypes.includes(type);
-                    
+
+                    const isAdmin = <?= ($sysRole === 'Admin') ? 'true' : 'false' ?>;
+                    const adminScope = window.CURRENT_ADMIN_SCOPE || 'cascaded';
+                    const matchesScope = !isAdmin || (adminScope === 'overall') || isCascaded;
+
                     let matchesUnit = true;
                     if (filterByUnit) {
                         const cardDepts = unit.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
@@ -1031,7 +1162,7 @@
                         });
                     }
                     
-                    if (matchesSearch && matchesUnit && matchesPos && matchesType) {
+                    if (matchesSearch && matchesUnit && matchesPos && matchesType && matchesScope) {
                         card.style.display = ''; 
                         visibleCards++;
                     } else {
@@ -1057,8 +1188,12 @@
             clearBtn.addEventListener('click', clearAllRatingsFilters);
         }
 
-        // Run once on load to ensure proper initial state
-        filterRatings();
+        // Initialize admin scope UI if Admin
+        <?php if ($sysRole === 'Admin'): ?>
+            switchAdminScope(window.CURRENT_ADMIN_SCOPE);
+        <?php else: ?>
+            filterRatings();
+        <?php endif; ?>
 
         function filterSidebarPositions() {
             const input = document.getElementById('mini-search-positions');
@@ -1082,15 +1217,6 @@
             filterSidebarPositions();
         }
 
-        // Period Custom Dropdown Logic
-        const periodSelect = document.getElementById('period-custom-select');
-        if (periodSelect) {
-            periodSelect.querySelectorAll('.js-select-option').forEach(opt => {
-                opt.addEventListener('click', () => {
-                    switchPeriod(opt.getAttribute('data-value'));
-                });
-            });
-        }
 
     });
 </script>

@@ -14,8 +14,8 @@
         $navItems['dashboard'] = 'Dashboard';
     }
 
-    // TWG, PMT, and the University President only review performance; they don't author personal folders.
-    if (!in_array($role, ['TWG', 'PMT']) && !$isPresident) {
+    // TWG, PMT only review performance; they don't author personal folders.
+    if (!in_array($role, ['TWG', 'PMT']) && ($role === 'Admin' || !$isPresident)) {
         $navItems['folders'] = 'Folders';
     }
 
@@ -30,8 +30,7 @@
     }
 
     // Admins, Supervisors, and Department Chairs create Distribution Lists (Teams)
-    // Note: The President doesn't manage subordinate distribution teams.
-    $canManageTeams = !$isPresident && (in_array($role, ['Admin', 'Supervisor']) || str_contains($userPos, 'chair') || str_contains($userPos, 'head'));
+    $canManageTeams = ($role === 'Admin') || (!$isPresident && (in_array($role, ['Admin', 'Supervisor']) || str_contains($userPos, 'chair') || str_contains($userPos, 'head')));
     if ($canManageTeams) {
         $navItems['teams'] = 'My Teams';
     }

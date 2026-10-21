@@ -299,12 +299,12 @@ class Session extends BaseController
             ]);
         }
 
-        if (in_array(session()->get('role'), ['TWG', 'PMT']) || $isPresident) {
-            return redirect()->to(site_url('ratings'));
-        }
-
         if (session()->get('role') === 'Admin') {
             return redirect()->to(site_url('dashboard'));
+        }
+
+        if (in_array(session()->get('role'), ['TWG', 'PMT']) || $isPresident) {
+            return redirect()->to(site_url('ratings'));
         }
 
         return redirect()->to(site_url('folders'));

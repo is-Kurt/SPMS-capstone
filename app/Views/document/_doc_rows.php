@@ -59,54 +59,36 @@
                 'containerClass'   => 'p-3.5 border-b border-surface-border dark:border-zinc-800 shrink-0 bg-surface dark:bg-zinc-950'
             ]) ?>
 
-            <?php if (!empty($groupedGuides) && session()->get('role') !== 'Admin'): ?>
-                <!-- TAB NAVIGATION (When superior guide exists) -->
-                <div class="flex items-center gap-6 px-6 lg:px-8 border-b border-surface-border dark:border-zinc-800 shrink-0 overflow-x-auto custom-scrollbar pt-2 bg-surface dark:bg-zinc-950">
-                    <button id="tab-btn-mine" class="tab-btn-doc whitespace-nowrap pb-3 text-sm font-bold border-b-2 border-emerald-500 text-zinc-900 dark:text-white transition-all cursor-pointer flex items-center gap-2" onclick="switchDocTab('mine')">
-                        Official Paper
-                        <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 text-[10px] font-extrabold tab-badge transition-colors"><?= count($myDocs) ?></span>
-                    </button>
-
-                    <button id="tab-btn-team" class="tab-btn-doc whitespace-nowrap pb-3 text-sm font-medium border-b-2 border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-all cursor-pointer flex items-center gap-2" onclick="switchDocTab('team')">
-                        Superior Reference Guide
-                        <span class="px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-950 text-zinc-500 dark:text-[#94A3B8] text-[10px] font-extrabold tab-badge transition-colors"><?= array_sum(array_map(fn($g) => count($g['docs']), $groupedGuides)) ?></span>
-                    </button>
-                </div>
-            <?php endif; ?>
-
-            <!-- TAB CONTENTS AREA -->
-            <div class="overflow-hidden flex flex-col flex-1 min-h-0 relative lg:h-auto bg-zinc-50 dark:bg-zinc-950">
+            <!-- OFFICIAL PERFORMANCE PAPER MAIN HUB -->
+            <div id="tab-content-mine" class="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8 bg-surface dark:bg-zinc-950">
                 
-                <!-- 1. MY SUBMISSIONS TAB -->
-                <div id="tab-content-mine" class="tab-content-doc flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar p-3 sm:p-5 lg:p-7 pb-20 lg:pb-7 bg-transparent">
-                    
-                    <style>
-                        /* BSU SPMS Official Paper Hub - Adaptive Light & Dark Styles */
+                <style>
+                    /* BSU SPMS Official Paper Hub - Adaptive Light & Dark Styles */
+                    .spms-hub-card {
+                        background-color: transparent;
+                        border: none;
+                        border-radius: 0;
+                        padding: 0;
+                        box-shadow: none;
+                        position: relative;
+                        overflow: visible;
+                        width: 100%;
+                    }
+                    .dark .spms-hub-card {
+                        background-color: transparent !important;
+                        border: none !important;
+                        box-shadow: none !important;
+                    }
+                    @media (min-width: 640px) {
                         .spms-hub-card {
-                            background-color: #ffffff;
-                            border: 1px solid #e2e8f0;
-                            border-radius: 16px;
-                            padding: 16px 14px;
-                            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
-                            position: relative;
-                            overflow: hidden;
-                            width: 100%;
+                            padding: 0 !important;
                         }
-                        .dark .spms-hub-card {
-                            background-color: #18181b !important;
-                            border: 1px solid #27272a !important;
-                            box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.6) !important;
+                    }
+                    @media (min-width: 1024px) {
+                        .spms-hub-card {
+                            padding: 0 !important;
                         }
-                        @media (min-width: 640px) {
-                            .spms-hub-card {
-                                padding: 24px 28px !important;
-                            }
-                        }
-                        @media (min-width: 1024px) {
-                            .spms-hub-card {
-                                padding: 32px 36px !important;
-                            }
-                        }
+                    }
 
                         .spms-hub-header-wrap {
                             display: flex;
@@ -926,7 +908,9 @@
                                     "iperf_target_start" => $activeFolder["iperf_target_start"] ?? "",
                                     "iperf_target_end"   => $activeFolder["iperf_target_end"] ?? "",
                                     "iperf_eval_start"   => $activeFolder["iperf_eval_start"] ?? "",
-                                    "iperf_eval_end"     => $activeFolder["iperf_eval_end"] ?? ""
+                                    "iperf_eval_end"     => $activeFolder["iperf_eval_end"] ?? "",
+                                    "approving_authority_name" => $activeFolder["approving_authority_name"] ?? "",
+                                    "approving_authority_position" => $activeFolder["approving_authority_position"] ?? ""
                                 ]) ?>)' class="spms-hub-btn-primary">
                                     Edit Cycle Dates
                                 </button>
@@ -996,12 +980,18 @@
                             }
 
                             $rawStatus = $activeFolder['status'] ?? 'draft_target';
+                            
+                            $totalSups = !empty($evaluatorSupervisors) ? count($evaluatorSupervisors) : 0;
+                            $approvedSups = !empty($evaluatorSupervisors) ? count(array_filter($evaluatorSupervisors, fn($s) => $s['status'] === 'approved')) : 0;
+                            $returnedSups = !empty($evaluatorSupervisors) ? count(array_filter($evaluatorSupervisors, fn($s) => $s['status'] === 'returned')) : 0;
+                            $allSupervisorsApproved = ($totalSups > 0 && $approvedSups === $totalSups);
+
                             $statusBadgeText = match($rawStatus) {
                                 'approved', 'twg_approved' => 'APPROVED',
                                 'twg_disapproved' => 'TWG DISAPPROVED',
                                 'submitted', 'to evaluate' => 'SUBMITTED',
                                 'evaluated' => 'EVALUATED',
-                                'pending_target_approval' => 'TARGET SUBMITTED',
+                                'pending_target_approval' => ($approvedSups > 0 ? "PARTIALLY APPROVED ({$approvedSups}/{$totalSups})" : 'TARGET SUBMITTED'),
                                 'target_approved' => 'TARGET APPROVED',
                                 'target_returned', 'target_unapproved' => 'TARGET REVISION',
                                 'reevaluate' => 'REVISION',
@@ -1293,51 +1283,359 @@
                                     User Guide
                                 </button>
                             </div>
-                        </div>
 
-                    <?php endif; ?>
-                </div>
+                            <!-- Supervising Authorities & Approval Status Tracker with Subtabs -->
+                            <?php 
+                                $targetSupsList = $targetSupervisors ?? $evaluatorSupervisors ?? [];
+                                $evalSupsList   = $evalSupervisors ?? $evaluatorSupervisors ?? [];
+                                $hasSupervisors = !empty($targetSupsList) || !empty($evalSupsList);
+                                $defaultSubtab  = ($currentStepIndex >= 3) ? 'eval' : 'target';
 
-                <!-- 2. TEAM SUBMISSIONS TAB -->
-                <div id="tab-content-team" class="tab-content-doc hidden flex-1 flex-col min-h-0 bg-surface overflow-y-auto custom-scrollbar px-6 lg:px-8 py-4">
-                    <?php if (empty($groupedGuides)): ?>
-                        <div class="p-12 text-center">
-                            <p class="text-sm text-text-muted font-medium italic">No team submissions or guide documents found for this period.</p>
-                        </div>
-                    <?php else: ?>
-                        <?php foreach ($groupedGuides as $gIdx => $group): ?>
-                            <div class="mb-4">
-                                <h4 class="text-xs font-black uppercase tracking-wider text-text-muted mb-2">Guide: <?= esc($group['superior']['name']) ?> (<?= esc($group['superior']['role']) ?>)</h4>
-                                <?php foreach ($group['docs'] as $doc): ?>
-                                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 px-5 py-3.5 items-center bg-surface border border-surface-border rounded-xl mb-2.5">
-                                        <div class="col-span-1 md:col-span-6 flex items-center gap-3">
-                                            <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-950/60 dark:border-blue-800/40 dark:text-blue-400 flex items-center justify-center shrink-0">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                </svg>
-                                            </div>
-                                            <div class="flex flex-col min-w-0">
-                                                <a href="<?= site_url('document/' . $doc['id']) ?>" class="font-bold text-xs text-text hover:text-emerald-500 truncate">
-                                                    <?= esc($doc['title']) ?>
-                                                </a>
-                                                <span class="text-[10px] text-text-muted">Superior Basis / Guide</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-span-1 md:col-span-4 text-xs text-text-muted">
-                                            <?= esc($group['superior']['role']) ?>
-                                        </div>
-                                        <div class="col-span-1 md:col-span-2 flex justify-end">
-                                            <a href="<?= site_url('document/' . $doc['id']) ?>" class="text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400 hover:underline px-3 py-1 bg-cyan-50 dark:bg-cyan-950/50 border border-cyan-200 dark:border-cyan-800/40 rounded-lg">View</a>
+                                // Split Target authorities into regular supervisors and assigned TWG
+                                $tRegularSups = array_values(array_filter($targetSupsList, fn($s) => empty($s['is_twg'])));
+                                $tTwgSup      = array_values(array_filter($targetSupsList, fn($s) => !empty($s['is_twg'])))[0] ?? null;
+
+                                // Split Eval authorities into regular supervisors and assigned TWG
+                                $eRegularSups = array_values(array_filter($evalSupsList, fn($s) => empty($s['is_twg'])));
+                                $eTwgSup      = array_values(array_filter($evalSupsList, fn($s) => !empty($s['is_twg'])))[0] ?? null;
+                            ?>
+                            <?php if ($hasSupervisors): ?>
+                                <div class="mt-6 pt-5 border-t border-slate-200 dark:border-zinc-800">
+                                    <!-- TOP ROW: Subtabs on TOP LEFT -->
+                                    <div class="mb-3.5">
+                                        <div class="inline-flex items-center p-0.5 bg-slate-100 dark:bg-zinc-800/90 rounded-xl border border-slate-200/80 dark:border-zinc-700/80 shadow-2xs self-start">
+                                            <button type="button" 
+                                                    id="tab-btn-target" 
+                                                    onclick="switchSupervisorTab('target')" 
+                                                    class="px-3 py-1.5 text-[11px] transition-all rounded-lg cursor-pointer <?= $defaultSubtab === 'target' ? 'font-black bg-white dark:bg-zinc-700 text-emerald-700 dark:text-emerald-400 shadow-xs border border-slate-200/80 dark:border-zinc-600' : 'font-semibold text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200' ?>">
+                                                Target Setting
+                                            </button>
+                                            <button type="button" 
+                                                    id="tab-btn-eval" 
+                                                    onclick="switchSupervisorTab('eval')" 
+                                                    class="px-3 py-1.5 text-[11px] transition-all rounded-lg cursor-pointer <?= $defaultSubtab === 'eval' ? 'font-black bg-white dark:bg-zinc-700 text-emerald-700 dark:text-emerald-400 shadow-xs border border-slate-200/80 dark:border-zinc-600' : 'font-semibold text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200' ?>">
+                                                Evaluation Phase
+                                            </button>
                                         </div>
                                     </div>
-                                <?php endforeach; ?>
-                            </div>
-                        <?php endforeach; ?>
+
+                                    <!-- SECTION TITLE & DYNAMIC SUBTITLE -->
+                                    <div class="flex items-center gap-2 mb-3.5">
+                                        <div class="w-6 h-6 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/80 flex items-center justify-center shrink-0">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-zinc-200">
+                                                Supervising Authorities & Approval Status
+                                            </h4>
+                                            <p id="sup-desc-target" class="text-[11px] text-slate-500 dark:text-zinc-400 <?= $defaultSubtab === 'target' ? '' : 'hidden' ?>">
+                                                Target setting approvals and commitment sign-offs by supervising authorities.
+                                            </p>
+                                            <p id="sup-desc-eval" class="text-[11px] text-slate-500 dark:text-zinc-400 <?= $defaultSubtab === 'eval' ? '' : 'hidden' ?>">
+                                                Performance evaluation rating approvals and TWG review status.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Pane 1: Target Setting -->
+                                    <div id="pane-supervisors-target" class="<?= $defaultSubtab === 'target' ? '' : 'hidden' ?>">
+                                        <?php if (empty($tRegularSups)): ?>
+                                            <div class="p-4 rounded-xl border border-dashed border-slate-200 dark:border-zinc-800 text-center text-xs text-slate-400 dark:text-zinc-500">
+                                                No supervising authorities recorded for Target Setting.
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-<?= min(max(count($tRegularSups), 1), 3) ?> gap-3">
+                                                <?php foreach ($tRegularSups as $sup): ?>
+                                                    <div class="flex items-center justify-between p-3 rounded-xl border bg-slate-50/70 dark:bg-zinc-900/60 border-slate-200/80 dark:border-zinc-800 transition-all hover:border-slate-300 dark:hover:border-zinc-700">
+                                                        <div class="flex items-center gap-3 min-w-0 pr-2">
+                                                            <div class="w-8 h-8 rounded-full bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-zinc-300 shrink-0 shadow-xs">
+                                                                <?= strtoupper(substr($sup['name'] ?: 'S', 0, 1)) ?>
+                                                            </div>
+                                                            <div class="min-w-0">
+                                                                <div class="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
+                                                                    <?= esc($sup['name']) ?>
+                                                                </div>
+                                                                <div class="text-[10px] text-slate-500 dark:text-zinc-400 truncate">
+                                                                    <?= esc($sup['position']) ?>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="shrink-0">
+                                                            <?php if ($sup['status'] === 'approved'): ?>
+                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-emerald-600 dark:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
+                                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                                                    </svg>
+                                                                    <?= esc($sup['status_label'] ?: 'Approved') ?>
+                                                                </span>
+                                                            <?php elseif ($sup['status'] === 'returned'): ?>
+                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-rose-600 dark:text-rose-400" viewBox="0 0 20 20" fill="currentColor">
+                                                                        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1z" clip-rule="evenodd" />
+                                                                    </svg>
+                                                                    <?= esc($sup['status_label'] ?: 'Returned') ?>
+                                                                </span>
+                                                            <?php elseif ($sup['status'] === 'draft'): ?>
+                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                                                                    <?= esc($sup['status_label'] ?: 'Draft') ?>
+                                                                </span>
+                                                            <?php else: ?>
+                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                    </svg>
+                                                                    <?= esc($sup['status_label'] ?: 'Pending Review') ?>
+                                                                </span>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <!-- TWG on next line separated by line with proper spacing and dedicated header (if assigned) -->
+                                        <?php if ($tTwgSup): ?>
+                                            <div class="mt-6 pt-5 border-t border-slate-200 dark:border-zinc-800">
+                                                <!-- TWG Section Title & Subtitle for Target Setting -->
+                                                <div class="flex items-center gap-2 mb-3.5">
+                                                    <div class="w-6 h-6 rounded-md bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800/80 flex items-center justify-center shrink-0">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-zinc-200">
+                                                            Technical Working Group (TWG) / PMT Verification
+                                                        </h4>
+                                                        <p class="text-[11px] text-slate-500 dark:text-zinc-400">
+                                                            Target setting verification and standards compliance review by TWG/PMT.
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                                    <div class="flex items-center justify-between p-3 rounded-xl border bg-slate-50/70 dark:bg-zinc-900/60 border-slate-200/80 dark:border-zinc-800 transition-all hover:border-slate-300 dark:hover:border-zinc-700">
+                                                        <div class="flex items-center gap-3 min-w-0 pr-2">
+                                                            <div class="w-8 h-8 rounded-full bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-zinc-300 shrink-0 shadow-xs">
+                                                                <?= strtoupper(substr($tTwgSup['name'] ?: 'T', 0, 1)) ?>
+                                                            </div>
+                                                            <div class="min-w-0">
+                                                                <div class="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
+                                                                    <?= esc($tTwgSup['name']) ?>
+                                                                </div>
+                                                                <div class="text-[10px] text-slate-500 dark:text-zinc-400 truncate">
+                                                                    <?= esc($tTwgSup['position']) ?>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="shrink-0">
+                                                            <?php if ($tTwgSup['status'] === 'approved'): ?>
+                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-emerald-600 dark:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
+                                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                                                    </svg>
+                                                                    <?= esc($tTwgSup['status_label'] ?: 'TWG Verified') ?>
+                                                                </span>
+                                                            <?php elseif ($tTwgSup['status'] === 'returned'): ?>
+                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-rose-600 dark:text-rose-400" viewBox="0 0 20 20" fill="currentColor">
+                                                                        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1z" clip-rule="evenodd" />
+                                                                    </svg>
+                                                                    <?= esc($tTwgSup['status_label'] ?: 'Returned') ?>
+                                                                </span>
+                                                            <?php else: ?>
+                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                    </svg>
+                                                                    <?= esc($tTwgSup['status_label'] ?: 'Pending Verification') ?>
+                                                                </span>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+
+                                    <!-- Pane 2: Evaluation Phase -->
+                                    <div id="pane-supervisors-eval" class="<?= $defaultSubtab === 'eval' ? '' : 'hidden' ?>">
+                                        <?php if (empty($eRegularSups)): ?>
+                                            <div class="p-4 rounded-xl border border-dashed border-slate-200 dark:border-zinc-800 text-center text-xs text-slate-400 dark:text-zinc-500">
+                                                No supervising authorities recorded for Evaluation Phase.
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-<?= min(max(count($eRegularSups), 1), 3) ?> gap-3">
+                                                <?php foreach ($eRegularSups as $sup): ?>
+                                                    <div class="flex items-center justify-between p-3 rounded-xl border bg-slate-50/70 dark:bg-zinc-900/60 border-slate-200/80 dark:border-zinc-800 transition-all hover:border-slate-300 dark:hover:border-zinc-700">
+                                                        <div class="flex items-center gap-3 min-w-0 pr-2">
+                                                            <div class="w-8 h-8 rounded-full bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-zinc-300 shrink-0 shadow-xs">
+                                                                <?= strtoupper(substr($sup['name'] ?: 'S', 0, 1)) ?>
+                                                            </div>
+                                                            <div class="min-w-0">
+                                                                <div class="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
+                                                                    <?= esc($sup['name']) ?>
+                                                                </div>
+                                                                <div class="text-[10px] text-slate-500 dark:text-zinc-400 truncate">
+                                                                    <?= esc($sup['position']) ?>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="shrink-0">
+                                                            <?php if ($sup['status'] === 'approved'): ?>
+                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-emerald-600 dark:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
+                                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                                                    </svg>
+                                                                    <?= esc($sup['status_label'] ?: 'Approved') ?>
+                                                                </span>
+                                                            <?php elseif ($sup['status'] === 'returned'): ?>
+                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-rose-600 dark:text-rose-400" viewBox="0 0 20 20" fill="currentColor">
+                                                                        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1z" clip-rule="evenodd" />
+                                                                    </svg>
+                                                                    <?= esc($sup['status_label'] ?: 'Returned') ?>
+                                                                </span>
+                                                            <?php elseif ($sup['status_label'] === 'Awaiting Eval Window' || $sup['status'] === 'draft'): ?>
+                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                                                                    <?= esc($sup['status_label']) ?>
+                                                                </span>
+                                                            <?php else: ?>
+                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                    </svg>
+                                                                    <?= esc($sup['status_label'] ?: 'Pending Review') ?>
+                                                                </span>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <!-- TWG on next line separated by line with proper spacing and dedicated header (if assigned) -->
+                                        <?php if ($eTwgSup): ?>
+                                            <div class="mt-6 pt-5 border-t border-slate-200 dark:border-zinc-800">
+                                                <!-- TWG Section Title & Subtitle for Evaluation Phase -->
+                                                <div class="flex items-center gap-2 mb-3.5">
+                                                    <div class="w-6 h-6 rounded-md bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800/80 flex items-center justify-center shrink-0">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-zinc-200">
+                                                            Technical Working Group (TWG) / PMT Calibration
+                                                        </h4>
+                                                        <p class="text-[11px] text-slate-500 dark:text-zinc-400">
+                                                            Performance rating calibration and MOV compliance review by TWG/PMT.
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                                    <div class="flex items-center justify-between p-3 rounded-xl border bg-slate-50/70 dark:bg-zinc-900/60 border-slate-200/80 dark:border-zinc-800 transition-all hover:border-slate-300 dark:hover:border-zinc-700">
+                                                        <div class="flex items-center gap-3 min-w-0 pr-2">
+                                                            <div class="w-8 h-8 rounded-full bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-zinc-300 shrink-0 shadow-xs">
+                                                                <?= strtoupper(substr($eTwgSup['name'] ?: 'T', 0, 1)) ?>
+                                                            </div>
+                                                            <div class="min-w-0">
+                                                                <div class="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
+                                                                    <?= esc($eTwgSup['name']) ?>
+                                                                </div>
+                                                                <div class="text-[10px] text-slate-500 dark:text-zinc-400 truncate">
+                                                                    <?= esc($eTwgSup['position']) ?>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="shrink-0">
+                                                            <?php if ($eTwgSup['status'] === 'approved'): ?>
+                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-emerald-600 dark:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
+                                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                                                    </svg>
+                                                                    <?= esc($eTwgSup['status_label'] ?: 'TWG Approved') ?>
+                                                                </span>
+                                                            <?php elseif ($eTwgSup['status'] === 'returned'): ?>
+                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-rose-600 dark:text-rose-400" viewBox="0 0 20 20" fill="currentColor">
+                                                                        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1z" clip-rule="evenodd" />
+                                                                    </svg>
+                                                                    <?= esc($eTwgSup['status_label'] ?: 'TWG Disapproved') ?>
+                                                                </span>
+                                                            <?php elseif ($eTwgSup['status_label'] === 'Awaiting Eval Window' || $eTwgSup['status'] === 'draft'): ?>
+                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                                                                    <?= esc($eTwgSup['status_label']) ?>
+                                                                </span>
+                                                            <?php else: ?>
+                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                    </svg>
+                                                                    <?= esc($eTwgSup['status_label'] ?: 'Pending Review') ?>
+                                                                </span>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+
+                                <script>
+                                    function switchSupervisorTab(phase) {
+                                        var paneTarget = document.getElementById('pane-supervisors-target');
+                                        var paneEval   = document.getElementById('pane-supervisors-eval');
+                                        var btnTarget  = document.getElementById('tab-btn-target');
+                                        var btnEval    = document.getElementById('tab-btn-eval');
+                                        var descTarget = document.getElementById('sup-desc-target');
+                                        var descEval   = document.getElementById('sup-desc-eval');
+
+                                        if (!paneTarget || !paneEval || !btnTarget || !btnEval) return;
+
+                                        var baseBtn = 'px-3 py-1.5 text-[11px] transition-all rounded-lg cursor-pointer ';
+                                        var activeBtn = baseBtn + 'font-black bg-white dark:bg-zinc-700 text-emerald-700 dark:text-emerald-400 shadow-xs border border-slate-200/80 dark:border-zinc-600';
+                                        var inactiveBtn = baseBtn + 'font-semibold text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200';
+
+                                        if (phase === 'target') {
+                                            paneTarget.classList.remove('hidden');
+                                            paneEval.classList.add('hidden');
+
+                                            btnTarget.className = activeBtn;
+                                            btnEval.className   = inactiveBtn;
+
+                                            if (descTarget) descTarget.classList.remove('hidden');
+                                            if (descEval) descEval.classList.add('hidden');
+                                        } else {
+                                            paneEval.classList.remove('hidden');
+                                            paneTarget.classList.add('hidden');
+
+                                            btnEval.className   = activeBtn;
+                                            btnTarget.className = inactiveBtn;
+
+                                            if (descEval) descEval.classList.remove('hidden');
+                                            if (descTarget) descTarget.classList.add('hidden');
+                                        }
+                                    }
+                                </script>
+                            <?php endif; ?>
+                        </div>
+
                     <?php endif; ?>
                 </div>
-
             </div>
-        </div>
 
         <?php 
             $isUserAdmin = (session()->get('role') === 'Admin');
@@ -1629,13 +1927,7 @@
                     <h4 class="text-[10px] font-black uppercase text-text-muted tracking-wider">Folder Management</h4>
                     
                     <?php if (!empty($activeFolder['deleted_at'])): ?>
-                        <?php 
-                            $archivedTimestamp = strtotime($activeFolder['deleted_at']);
-                            $fiveYearsAgo = strtotime('-5 years');
-                            $isEligibleForDisposal = ($archivedTimestamp <= $fiveYearsAgo);
-                            $yearsElapsed = max(0, min(5, floor((time() - $archivedTimestamp) / (365.25 * 86400))));
-                        ?>
-                        <div class="flex flex-col gap-2.5">
+                        <div class="flex flex-col gap-2">
                             <button onclick='unarchiveFolder("<?= esc($activeFolder["id"]) ?>", "<?= esc(addslashes($activeFolder["title"])) ?>")'
                                     class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1644,59 +1936,60 @@
                                 Restore Folder
                             </button>
 
-                            <?php if ($isEligibleForDisposal): ?>
-                                <button class="w-full btn-delete-modal bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 dark:bg-[#1c1214] dark:hover:bg-[#261619] dark:text-rose-400 dark:border-[#361a1f] py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-                                    data-id="<?= $activeFolder['id'] ?>" data-desc="<?= esc($activeFolder['title']) ?>" data-url="<?= site_url('folder') ?>" data-title="Dispose Record (5-Year Retention Lapsed)">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                    Permanent Delete (NAP / CSC Compliant)
-                                </button>
-                            <?php else: ?>
-                                <div class="p-3 rounded-xl border border-emerald-200 dark:border-emerald-800/40 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-200 flex flex-col gap-1 text-center">
-                                    <span class="text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                                        CSC 5-Year Retention Protected
-                                    </span>
-                                    <p class="text-[10px] text-zinc-500 dark:text-zinc-400 leading-tight">
-                                        Under CSC & National Archives policies, performance evaluations are retained for 5 years for audit and promotions. Permanent disposal unlocks after 5 years.
-                                    </p>
-                                </div>
-                            <?php endif; ?>
+                            <button class="w-full btn-delete-modal bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 dark:bg-[#1c1214] dark:hover:bg-[#261619] dark:text-rose-400 dark:border-[#361a1f] py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                                data-id="<?= $activeFolder['id'] ?>" data-desc="<?= esc($activeFolder['title']) ?>" data-url="<?= site_url('folder') ?>" data-title="Delete Archived Folder">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Delete Folder
+                            </button>
                         </div>
                     <?php else: ?>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button onclick='openEditFolderModal(<?= json_encode([
-                                "id"    => $activeFolder["id"],
-                                "title" => $activeFolder["title"],
-                                "ipcr_target_start" => $activeFolder["ipcr_target_start"] ?? "",
-                                "ipcr_target_end"   => $activeFolder["ipcr_target_end"] ?? "",
-                                "ipcr_eval_start"   => $activeFolder["ipcr_eval_start"] ?? "",
-                                "ipcr_eval_end"     => $activeFolder["ipcr_eval_end"] ?? "",
-                                "cdpcr_target_start" => $activeFolder["cdpcr_target_start"] ?? "",
-                                "cdpcr_target_end"   => $activeFolder["cdpcr_target_end"] ?? "",
-                                "cdpcr_eval_start"   => $activeFolder["cdpcr_eval_start"] ?? "",
-                                "cdpcr_eval_end"     => $activeFolder["cdpcr_eval_end"] ?? "",
-                                "dpcr_target_start" => $activeFolder["dpcr_target_start"] ?? "",
-                                "dpcr_target_end"   => $activeFolder["dpcr_target_end"] ?? "",
-                                "dpcr_eval_start"   => $activeFolder["dpcr_eval_start"] ?? "",
-                                "dpcr_eval_end"     => $activeFolder["dpcr_eval_end"] ?? "",
-                                "opcr_target_start" => $activeFolder["opcr_target_start"] ?? "",
-                                "opcr_target_end"   => $activeFolder["opcr_target_end"] ?? "",
-                                "opcr_eval_start"   => $activeFolder["opcr_eval_start"] ?? "",
-                                "opcr_eval_end"     => $activeFolder["opcr_eval_end"] ?? "",
-                                "iperf_target_start" => $activeFolder["iperf_target_start"] ?? "",
-                                "iperf_target_end"  => $activeFolder["iperf_target_end"] ?? "",
-                                "iperf_eval_start"  => $activeFolder["iperf_eval_start"] ?? "",
-                                "iperf_eval_end"    => $activeFolder["iperf_eval_end"] ?? ""
-                            ]) ?>)'
-                                    class="w-full text-emerald-700 dark:text-[#34d399] hover:text-emerald-800 dark:hover:text-[#6ee7b7] bg-emerald-50 hover:bg-emerald-100 dark:bg-zinc-800 border border-emerald-200 dark:border-zinc-700 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs">
-                                Edit
-                            </button>
+                        <div class="flex flex-col gap-2">
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick='openEditFolderModal(<?= json_encode([
+                                    "id"    => $activeFolder["id"],
+                                    "title" => $activeFolder["title"],
+                                    "ipcr_target_start" => $activeFolder["ipcr_target_start"] ?? "",
+                                    "ipcr_target_end"   => $activeFolder["ipcr_target_end"] ?? "",
+                                    "ipcr_eval_start"   => $activeFolder["ipcr_eval_start"] ?? "",
+                                    "ipcr_eval_end"     => $activeFolder["ipcr_eval_end"] ?? "",
+                                    "cdpcr_target_start" => $activeFolder["cdpcr_target_start"] ?? "",
+                                    "cdpcr_target_end"   => $activeFolder["cdpcr_target_end"] ?? "",
+                                    "cdpcr_eval_start"   => $activeFolder["cdpcr_eval_start"] ?? "",
+                                    "cdpcr_eval_end"     => $activeFolder["cdpcr_eval_end"] ?? "",
+                                    "dpcr_target_start" => $activeFolder["dpcr_target_start"] ?? "",
+                                    "dpcr_target_end"   => $activeFolder["dpcr_target_end"] ?? "",
+                                    "dpcr_eval_start"   => $activeFolder["dpcr_eval_start"] ?? "",
+                                    "dpcr_eval_end"     => $activeFolder["dpcr_eval_end"] ?? "",
+                                    "opcr_target_start" => $activeFolder["opcr_target_start"] ?? "",
+                                    "opcr_target_end"   => $activeFolder["opcr_target_end"] ?? "",
+                                    "opcr_eval_start"   => $activeFolder["opcr_eval_start"] ?? "",
+                                    "opcr_eval_end"     => $activeFolder["opcr_eval_end"] ?? "",
+                                    "iperf_target_start" => $activeFolder["iperf_target_start"] ?? "",
+                                    "iperf_target_end"  => $activeFolder["iperf_target_end"] ?? "",
+                                    "iperf_eval_start"  => $activeFolder["iperf_eval_start"] ?? "",
+                                    "iperf_eval_end"    => $activeFolder["iperf_eval_end"] ?? "",
+                                    "approving_authority_name" => $activeFolder["approving_authority_name"] ?? "",
+                                    "approving_authority_position" => $activeFolder["approving_authority_position"] ?? ""
+                                ]) ?>)'
+                                        class="w-full text-emerald-700 dark:text-[#34d399] hover:text-emerald-800 dark:hover:text-[#6ee7b7] bg-emerald-50 hover:bg-emerald-100 dark:bg-zinc-800 border border-emerald-200 dark:border-zinc-700 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs">
+                                    Edit
+                                </button>
 
-                            <button onclick='archiveFolder("<?= esc($activeFolder["id"]) ?>", "<?= esc(addslashes($activeFolder["title"])) ?>")'
-                                    class="w-full text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 bg-rose-50 hover:bg-rose-100 dark:bg-[#1c1214] border border-rose-200 dark:border-[#361a1f] py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                                    title="Close and archive this evaluation cycle (freezes all scores)">
-                                Close & Archive
+                                <button onclick='archiveFolder("<?= esc($activeFolder["id"]) ?>", "<?= esc(addslashes($activeFolder["title"])) ?>")'
+                                        class="w-full text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 bg-amber-50 hover:bg-amber-100 dark:bg-[#1f1912] border border-amber-200 dark:border-[#382b1d] py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                                        title="Close and archive this evaluation cycle (freezes all scores)">
+                                    Close & Archive
+                                </button>
+                            </div>
+
+                            <button class="w-full btn-delete-modal bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 dark:bg-[#1c1214] dark:hover:bg-[#261619] dark:text-rose-400 dark:border-[#361a1f] py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                                data-id="<?= $activeFolder['id'] ?>" data-desc="<?= esc($activeFolder['title']) ?>" data-url="<?= site_url('folder') ?>" data-title="Delete Evaluation Folder">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Delete Folder
                             </button>
                         </div>
                     <?php endif; ?>

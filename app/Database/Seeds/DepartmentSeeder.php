@@ -82,50 +82,25 @@ class DepartmentSeeder extends Seeder
             }
         }
 
-        // Ensure University President User & Plantilla
+        // Resolve Admin User (who acts as University President / Executive Evaluator)
+        $adminUser = $db->table('users u')
+            ->select('u.id')
+            ->join('user_roles ur', 'ur.user_id = u.id')
+            ->join('roles r', 'r.id = ur.role_id')
+            ->where('r.name', 'Admin')
+            ->where('u.is_active', 1)
+            ->get()->getRowArray();
+        $adminUserId = $adminUser ? (int)$adminUser['id'] : null;
+
+        // Ensure retired separate president account is removed
         $presUser = $db->table('users')->where('email', 'president@test.com')->get()->getRowArray();
-        $presPassword = password_hash('123', PASSWORD_DEFAULT);
-        if (!$presUser) {
-            $db->table('users')->insert([
-                'email'      => 'president@test.com',
-                'first_name' => 'Felipe',
-                'last_name'  => 'Comila',
-                'password'   => $presPassword,
-                'is_active'  => 1,
-                'doc_type'   => null,
-            ]);
-            $presUserId = (int)$db->insertID();
-        } else {
-            $presUserId = (int)$presUser['id'];
-            $db->table('users')->where('id', $presUserId)->update([
-                'first_name' => 'Felipe',
-                'last_name'  => 'Comila',
-                'is_active'  => 1,
-            ]);
-        }
-
-        $presRole = $roleMap['Supervisor'] ?? 2;
-        $presUserRole = $db->table('user_roles')->where('user_id', $presUserId)->get()->getRowArray();
-        if (!$presUserRole) {
-            $db->table('user_roles')->insert(['user_id' => $presUserId, 'role_id' => $presRole]);
-        } else {
-            $db->table('user_roles')->where('user_id', $presUserId)->update(['role_id' => $presRole]);
-        }
-
-        $presPlantilla = $db->table('plantillas')->where('user_id', $presUserId)->where('ended_at IS NULL')->get()->getRowArray();
-        if (!$presPlantilla) {
-            $db->table('plantillas')->insert([
-                'user_id'     => $presUserId,
-                'position_id' => $posMap['University President'],
-                'unit_id'     => $opUnitId,
-                'started_at'  => '2019-01-01',
-                'ended_at'    => null,
-            ]);
-        } else {
-            $db->table('plantillas')->where('id', $presPlantilla['id'])->update([
-                'position_id' => $posMap['University President'],
-                'unit_id'     => $opUnitId,
-            ]);
+        if ($presUser) {
+            $presId = (int)$presUser['id'];
+            $db->table('evaluation_routings')->where('evaluator_id', $presId)->delete();
+            $db->table('plantillas')->where('user_id', $presId)->delete();
+            $db->table('user_roles')->where('user_id', $presId)->delete();
+            $db->table('notifications')->where('user_id', $presId)->orWhere('sender_id', $presId)->delete();
+            $db->table('users')->where('id', $presId)->delete();
         }
 
         // Cache templates for form cloning
@@ -625,15 +600,15 @@ class DepartmentSeeder extends Seeder
                     ->where('deleted_at IS NULL')
                     ->get()->getRowArray();
 
-                if ($vpaaFolder && !empty($presUserId)) {
+                if ($vpaaFolder && !empty($adminUserId)) {
                     $existingVpRouting = $db->table('evaluation_routings')
                         ->where('folder_id', $vpaaFolder['id'])
-                        ->where('evaluator_id', $presUserId)
+                        ->where('evaluator_id', $adminUserId)
                         ->get()->getRowArray();
                     if (!$existingVpRouting) {
                         $db->table('evaluation_routings')->insert([
                             'folder_id'           => $vpaaFolder['id'],
-                            'evaluator_id'        => $presUserId,
+                            'evaluator_id'        => $adminUserId,
                             'evaluator_folder_id' => $activeCycle['id'],
                             'status'              => $vpaaFolder['status'] ?? 'Draft',
                             'created_at'          => $now,

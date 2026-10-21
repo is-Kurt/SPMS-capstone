@@ -58,6 +58,53 @@ class Rating extends BaseController
             $rootFolderId = null;
         }
 
+        if ($sysRole === 'Admin' && !empty($folders)) {
+            $userModel = new \App\Models\UserModel();
+            $presidentUser = $userModel->where('email', 'president@test.com')->first();
+            $presId = $presidentUser ? (int)$presidentUser['id'] : null;
+
+            $routingModel = new EvaluationRoutingModel();
+            $parentIds = array_column($folders, 'id');
+            if (!empty($parentIds)) {
+                $childFolders = $folderModel->select('id, parent_folder_id, status')
+                    ->where('parent_folder_id IS NOT NULL')
+                    ->where('deleted_at IS NULL')
+                    ->whereIn('parent_folder_id', $parentIds)
+                    ->findAll();
+
+                foreach ($childFolders as $cf) {
+                    if ($presId && $presId !== (int)$userId) {
+                        $routingModel->where('folder_id', $cf['id'])->where('evaluator_id', $presId)->delete();
+                    }
+                    $rExists = $routingModel->where('folder_id', $cf['id'])->where('evaluator_id', $userId)->first();
+                    if (!$rExists) {
+                        $routingModel->insert([
+                            'folder_id'           => $cf['id'],
+                            'evaluator_id'        => $userId,
+                            'evaluator_folder_id' => $cf['parent_folder_id'],
+                            'status'              => $cf['status'] ?? \App\Enums\FolderStatus::DRAFT->value,
+                            'created_at'          => date('Y-m-d H:i:s'),
+                            'updated_at'          => date('Y-m-d H:i:s')
+                        ]);
+                    }
+                }
+            }
+
+            // Self-healing: Clean up any stale Admin routings on subordinate folders (where parent is not a root cycle)
+            $folderModel->db->query("
+                DELETE FROM evaluation_routings 
+                WHERE id IN (
+                    SELECT er.id 
+                    FROM evaluation_routings er
+                    JOIN document_folders df ON df.id = er.folder_id
+                    JOIN document_folders pf ON pf.id = df.parent_folder_id
+                    JOIN user_roles ur ON ur.user_id = er.evaluator_id
+                    JOIN roles r ON r.id = ur.role_id AND r.name = 'Admin'
+                    WHERE pf.parent_folder_id IS NOT NULL
+                )
+            ");
+        }
+
         $isPresident = (bool) (session()->get('is_president') ?? false);
         $rawFolders = $folderModel->getRatingDashboardFolders($userId, $sysRole, $rootFolderId, $isPresident);
 
@@ -87,6 +134,13 @@ class Rating extends BaseController
             ]
         ];
 
+        $adminCascadedTotalCount = 0;
+        $overallTotalCount = 0;
+        $targetCascadedCount = 0;
+        $targetOverallCount = 0;
+        $evalCascadedCount = 0;
+        $evalOverallCount = 0;
+
         foreach ($rawFolders as $f) {
             $status = $f['folder_status'];
 
@@ -95,20 +149,46 @@ class Rating extends BaseController
                 continue;
             }
 
+            $overallTotalCount++;
+            $isCascaded = !empty($f['is_cascaded_by_me']);
+            if ($isCascaded) {
+                $adminCascadedTotalCount++;
+            }
+
             if (in_array($status, [\App\Enums\FolderStatus::APPROVED->value, \App\Enums\FolderStatus::TWG_APPROVED->value, \App\Enums\FolderStatus::TWG_DISAPPROVED->value, \App\Enums\FolderStatus::UNEVALUATED->value])) {
                 $periods['evaluation']['tabs']['completed']['folders'][] = $f;
+                $evalOverallCount++;
+                if ($isCascaded) $evalCascadedCount++;
             } elseif ($status === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value) {
                 $periods['target']['tabs']['target_approval']['folders'][] = $f;
+                $targetOverallCount++;
+                if ($isCascaded) $targetCascadedCount++;
             } elseif ($status === \App\Enums\FolderStatus::TARGET_RETURNED->value || $status === \App\Enums\FolderStatus::TARGET_UNAPPROVED->value) {
                 $periods['target']['tabs']['target_returned']['folders'][] = $f;
+                $targetOverallCount++;
+                if ($isCascaded) $targetCascadedCount++;
             } elseif ($status === \App\Enums\FolderStatus::TARGET_APPROVED->value) {
                 $periods['target']['tabs']['target_approved']['folders'][] = $f;
+                $targetOverallCount++;
+                if ($isCascaded) $targetCascadedCount++;
             } elseif ($status === \App\Enums\FolderStatus::REEVALUATE->value) {
                 $periods['evaluation']['tabs']['pending']['folders'][] = $f;
+                $evalOverallCount++;
+                if ($isCascaded) $evalCascadedCount++;
             } else {
                 $periods['evaluation']['tabs']['action']['folders'][] = $f;
+                $evalOverallCount++;
+                if ($isCascaded) $evalCascadedCount++;
             }
         }
+
+        foreach ($periods as $pKey => &$period) {
+            foreach ($period['tabs'] as $tKey => &$tab) {
+                $tab['cascaded_count'] = count(array_filter($tab['folders'], fn($row) => !empty($row['is_cascaded_by_me'])));
+                $tab['overall_count']  = count($tab['folders']);
+            }
+        }
+        unset($period, $tab);
 
         $filterUnits = [];
         $filterPositions = [];
@@ -135,13 +215,19 @@ class Rating extends BaseController
             'selectedFolderId' => $folderId, 
             'mainView'         => 'ratings/index',
             'mainData'         => [
-                'activeFolder'    => $activeFolder ?? null,
-                'periods'         => $periods,
-                'sysRole'         => $sysRole,
-                'filterUnits'     => $filterUnits,
-                'filterPositions' => $filterPositions,
-                'allUnits'        => $allUnits,
-                'assignedUnits'   => $assignedUnits
+                'activeFolder'            => $activeFolder ?? null,
+                'periods'                 => $periods,
+                'sysRole'                 => $sysRole,
+                'filterUnits'             => $filterUnits,
+                'filterPositions'         => $filterPositions,
+                'allUnits'                => $allUnits,
+                'assignedUnits'           => $assignedUnits,
+                'adminCascadedTotalCount' => $adminCascadedTotalCount,
+                'overallTotalCount'       => $overallTotalCount,
+                'targetCascadedCount'     => $targetCascadedCount,
+                'targetOverallCount'      => $targetOverallCount,
+                'evalCascadedCount'       => $evalCascadedCount,
+                'evalOverallCount'        => $evalOverallCount
             ]
         ]);
     }

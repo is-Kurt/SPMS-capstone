@@ -255,6 +255,11 @@ window.openEditFolderModal = function(idOrData, maybeTitle, maybeDates = {}) {
     if (idInput) idInput.value = id || '';
     if (titleInput) titleInput.value = title || '';
 
+    const approvingNameInput = document.getElementById('edit-folder-approving-name');
+    const approvingPosInput = document.getElementById('edit-folder-approving-position');
+    if (approvingNameInput) approvingNameInput.value = dates.approving_authority_name || '';
+    if (approvingPosInput) approvingPosInput.value = dates.approving_authority_position || '';
+
     // Populate individual docType inputs
     docTypes.forEach(type => {
         ['target_start', 'target_end', 'eval_start', 'eval_end'].forEach(phase => {

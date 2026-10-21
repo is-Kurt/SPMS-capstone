@@ -104,8 +104,9 @@ class Document extends BaseController
 
         $basisFormData = null;
         $basisDocContent = '';
+        $allBasisGuides = [];
 
-        // Query cascaded superior reference guides (e.g. OPCR/DPCR from evaluators/superiors)
+        // Query cascaded superior reference guides (e.g. OPCR/DPCR from all evaluators/superiors who cascaded)
         $folderId = $docInfo['document_folder_id'] ?? null;
         $groupedGuides = [];
 
@@ -119,90 +120,140 @@ class Document extends BaseController
                 $fModel = new \App\Models\DocumentFolderModel();
                 $cascadedRoutes = $routingModel->getEvaluatorsForFolder((string)$folderId);
 
+                $seenEvaluatorIds = [];
                 foreach ($cascadedRoutes as $route) {
+                    $eId = (int)$route['evaluator_id'];
+                    if (in_array($eId, $seenEvaluatorIds, true) || $eId === (int)$docOwnerId) continue;
+                    if ($userModel->hasRole($eId, 'Admin')) continue;
+
                     $guideFolder = $fModel->find($route['evaluator_folder_id']);
-                    if ($guideFolder && empty($guideFolder['deleted_at'])) {
-                        $docs = $documentModel->where('document_folder_id', $guideFolder['id'])->findAll();
-                        if (!empty($docs)) {
-                            $groupedGuides[] = [
-                                'superior' => [
-                                    'id'   => $route['evaluator_id'],
-                                    'name' => $route['first_name'] . ' ' . $route['last_name'],
-                                    'role' => $route['evaluator_position'] ?? 'Evaluator' 
-                                ], 
-                                'docs' => $docs
-                            ];
+                    if (!$guideFolder || !empty($guideFolder['deleted_at'])) continue;
+
+                    $docs = $documentModel->where('document_folder_id', $guideFolder['id'])->findAll();
+                    if (!empty($docs)) {
+                        $seenEvaluatorIds[] = $eId;
+                        $eName = trim(($route['first_name'] ?? '') . ' ' . ($route['last_name'] ?? ''));
+                        $ePos  = $route['evaluator_position'] ?? '';
+                        if (empty($ePos)) {
+                            $p = $userModel->getActivePlantillaDetails($eId);
+                            $ePos = $p['position'] ?? 'Immediate Supervisor';
                         }
+
+                        $groupedGuides[] = [
+                            'superior' => [
+                                'id'   => $eId,
+                                'name' => $eName,
+                                'role' => $ePos
+                            ], 
+                            'docs' => $docs
+                        ];
+
+                        // Identify target or primary document in superior's folder
+                        $targetDoc = null;
+                        foreach ($docs as $d) {
+                            if (!empty($d['is_target'])) { $targetDoc = $d; break; }
+                        }
+                        if (!$targetDoc) $targetDoc = $docs[0];
+
+                        $bFormData = null;
+                        $bContent  = $targetDoc['content'] ?? '';
+                        if (!empty($targetDoc['tabs'])) {
+                            $bTabs = is_string($targetDoc['tabs']) ? json_decode($targetDoc['tabs'], true) : $targetDoc['tabs'];
+                            if (!empty($bTabs) && is_array($bTabs)) {
+                                $bFormData = $bTabs[0]['formData'] ?? null;
+                                if (empty($bContent) && !empty($bTabs[0]['content'])) {
+                                    $bContent = $bTabs[0]['content'];
+                                }
+                            }
+                        }
+
+                        $isSupApproved = ($guideFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
+
+                        $tTitleUpper = strtoupper($targetDoc['title'] ?? '');
+                        $sDocType = str_contains($tTitleUpper, 'OPCR') ? 'OPCR' : (str_contains($tTitleUpper, 'DPCR') ? 'DPCR' : (str_contains($tTitleUpper, 'IPERF') ? 'IPERF' : 'IPCR'));
+
+                        $allBasisGuides[] = [
+                            'id'            => $targetDoc['id'],
+                            'title'         => $targetDoc['title'] ?? 'Basis Document',
+                            'doc_type'      => $sDocType,
+                            'superior_id'   => $eId,
+                            'superior_name' => $eName,
+                            'superior_role' => $ePos,
+                            'is_approved'   => $isSupApproved,
+                            'folder_id'     => $guideFolder['id'],
+                            'content'       => $bContent,
+                            'formData'      => $bFormData,
+                            'doc'           => $targetDoc
+                        ];
                     }
                 }
 
-                if (!empty($docInfo['parent_folder_id'])) {
+                // Fallback: Check parent folder if no routes
+                if (empty($allBasisGuides) && !empty($docInfo['parent_folder_id'])) {
                     $adminFolder = $fModel->find($docInfo['parent_folder_id']);
-                    if ($adminFolder && empty($adminFolder['deleted_at'])) {
-                        $adminDocs = $documentModel->where('document_folder_id', $adminFolder['id'])->findAll();
-                        if (!empty($adminDocs)) {
-                            $adminInfo = $userModel->getAdminPosition($adminFolder['user_id']);
-                            if ($adminInfo) {
-                                $groupedGuides[] = [
-                                    'superior' => [
-                                        'id'       => $adminInfo['id'],
-                                        'name'     => $adminInfo['first_name'] . ' ' . $adminInfo['last_name'],
-                                        'role'     => $adminInfo['admin_position'] ?? 'System Administrator',
-                                        'is_admin' => true
-                                    ],
-                                    'docs' => $adminDocs
+                    if ($adminFolder && empty($adminFolder['deleted_at']) && !empty($adminFolder['user_id'])) {
+                        $pUid = (int)$adminFolder['user_id'];
+                        if ($pUid !== (int)$docOwnerId && !$userModel->hasRole($pUid, 'Admin')) {
+                            $adminDocs = $documentModel->where('document_folder_id', $adminFolder['id'])->findAll();
+                            if (!empty($adminDocs)) {
+                                $pUser = $userModel->find($pUid);
+                                $pPlantilla = $userModel->getActivePlantillaDetails($pUid);
+                                $pName = trim(($pUser['first_name'] ?? '') . ' ' . ($pUser['last_name'] ?? ''));
+                                $pPos  = $pPlantilla['position'] ?? 'Supervisor';
+
+                                $targetDoc = null;
+                                foreach ($adminDocs as $d) {
+                                    if (!empty($d['is_target'])) { $targetDoc = $d; break; }
+                                }
+                                if (!$targetDoc) $targetDoc = $adminDocs[0];
+
+                                $bFormData = null;
+                                $bContent  = $targetDoc['content'] ?? '';
+                                if (!empty($targetDoc['tabs'])) {
+                                    $bTabs = is_string($targetDoc['tabs']) ? json_decode($targetDoc['tabs'], true) : $targetDoc['tabs'];
+                                    if (!empty($bTabs) && is_array($bTabs)) {
+                                        $bFormData = $bTabs[0]['formData'] ?? null;
+                                        if (empty($bContent) && !empty($bTabs[0]['content'])) {
+                                            $bContent = $bTabs[0]['content'];
+                                        }
+                                    }
+                                }
+
+                                $pTitleUpper = strtoupper($targetDoc['title'] ?? '');
+                                $pDocType = str_contains($pTitleUpper, 'OPCR') ? 'OPCR' : (str_contains($pTitleUpper, 'DPCR') ? 'DPCR' : (str_contains($pTitleUpper, 'IPERF') ? 'IPERF' : 'IPCR'));
+
+                                $allBasisGuides[] = [
+                                    'id'            => $targetDoc['id'],
+                                    'title'         => $targetDoc['title'] ?? 'Basis Document',
+                                    'doc_type'      => $pDocType,
+                                    'superior_id'   => $pUid,
+                                    'superior_name' => $pName,
+                                    'superior_role' => $pPos,
+                                    'is_approved'   => ($adminFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value),
+                                    'folder_id'     => $adminFolder['id'],
+                                    'content'       => $bContent,
+                                    'formData'      => $bFormData,
+                                    'doc'           => $targetDoc
                                 ];
                             }
                         }
                     }
                 }
-
-                $mergedGuides = [];
-                foreach ($groupedGuides as $guide) {
-                    $key = $guide['superior']['name']; 
-                    if (!isset($mergedGuides[$key])) {
-                        $mergedGuides[$key] = $guide;
-                    } else {
-                        $existingRoles = $mergedGuides[$key]['superior']['role'];
-                        $newRole       = $guide['superior']['role'];
-                        if (strpos($existingRoles, $newRole) === false) {
-                            $mergedGuides[$key]['superior']['role'] .= ', ' . $newRole;
-                        }
-                    }
-                }
-                $groupedGuides = array_values($mergedGuides);
             }
         }
 
-        // Link primary superior guide doc to basisDoc if basisDoc was not already set via parent_folder_id
-        if (!$basisDoc && !empty($groupedGuides)) {
-            foreach ($groupedGuides as $g) {
-                if (!empty($g['docs'])) {
-                    $basisDoc = $g['docs'][0];
-                    if (!empty($g['superior'])) {
-                        $superiorUser = [
-                            'first_name' => $g['superior']['name'],
-                            'last_name'  => '',
-                            'position'   => $g['superior']['role'],
-                            'department' => ''
-                        ];
-                    }
-                    break;
-                }
-            }
-        }
-
-        if ($basisDoc) {
-            $basisDocContent = $basisDoc['content'] ?? '';
-            if (!empty($basisDoc['tabs'])) {
-                $bTabs = is_string($basisDoc['tabs']) ? json_decode($basisDoc['tabs'], true) : $basisDoc['tabs'];
-                if (!empty($bTabs) && is_array($bTabs)) {
-                    $basisFormData = $bTabs[0]['formData'] ?? null;
-                    if (empty($basisDocContent) && !empty($bTabs[0]['content'])) {
-                        $basisDocContent = $bTabs[0]['content'];
-                    }
-                }
-            }
+        // Set primary basisDoc from allBasisGuides if available
+        if (!empty($allBasisGuides)) {
+            $basisDoc = $allBasisGuides[0]['doc'];
+            $basisFormData = $allBasisGuides[0]['formData'];
+            $basisDocContent = $allBasisGuides[0]['content'];
+            $superiorUser = [
+                'first_name' => $allBasisGuides[0]['superior_name'],
+                'last_name'  => '',
+                'position'   => $allBasisGuides[0]['superior_role'],
+                'department' => ''
+            ];
+            $isParentTargetApproved = $allBasisGuides[0]['is_approved'];
         }
 
         $currentUser = $userModel->find($userId);
@@ -219,28 +270,271 @@ class Document extends BaseController
         $ownerName = trim(($ownerUser['first_name'] ?? '') . ' ' . ($ownerUser['last_name'] ?? ''));
         $ownerPosition = $ownerPlantilla['position'] ?? ($ownerRoleName ?: 'Faculty');
         $ownerDept = $ownerPlantilla['department'] ?? '';
-        $docPeriod = '';
 
-        $data['ownerInfo'] = [
-            'name'     => $ownerName,
-            'position' => $ownerPosition,
-            'dept'     => $ownerDept,
-            'period'   => $docPeriod,
-        ];
+        $folderModel = new \App\Models\DocumentFolderModel();
+        $currentFolderRec = $folderModel->find($docInfo['document_folder_id']);
+
+        // Date when this folder was cascaded to the user
+        $cascadeDate = !empty($currentFolderRec['created_at']) 
+            ? date('Y-m-d', strtotime($currentFolderRec['created_at'])) 
+            : date('Y-m-d');
+
+        // Resolve evaluation period (e.g. January - June 2026 or July - December 2026)
+        $refTime = !empty($currentFolderRec['ipcr_target_start']) ? strtotime($currentFolderRec['ipcr_target_start']) 
+                 : (!empty($currentFolderRec['created_at']) ? strtotime($currentFolderRec['created_at']) : time());
+        $m = (int)date('n', $refTime);
+        $y = date('Y', $refTime);
+        $docPeriod = ($m <= 6) ? "January - June {$y}" : "July - December {$y}";
 
         $isCycleArchived = !empty($docInfo['folder_deleted_at']) || (!empty($parentFolder) && !empty($parentFolder['deleted_at']));
 
-        // Resolve root evaluation cycle folder ID
-        $folderModel = new \App\Models\DocumentFolderModel();
+        // Resolve root evaluation cycle folder ID and root cycle metadata
         $rootFolderId = $docInfo['parent_folder_id'] ?? $docInfo['document_folder_id'];
+        $rootCycle = $folderModel->find($rootFolderId);
         if (!empty($docInfo['parent_folder_id'])) {
             $pObj = $folderModel->find($docInfo['parent_folder_id']);
             while ($pObj && !empty($pObj['parent_folder_id'])) {
                 $rootFolderId = $pObj['parent_folder_id'];
                 $pObj = $folderModel->find($rootFolderId);
             }
+            if ($pObj) {
+                $rootCycle = $pObj;
+            }
         }
         $data['rootFolderId'] = $rootFolderId;
+
+        // Resolve Approving Authority (from cycle configuration or system admin fallback)
+        $cycleApprovingName = !empty($currentFolderRec['approving_authority_name']) 
+            ? $currentFolderRec['approving_authority_name'] 
+            : (!empty($rootCycle['approving_authority_name']) ? $rootCycle['approving_authority_name'] : '');
+        $cycleApprovingPos  = !empty($currentFolderRec['approving_authority_position']) 
+            ? $currentFolderRec['approving_authority_position'] 
+            : (!empty($rootCycle['approving_authority_position']) ? $rootCycle['approving_authority_position'] : '');
+
+        if (empty($cycleApprovingName)) {
+            $adminUser = $userModel->select('users.*, pos.title as pos_title')
+                ->join('user_roles ur', 'ur.user_id = users.id')
+                ->join('roles r', 'r.id = ur.role_id')
+                ->join('plantillas p', 'p.user_id = users.id AND p.ended_at IS NULL', 'left')
+                ->join('positions pos', 'pos.id = p.position_id', 'left')
+                ->where('r.name', 'Admin')
+                ->where('users.is_active', 1)
+                ->first();
+            if ($adminUser) {
+                $cycleApprovingName = trim(($adminUser['first_name'] ?? '') . ' ' . ($adminUser['last_name'] ?? ''));
+                $cycleApprovingPos  = $adminUser['pos_title'] ?? 'University President';
+            }
+        }
+
+        // Resolve default supervisors / approving authorities for this document
+        $docTitleUpper = strtoupper($docInfo['title'] ?? '');
+        $isMyDocOpcr = str_contains($docTitleUpper, 'OPCR') 
+                    || str_contains($docTitleUpper, 'OFFICE') 
+                    || (strtoupper($docInfo['doc_type'] ?? '') === 'OPCR');
+
+        $supervisors = [];
+        $seenEvaluatorIds = [];
+
+        if ($isMyDocOpcr) {
+            // For OPCR: The highest approving authority (e.g. University President / Head of Agency)
+            if (!empty($cycleApprovingName)) {
+                $supervisors[] = [
+                    'name'     => $cycleApprovingName,
+                    'position' => $cycleApprovingPos ?: 'University President',
+                    'date'     => $cascadeDate,
+                    'evalDate' => $cascadeDate
+                ];
+            }
+        } else {
+            // For DPCR, IPCR, IPERF: Gather supervisors from evaluation_routings (supports multiple cascades)
+            $routingModel = new \App\Models\EvaluationRoutingModel();
+            $cascadedRoutes = $routingModel->getEvaluatorsForFolder((string)$docInfo['document_folder_id']);
+
+            foreach ($cascadedRoutes as $route) {
+                $eId = (int)$route['evaluator_id'];
+                if (in_array($eId, $seenEvaluatorIds) || $eId === (int)$docOwnerId) continue;
+                // Exclude Admin from being listed as an evaluating supervisor
+                if ($userModel->hasRole($eId, 'Admin')) continue;
+
+                $seenEvaluatorIds[] = $eId;
+
+                $eName = trim(($route['first_name'] ?? '') . ' ' . ($route['last_name'] ?? ''));
+                $ePos  = $route['evaluator_position'] ?? '';
+                if (empty($ePos)) {
+                    $p = $userModel->getActivePlantillaDetails($eId);
+                    $ePos = $p['position'] ?? 'Immediate Supervisor';
+                }
+                $rDate = !empty($route['created_at']) ? date('Y-m-d', strtotime($route['created_at'])) : $cascadeDate;
+
+                $supervisors[] = [
+                    'id'        => $eId,
+                    'folder_id' => $route['evaluator_folder_id'] ?? null,
+                    'name'      => $eName,
+                    'position'  => $ePos,
+                    'date'      => $rDate,
+                    'evalDate'  => $rDate
+                ];
+            }
+
+            // Fallback: If no routings were recorded in evaluation_routings, inspect the immediate parent folder
+            if (empty($supervisors)) {
+                $currParentId = $currentFolderRec['parent_folder_id'] ?? null;
+                if (!empty($currParentId)) {
+                    $pFolder = $folderModel->find($currParentId);
+                    // Only use if parent folder is an intermediate supervisor folder (not an institutional root cycle)
+                    // and its owner is not an Admin
+                    if ($pFolder && !empty($pFolder['parent_folder_id']) && !empty($pFolder['user_id'])) {
+                        $pUserId = (int)$pFolder['user_id'];
+                        if ($pUserId !== (int)$docOwnerId && !$userModel->hasRole($pUserId, 'Admin')) {
+                            $pUser = $userModel->find($pUserId);
+                            if ($pUser) {
+                                $pPlantilla = $userModel->getActivePlantillaDetails($pUserId);
+                                $supervisors[] = [
+                                    'id'        => $pUserId,
+                                    'folder_id' => $pFolder['id'],
+                                    'name'      => trim(($pUser['first_name'] ?? '') . ' ' . ($pUser['last_name'] ?? '')),
+                                    'position'  => $pPlantilla['position'] ?? 'Supervisor',
+                                    'date'      => $cascadeDate,
+                                    'evalDate'  => $cascadeDate
+                                ];
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Fallback if no supervisor found
+            if (empty($supervisors) && !empty($cycleApprovingName)) {
+                $supervisors[] = [
+                    'id'        => null,
+                    'folder_id' => null,
+                    'name'      => $cycleApprovingName,
+                    'position'  => $cycleApprovingPos ?: 'University President',
+                    'date'      => $cascadeDate,
+                    'evalDate'  => $cascadeDate
+                ];
+            }
+        }
+
+        // Resolve cascaded target inputs and rubrics matrix from all supervisors
+        $cascadedCategories = [
+            'core'      => [],
+            'strategic' => [],
+            'support'   => []
+        ];
+        $cascadedRubrics = [];
+        $cascadedWeights = null;
+        $cascadedCurrency = '₱';
+
+        $isDocIperf = (strtoupper($docInfo['doc_type'] ?? '') === 'IPERF') || str_contains($docTitleUpper, 'IPERF');
+        $seenRowKeys = [];
+
+        foreach ($supervisors as $sup) {
+            $sFolderId = $sup['folder_id'] ?? null;
+            if (!$sFolderId) continue;
+
+            // When Admin cascades or is supervisor, no targets/inputs are cascaded (Admin only initiates cycles)
+            if (!empty($sup['id']) && $userModel->hasRole($sup['id'], 'Admin')) {
+                continue;
+            }
+            $sFolder = $folderModel->find($sFolderId);
+            if ($sFolder && empty($sFolder['parent_folder_id'])) {
+                // Root institutional cycle folder created by Admin has no targets to cascade
+                continue;
+            }
+
+            $sDoc = $documentModel->where('document_folder_id', $sFolderId)->where('is_target', 1)->first()
+                 ?? $documentModel->where('document_folder_id', $sFolderId)->first();
+            if (!$sDoc || empty($sDoc['tabs'])) continue;
+
+            $sTabs = is_string($sDoc['tabs']) ? json_decode($sDoc['tabs'], true) : $sDoc['tabs'];
+            if (empty($sTabs) || !is_array($sTabs)) continue;
+
+            $sFormData = $sTabs[0]['formData'] ?? [];
+            $sCategories = $sFormData['categories'] ?? [];
+            $sRubrics = $sFormData['rubrics'] ?? [];
+            if (!empty($sFormData['currency'])) $cascadedCurrency = $sFormData['currency'];
+            // Category percentage weights are intentionally left empty when cascaded to avoid conflicts across multiple supervisors
+
+            foreach (['core', 'strategic', 'support'] as $catKey) {
+                if (empty($sCategories[$catKey]) || !is_array($sCategories[$catKey])) continue;
+
+                foreach ($sCategories[$catKey] as $sRowIdx => $sRow) {
+                    $mfo = trim((string)($sRow['mfo'] ?? ($sRow['office_ppa'] ?? ($sRow['paps'] ?? ($sRow['mfo_title'] ?? '')))));
+                    $ind = trim((string)($sRow['indicators'] ?? ($sRow['success_indicators'] ?? ($sRow['expected_outputs'] ?? ($sRow['success_indicator'] ?? '')))));
+
+                    // Skip completely empty placeholder rows
+                    if ($mfo === '' && $ind === '') continue;
+
+                    // Deduplicate identical cascaded targets across supervisors if any
+                    $dedupKey = md5(strtolower($mfo . '||' . $ind));
+                    if (isset($seenRowKeys[$dedupKey])) continue;
+                    $seenRowKeys[$dedupKey] = true;
+
+                    $origRowId = $sRow['row_id'] ?? ('row_' . $catKey . '_' . $sRowIdx);
+                    $destCat = $isDocIperf ? 'core' : $catKey;
+                    $newRowId = 'row_' . $destCat . '_cascaded_' . ($sup['id'] ?? 'sup') . '_' . $sRowIdx . '_' . substr(md5(uniqid()), 0, 6);
+
+                    $cascadedCategories[$destCat][] = [
+                        'row_id'          => $newRowId,
+                        'mfo'             => $mfo,
+                        'indicators'      => $ind,
+                        'budget'          => $sRow['budget'] ?? ($sRow['allotted_budget'] ?? ''),
+                        'budget_currency' => $sRow['budget_currency'] ?? $cascadedCurrency,
+                        'accountable'     => $sRow['accountable'] ?? ($sRow['division'] ?? ''),
+                        'accomplishments' => '',
+                        'q'               => $sRow['q'] ?? '',
+                        't'               => $sRow['t'] ?? '',
+                        'e'               => $sRow['e'] ?? '',
+                        'q_self'          => ($sRow['q'] === 'X' || $sRow['q'] === 'N/A') ? 'X' : ($sRow['q_self'] ?? ''),
+                        't_self'          => ($sRow['t'] === 'X' || $sRow['t'] === 'N/A') ? 'X' : ($sRow['t_self'] ?? ''),
+                        'e_self'          => ($sRow['e'] === 'X' || $sRow['e'] === 'N/A') ? 'X' : ($sRow['e_self'] ?? ''),
+                        'remarks'         => '',
+                        'twg_comment'     => '',
+                        'std_5'           => $sRow['std_5'] ?? '',
+                        'std_4'           => $sRow['std_4'] ?? '',
+                        'std_3'           => $sRow['std_3'] ?? '',
+                        'std_2'           => $sRow['std_2'] ?? '',
+                        'std_1'           => $sRow['std_1'] ?? '',
+                        'cascaded_from'   => $sup['name'] ?? ''
+                    ];
+
+                    // Copy rubrics matrix standards for this row
+                    if (!empty($sRubrics[$origRowId]) && is_array($sRubrics[$origRowId])) {
+                        $cascadedRubrics[$newRowId] = $sRubrics[$origRowId];
+                    } elseif (!empty($sRow['std_5']) || !empty($sRow['std_4']) || !empty($sRow['std_3'])) {
+                        $cascadedRubrics[$newRowId] = [
+                            '5' => ['q' => $sRow['std_5'] ?? '', 't' => '', 'e' => ''],
+                            '4' => ['q' => $sRow['std_4'] ?? '', 't' => '', 'e' => ''],
+                            '3' => ['q' => $sRow['std_3'] ?? '', 't' => '', 'e' => ''],
+                            '2' => ['q' => $sRow['std_2'] ?? '', 't' => '', 'e' => ''],
+                            '1' => ['q' => $sRow['std_1'] ?? '', 't' => '', 'e' => ''],
+                        ];
+                    }
+                }
+            }
+        }
+
+        $cascadedTargets = [
+            'categories' => $cascadedCategories,
+            'rubrics'    => $cascadedRubrics,
+            'currency'   => $cascadedCurrency,
+            'weights'    => $cascadedWeights,
+            'hasTargets' => (!empty($cascadedCategories['core']) || !empty($cascadedCategories['strategic']) || !empty($cascadedCategories['support']))
+        ];
+        $data['cascadedTargets']    = $cascadedTargets;
+        $data['supervisors']        = $supervisors;
+        $data['cascadeDate']        = $cascadeDate;
+        $data['cycleApprovingName'] = $cycleApprovingName;
+        $data['cycleApprovingPos']  = $cycleApprovingPos;
+
+        $data['ownerInfo'] = [
+            'name'        => $ownerName,
+            'position'    => $ownerPosition,
+            'dept'        => $ownerDept,
+            'period'      => $docPeriod,
+            'cascadeDate' => $cascadeDate
+        ];
 
         // Ratee navigation for evaluators
         $rateeNav = null;
@@ -275,6 +569,28 @@ class Document extends BaseController
             }
         }
 
+        $isCascadedByMe = false;
+        if (!empty($docInfo['document_folder_id'])) {
+            $fModel = new DocumentFolderModel();
+            $currentFolderRec = $fModel->find($docInfo['document_folder_id']);
+            if ($currentFolderRec && !empty($currentFolderRec['parent_folder_id'])) {
+                $pFolder = $fModel->find($currentFolderRec['parent_folder_id']);
+                if ($pFolder && (int)$pFolder['user_id'] === (int)$userId) {
+                    $isCascadedByMe = true;
+                }
+            }
+            if (!$isCascadedByMe) {
+                $rCount = (new EvaluationRoutingModel())
+                    ->where('folder_id', $docInfo['document_folder_id'])
+                    ->where('evaluator_id', $userId)
+                    ->countAllResults();
+                if ($rCount > 0) {
+                    $isCascadedByMe = true;
+                }
+            }
+        }
+        $data['isCascadedByMe']         = $isCascadedByMe;
+
         $data['isCycleArchived']        = $isCycleArchived;
         $data['isOwner']                = ($docOwnerId == $userId);
         $data['rateeNav']               = $rateeNav;
@@ -297,6 +613,39 @@ class Document extends BaseController
         $data['userTeams']              = (new \App\Models\RoutingPresetModel())->getPresetsWithDetails($userId);
         $data['eligibleUsers']          = $userModel->getEligibleTeamMembers($userId);
         
+        // Resolve supervisor approval status for each supervisor
+        $supervisorApprovals = [];
+        $currentEvaluatorRoute = null;
+        if (!empty($docInfo['document_folder_id'])) {
+            $routingModel = new \App\Models\EvaluationRoutingModel();
+            $routes = $routingModel->where('folder_id', $docInfo['document_folder_id'])->findAll();
+            foreach ($routes as $r) {
+                $eId = (int)$r['evaluator_id'];
+                if ($userModel->hasRole($eId, 'Admin')) continue;
+                $supervisorApprovals[$eId] = $r['status'];
+                if ($eId === (int)$userId) {
+                    $currentEvaluatorRoute = $r;
+                }
+            }
+        }
+
+        $data['allBasisGuides']         = $allBasisGuides;
+        $data['allBasisGuidesJson']     = array_map(function($g) {
+            return [
+                'id'            => $g['id'],
+                'title'         => $g['title'],
+                'doc_type'      => $g['doc_type'],
+                'superior_id'   => $g['superior_id'],
+                'superior_name' => $g['superior_name'],
+                'superior_role' => $g['superior_role'],
+                'is_approved'   => (bool)$g['is_approved'],
+                'content'       => $g['content'] ?? '',
+                'formData'      => $g['formData'] ?? null
+            ];
+        }, $allBasisGuides);
+        $data['supervisorApprovals']    = $supervisorApprovals;
+        $data['currentEvaluatorRoute']  = $currentEvaluatorRoute;
+
         return view('document/show', $data);
     }
     

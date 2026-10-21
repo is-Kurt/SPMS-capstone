@@ -74,8 +74,35 @@
                 <!-- FOLDER TITLE INPUT -->
                 <div class="bg-zinc-50 dark:bg-zinc-800/40 p-4 rounded-xl border border-surface-border">
                     <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Folder Name / Batch Title</label>
-                    <input type="text" name="title" id="create-folder-title" placeholder="e.g., 2026-2027 Evaluation Cycle"
+                    <input type="text" name="title" id="create-folder-title"
                            class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-xl px-4 py-2.5 text-sm font-semibold focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none text-text transition-all shadow-2xs placeholder:text-text-muted/60" />
+                </div>
+
+                <!-- APPROVING AUTHORITY / HEAD OF AGENCY SIGNATORY -->
+                <div class="bg-zinc-50 dark:bg-zinc-800/40 p-4 rounded-xl border border-surface-border">
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="text-xs font-black uppercase tracking-wider text-text block">Approving Authority / Head of Office</span>
+                            <span class="text-[10px] text-text-muted font-medium block">Default approving signatory for institutional forms (OPCR) and apex performance reviews</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[9px] font-bold uppercase tracking-wider text-text-muted mb-1">Official Name</label>
+                            <input type="text" name="approving_authority_name" id="create-folder-approving-name"
+                                   class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-xl px-3.5 py-2 text-xs font-semibold focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none text-text transition-all shadow-2xs placeholder:text-text-muted/60" />
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-bold uppercase tracking-wider text-text-muted mb-1">Position / Official Designation</label>
+                            <input type="text" name="approving_authority_position" id="create-folder-approving-position"
+                                   class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-xl px-3.5 py-2 text-xs font-semibold focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none text-text transition-all shadow-2xs placeholder:text-text-muted/60" />
+                        </div>
+                    </div>
                 </div>
 
                 <!-- SCHEDULE MODE TOGGLE BAR -->

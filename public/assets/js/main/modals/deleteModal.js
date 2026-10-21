@@ -40,6 +40,10 @@ if (btnConfirmDelete) {
             onSuccess: () => {
                 // 1. SMART REDIRECT: Check if the item we just deleted is in the current URL
                 if (window.location.href.includes(deleteTargetId)) {
+                    if (window.location.href.includes('folders/archived')) {
+                        window.location.href = '/folders/archived';
+                        return;
+                    }
                     // If we deleted a folder, redirect back to the main /folders page
                     if (deleteTargetUrl.includes('folder')) {
                         window.location.href = deleteTargetUrl + 's'; // converts '/folder' to '/folders'

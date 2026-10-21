@@ -146,6 +146,7 @@ app/Services/SpmsLifecycleRunner.php
 app/Controllers/TestCycle.php
 writable/test_run.json
 writable/test_history.json
+writable/*.flag
 
 # Local Development Checklists & Private Notes
 docs/IMPROVEMENT_CHECKLIST.md

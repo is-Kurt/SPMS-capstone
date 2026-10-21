@@ -58,7 +58,7 @@
 
     $canEditEvaluation = ($isEvaluationPhase && (
         ($isOwner && in_array($status, [FolderStatus::DRAFT->value, FolderStatus::TARGET_APPROVED->value, FolderStatus::TO_EVALUATE->value, FolderStatus::REEVALUATE->value])) ||
-        (!$isOwner && isset($routingStatus) && in_array($status, [FolderStatus::SUBMITTED->value, FolderStatus::EVALUATED->value]))
+        (!$isOwner && (!empty($isCascadedByMe) || isset($routingStatus)) && in_array($status, [FolderStatus::SUBMITTED->value, FolderStatus::EVALUATED->value]))
     ) && !$isGuide);
 
     $editableStatuses = [
@@ -743,7 +743,7 @@
                         } elseif ($targetRole === 'TWG') {
                             $targetBadgeText = 'Targets TWG Approved';
                             $targetBadgeShort = 'Targets TWG Ok';
-                        } elseif ($targetRole === 'University President') {
+                        } elseif ($targetRole === 'University President' || $targetRole === 'Admin') {
                             $targetBadgeText = 'Targets President Approved';
                             $targetBadgeShort = 'Targets President Ok';
                         } elseif ($isTargetApproved) {
@@ -882,7 +882,7 @@
                         </div>
                     <?php else: ?>
                         
-                        <?php if (session()->get('role') === 'Admin'): ?>
+                        <?php if (session()->get('role') === 'Admin' && empty($isCascadedByMe)): ?>
                             <button type="button" disabled class="bg-highlight-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
                                 Monitoring<span class="hidden sm:inline"> View</span>
                             </button>
@@ -900,7 +900,7 @@
                                 } elseif ($targetRole === 'TWG') {
                                     $targetBadgeText = 'Targets TWG Approved';
                                     $targetBadgeShort = 'Targets TWG Ok';
-                                } elseif ($targetRole === 'University President') {
+                                } elseif ($targetRole === 'University President' || $targetRole === 'Admin') {
                                     $targetBadgeText = 'Targets President Approved';
                                     $targetBadgeShort = 'Targets President Ok';
                                 } elseif ($isTargetApproved) {
@@ -1078,7 +1078,7 @@
                             </button>
                         </div>
                     <?php else: ?>
-                        <?php if (session()->get('role') === 'Admin'): ?>
+                        <?php if (session()->get('role') === 'Admin' && empty($isCascadedByMe)): ?>
                             <button type="button" disabled class="bg-highlight-500 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg opacity-80 cursor-not-allowed">
                                 Monitoring<span class="hidden sm:inline"> View</span>
                             </button>
@@ -1099,20 +1099,38 @@
                             $isSupervisor = session()->get('role') === 'Supervisor' || str_contains($userPosLower, 'chair') || str_contains($userPosLower, 'head');
                             $docTitleUpper = strtoupper(trim($doc['title'] ?? ''));
                             $isTrueOpcr = str_contains($docTitleUpper, 'OPCR') || str_contains($docTitleUpper, 'OFFICE') || (strtoupper($doc['doc_type'] ?? '') === 'OPCR');
-                        ?>
-                        <div class="flex items-center gap-1.5 sm:gap-2">
-                            <button id="btn-return-target" type="button" 
-                                    <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="returnTargetRevision()"' ?>
-                                    class="<?= $isTargetPeriodEnded ? 'bg-revision-500/50 cursor-not-allowed opacity-80' : 'bg-revision-500 hover:bg-revision-600 shadow-revision-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg transition-all">
-                                Return<span class="hidden sm:inline"> Target for Revision</span>
-                            </button>
 
-                            <button id="btn-approve-target" type="button" 
-                                    <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="approveFolderTarget(null)"' ?>
-                                    class="<?= $isTargetPeriodEnded ? 'bg-success-500/50 cursor-not-allowed opacity-80' : 'bg-success-500 hover:bg-success-600 shadow-success-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg transition-all">
-                                Approve<span class="hidden sm:inline"> Target</span>
-                            </button>
-                        </div>
+                            $isCurrentSupervisorApproved = (!empty($currentEvaluatorRoute) && in_array($currentEvaluatorRoute['status'], ['target_approved', 'approved']));
+                        ?>
+                        <?php if ($isCurrentSupervisorApproved): ?>
+                            <div class="flex items-center gap-1.5 sm:gap-2">
+                                <span class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-lg text-[10px] sm:text-xs font-bold shadow-xs">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <span>You Approved Targets (Awaiting remaining supervisors)</span>
+                                </span>
+                                <button id="btn-unapprove-target" type="button" 
+                                        <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="unapproveFolderTarget()"' ?>
+                                        class="<?= $isTargetPeriodEnded ? 'bg-warning-500/50 cursor-not-allowed opacity-80' : 'bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg transition-all">
+                                    Remove<span class="hidden sm:inline"> Approval</span>
+                                </button>
+                            </div>
+                        <?php else: ?>
+                            <div class="flex items-center gap-1.5 sm:gap-2">
+                                <button id="btn-return-target" type="button" 
+                                        <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="returnTargetRevision()"' ?>
+                                        class="<?= $isTargetPeriodEnded ? 'bg-revision-500/50 cursor-not-allowed opacity-80' : 'bg-revision-500 hover:bg-revision-600 shadow-revision-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg transition-all">
+                                    Return<span class="hidden sm:inline"> Target for Revision</span>
+                                </button>
+
+                                <button id="btn-approve-target" type="button" 
+                                        <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="approveFolderTarget(null)"' ?>
+                                        class="<?= $isTargetPeriodEnded ? 'bg-success-500/50 cursor-not-allowed opacity-80' : 'bg-success-500 hover:bg-success-600 shadow-success-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg transition-all">
+                                    Approve<span class="hidden sm:inline"> Target</span>
+                                </button>
+                            </div>
+                        <?php endif; ?>
                     <?php endif; ?>
                     <?php endif; ?>
 
@@ -1141,7 +1159,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                 </svg>
-                                <span><?= (!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'PMT') ? 'Targets PMT Approved' : ((!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'TWG') ? 'Targets TWG Approved' : ((!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'University President') ? 'Targets President Approved' : 'Targets Approved')) ?></span>
+                                <span><?= (!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'PMT') ? 'Targets PMT Approved' : ((!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'TWG') ? 'Targets TWG Approved' : ((!empty($doc['target_approver_role']) && in_array($doc['target_approver_role'], ['University President', 'Admin'])) ? 'Targets President Approved' : 'Targets Approved')) ?></span>
                             </span>
 
                             <?php if (in_array(session()->get('role'), ['TWG', 'PMT']) && (empty($doc['target_approver_role']) || !in_array($doc['target_approver_role'], ['TWG', 'PMT']))): ?>
@@ -1179,7 +1197,7 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                     </svg>
-                                    <span><?= (!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'PMT') ? 'Targets PMT Approved' : ((!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'TWG') ? 'Targets TWG Approved' : ((!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'University President') ? 'Targets President Approved' : 'Targets Approved')) ?></span>
+                                    <span><?= (!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'PMT') ? 'Targets PMT Approved' : ((!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'TWG') ? 'Targets TWG Approved' : ((!empty($doc['target_approver_role']) && in_array($doc['target_approver_role'], ['University President', 'Admin'])) ? 'Targets President Approved' : 'Targets Approved')) ?></span>
                                 </span>
                                 <button id="btn-cascade-opcr" type="button" 
                                         onclick="saveWith({ after: () => openCascadeModal() })" 
@@ -1198,7 +1216,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                 </svg>
-                                <span><?= (!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'PMT') ? 'Targets PMT Approved' : ((!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'TWG') ? 'Targets TWG Approved' : ((!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'University President') ? 'Targets President Approved' : 'Targets Approved')) ?></span>
+                                <span><?= (!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'PMT') ? 'Targets PMT Approved' : ((!empty($doc['target_approver_role']) && $doc['target_approver_role'] === 'TWG') ? 'Targets TWG Approved' : ((!empty($doc['target_approver_role']) && in_array($doc['target_approver_role'], ['University President', 'Admin'])) ? 'Targets President Approved' : 'Targets Approved')) ?></span>
                             </span>
                             <span class="mx-1 opacity-40 font-normal">|</span>
                             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-zinc-600 dark:text-zinc-400">
@@ -1316,7 +1334,7 @@
     <!-- Main Workspace Split Container: Form (Left ~3/4) & Rubric (Right ~1/4) -->
     <div class="flex-1 min-h-0 w-full relative flex flex-row overflow-hidden" id="workspace-split-container">
         <div class="flex-1 min-h-0 h-full relative bg-zinc-200 dark:bg-zinc-950 overflow-x-auto transition-all duration-300 ease-out" id="editor-container">
-        <?php if (!empty($basisDoc) && !$isGuide): ?>
+        <?php if ((!empty($allBasisGuides) || !empty($basisDoc)) && !$isGuide): ?>
         <!-- SUPERIOR BASIS STATIC FORM WORKSPACE -->
         <div id="spms-basis-workspace" class="hidden w-full h-full overflow-y-auto p-2 sm:p-6 lg:p-8 flex justify-center items-start custom-scrollbar print:p-0 print:bg-white print:overflow-visible">
             <article id="basis-printable-sheet" class="spms-sheet-container block space-y-5">
@@ -1337,16 +1355,10 @@
                             $isBasisOpcr = !empty($isParentDocOpcr) || str_contains($basisTitleUpper, 'OPCR') || ($basisTypeUpper === 'OPCR');
                             $isBasisDpcr = !empty($isParentDocDpcr) || str_contains($basisTitleUpper, 'DPCR') || str_contains($basisTitleUpper, 'DEPARTMENT') || str_contains($basisTitleUpper, 'DIVISION') || ($basisTypeUpper === 'DPCR');
                         ?>
-                        <?php if ($isParentTargetApproved): ?>
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                                <?= $isBasisOpcr ? 'Institutional Basis' : 'Approved Targets' ?>
-                            </span>
-                        <?php else: ?>
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
-                                Pending Approval
-                            </span>
-                        <?php endif; ?>
-                        <a href="<?= site_url('document/' . $basisDoc['id']) ?>" target="_blank" 
+                        <span id="basis-header-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold <?= $isParentTargetApproved ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300' ?>">
+                            <?= $isParentTargetApproved ? ($isBasisOpcr ? 'Institutional Basis' : 'Approved Targets') : 'Pending Approval' ?>
+                        </span>
+                        <a id="basis-header-open-link" href="<?= site_url('document/' . ($basisDoc['id'] ?? '')) ?>" target="_blank" 
                            class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[10px] font-bold text-zinc-600 hover:text-sky-600 border border-zinc-300 hover:border-sky-300 transition-colors print:hidden"
                            title="Open in new window or tab">
                             <span>Open in New Tab ↗</span>
@@ -1627,10 +1639,10 @@
                 <?php else: ?>
                 <!-- Preamble with Executive Form Styling -->
                 <div style="margin-bottom: 18px; font-size: 11px; line-height: 1.8; text-align: justify; color: #0f172a;">
-                    I, <input type="text" id="ratee-name" value="" placeholder="FULL NAME HERE" class="spms-meta-input" style="font-weight: bold; text-align: center; min-width: 170px; padding: 2px 6px;" <?= $canEditTargets ? '' : 'disabled' ?>>, 
-                    <input type="text" id="ratee-position" value="" placeholder="Position and Official Designation" class="spms-meta-input" style="text-align: center; min-width: 200px; padding: 2px 6px;" <?= $canEditTargets ? '' : 'disabled' ?>> of the 
-                    <input type="text" id="ratee-dept" value="" placeholder="Office Name" class="spms-meta-input" style="text-align: center; min-width: 170px; padding: 2px 6px;" <?= $canEditTargets ? '' : 'disabled' ?>>, commit to deliver and agree to be rated on the attainment of the following targets in accordance with the indicated measure for the period 
-                    <input type="text" id="ratee-period" value="" placeholder="January - June or July - December and Year; e.g., July - December 2024" class="spms-meta-input" style="font-weight: bold; text-align: center; min-width: 320px; padding: 2px 6px;" <?= $canEditTargets ? '' : 'disabled' ?>>.
+                    I, <input type="text" id="ratee-name" value="<?= esc($ownerInfo['name'] ?? '') ?>" placeholder="FULL NAME HERE" class="spms-meta-input" style="font-weight: bold; text-align: center; min-width: 170px; padding: 2px 6px;" <?= $canEditTargets ? '' : 'disabled' ?>>, 
+                    <input type="text" id="ratee-position" value="<?= esc($ownerInfo['position'] ?? '') ?>" placeholder="Position and Official Designation" class="spms-meta-input" style="text-align: center; min-width: 200px; padding: 2px 6px;" <?= $canEditTargets ? '' : 'disabled' ?>> of the 
+                    <input type="text" id="ratee-dept" value="<?= esc($ownerInfo['dept'] ?? '') ?>" placeholder="Office Name" class="spms-meta-input" style="text-align: center; min-width: 170px; padding: 2px 6px;" <?= $canEditTargets ? '' : 'disabled' ?>>, commit to deliver and agree to be rated on the attainment of the following targets in accordance with the indicated measure for the period 
+                    <input type="text" id="ratee-period" value="<?= esc($ownerInfo['period'] ?? '') ?>" placeholder="January - June or July - December and Year; e.g., July - December 2024" class="spms-meta-input" style="font-weight: bold; text-align: center; min-width: 320px; padding: 2px 6px;" <?= $canEditTargets ? '' : 'disabled' ?>>.
                 </div>
 
                 <!-- Approver, Ratee, and Rating Scale Matrix -->
@@ -1650,20 +1662,20 @@
                                         <tr>
                                             <td style="width: 65px; border: none; padding: 3px 0; font-weight: bold; color: #0f172a;">Name:</td>
                                             <td style="border: none; padding: 3px 0;">
-                                                <input type="text" class="field-approver-name spms-meta-input" id="approver-name" value="" placeholder="<?= $isDocOpcr ? '(name of head of office / approving authority)' : ($isDocDpcr ? '(name of office head)' : 'Name of Approving Authority') ?>" style="font-weight: bold; width: 60%; padding: 2px 4px;" <?= $canEditApprover ? '' : 'disabled' ?>>
+                                                <input type="text" class="field-approver-name spms-meta-input" id="approver-name" value="<?= esc($supervisors[0]['name'] ?? '') ?>" placeholder="<?= $isDocOpcr ? '(name of head of office / approving authority)' : ($isDocDpcr ? '(name of office head)' : 'Name of Approving Authority') ?>" style="font-weight: bold; width: 60%; padding: 2px 4px;" <?= $canEditApprover ? '' : 'disabled' ?>>
                                                 <span style="color: #64748b; font-style: italic; font-size: 10px; margin-left: 6px;">(may add signatories depending on position)</span>
                                             </td>
                                         </tr>
                                         <tr>
                                             <td style="border: none; padding: 3px 0; font-weight: bold; color: #0f172a;">Position:</td>
                                             <td style="border: none; padding: 3px 0;">
-                                                <input type="text" class="field-approver-pos spms-meta-input" id="approver-pos" value="" placeholder="<?= $isDocOpcr ? '(position / designation)' : ($isDocDpcr ? '(position of office head)' : 'Official Designation') ?>" style="width: 80%; padding: 2px 4px;" <?= $canEditApprover ? '' : 'disabled' ?>>
+                                                <input type="text" class="field-approver-pos spms-meta-input" id="approver-pos" value="<?= esc($supervisors[0]['position'] ?? '') ?>" placeholder="<?= $isDocOpcr ? '(position / designation)' : ($isDocDpcr ? '(position of office head)' : 'Official Designation') ?>" style="width: 80%; padding: 2px 4px;" <?= $canEditApprover ? '' : 'disabled' ?>>
                                             </td>
                                         </tr>
                                         <tr>
                                             <td style="border: none; padding: 3px 0; font-weight: bold; color: #0f172a;">Date:</td>
                                             <td style="border: none; padding: 3px 0;">
-                                                <input type="date" class="field-approver-date spms-meta-input" id="approver-date" value="" onclick="this.showPicker && this.showPicker()" style="width: 130px; padding: 2px 4px; cursor: pointer;" <?= $canEditApprover ? '' : 'disabled' ?>>
+                                                <input type="date" class="field-approver-date spms-meta-input" id="approver-date" value="<?= esc($supervisors[0]['date'] ?? $cascadeDate ?? '') ?>" onclick="this.showPicker && this.showPicker()" style="width: 130px; padding: 2px 4px; cursor: pointer;" <?= $canEditApprover ? '' : 'disabled' ?>>
                                             </td>
                                         </tr>
                                     </table>
@@ -1677,11 +1689,11 @@
                                 <!-- Name of Employee Block -->
                                 <div style="margin-bottom: 14px;">
                                     <div>
-                                        <input type="text" id="ratee-sign-name" value="" placeholder="(full name here)" class="spms-meta-input" style="font-weight: bold; width: 240px; padding: 2px 0;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                        <input type="text" id="ratee-sign-name" value="<?= esc($ownerInfo['name'] ?? '') ?>" placeholder="(full name here)" class="spms-meta-input" style="font-weight: bold; width: 240px; padding: 2px 0;" <?= $canEditTargets ? '' : 'disabled' ?>>
                                     </div>
                                     <div style="font-size: 11px; color: #334155; margin-top: 3px; font-weight: 600;">Name of Employee</div>
                                     <div style="margin-top: 4px; font-size: 11px; color: #334155;">
-                                        Date: <input type="date" id="ratee-sign-date" value="" onclick="this.showPicker && this.showPicker()" class="spms-meta-input" style="width: 130px; cursor: pointer; padding: 1px 2px;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                        Date: <input type="date" id="ratee-sign-date" value="<?= esc($cascadeDate ?? '') ?>" onclick="this.showPicker && this.showPicker()" class="spms-meta-input" style="width: 130px; cursor: pointer; padding: 1px 2px;" <?= $canEditTargets ? '' : 'disabled' ?>>
                                     </div>
                                 </div>
 
@@ -1718,6 +1730,25 @@
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> HoO Adjusted</span>
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50/80 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800"><span class="w-2 h-2 rounded-full bg-amber-500"></span> TWG Calibrated</span>
                     </div>
+                </div>
+                <?php endif; ?>
+
+                <!-- Cascaded Targets & Rubrics Notice / Action Banner (Target Phase) -->
+                <?php if ($canEditTargets && !empty($cascadedTargets['hasTargets'])): ?>
+                <div class="mb-3.5 p-2.5 sm:p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-900 dark:text-purple-300 flex flex-wrap items-center justify-between gap-2.5 text-xs print-hide shadow-xs">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-6 h-6 rounded-md bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 font-bold">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        </div>
+                        <div class="min-w-0">
+                            <span class="font-extrabold text-purple-950 dark:text-purple-200 text-xs">Cascaded Targets & Rubrics Matrix:</span>
+                            <span class="text-purple-700 dark:text-purple-400 text-[11px] ml-1">Targets, success indicators, and rubrics from <?= count($supervisors) === 1 ? '1 supervisor' : count($supervisors) . ' supervisors' ?> are passed on and freely editable.</span>
+                        </div>
+                    </div>
+                    <button type="button" onclick="appendCascadedTargets()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold bg-purple-600 text-white hover:bg-purple-700 transition-all cursor-pointer shadow-xs shrink-0" title="Append cascaded targets and rubrics from supervisor(s)">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        <span>Append Cascaded Goals (<?= count($supervisors) ?>)</span>
+                    </button>
                 </div>
                 <?php endif; ?>
 
@@ -2225,13 +2256,13 @@
                         <!-- Left: Ratee (Columns A-C) -->
                         <td style="width: 50%; vertical-align: top; border: none; padding: 0 15px 0 0;">
                             <div style="margin-bottom: 6px; color: #0f172a;">Name and Signature of Ratee: 
-                                <input type="text" id="sig-ratee-name" value="" placeholder="(name here)" class="spms-meta-input" style="font-weight: bold; width: 55%; padding: 2px 4px;">
+                                <input type="text" id="sig-ratee-name" value="<?= esc($ownerInfo['name'] ?? '') ?>" placeholder="(name here)" class="spms-meta-input" style="font-weight: bold; width: 55%; padding: 2px 4px;">
                             </div>
                             <div style="margin-bottom: 6px; color: #0f172a;">Position: 
-                                <input type="text" id="sig-ratee-pos" value="" placeholder="(position here)" class="spms-meta-input" style="width: 70%; padding: 2px 4px;">
+                                <input type="text" id="sig-ratee-pos" value="<?= esc($ownerInfo['position'] ?? '') ?>" placeholder="(position here)" class="spms-meta-input" style="width: 70%; padding: 2px 4px;">
                             </div>
                             <div style="margin-bottom: 6px; color: #0f172a;">
-                                Date: <input type="date" id="sig-ratee-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input" style="width: 130px; cursor: pointer; padding: 1px 4px;">
+                                Date: <input type="date" id="sig-ratee-date" value="<?= esc($cascadeDate ?? '') ?>" onclick="this.showPicker && this.showPicker()" class="spms-meta-input" style="width: 130px; cursor: pointer; padding: 1px 4px;">
                             </div>
                         </td>
 
@@ -2246,13 +2277,13 @@
                                         </button>
                                     </div>
                                     <div style="margin-bottom: 6px; color: #0f172a;">
-                                        <input type="text" class="field-footer-approver-name spms-meta-input" id="sig-dean-name" value="" placeholder="(name of office head)" style="font-weight: bold; width: 65%; padding: 2px 4px;">
+                                        <input type="text" class="field-footer-approver-name spms-meta-input" id="sig-dean-name" value="<?= esc($supervisors[0]['name'] ?? '') ?>" placeholder="(name of office head)" style="font-weight: bold; width: 65%; padding: 2px 4px;">
                                     </div>
                                     <div style="margin-bottom: 6px; color: #0f172a;">Position: 
-                                        <input type="text" class="field-footer-approver-pos spms-meta-input" id="sig-dean-pos" value="" placeholder="(position of office head)" style="width: 70%; padding: 2px 4px;">
+                                        <input type="text" class="field-footer-approver-pos spms-meta-input" id="sig-dean-pos" value="<?= esc($supervisors[0]['position'] ?? '') ?>" placeholder="(position of office head)" style="width: 70%; padding: 2px 4px;">
                                     </div>
                                     <div style="margin-bottom: 6px; color: #0f172a;">
-                                        Date: <input type="date" class="field-footer-approver-date spms-meta-input" id="sig-dean-date" onclick="this.showPicker && this.showPicker()" style="width: 130px; cursor: pointer; padding: 1px 4px;">
+                                        Date: <input type="date" class="field-footer-approver-date spms-meta-input" id="sig-dean-date" value="<?= esc($supervisors[0]['evalDate'] ?? $cascadeDate ?? '') ?>" onclick="this.showPicker && this.showPicker()" style="width: 130px; cursor: pointer; padding: 1px 4px;">
                                     </div>
                                     <div style="color: #64748b; font-size: 10px; font-style: italic;">(may add signatories depending on position/designation)</div>
                                 </div>
@@ -2409,10 +2440,14 @@
 
     let activeTabId = tabs[0].id;
     
+    const allBasisGuides = <?= json_encode($allBasisGuidesJson ?? []) ?>;
     const basisFormData = <?= json_encode($basisFormData ?? null) ?>;
     const basisDocContent = <?= json_encode($basisDocContent ?? '') ?>;
     const superiorUserInfo = <?= json_encode($superiorUser ?? null) ?>;
     const ownerAccountInfo = <?= json_encode($ownerInfo ?? []) ?>;
+    const defaultSupervisors = <?= json_encode($supervisors ?? []) ?>;
+    const defaultCascadeDate = <?= json_encode($cascadeDate ?? date('Y-m-d')) ?>;
+    const cascadedTargets = <?= json_encode($cascadedTargets ?? null) ?>;
 
     const canEditTargets = <?= json_encode($canEditTargets) ?>;
     const canEditApprover = <?= json_encode($canEditApprover) ?>;
@@ -2513,26 +2548,54 @@
         `;
         tabBar.appendChild(rubricsBtn);
 
-        <?php if (!empty($basisDoc) && !$isGuide): ?>
-        <?php 
-            $isBasisOpcr = !empty($isParentDocOpcr) || str_contains(strtoupper($basisDoc['title'] ?? ''), 'OPCR') || (strtoupper($basisDoc['doc_type'] ?? '') === 'OPCR');
-            $basisBadgeLabel = $isParentTargetApproved ? ($isBasisOpcr ? 'Institutional' : 'Approved') : 'Pending';
-        ?>
-        const isBasisActive = (activeTabId === 'basis-tab');
-        const basisBtn = document.createElement('div');
-        basisBtn.className = `group flex items-center gap-1.5 pb-2 border-b-2 transition-colors select-none cursor-pointer ${isBasisActive ? 'border-sky-600 text-sky-800 dark:border-sky-400 dark:text-sky-300 font-extrabold' : 'border-transparent text-zinc-500 hover:text-zinc-800 dark:text-text-muted dark:hover:text-text'}`;
-        basisBtn.onclick = () => switchEditorTab('basis-tab');
-        basisBtn.title = 'View Superior Basis Document';
-        basisBtn.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 ${isBasisActive ? 'text-sky-500' : 'text-sky-500/70'} shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span>Basis: <?= esc($basisDoc['title']) ?></span>
-            <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold ${isBasisActive ? 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-300 dark:border-sky-700' : '<?= $isParentTargetApproved ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400' ?>'}">
-                <?= esc($basisBadgeLabel) ?>
-            </span>
-        `;
-        tabBar.appendChild(basisBtn);
+        <?php if (!empty($allBasisGuides) && !$isGuide): ?>
+            <?php foreach ($allBasisGuides as $gIdx => $g): ?>
+                <?php 
+                    $isBasisOpcr = !empty($isParentDocOpcr) || str_contains(strtoupper($g['title'] ?? ''), 'OPCR') || (strtoupper($g['doc_type'] ?? '') === 'OPCR');
+                    $basisBadgeLabel = $g['is_approved'] ? ($isBasisOpcr ? 'Institutional' : 'Approved') : 'Pending';
+                    $tabKey = 'basis-tab-' . $gIdx;
+                    $supShortName = esc($g['superior_name'] ?? '');
+                    $guideTitle = esc($g['title'] ?? 'Basis');
+                    $tabLabel = (count($allBasisGuides) > 1) 
+                        ? "Basis: {$guideTitle} ({$supShortName})" 
+                        : "Basis: {$guideTitle}";
+                ?>
+                const isBasisActive_<?= $gIdx ?> = (activeTabId === '<?= $tabKey ?>');
+                const basisBtn_<?= $gIdx ?> = document.createElement('div');
+                basisBtn_<?= $gIdx ?>.className = `group flex items-center gap-1.5 pb-2 border-b-2 transition-colors select-none cursor-pointer ${isBasisActive_<?= $gIdx ?> ? 'border-sky-600 text-sky-800 dark:border-sky-400 dark:text-sky-300 font-extrabold' : 'border-transparent text-zinc-500 hover:text-zinc-800 dark:text-text-muted dark:hover:text-text'}`;
+                basisBtn_<?= $gIdx ?>.onclick = () => switchEditorTab('<?= $tabKey ?>');
+                basisBtn_<?= $gIdx ?>.title = 'View Superior Basis Document: <?= esc($g['title']) ?> (<?= esc($g['superior_name']) ?>)';
+                basisBtn_<?= $gIdx ?>.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 ${isBasisActive_<?= $gIdx ?> ? 'text-sky-500' : 'text-sky-500/70'} shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span><?= $tabLabel ?></span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold ${isBasisActive_<?= $gIdx ?> ? 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-300 dark:border-sky-700' : '<?= $g['is_approved'] ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400' ?>'}">
+                        <?= esc($basisBadgeLabel) ?>
+                    </span>
+                `;
+                tabBar.appendChild(basisBtn_<?= $gIdx ?>);
+            <?php endforeach; ?>
+        <?php elseif (!empty($basisDoc) && !$isGuide): ?>
+            <?php 
+                $isBasisOpcr = !empty($isParentDocOpcr) || str_contains(strtoupper($basisDoc['title'] ?? ''), 'OPCR') || (strtoupper($basisDoc['doc_type'] ?? '') === 'OPCR');
+                $basisBadgeLabel = $isParentTargetApproved ? ($isBasisOpcr ? 'Institutional' : 'Approved') : 'Pending';
+            ?>
+            const isBasisActive = (activeTabId === 'basis-tab' || activeTabId === 'basis-tab-0');
+            const basisBtn = document.createElement('div');
+            basisBtn.className = `group flex items-center gap-1.5 pb-2 border-b-2 transition-colors select-none cursor-pointer ${isBasisActive ? 'border-sky-600 text-sky-800 dark:border-sky-400 dark:text-sky-300 font-extrabold' : 'border-transparent text-zinc-500 hover:text-zinc-800 dark:text-text-muted dark:hover:text-text'}`;
+            basisBtn.onclick = () => switchEditorTab('basis-tab-0');
+            basisBtn.title = 'View Superior Basis Document';
+            basisBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 ${isBasisActive ? 'text-sky-500' : 'text-sky-500/70'} shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Basis: <?= esc($basisDoc['title']) ?></span>
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold ${isBasisActive ? 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-300 dark:border-sky-700' : '<?= $isParentTargetApproved ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400' ?>'}">
+                    <?= esc($basisBadgeLabel) ?>
+                </span>
+            `;
+            tabBar.appendChild(basisBtn);
         <?php endif; ?>
         
 
@@ -2545,7 +2608,7 @@
             if (typeof window.syncDigitalRubricsData === 'function') {
                 window.syncDigitalRubricsData();
             }
-        } else if (activeTabId !== 'basis-tab') {
+        } else if (typeof activeTabId !== 'string' || !activeTabId.startsWith('basis-tab')) {
             if (window.isSpmsFormActive && typeof window.syncSpmsActiveTab === 'function') {
                 window.syncSpmsActiveTab();
             } else {
@@ -3498,14 +3561,15 @@
         const basisWorkspace = document.getElementById('spms-basis-workspace');
         const rubricsWorkspace = document.getElementById('spms-rubrics-workspace');
 
-        if (activeTabId === 'basis-tab') {
+        if (activeTabId === 'basis-tab' || (typeof activeTabId === 'string' && activeTabId.startsWith('basis-tab'))) {
             window.isSpmsFormActive = false;
             document.getElementById('spms-form-workspace')?.classList.add('hidden');
             document.getElementById('tinymce-wrapper')?.classList.add('hidden');
             if (rubricsWorkspace) rubricsWorkspace.classList.add('hidden');
             if (basisWorkspace) {
                 basisWorkspace.classList.remove('hidden');
-                renderBasisStaticSheet();
+                const gIdx = parseInt(activeTabId.replace('basis-tab-', '').replace('basis-tab', '')) || 0;
+                renderBasisStaticSheet(gIdx);
             }
             return;
         }
@@ -3754,6 +3818,66 @@
     window.removeFooterApproverBlock = removeFooterApproverBlock;
     window.removeApproverBlockByIndex = removeApproverBlockByIndex;
 
+    window.appendCascadedTargets = function() {
+        if (!cascadedTargets || !cascadedTargets.hasTargets) {
+            if (typeof window.showToast === 'function') {
+                window.showToast('No cascaded targets available from supervisor(s).', 'info');
+            }
+            return;
+        }
+        const cats = cascadedTargets.categories || {};
+        let addedCount = 0;
+        ['core', 'strategic', 'support'].forEach(cat => {
+            if (window.isCurrentDocIperf && cat !== 'core') return;
+            if (Array.isArray(cats[cat])) {
+                cats[cat].forEach(row => {
+                    const rowMfo = (row.mfo || '').trim().toLowerCase();
+                    const rowInd = (row.indicators || '').trim().toLowerCase();
+                    if (!rowMfo && !rowInd) return;
+
+                    // Deduplicate against rows currently present in table tbody
+                    const tbody = document.getElementById('tbody-' + cat);
+                    let alreadyPresent = false;
+                    if (tbody) {
+                        const trList = tbody.querySelectorAll('.table-row-' + cat);
+                        trList.forEach(tr => {
+                            const curMfo = (tr.querySelector('.field-mfo')?.value || '').trim().toLowerCase();
+                            const curInd = (tr.querySelector('.field-indicators')?.value || '').trim().toLowerCase();
+                            if (curMfo === rowMfo && curInd === rowInd) {
+                                alreadyPresent = true;
+                            }
+                        });
+                    }
+
+                    if (!alreadyPresent) {
+                        const clone = Object.assign({}, row, {
+                            row_id: 'row_' + cat + '_cascaded_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6)
+                        });
+                        addTableRow(cat, clone);
+                        if (cascadedTargets.rubrics && cascadedTargets.rubrics[row.row_id]) {
+                            if (!window.digitalRubricsData) window.digitalRubricsData = {};
+                            window.digitalRubricsData[clone.row_id] = JSON.parse(JSON.stringify(cascadedTargets.rubrics[row.row_id]));
+                        }
+                        addedCount++;
+                    }
+                });
+            }
+        });
+        if (addedCount > 0) {
+            if (tabs[0]?.formData) tabs[0].formData.rubrics = window.digitalRubricsData;
+            if (typeof window.syncSpmsActiveTab === 'function') window.syncSpmsActiveTab();
+            if (typeof AppState !== 'undefined') AppState.setDirty(true);
+            if (typeof window.renderDigitalRubricsMatrix === 'function') window.renderDigitalRubricsMatrix();
+            if (typeof window.showToast === 'function') {
+                window.showToast(`Successfully appended ${addedCount} cascaded target(s) and rubrics from supervisor(s).`, 'success');
+            }
+        } else {
+            if (typeof window.showToast === 'function') {
+                window.showToast('All cascaded targets from supervisor(s) are already present in your form.', 'info');
+            }
+        }
+    };
+
     function populateSpmsForm(formData) {
         const data = formData || {};
 
@@ -3905,61 +4029,81 @@
             }
         };
 
-        const defaultRateeName = '';
-        const defaultRateePos  = '';
-        const defaultRateeDept = '';
-        const defaultPeriod    = ''; // Keep blank for user to fill
+        const defaultRateeName = ownerAccountInfo.name || '';
+        const defaultRateePos  = ownerAccountInfo.position || '';
+        const defaultRateeDept = ownerAccountInfo.dept || '';
+        const defaultPeriod    = ownerAccountInfo.period || '';
+        const cascadeDateVal   = ownerAccountInfo.cascadeDate || defaultCascadeDate;
 
         let savedPeriod = data.ratee?.period || '';
         if (savedPeriod.toLowerCase().startsWith('untitled evaluation') || (ownerAccountInfo.folderTitle && savedPeriod === ownerAccountInfo.folderTitle)) {
             savedPeriod = '';
         }
 
-        const defaultSupName = '';
-        const defaultSupPos  = '';
-
-        setVal('ratee-name', data.ratee?.name || '');
-        setVal('ratee-position', data.ratee?.position || '');
-        setVal('ratee-dept', data.ratee?.dept || '');
-        setVal('ratee-period', savedPeriod);
+        setVal('ratee-name', (data.ratee?.name && data.ratee.name.trim() !== '') ? data.ratee.name : defaultRateeName);
+        setVal('ratee-position', (data.ratee?.position && data.ratee.position.trim() !== '') ? data.ratee.position : defaultRateePos);
+        setVal('ratee-dept', (data.ratee?.dept && data.ratee.dept.trim() !== '') ? data.ratee.dept : defaultRateeDept);
+        setVal('ratee-period', savedPeriod || defaultPeriod);
 
         // Auto-sync masthead college / department subtitle
         const lhDept = document.getElementById('spms-letterhead-dept');
         if (lhDept) {
-            const currentDept = (data.ratee?.dept || '').trim() || '<?= addslashes(esc($ownerInfo['dept'] ?? '')) ?>' || 'Office of the University President';
+            const currentDept = (data.ratee?.dept || '').trim() || (defaultRateeDept || '') || '<?= addslashes(esc($ownerInfo['dept'] ?? '')) ?>' || 'Office of the University President';
             lhDept.textContent = currentDept;
         }
 
-        // Populate Approver(s)
+        // Populate Approver(s) - Supports multiple cascaded supervisors
         const container = document.getElementById('approvers-container');
         const footerContainer = document.getElementById('footer-approvers-container');
+        let approversList = [];
+
         if (container) {
             container.innerHTML = '';
             if (footerContainer) footerContainer.innerHTML = '';
 
-            let approversList = (data.approvers && Array.isArray(data.approvers) && data.approvers.length > 0)
-                ? data.approvers
-                : (data.approver && (data.approver.name || data.approver.position || data.approver.date)
-                    ? [data.approver]
-                    : [{ name: '', position: '', date: '', evalDate: '' }]);
+            let hasValidSavedApprovers = false;
+            if (data.approvers && Array.isArray(data.approvers) && data.approvers.length > 0) {
+                if (data.approvers.some(a => a && a.name && a.name.trim() !== '')) {
+                    hasValidSavedApprovers = true;
+                    approversList = data.approvers;
+                }
+            } else if (data.approver && data.approver.name && data.approver.name.trim() !== '') {
+                hasValidSavedApprovers = true;
+                approversList = [data.approver];
+            } else if (data.signatories?.dean && data.signatories.dean.trim() !== '') {
+                hasValidSavedApprovers = true;
+                approversList = [{
+                    name: data.signatories.dean,
+                    position: data.signatories.deanPos || '',
+                    date: data.signatories.deanDate || cascadeDateVal,
+                    evalDate: data.signatories.deanDate || cascadeDateVal
+                }];
+            }
 
-            if (approversList.length > 0 && !approversList[0].evalDate && data.signatories?.deanDate) {
-                approversList[0].evalDate = data.signatories.deanDate;
-            }
-            if (approversList.length > 0 && !approversList[0].name && data.signatories?.dean) {
-                approversList[0].name = data.signatories.dean;
-            }
-            if (approversList.length > 0 && !approversList[0].position && data.signatories?.deanPos) {
-                approversList[0].position = data.signatories.deanPos;
+            if (!hasValidSavedApprovers) {
+                // Populate default from cascaded supervisor(s)
+                if (defaultSupervisors && Array.isArray(defaultSupervisors) && defaultSupervisors.length > 0) {
+                    approversList = defaultSupervisors.map(sup => ({
+                        name: sup.name || '',
+                        position: sup.position || '',
+                        date: sup.date || cascadeDateVal,
+                        evalDate: sup.evalDate || cascadeDateVal
+                    }));
+                } else {
+                    approversList = [{ name: '', position: '', date: cascadeDateVal, evalDate: cascadeDateVal }];
+                }
             }
 
             approversList.forEach((appr, idx) => {
-                addApproverBlock(appr.name || '', appr.position || '', appr.date || '', idx === 0, appr.evalDate || '');
+                if (!appr.date) appr.date = cascadeDateVal;
+                if (!appr.evalDate) appr.evalDate = cascadeDateVal;
+                addApproverBlock(appr.name || '', appr.position || '', appr.date, idx === 0, appr.evalDate);
             });
         } else {
-            setVal('approver-name', data.approver?.name || '');
-            setVal('approver-pos', data.approver?.position || '');
-            setVal('approver-date', data.approver?.date || '');
+            const firstSup = (defaultSupervisors && defaultSupervisors[0]) ? defaultSupervisors[0] : {};
+            setVal('approver-name', (data.approver?.name && data.approver.name.trim() !== '') ? data.approver.name : (firstSup.name || ''));
+            setVal('approver-pos', (data.approver?.position && data.approver.position.trim() !== '') ? data.approver.position : (firstSup.position || ''));
+            setVal('approver-date', (data.approver?.date && data.approver.date.trim() !== '') ? data.approver.date : (firstSup.date || cascadeDateVal));
         }
 
         const addApprBtn = document.getElementById('btn-add-approver') || document.getElementById('btn-add-approver-ipcr');
@@ -3971,8 +4115,8 @@
             addFooterApprBtn.style.display = canEditTargets ? 'inline-flex' : 'none';
         }
 
-        setVal('ratee-sign-name', data.rateeSign?.name || '');
-        setVal('ratee-sign-date', data.rateeSign?.date || '');
+        setVal('ratee-sign-name', (data.rateeSign?.name && data.rateeSign.name.trim() !== '') ? data.rateeSign.name : defaultRateeName);
+        setVal('ratee-sign-date', (data.rateeSign?.date && data.rateeSign.date.trim() !== '') ? data.rateeSign.date : cascadeDateVal);
 
         window.currentDocCurrency = data.budget_currency || data.currency || '₱';
         document.querySelectorAll('.header-budget-currency').forEach(el => {
@@ -3983,24 +4127,25 @@
 
         setVal('pmt-remarks', data.pmtRemarks || '');
 
-        setVal('sig-ratee-name', data.signatories?.ratee || '');
-        setVal('sig-ratee-pos', data.signatories?.rateePos || '');
-        setVal('sig-ratee-date', data.signatories?.rateeDate || '');
-        setVal('sig-dean-name', data.signatories?.dean || '');
-        setVal('sig-dean-date', data.signatories?.deanDate || '');
+        setVal('sig-ratee-name', (data.signatories?.ratee && data.signatories.ratee.trim() !== '') ? data.signatories.ratee : defaultRateeName);
+        setVal('sig-ratee-pos', (data.signatories?.rateePos && data.signatories.rateePos.trim() !== '') ? data.signatories.rateePos : defaultRateePos);
+        setVal('sig-ratee-date', (data.signatories?.rateeDate && data.signatories.rateeDate.trim() !== '') ? data.signatories.rateeDate : cascadeDateVal);
+        setVal('sig-dean-name', (data.signatories?.dean && data.signatories.dean.trim() !== '') ? data.signatories.dean : (approversList[0]?.name || defaultSupervisors[0]?.name || ''));
+        setVal('sig-dean-pos', (data.signatories?.deanPos && data.signatories.deanPos.trim() !== '') ? data.signatories.deanPos : (approversList[0]?.position || defaultSupervisors[0]?.position || ''));
+        setVal('sig-dean-date', (data.signatories?.deanDate && data.signatories.deanDate.trim() !== '') ? data.signatories.deanDate : (approversList[0]?.evalDate || cascadeDateVal));
         setVal('sig-vp-name', data.signatories?.vp || '');
         setVal('sig-vp-date', data.signatories?.vpDate || '');
 
         if (isIperf) {
             setVal('ratee-classification', data.classification || 'Contract of Service (COS)');
-            setVal('sig-targets-prepared-name', data.signatories?.targetsPreparedName || '');
-            setVal('sig-targets-prepared-date', data.signatories?.targetsPreparedDate || '');
-            setVal('sig-targets-approved-name', data.signatories?.targetsApprovedName || '');
-            setVal('sig-targets-approved-date', data.signatories?.targetsApprovedDate || '');
-            setVal('sig-eval-rated-name', data.signatories?.evalRatedName || '');
-            setVal('sig-eval-rated-date', data.signatories?.evalRatedDate || '');
-            setVal('sig-eval-conforme-name', data.signatories?.evalConformeName || '');
-            setVal('sig-eval-conforme-date', data.signatories?.evalConformeDate || '');
+            setVal('sig-targets-prepared-name', (data.signatories?.targetsPreparedName && data.signatories.targetsPreparedName.trim() !== '') ? data.signatories.targetsPreparedName : defaultRateeName);
+            setVal('sig-targets-prepared-date', (data.signatories?.targetsPreparedDate && data.signatories.targetsPreparedDate.trim() !== '') ? data.signatories.targetsPreparedDate : cascadeDateVal);
+            setVal('sig-targets-approved-name', (data.signatories?.targetsApprovedName && data.signatories.targetsApprovedName.trim() !== '') ? data.signatories.targetsApprovedName : (approversList[0]?.name || defaultSupervisors[0]?.name || ''));
+            setVal('sig-targets-approved-date', (data.signatories?.targetsApprovedDate && data.signatories.targetsApprovedDate.trim() !== '') ? data.signatories.targetsApprovedDate : cascadeDateVal);
+            setVal('sig-eval-rated-name', (data.signatories?.evalRatedName && data.signatories.evalRatedName.trim() !== '') ? data.signatories.evalRatedName : (approversList[0]?.name || defaultSupervisors[0]?.name || ''));
+            setVal('sig-eval-rated-date', (data.signatories?.evalRatedDate && data.signatories.evalRatedDate.trim() !== '') ? data.signatories.evalRatedDate : cascadeDateVal);
+            setVal('sig-eval-conforme-name', (data.signatories?.evalConformeName && data.signatories.evalConformeName.trim() !== '') ? data.signatories.evalConformeName : defaultRateeName);
+            setVal('sig-eval-conforme-date', (data.signatories?.evalConformeDate && data.signatories.evalConformeDate.trim() !== '') ? data.signatories.evalConformeDate : cascadeDateVal);
 
             const elClass = document.getElementById('ratee-classification');
             if (elClass) elClass.disabled = !canEditTargets;
@@ -4020,26 +4165,78 @@
         document.querySelectorAll('.table-row-core, .table-row-strategic, .table-row-support').forEach(tr => tr.remove());
 
         // Populate category rows
-        const hasSavedCategories = Boolean(data && data.categories && typeof data.categories === 'object' && (
-            (Array.isArray(data.categories.core) && data.categories.core.length > 0) ||
-            (Array.isArray(data.categories.strategic) && data.categories.strategic.length > 0) ||
-            (Array.isArray(data.categories.support) && data.categories.support.length > 0) ||
+        const hasRealCustomTargets = Boolean(data && data.categories && typeof data.categories === 'object' && (
+            (Array.isArray(data.categories.core) && data.categories.core.some(r => r && ((r.mfo && r.mfo.trim() !== '') || (r.indicators && r.indicators.trim() !== '')))) ||
+            (Array.isArray(data.categories.strategic) && data.categories.strategic.some(r => r && ((r.mfo && r.mfo.trim() !== '') || (r.indicators && r.indicators.trim() !== '')))) ||
+            (Array.isArray(data.categories.support) && data.categories.support.some(r => r && ((r.mfo && r.mfo.trim() !== '') || (r.indicators && r.indicators.trim() !== '')))) ||
             window._userExplicitlyDeletedRow
         ));
-        const cats = data.categories || DEFAULT_BLUEPRINT;
+
+        let cats = data.categories;
+        if (!hasRealCustomTargets && cascadedTargets && cascadedTargets.hasTargets) {
+            cats = cascadedTargets.categories;
+            if (cascadedTargets.rubrics && Object.keys(cascadedTargets.rubrics).length > 0) {
+                window.digitalRubricsData = Object.assign({}, cascadedTargets.rubrics, window.digitalRubricsData || {});
+                if (tabs[0]?.formData) tabs[0].formData.rubrics = window.digitalRubricsData;
+            }
+            if (tabs[0]?.formData) tabs[0].formData.categories = cats;
+            if (cascadedTargets.currency) window.currentDocCurrency = cascadedTargets.currency;
+        } else if (hasRealCustomTargets && canEditTargets && cascadedTargets && cascadedTargets.hasTargets && !window._userExplicitlyDeletedRow) {
+            // When multiple supervisors cascade to the same subordinate, automatically merge any new cascaded targets
+            // that do not already exist in the user's current categories
+            let merged = false;
+            ['core', 'strategic', 'support'].forEach(cat => {
+                if (window.isCurrentDocIperf && cat !== 'core') return;
+                const incomingRows = (cascadedTargets.categories && cascadedTargets.categories[cat]) || [];
+                if (!Array.isArray(cats[cat])) cats[cat] = [];
+                
+                incomingRows.forEach(inRow => {
+                    const inMfo = (inRow.mfo || '').trim().toLowerCase();
+                    const inInd = (inRow.indicators || '').trim().toLowerCase();
+                    if (!inMfo && !inInd) return;
+
+                    const alreadyExists = cats[cat].some(existingRow => {
+                        const exMfo = (existingRow.mfo || '').trim().toLowerCase();
+                        const exInd = (existingRow.indicators || '').trim().toLowerCase();
+                        return (exMfo === inMfo && exInd === inInd);
+                    });
+
+                    if (!alreadyExists) {
+                        const newRow = Object.assign({}, inRow, {
+                            row_id: 'row_' + cat + '_cascaded_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6)
+                        });
+                        cats[cat].push(newRow);
+                        if (cascadedTargets.rubrics && cascadedTargets.rubrics[inRow.row_id]) {
+                            if (!window.digitalRubricsData) window.digitalRubricsData = {};
+                            window.digitalRubricsData[newRow.row_id] = JSON.parse(JSON.stringify(cascadedTargets.rubrics[inRow.row_id]));
+                        }
+                        merged = true;
+                    }
+                });
+            });
+            if (merged) {
+                if (tabs[0]?.formData) {
+                    tabs[0].formData.categories = cats;
+                    tabs[0].formData.rubrics = window.digitalRubricsData;
+                }
+            }
+        } else if (!cats) {
+            cats = DEFAULT_BLUEPRINT;
+        }
+
         const coreRows = Array.isArray(cats.core) 
-            ? (hasSavedCategories ? cats.core : (cats.core.length > 0 ? cats.core : DEFAULT_BLUEPRINT.core))
+            ? (cats.core.length > 0 ? cats.core : (DEFAULT_BLUEPRINT.core || []))
             : (DEFAULT_BLUEPRINT.core || []);
         coreRows.forEach(row => addTableRow('core', row));
 
         if (!isIperf) {
             const stratRows = Array.isArray(cats.strategic)
-                ? (hasSavedCategories ? cats.strategic : (cats.strategic.length > 0 ? cats.strategic : DEFAULT_BLUEPRINT.strategic))
+                ? (cats.strategic.length > 0 ? cats.strategic : (DEFAULT_BLUEPRINT.strategic || []))
                 : (DEFAULT_BLUEPRINT.strategic || []);
             stratRows.forEach(row => addTableRow('strategic', row));
 
             const suppRows = Array.isArray(cats.support)
-                ? (hasSavedCategories ? cats.support : (cats.support.length > 0 ? cats.support : DEFAULT_BLUEPRINT.support))
+                ? (cats.support.length > 0 ? cats.support : (DEFAULT_BLUEPRINT.support || []))
                 : (DEFAULT_BLUEPRINT.support || []);
             suppRows.forEach(row => addTableRow('support', row));
         }
@@ -6165,17 +6362,38 @@
         document.querySelectorAll('.field-budget').forEach(adjustBudgetFontSize);
     });
 
-    function renderBasisStaticSheet() {
+    function renderBasisStaticSheet(guideIdx = 0) {
         const sheet = document.getElementById('basis-printable-sheet');
         if (!sheet) return;
 
-        const data = basisFormData || {};
+        const guide = (typeof allBasisGuides !== 'undefined' && allBasisGuides && allBasisGuides[guideIdx]) 
+            ? allBasisGuides[guideIdx] 
+            : ((typeof allBasisGuides !== 'undefined' && allBasisGuides && allBasisGuides[0]) ? allBasisGuides[0] : null);
+
+        const data = (guide && guide.formData) ? guide.formData : (basisFormData || {});
+        const docContent = (guide && guide.content) ? guide.content : (basisDocContent || '');
         const fallbackEl = document.getElementById('basis-html-fallback');
 
+        // Header info bar
+        const headerDocTitleEl = document.getElementById('basis-header-doc-title');
+        if (headerDocTitleEl && guide) {
+            headerDocTitleEl.innerText = `${guide.title} — ${guide.superior_name} (${guide.superior_role})`;
+        }
+        const openLinkEl = document.getElementById('basis-header-open-link');
+        if (openLinkEl && guide && guide.id) {
+            openLinkEl.href = '<?= site_url('document/') ?>' + guide.id;
+        }
+        const statusBadgeEl = document.getElementById('basis-header-status-badge');
+        if (statusBadgeEl && guide) {
+            const isOpcr = (guide.title || '').toUpperCase().includes('OPCR') || (guide.doc_type || '').toUpperCase() === 'OPCR';
+            statusBadgeEl.innerText = guide.is_approved ? (isOpcr ? 'Institutional Basis' : 'Approved Targets') : 'Pending Approval';
+            statusBadgeEl.className = `px-2 py-0.5 rounded-full text-[10px] font-extrabold ${guide.is_approved ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300'}`;
+        }
+
         // If no structured categories, but has HTML content:
-        if ((!data.categories || Object.keys(data.categories).length === 0) && basisDocContent && basisDocContent.trim() !== '') {
+        if ((!data.categories || Object.keys(data.categories).length === 0) && docContent && docContent.trim() !== '') {
             if (fallbackEl) {
-                fallbackEl.innerHTML = basisDocContent;
+                fallbackEl.innerHTML = docContent;
                 fallbackEl.classList.remove('hidden');
             }
             return;
@@ -6184,7 +6402,7 @@
         if (fallbackEl) fallbackEl.classList.add('hidden');
 
         // Header info
-        const titleText = data.title || '<?= esc($basisDoc['title'] ?? '') ?>';
+        const titleText = data.title || (guide ? guide.title : '<?= esc($basisDoc['title'] ?? '') ?>');
         const sheetTitleEl = document.getElementById('basis-sheet-title');
         if (sheetTitleEl) sheetTitleEl.innerText = titleText;
 

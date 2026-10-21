@@ -38,25 +38,15 @@
 
         <!-- MOBILE ANALYTICS HEADER (Shown only when Overview Analytics is active on mobile) -->
         <div id="analytics-mobile-header" class="lg:hidden space-y-2.5 mb-1">
-            <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
                 <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
                     <?= ($sysRole === 'Supervisor' && empty($isPresidentScope)) ? (!empty($isChairScope) ? 'Department Submission Compliance' : 'College Submission Compliance') : 'Executive Performance Analytics' ?>
-                </span>
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-700 border border-zinc-300 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700 shrink-0">
-                    <?= ($sysRole === 'Supervisor' && empty($isPresidentScope)) ? esc($supervisorCollegeName ?? (!empty($isChairScope) ? 'Departmental Oversight' : 'Collegiate Oversight')) : (!empty($isPresidentScope) ? 'Office of the President' : 'University-Wide Oversight') ?>
                 </span>
             </div>
             <div class="flex items-center justify-between gap-2">
                 <h1 class="text-xl font-black tracking-tight text-zinc-900 dark:text-white truncate">
                     <?= ($sysRole === 'Supervisor' && empty($isPresidentScope)) ? (!empty($isChairScope) ? 'Department Overview' : 'College Overview') : 'Executive Overview' ?>
                 </h1>
-                <a href="<?= site_url('ratings') ?>" 
-                   class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shadow-2xs shrink-0 spms-btn-queue">
-                    <span>Queue</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-current shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
-                </a>
             </div>
             <?php
             $colleges = [];
@@ -202,12 +192,9 @@
         <!-- DESKTOP TOP HEADER / TOOLBAR (hidden on mobile, visible lg:flex) -->
         <div class="hidden lg:block">
             <!-- Eyebrow Row -->
-            <div class="flex items-center justify-between gap-2 mb-1">
+            <div class="flex items-center gap-2 mb-1">
                 <span class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
                     <?= ($sysRole === 'Supervisor' && empty($isPresidentScope)) ? (!empty($isChairScope) ? 'Department Submission Compliance' : 'College Submission Compliance') : 'Executive Performance Analytics' ?>
-                </span>
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-700 border border-zinc-300 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700 shrink-0">
-                    <?= ($sysRole === 'Supervisor' && empty($isPresidentScope)) ? esc($supervisorCollegeName ?? (!empty($isChairScope) ? 'Departmental Oversight' : 'Collegiate Oversight')) : (!empty($isPresidentScope) ? 'Office of the President' : 'University-Wide Oversight') ?>
                 </span>
             </div>
             
@@ -250,9 +237,9 @@
                         </button>
                     </div>
 
-                    <!-- Desktop College Filter & Queue -->
+                    <!-- Desktop College Filter -->
+                    <?php if (!empty($allUnits)): ?>
                     <div class="flex items-center gap-2">
-                        <?php if (!empty($allUnits)): ?>
                         <div class="relative" id="college-dropdown-container">
                             <button type="button" 
                                     id="college-dropdown-btn"
@@ -358,7 +345,6 @@
                                 </div>
                             </div>
                         </div>
-                        <?php endif; ?>
 
                         <?php if (!empty($selectedUnitId)): ?>
                             <button onclick="applyCollegeFilter('')"
@@ -367,23 +353,8 @@
                                 <span>&times;</span>
                             </button>
                         <?php endif; ?>
-
-                        <a href="<?= site_url('ratings') ?>" 
-                           class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors shadow-2xs shrink-0 spms-btn-queue">
-                            <span>Evaluator Queue</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-current shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                            </svg>
-                        </a>
                     </div>
-                    <?php else: ?>
-                    <a href="<?= site_url('ratings') ?>" 
-                       class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors shadow-2xs shrink-0 spms-btn-queue">
-                        <span>Evaluator Queue</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-current shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
-                    </a>
+                    <?php endif; ?>
                     <?php endif; ?>
                 </div>
             </div>
@@ -1423,49 +1394,6 @@
                     </div>
                 </div>
 
-                <!-- 2. 2x2 QUICK METRICS CARDS -->
-                <div class="grid grid-cols-2 gap-2">
-                    <!-- Card 1: TOTAL PERSONNEL -->
-                    <div class="py-2.5 px-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
-                        <div class="text-[9px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                            TOTAL PERSONNEL
-                        </div>
-                        <div class="text-xl font-black text-zinc-900 dark:text-white mt-0.5">
-                            <?= number_format(count($cycleFolders)) ?>
-                        </div>
-                    </div>
-
-                    <!-- Card 2: PERMANENT -->
-                    <div class="py-2.5 px-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
-                        <div class="text-[9px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                            PERMANENT
-                        </div>
-                        <div class="text-xl font-black text-zinc-900 dark:text-white mt-0.5">
-                            <?= number_format($empStatusCounts['permanent'] ?? 0) ?>
-                        </div>
-                    </div>
-
-                    <!-- Card 3: TEMPORARY -->
-                    <div class="py-2.5 px-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
-                        <div class="text-[9px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                            TEMPORARY
-                        </div>
-                        <div class="text-xl font-black text-amber-500 dark:text-[#f59e0b] mt-0.5">
-                            <?= number_format($empStatusCounts['temporary'] ?? 0) ?>
-                        </div>
-                    </div>
-
-                    <!-- Card 4: CASUAL & CONTR. -->
-                    <div class="py-2.5 px-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
-                        <div class="text-[9px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                            CASUAL &amp; CONTR.
-                        </div>
-                        <div class="text-xl font-black text-sky-500 dark:text-sky-400 mt-0.5">
-                            <?= number_format(($empStatusCounts['casual'] ?? 0) + ($empStatusCounts['contractual'] ?? 0)) ?>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- 3. SEARCH INPUT (Mobile) -->
                 <div class="relative w-full">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400 dark:text-[#4e6b5c]">
@@ -1628,117 +1556,83 @@
             <!-- ======================================================== -->
             <!-- B. DESKTOP MASTER LIST VIEW (hidden md:block)            -->
             <!-- ======================================================== -->
-            <div class="hidden md:block space-y-5">
-                 <!-- MASTERLIST HEADER & EXPORT ACTION CARD (Desktop) -->
-                <div class="p-4 sm:p-5 lg:p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
-                    <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-                        <div class="space-y-1">
-                            <div class="flex items-center gap-2">
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30">
-                                    CSC MC No. 6, s. 2012 Prescribed
-                                </span>
-                                <span class="text-xs font-semibold text-zinc-400">|</span>
-                                <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-                                    <?= esc($selectedUnitName ?? 'University-Wide Roster') ?>
-                                </span>
-                            </div>
-                            <h2 class="text-xl lg:text-2xl font-black text-zinc-900 dark:text-white tracking-tight">
-                                Master List
-                            </h2>
-                            <p class="text-xs text-zinc-500 dark:text-zinc-400 max-w-3xl">
-                                Consolidated institutional master list of all active plantilla faculty and staff for <?= esc($activeCycle['title'] ?? 'this evaluation period') ?>. Formatted in accordance with Civil Service Commission Strategic Performance Management System guidelines.
-                            </p>
-                        </div>
-
-                        <div class="flex items-center gap-3 shrink-0">
-                            <a href="<?= site_url('dashboard/export-masterlist/' . ($activeCycle['id'] ?? '') . (!empty($selectedUnitId) ? '?unit_id=' . $selectedUnitId : '')) ?>"
-                               class="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs font-black text-white bg-[#114232] hover:bg-[#16533f] text-white border border-[#1b5e47] transition-all shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
-                               title="Generate and download official CSC landscape Excel workbook">
-                                <svg class="w-4 h-4 text-emerald-200 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                <span>Export Master List (.xlsx)</span>
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Quick Masterlist Stats Row (Desktop) -->
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-4 sm:pt-5 mt-4 sm:mt-5 border-t border-zinc-100 dark:border-zinc-800">
-                        <div class="px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 truncate">Total Personnel</div>
-                            <div class="text-base font-black text-zinc-900 dark:text-white mt-0.5"><?= number_format(count($cycleFolders)) ?></div>
-                        </div>
-                        <div class="px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">Permanent</div>
-                            <div class="text-base font-black text-zinc-900 dark:text-white mt-0.5"><?= number_format($empStatusCounts['permanent'] ?? 0) ?></div>
-                        </div>
-                        <div class="px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 truncate">Temporary</div>
-                            <div class="text-base font-black text-amber-600 dark:text-amber-400 mt-0.5"><?= number_format($empStatusCounts['temporary'] ?? 0) ?></div>
-                        </div>
-                        <div class="px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 truncate" title="Casual &amp; Contractual">Casual &amp; Contr.</div>
-                            <div class="text-base font-black text-sky-600 dark:text-sky-400 mt-0.5"><?= number_format(($empStatusCounts['casual'] ?? 0) + ($empStatusCounts['contractual'] ?? 0)) ?></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- SEARCH & FILTER TOOLBAR (Desktop) -->
-                <div class="p-4 sm:p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-4">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                        <div class="relative flex-1 max-w-lg">
-                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                </svg>
-                            </div>
-                            <input type="text" id="masterlist-search" onkeyup="filterMasterlist()"
-                                   placeholder="Search personnel name, email, department, or position..."
-                                   class="w-full text-xs font-medium py-2.5 pl-10 pr-4 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/40 dark:focus:ring-zinc-600/40 shadow-2xs" />
-                        </div>
-
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <select id="masterlist-status-filter" onchange="filterMasterlist()"
-                                    class="text-xs font-semibold px-3 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-400/40 dark:focus:ring-zinc-600/40 cursor-pointer shadow-2xs [color-scheme:light] dark:[color-scheme:dark]">
-                                <option value="">All Appointments</option>
-                                <option value="permanent">Permanent</option>
-                                <option value="temporary">Temporary</option>
-                                <option value="casual">Casual</option>
-                                <option value="contractual">Contractual</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Status Filter Pill Buttons (Desktop) -->
-                    <div class="flex items-center gap-2 pb-1 overflow-x-auto custom-scrollbar pt-2 border-t border-zinc-100 dark:border-zinc-800">
-                        <button type="button" onclick="setMasterlistPill('all', this)"
-                                data-pill="all"
-                                class="masterlist-tab-btn active inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                            All Personnel (<?= count($cycleFolders) ?>)
-                        </button>
-                        <button type="button" onclick="setMasterlistPill('permanent', this)"
-                                data-pill="permanent"
-                                class="masterlist-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
-                            <span>Permanent (<?= $empStatusCounts['permanent'] ?? 0 ?>)</span>
-                        </button>
-                        <button type="button" onclick="setMasterlistPill('temporary', this)"
-                                data-pill="temporary"
-                                class="masterlist-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                            <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
-                            <span>Temporary (<?= $empStatusCounts['temporary'] ?? 0 ?>)</span>
-                        </button>
-                        <button type="button" onclick="setMasterlistPill('casual_contr', this)"
-                                data-pill="casual_contr"
-                                class="masterlist-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                            <span class="w-2 h-2 rounded-full bg-sky-500 shrink-0"></span>
-                            <span>Casual &amp; Contr. (<?= ($empStatusCounts['casual'] ?? 0) + ($empStatusCounts['contractual'] ?? 0) ?>)</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- MASTERLIST DATA CONTAINER (Desktop Table & Pagination) -->
+            <div class="hidden md:block">
+                <!-- UNIFIED MASTERLIST CARD CONTAINER (Header, Search & Filters, Table, Pagination) -->
                 <div id="masterlist-container" class="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs overflow-hidden">
+                    
+                    <!-- 1. MASTERLIST HEADER ROW -->
+                    <div class="p-4 sm:p-5 lg:p-6 border-b border-zinc-100 dark:border-zinc-800">
+                        <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+                            <div class="space-y-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30">
+                                        CSC MC No. 6, s. 2012 Prescribed
+                                    </span>
+                                    <span class="text-xs font-semibold text-zinc-400">|</span>
+                                    <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                                        <?= esc($selectedUnitName ?? 'University-Wide Roster') ?>
+                                    </span>
+                                </div>
+                                <h2 class="text-xl lg:text-2xl font-black text-zinc-900 dark:text-white tracking-tight">
+                                    Master List
+                                </h2>
+                            </div>
+
+                            <div class="flex items-center gap-3 shrink-0">
+                                <a href="<?= site_url('dashboard/export-masterlist/' . ($activeCycle['id'] ?? '') . (!empty($selectedUnitId) ? '?unit_id=' . $selectedUnitId : '')) ?>"
+                                   class="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs font-black text-white bg-[#114232] hover:bg-[#16533f] text-white border border-[#1b5e47] transition-all shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                                   title="Generate and download official CSC landscape Excel workbook">
+                                    <svg class="w-4 h-4 text-emerald-200 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    <span>Export Master List (.xlsx)</span>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- 2. SEARCH & FILTER TOOLBAR (Unified into Header) -->
+                        <div class="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 space-y-3">
+                            <div class="relative w-full">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                    </svg>
+                                </div>
+                                <input type="text" id="masterlist-search" onkeyup="filterMasterlist()"
+                                       placeholder="Search personnel name, email, department, or position..."
+                                       class="w-full text-xs font-medium py-2.5 pl-10 pr-4 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/40 dark:focus:ring-zinc-600/40 shadow-2xs" />
+                            </div>
+
+                            <!-- Status Filter Pill Buttons (Desktop) -->
+                            <div class="flex items-center gap-2 pb-0.5 overflow-x-auto custom-scrollbar">
+                                <button type="button" onclick="setMasterlistPill('all', this)"
+                                        data-pill="all"
+                                        class="masterlist-tab-btn active inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                                    All Personnel (<?= count($cycleFolders) ?>)
+                                </button>
+                                <button type="button" onclick="setMasterlistPill('permanent', this)"
+                                        data-pill="permanent"
+                                        class="masterlist-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                                    <span>Permanent (<?= $empStatusCounts['permanent'] ?? 0 ?>)</span>
+                                </button>
+                                <button type="button" onclick="setMasterlistPill('temporary', this)"
+                                        data-pill="temporary"
+                                        class="masterlist-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                                    <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                                    <span>Temporary (<?= $empStatusCounts['temporary'] ?? 0 ?>)</span>
+                                </button>
+                                <button type="button" onclick="setMasterlistPill('casual_contr', this)"
+                                        data-pill="casual_contr"
+                                        class="masterlist-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                                    <span class="w-2 h-2 rounded-full bg-sky-500 shrink-0"></span>
+                                    <span>Casual &amp; Contr. (<?= ($empStatusCounts['casual'] ?? 0) + ($empStatusCounts['contractual'] ?? 0) ?>)</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. MASTERLIST TABLE -->
                     <div class="overflow-x-auto custom-scrollbar">
                         <table class="w-full text-left border-collapse" id="masterlist-table">
                             <thead>

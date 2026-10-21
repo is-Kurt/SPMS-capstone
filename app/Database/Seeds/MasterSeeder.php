@@ -42,7 +42,7 @@ class MasterSeeder extends Seeder
         // Keyed by positional slug (matches email prefix) instead of last_name,
         // so there are no collisions and plantillaData below can't reference a
         // user that doesn't exist.
-        $supervisorSlugs = ['president', 'vpaa', 'dean', 'deptchair', 'cao'];
+        $supervisorSlugs = ['vpaa', 'dean', 'deptchair', 'cao'];
         
         $adminEmail = getenv('admin.email') ?: 'admin@test.com';
         $adminPasswordRaw = getenv('admin.password') ?: (getenv('ADMIN_DEFAULT_PASSWORD') ?: '123');
@@ -51,7 +51,6 @@ class MasterSeeder extends Seeder
         $usersData = [
             'admin'     => ['email' => $adminEmail,          'first_name' => 'System',    'last_name' => 'Admin',    'password' => $adminPassword, 'is_active' => 1, 'doc_type' => null],
             'admin2'    => ['email' => 'admin2@test.com',    'first_name' => 'Secondary', 'last_name' => 'Admin',    'password' => $adminPassword, 'is_active' => 1, 'doc_type' => null],
-            'president' => ['email' => 'president@test.com', 'first_name' => 'Felipe',    'last_name' => 'Comila',   'password' => $password, 'is_active' => 1, 'doc_type' => null],
             'twg'       => ['email' => 'twg@test.com',       'first_name' => 'System',    'last_name' => 'TWG',      'password' => password_hash('123', PASSWORD_DEFAULT), 'is_active' => 1, 'doc_type' => null],
             'pmt'       => ['email' => 'pmt@test.com',       'first_name' => 'PMT',       'last_name' => 'Chair / Reviewer', 'password' => password_hash('123', PASSWORD_DEFAULT), 'is_active' => 1, 'doc_type' => null],
             'vpaa'      => ['email' => 'vpaa@test.com',      'first_name' => 'Ana',       'last_name' => 'Santos',   'password' => $password, 'is_active' => 1, 'doc_type' => 'OPCR'],
@@ -145,7 +144,6 @@ class MasterSeeder extends Seeder
         // 6. SEED PLANTILLA (The Connective Tissue)
         // ==========================================
         $plantillaData = [
-            ['user_id' => $userMap['president'], 'position_id' => $posMap['University President'],     'unit_id' => $opId,    'started_at' => '2019-01-01', 'ended_at' => null],
             ['user_id' => $userMap['vpaa'],      'position_id' => $posMap['Vice President'],           'unit_id' => $ovpaaId, 'started_at' => '2020-01-01', 'ended_at' => null],
             ['user_id' => $userMap['dean'],      'position_id' => $posMap['Dean'],                     'unit_id' => $coeId,   'started_at' => '2021-06-01', 'ended_at' => null],
             ['user_id' => $userMap['deptchair'], 'position_id' => $posMap['Department Chair'],         'unit_id' => $coeId,   'started_at' => '2022-08-15', 'ended_at' => null],

@@ -36,6 +36,8 @@ class  DocumentFolderModel extends Model
         'eval_period_open_sent_at',
         'routing_preset_id',
         'status',
+        'approving_authority_name',
+        'approving_authority_position',
         'deleted_at'
     ];
 
@@ -77,16 +79,23 @@ class  DocumentFolderModel extends Model
      */
     public function getRatingDashboardFolders(int $userId, string $sysRole, ?string $parentFolderId = null, bool $isPresident = false): array
     {
+        $cascadedCondition = ($sysRole === 'Admin')
+            ? "(pf.parent_folder_id IS NULL AND (pf.user_id = " . (int)$userId . " OR er_me.evaluator_id IS NOT NULL))"
+            : "(er_me.evaluator_id IS NOT NULL OR pf.user_id = " . (int)$userId . ")";
+
         $builder = $this->db->table('document_folders df')
             ->select("df.id as folder_id, df.user_id, (u.first_name || ' ' || u.last_name) as username,
                       REPLACE(GROUP_CONCAT(DISTINCT pos.title), ',', ', ') as position,
                       REPLACE(GROUP_CONCAT(DISTINCT un.name), ',', ', ') as department,
                       MAX(pos.is_teaching) as is_teaching,
-                      df.final_rating, df.status as folder_status")
+                      df.final_rating, df.status as folder_status,
+                      MAX(CASE WHEN {$cascadedCondition} THEN 1 ELSE 0 END) as is_cascaded_by_me")
             ->join('users u', 'u.id = df.user_id')
             ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
             ->join('positions pos', 'pos.id = p.position_id', 'left')
             ->join('units un', 'un.id = p.unit_id', 'left')
+            ->join('evaluation_routings er_me', 'er_me.folder_id = df.id AND er_me.evaluator_id = ' . (int)$userId, 'left')
+            ->join('document_folders pf', 'pf.id = df.parent_folder_id', 'left')
             ->where('df.parent_folder_id IS NOT NULL')
             ->where('df.deleted_at IS NULL')
             ->whereNotIn('df.status', [FolderStatus::DRAFT->value, FolderStatus::DRAFT_TARGET->value]);
@@ -108,9 +117,11 @@ class  DocumentFolderModel extends Model
                 ->orLike('u.email', 'vp', 'both')
                 ->orLike('u.email', 'cao', 'both')
             ->groupEnd();
-        } elseif (!in_array($sysRole, ['Admin', 'PMT', 'TWG'])) {
-            $builder->join('evaluation_routings er_me', 'er_me.folder_id = df.id')
-                    ->where('er_me.evaluator_id', $userId);
+        } elseif ($sysRole === 'Admin') {
+            // Admin has institutional oversight over all submissions in the cycle,
+            // while distinguishing what Admin directly cascaded vs subordinate folders via is_cascaded_by_me
+        } elseif (!in_array($sysRole, ['PMT', 'TWG'])) {
+            $builder->where('er_me.evaluator_id', $userId);
         }
 
         $builder->groupBy('df.id');
