@@ -12,6 +12,9 @@ All notable changes, features, and fixes across the Benguet State University Str
 ---
 
 ### Oct 21, 2026
+- **[Changed]** Team Management Subtabs Order & Default Active Panel — *Committed by @is-Kurt*
+  - Reordered Team Management tabs in `teams/index.php` so **Selected Members** is positioned first on the left and active by default.
+  - Configured `#panel-selected` to open on initial view with active badge indicators, keeping directory search under **Available Users**.
 - **[Changed]** Folder Supervising Authorities & Dashboard Master List UI Streamlining — *Committed by @is-Kurt*
   - Reorganized Supervising Authorities & Approval Status card in Folder view into clean subtabs (**Target Setting** vs **Evaluation Phase**) with dedicated sections for supervising authorities and TWG calibration.
   - Removed supervisor consensus summary pill badge from folder supervising authorities card header.

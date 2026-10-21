@@ -54,12 +54,12 @@
             <div class="flex-1 flex flex-col min-w-0">
                 <!-- Sub Tabs (Now visible on Desktop too!) -->
                 <div class="flex gap-6 border-b border-surface-border mb-4 px-2 shrink-0 overflow-x-auto custom-scrollbar">
-                    <button type="button" id="tab-btn-available" class="tab-btn pb-3 text-sm font-bold border-b-2 border-accent text-accent transition-all cursor-pointer whitespace-nowrap" onclick="switchTeamPanel('available')">
-                        Available Users
-                    </button>
-                    <button type="button" id="tab-btn-selected" class="tab-btn pb-3 text-sm font-bold border-b-2 border-transparent text-text-muted hover:text-text hover:border-surface-border transition-all cursor-pointer whitespace-nowrap" onclick="switchTeamPanel('selected')">
+                    <button type="button" id="tab-btn-selected" class="tab-btn pb-3 text-sm font-bold border-b-2 border-accent text-accent transition-all cursor-pointer whitespace-nowrap" onclick="switchTeamPanel('selected')">
                         Selected Members
-                        <span class="ml-1.5 px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-text-muted text-[10px] tab-badge transition-colors" id="tab-selected-count">0</span>
+                        <span class="ml-1.5 px-2 py-0.5 rounded-full bg-accent/10 text-accent text-[10px] tab-badge transition-colors" id="tab-selected-count">0</span>
+                    </button>
+                    <button type="button" id="tab-btn-available" class="tab-btn pb-3 text-sm font-bold border-b-2 border-transparent text-text-muted hover:text-text hover:border-surface-border transition-all cursor-pointer whitespace-nowrap" onclick="switchTeamPanel('available')">
+                        Available Users
                     </button>
                 </div>
                 
@@ -67,7 +67,7 @@
                 <div class="flex-1 relative flex flex-col">
                     
                     <!-- Panel 1: Directory Search (Available Users) -->
-                    <div id="panel-available" class="flex-1 flex-col bg-surface lg:border border-surface-border rounded-none lg:rounded-2xl shadow-none lg:shadow-sm lg:overflow-hidden flex lg:absolute lg:inset-0">
+                    <div id="panel-available" class="flex-1 flex-col bg-surface lg:border border-surface-border rounded-none lg:rounded-2xl shadow-none lg:shadow-sm lg:overflow-hidden hidden lg:absolute lg:inset-0">
                         <div class="p-4 border-b border-surface-border bg-zinc-50 dark:bg-zinc-800/30 shrink-0 relative">
                             <div class="flex justify-between items-center">
                                 <h2 class="text-xs font-black uppercase tracking-widest text-text-muted">Available Users</h2>
@@ -111,7 +111,7 @@
                     </div>
 
                     <!-- Panel 2: Selected Team Members -->
-                    <div id="panel-selected" class="flex-1 flex-col bg-surface lg:border border-surface-border rounded-none lg:rounded-2xl shadow-none lg:shadow-sm lg:overflow-hidden hidden lg:absolute lg:inset-0">
+                    <div id="panel-selected" class="flex-1 flex-col bg-surface lg:border border-surface-border rounded-none lg:rounded-2xl shadow-none lg:shadow-sm lg:overflow-hidden flex lg:absolute lg:inset-0">
                         <div class="border-b border-surface-border bg-success-50 dark:bg-success-500/10 shrink-0">
                             <div class="p-4 flex justify-between items-center">
                                 <h2 class="text-xs font-black uppercase tracking-widest text-success-600 dark:text-success-400">Selected Team Members (<span id="selected-count">0</span>)</h2>
@@ -498,8 +498,11 @@
             
             btnSelected.classList.remove('border-accent', 'text-accent');
             btnSelected.classList.add('border-transparent', 'text-text-muted');
-            btnSelected.querySelector('.tab-badge').classList.replace('bg-accent/10', 'bg-zinc-100');
-            btnSelected.querySelector('.tab-badge').classList.replace('text-accent', 'text-text-muted');
+            const badge = btnSelected.querySelector('.tab-badge');
+            if (badge) {
+                badge.classList.remove('bg-accent/10', 'text-accent');
+                badge.classList.add('bg-zinc-100', 'dark:bg-zinc-800', 'text-text-muted');
+            }
         } else {
             selected.classList.remove('hidden');
             selected.classList.add('flex');
@@ -508,8 +511,11 @@
 
             btnSelected.classList.add('border-accent', 'text-accent');
             btnSelected.classList.remove('border-transparent', 'text-text-muted');
-            btnSelected.querySelector('.tab-badge').classList.replace('bg-zinc-100', 'bg-accent/10');
-            btnSelected.querySelector('.tab-badge').classList.replace('text-text-muted', 'text-accent');
+            const badge = btnSelected.querySelector('.tab-badge');
+            if (badge) {
+                badge.classList.remove('bg-zinc-100', 'dark:bg-zinc-800', 'text-text-muted');
+                badge.classList.add('bg-accent/10', 'text-accent');
+            }
 
             btnAvail.classList.remove('border-accent', 'text-accent');
             btnAvail.classList.add('border-transparent', 'text-text-muted');
