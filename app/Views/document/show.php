@@ -686,6 +686,17 @@
 
         <!-- Call autoResize immediately after the element is in DOM -->
         <script>
+            function autoResize(el) {
+                if (!el) return;
+                el.style.width = '1px';
+                el.style.width = (el.scrollWidth + 2) + 'px';
+            }
+            function restoreTitle(el, defaultTitle) {
+                if (!el) return;
+                if (el.value.trim() === '') {
+                    el.value = defaultTitle;
+                }
+            }
             document.addEventListener('DOMContentLoaded', () => {
                 const titleInput = document.getElementById('doc-title');
                 if (titleInput) autoResize(titleInput);
@@ -972,14 +983,6 @@
                             </button>
                         <?php else: ?>
                             <div class="flex gap-1.5 sm:gap-2">
-                                <button type="button" 
-                                        onclick="rate()" 
-                                        class="flex items-center justify-center bg-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1.5 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                    </svg>
-                                    Calculate
-                                </button>
                                 <button id="btn-return" type="button" 
                                         onclick="returnFolderRevision()" 
                                         class="bg-revision-500 hover:bg-revision-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-revision-500/20 transition-all active:scale-[0.98] cursor-pointer">
@@ -998,14 +1001,6 @@
                 <?php elseif ($status === FolderStatus::TO_EVALUATE->value || $status === FolderStatus::REEVALUATE->value): ?>
                     <?php if ($isOwner): ?>
                         <div class="flex gap-1.5 sm:gap-2">
-                            <button type="button" 
-                                    onclick="rate()" 
-                                    class="flex items-center justify-center bg-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1.5 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                </svg>
-                                Calculate
-                            </button>
                             <button id="btn-submit" type="button" 
                                     onclick="saveWith({ after: () => lockFolderEvaluation() })" 
                                     class="bg-info-500 hover:bg-info-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-info-500/20 transition-all active:scale-[0.98] cursor-pointer">
@@ -1530,7 +1525,7 @@
                     </table>
                 </div>
 
-                <!-- Custom HTML Container for older/TinyMCE templates if applicable -->
+                <!-- Custom HTML Container for older legacy guidelines if applicable -->
                 <div id="basis-html-fallback" class="hidden text-sm leading-relaxed p-4 bg-white text-zinc-800"></div>
             </article>
         </div>
@@ -2403,10 +2398,7 @@
 
         </div>
 
-        <!-- Fallback TinyMCE Editor Container for Free-Form Documents -->
-        <div id="tinymce-wrapper" class="w-full h-full bg-white dark:bg-zinc-950">
-            <textarea id="editable-doc" name="content"></textarea>
-        </div>
+
     </div>
     <?= view('document/_cascade_modal') ?>
 </div>
@@ -2462,8 +2454,7 @@
     window.rubricAttachments = [];
     window.digitalRubricsData = (tabs[0]?.formData?.rubrics && !Array.isArray(tabs[0]?.formData?.rubrics)) ? tabs[0].formData.rubrics : {};
     
-    // Set initial content for TinyMCE initialization
-    document.getElementById('editable-doc').value = tabs[0].content;
+
 
     function getUniqueTitle(baseTitle, excludeTabId = null) {
         let title = baseTitle;
@@ -2611,12 +2602,6 @@
         } else if (typeof activeTabId !== 'string' || !activeTabId.startsWith('basis-tab')) {
             if (window.isSpmsFormActive && typeof window.syncSpmsActiveTab === 'function') {
                 window.syncSpmsActiveTab();
-            } else {
-                const editor = tinymce.get('editable-doc');
-                if (editor) {
-                    const activeTab = tabs.find(t => t.id === activeTabId);
-                    if (activeTab) activeTab.content = editor.getContent();
-                }
             }
         }
         
@@ -2638,12 +2623,6 @@
         
         if (window.isSpmsFormActive && typeof window.syncSpmsActiveTab === 'function') {
             window.syncSpmsActiveTab();
-        } else {
-            const editor = tinymce.get('editable-doc');
-            if (editor) {
-                const activeTab = tabs.find(t => t.id === activeTabId);
-                if (activeTab) activeTab.content = editor.getContent();
-            }
         }
 
         tabs.push(newTab);
@@ -2687,11 +2666,6 @@
         
         if (activeTabId === tabId) {
             activeTabId = tabs[Math.min(index, tabs.length - 1)].id;
-            const newActive = tabs.find(t => t.id === activeTabId);
-            const editor = tinymce.get('editable-doc');
-            if (editor && newActive) {
-                editor.setContent(newActive.content);
-            }
         }
         
         renderTabs();
@@ -2700,8 +2674,8 @@
 
     // Initialize tabs UI
     renderTabs();
-</script> <script src="<?= base_url('assets/js/editor/functions.js?v=' . time()) ?>"></script>
-<script src="<?= base_url('assets/js/editor/saveDocument.js') ?>"></script>
+</script>
+<script src="<?= base_url('assets/js/editor/saveDocument.js') ?>?v=<?= file_exists(FCPATH . 'assets/js/editor/saveDocument.js') ? filemtime(FCPATH . 'assets/js/editor/saveDocument.js') : time() ?>"></script>
 
 <script>
     const AppConfig = {
@@ -2976,14 +2950,8 @@
     });
 
     async function lockFolderEvaluation() {
-        let finalScore = '';
-        if (window.isSpmsFormActive) {
-            finalScore = document.getElementById('grand-score')?.innerText?.trim() || '';
-            if (finalScore === '0.000' || finalScore === '—') finalScore = '';
-        } else {
-            const editorBody = tinymce.get('editable-doc')?.getBody();
-            finalScore = editorBody?.getAttribute('data-final-score') || '';
-        }
+        let finalScore = document.getElementById('grand-score')?.innerText?.trim() || '';
+        if (finalScore === '0.000' || finalScore === '—') finalScore = '';
 
         const formData = new FormData();
         formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
@@ -3015,14 +2983,8 @@
     }
 
     async function approveFolderEvaluation() {
-        let finalScore = '';
-        if (window.isSpmsFormActive) {
-            finalScore = document.getElementById('grand-score')?.innerText?.trim() || '';
-            if (finalScore === '0.000' || finalScore === '—') finalScore = '';
-        } else {
-            const editorBody = tinymce.get('editable-doc')?.getBody();
-            finalScore = editorBody?.getAttribute('data-final-score') || '';
-        }
+        let finalScore = document.getElementById('grand-score')?.innerText?.trim() || '';
+        if (finalScore === '0.000' || finalScore === '—') finalScore = '';
 
         const btnApprove = document.getElementById('btn-approve');
         if (btnApprove && btnApprove.disabled) {
@@ -3052,7 +3014,17 @@
 
         if (btnApprove) btnApprove.innerText = 'Approving...';
         apiPost('<?= site_url('folder/approve') ?>', formData, {
-            onSuccess: () => window.location.reload()
+            onSuccess: () => window.location.reload(),
+            onError: async (errMsg) => {
+                if (btnApprove) {
+                    btnApprove.innerHTML = 'Approve<span class="hidden sm:inline"> Rating</span>';
+                }
+                await window.appAlert(errMsg || "An error occurred while approving the evaluation.", {
+                    title: 'Action Conflict',
+                    variant: 'warning'
+                });
+                window.location.reload();
+            }
         });
     }
 
@@ -3068,9 +3040,18 @@
         const formData = new FormData();
         formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
 
-        document.getElementById('btn-unapprove-evaluation').innerText = 'Removing...';
+        const btnUnapp = document.getElementById('btn-unapprove-evaluation');
+        if (btnUnapp) btnUnapp.innerText = 'Removing...';
         apiPost('<?= site_url('folder/unapprove') ?>', formData, {
-            onSuccess: () => window.location.reload()
+            onSuccess: () => window.location.reload(),
+            onError: async (errMsg) => {
+                if (btnUnapp) btnUnapp.innerHTML = 'Remove<span class="hidden sm:inline"> Approval</span>';
+                await window.appAlert(errMsg || "An error occurred while removing approval.", {
+                    title: 'Action Conflict',
+                    variant: 'warning'
+                });
+                window.location.reload();
+            }
         });
     }
 
@@ -3151,7 +3132,15 @@
         const btn = document.getElementById('btn-return');
         if (btn) btn.innerText = 'Returning...';
         apiPost('<?= site_url('folder/return') ?>', formData, {
-            onSuccess: () => window.location.reload()
+            onSuccess: () => window.location.reload(),
+            onError: async (errMsg) => {
+                if (btn) btn.innerHTML = 'Return<span class="hidden sm:inline"> for Revision</span>';
+                await window.appAlert(errMsg || "An error occurred while returning for revision.", {
+                    title: 'Action Conflict',
+                    variant: 'warning'
+                });
+                window.location.reload();
+            }
         });
     }
 
@@ -3351,7 +3340,15 @@
         if (btn) btn.innerText = releaseScope ? 'Releasing...' : 'Approving...';
 
         apiPost('<?= site_url('folder/approve_target') ?>', formData, {
-            onSuccess: () => window.location.reload()
+            onSuccess: () => window.location.reload(),
+            onError: async (errMsg) => {
+                if (btn) btn.innerText = releaseScope ? 'Release Targets' : 'Approve Targets';
+                await window.appAlert(errMsg || "An error occurred while approving targets.", {
+                    title: 'Action Conflict',
+                    variant: 'warning'
+                });
+                window.location.reload();
+            }
         });
     }
 
@@ -3367,9 +3364,18 @@
         const formData = new FormData();
         formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
 
-        document.getElementById('btn-unapprove-target').innerText = 'Removing...';
+        const btn = document.getElementById('btn-unapprove-target');
+        if (btn) btn.innerText = 'Removing...';
         apiPost('<?= site_url('folder/unapprove_target') ?>', formData, {
-            onSuccess: () => window.location.reload()
+            onSuccess: () => window.location.reload(),
+            onError: async (errMsg) => {
+                if (btn) btn.innerText = 'Remove Approval';
+                await window.appAlert(errMsg || "An error occurred while removing approval.", {
+                    title: 'Action Conflict',
+                    variant: 'warning'
+                });
+                window.location.reload();
+            }
         });
     }
 
@@ -3394,7 +3400,15 @@
         const btn = document.getElementById('btn-return-target');
         if (btn) btn.innerText = 'Returning...';
         apiPost('<?= site_url('folder/return_target') ?>', formData, {
-            onSuccess: () => window.location.reload()
+            onSuccess: () => window.location.reload(),
+            onError: async (errMsg) => {
+                if (btn) btn.innerText = 'Return for Revision';
+                await window.appAlert(errMsg || "An error occurred while returning targets.", {
+                    title: 'Action Conflict',
+                    variant: 'warning'
+                });
+                window.location.reload();
+            }
         });
     }
 
@@ -3432,10 +3446,7 @@
     }
 </script>
 
-<script src="<?= base_url('assets/vendor/tinymce/tinymce.min.js') ?>"></script>
-<script src="<?= base_url('assets/js/editor/plugins.js') ?>"></script>
-<script src="<?= base_url('assets/js/editor/TableTools.js') ?>"></script>
-<script src="<?= base_url('assets/js/editor/config.js') ?>"></script>
+
 
 <script>
     window.isGuide = <?= json_encode($isGuide) ?>;
@@ -3464,39 +3475,7 @@
         'UNEVALUATED'             => \App\Enums\FolderStatus::UNEVALUATED->value,
     ]) ?>;
 
-    let isFullyLocked = true;
-    let useFullEditor = false;
-    let useRemarksOnlyEditor = false;
 
-    if (isGuide) {
-        // Guide documents can only be edited by their owner (the Admin)
-        isFullyLocked = !isOwner;
-        useFullEditor = isOwner;
-    } else {
-        if (status === FolderStatus.DRAFT_TARGET || status === FolderStatus.TARGET_RETURNED) {
-            isFullyLocked = !isOwner;
-            useFullEditor = isOwner; // Target drafting gets the full editor to build tables
-        } else if (status === FolderStatus.PENDING_TARGET_APPROVAL && !isOwner) {
-            // Supervisor reviewing targets can only edit the remarks column
-            isFullyLocked = !isTarget;
-            useFullEditor = false;
-            useRemarksOnlyEditor = isTarget; // Only allow editing remarks if it's the target document
-        } else if (status === FolderStatus.DRAFT) {
-            isFullyLocked = !isOwner;
-            useFullEditor = false; // Eval drafting gets plain editor (structure locked)
-        } else if ((status === FolderStatus.TO_EVALUATE || status === FolderStatus.REEVALUATE) && isOwner) {
-            // Owner can only self-rate the TARGET document.
-            isFullyLocked = !isTarget && status === FolderStatus.TO_EVALUATE;
-            // REEVALUATE implies revision of eval, or revision of targets?
-            // For now, if REEVALUATE, we give them the plain editor so they can fix their ratings/eval.
-            // If they need to fix targets, they would need to be back in DRAFT_TARGET.
-            useFullEditor = false; 
-        } else if (status === FolderStatus.EVALUATED && !isOwner) {
-            // Evaluator can only evaluate/rate the TARGET document.
-            isFullyLocked = !isTarget;
-            useFullEditor = false;
-        }
-    }
 
     // =========================================================================
     // SPMS Form Builder logic (Matches templates/editor.php)
@@ -3564,7 +3543,6 @@
         if (activeTabId === 'basis-tab' || (typeof activeTabId === 'string' && activeTabId.startsWith('basis-tab'))) {
             window.isSpmsFormActive = false;
             document.getElementById('spms-form-workspace')?.classList.add('hidden');
-            document.getElementById('tinymce-wrapper')?.classList.add('hidden');
             if (rubricsWorkspace) rubricsWorkspace.classList.add('hidden');
             if (basisWorkspace) {
                 basisWorkspace.classList.remove('hidden');
@@ -3577,7 +3555,6 @@
         if (activeTabId === 'rubrics-tab') {
             window.isSpmsFormActive = false;
             document.getElementById('spms-form-workspace')?.classList.add('hidden');
-            document.getElementById('tinymce-wrapper')?.classList.add('hidden');
             if (basisWorkspace) basisWorkspace.classList.add('hidden');
             if (rubricsWorkspace) {
                 rubricsWorkspace.classList.remove('hidden');
@@ -3595,33 +3572,11 @@
         const activeTab = tabs.find(t => t.id === activeTabId);
         if (!activeTab) return;
 
-        const hasSpmsData = activeTab.formData && typeof activeTab.formData === 'object';
-        const hasSpmsContent = activeTab.content && (activeTab.content.includes('spms-table') || activeTab.content.includes('printable-form') || activeTab.content.includes('ACADEMIC') || activeTab.content.includes('MAJOR FINAL OUTPUT'));
-        const isEmptyTab = !activeTab.content || activeTab.content.trim() === '';
-
-        const isPerformanceDoc = Boolean(window.isCurrentDocDpcr || window.isCurrentDocOpcr || window.isCurrentDocIperf || IS_DOC_DPCR || IS_DOC_OPCR || IS_DOC_IPERF);
-
-        // SPMS Form is default for performance documents
-        if (hasSpmsData || hasSpmsContent || isEmptyTab || isPerformanceDoc) {
-            window.isSpmsFormActive = true;
-            document.getElementById('spms-form-workspace').classList.remove('hidden');
-            document.getElementById('tinymce-wrapper').classList.add('hidden');
-            populateSpmsForm(activeTab.formData);
-            if (typeof window.syncSpmsActiveTab === 'function') {
-                window.syncSpmsActiveTab();
-            }
-        } else {
-            window.isSpmsFormActive = false;
-            document.getElementById('spms-form-workspace').classList.add('hidden');
-            document.getElementById('tinymce-wrapper').classList.remove('hidden');
-            
-            const editor = tinymce.get('editable-doc');
-            if (editor) {
-                editor.setContent(activeTab.content || '');
-            } else {
-                document.getElementById('editable-doc').value = activeTab.content || '';
-                initTinyMceIfNeeded();
-            }
+        window.isSpmsFormActive = true;
+        document.getElementById('spms-form-workspace')?.classList.remove('hidden');
+        populateSpmsForm(activeTab.formData);
+        if (typeof window.syncSpmsActiveTab === 'function') {
+            window.syncSpmsActiveTab();
         }
     }
 
@@ -6287,28 +6242,14 @@
         }
     });
 
-    const originalRate = window.rate;
     window.rate = async function() {
         if (window.isSpmsFormActive) {
             recalculateForm();
             window.syncSpmsActiveTab();
             AppState.setDirty(true);
             return 'calculated';
-        } else if (typeof originalRate === 'function') {
-            return originalRate();
         }
     };
-
-    function initTinyMceIfNeeded() {
-        if (window.isSpmsFormActive) return;
-        if (useFullEditor) {
-            initEditor();
-        } else if (useRemarksOnlyEditor) {
-            initRemarksOnlyEditor();
-        } else {
-            initPlainEditor(isFullyLocked);
-        }
-    }
 
     function exportToExcel() {
         const exportUrl = '<?= site_url("document/" . $doc["id"] . "/export-excel") ?>';
@@ -6328,21 +6269,12 @@
             window.print();
             return;
         }
-        if (window.isSpmsFormActive) {
-            // Auto-expand all textareas so multi-line text is never clipped during printing
-            document.querySelectorAll('#printable-form textarea').forEach(ta => {
-                ta.style.height = 'auto';
-                ta.style.height = Math.max(ta.scrollHeight, 38) + 'px';
-            });
-            window.print();
-        } else {
-            const editor = tinymce.get('editable-doc');
-            if (editor) {
-                editor.execCommand('mcePrint');
-            } else {
-                window.print();
-            }
-        }
+        // Auto-expand all textareas so multi-line text is never clipped during printing
+        document.querySelectorAll('#printable-form textarea').forEach(ta => {
+            ta.style.height = 'auto';
+            ta.style.height = Math.max(ta.scrollHeight, 38) + 'px';
+        });
+        window.print();
     }
 
     // Auto-expand textareas before printing

@@ -50,10 +50,6 @@
                 document.documentElement.classList.toggle('dark');
                 const isDark = document.documentElement.classList.contains('dark');
                 localStorage.setItem('theme', isDark ? 'dark' : 'light');
-
-                if (typeof initEditor === 'function') {
-                    initEditor();
-                }
             };
 
             // Use native View Transitions API if supported for 60fps hardware-accelerated cross-fade

@@ -2,12 +2,19 @@
 $colleges = [];
 $adminOffices = [];
 foreach ($units as $u) {
-    if (empty($u['parent_id'])) {
-        if (stripos($u['name'], 'College of') !== false || stripos($u['name'], 'Graduate School') !== false) {
-            $colleges[] = $u;
-        } else {
-            $adminOffices[] = $u;
-        }
+    $uname = $u['name'];
+    // Top-level executive branches (OVPAA, OVPAF, Office of the President) are executive levels reviewed by the President, not TWG
+    if (in_array($uname, ['OVPAA', 'OVPAF', 'Office of the President'], true)) {
+        continue;
+    }
+    if (stripos($uname, 'College of') !== false || stripos($uname, 'Graduate School') !== false) {
+        $colleges[] = $u;
+    } elseif (
+        stripos($uname, 'Bachelor') === false && 
+        stripos($uname, 'Doctor') === false && 
+        stripos($uname, 'Master') === false
+    ) {
+        $adminOffices[] = $u;
     }
 }
 
@@ -210,7 +217,7 @@ foreach ($units as $u) {
                     <div class="flex items-center justify-between mb-3 px-1">
                         <span class="text-[11px] font-black uppercase tracking-wider text-text-muted flex items-center gap-2">
                             <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
-                            Academic Colleges (15)
+                            Academic Colleges (<?= count($colleges) ?>)
                         </span>
                         <span class="text-[10px] font-semibold text-text-muted">Auto-includes degree programs</span>
                     </div>

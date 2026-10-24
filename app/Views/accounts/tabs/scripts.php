@@ -771,66 +771,181 @@
     }
     window.getCheckedValues = getCheckedValues;
 
-    // --- CASCADING COLLEGE & SUB-DEPARTMENT HANDLERS ---
-    function onCollegeFilterChange(collegeId) {
-        const deptSelect = document.getElementById('filter-dept-select');
-        const countPill = document.getElementById('subdept-count-pill');
-        if (!deptSelect) return;
+    // --- DYNAMIC CASCADING UNIT FILTERS (USER DIRECTORY) ---
+    const DIR_LEVEL_THEMES = [
+        {
+            labelColor: 'text-text-muted',
+            focusRing: 'focus:border-accent focus:ring-1 focus:ring-accent/20',
+            activeBorder: 'border-zinc-400 dark:border-zinc-600',
+            connector: 'border-zinc-300 dark:border-zinc-700'
+        }
+    ];
 
-        if (!collegeId) {
-            deptSelect.innerHTML = '<option value="">All Departments</option>';
-            deptSelect.value = '';
-            deptSelect.disabled = true;
-            deptSelect.classList.add('opacity-60');
-            deptSelect.classList.remove('border-amber-500', 'text-amber-600', 'dark:text-amber-400');
-            if (countPill) countPill.textContent = '(All)';
-            filterUsers();
+    function getDirLevelTheme(level) {
+        return DIR_LEVEL_THEMES[0];
+    }
+
+    function getDirLevelTitle(level, parentUnit) {
+        if (level === 1) {
+            return 'DEPARTMENT / UNIT';
+        }
+        return parentUnit ? escapeHtml(parentUnit.name) : 'SUB-UNIT';
+    }
+
+    function getDirDefaultOptionLabel(level, parentUnit) {
+        if (level === 1) {
+            return 'All Departments &amp; Units';
+        }
+        return parentUnit ? `All in ${escapeHtml(parentUnit.name)}` : 'All Options';
+    }
+
+    function getDescendantUnitIds(rootId) {
+        const units = window.SPMS_UNITS_MAP || [];
+        const childrenMap = new Map();
+        units.forEach(u => {
+            const pid = String(u.parent_id || 0);
+            if (!childrenMap.has(pid)) childrenMap.set(pid, []);
+            childrenMap.get(pid).push(String(u.id));
+        });
+
+        const result = new Set([String(rootId)]);
+        const stack = [String(rootId)];
+        while (stack.length) {
+            const current = stack.pop();
+            (childrenMap.get(current) || []).forEach(childId => {
+                if (!result.has(childId)) {
+                    result.add(childId);
+                    stack.push(childId);
+                }
+            });
+        }
+        return result;
+    }
+
+    function renderDynamicDirectoryUnitLevel(level, parentUnitId, targetContainer) {
+        if (!targetContainer) return;
+        targetContainer.innerHTML = '';
+
+        const units = window.SPMS_UNITS_MAP || [];
+        const unitsById = {};
+        units.forEach(u => unitsById[u.id] = u);
+
+        let availableUnits = [];
+        let parentUnit = null;
+
+        if (level === 1) {
+            // Root units for directory (OVPAA, OVPAF, etc.)
+            availableUnits = units.filter(u => !u.parent_id || !unitsById[u.parent_id]);
+        } else {
+            const numParentId = parseInt(parentUnitId, 10);
+            parentUnit = unitsById[numParentId] || null;
+            availableUnits = units.filter(u => u.parent_id === numParentId);
+        }
+
+        if (availableUnits.length === 0) {
+            targetContainer.classList.add('hidden');
             return;
         }
 
-        const numericCollegeId = parseInt(collegeId, 10);
-        const units = window.SPMS_UNITS_MAP || [];
-        const college = units.find(u => u.id === numericCollegeId);
-        const collegeName = college ? college.name : '';
+        targetContainer.classList.remove('hidden');
 
-        // Find children of this college
-        const children = units.filter(u => u.parent_id === numericCollegeId);
+        const theme = getDirLevelTheme(level);
+        const title = getDirLevelTitle(level, parentUnit);
+        const defaultLabel = getDirDefaultOptionLabel(level, parentUnit);
 
-        // Form college-specific label
-        let shortName = collegeName.replace(/^College of\s+/i, '').trim();
-        let allLabel = shortName ? `All ${shortName} Departments` : 'All Departments';
-
-        let html = `<option value="">${allLabel}</option>`;
-        children.forEach(child => {
-            html += `<option value="${escapeHtml(child.name)}">${escapeHtml(child.name)}</option>`;
+        let optionsHtml = `<option value="">${defaultLabel}</option>`;
+        availableUnits.forEach(u => {
+            optionsHtml += `<option value="${u.id}">${escapeHtml(u.name)}</option>`;
         });
 
-        deptSelect.innerHTML = html;
-        deptSelect.value = '';
-        deptSelect.disabled = false;
-        deptSelect.classList.remove('opacity-60');
-        deptSelect.classList.remove('border-amber-500', 'text-amber-600', 'dark:text-amber-400');
+        const levelWrapper = document.createElement('div');
+        levelWrapper.className = 'space-y-1.5 dynamic-unit-level';
+        levelWrapper.dataset.level = level;
 
-        if (countPill) {
-            countPill.textContent = `(${children.length} options)`;
-        }
+        const headerHtml = level === 1 ? `
+            <div class="flex items-center justify-between">
+                <label for="filter-dir-unit-level-${level}" class="block text-[10px] font-black uppercase tracking-wider ${theme.labelColor} truncate pr-2" title="${title}">
+                    ${title}
+                </label>
+                <span class="text-[10px] font-medium text-text-muted italic shrink-0">(${availableUnits.length} options)</span>
+            </div>` : '';
 
-        filterUsers();
+        levelWrapper.innerHTML = `
+            ${headerHtml}
+            <div class="relative w-full">
+                <select id="filter-dir-unit-level-${level}"
+                    class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border ${theme.focusRing} rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
+                    ${optionsHtml}
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 flex items-center text-text-muted" style="right: 10px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+            <div id="dynamic-dir-unit-children-${level}" class="relative pl-3.5 ml-2.5 border-l-2 border-dashed ${theme.connector} space-y-3 pt-2 hidden"></div>
+        `;
+
+        targetContainer.appendChild(levelWrapper);
+
+        const selectEl = levelWrapper.querySelector(`#filter-dir-unit-level-${level}`);
+        selectEl.addEventListener('change', (e) => {
+            onDynamicDirectoryUnitLevelChange(level, e.target.value);
+        });
     }
-    window.onCollegeFilterChange = onCollegeFilterChange;
 
-    function onDeptFilterChange(deptName) {
-        const deptSelect = document.getElementById('filter-dept-select');
-        if (deptSelect) {
-            if (deptName) {
-                deptSelect.classList.add('border-amber-500', 'text-amber-600', 'dark:text-amber-400');
+    function onDynamicDirectoryUnitLevelChange(level, selectedUnitId) {
+        const selectEl = document.getElementById(`filter-dir-unit-level-${level}`);
+        const childrenContainer = document.getElementById(`dynamic-dir-unit-children-${level}`);
+        const theme = getDirLevelTheme(level);
+
+        if (selectEl) {
+            const activeClasses = theme.activeBorder.split(' ');
+            if (selectedUnitId) {
+                selectEl.classList.add(...activeClasses);
             } else {
-                deptSelect.classList.remove('border-amber-500', 'text-amber-600', 'dark:text-amber-400');
+                selectEl.classList.remove(...activeClasses);
             }
         }
+
+        if (childrenContainer) {
+            childrenContainer.innerHTML = '';
+            childrenContainer.classList.add('hidden');
+
+            if (selectedUnitId) {
+                const numId = parseInt(selectedUnitId, 10);
+                const units = window.SPMS_UNITS_MAP || [];
+                const childUnits = units.filter(u => u.parent_id === numId);
+
+                if (childUnits.length > 0) {
+                    renderDynamicDirectoryUnitLevel(level + 1, selectedUnitId, childrenContainer);
+                }
+            }
+        }
+
+        filterSidebarPositions();
         filterUsers();
     }
-    window.onDeptFilterChange = onDeptFilterChange;
+    window.onDynamicDirectoryUnitLevelChange = onDynamicDirectoryUnitLevelChange;
+
+    function initDynamicDirectoryUnitFilters() {
+        const rootContainer = document.getElementById('dynamic-directory-unit-filter-container');
+        if (!rootContainer) return;
+        renderDynamicDirectoryUnitLevel(1, null, rootContainer);
+        filterSidebarPositions();
+    }
+    window.initDynamicDirectoryUnitFilters = initDynamicDirectoryUnitFilters;
+
+    function getActiveDirectoryDynamicUnitId() {
+        const container = document.getElementById('dynamic-directory-unit-filter-container');
+        if (!container) return null;
+        const selects = Array.from(container.querySelectorAll('select'));
+        for (let i = selects.length - 1; i >= 0; i--) {
+            const val = selects[i].value;
+            if (val) return val;
+        }
+        return null;
+    }
 
     // --- USER DIRECTORY FILTERING ---
     function filterUsers() {
@@ -839,44 +954,24 @@
         const checkedRoles  = getCheckedValues('filter_role');
         const checkedPos    = getCheckedValues('filter_pos');
 
-        // Cascading College & Sub-department dropdown filters
-        const collegeSelect = document.getElementById('filter-college-select');
-        const deptSelect    = document.getElementById('filter-dept-select');
-
-        const selectedCollegeId = collegeSelect ? collegeSelect.value : '';
-        const selectedDept      = (deptSelect ? deptSelect.value : '').trim();
-
-        let filterByUnit = false;
+        const activeUnitId = getActiveDirectoryDynamicUnitId();
+        let allowedUnitIds = null;
         let allowedUnitNames = new Set();
-
-        if (selectedDept) {
-            // Specific department chosen
-            filterByUnit = true;
-            allowedUnitNames.add(selectedDept.toLowerCase());
-            const descendants = getExpandedUnitNames([selectedDept]);
-            descendants.forEach(d => allowedUnitNames.add(d.toLowerCase()));
-        } else if (selectedCollegeId) {
-            // College chosen with "Show All" sub-departments
-            filterByUnit = true;
-            const numericCollegeId = parseInt(selectedCollegeId, 10);
+        if (activeUnitId) {
+            allowedUnitIds = getDescendantUnitIds(String(activeUnitId));
             const units = window.SPMS_UNITS_MAP || [];
-            const college = units.find(u => u.id === numericCollegeId);
-            if (college) {
-                allowedUnitNames.add((college.name || '').trim().toLowerCase());
-                units.filter(u => u.parent_id === numericCollegeId).forEach(child => {
-                    allowedUnitNames.add((child.name || '').trim().toLowerCase());
-                    const childDesc = getExpandedUnitNames([child.name]);
-                    childDesc.forEach(cd => allowedUnitNames.add(cd.toLowerCase()));
-                });
-            }
+            units.forEach(u => {
+                if (allowedUnitIds.has(String(u.id))) {
+                    allowedUnitNames.add((u.name || '').trim().toLowerCase());
+                }
+            });
         }
 
         // Active filters counter & Reset all toggle
         let activeCount = 0;
         if (query) activeCount++;
         if (checkedRoles.length > 0) activeCount += checkedRoles.length;
-        if (selectedCollegeId) activeCount++;
-        if (selectedDept) activeCount++;
+        if (activeUnitId) activeCount++;
         if (checkedPos.length > 0) activeCount += checkedPos.length;
 
         const countBadge = document.getElementById('active-filter-count-badge');
@@ -903,15 +998,20 @@
             const matchesRole   = checkedRoles.length === 0 || checkedRoles.some(r => rowRole.includes(r.toLowerCase()));
             
             let matchesDept = true;
-            if (filterByUnit) {
-                const userDepts = rowDept.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-                matchesDept = userDepts.some(ud => {
-                    if (allowedUnitNames.has(ud)) return true;
-                    for (const allowed of allowedUnitNames) {
-                        if (ud.includes(allowed) || allowed.includes(ud)) return true;
-                    }
-                    return false;
-                });
+            if (allowedUnitIds) {
+                const rowUnitIds = (row.dataset.unit || row.getAttribute('data-unit') || '').split(',').map(s => s.trim()).filter(Boolean);
+                if (rowUnitIds.length > 0) {
+                    matchesDept = rowUnitIds.some(uid => allowedUnitIds.has(uid));
+                } else {
+                    const userDepts = rowDept.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+                    matchesDept = userDepts.some(ud => {
+                        if (allowedUnitNames.has(ud)) return true;
+                        for (const allowed of allowedUnitNames) {
+                            if (ud.includes(allowed) || allowed.includes(ud)) return true;
+                        }
+                        return false;
+                    });
+                }
             }
 
             const matchesPos = checkedPos.length === 0 || checkedPos.some(p => rowPos.includes(p.toLowerCase()));
@@ -988,19 +1088,93 @@
     window.filterSidebarUnits = filterSidebarUnits;
 
     // --- DIRECTORY SIDEBAR: POSITIONS FILTER ---
+    function getActiveDirectoryDeptPositions() {
+        const activeUnitId = getActiveDirectoryDynamicUnitId();
+        if (!activeUnitId) {
+            return null; // All positions are allowed when no department filter is active
+        }
+        const allowedUnitIds = getDescendantUnitIds(String(activeUnitId));
+        const units = window.SPMS_UNITS_MAP || [];
+        const allowedUnitNames = new Set();
+        units.forEach(u => {
+            if (allowedUnitIds.has(String(u.id))) {
+                allowedUnitNames.add((u.name || '').trim().toLowerCase());
+            }
+        });
+
+        const rows = document.querySelectorAll('.user-dir-row');
+        const allowedPositions = new Set();
+
+        rows.forEach(row => {
+            const rowUnitIds = (row.dataset.unit || row.getAttribute('data-unit') || '').split(',').map(s => s.trim()).filter(Boolean);
+            let matchesDept = false;
+            if (rowUnitIds.length > 0) {
+                matchesDept = rowUnitIds.some(uid => allowedUnitIds.has(uid));
+            } else {
+                const userDepts = (row.dataset.dept || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+                matchesDept = userDepts.some(ud => {
+                    if (allowedUnitNames.has(ud)) return true;
+                    for (const allowed of allowedUnitNames) {
+                        if (ud.includes(allowed) || allowed.includes(ud)) return true;
+                    }
+                    return false;
+                });
+            }
+
+            if (matchesDept) {
+                const posStr = row.dataset.position || '';
+                posStr.split(',').forEach(p => {
+                    const trimmed = p.trim().toLowerCase();
+                    if (trimmed && trimmed !== 'no position') {
+                        allowedPositions.add(trimmed);
+                    }
+                });
+            }
+        });
+
+        return allowedPositions;
+    }
+
     function filterSidebarPositions() {
         const input = document.getElementById('mini-search-positions');
         const query = (input ? input.value : '').trim().toLowerCase();
         const list = document.getElementById('positions-checkbox-list');
         if (!list) return;
 
-        const allRows = Array.from(list.querySelectorAll('.position-filter-label'));
+        const allowedDeptPositions = getActiveDirectoryDeptPositions();
+        const allRows = Array.from(list.querySelectorAll('.position-label, .position-filter-label'));
+        let visibleCount = 0;
+
         allRows.forEach(row => {
-            const title = (row.dataset.title || row.textContent || '').trim().toLowerCase();
-            const matches = !query || title.includes(query);
-            row.classList.toggle('page-hidden', !matches);
-            row.style.display = matches ? '' : 'none';
+            const title = (row.dataset.name || row.dataset.title || row.textContent || '').trim().toLowerCase();
+            const matchesQuery = !query || title.includes(query);
+            const matchesDept = allowedDeptPositions === null || allowedDeptPositions.has(title);
+
+            if (!matchesDept) {
+                const cb = row.querySelector('input[type="checkbox"]');
+                if (cb && cb.checked) {
+                    cb.checked = false;
+                }
+            }
+
+            const isVisible = matchesQuery && matchesDept;
+            row.classList.toggle('page-hidden', !isVisible);
+            row.style.display = isVisible ? '' : 'none';
+            if (isVisible) visibleCount++;
         });
+
+        let emptyMsg = list.querySelector('.no-positions-msg');
+        if (visibleCount === 0) {
+            if (!emptyMsg) {
+                emptyMsg = document.createElement('div');
+                emptyMsg.className = 'no-positions-msg text-center py-3 text-[11px] font-bold text-text-muted italic';
+                emptyMsg.textContent = 'No positions in selected unit';
+                list.appendChild(emptyMsg);
+            }
+            emptyMsg.style.display = '';
+        } else if (emptyMsg) {
+            emptyMsg.style.display = 'none';
+        }
     }
     window.filterSidebarPositions = filterSidebarPositions;
 
@@ -1189,20 +1363,7 @@
             cb.checked = false;
         });
 
-        const collegeSelect = document.getElementById('filter-college-select');
-        if (collegeSelect) collegeSelect.value = '';
-
-        const deptSelect = document.getElementById('filter-dept-select');
-        if (deptSelect) {
-            deptSelect.innerHTML = '<option value="">All Departments</option>';
-            deptSelect.value = '';
-            deptSelect.disabled = true;
-            deptSelect.classList.add('opacity-60');
-            deptSelect.classList.remove('border-amber-500', 'text-amber-600', 'dark:text-amber-400');
-        }
-
-        const countPill = document.getElementById('subdept-count-pill');
-        if (countPill) countPill.textContent = '(All)';
+        initDynamicDirectoryUnitFilters();
 
         const msPos = document.getElementById('mini-search-positions');
         if (msPos) msPos.value = '';
@@ -1216,6 +1377,9 @@
     // UNIFIED PAGE INITIALIZATION
     // ==========================================
     function initAccountsPage() {
+        // Initialize dynamic unit cascading filters for user directory
+        initDynamicDirectoryUnitFilters();
+
         // --- 1. Directory Filter Listeners ---
         const searchInput = document.getElementById('filter-search');
         if (searchInput) searchInput.addEventListener('input', filterUsers);
@@ -1332,10 +1496,35 @@
         if (closeMobileInviteFilters) closeMobileInviteFilters.addEventListener('click', () => toggleMobileInviteFilters(false));
         if (mobileInviteOverlay) mobileInviteOverlay.addEventListener('click', () => toggleMobileInviteFilters(false));
 
-        const btnDeleteFiltered = document.getElementById('btn-delete-filtered');
+        const btnDeleteFiltered = document.getElementById('delete-filtered-invites') || document.getElementById('btn-delete-filtered');
         if (btnDeleteFiltered) {
             btnDeleteFiltered.addEventListener('click', async () => {
-                const visibleRows = Array.from(document.querySelectorAll('.invite-row')).filter(row => row.style.display !== 'none' && !row.classList.contains('page-hidden'));
+                const searchInput = document.getElementById('invite-filter-search');
+                const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+                const checkedRoles = getCheckedValues('invite_filter_role');
+                const checkedStatus = getCheckedValues('invite_filter_status');
+                const checkedExpiry = getCheckedValues('invite_filter_expiry');
+
+                const allRows = Array.from(document.querySelectorAll('.invite-row'));
+                const visibleRows = allRows.filter(row => {
+                    const email = (row.dataset.email || '').toLowerCase();
+                    const role = (row.dataset.role || '').toLowerCase();
+                    const status = (row.dataset.status || '').toLowerCase();
+                    const isExpired = row.dataset.expired === '1';
+
+                    const matchesSearch = !query || email.includes(query);
+                    const matchesRole = checkedRoles.length === 0 || checkedRoles.some(r => role.includes(r.toLowerCase()));
+                    const matchesStatus = checkedStatus.length === 0 || checkedStatus.includes(status);
+
+                    let matchesExpiry = true;
+                    if (checkedExpiry.length > 0) {
+                        if (isExpired && !checkedExpiry.includes('expired')) matchesExpiry = false;
+                        if (!isExpired && !checkedExpiry.includes('not-expired')) matchesExpiry = false;
+                    }
+
+                    return matchesSearch && matchesRole && matchesStatus && matchesExpiry;
+                });
+
                 if (visibleRows.length === 0) {
                     window.appAlert('No invitations match the current filter.', { variant: 'warning' });
                     return;
@@ -1343,7 +1532,7 @@
 
                 const ok = await window.appConfirm(
                     `Delete these ${visibleRows.length} invitation(s)? Any that haven't been accepted yet will stop working.`,
-                    { title: 'Delete Filtered Invitations', confirmText: 'Delete All' }
+                    { title: 'Delete Filtered Invitations', confirmText: 'Delete All', variant: 'danger' }
                 );
                 if (!ok) return;
 
@@ -1355,6 +1544,9 @@
                 apiPost('/account/invite/delete-bulk', formData, {
                     onSuccess: () => {
                         visibleRows.forEach(row => row.remove());
+                        if (window.invPaginator) {
+                            window.invPaginator.init(Array.from(document.querySelectorAll('.invite-row')));
+                        }
                         filterInvitations();
                         window.appAlert('Deleted successfully.', { title: 'Invitations Deleted', variant: 'info' });
                         btnDeleteFiltered.disabled = false;
@@ -1647,18 +1839,6 @@
                         assignBtn.setAttribute('onclick', `openTwgAssignmentModal(${userId}, "${name}", "${email}", ${JSON.stringify(newIds)})`);
                     }
                 }
-
-                // Update the User Directory button if it exists
-                document.querySelectorAll(`tr.user-dir-row button[onclick*="openTwgAssignmentModal(${userId},"]`).forEach(btn => {
-                    const span = btn.querySelector('span');
-                    if (span) {
-                        span.textContent = count > 0 ? `${count} Assigned Office${count > 1 ? 's' : ''}` : 'Assign Offices';
-                    }
-                    const parentRow = btn.closest('tr.user-dir-row');
-                    const rName = parentRow ? (parentRow.dataset.name || '') : '';
-                    const rEmail = parentRow ? (parentRow.dataset.email || '') : '';
-                    btn.setAttribute('onclick', `openTwgAssignmentModal(${userId}, "${rName}", "${rEmail}", ${JSON.stringify(newIds)})`);
-                });
             },
             onError: (errMsg) => {
                 if (submitBtn) {

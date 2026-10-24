@@ -151,7 +151,7 @@ Frontend Structure  | HTML5 Semantic Markup            | Accessible, standards-c
 Styling             | Vanilla CSS & Tailwind utilities | Responsive layout, dark/light theme, and custom widgets
 Client-Side Logic   | Vanilla JavaScript (ES6+)        | Asynchronous DOM updates, modals, and AJAX interactions
 HTTP Client         | Axios                            | RESTful API communication for dynamic actions
-Document Editor     | TinyMCE                          | Formatted text editing for accomplishment descriptions
+Document Editor     | Native SPMS Form Workspace       | Interactive tabular workspace for deliverables, targets, and rubrics
 Testing Framework   | SpmsLifecycleRunner (CLI)        | Automated end-to-end 15-stage lifecycle simulation
 
 ---

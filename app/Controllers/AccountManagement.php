@@ -65,33 +65,40 @@ class AccountManagement extends BaseController
      */
     public function sendInvites() {
         return $this->tryOrFail(function() {
-            $rawEmails = $this->request->getPost('emails');
+            $rawEmails = (string) $this->request->getPost('emails');
             $roleId    = $this->request->getPost('role_id');
 
-            $emails = preg_split('/[\s,;]+/', trim($rawEmails));
+            // Split by whitespace, commas, or semicolons and normalize
+            $rawList = preg_split('/[\s,;]+/', trim($rawEmails));
+            $cleaned = [];
+            foreach ($rawList as $e) {
+                $e = strtolower(trim($e));
+                if ($e !== '' && filter_var($e, FILTER_VALIDATE_EMAIL)) {
+                    $cleaned[] = $e;
+                }
+            }
+
+            // Filter out initial duplicates pasted into the textarea
+            $uniqueEmails = array_values(array_unique($cleaned));
             $validEmails = [];
 
             $userModel = new UserModel();
             $invitationModel = new InvitationModel();
             $now = date('Y-m-d H:i:s');
 
-            foreach ($emails as $email) {
-                $email = trim($email);
-                if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            foreach ($uniqueEmails as $email) {
+                // 1. Check if they already have an account
+                $hasAccount = $userModel->where('email', $email)->countAllResults() > 0;
 
-                    // 1. Check if they already have an account
-                    $hasAccount = $userModel->where('email', $email)->countAllResults() > 0;
+                // 2. Check if they already have a pending, unexpired invitation
+                $hasPendingInvite = $invitationModel->where('email', $email)
+                                                    ->where('status', InvitationStatus::PENDING->value)
+                                                    ->where('expires_at >', $now)
+                                                    ->countAllResults() > 0;
 
-                    // 2. Check if they already have a pending, unexpired invitation
-                    $hasPendingInvite = $invitationModel->where('email', $email)
-                                                        ->where('status', InvitationStatus::PENDING->value)
-                                                        ->where('expires_at >', $now)
-                                                        ->countAllResults() > 0;
-
-                    // Only add them if BOTH are false
-                    if (!$hasAccount && !$hasPendingInvite) {
-                        $validEmails[] = $email;
-                    }
+                // Only add them if BOTH are false
+                if (!$hasAccount && !$hasPendingInvite && !in_array($email, $validEmails, true)) {
+                    $validEmails[] = $email;
                 }
             }
 
@@ -346,12 +353,17 @@ class AccountManagement extends BaseController
 
     /** POST /account/position/add */
     public function addPosition() {
-        $title = trim($this->request->getPost('title'));
+        $title = trim($this->request->getPost('title') ?? '');
         $isTeaching = $this->request->getPost('is_teaching') ? 1 : 0;
 
         if (empty($title)) return $this->respondError('Position title is required.');
 
         $positionModel = new PositionModel();
+        $existing = $positionModel->where('LOWER(title)', strtolower($title))->first();
+        if ($existing) {
+            return $this->respondError("A position with the title '{$title}' already exists.");
+        }
+
         $id = $positionModel->insert([
             'title' => $title,
             'is_teaching' => $isTeaching,
@@ -377,12 +389,17 @@ class AccountManagement extends BaseController
 
     /** POST /account/unit/add - `parent_id` lets units nest (e.g. a college under a campus). */
     public function addUnit() {
-        $name = trim($this->request->getPost('name'));
+        $name = trim($this->request->getPost('name') ?? '');
         $parentId = $this->request->getPost('parent_id') ?: null;
 
         if (empty($name)) return $this->respondError('Unit name is required.');
 
         $unitModel = new UnitModel();
+        $existing = $unitModel->where('LOWER(name)', strtolower($name))->first();
+        if ($existing) {
+            return $this->respondError("A unit named '{$name}' already exists.");
+        }
+
         $id = $unitModel->insert([
             'name' => $name,
             'parent_id' => $parentId,
@@ -407,7 +424,7 @@ class AccountManagement extends BaseController
      */
     public function updateUnit() {
         $unitId = (int) $this->request->getPost('id');
-        $name = trim($this->request->getPost('name'));
+        $name = trim($this->request->getPost('name') ?? '');
         $parentId = $this->request->getPost('parent_id');
         $parentId = ($parentId !== '' && $parentId !== null && $parentId !== '0') ? (int) $parentId : null;
 
@@ -417,6 +434,12 @@ class AccountManagement extends BaseController
         $unitModel = new UnitModel();
         $unit = $unitModel->find($unitId);
         if (!$unit) return $this->respondError('Unit not found.');
+
+        // Prevent duplicate unit names
+        $existing = $unitModel->where('LOWER(name)', strtolower($name))->where('id !=', $unitId)->first();
+        if ($existing) {
+            return $this->respondError("A unit named '{$name}' already exists.");
+        }
 
         // Prevent self-parenting
         if ($parentId && $parentId === $unitId) {

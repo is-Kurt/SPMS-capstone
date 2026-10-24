@@ -19,15 +19,12 @@ use App\Models\DocumentFolderModel;
 class Team extends BaseController
 {
     /** GET /teams - Lists this user's saved teams and shows the selected one's member roster. */
-    public function index() {
+    public function index(?string $paramTeamId = null) {
         $role = session()->get('role');
-        $userPos = strtolower(session()->get('position') ?? '');
-        $isChair = str_contains($userPos, 'chair') || str_contains($userPos, 'head');
-        $isExecOrOpcr = str_contains($userPos, 'president') || str_contains($userPos, 'vpaa') || str_contains($userPos, 'dean') || (strtolower(session()->get('doc_type') ?? '') === 'opcr');
-        if (!in_array($role, ['Admin', 'Supervisor']) && !$isChair && !$isExecOrOpcr) return redirect()->to('/');
+        if (!in_array($role, ['Admin', 'Supervisor'])) return redirect()->to('/');
 
         $userId = session()->get('user_id');
-        $teamId = $this->request->getGet('team_id');
+        $teamId = $paramTeamId ?? $this->request->getGet('team_id');
 
         $userModel     = new UserModel();
         $unitModel     = new UnitModel();
@@ -36,8 +33,37 @@ class Team extends BaseController
         $memberModel   = new RoutingPresetMemberModel();
         $folderModel   = new DocumentFolderModel();
 
-        $users = $userModel->getEligibleTeamMembers($userId);
-        $units = $unitModel->orderBy('name', 'ASC')->findAll();
+        // Scope calculation: Admin has full university access, Supervisor is scoped to their unit branch
+        $allowedUnitIds = null;
+        $hasLowerLevels = true;
+        $supervisorUnit = null;
+
+        if ($role !== 'Admin') {
+            $db = \Config\Database::connect();
+            $userPlantillas = $db->table('plantillas')
+                ->select('unit_id')
+                ->where('user_id', $userId)
+                ->where('ended_at IS NULL')
+                ->where('unit_id IS NOT NULL')
+                ->get()->getResultArray();
+            $myUnitIds = array_unique(array_filter(array_map('intval', array_column($userPlantillas, 'unit_id'))));
+            $allowedUnitIds = !empty($myUnitIds) ? $unitModel->getDescendantIds($myUnitIds) : [];
+            
+            // Check if supervisor's assigned unit has any child/subordinate units
+            $childUnits = array_diff($allowedUnitIds, $myUnitIds);
+            $hasLowerLevels = !empty($childUnits);
+
+            if (!empty($myUnitIds)) {
+                $supervisorUnit = $unitModel->find(reset($myUnitIds));
+            }
+        }
+
+        $users = $userModel->getEligibleTeamMembers($userId, $allowedUnitIds);
+        if ($role === 'Admin') {
+            $units = $unitModel->orderBy('name', 'ASC')->findAll();
+        } else {
+            $units = !empty($allowedUnitIds) ? $unitModel->whereIn('id', $allowedUnitIds)->orderBy('name', 'ASC')->findAll() : [];
+        }
 
         foreach ($users as &$u) {
             if ($u['position'])   $u['position']   = str_replace(',', ', ', $u['position']);
@@ -82,7 +108,7 @@ class Team extends BaseController
                 $members = $memberModel->where('preset_id', $teamId)->findAll();
                 $activeMemberIds = array_column($members, 'user_id');
             } else {
-                return redirect()->to('teams')->with('error', 'Team not found.'); 
+                throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound(); 
             }
         }
 
@@ -101,7 +127,10 @@ class Team extends BaseController
                 'positions'       => $positions,
                 'presets'         => $presets,
                 'activeTeam'      => $activeTeam,
-                'activeMemberIds' => $activeMemberIds
+                'activeMemberIds' => $activeMemberIds,
+                'hasLowerLevels'  => $hasLowerLevels,
+                'supervisorUnit'  => $supervisorUnit,
+                'myUnitIds'       => $myUnitIds ?? [],
             ]
         ]);
     }
@@ -109,10 +138,7 @@ class Team extends BaseController
     /** POST /teams/create - Creates an empty, unnamed team shell so the UI has an id to attach members to. */
     public function createShell() {
         $role = session()->get('role');
-        $userPos = strtolower(session()->get('position') ?? '');
-        $isChair = str_contains($userPos, 'chair') || str_contains($userPos, 'head');
-        $isExecOrOpcr = str_contains($userPos, 'president') || str_contains($userPos, 'vpaa') || str_contains($userPos, 'dean') || (strtolower(session()->get('doc_type') ?? '') === 'opcr');
-        if (!in_array($role, ['Admin', 'Supervisor']) && !$isChair && !$isExecOrOpcr) return $this->respondError('Unauthorized.', 403);
+        if (!in_array($role, ['Admin', 'Supervisor'])) return $this->respondError('Unauthorized.', 403);
 
         $presetModel = new RoutingPresetModel();
 
@@ -138,10 +164,7 @@ class Team extends BaseController
     /** POST /teams - Saves a team's name/description and replaces its full member list. */
     public function store() {
         $role = session()->get('role');
-        $userPos = strtolower(session()->get('position') ?? '');
-        $isChair = str_contains($userPos, 'chair') || str_contains($userPos, 'head');
-        $isExecOrOpcr = str_contains($userPos, 'president') || str_contains($userPos, 'vpaa') || str_contains($userPos, 'dean') || (strtolower(session()->get('doc_type') ?? '') === 'opcr');
-        if (!in_array($role, ['Admin', 'Supervisor']) && !$isChair && !$isExecOrOpcr) return redirect()->to('/');
+        if (!in_array($role, ['Admin', 'Supervisor'])) return redirect()->to('/');
 
         $teamId  = $this->request->getPost('team_id');
         $name    = trim($this->request->getPost('name'));
@@ -151,8 +174,23 @@ class Team extends BaseController
         $presetModel = new RoutingPresetModel();
         $memberModel = new RoutingPresetMemberModel();
 
+        // Scope check: Supervisor can only add members belonging to their unit branch
+        $allowedUnitIds = null;
+        if ($role !== 'Admin') {
+            $db = \Config\Database::connect();
+            $userPlantillas = $db->table('plantillas')
+                ->select('unit_id')
+                ->where('user_id', $userId)
+                ->where('ended_at IS NULL')
+                ->where('unit_id IS NOT NULL')
+                ->get()->getResultArray();
+            $myUnitIds = array_unique(array_filter(array_map('intval', array_column($userPlantillas, 'unit_id'))));
+            $unitModel = new UnitModel();
+            $allowedUnitIds = !empty($myUnitIds) ? $unitModel->getDescendantIds($myUnitIds) : [];
+        }
+
         $userModel = new UserModel();
-        $eligible = $userModel->getEligibleTeamMembers($userId);
+        $eligible = $userModel->getEligibleTeamMembers($userId, $allowedUnitIds);
         $allowedUserIds = array_map('strval', array_column($eligible, 'user_id'));
         $userIds = array_values(array_intersect($userIds, $allowedUserIds));
 
@@ -235,9 +273,7 @@ class Team extends BaseController
     /** POST /teams/delete - Archives (soft-deletes) a team if cascaded, or hard-deletes if unused. */
     public function delete() {
         $role = session()->get('role');
-        $userPos = strtolower(session()->get('position') ?? '');
-        $isChair = str_contains($userPos, 'chair') || str_contains($userPos, 'head');
-        if (!in_array($role, ['Admin', 'Supervisor']) && !$isChair) return $this->respondError('Unauthorized.', 403);
+        if (!in_array($role, ['Admin', 'Supervisor'])) return $this->respondError('Unauthorized.', 403);
 
         $presetId = $this->request->getVar('preset_id') ?? $this->request->getPost('preset_id');
         $presetModel = new RoutingPresetModel();

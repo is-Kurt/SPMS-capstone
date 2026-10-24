@@ -60,9 +60,9 @@ class Security extends BaseConfig
      *
      * Expiration time for Cross Site Request Forgery protection cookie.
      *
-     * Defaults to two hours (in seconds).
+     * Defaults to two hours (in seconds). Extended to 24 hours (86400) for mobile/background tab resilience.
      */
-    public int $expires = 7200;
+    public int $expires = 86400;
 
     /**
      * --------------------------------------------------------------------------
@@ -82,5 +82,5 @@ class Security extends BaseConfig
      *
      * @see https://codeigniter4.github.io/userguide/libraries/security.html#redirection-on-failure
      */
-    public bool $redirect = (ENVIRONMENT === 'production');
+    public bool $redirect = true;
 }

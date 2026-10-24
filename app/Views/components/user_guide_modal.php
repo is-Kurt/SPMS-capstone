@@ -8,13 +8,6 @@
         <!-- Header (Compact) -->
         <div class="spms-modal-header">
             <div>
-                <div class="flex items-center gap-2 mb-0.5">
-                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                        BSU SPMS &bull; Quick Action Guide
-                    </span>
-                    <span class="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium hidden sm:inline">&bull; 2026 Edition</span>
-                </div>
                 <h3 class="text-base sm:text-lg font-black text-zinc-900 dark:text-white m-0 tracking-tight leading-tight">
                     How to Complete Your Evaluation Paper
                 </h3>

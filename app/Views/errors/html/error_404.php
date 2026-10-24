@@ -27,13 +27,13 @@
         }
 
         :root {
-            --bg-page: #f8fafc;
+            --bg-page: #f4f4f5;
             --bg-card: #ffffff;
-            --bg-subtle: #f1f5f9;
-            --border-color: #e2e8f0;
+            --bg-subtle: #f4f4f5;
+            --border-color: #e4e4e7;
             --border-focus: #10b981;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
+            --text-main: #09090b;
+            --text-muted: #71717a;
             --accent-emerald: #059669;
             --accent-emerald-hover: #047857;
             --accent-amber: #d97706;
@@ -42,22 +42,22 @@
         }
 
         html.dark {
-            --bg-page: #031710;
-            --bg-card: #08281d;
-            --bg-subtle: #0d3829;
-            --border-color: #144f3b;
+            --bg-page: #09090b;
+            --bg-card: #18181b;
+            --bg-subtle: #27272a;
+            --border-color: #27272a;
             --border-focus: #10b981;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
+            --text-main: #fafafa;
+            --text-muted: #a1a1aa;
             --accent-emerald: #10b981;
             --accent-emerald-hover: #34d399;
             --accent-amber: #fbbf24;
             --accent-amber-bg: rgba(251, 191, 36, 0.12);
-            --card-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(16, 185, 129, 0.06);
+            --card-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
             background-color: var(--bg-page);
             color: var(--text-main);
             min-height: 100vh;
@@ -296,24 +296,51 @@
         </p>
 
         <!-- Navigation Actions -->
+        <?php
+            $session = \Config\Services::session();
+            $role = $session->get('role');
+            $isLoggedIn = (bool) $session->get('user_id');
+        ?>
         <div class="button-group">
-            <a href="<?= site_url('dashboard') ?>" class="btn btn-primary">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                Dashboard
-            </a>
-            <a href="<?= site_url('folders') ?>" class="btn btn-secondary">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-                My Folders
-            </a>
-            <a href="<?= site_url('ratings') ?>" class="btn btn-secondary">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                Ratings
-            </a>
-            <button onclick="window.history.back()" class="btn btn-outline" type="button">
+            <?php if ($isLoggedIn): ?>
+                <a href="<?= site_url('folders') ?>" class="btn btn-primary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                    My Folders
+                </a>
+                <?php if (in_array($role, ['Admin', 'Supervisor'])): ?>
+                    <a href="<?= site_url('dashboard') ?>" class="btn btn-secondary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                        Dashboard
+                    </a>
+                <?php endif; ?>
+                <?php if (in_array($role, ['Admin', 'Supervisor', 'PMT', 'TWG'])): ?>
+                    <a href="<?= site_url('ratings') ?>" class="btn btn-secondary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        Ratings
+                    </a>
+                <?php endif; ?>
+            <?php else: ?>
+                <a href="<?= site_url('login') ?>" class="btn btn-primary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+                    Sign In
+                </a>
+            <?php endif; ?>
+
+            <button onclick="smartGoBack()" class="btn btn-outline" type="button">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 Go Back
             </button>
         </div>
+
+        <script>
+            function smartGoBack() {
+                if (document.referrer && document.referrer.indexOf(window.location.host) !== -1 && document.referrer !== window.location.href) {
+                    window.history.back();
+                } else {
+                    window.location.href = '<?= $isLoggedIn ? site_url('folders') : site_url('login') ?>';
+                }
+            }
+        </script>
 
         <?php if (ENVIRONMENT !== 'production' && !empty($message)): ?>
             <details class="dev-details">

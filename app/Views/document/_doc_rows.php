@@ -795,10 +795,17 @@
                             <div class="mb-3 sm:mb-5">
                                 <div class="flex items-center justify-between gap-2 mb-1 sm:mb-2">
                                     <span class="spms-hub-kicker text-zinc-500 dark:text-zinc-400">INSTITUTIONAL EVALUATION CYCLE</span>
-                                    <div class="spms-hub-status-pill">
-                                        <span class="spms-hub-status-dot"></span>
-                                        <span>TARGET PHASE ACTIVE</span>
-                                    </div>
+                                    <?php if ($isArchived): ?>
+                                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                            <span>Archived &amp; Frozen</span>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="spms-hub-status-pill">
+                                            <span class="spms-hub-status-dot"></span>
+                                            <span>TARGET PHASE ACTIVE</span>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                                 <h2 class="spms-hub-title"><?= esc($activeFolder['title'] ?: 'Untitled Cycle') ?></h2>
                                 <p class="spms-hub-subtitle">
@@ -807,17 +814,31 @@
                             </div>
 
                             <!-- TIMELINE INFORMATION BANNER -->
-                            <div class="spms-hub-banner p-2.5 sm:p-4 rounded-xl mb-3 sm:mb-5 flex items-start gap-2.5 sm:gap-3.5 shadow-xs">
-                                <div class="spms-hub-banner-icon w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
+                            <?php if ($isArchived): ?>
+                                <div class="p-2.5 sm:p-4 rounded-xl mb-3 sm:mb-5 flex items-start gap-2.5 sm:gap-3.5 shadow-xs border border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-300">
+                                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 bg-amber-500/20 text-amber-700 dark:text-amber-400">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                                        </svg>
+                                    </div>
+                                    <div class="text-[10px] sm:text-xs leading-relaxed">
+                                        <span class="font-extrabold block mb-0.5 text-[11px] sm:text-sm">Evaluation Cycle is Closed &amp; Archived</span>
+                                        This evaluation cycle is archived and read-only. All ratings, targets, and cascading actions are frozen. To modify dates or make changes, restore the folder using the <strong>Restore Folder</strong> button in Folder Management.
+                                    </div>
                                 </div>
-                                <div class="text-[10px] sm:text-xs leading-relaxed">
-                                    <span class="spms-hub-banner-title font-extrabold block mb-0.5 text-[11px] sm:text-sm">Target Setting Window is Active</span>
-                                    As Administrator, you oversee the evaluation schedule and release cycles to executive leadership. You have <strong>no personal evaluation paper to fill</strong>. Use the <strong>Cycle Release</strong> panel on the right to release this cycle to the <strong>Vice Presidents (Executive Team)</strong> so OPCR commitments can be formulated.
+                            <?php else: ?>
+                                <div class="spms-hub-banner p-2.5 sm:p-4 rounded-xl mb-3 sm:mb-5 flex items-start gap-2.5 sm:gap-3.5 shadow-xs">
+                                    <div class="spms-hub-banner-icon w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                    <div class="text-[10px] sm:text-xs leading-relaxed">
+                                        <span class="spms-hub-banner-title font-extrabold block mb-0.5 text-[11px] sm:text-sm">Target Setting Window is Active</span>
+                                        As Administrator, you oversee the evaluation schedule and release cycles to executive leadership. You have <strong>no personal evaluation paper to fill</strong>. Use the <strong>Cycle Release</strong> panel on the right to release this cycle to the <strong>Vice Presidents (Executive Team)</strong> so OPCR commitments can be formulated.
+                                    </div>
                                 </div>
-                            </div>
+                            <?php endif; ?>
 
                             <?php
                                 $hubTargetStart = $activeFolder['ipcr_target_start'] ?? $activeFolder['opcr_target_start'] ?? $activeFolder['dpcr_target_start'] ?? $activeFolder['iperf_target_start'] ?? null;
@@ -884,40 +905,52 @@
                                 </div>
                             </div>
 
-                            <!-- ACTIONS -->
-                            <div class="spms-hub-actions-bar">
-                                <button type="button" onclick='openEditFolderModal(<?= json_encode([
-                                    "id"    => $activeFolder["id"],
-                                    "title" => $activeFolder["title"],
-                                    "ipcr_target_start" => $activeFolder["ipcr_target_start"] ?? "",
-                                    "ipcr_target_end"   => $activeFolder["ipcr_target_end"] ?? "",
-                                    "ipcr_eval_start"   => $activeFolder["ipcr_eval_start"] ?? "",
-                                    "ipcr_eval_end"     => $activeFolder["ipcr_eval_end"] ?? "",
-                                    "cdpcr_target_start" => $activeFolder["cdpcr_target_start"] ?? "",
-                                    "cdpcr_target_end"   => $activeFolder["cdpcr_target_end"] ?? "",
-                                    "cdpcr_eval_start"   => $activeFolder["cdpcr_eval_start"] ?? "",
-                                    "cdpcr_eval_end"     => $activeFolder["cdpcr_eval_end"] ?? "",
-                                    "dpcr_target_start" => $activeFolder["dpcr_target_start"] ?? "",
-                                    "dpcr_target_end"   => $activeFolder["dpcr_target_end"] ?? "",
-                                    "dpcr_eval_start"   => $activeFolder["dpcr_eval_start"] ?? "",
-                                    "dpcr_eval_end"     => $activeFolder["dpcr_eval_end"] ?? "",
-                                    "opcr_target_start" => $activeFolder["opcr_target_start"] ?? "",
-                                    "opcr_target_end"   => $activeFolder["opcr_target_end"] ?? "",
-                                    "opcr_eval_start"   => $activeFolder["opcr_eval_start"] ?? "",
-                                    "opcr_eval_end"     => $activeFolder["opcr_eval_end"] ?? "",
-                                    "iperf_target_start" => $activeFolder["iperf_target_start"] ?? "",
-                                    "iperf_target_end"   => $activeFolder["iperf_target_end"] ?? "",
-                                    "iperf_eval_start"   => $activeFolder["iperf_eval_start"] ?? "",
-                                    "iperf_eval_end"     => $activeFolder["iperf_eval_end"] ?? "",
-                                    "approving_authority_name" => $activeFolder["approving_authority_name"] ?? "",
-                                    "approving_authority_position" => $activeFolder["approving_authority_position"] ?? ""
-                                ]) ?>)' class="spms-hub-btn-primary">
-                                    Edit Cycle Dates
-                                </button>
-                                <button type="button" onclick="openUserGuideModal()" class="spms-hub-btn-secondary spms-hub-btn-secondary-full">
-                                    SPMS Cascade Guide
-                                </button>
-                            </div>
+                                <!-- ACTIONS -->
+                                <div class="spms-hub-actions-bar">
+                                    <?php if ($isArchived): ?>
+                                        <button type="button" disabled class="spms-hub-btn-primary opacity-40 cursor-not-allowed hover:bg-transparent" title="Archived evaluation cycles cannot be edited. Restore the cycle first.">
+                                            Edit Cycle Dates
+                                        </button>
+                                    <?php else: ?>
+                                        <button type="button" onclick='openEditFolderModal(<?= json_encode([
+                                            "id"    => $activeFolder["id"],
+                                            "title" => $activeFolder["title"],
+                                            "ipcr_target_start" => $activeFolder["ipcr_target_start"] ?? "",
+                                            "ipcr_target_end"   => $activeFolder["ipcr_target_end"] ?? "",
+                                            "ipcr_eval_start"   => $activeFolder["ipcr_eval_start"] ?? "",
+                                            "ipcr_eval_end"     => $activeFolder["ipcr_eval_end"] ?? "",
+                                            "cdpcr_target_start" => $activeFolder["cdpcr_target_start"] ?? "",
+                                            "cdpcr_target_end"   => $activeFolder["cdpcr_target_end"] ?? "",
+                                            "cdpcr_eval_start"   => $activeFolder["cdpcr_eval_start"] ?? "",
+                                            "cdpcr_eval_end"     => $activeFolder["cdpcr_eval_end"] ?? "",
+                                            "dpcr_target_start" => $activeFolder["dpcr_target_start"] ?? "",
+                                            "dpcr_target_end"   => $activeFolder["dpcr_target_end"] ?? "",
+                                            "dpcr_eval_start"   => $activeFolder["dpcr_eval_start"] ?? "",
+                                            "dpcr_eval_end"     => $activeFolder["dpcr_eval_end"] ?? "",
+                                            "opcr_target_start" => $activeFolder["opcr_target_start"] ?? "",
+                                            "opcr_target_end"   => $activeFolder["opcr_target_end"] ?? "",
+                                            "opcr_eval_start"   => $activeFolder["opcr_eval_start"] ?? "",
+                                            "opcr_eval_end"     => $activeFolder["opcr_eval_end"] ?? "",
+                                            "iperf_target_start" => $activeFolder["iperf_target_start"] ?? "",
+                                            "iperf_target_end"   => $activeFolder["iperf_target_end"] ?? "",
+                                            "iperf_eval_start"   => $activeFolder["iperf_eval_start"] ?? "",
+                                            "iperf_eval_end"     => $activeFolder["iperf_eval_end"] ?? "",
+                                            "approving_authority_name" => $activeFolder["approving_authority_name"] ?? "",
+                                            "approving_authority_position" => $activeFolder["approving_authority_position"] ?? ""
+                                        ]) ?>)' class="spms-hub-btn-primary">
+                                            Edit Cycle Dates
+                                        </button>
+                                    <?php endif; ?>
+                                    <?php if ($isArchived): ?>
+                                        <button type="button" disabled class="spms-hub-btn-secondary spms-hub-btn-secondary-full opacity-40 cursor-not-allowed hover:bg-transparent" title="Archived evaluation cycles are frozen.">
+                                            SPMS Cascade Guide
+                                        </button>
+                                    <?php else: ?>
+                                        <button type="button" onclick="openUserGuideModal()" class="spms-hub-btn-secondary spms-hub-btn-secondary-full">
+                                            SPMS Cascade Guide
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
                         </div>
 
                     <?php elseif (empty($myDocs)): ?>
@@ -1738,13 +1771,15 @@
 
                         <div class="flex items-center justify-between px-1 shrink-0">
                             <span class="text-[10px] text-text-muted font-medium">Team Roster</span>
-                            <a href="<?= site_url('teams?team_id=' . $cascadedTeamId) ?>" class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1">
-                                + Manage Members in Teams
-                            </a>
+                            <?php if (!$isArchived): ?>
+                                <a href="<?= site_url('teams?team_id=' . $cascadedTeamId) ?>" class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1">
+                                    + Manage Members in Teams
+                                </a>
+                            <?php endif; ?>
                         </div>
 
                         <?php $pendingCount = (int)($pendingTeamMembersCount ?? 0); ?>
-                        <?php if ($pendingCount > 0 && $canActuallyCascade): ?>
+                        <?php if ($pendingCount > 0 && $canActuallyCascade && !$isArchived): ?>
                             <!-- SYNC NOTICE: MISSING MEMBERS DETECTED -->
                             <div class="p-3 rounded-xl border border-emerald-300 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 flex flex-col gap-2 shadow-2xs">
                                 <div class="flex items-center justify-between">
@@ -1770,9 +1805,15 @@
                             </div>
                         <?php endif; ?>
 
-                        <button onclick="triggerUncascade('<?= $activeFolder['id'] ?>')" class="w-full py-2.5 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-300 dark:border-[#361a1f] bg-rose-50 dark:bg-[#1c1214] hover:bg-rose-600 dark:hover:bg-[#261619] rounded-xl transition-colors cursor-pointer flex justify-center items-center gap-1.5 font-bold text-xs uppercase tracking-wider shrink-0">
-                            <?= $isUserAdmin ? 'Revoke Cycle Release' : 'Revoke Cascade' ?>
-                        </button>
+                        <?php if ($isArchived): ?>
+                            <button type="button" disabled class="w-full py-2.5 text-rose-400/50 border border-rose-900/30 bg-rose-950/10 rounded-xl opacity-40 cursor-not-allowed flex justify-center items-center gap-1.5 font-bold text-xs uppercase tracking-wider shrink-0" title="Archived evaluation cycles cannot be revoked. Restore the cycle first.">
+                                <?= $isUserAdmin ? 'Revoke Cycle Release' : 'Revoke Cascade' ?>
+                            </button>
+                        <?php else: ?>
+                            <button onclick="triggerUncascade('<?= $activeFolder['id'] ?>')" class="w-full py-2.5 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-300 dark:border-[#361a1f] bg-rose-50 dark:bg-[#1c1214] hover:bg-rose-600 dark:hover:bg-[#261619] rounded-xl transition-colors cursor-pointer flex justify-center items-center gap-1.5 font-bold text-xs uppercase tracking-wider shrink-0">
+                                <?= $isUserAdmin ? 'Revoke Cycle Release' : 'Revoke Cascade' ?>
+                            </button>
+                        <?php endif; ?>
 
                         <?php if (!empty($cascadedChildren)): ?>
                             <?php 
@@ -1788,11 +1829,11 @@
                                 <div id="cascaded-subordinates-list" class="space-y-2 overflow-y-auto custom-scrollbar flex-1 min-h-0 pr-0.5">
                                     <?php foreach ($cascadedChildren as $cIndex => $child): ?>
                                         <?php 
-                                            $isPending = ($child['status'] === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value);
-                                            $isApproved = ($child['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
-                                            $fInit = mb_substr($child['first_name'] ?? '', 0, 1);
-                                            $lInit = mb_substr($child['last_name'] ?? '', 0, 1);
-                                            $initials = strtoupper($fInit . $lInit) ?: 'U';
+                                             $isPending = ($child['status'] === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value);
+                                             $isApproved = ($child['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
+                                             $fInit = mb_substr($child['first_name'] ?? '', 0, 1);
+                                             $lInit = mb_substr($child['last_name'] ?? '', 0, 1);
+                                             $initials = strtoupper($fInit . $lInit) ?: 'U';
                                         ?>
                                         <div class="subordinate-card <?= ($cIndex >= $subPageSize) ? 'hidden' : '' ?> p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 flex flex-col gap-1.5 text-xs transition-all duration-150" data-subordinate-index="<?= $cIndex ?>">
                                             <div class="flex items-center justify-between gap-1.5">
@@ -1824,7 +1865,7 @@
                                                         </span>
                                                     <?php endif; ?>
 
-                                                    <?php if ($canActuallyCascade): ?>
+                                                    <?php if ($canActuallyCascade && !$isArchived): ?>
                                                         <button type="button"
                                                                 onclick="triggerRemoveCascadedSubordinate('<?= $child['id'] ?>', '<?= esc(addslashes($child['first_name'] . ' ' . $child['last_name'])) ?>', '<?= $activeFolder['id'] ?>')"
                                                                 title="<?= $isUserAdmin ? 'Revoke cycle release for this recipient' : 'Remove from this cycle' ?>"
@@ -1978,7 +2019,7 @@
                                 </button>
 
                                 <button onclick='archiveFolder("<?= esc($activeFolder["id"]) ?>", "<?= esc(addslashes($activeFolder["title"])) ?>")'
-                                        class="w-full text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 bg-amber-50 hover:bg-amber-100 dark:bg-[#1f1912] border border-amber-200 dark:border-[#382b1d] py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                                        class="w-full text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 bg-amber-50 hover:bg-amber-100 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 border border-amber-200 dark:border-zinc-700 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs"
                                         title="Close and archive this evaluation cycle (freezes all scores)">
                                     Close & Archive
                                 </button>

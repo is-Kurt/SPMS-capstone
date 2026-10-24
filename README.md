@@ -77,7 +77,7 @@ The system guides users through the four official steps of the evaluation cycle:
 | :--- | :--- | :--- |
 | **What You See (Look & Feel)** | Tailwind CSS & Modern CSS | Makes the website look clean and adjust smoothly to phone and computer screens. |
 | **Interactive Controls** | JavaScript | Powers clickable buttons, slide-out menus, and instant updates without reloading. |
-| **Text & Goal Editor** | TinyMCE | A familiar word-processing box to type and format comments and work targets. |
+| **Form & Goal Workspace** | Native SPMS Form Editor | Interactive tabular workspace to configure work targets, accomplishments, and digital rubrics. |
 | **Behind the Scenes (Engine)** | CodeIgniter 4 (PHP) | Connects all pages, checks user permissions, and runs the official rating calculations. |
 | **Information Storage** | MySQL / MariaDB | Safely stores all user accounts, uploaded targets, and final evaluation scores. |
 | **Report Generator** | PhpSpreadsheet | Automatically builds and formats official government Excel files for printing. |

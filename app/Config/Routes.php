@@ -22,6 +22,7 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
 
     // Routing Presets (My Teams)
     $routes->get('teams', 'Team::index', ['filter' => 'role:Admin,Supervisor']);
+    $routes->get('teams/(:segment)', 'Team::index/$1', ['filter' => 'role:Admin,Supervisor']);
     $routes->post('teams/create-shell', 'Team::createShell', ['filter' => 'role:Admin,Supervisor']);
     $routes->post('teams/store', 'Team::store', ['filter' => 'role:Admin,Supervisor']);
     $routes->match(['POST', 'DELETE'], 'teams/delete', 'Team::delete', ['filter' => 'role:Admin,Supervisor']);

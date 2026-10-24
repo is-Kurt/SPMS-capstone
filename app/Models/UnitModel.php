@@ -170,16 +170,42 @@ class UnitModel extends Model
             }
         }
 
-        // 2. Unnest colleges from OVPAA and ensure all 15 colleges & programs exist
+        // 2. Ensure top VP executive units exist as top-level nodes
         $now = date('Y-m-d H:i:s');
+        $ovpaa = $this->where('name', 'OVPAA')->first();
+        if (!$ovpaa) {
+            $ovpaaId = (int)$this->insert(['name' => 'OVPAA', 'parent_id' => null, 'created_at' => $now]);
+        } else {
+            $ovpaaId = (int)$ovpaa['id'];
+            if ($ovpaa['parent_id'] !== null) $this->update($ovpaaId, ['parent_id' => null]);
+        }
+
+        $ovpaf = $this->where('name', 'OVPAF')->first();
+        if (!$ovpaf) {
+            $ovpafId = (int)$this->insert(['name' => 'OVPAF', 'parent_id' => null, 'created_at' => $now]);
+        } else {
+            $ovpafId = (int)$ovpaf['id'];
+            if ($ovpaf['parent_id'] !== null) $this->update($ovpafId, ['parent_id' => null]);
+        }
+
+        // Nest administrative offices under OVPAF
+        $adminOfficeNames = ['HRDO', 'Accounting Office', "Registrar's Office"];
+        foreach ($adminOfficeNames as $aoName) {
+            $ao = $this->where('name', $aoName)->first();
+            if ($ao && (int)($ao['parent_id'] ?? 0) !== $ovpafId) {
+                $this->update($ao['id'], ['parent_id' => $ovpafId]);
+            }
+        }
+
+        // Nest all 15 colleges under OVPAA and ensure their programs exist under each college
         foreach ($bsuHierarchy as $collegeName => $programs) {
             $college = $this->where('name', $collegeName)->first();
             if (!$college) {
-                $collegeId = (int)$this->insert(['name' => $collegeName, 'parent_id' => null, 'created_at' => $now]);
+                $collegeId = (int)$this->insert(['name' => $collegeName, 'parent_id' => $ovpaaId, 'created_at' => $now]);
             } else {
                 $collegeId = (int)$college['id'];
-                if ($college['parent_id'] !== null) {
-                    $this->update($collegeId, ['parent_id' => null]);
+                if ((int)($college['parent_id'] ?? 0) !== $ovpaaId) {
+                    $this->update($collegeId, ['parent_id' => $ovpaaId]);
                 }
             }
 
@@ -307,10 +333,17 @@ class UnitModel extends Model
     {
         $unit = $this->find($unitId);
         if (!$unit) return null;
+        if (stripos($unit['name'], 'College of') !== false || stripos($unit['name'], 'Graduate School') !== false) {
+            return $unit;
+        }
         if (empty($unit['parent_id'])) {
             return $unit;
         }
-        return $this->find($unit['parent_id']);
+        $parent = $this->find($unit['parent_id']);
+        if ($parent && (stripos($parent['name'], 'College of') !== false || stripos($parent['name'], 'Graduate School') !== false)) {
+            return $parent;
+        }
+        return $parent ?: $unit;
     }
 
     /**

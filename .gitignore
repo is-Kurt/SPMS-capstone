@@ -134,6 +134,7 @@ _modules/*
 /phpunit*.xml
 
 writable/spms_db*
+writable/*.sqlite
 writable/database/*
 !writable/database/.gitkeep
 

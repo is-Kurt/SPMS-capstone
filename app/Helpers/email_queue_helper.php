@@ -49,16 +49,17 @@ function queue_email(string $toEmail, string $subject, string $body)
  */
 function dispatch_email_now($response, int $limit = 1)
 {
-    if (ENVIRONMENT === 'development' || !function_exists('fastcgi_finish_request')) {
+    if (function_exists('fastcgi_finish_request')) {
+        $response->send();
+        session_write_close();
+        fastcgi_finish_request();
         process_email_queue($limit);
-        return $response;
+        exit();
     }
 
-    $response->send();
     session_write_close();
-    fastcgi_finish_request();
     process_email_queue($limit);
-    exit();
+    return $response;
 }
 
 /**

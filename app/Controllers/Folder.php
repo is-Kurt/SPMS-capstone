@@ -86,7 +86,7 @@ class Folder extends BaseController
             // own proper authorization check.)
             if (!$activeFolder) {
                 // If the folder no longer exists (e.g. revoked cascade or deleted cycle),
-                // remove any stale notifications referencing it and notify the user
+                // remove any stale notifications referencing it
                 (new \App\Models\NotificationModel())
                     ->groupStart()
                         ->like('link', 'folders/' . $folderId)
@@ -95,8 +95,7 @@ class Folder extends BaseController
                     ->delete();
 
                 session()->remove('active_folder_id');
-                session()->setFlashdata('error', 'The evaluation folder you tried to access has been revoked or no longer exists.');
-                return redirect()->to(site_url('folders'));
+                throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
             }
 
             if ($activeFolder['user_id'] != $userId) {
@@ -115,14 +114,8 @@ class Folder extends BaseController
                     return redirect()->to(site_url('ratings/show/' . $activeFolder['id']));
                 }
 
-                $owner = $userModel->find($activeFolder['user_id']);
-                if ($owner) {
-                    session()->setFlashdata('mismatch_detected', true);
-                    session()->setFlashdata('mismatch_target_email', $owner['email']);
-                    return redirect()->to('account-mismatch');
-                }
-
-                return redirect()->to('folders');
+                // Security guard: If user is neither owner nor an authorized evaluator, block with 404 (prevents user/email enumeration)
+                throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
             }
 
             $isReadOnly = false;
@@ -1845,6 +1838,10 @@ class Folder extends BaseController
         $activeFolder = null;
         $myDocs = [];
         $ownerDocType = null;
+        $presetModel = new RoutingPresetModel();
+        $presets = $presetModel->getPresetsWithDetails($userId);
+        $cascadedChildren = [];
+        $pendingTeamMembers = [];
 
         if ($folderId) {
             $activeFolder = $folderModel->find($folderId);
@@ -1855,6 +1852,62 @@ class Folder extends BaseController
                 $myDocs = $documentModel->where('document_folder_id', $folderId)->findAll();
                 $owner = $userModel->find($activeFolder['user_id']);
                 $ownerDocType = $owner['doc_type'] ?? null;
+
+                // Ensure the assigned team preset is included in $presets even if soft-deleted
+                if (!empty($activeFolder['routing_preset_id']) && !in_array($activeFolder['routing_preset_id'], array_column($presets, 'id'))) {
+                    $archivedPreset = $presetModel->withDeleted()->find($activeFolder['routing_preset_id']);
+                    if ($archivedPreset) {
+                        $rpmModel = new \App\Models\RoutingPresetMemberModel();
+                        $archivedPreset['member_count'] = $rpmModel->where('preset_id', $archivedPreset['id'])->countAllResults();
+                        $presets[] = $archivedPreset;
+                    }
+                }
+
+                // Query child folders released from this cycle (they have deleted_at IS NOT NULL because the cycle was archived)
+                $routingModel = new \App\Models\EvaluationRoutingModel();
+                $routedFolderIds = $routingModel->where('evaluator_folder_id', $activeFolder['id'])
+                    ->findColumn('folder_id') ?: [];
+
+                $builder = $folderModel
+                    ->select("document_folders.id, document_folders.user_id, document_folders.status, document_folders.target_submitted_at, users.first_name, users.last_name, users.email, pos.title as position")
+                    ->join('users', 'users.id = document_folders.user_id')
+                    ->join('plantillas p', 'p.user_id = users.id AND p.ended_at IS NULL', 'left')
+                    ->join('positions pos', 'pos.id = p.position_id', 'left');
+
+                if (!empty($routedFolderIds)) {
+                    $builder->groupStart()
+                        ->where('document_folders.parent_folder_id', $activeFolder['id'])
+                        ->orWhereIn('document_folders.id', $routedFolderIds)
+                    ->groupEnd();
+                } else {
+                    $builder->where('document_folders.parent_folder_id', $activeFolder['id']);
+                }
+                $cascadedChildren = $builder->findAll();
+
+                if (!empty($activeFolder['routing_preset_id'])) {
+                    $rpmModel = new \App\Models\RoutingPresetMemberModel();
+                    $teamMembers = $rpmModel->where('preset_id', $activeFolder['routing_preset_id'])->findAll();
+                    $cascadedUserIds = array_map('intval', array_column($cascadedChildren, 'user_id'));
+
+                    foreach ($teamMembers as $tm) {
+                        $tUserId = (int)$tm['user_id'];
+                        if (in_array($tUserId, $cascadedUserIds, true)) {
+                            continue;
+                        }
+
+                        $pUser = $userModel->find($tUserId);
+                        if ($pUser) {
+                            $pPlantilla = $userModel->getActivePlantillaDetails($tUserId);
+                            $pendingTeamMembers[] = [
+                                'user_id'    => $tUserId,
+                                'first_name' => $pUser['first_name'],
+                                'last_name'  => $pUser['last_name'],
+                                'email'      => $pUser['email'],
+                                'position'   => $pPlantilla['position'] ?? ''
+                            ];
+                        }
+                    }
+                }
             }
         }
 
@@ -1864,13 +1917,16 @@ class Folder extends BaseController
             'mainView'         => 'document/_doc_rows',
             'templates'        => $templateModel->findAll(),
             'mainData'         => [
-                'activeFolder'  => $activeFolder,
-                'ownerDocType'  => $ownerDocType,
-                'myDocs'        => $myDocs,
-                'groupedGuides' => [],
-                'isReadOnly'    => true,
-                'presets'       => [],
-                'isArchivedView'=> true
+                'activeFolder'            => $activeFolder,
+                'ownerDocType'            => $ownerDocType,
+                'myDocs'                  => $myDocs,
+                'groupedGuides'           => [],
+                'isReadOnly'              => true,
+                'presets'                 => $presets,
+                'cascadedChildren'        => $cascadedChildren,
+                'pendingTeamMembers'      => $pendingTeamMembers,
+                'pendingTeamMembersCount' => count($pendingTeamMembers),
+                'isArchivedView'          => true
             ]
         ]);
     }
@@ -2515,18 +2571,23 @@ class Folder extends BaseController
             $folder = $folderModel->find($folderId);
             if (!$folder) return $this->respondError("Folder not found.", 400);
 
-            $dates = $folderModel->getFolderDates($folder);
-            
-            if (!empty($dates['target_date_end']) && date('Y-m-d H:i:s') > $dates['target_date_end']) {
-                return $this->respondError("The target setting period has already ended.", 400);
-            }
-            
             $evalStatuses = [
                 FolderStatus::EVALUATED->value, 
                 FolderStatus::APPROVED->value, 
                 FolderStatus::TWG_APPROVED->value, 
                 FolderStatus::TWG_DISAPPROVED->value
             ];
+
+            if ($folder['status'] !== FolderStatus::PENDING_TARGET_APPROVAL->value && !in_array($folder['status'], $evalStatuses)) {
+                return $this->respondError("Cannot approve targets: The employee has revoked or unsubmitted their targets. Please refresh the page.", 409);
+            }
+
+            $dates = $folderModel->getFolderDates($folder);
+            
+            if (!empty($dates['target_date_end']) && date('Y-m-d H:i:s') > $dates['target_date_end']) {
+                return $this->respondError("The target setting period has already ended.", 400);
+            }
+            
             $targetStatus = in_array($folder['status'], $evalStatuses) ? $folder['status'] : FolderStatus::TARGET_APPROVED->value;
 
             $currentUserId = (int)session()->get('user_id');
@@ -3008,6 +3069,12 @@ class Folder extends BaseController
             $folderModel = new DocumentFolderModel();
             
             $folder = $folderModel->find($folderId);
+            if (!$folder) return $this->respondError("Folder not found.", 400);
+
+            if ($folder['status'] !== FolderStatus::PENDING_TARGET_APPROVAL->value) {
+                return $this->respondError("Cannot return targets: The employee has already revoked or unsubmitted their targets. Please refresh the page.", 409);
+            }
+
             $dates = $folderModel->getFolderDates($folder);
             if (!empty($dates['target_date_end']) && date('Y-m-d H:i:s') > $dates['target_date_end']) {
                 return $this->respondError("The target setting period has already ended.", 400);
@@ -3064,6 +3131,15 @@ class Folder extends BaseController
             $folder = $folderModel->find($folderId);
             if (!$folder || !empty($folder['deleted_at'])) {
                 return $this->respondError("Cannot approve: This evaluation cycle is closed/archived.", 400);
+            }
+
+            $validEvalStatuses = [
+                FolderStatus::EVALUATED->value,
+                FolderStatus::SUBMITTED->value,
+                FolderStatus::APPROVED->value
+            ];
+            if (!in_array($folder['status'], $validEvalStatuses)) {
+                return $this->respondError("Cannot approve evaluation: The employee has revoked their self-rating submission. Please refresh the page.", 409);
             }
 
             $isAdmin = (new UserModel())->hasRole(session()->get('user_id'), 'Admin');
@@ -3225,6 +3301,14 @@ class Folder extends BaseController
 
             $folderId = $this->request->getPost('folder_id');
             $status = $this->request->getPost('status');
+
+            if ($role === 'TWG') {
+                $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
+                $assignedUnits = $twgAssignmentModel->getAssignedUnitIds(session()->get('user_id'));
+                if (!empty($assignedUnits) && !$twgAssignmentModel->isTwgAssignedToFolder(session()->get('user_id'), $folderId)) {
+                    return $this->respondError('Unauthorized: This folder is outside your assigned unit jurisdiction.', 403);
+                }
+            }
             
             if (!in_array($status, [FolderStatus::TWG_APPROVED->value, FolderStatus::TWG_DISAPPROVED->value, 'revoke'])) {
                 return $this->fail('Invalid status');
@@ -3234,6 +3318,16 @@ class Folder extends BaseController
             $folder = $folderModel->find($folderId);
             if (!$folder || !empty($folder['deleted_at'])) {
                 return $this->respondError("Cannot perform TWG review: This evaluation cycle is closed/archived.", 400);
+            }
+
+            $validTwgStatuses = [
+                FolderStatus::EVALUATED->value,
+                FolderStatus::APPROVED->value,
+                FolderStatus::TWG_APPROVED->value,
+                FolderStatus::TWG_DISAPPROVED->value
+            ];
+            if ($status !== 'revoke' && !in_array($folder['status'], $validTwgStatuses)) {
+                return $this->respondError("Cannot perform TWG review: The employee's submission is no longer under evaluation. Please refresh the page.", 409);
             }
 
             if ($status === 'revoke') {
@@ -3275,6 +3369,21 @@ class Folder extends BaseController
             $folderId = $this->request->getPost('folder_id');
             $reason   = trim($this->request->getPost('reason') ?? '');
             $routingModel = new EvaluationRoutingModel();
+            $folderModel  = new DocumentFolderModel();
+
+            $folder = $folderModel->find($folderId);
+            if (!$folder || !empty($folder['deleted_at'])) {
+                return $this->respondError("Cannot return evaluation: This evaluation cycle is closed/archived.", 400);
+            }
+
+            $validEvalStatuses = [
+                FolderStatus::EVALUATED->value,
+                FolderStatus::SUBMITTED->value,
+                FolderStatus::APPROVED->value
+            ];
+            if (!in_array($folder['status'], $validEvalStatuses)) {
+                return $this->respondError("Cannot return evaluation: The employee has already revoked their self-rating submission. Please refresh the page.", 409);
+            }
 
             $routingModel->where('folder_id', $folderId)
                 ->where('evaluator_id', session()->get('user_id'))

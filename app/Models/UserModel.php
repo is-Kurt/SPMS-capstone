@@ -89,6 +89,7 @@ class UserModel extends Model
         $users = $this->db->table('users u')
             ->select("u.id, u.first_name, u.last_name, u.email, u.is_active,
                       GROUP_CONCAT(DISTINCT pos.title) as position,
+                      GROUP_CONCAT(DISTINCT un.id) as unit_id,
                       GROUP_CONCAT(DISTINCT un.name) as department,
                       GROUP_CONCAT(DISTINCT r.name) as role_name,
                       GROUP_CONCAT(DISTINCT r.id) as role_id")
@@ -107,9 +108,13 @@ class UserModel extends Model
     /**
      * For Team.php: Fetches eligible subordinates (excluding current user and Admins).
      */
-    public function getEligibleTeamMembers(int $excludeUserId): array
+    public function getEligibleTeamMembers(int $excludeUserId, ?array $allowedUnitIds = null): array
     {
-        $users = $this->db->table('users u')
+        if ($allowedUnitIds !== null && empty($allowedUnitIds)) {
+            return [];
+        }
+
+        $builder = $this->db->table('users u')
             ->select("u.id as user_id, u.first_name, u.last_name, u.email, 
                       GROUP_CONCAT(DISTINCT pos.id) as position_id, 
                       GROUP_CONCAT(DISTINCT pos.title) as position, 
@@ -126,8 +131,13 @@ class UserModel extends Model
             ->groupStart()
                 ->where('r.name !=', 'Admin')
                 ->orWhere('r.name IS NULL')
-            ->groupEnd()
-            ->groupBy('u.id') 
+            ->groupEnd();
+
+        if ($allowedUnitIds !== null) {
+            $builder->whereIn('p.unit_id', $allowedUnitIds);
+        }
+
+        $users = $builder->groupBy('u.id') 
             ->orderBy('u.last_name', 'ASC')
             ->get()->getResultArray();
 

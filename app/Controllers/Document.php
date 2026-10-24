@@ -16,7 +16,7 @@ use App\Models\TemplateModel;
  */
 class Document extends BaseController
 {
-    /** GET /document/{docId} - Opens the TinyMCE editor view for a single document. */
+    /** GET /document/{docId} - Opens the SPMS form workspace editor view for a single document. */
     public function index($docId = null) {
         $userId  = session()->get('user_id');
         $sysRole = session()->get('role');
@@ -42,16 +42,19 @@ class Document extends BaseController
                                     ->where('evaluator_id', $userId)
                                     ->first();
             
+            $isAuthorizedEvaluator = $routing || in_array($sysRole, ['Admin', 'PMT', 'TWG']);
+
+            // Security guard: If user is neither document owner nor an authorized evaluator, block with 404
+            if (!$isAuthorizedEvaluator) {
+                throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+            }
+
             if ($routing) {
                 $routingStatus = is_object($routing) ? $routing->status : $routing['status'];
-            } elseif (in_array($sysRole, ['Admin', 'PMT', 'TWG'])) {
-                $routingStatus = null;
-            } else {
-                $isGuide = true;
             }
 
             // Privacy guard: Evaluators, Admins, and TWG cannot read an unsubmitted private draft
-            if (!$isGuide && in_array($docInfo['folder_status'] ?? '', [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::DRAFT_TARGET->value])) {
+            if (in_array($docInfo['folder_status'] ?? '', [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::DRAFT_TARGET->value])) {
                 session()->setFlashdata('error', 'This document is currently being drafted by the employee and has not yet been submitted for evaluation.');
                 return redirect()->to(site_url('ratings'));
             }
@@ -840,7 +843,7 @@ class Document extends BaseController
 
         // Authorization check: Only Document Owner and Admin can export
         if ($docOwnerId !== $userId && $sysRole !== 'Admin') {
-            return redirect()->back()->with('error', 'Only the document owner and Admin can export this document.');
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
         // Parse form data from tabs
@@ -904,8 +907,10 @@ class Document extends BaseController
         $docOwnerId = $docInfo['owner_id'];
 
         // Authorization: Owner, Evaluator/Supervisor, Admin, TWG, or PMT
-        if ($docOwnerId !== $userId && !in_array($sysRole, ['Admin', 'Supervisor', 'TWG', 'PMT'])) {
-            return redirect()->back()->with('error', 'Unauthorized to export rubrics for this document.');
+        $routingModel = new EvaluationRoutingModel();
+        $isEvaluator = $routingModel->where('folder_id', $docInfo['document_folder_id'])->where('evaluator_id', $userId)->countAllResults() > 0;
+        if ($docOwnerId !== $userId && !$isEvaluator && !in_array($sysRole, ['Admin', 'PMT', 'TWG'])) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
         // Parse form data from tabs

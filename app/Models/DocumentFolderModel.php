@@ -86,7 +86,9 @@ class  DocumentFolderModel extends Model
         $builder = $this->db->table('document_folders df')
             ->select("df.id as folder_id, df.user_id, (u.first_name || ' ' || u.last_name) as username,
                       REPLACE(GROUP_CONCAT(DISTINCT pos.title), ',', ', ') as position,
+                      GROUP_CONCAT(DISTINCT pos.id) as position_id,
                       REPLACE(GROUP_CONCAT(DISTINCT un.name), ',', ', ') as department,
+                      GROUP_CONCAT(DISTINCT un.id) as unit_id,
                       MAX(pos.is_teaching) as is_teaching,
                       df.final_rating, df.status as folder_status,
                       MAX(CASE WHEN {$cascadedCondition} THEN 1 ELSE 0 END) as is_cascaded_by_me")
@@ -120,7 +122,15 @@ class  DocumentFolderModel extends Model
         } elseif ($sysRole === 'Admin') {
             // Admin has institutional oversight over all submissions in the cycle,
             // while distinguishing what Admin directly cascaded vs subordinate folders via is_cascaded_by_me
-        } elseif (!in_array($sysRole, ['PMT', 'TWG'])) {
+        } elseif ($sysRole === 'TWG') {
+            $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
+            $allowedUnitIds = $twgAssignmentModel->getAssignedUnitIdsWithDescendants($userId);
+            if (!empty($allowedUnitIds)) {
+                $builder->whereIn('p.unit_id', $allowedUnitIds);
+            } else {
+                $builder->where('df.id', -1);
+            }
+        } elseif ($sysRole !== 'PMT') {
             $builder->where('er_me.evaluator_id', $userId);
         }
 

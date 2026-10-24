@@ -198,72 +198,12 @@
                         </div>
                     </div>
 
-                    <!-- College & Department Cascading Filter -->
-                    <div class="shrink-0 pb-4 border-b border-surface-border/50 space-y-3">
-                        <!-- STEP 1: COLLEGE / DIVISION -->
-                        <div class="space-y-1.5">
-                            <label for="filter-college-select" class="block text-[10px] font-black uppercase tracking-wider text-text-muted">
-                                1. COLLEGE / DIVISION
-                            </label>
-                            <div class="relative w-full">
-                                <select id="filter-college-select" onchange="onTeamCollegeFilterChange(this.value)"
-                                    class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border focus:border-sky-500 dark:focus:border-sky-400 focus:ring-1 focus:ring-sky-500/30 rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
-                                    <option value="">All Colleges &amp; Divisions</option>
-                                    <?php
-                                    $colleges = [];
-                                    $adminOffices = [];
-                                    foreach ($units as $u) {
-                                        if (empty($u['parent_id'])) {
-                                            if (stripos($u['name'], 'College of') !== false || stripos($u['name'], 'Graduate School') !== false) {
-                                                $colleges[] = $u;
-                                            } else {
-                                                $adminOffices[] = $u;
-                                            }
-                                        }
-                                    }
-                                    ?>
-                                    <optgroup label="Colleges">
-                                        <?php foreach ($colleges as $c): ?>
-                                            <option value="<?= esc($c['id']) ?>" data-name="<?= esc($c['name']) ?>"><?= esc($c['name']) ?></option>
-                                        <?php endforeach; ?>
-                                    </optgroup>
-                                    <?php if (!empty($adminOffices)): ?>
-                                    <optgroup label="Administrative Offices / Divisions">
-                                        <?php foreach ($adminOffices as $ao): ?>
-                                            <option value="<?= esc($ao['id']) ?>" data-name="<?= esc($ao['name']) ?>"><?= esc($ao['name']) ?></option>
-                                        <?php endforeach; ?>
-                                    </optgroup>
-                                    <?php endif; ?>
-                                </select>
-                                <div class="pointer-events-none absolute inset-y-0 flex items-center text-text-muted" style="right: 10px;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- STEP 2: DEPARTMENT / PROGRAM (Connected by dashed connector line) -->
-                        <div id="subdepartment-container" class="relative pl-3.5 ml-2.5 border-l-2 border-dashed border-emerald-500/50 dark:border-emerald-500/40 space-y-1.5 transition-all">
-                            <div class="flex items-center justify-between">
-                                <label for="filter-dept-select" class="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                                    <span>2. DEPARTMENT / PROGRAM</span>
-                                </label>
-                                <span id="subdept-count-pill" class="text-[10px] font-medium text-text-muted italic">(All)</span>
-                            </div>
-                            <div class="relative w-full">
-                                <select id="filter-dept-select" onchange="onTeamDeptFilterChange(this.value)" disabled
-                                    class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs opacity-60 [color-scheme:light] dark:[color-scheme:dark]">
-                                    <option value="">All Departments</option>
-                                </select>
-                                <div class="pointer-events-none absolute inset-y-0 flex items-center text-text-muted" style="right: 10px;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
+                    <!-- Dynamic Cascading Unit / Department Filter -->
+                    <?php if (!empty($hasLowerLevels)): ?>
+                    <div id="dynamic-unit-filter-container" class="shrink-0 pb-4 border-b border-surface-border/50 space-y-3">
+                        <!-- Populated dynamically by JavaScript -->
                     </div>
+                    <?php endif; ?>
 
                     <!-- Positions Filter with mini-search -->
                     <div class="shrink-0 pb-4 border-b border-surface-border/50">
@@ -281,7 +221,7 @@
                             </div>
                             <div class="space-y-1 pr-1" id="positions-checkbox-list">
                                 <?php foreach ($positions as $pos): ?>
-                                    <label class="position-filter-label flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors" data-title="<?= strtolower(esc($pos['title'])) ?>" data-teaching="<?= $pos['is_teaching'] ?>">
+                                    <label class="position-filter-label flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors" data-title="<?= strtolower(esc($pos['title'])) ?>" data-teaching="<?= $pos['is_teaching'] ?>" data-pos-id="<?= esc($pos['id']) ?>">
                                         <input type="checkbox" name="filter_pos[]" value="<?= esc($pos['id']) ?>" class="checkbox team-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
                                         <span class="truncate"><?= esc($pos['title']) ?></span>
                                     </label>
@@ -536,6 +476,8 @@
     const searchInput = document.getElementById('filter-search');
 
     window.SPMS_TEAM_UNITS = <?= json_encode(array_map(fn($u) => ['id' => (int)$u['id'], 'name' => $u['name'], 'parent_id' => $u['parent_id'] ? (int)$u['parent_id'] : 0], $units ?? [])) ?>;
+    window.SPMS_USER_ROLE = '<?= esc(session()->get('role')) ?>';
+    window.SPMS_MY_UNIT_IDS = <?= json_encode(array_map('intval', $myUnitIds ?? [])) ?>;
 
     function escapeHtml(str) {
         return String(str)
@@ -574,82 +516,202 @@
         return result;
     }
 
-    function onTeamCollegeFilterChange(collegeId) {
-        const deptSelect = document.getElementById('filter-dept-select');
-        const countPill = document.getElementById('subdept-count-pill');
-        if (!deptSelect) return;
+    // Dynamic Cascading Unit Filters (N-Tier Drill-Down)
+    const LEVEL_THEMES = [
+        {
+            labelColor: 'text-text-muted',
+            focusRing: 'focus:border-accent focus:ring-1 focus:ring-accent/20',
+            activeBorder: 'border-zinc-400 dark:border-zinc-600',
+            connector: 'border-zinc-300 dark:border-zinc-700'
+        }
+    ];
 
-        if (!collegeId) {
-            deptSelect.innerHTML = '<option value="">All Departments</option>';
-            deptSelect.value = '';
-            deptSelect.disabled = true;
-            deptSelect.classList.add('opacity-60');
-            deptSelect.classList.remove('border-amber-500', 'text-amber-600', 'dark:text-amber-400');
-            if (countPill) countPill.textContent = '(All)';
-            applyFilters();
+    function getLevelTheme(level) {
+        return LEVEL_THEMES[0];
+    }
+
+    function getLevelTitle(level, parentUnit) {
+        if (level === 1) {
+            return 'DEPARTMENT / UNIT';
+        }
+        return parentUnit ? escapeHtml(parentUnit.name) : 'SUB-UNIT';
+    }
+
+    function getDefaultOptionLabel(level, parentUnit) {
+        if (level === 1) {
+            return 'All Departments &amp; Units';
+        }
+        return parentUnit ? `All in ${escapeHtml(parentUnit.name)}` : 'All Options';
+    }
+
+    function renderDynamicUnitLevel(level, parentUnitId, targetContainer) {
+        if (!targetContainer) return;
+        targetContainer.innerHTML = '';
+
+        const units = window.SPMS_TEAM_UNITS || [];
+        const unitsById = {};
+        units.forEach(u => unitsById[u.id] = u);
+
+        let availableUnits = [];
+        let parentUnit = null;
+
+        if (level === 1) {
+            if (window.SPMS_USER_ROLE === 'Admin') {
+                // Admin starts with root units
+                availableUnits = units.filter(u => !u.parent_id || !unitsById[u.parent_id]);
+            } else {
+                // Supervisor starts with direct children of their assigned units
+                const myUnits = window.SPMS_MY_UNIT_IDS || [];
+                availableUnits = units.filter(u => myUnits.includes(u.parent_id));
+            }
+        } else {
+            const numParentId = parseInt(parentUnitId, 10);
+            parentUnit = unitsById[numParentId] || null;
+            availableUnits = units.filter(u => u.parent_id === numParentId);
+        }
+
+        // If no units available, omit this level entirely
+        if (availableUnits.length === 0) {
+            targetContainer.classList.add('hidden');
             return;
         }
 
-        const numericCollegeId = parseInt(collegeId, 10);
-        const units = window.SPMS_TEAM_UNITS || [];
-        const college = units.find(u => u.id === numericCollegeId);
-        const collegeName = college ? college.name : '';
+        targetContainer.classList.remove('hidden');
 
-        // Find children of this college
-        const children = units.filter(u => u.parent_id === numericCollegeId);
+        const theme = getLevelTheme(level);
+        const title = getLevelTitle(level, parentUnit);
+        const defaultLabel = getDefaultOptionLabel(level, parentUnit);
 
-        let shortName = collegeName.replace(/^College of\s+/i, '').trim();
-        let allLabel = shortName ? `All ${shortName} Departments` : 'All Departments';
-
-        let html = `<option value="">${allLabel}</option>`;
-        children.forEach(child => {
-            html += `<option value="${child.id}">${escapeHtml(child.name)}</option>`;
+        let optionsHtml = `<option value="">${defaultLabel}</option>`;
+        availableUnits.forEach(u => {
+            optionsHtml += `<option value="${u.id}">${escapeHtml(u.name)}</option>`;
         });
 
-        deptSelect.innerHTML = html;
-        deptSelect.value = '';
-        deptSelect.disabled = false;
-        deptSelect.classList.remove('opacity-60');
-        deptSelect.classList.remove('border-amber-500', 'text-amber-600', 'dark:text-amber-400');
+        const levelWrapper = document.createElement('div');
+        levelWrapper.className = 'space-y-1.5 dynamic-unit-level';
+        levelWrapper.dataset.level = level;
 
-        if (countPill) {
-            countPill.textContent = `(${children.length} options)`;
-        }
+        const headerHtml = level === 1 ? `
+            <div class="flex items-center justify-between">
+                <label for="filter-unit-level-${level}" class="block text-[10px] font-black uppercase tracking-wider ${theme.labelColor} truncate pr-2" title="${title}">
+                    ${title}
+                </label>
+                <span class="text-[10px] font-medium text-text-muted italic shrink-0">(${availableUnits.length} options)</span>
+            </div>` : '';
 
-        applyFilters();
+        levelWrapper.innerHTML = `
+            ${headerHtml}
+            <div class="relative w-full">
+                <select id="filter-unit-level-${level}"
+                    class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border ${theme.focusRing} rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
+                    ${optionsHtml}
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 flex items-center text-text-muted" style="right: 10px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+            <div id="dynamic-unit-children-${level}" class="relative pl-3.5 ml-2.5 border-l-2 border-dashed ${theme.connector} space-y-3 pt-2 hidden"></div>
+        `;
+
+        targetContainer.appendChild(levelWrapper);
+
+        const selectEl = levelWrapper.querySelector(`#filter-unit-level-${level}`);
+        selectEl.addEventListener('change', (e) => {
+            onDynamicUnitLevelChange(level, e.target.value);
+        });
     }
-    window.onTeamCollegeFilterChange = onTeamCollegeFilterChange;
 
-    function onTeamDeptFilterChange(deptId) {
-        const deptSelect = document.getElementById('filter-dept-select');
-        if (deptSelect) {
-            if (deptId) {
-                deptSelect.classList.add('border-amber-500', 'text-amber-600', 'dark:text-amber-400');
+    function onDynamicUnitLevelChange(level, selectedUnitId) {
+        const selectEl = document.getElementById(`filter-unit-level-${level}`);
+        const childrenContainer = document.getElementById(`dynamic-unit-children-${level}`);
+        const theme = getLevelTheme(level);
+
+        if (selectEl) {
+            const activeClasses = theme.activeBorder.split(' ');
+            if (selectedUnitId) {
+                selectEl.classList.add(...activeClasses);
             } else {
-                deptSelect.classList.remove('border-amber-500', 'text-amber-600', 'dark:text-amber-400');
+                selectEl.classList.remove(...activeClasses);
             }
         }
+
+        if (childrenContainer) {
+            childrenContainer.innerHTML = '';
+            childrenContainer.classList.add('hidden');
+
+            if (selectedUnitId) {
+                const numId = parseInt(selectedUnitId, 10);
+                const units = window.SPMS_TEAM_UNITS || [];
+                const childUnits = units.filter(u => u.parent_id === numId);
+
+                if (childUnits.length > 0) {
+                    renderDynamicUnitLevel(level + 1, selectedUnitId, childrenContainer);
+                }
+            }
+        }
+
+        if (typeof filterSidebarPositions === 'function') {
+            filterSidebarPositions();
+        }
         applyFilters();
     }
-    window.onTeamDeptFilterChange = onTeamDeptFilterChange;
+    window.onDynamicUnitLevelChange = onDynamicUnitLevelChange;
+
+    function initDynamicUnitFilters() {
+        const rootContainer = document.getElementById('dynamic-unit-filter-container');
+        if (!rootContainer) return;
+        renderDynamicUnitLevel(1, null, rootContainer);
+    }
+
+    function getActiveDynamicUnitId() {
+        const container = document.getElementById('dynamic-unit-filter-container');
+        if (!container) return null;
+        const selects = Array.from(container.querySelectorAll('select'));
+        for (let i = selects.length - 1; i >= 0; i--) {
+            const val = selects[i].value;
+            if (val) return val;
+        }
+        return null;
+    }
+
+    function getActiveDeptPositions() {
+        const activeUnitId = getActiveDynamicUnitId();
+        if (!activeUnitId) {
+            return null; // All positions are allowed when no dept is filtered
+        }
+        const allowedUnitIds = getDescendantUnitIds(String(activeUnitId));
+        const allCards = document.querySelectorAll('#directory-list .user-card, #selected-list .user-card');
+        const allowedPosIds = new Set();
+
+        allCards.forEach(card => {
+            const cardUnit = card.getAttribute('data-unit');
+            if (cardUnit && cardUnit.split(',').some(uid => allowedUnitIds.has(uid))) {
+                const cardPos = card.getAttribute('data-position');
+                if (cardPos) {
+                    cardPos.split(',').forEach(pid => {
+                        const trimmed = pid.trim();
+                        if (trimmed) allowedPosIds.add(trimmed);
+                    });
+                }
+            }
+        });
+
+        return allowedPosIds;
+    }
+
+    let filterSidebarPositions = function() {};
 
     function clearAllTeamsFilters() {
         if (searchInput) searchInput.value = '';
         document.querySelectorAll('.team-filter-checkbox').forEach(cb => cb.checked = false);
-        const collegeSelect = document.getElementById('filter-college-select');
-        if (collegeSelect) collegeSelect.value = '';
-        const deptSelect = document.getElementById('filter-dept-select');
-        if (deptSelect) {
-            deptSelect.innerHTML = '<option value="">All Departments</option>';
-            deptSelect.value = '';
-            deptSelect.disabled = true;
-            deptSelect.classList.add('opacity-60');
-            deptSelect.classList.remove('border-amber-500', 'text-amber-600', 'dark:text-amber-400');
-        }
-        const countPill = document.getElementById('subdept-count-pill');
-        if (countPill) countPill.textContent = '(All)';
         const msPos = document.getElementById('mini-search-positions');
-        if (msPos) { msPos.value = ''; msPos.dispatchEvent(new Event('input')); }
+        if (msPos) { msPos.value = ''; }
+        initDynamicUnitFilters();
+        if (typeof filterSidebarPositions === 'function') {
+            filterSidebarPositions();
+        }
         applyFilters();
     }
     window.clearAllTeamsFilters = clearAllTeamsFilters;
@@ -666,24 +728,17 @@
         const checkedStaffTypes = getCheckedValues('filter_staff_type[]');
         const checkedPositions = getCheckedValues('filter_pos[]');
 
-        const collegeSelect = document.getElementById('filter-college-select');
-        const deptSelect = document.getElementById('filter-dept-select');
-        const selectedCollegeId = collegeSelect ? collegeSelect.value : '';
-        const selectedDeptId = deptSelect ? deptSelect.value : '';
-
+        const activeUnitId = getActiveDynamicUnitId();
         let allowedUnitIds = null;
-        if (selectedDeptId) {
-            allowedUnitIds = getDescendantUnitIds(String(selectedDeptId));
-        } else if (selectedCollegeId) {
-            allowedUnitIds = getDescendantUnitIds(String(selectedCollegeId));
+        if (activeUnitId) {
+            allowedUnitIds = getDescendantUnitIds(String(activeUnitId));
         }
 
         // Active filters count badge & Reset button
         let activeCount = 0;
         if (searchTerm) activeCount++;
         if (checkedStaffTypes.length > 0) activeCount += checkedStaffTypes.length;
-        if (selectedCollegeId) activeCount++;
-        if (selectedDeptId) activeCount++;
+        if (activeUnitId) activeCount++;
         if (checkedPositions.length > 0) activeCount += checkedPositions.length;
 
         const countBadge = document.getElementById('active-teams-filter-badge');
@@ -757,10 +812,27 @@
         const allPosRows = Array.from(cbPosList.querySelectorAll('.position-filter-label'));
         filterPosPaginator.init(allPosRows);
         
-        const filterSidebarPositions = () => {
+        filterSidebarPositions = () => {
             const input = document.getElementById('mini-search-positions');
             const query = input ? input.value.trim().toLowerCase() : '';
-            const matchedRows = allPosRows.filter(row => row.dataset.title && row.dataset.title.includes(query));
+            const allowedDeptPosIds = getActiveDeptPositions();
+
+            const matchedRows = allPosRows.filter(row => {
+                const posId = row.dataset.posId || (row.querySelector('input') ? row.querySelector('input').value : '');
+                const title = row.dataset.title || '';
+                const matchesQuery = !query || title.includes(query);
+                const matchesDept = allowedDeptPosIds === null || allowedDeptPosIds.has(posId);
+
+                if (!matchesDept) {
+                    const cb = row.querySelector('input[type="checkbox"]');
+                    if (cb && cb.checked) {
+                        cb.checked = false;
+                    }
+                }
+
+                return matchesQuery && matchesDept;
+            });
+
             filterPosPaginator.updateItems(matchedRows);
         };
 
@@ -853,6 +925,9 @@
             clearBtn.classList.remove('flex');
         }
     }
+
+    // Initialize Dynamic Unit Cascading Filters
+    initDynamicUnitFilters();
 
 <?php endif; ?>
 </script>

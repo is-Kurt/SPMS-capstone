@@ -178,6 +178,8 @@ class TwgUnitAssignmentModel extends Model
             ->join('user_roles ur', 'ur.user_id = u.id')
             ->join('roles r', 'r.id = ur.role_id')
             ->where('r.name', 'TWG')
+            ->where('u.deleted_at IS NULL')
+            ->groupBy('u.id')
             ->orderBy('u.last_name', 'ASC')
             ->get()->getResultArray();
     }

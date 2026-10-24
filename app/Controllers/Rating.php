@@ -48,13 +48,28 @@ class Rating extends BaseController
                 return redirect()->to('ratings/' . $folders[0]['id']);
             }
         } else {
+            // Strict Authorization: The requested folderId MUST be an authorized folder in the user's sidebar
+            // (e.g. root evaluation cycle for TWG/PMT/Admin, or personal folder for Supervisor).
+            // Prevent users from accessing other users' personal folders via /ratings/{id}.
+            if (array_search($folderId, array_column($folders, 'id')) === false) {
+                session()->remove('active_folder_id');
+                throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+            }
             session()->set('active_folder_id', $folderId);
         }
 
-        if (!empty($folders)) {
+        if ($folderId) {
             $activeFolder = $folderModel->find($folderId);
+            if (!$activeFolder || !empty($activeFolder['deleted_at'])) {
+                session()->remove('active_folder_id');
+                throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+            }
+            $rootFolderId = $activeFolder['parent_folder_id'] ?? $activeFolder['id'];
+        } elseif (!empty($folders)) {
+            $activeFolder = $folders[0];
             $rootFolderId = $activeFolder['parent_folder_id'] ?? $activeFolder['id'];
         } else {
+            $activeFolder = null;
             $rootFolderId = null;
         }
 
@@ -263,8 +278,7 @@ class Rating extends BaseController
                 ->groupEnd()
                 ->delete();
 
-            session()->setFlashdata('error', 'The evaluation folder you tried to access has been revoked or removed by the supervisor.');
-            return redirect()->to(site_url('ratings'));
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
         // Privacy guard: Unsubmitted work-in-progress drafts cannot be viewed for evaluation
@@ -275,8 +289,16 @@ class Rating extends BaseController
 
         $isAuthorized = false;
 
-        if (in_array($sysRole, ['Admin', 'PMT', 'TWG'])) {
+        if (in_array($sysRole, ['Admin', 'PMT'])) {
             $isAuthorized = true;
+        } elseif ($sysRole === 'TWG') {
+            $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
+            $assignedUnits = $twgAssignmentModel->getAssignedUnitIds($userId);
+            // If TWG reviewer has specific unit assignments, verify folder owner belongs to their assigned units.
+            // If no assignments are configured, fallback to institutional scope.
+            if (empty($assignedUnits) || $twgAssignmentModel->isTwgAssignedToFolder($userId, $subFolderId)) {
+                $isAuthorized = true;
+            }
         } else {
             $routingCount = $routingModel->where('folder_id', $subFolderId)
                                          ->where('evaluator_id', $userId)
@@ -285,8 +307,7 @@ class Rating extends BaseController
         }
 
         if (!$isAuthorized) {
-            session()->setFlashdata('mismatch_detected', true);
-            return redirect()->to('account-mismatch');
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
         $userPersonalFolders = $folderModel->where('user_id', $userId)->where('deleted_at IS NULL')->orderBy('created_at', 'DESC')->findAll();

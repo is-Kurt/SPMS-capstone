@@ -44,71 +44,9 @@
                 </div>
             </div>
 
-            <!-- College & Department Cascading Filter -->
-            <div class="shrink-0 pb-4 border-b border-surface-border/50 space-y-3">
-                <!-- STEP 1: COLLEGE / DIVISION -->
-                <div class="space-y-1.5">
-                    <label for="filter-college-select" class="block text-[10px] font-black uppercase tracking-wider text-text-muted">
-                        1. COLLEGE / DIVISION
-                    </label>
-                    <div class="relative w-full">
-                        <select id="filter-college-select" onchange="onCollegeFilterChange(this.value)"
-                            class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border focus:border-sky-500 dark:focus:border-sky-400 focus:ring-1 focus:ring-sky-500/30 rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
-                            <option value="">All Colleges &amp; Divisions</option>
-                            <?php
-                            $colleges = [];
-                            $adminOffices = [];
-                            foreach ($units as $u) {
-                                if (empty($u['parent_id'])) {
-                                    if (stripos($u['name'], 'College of') !== false || stripos($u['name'], 'Graduate School') !== false) {
-                                        $colleges[] = $u;
-                                    } else {
-                                        $adminOffices[] = $u;
-                                    }
-                                }
-                            }
-                            ?>
-                            <optgroup label="Colleges">
-                                <?php foreach ($colleges as $c): ?>
-                                    <option value="<?= esc($c['id']) ?>" data-name="<?= esc($c['name']) ?>"><?= esc($c['name']) ?></option>
-                                <?php endforeach; ?>
-                            </optgroup>
-                            <?php if (!empty($adminOffices)): ?>
-                            <optgroup label="Administrative Offices / Divisions">
-                                <?php foreach ($adminOffices as $ao): ?>
-                                    <option value="<?= esc($ao['id']) ?>" data-name="<?= esc($ao['name']) ?>"><?= esc($ao['name']) ?></option>
-                                <?php endforeach; ?>
-                            </optgroup>
-                            <?php endif; ?>
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 flex items-center text-text-muted" style="right: 10px;">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- STEP 2: DEPARTMENT / PROGRAM (Connected by dashed connector line) -->
-                <div id="subdepartment-container" class="relative pl-3.5 ml-2.5 border-l-2 border-dashed border-emerald-500/50 dark:border-emerald-500/40 space-y-1.5 transition-all">
-                    <div class="flex items-center justify-between">
-                        <label for="filter-dept-select" class="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                            <span>2. DEPARTMENT / PROGRAM</span>
-                        </label>
-                        <span id="subdept-count-pill" class="text-[10px] font-medium text-text-muted italic">(All)</span>
-                    </div>
-                    <div class="relative w-full">
-                        <select id="filter-dept-select" onchange="onDeptFilterChange(this.value)" disabled
-                            class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs opacity-60 [color-scheme:light] dark:[color-scheme:dark]">
-                            <option value="">All Departments</option>
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 flex items-center text-text-muted" style="right: 10px;">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                    </div>
-                </div>
+            <!-- Dynamic Cascading Unit / Department Filter -->
+            <div id="dynamic-directory-unit-filter-container" class="shrink-0 pb-4 border-b border-surface-border/50 space-y-3">
+                <!-- Populated dynamically by JavaScript -->
             </div>
 
             <!-- Positions Filter with mini-search -->
@@ -178,6 +116,7 @@
                             data-name="<?= strtolower(esc($u['first_name'] . ' ' . $u['last_name'])) ?>"
                             data-email="<?= strtolower(esc($u['email'])) ?>"
                             data-role="<?= esc($u['role_name'] ?? 'No Role') ?>"
+                            data-unit="<?= esc($u['unit_id'] ?? '') ?>"
                             data-dept="<?= esc($u['department'] ?? 'No Unit') ?>"
                             data-position="<?= esc($u['position'] ?? 'No Position') ?>"
                             data-status="<?= $u['is_active'] ?? 1 ?>">
@@ -216,19 +155,9 @@
                                     </div>
                                     <div class="flex flex-col min-w-0 lg:hidden text-right">
                                         <?php if (str_contains($u['role_name'] ?? '', 'TWG')): ?>
-                                            <?php 
-                                                $uAssigned = $twgAssignmentsGrouped[$u['id']] ?? [];
-                                                $assignedCount = count($uAssigned);
-                                                $assignedIds = array_column($uAssigned, 'unit_id');
-                                            ?>
-                                            <button type="button" 
-                                                    onclick='openTwgAssignmentModal(<?= $u['id'] ?>, "<?= esc(addslashes($u['first_name'] . ' ' . $u['last_name'])) ?>", "<?= esc(addslashes($u['email'])) ?>", <?= json_encode(array_values($assignedIds)) ?>)'
-                                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-accent/10 text-accent border border-accent/20 cursor-pointer self-end">
-                                                <span><?= $assignedCount > 0 ? "{$assignedCount} Offices" : 'Assign Offices' ?></span>
-                                            </button>
+                                            <span class="text-xs font-bold text-text truncate">TWG Reviewer</span>
                                         <?php elseif (str_contains($u['role_name'] ?? '', 'PMT')): ?>
-                                            <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400">Institutional Oversight</span>
-                                            <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate">PMT Committee</span>
+                                            <span class="text-xs font-bold text-text truncate">PMT Reviewer</span>
                                         <?php else: ?>
                                             <span class="text-xs font-bold text-text truncate"><?= esc($u['department'] ?? 'No Unit') ?></span>
                                             <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate"><?= esc($u['position'] ?? 'No Position') ?></span>
@@ -240,28 +169,11 @@
                             <td class="hidden lg:table-cell px-6 lg:py-4">
                                 <div class="flex flex-col min-w-0">
                                     <?php if (str_contains($u['role_name'] ?? '', 'TWG')): ?>
-                                        <?php 
-                                            $uAssigned = $twgAssignmentsGrouped[$u['id']] ?? [];
-                                            $assignedCount = count($uAssigned);
-                                            $assignedIds = array_column($uAssigned, 'unit_id');
-                                        ?>
-                                        <button type="button" 
-                                                onclick='openTwgAssignmentModal(<?= $u['id'] ?>, "<?= esc(addslashes($u['first_name'] . ' ' . $u['last_name'])) ?>", "<?= esc(addslashes($u['email'])) ?>", <?= json_encode(array_values($assignedIds)) ?>)'
-                                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 transition-all cursor-pointer w-fit group">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                            </svg>
-                                            <span class="group-hover:underline"><?= $assignedCount > 0 ? "{$assignedCount} Assigned Office" . ($assignedCount > 1 ? 's' : '') : 'Assign Offices' ?></span>
-                                        </button>
-                                        <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate mt-0.5">TWG Reviewer</span>
+                                        <span class="text-xs font-bold text-text truncate">TWG Reviewer</span>
+                                        <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate">Technical Working Group</span>
                                     <?php elseif (str_contains($u['role_name'] ?? '', 'PMT')): ?>
-                                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 w-fit">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 shrink-0 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                            </svg>
-                                            <span>Institutional Calibration</span>
-                                        </div>
-                                        <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate mt-0.5">PMT Reviewer</span>
+                                        <span class="text-xs font-bold text-text truncate">PMT Reviewer</span>
+                                        <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate">Performance Management Team</span>
                                     <?php else: ?>
                                         <span class="text-xs font-bold text-text truncate"><?= esc($u['department'] ?? 'No Unit') ?></span>
                                         <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate"><?= esc($u['position'] ?? 'No Position') ?></span>
@@ -300,22 +212,6 @@
                                             </div>
                                         <?php endif; ?>
                                     </div>
-
-                                    <?php if (str_contains($u['role_name'] ?? '', 'TWG')): ?>
-                                        <?php 
-                                            $uAssigned = $twgAssignmentsGrouped[$u['id']] ?? [];
-                                            $assignedIds = array_column($uAssigned, 'unit_id');
-                                        ?>
-                                        <button type="button" 
-                                                onclick='openTwgAssignmentModal(<?= $u['id'] ?>, "<?= esc(addslashes($u['first_name'] . ' ' . $u['last_name'])) ?>", "<?= esc(addslashes($u['email'])) ?>", <?= json_encode(array_values($assignedIds)) ?>)'
-                                                class="w-full lg:w-auto px-2.5 py-1.5 lg:p-1.5 rounded-lg text-xs font-bold text-accent hover:text-accent-hover bg-accent/10 hover:bg-accent/20 border border-accent/20 transition-all cursor-pointer text-center flex justify-center items-center gap-1"
-                                                title="Assign Review Offices">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                            </svg>
-                                            <span class="lg:hidden">Offices</span>
-                                        </button>
-                                    <?php endif; ?>
 
                                     <?php if ($u['id'] != session()->get('user_id')): ?>
                                         <?= form_open('account', [

@@ -93,9 +93,6 @@
     --color-accent-text:    #000000;
 }
 
-.tox.tox-tinymce {
-    border-radius: 0;
-}
 
 .datetime-tight::-webkit-calendar-picker-indicator {
     display: none;

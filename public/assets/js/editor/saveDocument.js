@@ -15,10 +15,9 @@ async function saveDocument(manualSave = true) {
     }
 
     savePromise = new Promise((resolve, reject) => {
-        const editor = tinymce.get('editable-doc');
         const isRubricsActive = (typeof activeTabId !== 'undefined' && activeTabId === 'rubrics-tab');
         const hasTabs = (typeof tabs !== 'undefined' && Array.isArray(tabs) && tabs.length > 0);
-        if (!editor && !window.isSpmsFormActive && !isRubricsActive && !hasTabs) return resolve(); // Fail gracefully if neither editor is ready
+        if (!window.isSpmsFormActive && !isRubricsActive && !hasTabs) return resolve();
 
         if (hasTabs) {
             const isSpmsFormActiveDoc = window.isSpmsFormActive || isRubricsActive || Boolean(document.getElementById('printable-form'));
@@ -27,10 +26,6 @@ async function saveDocument(manualSave = true) {
             }
             if (typeof window.syncDigitalRubricsData === 'function') {
                 window.syncDigitalRubricsData();
-            }
-            if (editor && typeof activeTabId !== 'undefined' && !window.isSpmsFormActive && !isRubricsActive) {
-                const activeTab = tabs.find(t => t.id === activeTabId);
-                if (activeTab) activeTab.content = editor.getContent();
             }
         }
 
@@ -64,8 +59,6 @@ async function saveDocument(manualSave = true) {
         formData.append('id', docId);
         if (typeof tabs !== 'undefined' && tabs.length > 0) {
             formData.append('tabs', JSON.stringify(tabs));
-        } else if (editor) {
-            formData.append('content', editor.getContent());
         }
         
         formData.append('title', title);
@@ -189,17 +182,11 @@ async function saveWith({before, after}) {
 
     let result = null;
 
-    // 1. Run the `rate()` calculation & validation first (awaited: rate() may show
-    // a blocking appAlert() on validation failure before resolving)
     if (before) result = await before();
-
-    // Halt immediately if a user left a cell blank or typed an invalid number
     if (result === 'hasError') return;
 
     try {
-        // 2. Save the document (persists latest form/editor contents)
         await saveDocument(true);
-        // 3. Finally, trigger the POST request to Submit or Rate
         if (after) await after();
     } catch (error) {
         console.error("Submission halted: Could not save the latest changes.", error);
@@ -215,7 +202,6 @@ function toggleSubmit(action) {
     const btn = document.getElementById('btn-submit');
     const originalText = btn.innerText;
     
-    // Update button to show loading state
     btn.innerText = action === 'submit' ? 'Submitting...' : 'Unsubmitting...';
     btn.classList.add('opacity-75', 'cursor-not-allowed');
     
@@ -223,54 +209,12 @@ function toggleSubmit(action) {
     const docId = AppConfig.docId || new URLSearchParams(window.location.search).get('Id');
     
     formData.append('doc_id', docId);
-    formData.append('action', action); // 'submit' or 'unsubmit'
+    formData.append('action', action);
 
     submitting = true;
     
     apiPost(`${AppConfig.baseUrl}/submit`, formData, {
         onSuccess: () => {
-            // Reload the page to reflect the new Status and swap the button UI
-            window.location.reload(); 
-        },
-        onError: () => {
-            // Revert button if something goes wrong
-            submitting = false; 
-            btn.innerText = originalText;
-            btn.classList.remove('opacity-75', 'cursor-not-allowed');
-        }
-    });
-}
-
-async function evaluateDocument() {
-    if (submitting) return;
-
-    // 1. Pull the final calculated score directly out of the TinyMCE body attribute
-    const editorBody = tinymce.get('editable-doc').getBody();
-    const finalScore = editorBody.getAttribute('data-final-score');
-
-    if (!finalScore || isNaN(parseFloat(finalScore))) {
-        await window.appAlert("Could not extract a valid final score. Please ensure the tables are filled out correctly.");
-        return;
-    }
-
-    const btn = document.getElementById('btn-submit');
-    const originalText = btn.innerText;
-    
-    btn.innerText = 'Evaluating...';
-    btn.classList.add('opacity-75', 'cursor-not-allowed');
-
-    // 2. Bundle the score and send it to the backend controller
-    const formData = new FormData();
-    const docId = AppConfig.docId || new URLSearchParams(window.location.search).get('Id');
-    
-    formData.append('doc_id', docId);
-    formData.append('final_rating', finalScore);
-
-    submitting = true;
-    
-    apiPost(`${AppConfig.baseUrl}/evaluate`, formData, {
-        onSuccess: () => {
-            // Instantly reload to show the green "Evaluated ✓" button
             window.location.reload(); 
         },
         onError: () => {
@@ -279,83 +223,26 @@ async function evaluateDocument() {
             btn.classList.remove('opacity-75', 'cursor-not-allowed');
         }
     });
-}
-
-function getEditorData() {
-    const editor = tinymce.get('editable-doc');
-    if (!editor) return {};
-
-    const body = editor.getBody();
-
-    return {
-        // Grab the grand total from the DOM where calculateAllTables() stored it
-        final_rating: body.getAttribute('data-final-score') || 0
-    };
 }
 
 async function rate() {
-    if (window.isSpmsFormActive || document.getElementById('printable-form')) {
-        if (typeof recalculateForm === 'function') {
-            recalculateForm();
-        }
-        if (typeof window.syncSpmsActiveTab === 'function') {
-            window.syncSpmsActiveTab();
-        }
-        if (typeof AppState !== 'undefined' && typeof AppState.setDirty === 'function') {
-            AppState.setDirty(true);
-        }
-
-        const scoreEl = document.getElementById('grand-score') || document.getElementById('iperf-overall-average');
-        const badgeEl = document.getElementById('adjectival-badge') || document.getElementById('iperf-adjectival-badge');
-        const score = scoreEl?.innerText?.trim() || '0.000';
-        const badge = badgeEl?.innerText?.trim() || '';
-
-        if (typeof window.showToast === 'function') {
-            window.showToast(`Calculations verified: Final Rating is ${score}${badge ? ' (' + badge + ')' : ''}`, 'success');
-        }
-        return 'success';
+    if (typeof recalculateForm === 'function') {
+        recalculateForm();
+    }
+    if (typeof window.syncSpmsActiveTab === 'function') {
+        window.syncSpmsActiveTab();
+    }
+    if (typeof AppState !== 'undefined' && typeof AppState.setDirty === 'function') {
+        AppState.setDirty(true);
     }
 
-    let hasError = false;
+    const scoreEl = document.getElementById('grand-score') || document.getElementById('iperf-overall-average');
+    const badgeEl = document.getElementById('adjectival-badge') || document.getElementById('iperf-adjectival-badge');
+    const score = scoreEl?.innerText?.trim() || '0.000';
+    const badge = badgeEl?.innerText?.trim() || '';
 
-    const editor = tinymce.get('editable-doc');
-    if (!editor) return 'hasError';
-
-    const body = editor.getBody();
-    const ratingCells = body.querySelectorAll('.calc-rating');
-
-    // 1. Validate every single rating box
-    ratingCells.forEach(cell => {
-        const value = cell.innerText.trim();
-        const num = parseFloat(value);
-
-        const parentTable = cell.closest('table');
-        const scoreRange = parentTable ? parseFloat(parentTable.getAttribute('data-score-range')) : null;
-
-        const isInvalid = value === '' ||
-                          isNaN(num) ||
-                          num < 0 ||
-                          (scoreRange !== null && num > scoreRange);
-
-        if (isInvalid) {
-            cell.style.backgroundColor = 'rgba(220, 38, 38, 0.35)'; // Red Error Box
-            hasError = true;
-        } else {
-            cell.style.backgroundColor = 'rgba(16, 185, 129, 0.25)'; // Green Success Box
-        }
-    });
-
-    if (hasError) {
-        console.warn('Validation failed: check highlighted cells.');
-        await window.appAlert('Please fill in every rating cell with a valid score before continuing.', { title: 'Missing or Invalid Scores', variant: 'danger' });
-        return 'hasError';
+    if (typeof window.showToast === 'function') {
+        window.showToast(`Calculations verified: Final Rating is ${score}${badge ? ' (' + badge + ')' : ''}`, 'success');
     }
-
-    // 2. If validation passes, run the master math function!
-    if (typeof calculateAllTables === 'function') {
-        calculateAllTables();
-    }
-
-    // 3. Mark the document as dirty so `saveWith` knows it needs to save the new green boxes/math!
-    AppState.setDirty(true);
+    return 'success';
 }
