@@ -331,6 +331,137 @@
             overflow: hidden !important;
             height: auto !important;
         }
+        /* Institutional Letterhead in Print (Official BSU & CSC colors) */
+        .spms-letterhead-republic { color: #111827 !important; }
+        .spms-letterhead-title { color: #436531 !important; text-shadow: none !important; }
+        .spms-letterhead-location { color: #1f2937 !important; }
+        .spms-letterhead-dept { color: #111827 !important; }
+        input[type="date"] { color-scheme: light !important; }
+        input[type="date"]::-webkit-calendar-picker-indicator { display: none !important; }
+    }
+
+    /* Institutional Official Letterhead baseline typography & colors */
+    .spms-letterhead-republic { color: #111827; }
+    .spms-letterhead-title { color: #436531; }
+    .spms-letterhead-location { color: #1f2937; }
+    .spms-letterhead-dept { color: #111827; }
+
+    /* Date picker baseline */
+    input[type="date"] {
+        color-scheme: light;
+    }
+
+    /* High-Visibility Modern Scrollbars */
+    .custom-scrollbar,
+    textarea,
+    .spms-textarea {
+        scrollbar-width: thin;
+        scrollbar-color: #94a3b8 rgba(0, 0, 0, 0.05);
+    }
+    .custom-scrollbar::-webkit-scrollbar,
+    textarea::-webkit-scrollbar,
+    .spms-textarea::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track,
+    textarea::-webkit-scrollbar-track,
+    .spms-textarea::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.04);
+        border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb,
+    textarea::-webkit-scrollbar-thumb,
+    .spms-textarea::-webkit-scrollbar-thumb {
+        background-color: #94a3b8;
+        border-radius: 9999px;
+        border: 2px solid transparent;
+        background-clip: padding-box;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+    textarea::-webkit-scrollbar-thumb:hover,
+    .spms-textarea::-webkit-scrollbar-thumb:hover {
+        background-color: #64748b;
+    }
+
+    @media screen {
+        html.dark .spms-official-letterhead {
+            border-bottom-color: #3f3f46 !important;
+        }
+        html.dark .spms-letterhead-republic {
+            color: #e4e4e7 !important;
+        }
+        html.dark .spms-letterhead-title {
+            color: #4ade80 !important;
+            text-shadow: 0 0 16px rgba(74, 222, 128, 0.25);
+        }
+        html.dark .spms-letterhead-location {
+            color: #a1a1aa !important;
+        }
+        html.dark .spms-letterhead-dept {
+            color: #93c5fd !important;
+        }
+
+        html.dark input[type="date"],
+        html.dark .spms-meta-input[type="date"],
+        html.dark .spms-sheet-container input[type="date"] {
+            color-scheme: dark !important;
+        }
+        html.dark input[type="date"]::-webkit-calendar-picker-indicator,
+        html.dark .spms-meta-input[type="date"]::-webkit-calendar-picker-indicator,
+        html.dark .spms-sheet-container input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer !important;
+            opacity: 0.9 !important;
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+        html.dark input[type="date"]::-webkit-calendar-picker-indicator:hover,
+        html.dark .spms-meta-input[type="date"]::-webkit-calendar-picker-indicator:hover,
+        html.dark .spms-sheet-container input[type="date"]::-webkit-calendar-picker-indicator:hover {
+            opacity: 1 !important;
+            transform: scale(1.08);
+        }
+
+        /* High-Contrast Scrollbars in Dark Mode */
+        html.dark .custom-scrollbar,
+        html.dark textarea,
+        html.dark .spms-textarea {
+            scrollbar-color: #71717a rgba(24, 24, 27, 0.6) !important;
+        }
+        html.dark ::-webkit-scrollbar,
+        html.dark .custom-scrollbar::-webkit-scrollbar,
+        html.dark textarea::-webkit-scrollbar,
+        html.dark .spms-textarea::-webkit-scrollbar {
+            width: 8px !important;
+            height: 8px !important;
+        }
+        html.dark ::-webkit-scrollbar-track,
+        html.dark .custom-scrollbar::-webkit-scrollbar-track,
+        html.dark textarea::-webkit-scrollbar-track,
+        html.dark .spms-textarea::-webkit-scrollbar-track {
+            background: rgba(24, 24, 27, 0.7) !important;
+            border-radius: 9999px !important;
+        }
+        html.dark ::-webkit-scrollbar-thumb,
+        html.dark .custom-scrollbar::-webkit-scrollbar-thumb,
+        html.dark textarea::-webkit-scrollbar-thumb,
+        html.dark .spms-textarea::-webkit-scrollbar-thumb {
+            background-color: #71717a !important;
+            border-radius: 9999px !important;
+            border: 1.5px solid #18181b !important;
+            background-clip: padding-box !important;
+        }
+        html.dark ::-webkit-scrollbar-thumb:hover,
+        html.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+        html.dark textarea::-webkit-scrollbar-thumb:hover,
+        html.dark .spms-textarea::-webkit-scrollbar-thumb:hover {
+            background-color: #a1a1aa !important;
+        }
+        html.dark ::-webkit-scrollbar-thumb:active,
+        html.dark .custom-scrollbar::-webkit-scrollbar-thumb:active,
+        html.dark textarea::-webkit-scrollbar-thumb:active,
+        html.dark .spms-textarea::-webkit-scrollbar-thumb:active {
+            background-color: #d4d4d8 !important;
+        }
     }
 </style>
 
@@ -373,7 +504,7 @@
     <article id="printable-form" class="spms-sheet-container block space-y-5">
         
         <!-- INSTITUTIONAL OFFICIAL LETTERHEAD (BSU Seal, Gothic Masthead & Bagong Pilipinas) -->
-        <div class="spms-official-letterhead flex items-center justify-between gap-3 sm:gap-6 mb-4 pb-3 border-b border-zinc-300">
+        <div class="spms-official-letterhead flex items-center justify-between gap-3 sm:gap-6 mb-4 pb-3 border-b border-zinc-300 dark:border-zinc-700/80">
             <!-- Left: BSU Official Seal -->
             <div class="shrink-0 flex items-center justify-center">
                 <img src="<?= base_url('assets/images/bsu_seal.png') ?>" alt="Benguet State University Seal" class="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-xs" />
@@ -381,10 +512,10 @@
 
             <!-- Center: Republic & University Letterhead -->
             <div class="flex-1 text-center min-w-0">
-                <p style="font-family: 'Bookman Old Style', 'Century Schoolbook', 'Times New Roman', serif; font-size: 12px; font-weight: 600; color: #111827 !important; margin: 0; line-height: 1.3;">Republic of the Philippines</p>
-                <h1 style="font-family: 'Old English Text MT', 'UnifrakturMaguntia', 'Chaucer', serif; font-size: 26px; font-weight: 700; line-height: 1.25; color: #436531 !important; margin: 3px 0;">Benguet State University</h1>
-                <p style="font-family: 'Bookman Old Style', 'Century Schoolbook', 'Times New Roman', serif; font-size: 11px; font-style: italic; font-weight: 600; color: #1f2937 !important; margin: 0; line-height: 1.3;">La Trinidad, 2601 Benguet</p>
-                <p id="spms-letterhead-dept" style="font-family: 'Monotype Corsiva', 'Lucida Calligraphy', 'Brush Script MT', 'Dancing Script', cursive, serif; font-size: 15.5px; font-style: italic; font-weight: 700; color: #111827 !important; margin: 2px 0 0 0;">
+                <p class="spms-letterhead-republic" style="font-family: 'Bookman Old Style', 'Century Schoolbook', 'Times New Roman', serif; font-size: 12px; font-weight: 600; margin: 0; line-height: 1.3;">Republic of the Philippines</p>
+                <h1 class="spms-letterhead-title" style="font-family: 'Old English Text MT', 'UnifrakturMaguntia', 'Chaucer', serif; font-size: 26px; font-weight: 700; line-height: 1.25; margin: 3px 0;">Benguet State University</h1>
+                <p class="spms-letterhead-location" style="font-family: 'Bookman Old Style', 'Century Schoolbook', 'Times New Roman', serif; font-size: 11px; font-style: italic; font-weight: 600; margin: 0; line-height: 1.3;">La Trinidad, 2601 Benguet</p>
+                <p id="spms-letterhead-dept" class="spms-letterhead-dept" style="font-family: 'Monotype Corsiva', 'Lucida Calligraphy', 'Brush Script MT', 'Dancing Script', cursive, serif; font-size: 15.5px; font-style: italic; font-weight: 700; margin: 2px 0 0 0;">
                     <?= esc(!empty($existingFormData['ratee']['dept']) ? $existingFormData['ratee']['dept'] : ($isOpcr ? 'Office of the University President' : 'Office of the University President')) ?>
                 </p>
             </div>

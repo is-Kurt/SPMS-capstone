@@ -1379,7 +1379,8 @@
                                                 No supervising authorities recorded for Target Setting.
                                             </div>
                                         <?php else: ?>
-                                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-<?= min(max(count($tRegularSups), 1), 3) ?> gap-3">
+                                            <?php $tCols = max(min(count($tRegularSups), 3), 2); ?>
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-<?= $tCols ?> gap-3">
                                                 <?php foreach ($tRegularSups as $sup): ?>
                                                     <div class="flex items-center justify-between p-3 rounded-xl border bg-slate-50/70 dark:bg-zinc-900/60 border-slate-200/80 dark:border-zinc-800 transition-all hover:border-slate-300 dark:hover:border-zinc-700">
                                                         <div class="flex items-center gap-3 min-w-0 pr-2">
@@ -1450,7 +1451,8 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                                <?php $tCols = max(min(count($tRegularSups), 3), 2); ?>
+                                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-<?= $tCols ?> gap-3">
                                                     <div class="flex items-center justify-between p-3 rounded-xl border bg-slate-50/70 dark:bg-zinc-900/60 border-slate-200/80 dark:border-zinc-800 transition-all hover:border-slate-300 dark:hover:border-zinc-700">
                                                         <div class="flex items-center gap-3 min-w-0 pr-2">
                                                             <div class="w-8 h-8 rounded-full bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-zinc-300 shrink-0 shadow-xs">
@@ -1504,7 +1506,8 @@
                                                 No supervising authorities recorded for Evaluation Phase.
                                             </div>
                                         <?php else: ?>
-                                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-<?= min(max(count($eRegularSups), 1), 3) ?> gap-3">
+                                            <?php $eCols = max(min(count($eRegularSups), 3), 2); ?>
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-<?= $eCols ?> gap-3">
                                                 <?php foreach ($eRegularSups as $sup): ?>
                                                     <div class="flex items-center justify-between p-3 rounded-xl border bg-slate-50/70 dark:bg-zinc-900/60 border-slate-200/80 dark:border-zinc-800 transition-all hover:border-slate-300 dark:hover:border-zinc-700">
                                                         <div class="flex items-center gap-3 min-w-0 pr-2">
@@ -1575,7 +1578,8 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                                <?php $eCols = max(min(count($eRegularSups), 3), 2); ?>
+                                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-<?= $eCols ?> gap-3">
                                                     <div class="flex items-center justify-between p-3 rounded-xl border bg-slate-50/70 dark:bg-zinc-900/60 border-slate-200/80 dark:border-zinc-800 transition-all hover:border-slate-300 dark:hover:border-zinc-700">
                                                         <div class="flex items-center gap-3 min-w-0 pr-2">
                                                             <div class="w-8 h-8 rounded-full bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-zinc-300 shrink-0 shadow-xs">

@@ -1634,33 +1634,32 @@
         const indicator = card.querySelector('.unit-check-indicator');
         const icon = card.querySelector('.check-icon');
         const nameText = card.querySelector('.unit-name-text');
-        const badge = card.querySelector('.sub-prog-badge');
 
         if (isChecked) {
             card.classList.add('border-accent', 'bg-accent/10', 'ring-1', 'ring-accent/40');
             card.classList.remove('border-surface-border/70', 'bg-surface/50');
             if (indicator) {
                 indicator.classList.add('bg-accent', 'border-accent');
-                indicator.classList.remove('bg-input/80', 'border-surface-border');
+                indicator.classList.remove('bg-input', 'bg-input/80', 'border-surface-border');
             }
             if (icon) icon.classList.remove('hidden');
-            if (nameText) nameText.classList.add('text-accent');
-            if (badge) {
-                badge.classList.add('bg-accent/20', 'border-accent/40', 'text-accent');
-                badge.classList.remove('bg-input', 'border-surface-border', 'text-text-muted');
+            if (nameText) {
+                nameText.classList.add('text-accent');
+                nameText.classList.remove('text-text-muted');
             }
         } else {
             card.classList.remove('border-accent', 'bg-accent/10', 'ring-1', 'ring-accent/40');
             card.classList.add('border-surface-border/70', 'bg-surface/50');
             if (indicator) {
                 indicator.classList.remove('bg-accent', 'border-accent');
-                indicator.classList.add('bg-input/80', 'border-surface-border');
+                indicator.classList.add('bg-input', 'border-surface-border');
             }
             if (icon) icon.classList.add('hidden');
-            if (nameText) nameText.classList.remove('text-accent');
-            if (badge) {
-                badge.classList.remove('bg-accent/20', 'border-accent/40', 'text-accent');
-                badge.classList.add('bg-input', 'border-surface-border', 'text-text-muted');
+            if (nameText) {
+                nameText.classList.remove('text-accent');
+                if (card.dataset.tier === '3') {
+                    nameText.classList.add('text-text-muted');
+                }
             }
         }
     }
@@ -1682,12 +1681,15 @@
         document.getElementById('modal-reviewer-name').textContent = name;
         document.getElementById('modal-reviewer-email').textContent = email ? `(${email})` : '';
 
-        // Reset search filter
+        // Reset search, tier, and sector filters
         const filterInput = document.getElementById('modal-unit-filter');
-        if (filterInput) {
-            filterInput.value = '';
-            filterModalUnits();
-        }
+        if (filterInput) filterInput.value = '';
+
+        const tierFilter = document.getElementById('modal-tier-filter');
+        if (tierFilter) tierFilter.value = 'all';
+
+        const sectorFilter = document.getElementById('modal-sector-filter');
+        if (sectorFilter) sectorFilter.value = 'all';
 
         // Set checkboxes and card visuals
         const numericIds = (assignedIds || []).map(Number);
@@ -1698,6 +1700,7 @@
             syncUnitCardVisual(card, cb.checked);
         });
 
+        filterModalUnits();
         updateModalSelectedBadge();
 
         modal.classList.remove('hidden');
@@ -1715,25 +1718,79 @@
 
     function filterModalUnits() {
         const query = (document.getElementById('modal-unit-filter')?.value || '').toLowerCase().trim();
+        const tier = document.getElementById('modal-tier-filter')?.value || 'all';
+        const sector = (document.getElementById('modal-sector-filter')?.value || 'all').toLowerCase();
+
+        let visibleCount = 0;
+
+        // 1. Filter individual unit items
         document.querySelectorAll('.modal-unit-item').forEach(item => {
             const name = (item.dataset.name || '').toLowerCase();
-            item.style.display = (!query || name.includes(query)) ? '' : 'none';
+            const path = (item.dataset.path || '').toLowerCase();
+            const itemTier = item.dataset.tier || '';
+            const itemSector = (item.dataset.sector || '').toLowerCase();
+
+            const matchQuery = !query || name.includes(query) || path.includes(query);
+            const matchTier = (tier === 'all') || (itemTier === tier);
+            const matchSector = (sector === 'all') || (itemSector === sector);
+
+            const isVisible = matchQuery && matchTier && matchSector;
+            item.style.display = isVisible ? '' : 'none';
+            if (isVisible) visibleCount++;
         });
+
+        // 2. Hide Tier 2 wrapper if its Tier 2 item AND all its Tier 3 programs are hidden
+        document.querySelectorAll('.tier2-wrapper').forEach(wrapper => {
+            const hasVisibleChild = Array.from(wrapper.querySelectorAll('.modal-unit-item')).some(it => it.style.display !== 'none');
+            wrapper.style.display = hasVisibleChild ? '' : 'none';
+        });
+
+        // 3. Hide Tier 2 children container if no units inside are visible
+        document.querySelectorAll('.tree-children-container').forEach(container => {
+            const hasVisibleChild = Array.from(container.querySelectorAll('.modal-unit-item')).some(it => it.style.display !== 'none');
+            container.style.display = hasVisibleChild ? '' : 'none';
+        });
+
+        // 4. Hide entire root branch container if no units inside are visible
+        document.querySelectorAll('.tree-branch-container').forEach(branch => {
+            const hasVisibleItem = Array.from(branch.querySelectorAll('.modal-unit-item')).some(it => it.style.display !== 'none');
+            branch.style.display = hasVisibleItem ? '' : 'none';
+        });
+
+        const emptyMsg = document.getElementById('modal-units-empty-msg');
+        if (emptyMsg) {
+            emptyMsg.style.display = (visibleCount === 0) ? 'flex' : 'none';
+        }
     }
     window.filterModalUnits = filterModalUnits;
 
     function selectModalUnits(type) {
         document.querySelectorAll('.modal-unit-item').forEach(card => {
-            if (card.style.display === 'none') return;
             const cb = card.querySelector('.js-unit-checkbox');
             if (!cb) return;
 
-            if (type === 'all') {
+            if (type === 'visible') {
+                if (card.style.display !== 'none') {
+                    cb.checked = true;
+                }
+            } else if (type === 'clear-visible') {
+                if (card.style.display !== 'none') {
+                    cb.checked = false;
+                }
+            } else if (type === 'all') {
                 cb.checked = true;
             } else if (type === 'none') {
                 cb.checked = false;
+            } else if (type === 'tier1') {
+                if (card.dataset.tier === '1') {
+                    cb.checked = true;
+                }
             } else if (type === 'colleges') {
                 if (card.dataset.type === 'college') {
+                    cb.checked = true;
+                }
+            } else if (type === 'admin') {
+                if (card.dataset.type === 'admin') {
                     cb.checked = true;
                 }
             }

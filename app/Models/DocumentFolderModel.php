@@ -124,7 +124,8 @@ class  DocumentFolderModel extends Model
             // while distinguishing what Admin directly cascaded vs subordinate folders via is_cascaded_by_me
         } elseif ($sysRole === 'TWG') {
             $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
-            $allowedUnitIds = $twgAssignmentModel->getAssignedUnitIdsWithDescendants($userId);
+            // Strictly non-cascading: Only folders belonging directly to assigned units
+            $allowedUnitIds = $twgAssignmentModel->getAssignedUnitIds($userId);
             if (!empty($allowedUnitIds)) {
                 $builder->whereIn('p.unit_id', $allowedUnitIds);
             } else {

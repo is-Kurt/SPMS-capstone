@@ -133,24 +133,58 @@ a {
     }
 }
 
-.custom-scrollbar {
-            scrollbar-width: thin; /* Firefox */
-            scrollbar-color: var(--color-surface-border) transparent; 
-            scrollbar-gutter: stable;
-        }
-.custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+.custom-scrollbar,
+textarea {
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: #94a3b8 rgba(0, 0, 0, 0.04);
+    scrollbar-gutter: stable;
 }
-.custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
+.custom-scrollbar::-webkit-scrollbar,
+textarea::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
 }
-.custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: var(--color-surface-border);
+.custom-scrollbar::-webkit-scrollbar-track,
+textarea::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.04);
     border-radius: 9999px;
 }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: var(--color-text-muted);
+.custom-scrollbar::-webkit-scrollbar-thumb,
+textarea::-webkit-scrollbar-thumb {
+    background-color: #94a3b8;
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover,
+textarea::-webkit-scrollbar-thumb:hover {
+    background-color: #64748b;
+}
+
+.dark .custom-scrollbar,
+html.dark .custom-scrollbar,
+.dark textarea,
+html.dark textarea {
+    scrollbar-color: #71717a rgba(24, 24, 27, 0.6) !important;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-track,
+html.dark .custom-scrollbar::-webkit-scrollbar-track,
+.dark textarea::-webkit-scrollbar-track,
+html.dark textarea::-webkit-scrollbar-track {
+    background: rgba(24, 24, 27, 0.7) !important;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb,
+html.dark .custom-scrollbar::-webkit-scrollbar-thumb,
+.dark textarea::-webkit-scrollbar-thumb,
+html.dark textarea::-webkit-scrollbar-thumb {
+    background-color: #71717a !important;
+    border: 1.5px solid #18181b !important;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+html.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+.dark textarea::-webkit-scrollbar-thumb:hover,
+html.dark textarea::-webkit-scrollbar-thumb:hover {
+    background-color: #a1a1aa !important;
 }
 
 /* Suppress the browser's own native password-reveal icon (Edge's built-in eye
@@ -161,11 +195,15 @@ input[type="password"]::-ms-clear {
     display: none;
 }
 
+input[type="date"],
 input[type="datetime-local"] {
     color-scheme: light;
 }
 
-.dark input[type="datetime-local"] {
+.dark input[type="date"],
+.dark input[type="datetime-local"],
+html.dark input[type="date"],
+html.dark input[type="datetime-local"] {
     color-scheme: dark;
 }
 
@@ -173,7 +211,8 @@ input[type="datetime-local"] {
     color-scheme: light;
 }
 
-.dark .datetime-tight {
+.dark .datetime-tight,
+html.dark .datetime-tight {
     color-scheme: dark;
 }
 

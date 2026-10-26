@@ -1,30 +1,23 @@
 <?php
-$colleges = [];
-$adminOffices = [];
-foreach ($units as $u) {
-    $uname = $u['name'];
-    // Top-level executive branches (OVPAA, OVPAF, Office of the President) are executive levels reviewed by the President, not TWG
-    if (in_array($uname, ['OVPAA', 'OVPAF', 'Office of the President'], true)) {
-        continue;
-    }
-    if (stripos($uname, 'College of') !== false || stripos($uname, 'Graduate School') !== false) {
-        $colleges[] = $u;
-    } elseif (
-        stripos($uname, 'Bachelor') === false && 
-        stripos($uname, 'Doctor') === false && 
-        stripos($uname, 'Master') === false
-    ) {
-        $adminOffices[] = $u;
-    }
-}
+$unitModel = new \App\Models\UnitModel();
+$hierarchyTree = $unitModel->getHierarchyTree();
+$enrichedUnits = $unitModel->getEnrichedHierarchyUnits();
 
-// Pre-calculate sub-unit count for each parent unit
-$subUnitCounts = [];
-foreach ($units as $u) {
-    if (!empty($u['parent_id'])) {
-        $subUnitCounts[$u['parent_id']] = ($subUnitCounts[$u['parent_id']] ?? 0) + 1;
+// Derive unique tiers and sectors present in the dataset
+$availableTiers = [];
+$availableSectors = [];
+
+foreach ($enrichedUnits as $eu) {
+    $t = (int)$eu['tier'];
+    if (!in_array($t, $availableTiers, true)) {
+        $availableTiers[] = $t;
+    }
+    if (!empty($eu['root_name']) && !in_array($eu['root_name'], $availableSectors, true)) {
+        $availableSectors[] = $eu['root_name'];
     }
 }
+sort($availableTiers);
+sort($availableSectors);
 ?>
 
 <div id="tab-content-twg" class="tab-content <?= $activeTab === 'twg' ? 'flex' : 'hidden' ?> flex-col lg:absolute lg:inset-0 bg-transparent lg:bg-surface p-4 lg:p-6 overflow-y-auto custom-scrollbar">
@@ -41,7 +34,7 @@ foreach ($units as $u) {
                 <div>
                     <h2 class="text-lg font-black tracking-tight text-text">Technical Working Group (TWG) Office Assignments</h2>
                     <p class="text-xs font-medium text-text-muted mt-0.5">
-                        Assign academic colleges and delivery units to TWG calibration reviewers to balance evaluation workload.
+                        Assign academic colleges, executive offices, and delivery units to TWG calibration reviewers to balance evaluation workload.
                     </p>
                 </div>
             </div>
@@ -154,10 +147,10 @@ foreach ($units as $u) {
 </div>
 
 <!-- ======================================================== -->
-<!-- MODAL: CONFIGURE TWG OFFICE ASSIGNMENTS                  -->
+<!-- MODAL: CONFIGURE TWG OFFICE ASSIGNMENTS (DYNAMIC N-TIER) -->
 <!-- ======================================================== -->
-<div id="twg-assignment-modal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-zinc-950/70 p-4 backdrop-blur-sm transition-all duration-200">
-    <div class="relative w-full max-w-3xl bg-surface border border-surface-border rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+<div id="twg-assignment-modal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-zinc-950/70 p-3 sm:p-4 backdrop-blur-sm transition-all duration-200">
+    <div class="relative w-full max-w-4xl bg-surface border border-surface-border rounded-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         
         <!-- Modal Header -->
         <div class="px-6 py-4 border-b border-surface-border flex items-center justify-between shrink-0 bg-surface">
@@ -168,7 +161,12 @@ foreach ($units as $u) {
                     </svg>
                 </div>
                 <div>
-                    <h3 class="text-base font-black text-text tracking-tight">Assign Review Offices</h3>
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-base font-black text-text tracking-tight">Assign Review Offices</h3>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                            Non-Cascading
+                        </span>
+                    </div>
                     <p class="text-xs text-text-muted mt-0.5">
                         Assigning to <span id="modal-reviewer-name" class="font-bold text-accent">TWG Reviewer</span>
                         <span id="modal-reviewer-email" class="text-text-muted ml-1"></span>
@@ -182,115 +180,213 @@ foreach ($units as $u) {
             </button>
         </div>
 
-        <!-- Filter & Quick Select Bar (Theme Matched) -->
-        <div class="px-6 py-3 border-b border-surface-border bg-input/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-            <div class="relative flex-1">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-muted">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
+        <!-- Filter & Quick Select Toolbar -->
+        <div class="px-6 py-3.5 border-b border-surface-border bg-input/40 flex flex-col gap-2.5 shrink-0">
+            <!-- Top Row: Real-time search + Dynamic Tier dropdown + Sector dropdown -->
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2.5">
+                <!-- Search Input -->
+                <div class="relative flex-1">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-muted">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    <input type="text" id="modal-unit-filter" oninput="filterModalUnits()" 
+                           placeholder="Filter by office, program, or keyword (e.g. OVPAA, Nursing, HRDO)..." 
+                           class="w-full bg-surface border border-surface-border rounded-xl pl-9 pr-3 py-2 text-xs font-semibold text-text placeholder:text-text-muted/60 focus:border-accent outline-none transition-all">
                 </div>
-                <input type="text" id="modal-unit-filter" oninput="filterModalUnits()" placeholder="Filter colleges & offices..." 
-                       class="w-full bg-surface border border-surface-border rounded-xl pl-9 pr-3 py-1.5 text-xs font-semibold text-text placeholder:text-text-muted/60 focus:border-accent outline-none transition-all">
+
+                <!-- Dynamic Tier Filter (Simple Tier 1, 2, 3 without hardcoded text) -->
+                <div class="flex items-center gap-2 shrink-0">
+                    <select id="modal-tier-filter" onchange="filterModalUnits()" 
+                            class="bg-surface border border-surface-border rounded-xl px-3 py-2 text-xs font-bold text-text focus:border-accent outline-none transition-all cursor-pointer">
+                        <option value="all">All Tiers</option>
+                        <?php foreach ($availableTiers as $tNum): ?>
+                            <option value="<?= $tNum ?>">Tier <?= $tNum ?></option>
+                        <?php endforeach; ?>
+                    </select>
+
+                    <!-- Dynamic Sector / Root Branch Filter -->
+                    <select id="modal-sector-filter" onchange="filterModalUnits()" 
+                            class="bg-surface border border-surface-border rounded-xl px-3 py-2 text-xs font-bold text-text focus:border-accent outline-none transition-all cursor-pointer">
+                        <option value="all">All Sectors</option>
+                        <?php foreach ($availableSectors as $sName): ?>
+                            <option value="<?= esc($sName) ?>"><?= esc($sName) ?> Sector</option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
             </div>
-            <div class="flex items-center gap-2 shrink-0">
-                <button type="button" onclick="selectModalUnits('colleges')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-accent/10 hover:bg-accent/20 text-accent border border-accent/20 transition-all cursor-pointer">
-                    All Colleges
-                </button>
-                <button type="button" onclick="selectModalUnits('all')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-surface hover:bg-input text-text border border-surface-border transition-all cursor-pointer">
-                    Select All
-                </button>
-                <button type="button" onclick="selectModalUnits('none')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-danger-500 hover:bg-danger-500/10 border border-transparent transition-all cursor-pointer">
-                    Clear
-                </button>
+
+            <!-- Bottom Row: Quick Select Action Pills & Non-Cascading Hint -->
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-text-muted mr-1">Quick Select:</span>
+                    <button type="button" onclick="selectModalUnits('visible')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-accent/15 hover:bg-accent/25 text-accent border border-accent/30 transition-all cursor-pointer shadow-2xs">
+                        Select Visible
+                    </button>
+                    <button type="button" onclick="selectModalUnits('tier1')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-surface hover:bg-input text-text border border-surface-border transition-all cursor-pointer">
+                        Tier 1 Only
+                    </button>
+                    <button type="button" onclick="selectModalUnits('colleges')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-surface hover:bg-input text-text border border-surface-border transition-all cursor-pointer">
+                        Colleges Only
+                    </button>
+                    <button type="button" onclick="selectModalUnits('admin')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-surface hover:bg-input text-text border border-surface-border transition-all cursor-pointer">
+                        Admin Offices
+                    </button>
+                    <button type="button" onclick="selectModalUnits('clear-visible')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold text-danger-500 hover:bg-danger-500/10 border border-transparent transition-all cursor-pointer">
+                        Clear Visible
+                    </button>
+                    <button type="button" onclick="selectModalUnits('none')" class="px-2 py-1 rounded-lg text-[11px] font-bold text-text-muted hover:text-text hover:bg-input transition-all cursor-pointer">
+                        Clear All
+                    </button>
+                </div>
+
+                <div class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-text-muted bg-surface/80 px-2.5 py-1 rounded-lg border border-surface-border/60">
+                    <svg class="w-3.5 h-3.5 text-accent shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Direct assignment only: Subordinate offices are not auto-checked.</span>
+                </div>
             </div>
         </div>
 
-        <!-- Modal Body: Interactive Card Grid -->
+        <!-- Modal Body: Interactive Unified Organizational Tree -->
         <form id="twg-assignment-form" class="flex flex-col flex-1 overflow-hidden" onsubmit="submitTwgAssignments(event)">
             <input type="hidden" name="user_id" id="modal-user-id" value="">
             
             <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6" id="modal-units-list">
                 
-                <!-- Colleges Section -->
-                <div>
-                    <div class="flex items-center justify-between mb-3 px-1">
-                        <span class="text-[11px] font-black uppercase tracking-wider text-text-muted flex items-center gap-2">
-                            <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
-                            Academic Colleges (<?= count($colleges) ?>)
-                        </span>
-                        <span class="text-[10px] font-semibold text-text-muted">Auto-includes degree programs</span>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                        <?php foreach ($colleges as $c): ?>
-                            <?php $subCount = $subUnitCounts[$c['id']] ?? 0; ?>
-                            <div class="modal-unit-item relative flex items-center justify-between p-3.5 rounded-xl border border-surface-border/70 bg-surface/50 hover:bg-surface hover:border-accent/40 transition-all cursor-pointer select-none group"
-                                 data-name="<?= strtolower(esc($c['name'])) ?>"
-                                 data-type="college"
-                                 onclick="toggleUnitCard(this)">
-                                
-                                <div class="flex items-center gap-3 min-w-0 pr-2">
-                                    <!-- Custom Checkbox Indicator -->
-                                    <div class="unit-check-indicator w-5 h-5 rounded-md border-2 border-surface-border bg-input/80 flex items-center justify-center shrink-0 transition-all group-hover:border-accent/60">
-                                        <svg class="check-icon w-3.5 h-3.5 text-black stroke-[3] hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                        </svg>
-                                    </div>
-                                    <span class="unit-name-text text-xs font-bold text-text group-hover:text-accent transition-colors leading-tight">
-                                        <?= esc($c['name']) ?>
+                <?php foreach ($hierarchyTree as $root): ?>
+                    <div class="tree-branch-container rounded-2xl border border-surface-border bg-input/20 p-4 space-y-3.5" data-sector="<?= strtolower(esc($root['root_name'])) ?>">
+                        
+                        <!-- Tier 1 Section Label -->
+                        <div class="flex items-center justify-between px-1">
+                            <span class="text-xs font-black uppercase tracking-wider text-accent flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-accent"></span>
+                                Tier 1
+                            </span>
+                        </div>
+
+                        <!-- Tier 1 Root Unit Card (e.g. OVPAA, OVPAF) -->
+                        <div class="modal-unit-item relative flex items-center justify-between p-3.5 rounded-xl border border-surface-border/80 bg-surface hover:border-accent/40 shadow-xs transition-all cursor-pointer select-none group"
+                             data-id="<?= esc($root['id']) ?>"
+                             data-name="<?= strtolower(esc($root['name'])) ?>"
+                             data-tier="<?= esc($root['tier']) ?>"
+                             data-sector="<?= strtolower(esc($root['root_name'])) ?>"
+                             data-type="<?= esc($root['type']) ?>"
+                             data-path="<?= strtolower(esc($root['path_str'])) ?>"
+                             onclick="toggleUnitCard(this)">
+                            
+                            <div class="flex items-center gap-3 min-w-0 pr-2">
+                                <!-- Checkbox Indicator -->
+                                <div class="unit-check-indicator w-5 h-5 rounded-md border-2 border-surface-border bg-input/80 flex items-center justify-center shrink-0 transition-all group-hover:border-accent/60">
+                                    <svg class="check-icon w-3.5 h-3.5 text-black stroke-[3] hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <!-- Unit Name ONLY (Clean, no tier tags or child count pills) -->
+                                <span class="unit-name-text text-sm font-black text-text group-hover:text-accent transition-colors leading-tight">
+                                    <?= esc($root['name']) ?>
+                                </span>
+                            </div>
+
+                            <input type="checkbox" name="unit_ids[]" value="<?= esc($root['id']) ?>" 
+                                   class="js-unit-checkbox sr-only" tabindex="-1">
+                        </div>
+
+                        <!-- Tier 2 Children (Indented directly under this root) -->
+                        <?php if (!empty($root['children'])): ?>
+                            <div class="tree-children-container pl-3.5 sm:pl-5 border-l-2 border-surface-border/70 ml-2.5 sm:ml-3.5 space-y-3">
+                                <div class="flex items-center justify-between pt-1 px-1">
+                                    <span class="text-[11px] font-black uppercase tracking-wider text-text-muted">
+                                        Tier 2
                                     </span>
                                 </div>
 
-                                <?php if ($subCount > 0): ?>
-                                    <span class="sub-prog-badge shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold bg-input border border-surface-border text-text-muted transition-colors">
-                                        <?= $subCount ?> progs
-                                    </span>
-                                <?php endif; ?>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <?php foreach ($root['children'] as $child): ?>
+                                        <div class="tier2-wrapper rounded-xl border border-surface-border/80 bg-surface/70 p-3 space-y-2.5 hover:border-surface-border transition-all">
+                                            
+                                            <!-- Tier 2 Unit Card (e.g. College of Agriculture, HRDO) -->
+                                            <div class="modal-unit-item relative flex items-center justify-between p-2 rounded-lg hover:bg-surface-border/20 transition-all cursor-pointer select-none group"
+                                                 data-id="<?= esc($child['id']) ?>"
+                                                 data-name="<?= strtolower(esc($child['name'])) ?>"
+                                                 data-tier="<?= esc($child['tier']) ?>"
+                                                 data-sector="<?= strtolower(esc($child['root_name'])) ?>"
+                                                 data-type="<?= esc($child['type']) ?>"
+                                                 data-path="<?= strtolower(esc($child['path_str'])) ?>"
+                                                 onclick="toggleUnitCard(this)">
+                                                
+                                                <div class="flex items-center gap-2.5 min-w-0 pr-2">
+                                                    <div class="unit-check-indicator w-4.5 h-4.5 rounded border-2 border-surface-border bg-input flex items-center justify-center shrink-0 transition-all group-hover:border-accent/60">
+                                                        <svg class="check-icon w-3 h-3 text-black stroke-[3] hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    </div>
+                                                    <!-- Unit Name ONLY -->
+                                                    <span class="unit-name-text text-xs font-bold text-text group-hover:text-accent transition-colors leading-tight">
+                                                        <?= esc($child['name']) ?>
+                                                    </span>
+                                                </div>
 
-                                <!-- Hidden actual checkbox input -->
-                                <input type="checkbox" name="unit_ids[]" value="<?= esc($c['id']) ?>" 
-                                       class="js-unit-checkbox sr-only" tabindex="-1">
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
+                                                <input type="checkbox" name="unit_ids[]" value="<?= esc($child['id']) ?>" 
+                                                       class="js-unit-checkbox sr-only" tabindex="-1">
+                                            </div>
 
-                <!-- Administrative Offices Section -->
-                <?php if (!empty($adminOffices)): ?>
-                <div>
-                    <div class="flex items-center justify-between mb-3 px-1">
-                        <span class="text-[11px] font-black uppercase tracking-wider text-text-muted flex items-center gap-2">
-                            <span class="w-1.5 h-1.5 rounded-full bg-text-muted"></span>
-                            Administrative &amp; Support Offices
-                        </span>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                        <?php foreach ($adminOffices as $ao): ?>
-                            <div class="modal-unit-item relative flex items-center justify-between p-3.5 rounded-xl border border-surface-border/70 bg-surface/50 hover:bg-surface hover:border-accent/40 transition-all cursor-pointer select-none group"
-                                 data-name="<?= strtolower(esc($ao['name'])) ?>"
-                                 data-type="admin"
-                                 onclick="toggleUnitCard(this)">
-                                
-                                <div class="flex items-center gap-3 min-w-0 pr-2">
-                                    <!-- Custom Checkbox Indicator -->
-                                    <div class="unit-check-indicator w-5 h-5 rounded-md border-2 border-surface-border bg-input/80 flex items-center justify-center shrink-0 transition-all group-hover:border-accent/60">
-                                        <svg class="check-icon w-3.5 h-3.5 text-black stroke-[3] hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                        </svg>
-                                    </div>
-                                    <span class="unit-name-text text-xs font-bold text-text group-hover:text-accent transition-colors leading-tight">
-                                        <?= esc($ao['name']) ?>
-                                    </span>
+                                            <!-- Tier 3 Programs directly under this Tier 2 unit -->
+                                            <?php if (!empty($child['children'])): ?>
+                                                <div class="tier3-container pl-3 border-l-2 border-surface-border/50 ml-2 space-y-1.5 pt-1">
+                                                    <span class="text-[10px] font-black uppercase tracking-wider text-text-muted/70 block px-1">
+                                                        Tier 3
+                                                    </span>
+                                                    <?php foreach ($child['children'] as $prog): ?>
+                                                        <div class="modal-unit-item relative flex items-center justify-between p-1.5 rounded-md hover:bg-surface-border/20 transition-all cursor-pointer select-none group"
+                                                             data-id="<?= esc($prog['id']) ?>"
+                                                             data-name="<?= strtolower(esc($prog['name'])) ?>"
+                                                             data-tier="<?= esc($prog['tier']) ?>"
+                                                             data-sector="<?= strtolower(esc($prog['root_name'])) ?>"
+                                                             data-type="<?= esc($prog['type']) ?>"
+                                                             data-path="<?= strtolower(esc($prog['path_str'])) ?>"
+                                                             onclick="toggleUnitCard(this)">
+                                                            
+                                                            <div class="flex items-center gap-2 min-w-0 pr-2">
+                                                                <div class="unit-check-indicator w-4 h-4 rounded border border-surface-border bg-input flex items-center justify-center shrink-0 transition-all group-hover:border-accent/60">
+                                                                    <svg class="check-icon w-2.5 h-2.5 text-black stroke-[3] hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                                                    </svg>
+                                                                </div>
+                                                                <!-- Unit Name ONLY -->
+                                                                <span class="unit-name-text text-[11px] font-medium text-text-muted group-hover:text-text transition-colors leading-tight">
+                                                                    <?= esc($prog['name']) ?>
+                                                                </span>
+                                                            </div>
+
+                                                            <input type="checkbox" name="unit_ids[]" value="<?= esc($prog['id']) ?>" 
+                                                                   class="js-unit-checkbox sr-only" tabindex="-1">
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            <?php endif; ?>
+
+                                        </div>
+                                    <?php endforeach; ?>
                                 </div>
-
-                                <!-- Hidden actual checkbox input -->
-                                <input type="checkbox" name="unit_ids[]" value="<?= esc($ao['id']) ?>" 
-                                       class="js-unit-checkbox sr-only" tabindex="-1">
                             </div>
-                        <?php endforeach; ?>
+                        <?php endif; ?>
+
                     </div>
+                <?php endforeach; ?>
+
+                <!-- Empty State Message when Filter Matches Nothing -->
+                <div id="modal-units-empty-msg" class="hidden flex-col items-center justify-center p-12 text-center border-2 border-dashed border-surface-border rounded-2xl bg-input/20">
+                    <div class="w-10 h-10 rounded-xl bg-accent/15 border border-accent/25 text-accent flex items-center justify-center mb-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    <span class="text-xs font-bold text-text">No offices match your filter criteria</span>
+                    <p class="text-[11px] text-text-muted mt-0.5">Try clearing the search input or switching the tier / sector filters.</p>
                 </div>
-                <?php endif; ?>
 
             </div>
 

@@ -102,6 +102,13 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
 
     // Document
     $routes->get('document', 'Document');
+    // Document Threaded Comments (Excel-style)
+    $routes->get('document/comments', 'Comment::getThreads');
+    $routes->post('document/comment/create', 'Comment::create');
+    $routes->post('document/comment/reply', 'Comment::reply');
+    $routes->post('document/comment/resolve', 'Comment::resolve');
+    $routes->post('document/comment/delete', 'Comment::delete');
+
     $routes->get('document/(:segment)/export-excel', 'Document::exportExcel/$1');
     $routes->get('document/(:segment)/export-rubric', 'Document::exportRubric/$1');
     $routes->get('document/(:segment)', 'Document::index/$1');

@@ -145,7 +145,8 @@ class TwgUnitAssignmentModel extends Model
             return false;
         }
 
-        $allowedUnitIds = $this->getAssignedUnitIdsWithDescendants($userId);
+        // Strictly non-cascading: Only units directly assigned to this TWG member are authorized
+        $allowedUnitIds = $this->getAssignedUnitIds($userId);
         if (empty($allowedUnitIds)) {
             return false;
         }

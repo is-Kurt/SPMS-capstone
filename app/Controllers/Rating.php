@@ -52,8 +52,19 @@ class Rating extends BaseController
             // (e.g. root evaluation cycle for TWG/PMT/Admin, or personal folder for Supervisor).
             // Prevent users from accessing other users' personal folders via /ratings/{id}.
             if (array_search($folderId, array_column($folders, 'id')) === false) {
+                // If folderId is a root cycle, check if the supervisor has a personal folder under it
+                $childFolder = $folderModel->where('user_id', $userId)
+                                           ->where('parent_folder_id', $folderId)
+                                           ->where('deleted_at IS NULL')
+                                           ->first();
+                if ($childFolder && array_search($childFolder['id'], array_column($folders, 'id')) !== false) {
+                    session()->set('active_folder_id', $childFolder['id']);
+                    return redirect()->to('ratings/' . $childFolder['id']);
+                }
+
+                // If not found in user's folders, gracefully fall back to ratings index instead of throwing 404
                 session()->remove('active_folder_id');
-                throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+                return redirect()->to('ratings');
             }
             session()->set('active_folder_id', $folderId);
         }

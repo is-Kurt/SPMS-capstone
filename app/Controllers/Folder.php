@@ -328,24 +328,37 @@ class Folder extends BaseController
             $ownerUnitIds = array_filter(array_map('intval', array_column($ownerPlantillas, 'unit_id')));
             
             if (!empty($ownerUnitIds)) {
-                $unitModel = new \App\Models\UnitModel();
-                $allRelevantUnitIds = $ownerUnitIds;
-                foreach ($ownerUnitIds as $uId) {
-                    $college = $unitModel->getParentCollege($uId);
-                    if ($college && !empty($college['id'])) {
-                        $allRelevantUnitIds[] = (int)$college['id'];
-                    }
-                }
-                $allRelevantUnitIds = array_unique($allRelevantUnitIds);
-
                 $db = \Config\Database::connect();
+                // Strictly non-cascading: Match TWG reviewer assigned directly to the owner's unit
                 $twgAssignment = $db->table('twg_unit_assignments tua')
                     ->select('u.id, u.first_name, u.last_name, u.email, un.name as college_name')
                     ->join('users u', 'u.id = tua.user_id')
                     ->join('units un', 'un.id = tua.unit_id')
-                    ->whereIn('tua.unit_id', $allRelevantUnitIds)
+                    ->whereIn('tua.unit_id', $ownerUnitIds)
                     ->where('u.is_active', 1)
                     ->get()->getRowArray();
+
+                // If owner is in a sub-program department with no direct assignment, fallback only to their immediate college (never executive OVPAA/OVPAF)
+                if (!$twgAssignment) {
+                    $unitModel = new \App\Models\UnitModel();
+                    $parentCollegeIds = [];
+                    foreach ($ownerUnitIds as $uId) {
+                        $college = $unitModel->getParentCollege($uId);
+                        if ($college && !empty($college['id']) && !in_array($college['name'], ['OVPAA', 'OVPAF', 'Office of the President'], true)) {
+                            $parentCollegeIds[] = (int)$college['id'];
+                        }
+                    }
+                    $parentCollegeIds = array_diff(array_unique($parentCollegeIds), $ownerUnitIds);
+                    if (!empty($parentCollegeIds)) {
+                        $twgAssignment = $db->table('twg_unit_assignments tua')
+                            ->select('u.id, u.first_name, u.last_name, u.email, un.name as college_name')
+                            ->join('users u', 'u.id = tua.user_id')
+                            ->join('units un', 'un.id = tua.unit_id')
+                            ->whereIn('tua.unit_id', $parentCollegeIds)
+                            ->where('u.is_active', 1)
+                            ->get()->getRowArray();
+                    }
+                }
 
                 if ($twgAssignment) {
                     $twgCollege = trim((string)($twgAssignment['college_name'] ?? ''));
@@ -367,12 +380,12 @@ class Folder extends BaseController
         }
 
         $rawFolderStatus = $activeFolder['status'] ?? 'draft_target';
-        $isTargetApprovedFolder = in_array($rawFolderStatus, ['target_approved', 'draft', 'submitted', 'to evaluate', 'evaluated', 'reevaluate', 'approved', 'twg_approved', 'twg_disapproved'], true)
+        $isTargetApprovedFolder = in_array($rawFolderStatus, ['target_approved', 'draft', 'submitted', 'to evaluate', 'to_evaluate', 'evaluated', 'reevaluate', 'approved', 'twg_approved', 'twg_disapproved', 'eval_submitted', 'eval_returned', 'eval_calibrating', 'eval_unverified', 'eval_missed'], true)
             || !empty($activeFolder['target_approved_at']);
-        $isTargetReturnedFolder = in_array($rawFolderStatus, ['target_returned', 'target_unapproved'], true);
-        $isInEvaluationPhase = in_array($rawFolderStatus, ['draft', 'submitted', 'to evaluate', 'evaluated', 'reevaluate', 'approved', 'twg_approved', 'twg_disapproved'], true);
+        $isTargetReturnedFolder = in_array($rawFolderStatus, ['target_returned', 'target_unapproved', 'target_twg_disapproved'], true);
+        $isInEvaluationPhase = in_array($rawFolderStatus, ['draft', 'submitted', 'to evaluate', 'to_evaluate', 'evaluated', 'reevaluate', 'approved', 'twg_approved', 'twg_disapproved', 'eval_submitted', 'eval_returned', 'eval_calibrating', 'eval_unverified', 'eval_missed'], true);
         $isEvalApprovedFolder = in_array($rawFolderStatus, ['approved', 'twg_approved'], true);
-        $isEvalReturnedFolder = ($rawFolderStatus === 'reevaluate');
+        $isEvalReturnedFolder = in_array($rawFolderStatus, ['reevaluate', 'eval_returned'], true);
 
         // Gather all supervising authorities separated by phase
         $targetSupervisors    = [];
@@ -2355,7 +2368,17 @@ class Folder extends BaseController
                 return $this->respondError("Unauthorized to evaluate this folder.", 400);
             }
 
-            if (!in_array($folder['status'], [FolderStatus::TO_EVALUATE->value, FolderStatus::REEVALUATE->value])) {
+            $dates = $folderModel->getFolderDates($folder);
+            $now = date('Y-m-d H:i:s');
+            $isEvalWindowOpen = !empty($dates['eval_date_start']) && !empty($dates['eval_date_end'])
+                && $dates['eval_date_start'] <= $now && $dates['eval_date_end'] >= $now;
+
+            $validEvalStatuses = [FolderStatus::TO_EVALUATE->value, FolderStatus::REEVALUATE->value];
+            if ($isEvalWindowOpen) {
+                $validEvalStatuses[] = FolderStatus::TARGET_APPROVED->value;
+            }
+
+            if (!in_array($folder['status'], $validEvalStatuses, true)) {
                 return $this->respondError("This folder cannot be evaluated at this time.", 400);
             }
 
@@ -2417,6 +2440,17 @@ class Folder extends BaseController
 
             if (!empty($dates['target_date_end']) && date('Y-m-d H:i:s') > $dates['target_date_end']) {
                 return $this->respondError("The target setting period has already ended.", 400);
+            }
+
+            $validSubmitStatuses = [
+                FolderStatus::DRAFT_TARGET->value,
+                FolderStatus::DRAFT->value,
+                FolderStatus::TARGET_RETURNED->value,
+                FolderStatus::TARGET_UNAPPROVED->value,
+                FolderStatus::TARGET_TWG_DISAPPROVED->value
+            ];
+            if (!in_array($folder['status'], $validSubmitStatuses, true)) {
+                return $this->respondError("Targets cannot be submitted at this stage (current status: " . esc($folder['status']) . ").", 400);
             }
 
             $isFolderOpcr = $this->isOpcrFolder($folder, $userId);
@@ -2578,8 +2612,25 @@ class Folder extends BaseController
                 FolderStatus::TWG_DISAPPROVED->value
             ];
 
-            if ($folder['status'] !== FolderStatus::PENDING_TARGET_APPROVAL->value && !in_array($folder['status'], $evalStatuses)) {
+            $userRole = session()->get('role');
+            $isTwgReviewer = in_array($userRole, ['TWG', 'PMT'], true);
+
+            $allowedStatuses = [FolderStatus::PENDING_TARGET_APPROVAL->value, ...$evalStatuses];
+            // TWG, PMT, and Admin are authorized to verify targets after supervising authority approval
+            if ($isTwgReviewer || $userRole === 'Admin') {
+                $allowedStatuses[] = FolderStatus::TARGET_APPROVED->value;
+            }
+
+            if (!in_array($folder['status'], $allowedStatuses, true)) {
                 return $this->respondError("Cannot approve targets: The employee has revoked or unsubmitted their targets. Please refresh the page.", 409);
+            }
+
+            if ($userRole === 'TWG') {
+                $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
+                $assignedUnits = $twgAssignmentModel->getAssignedUnitIds(session()->get('user_id'));
+                if (!empty($assignedUnits) && !$twgAssignmentModel->isTwgAssignedToFolder(session()->get('user_id'), $folderId)) {
+                    return $this->respondError('Unauthorized: This folder is outside your assigned unit jurisdiction.', 403);
+                }
             }
 
             $dates = $folderModel->getFolderDates($folder);
@@ -2643,10 +2694,12 @@ class Folder extends BaseController
                 }
             }
 
-            $approverRole = (session()->get('is_president') || session()->get('role') === 'Admin') ? 'University President' : (session()->get('role') ?: 'Supervisor');
+            $approverRole = $isTwgReviewer 
+                ? $userRole 
+                : ((session()->get('is_president') || session()->get('role') === 'Admin') ? 'University President' : (session()->get('role') ?: 'Supervisor'));
 
-            // If there are multiple supervisors and NOT all have approved yet:
-            if ($totalSupervisors > 1 && $approvedSupervisors < $totalSupervisors) {
+            // If there are multiple supervisors and NOT all have approved yet (skip for TWG reviewers):
+            if (!$isTwgReviewer && $totalSupervisors > 1 && $approvedSupervisors < $totalSupervisors) {
                 $folderModel->update($folderId, [
                     'status' => FolderStatus::PENDING_TARGET_APPROVAL->value
                 ]);
@@ -2980,22 +3033,28 @@ class Folder extends BaseController
             notify_user((int) $folder['user_id'], [
                 'sender_id' => session()->get('user_id'),
                 'type'      => 'target_approved',
-                'title'     => 'Target Commitments Approved',
-                'message'   => "Your target commitments for \"{$folder['title']}\" have been approved.",
+                'title'     => $isTwgReviewer ? 'Target Commitments Verified' : 'Target Commitments Approved',
+                'message'   => $isTwgReviewer 
+                    ? "Your target commitments for \"{$folder['title']}\" have been verified by {$approverRole}."
+                    : "Your target commitments for \"{$folder['title']}\" have been approved.",
                 'link'      => 'folders/' . $folderId,
                 'icon'      => 'check',
             ]);
 
-            $logAction = $releaseToDeans 
-                ? " and released to Deans: " 
-                : ($releaseToChairs 
-                    ? " and released to Department Chairs: " 
-                    : ($releaseToFaculty 
-                        ? " and released to Faculty: " 
-                        : ": "));
-            audit_log('TARGET_APPROVED', 'TARGET', 'document_folder', (int) $folderId, "Target commitments approved" . $logAction . $folder['title']);
+            $logAction = $isTwgReviewer
+                ? "Target commitments verified by {$approverRole}: "
+                : ($releaseToDeans 
+                    ? "Target commitments approved and released to Deans: " 
+                    : ($releaseToChairs 
+                        ? "Target commitments approved and released to Department Chairs: " 
+                        : ($releaseToFaculty 
+                            ? "Target commitments approved and released to Faculty: " 
+                            : "Target commitments approved: ")));
+            audit_log('TARGET_APPROVED', 'TARGET', 'document_folder', (int) $folderId, $logAction . $folder['title']);
 
-            if ($releaseToDeans) {
+            if ($isTwgReviewer) {
+                $msg = "Targets verified and approved by {$approverRole} successfully.";
+            } elseif ($releaseToDeans) {
                 $msg = "OPCR targets approved and successfully released to {$releasedCount} College Dean(s).";
             } elseif ($releaseToChairs) {
                 $msg = "Collegiate DPCR targets approved and successfully released to {$releasedCount} Department Chair(s).";
@@ -3026,7 +3085,24 @@ class Folder extends BaseController
             }
             
             $currentUserId = (int)session()->get('user_id');
+            $userRole      = session()->get('role');
+            $isTwgReviewer = in_array($userRole, ['TWG', 'PMT'], true);
             $routingModel  = new \App\Models\EvaluationRoutingModel();
+            
+            if ($isTwgReviewer) {
+                // TWG / PMT un-verifies the folder: revert target_approver_role back to supervisor authority
+                $fallbackRole = 'Supervisor';
+                if (!empty($folder['approving_authority_name']) || empty($folder['parent_folder_id'])) {
+                    $fallbackRole = 'University President';
+                }
+                $folderModel->update($folderId, [
+                    'target_approver_role' => $fallbackRole
+                ]);
+
+                audit_log('TWG_TARGET_UNVERIFIED', 'TARGET', 'document_folder', (int) $folderId, "Target verification revoked by {$userRole}: {$folder['title']}");
+
+                return $this->respond(['status' => 'success', 'message' => "Target verification removed successfully."]);
+            }
             
             // Revert this evaluator's specific route back to pending
             $routingModel->where('folder_id', $folderId)
@@ -3136,9 +3212,11 @@ class Folder extends BaseController
             $validEvalStatuses = [
                 FolderStatus::EVALUATED->value,
                 FolderStatus::SUBMITTED->value,
-                FolderStatus::APPROVED->value
+                FolderStatus::APPROVED->value,
+                FolderStatus::TWG_APPROVED->value,
+                FolderStatus::TWG_DISAPPROVED->value
             ];
-            if (!in_array($folder['status'], $validEvalStatuses)) {
+            if (!in_array($folder['status'], $validEvalStatuses, true)) {
                 return $this->respondError("Cannot approve evaluation: The employee has revoked their self-rating submission. Please refresh the page.", 409);
             }
 

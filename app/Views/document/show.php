@@ -181,55 +181,110 @@
     .spms-table th, .spms-table td {
         border: 1px solid #000000;
     }
+    /* Seamless Full-Bleed Excel/Sheets Table Cells */
+    .spms-table td.spms-cell-input {
+        padding: 0 !important;
+        margin: 0 !important;
+        position: relative !important;
+        vertical-align: top !important;
+        background-color: #ffffff;
+        height: 100%;
+    }
+    .spms-table td {
+        -webkit-touch-callout: none !important;
+    }
+    .spms-table td.spms-cell-active,
+    .spms-table td.spms-cell-input:focus-within,
+    .spms-table td.spms-score-cell:focus-within {
+        outline: 2px solid #059669 !important;
+        outline-offset: -2px !important;
+        z-index: 10 !important;
+        background-color: #ffffff !important;
+    }
+    .spms-table td.spms-cell-input,
+    .spms-table td[data-field-name],
+    .spms-table td.spms-score-cell {
+        cursor: pointer;
+        touch-action: pan-x pan-y manipulation !important;
+        -webkit-tap-highlight-color: transparent !important;
+        -webkit-touch-callout: none !important;
+    }
     .spms-textarea {
-        width: 100%;
+        width: 100% !important;
+        height: 100% !important;
         min-height: 48px;
         background: transparent;
-        border: 1px solid transparent;
-        padding: 4px;
+        border: none !important;
+        padding: 6px 8px !important;
         font-size: 11px;
-        line-height: 1.35;
+        line-height: 1.4;
         color: #0f172a;
-        resize: vertical;
+        resize: none !important;
         box-sizing: border-box;
-        border-radius: 4px;
+        border-radius: 0 !important;
         font-family: inherit;
-        transition: border-color 0.15s ease, background-color 0.15s ease;
+        outline: none !important;
+        display: block;
     }
     .spms-textarea:hover:not(:disabled) {
-        border-color: #cbd5e1;
+        background: rgba(248, 250, 252, 0.4);
     }
     .spms-textarea:focus {
-        border-color: #059669;
         background: #ffffff;
-        outline: none;
+        outline: none !important;
     }
-    .spms-textarea:disabled {
-        color: #475569;
+    .spms-table textarea:disabled,
+    .spms-table input:disabled {
+        color: #334155;
         background: #f8fafc;
-        border-color: #f1f5f9;
-        cursor: not-allowed;
-        resize: none;
+        cursor: pointer !important;
+        pointer-events: none !important;
+        user-select: none !important;
+        -webkit-user-select: none !important;
+        -webkit-touch-callout: none !important;
     }
     .field-mfo:disabled {
         color: #0f172a !important;
         font-weight: 600;
         background: #fcfcfc;
     }
+    .budget-input-wrapper {
+        display: flex !important;
+        align-items: center !important;
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 48px !important;
+        padding: 6px 18px 6px 8px !important;
+        box-sizing: border-box !important;
+        border: none !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        outline: none !important;
+    }
+    .spms-score-cell {
+        position: relative;
+        padding: 0 !important;
+        vertical-align: middle !important;
+        text-align: center !important;
+        background-color: #ffffff;
+    }
     .spms-score-input {
         width: 100%;
+        height: 100%;
+        min-height: 48px;
         text-align: center;
         font-weight: 800;
         font-size: 12px;
         color: #0f172a;
-        background: #ffffff;
-        border: 1px solid #cbd5e1;
-        border-radius: 4px;
-        padding: 3px 2px;
+        background: transparent;
+        border: none !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
         box-sizing: border-box;
         -moz-appearance: textfield;
         appearance: textfield;
-        transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+        outline: none !important;
     }
     .spms-score-input::-webkit-outer-spin-button,
     .spms-score-input::-webkit-inner-spin-button {
@@ -237,19 +292,125 @@
         margin: 0;
     }
     .spms-score-input:hover:not(:disabled) {
-        border-color: #94a3b8;
+        background: rgba(248, 250, 252, 0.4);
     }
     .spms-score-input:focus {
-        border-color: #059669;
-        outline: none;
         background: #ffffff;
-        box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15);
+        outline: none !important;
     }
     .spms-score-input:disabled {
         background: #f8fafc;
-        border-color: #e2e8f0;
         color: #94a3b8;
+        cursor: default;
+    }
+
+    /* Excel-style Cell Comment Corner Triangle (Amber for Open, Green for Resolved) */
+    .has-cell-comment::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 0;
+        height: 0;
+        border-style: solid;
+        border-width: 0 9px 9px 0;
+        border-color: transparent #d97706 transparent transparent;
+        pointer-events: none;
+        z-index: 20;
+    }
+    .has-cell-comment.comment-resolved::after {
+        border-color: transparent #10b981 transparent transparent;
+    }
+    .has-cell-comment:hover::after {
+        border-width: 0 11px 11px 0;
+    }
+
+    /* Right-Click Context Menu */
+    #spms-context-menu {
+        position: fixed;
+        z-index: 99998;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        padding: 4px 0;
+        min-width: 190px;
+        font-size: 12px;
+        color: #1e293b;
+        user-select: none;
+        display: none;
+    }
+    .dark #spms-context-menu {
+        background: #18181b;
+        border-color: #27272a;
+        color: #f4f4f5;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    .spms-ctx-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 12px;
+        cursor: pointer;
+        transition: background-color 0.1s ease;
+        gap: 12px;
+    }
+    .spms-ctx-item:hover:not(.disabled) {
+        background-color: #f1f5f9;
+        color: #0f172a;
+    }
+    .dark .spms-ctx-item:hover:not(.disabled) {
+        background-color: #27272a;
+        color: #ffffff;
+    }
+    .spms-ctx-item.disabled {
+        opacity: 0.45;
         cursor: not-allowed;
+    }
+    .spms-ctx-item .ctx-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .spms-ctx-item .ctx-shortcut {
+        font-size: 10px;
+        color: #94a3b8;
+        font-weight: 500;
+    }
+    .spms-ctx-divider {
+        height: 1px;
+        background: #e2e8f0;
+        margin: 4px 0;
+    }
+    .dark .spms-ctx-divider {
+        background: #27272a;
+    }
+
+    /* Mobile long-press optimization for spreadsheet grid */
+    td.spms-cell-input, td[data-field-name], td.spms-score-cell, .spms-textarea {
+        -webkit-touch-callout: none !important;
+        touch-action: pan-x pan-y manipulation;
+    }
+
+    /* Floating Threaded Comments Overlay Card */
+    #spms-comment-overlay {
+        position: fixed;
+        z-index: 99999;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+        width: 360px;
+        max-width: 90vw;
+        max-height: 480px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .dark #spms-comment-overlay {
+        background: #18181b;
+        border-color: #3f3f46;
+        color: #f4f4f5;
     }
     /* Score Role Attribution Indicators (Minimal Corner Notification Marker) */
     .spms-score-cell {
@@ -301,29 +462,88 @@
         box-shadow: 0 0 0 1.5px #18181b, 0 1px 3px rgba(16, 185, 129, 0.6);
     }
     .budget-input-wrapper {
-        display: flex;
-        align-items: center;
-        border: 1px solid #cbd5e1;
-        border-radius: 4px;
-        background: #ffffff;
-        padding: 1px 3px;
-        gap: 2px;
-        box-sizing: border-box;
-        transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
-        overflow: hidden;
+        display: flex !important;
+        align-items: center !important;
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 48px !important;
+        border: none !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        padding: 6px 18px 6px 8px !important;
+        gap: 2px !important;
+        box-sizing: border-box !important;
+        box-shadow: none !important;
+        outline: none !important;
     }
     .budget-input-wrapper:hover:not(:has(:disabled)) {
-        border-color: #94a3b8;
+        background: rgba(248, 250, 252, 0.4) !important;
+        border: none !important;
+        box-shadow: none !important;
     }
     .budget-input-wrapper:focus-within {
-        border-color: #059669;
-        box-shadow: 0 0 0 1px #059669;
-        background: #ffffff;
+        border: none !important;
+        box-shadow: none !important;
+        background: #ffffff !important;
+        outline: none !important;
     }
     .budget-input-wrapper:has(:disabled) {
-        background: #f8fafc;
-        border-color: #e2e8f0;
-        cursor: not-allowed;
+        background: #f8fafc !important;
+        border: none !important;
+        box-shadow: none !important;
+        cursor: default !important;
+    }
+    .field-budget-currency {
+        border: none !important;
+        border-right: none !important;
+        background: transparent !important;
+        outline: none !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        color: #0284c7 !important;
+        padding: 0 !important;
+        cursor: pointer;
+        flex-shrink: 0;
+        text-align: center;
+        box-shadow: none !important;
+    }
+    .field-budget-currency:disabled {
+        color: #64748b !important;
+        cursor: default;
+    }
+    .field-budget {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        border: none !important;
+        outline: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        font-size: 11px !important;
+        text-align: right !important;
+        font-family: inherit !important;
+        font-weight: 500 !important;
+        color: #0f172a !important;
+        padding: 0 12px 0 0 !important;
+        box-sizing: border-box !important;
+    }
+    .field-budget::placeholder {
+        padding-right: 4px !important;
+    }
+    .field-budget:disabled {
+        color: #64748b !important;
+        background: transparent !important;
+        cursor: default;
+    }
+    .btn-add-dashed, .btn-add-row, #tfoot-add-core, #tfoot-add-strategic, #tfoot-add-support, [id^="tfoot-add-"] {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        overflow: hidden !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
     }
     .header-budget-currency {
         border: none;
@@ -363,24 +583,10 @@
         }
     }
     .btn-add-dashed {
-        display: block;
-        width: 100%;
-        background: #ffffff;
-        border: 1.5px dashed #cbd5e1;
-        color: #475569;
-        font-weight: 700;
-        font-size: 11px;
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.15s ease-in-out;
-        text-align: center;
-    }
-    .btn-add-dashed:hover {
-        background: #f8fafc;
-        border-color: #94a3b8;
-        color: #0f172a;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        border: none !important;
     }
     .btn-del-row {
         color: #dc2626;
@@ -579,6 +785,367 @@
             overflow: hidden !important;
             height: auto !important;
         }
+        /* Institutional Letterhead in Print (Official BSU & CSC colors) */
+        .spms-letterhead-republic { color: #111827 !important; }
+        .spms-letterhead-title { color: #436531 !important; text-shadow: none !important; }
+        .spms-letterhead-location { color: #1f2937 !important; }
+        .spms-letterhead-dept { color: #111827 !important; }
+        input[type="date"] { color-scheme: light !important; }
+        input[type="date"]::-webkit-calendar-picker-indicator { display: none !important; }
+    }
+
+    /* ===== Q/T/E whole-cell N/A toggle (Target Setting phase) ===== */
+    .spms-score-cell.qte-toggleable {
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .spms-score-cell.qte-toggleable .spms-score-input {
+        pointer-events: none;
+        cursor: pointer !important;
+    }
+    .spms-score-cell.qte-toggleable:hover {
+        background-color: #ecfdf5 !important;
+        box-shadow: inset 0 0 0 2px #10b981;
+    }
+    .spms-score-cell.qte-toggleable.qte-na {
+        background-color: #f1f5f9 !important;
+        background-image: repeating-linear-gradient(135deg, transparent 0 6px, rgba(100, 116, 139, 0.08) 6px 12px);
+    }
+    .spms-score-cell.qte-toggleable.qte-na .spms-score-input {
+        color: #94a3b8 !important;
+        font-size: 10px !important;
+        letter-spacing: 0.05em;
+    }
+    .spms-score-cell.qte-toggleable.qte-na:hover {
+        background-color: #fef2f2 !important;
+        box-shadow: inset 0 0 0 2px #f87171;
+    }
+    .spms-score-cell.qte-toggleable:focus-visible {
+        outline: 2px solid #059669 !important;
+        outline-offset: -2px;
+    }
+    .spms-table td.spms-score-cell.qte-toggleable.qte-na:focus-within {
+        background-color: #f1f5f9 !important;
+    }
+    html.dark .spms-table td.spms-score-cell.qte-toggleable.qte-na:focus-within {
+        background-color: #232327 !important;
+    }
+    @keyframes qtePulse {
+        0% { transform: scale(0.85); opacity: 0.4; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    .spms-score-cell.qte-just-toggled .spms-score-input {
+        animation: qtePulse 0.18s ease-out;
+    }
+
+    /* Baseline Letterhead typography and colors (Screen & Print) */
+    .spms-letterhead-republic { color: #111827; }
+    .spms-letterhead-title { color: #436531; }
+    .spms-letterhead-location { color: #1f2937; }
+    .spms-letterhead-dept { color: #111827; }
+
+    /* Date picker color-scheme baseline */
+    input[type="date"] {
+        color-scheme: light;
+    }
+
+    /* High-Visibility Modern Scrollbars (Base & Light Mode) */
+    .custom-scrollbar,
+    textarea,
+    .spms-textarea,
+    .rubric-cell-textarea {
+        scrollbar-width: thin;
+        scrollbar-color: #94a3b8 rgba(0, 0, 0, 0.05);
+    }
+    .custom-scrollbar::-webkit-scrollbar,
+    textarea::-webkit-scrollbar,
+    .spms-textarea::-webkit-scrollbar,
+    .rubric-cell-textarea::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track,
+    textarea::-webkit-scrollbar-track,
+    .spms-textarea::-webkit-scrollbar-track,
+    .rubric-cell-textarea::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.04);
+        border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb,
+    textarea::-webkit-scrollbar-thumb,
+    .spms-textarea::-webkit-scrollbar-thumb,
+    .rubric-cell-textarea::-webkit-scrollbar-thumb {
+        background-color: #94a3b8;
+        border-radius: 9999px;
+        border: 2px solid transparent;
+        background-clip: padding-box;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+    textarea::-webkit-scrollbar-thumb:hover,
+    .spms-textarea::-webkit-scrollbar-thumb:hover,
+    .rubric-cell-textarea::-webkit-scrollbar-thumb:hover {
+        background-color: #64748b;
+    }
+
+    /* Rubric Matrix Full-Bleed Cell Inputs (Screen) */
+    #digital-rubrics-table {
+        border-collapse: collapse;
+    }
+    #digital-rubrics-table td.rubric-score-td {
+        padding: 0 !important;
+        margin: 0 !important;
+        position: relative !important;
+        vertical-align: top !important;
+        height: 100%;
+        background-color: #ffffff;
+    }
+    #digital-rubrics-table td.rubric-score-td:focus-within {
+        outline: 2px solid #059669 !important;
+        outline-offset: -2px !important;
+        z-index: 10 !important;
+        background-color: #ffffff !important;
+    }
+    #digital-rubrics-table td.rubric-score-td.rubric-dim-na {
+        background-color: #f8fafc !important;
+    }
+    .rubric-cell-textarea {
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 56px;
+        padding: 10px 12px !important;
+        margin: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        color: #0f172a;
+        font-size: 11px;
+        line-height: 1.45;
+        resize: none !important;
+        box-sizing: border-box;
+        display: block;
+        font-family: inherit;
+        outline: none !important;
+        box-shadow: none !important;
+        transition: background-color 0.15s ease;
+    }
+    .rubric-cell-textarea:hover:not(:disabled) {
+        background: rgba(248, 250, 252, 0.6) !important;
+    }
+    .rubric-cell-textarea:focus {
+        background: #ffffff !important;
+    }
+    .rubric-cell-textarea.is-na,
+    .rubric-cell-textarea:disabled {
+        cursor: not-allowed !important;
+        text-align: center !important;
+        font-weight: 800 !important;
+        text-transform: uppercase !important;
+        color: #94a3b8 !important;
+        padding-top: 18px !important;
+        letter-spacing: 0.05em;
+        user-select: none;
+    }
+
+    /* ===== DOCUMENT SHEET DARK MODE (screen only; print always stays black-on-white) ===== */
+    @media screen {
+        html.dark .spms-sheet-container {
+            background: #18181b !important;
+            color: #e4e4e7 !important;
+            border-color: #27272a !important;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.04) !important;
+        }
+        /* Grid lines */
+        html.dark .spms-sheet-container table,
+        html.dark .spms-sheet-container th,
+        html.dark .spms-sheet-container td,
+        html.dark .spms-sheet-container tr,
+        html.dark .spms-sheet-container [style*="solid #000"],
+        html.dark .spms-sheet-container [style*="#cbd5e1"],
+        html.dark .spms-sheet-container [style*="#e2e8f0"],
+        html.dark .spms-sheet-container [style*="solid #94a3b8"] {
+            border-color: #3f3f46 !important;
+        }
+        /* Surfaces */
+        html.dark .spms-sheet-container [style*="background: #ffffff"],
+        html.dark .spms-sheet-container [style*="background-color: #ffffff"],
+        html.dark .spms-sheet-container [style*="background: #fdfdfd"],
+        html.dark .spms-sheet-container [style*="background: #fcfcfc"] {
+            background: #18181b !important;
+        }
+        html.dark .spms-sheet-container [style*="background: #f8fafc"],
+        html.dark .spms-sheet-container [style*="background-color: #f8fafc"],
+        html.dark .spms-sheet-container [style*="background: #fafafa"] {
+            background: #1f1f23 !important;
+        }
+        html.dark .spms-sheet-container [style*="background: #f1f5f9"],
+        html.dark .spms-sheet-container [style*="background-color: #f1f5f9"],
+        html.dark .spms-sheet-container [style*="background: #e2e8f0"],
+        html.dark .spms-sheet-container .spms-category-header {
+            background: #27272a !important;
+        }
+        html.dark .spms-sheet-container [style*="background: #ecfdf5"] { background: rgba(16, 185, 129, 0.12) !important; }
+        html.dark .spms-sheet-container [style*="background: #f0f9ff"] { background: rgba(14, 165, 233, 0.12) !important; }
+        html.dark .spms-sheet-container [style*="background: #fee2e2"] { background: rgba(239, 68, 68, 0.15) !important; }
+        /* Text */
+        html.dark .spms-sheet-container [style*="color: #000"],
+        html.dark .spms-sheet-container [style*="color: #0f172a"],
+        html.dark .spms-sheet-container [style*="color: #111827"],
+        html.dark .spms-sheet-container [style*="color: #1f2937"],
+        html.dark .spms-sheet-container [style*="color: #1e293b"] {
+            color: #f4f4f5 !important;
+        }
+        html.dark .spms-sheet-container [style*="color: #334155"],
+        html.dark .spms-sheet-container [style*="color: #475569"] { color: #d4d4d8 !important; }
+        html.dark .spms-sheet-container [style*="color: #64748b"] { color: #a1a1aa !important; }
+        html.dark .spms-sheet-container [style*="color: #047857"] { color: #34d399 !important; }
+        html.dark .spms-sheet-container [style*="color: #0284c7"],
+        html.dark .spms-sheet-container [style*="color: #0369a1"] { color: #38bdf8 !important; }
+        html.dark .spms-sheet-container input::placeholder,
+        html.dark .spms-sheet-container textarea::placeholder { color: #71717a !important; }
+
+        /* Editable cells */
+        html.dark .spms-table td.spms-cell-input,
+        html.dark .spms-score-cell { background-color: #18181b !important; }
+        html.dark .spms-table td.spms-cell-input:focus-within,
+        html.dark .spms-table td.spms-score-cell:focus-within { background-color: #1c1c20 !important; outline-color: #10b981 !important; }
+        html.dark .spms-textarea,
+        html.dark .spms-score-input,
+        html.dark .field-budget,
+        html.dark .spms-meta-input { color: #f4f4f5 !important; }
+        html.dark .spms-textarea:hover:not(:disabled),
+        html.dark .spms-score-input:hover:not(:disabled) { background: rgba(255, 255, 255, 0.03) !important; }
+        html.dark .spms-textarea:focus,
+        html.dark .spms-score-input:focus,
+        html.dark .spms-meta-input:focus { background: transparent !important; }
+        html.dark .spms-textarea:disabled,
+        html.dark .spms-score-input:disabled,
+        html.dark .budget-input-wrapper:has(:disabled) { background: #1f1f23 !important; color: #a1a1aa !important; }
+        html.dark .field-mfo:disabled { background: #1f1f23 !important; color: #e4e4e7 !important; }
+        html.dark .field-budget:disabled { color: #a1a1aa !important; }
+        html.dark .spms-meta-input { border-bottom-color: #3f3f46 !important; }
+        html.dark .spms-meta-input:disabled { color: #d4d4d8 !important; }
+        html.dark .budget-input-wrapper:focus-within { background: transparent !important; }
+
+        /* Q/T/E toggle in dark */
+        html.dark .spms-score-cell.qte-toggleable:hover { background-color: rgba(16, 185, 129, 0.12) !important; }
+        html.dark .spms-score-cell.qte-toggleable.qte-na {
+            background-color: #232327 !important;
+            background-image: repeating-linear-gradient(135deg, transparent 0 6px, rgba(255, 255, 255, 0.04) 6px 12px);
+        }
+        html.dark .spms-score-cell.qte-toggleable.qte-na .spms-score-input { color: #71717a !important; }
+        html.dark .spms-score-cell.qte-toggleable.qte-na:hover { background-color: rgba(239, 68, 68, 0.12) !important; }
+
+        /* Institutional Official Letterhead in Dark Mode */
+        html.dark .spms-official-letterhead {
+            border-bottom-color: #3f3f46 !important;
+        }
+        html.dark .spms-letterhead-republic {
+            color: #e4e4e7 !important;
+        }
+        html.dark .spms-letterhead-title {
+            color: #4ade80 !important;
+            text-shadow: 0 0 16px rgba(74, 222, 128, 0.25);
+        }
+        html.dark .spms-letterhead-location {
+            color: #a1a1aa !important;
+        }
+        html.dark .spms-letterhead-dept {
+            color: #93c5fd !important;
+        }
+
+        /* Native Date Picker & Calendar Icon in Dark Mode */
+        html.dark input[type="date"],
+        html.dark .spms-meta-input[type="date"],
+        html.dark .spms-sheet-container input[type="date"] {
+            color-scheme: dark !important;
+        }
+        html.dark input[type="date"]::-webkit-calendar-picker-indicator,
+        html.dark .spms-meta-input[type="date"]::-webkit-calendar-picker-indicator,
+        html.dark .spms-sheet-container input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer !important;
+            opacity: 0.9 !important;
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+        html.dark input[type="date"]::-webkit-calendar-picker-indicator:hover,
+        html.dark .spms-meta-input[type="date"]::-webkit-calendar-picker-indicator:hover,
+        html.dark .spms-sheet-container input[type="date"]::-webkit-calendar-picker-indicator:hover {
+            opacity: 1 !important;
+            transform: scale(1.08);
+        }
+
+        /* High-Contrast Visible Scrollbars in Dark Mode */
+        html.dark .custom-scrollbar,
+        html.dark textarea,
+        html.dark .spms-textarea,
+        html.dark .rubric-cell-textarea {
+            scrollbar-color: #71717a rgba(24, 24, 27, 0.6) !important;
+        }
+        html.dark ::-webkit-scrollbar,
+        html.dark .custom-scrollbar::-webkit-scrollbar,
+        html.dark textarea::-webkit-scrollbar,
+        html.dark .spms-textarea::-webkit-scrollbar,
+        html.dark .rubric-cell-textarea::-webkit-scrollbar {
+            width: 8px !important;
+            height: 8px !important;
+        }
+        html.dark ::-webkit-scrollbar-track,
+        html.dark .custom-scrollbar::-webkit-scrollbar-track,
+        html.dark textarea::-webkit-scrollbar-track,
+        html.dark .spms-textarea::-webkit-scrollbar-track,
+        html.dark .rubric-cell-textarea::-webkit-scrollbar-track {
+            background: rgba(24, 24, 27, 0.7) !important;
+            border-radius: 9999px !important;
+        }
+        html.dark ::-webkit-scrollbar-thumb,
+        html.dark .custom-scrollbar::-webkit-scrollbar-thumb,
+        html.dark textarea::-webkit-scrollbar-thumb,
+        html.dark .spms-textarea::-webkit-scrollbar-thumb,
+        html.dark .rubric-cell-textarea::-webkit-scrollbar-thumb {
+            background-color: #71717a !important;
+            border-radius: 9999px !important;
+            border: 1.5px solid #18181b !important;
+            background-clip: padding-box !important;
+        }
+        html.dark ::-webkit-scrollbar-thumb:hover,
+        html.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+        html.dark textarea::-webkit-scrollbar-thumb:hover,
+        html.dark .spms-textarea::-webkit-scrollbar-thumb:hover,
+        html.dark .rubric-cell-textarea::-webkit-scrollbar-thumb:hover {
+            background-color: #a1a1aa !important;
+        }
+        html.dark ::-webkit-scrollbar-thumb:active,
+        html.dark .custom-scrollbar::-webkit-scrollbar-thumb:active,
+        html.dark textarea::-webkit-scrollbar-thumb:active,
+        html.dark .spms-textarea::-webkit-scrollbar-thumb:active,
+        html.dark .rubric-cell-textarea::-webkit-scrollbar-thumb:active {
+            background-color: #d4d4d8 !important;
+        }
+
+        /* Rubric Matrix Full-Bleed Cells in Dark Mode */
+        html.dark #digital-rubrics-table td.rubric-score-td {
+            background-color: #18181b !important;
+        }
+        html.dark #digital-rubrics-table td.rubric-score-td:focus-within {
+            outline-color: #10b981 !important;
+            background-color: #1c1c20 !important;
+        }
+        html.dark #digital-rubrics-table td.rubric-score-td.rubric-dim-na {
+            background-color: #1f1f23 !important;
+        }
+        html.dark .rubric-cell-textarea {
+            color: #f4f4f5 !important;
+        }
+        html.dark .rubric-cell-textarea:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.03) !important;
+        }
+        html.dark .rubric-cell-textarea:focus {
+            background: #1c1c20 !important;
+        }
+        html.dark .rubric-cell-textarea.is-na,
+        html.dark .rubric-cell-textarea:disabled {
+            color: #52525b !important;
+        }
     }
 </style>
 
@@ -593,11 +1160,12 @@
             $homeUrl = in_array($sysRole, ['TWG', 'PMT']) ? site_url('ratings') : site_url('folders');
             $returnUrl = $isOwner 
                 ? site_url('folders/' . ($doc['document_folder_id'] ?? ''))
-                : site_url('ratings' . (!empty($rootFolderId) ? '/' . $rootFolderId : ''));
+                : site_url('ratings');
         ?>
         <div class="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-1">
             <!-- Return to Folder Button -->
             <a href="<?= esc($returnUrl) ?>" 
+               onclick="if (window.history.length > 1 && document.referrer && document.referrer.indexOf(window.location.host) !== -1) { event.preventDefault(); window.history.back(); }"
                class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 bg-surface-border/20 hover:bg-surface-border/40 active:scale-[0.96] text-text text-xs font-bold rounded-lg border border-surface-border transition-all shrink-0 shadow-sm mr-1 sm:mr-2 cursor-pointer"
                title="Return to <?= $isOwner ? 'Folder' : 'Ratings Dashboard' ?>">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -1169,11 +1737,23 @@
                                 </button>
                             <?php endif; ?>
 
-                            <button id="btn-unapprove-target" type="button" 
-                                    <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="unapproveFolderTarget()"' ?>
-                                    class="<?= $isTargetPeriodEnded ? 'bg-warning-500/50 cursor-not-allowed opacity-80' : 'bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg transition-all">
-                                Remove<span class="hidden sm:inline"> Approval</span>
-                            </button>
+                            <?php 
+                                $canRemoveApproval = false;
+                                if (in_array(session()->get('role'), ['TWG', 'PMT'])) {
+                                    if (!empty($doc['target_approver_role']) && in_array($doc['target_approver_role'], ['TWG', 'PMT'])) {
+                                        $canRemoveApproval = true;
+                                    }
+                                } else {
+                                    $canRemoveApproval = true;
+                                }
+                            ?>
+                            <?php if ($canRemoveApproval): ?>
+                                <button id="btn-unapprove-target" type="button" 
+                                        <?= $isTargetPeriodEnded ? 'disabled' : 'onclick="unapproveFolderTarget()"' ?>
+                                        class="<?= $isTargetPeriodEnded ? 'bg-warning-500/50 cursor-not-allowed opacity-80' : 'bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer' ?> text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-lg transition-all">
+                                    <?= in_array(session()->get('role'), ['TWG', 'PMT']) ? 'Remove Verification' : 'Remove Approval' ?>
+                                </button>
+                            <?php endif; ?>
                         </div>
                     <?php elseif ($isDocOpcr || $isTrueOpcr): ?>
                         <div class="flex items-center gap-1.5 sm:gap-2">
@@ -1552,7 +2132,7 @@
                 <?php endif; ?>
 
                 <!-- INSTITUTIONAL OFFICIAL LETTERHEAD (BSU Seal, Gothic Masthead & Bagong Pilipinas) -->
-                <div class="spms-official-letterhead flex items-center justify-between gap-3 sm:gap-6 mb-4 pb-3 border-b border-zinc-300">
+                <div class="spms-official-letterhead flex items-center justify-between gap-3 sm:gap-6 mb-4 pb-3 border-b border-zinc-300 dark:border-zinc-700/80">
                     <!-- Left: BSU Official Seal -->
                     <div class="shrink-0 flex items-center justify-center">
                         <img src="<?= base_url('assets/images/bsu_seal.png') ?>" alt="Benguet State University Seal" class="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-xs" />
@@ -1560,10 +2140,10 @@
 
                     <!-- Center: Republic & University Letterhead -->
                     <div class="flex-1 text-center min-w-0">
-                        <p style="font-family: 'Bookman Old Style', 'Century Schoolbook', 'Times New Roman', serif; font-size: 12px; font-weight: 600; color: #111827 !important; margin: 0; line-height: 1.3;">Republic of the Philippines</p>
-                        <h1 style="font-family: 'Old English Text MT', 'UnifrakturMaguntia', 'Chaucer', serif; font-size: 26px; font-weight: 700; line-height: 1.25; color: #436531 !important; margin: 3px 0;">Benguet State University</h1>
-                        <p style="font-family: 'Bookman Old Style', 'Century Schoolbook', 'Times New Roman', serif; font-size: 11px; font-style: italic; font-weight: 600; color: #1f2937 !important; margin: 0; line-height: 1.3;">La Trinidad, 2601 Benguet</p>
-                        <p id="spms-letterhead-dept" style="font-family: 'Monotype Corsiva', 'Lucida Calligraphy', 'Brush Script MT', 'Dancing Script', cursive, serif; font-size: 15.5px; font-style: italic; font-weight: 700; color: #111827 !important; margin: 2px 0 0 0;">
+                        <p class="spms-letterhead-republic" style="font-family: 'Bookman Old Style', 'Century Schoolbook', 'Times New Roman', serif; font-size: 12px; font-weight: 600; margin: 0; line-height: 1.3;">Republic of the Philippines</p>
+                        <h1 class="spms-letterhead-title" style="font-family: 'Old English Text MT', 'UnifrakturMaguntia', 'Chaucer', serif; font-size: 26px; font-weight: 700; line-height: 1.25; margin: 3px 0;">Benguet State University</h1>
+                        <p class="spms-letterhead-location" style="font-family: 'Bookman Old Style', 'Century Schoolbook', 'Times New Roman', serif; font-size: 11px; font-style: italic; font-weight: 600; margin: 0; line-height: 1.3;">La Trinidad, 2601 Benguet</p>
+                        <p id="spms-letterhead-dept" class="spms-letterhead-dept" style="font-family: 'Monotype Corsiva', 'Lucida Calligraphy', 'Brush Script MT', 'Dancing Script', cursive, serif; font-size: 15.5px; font-style: italic; font-weight: 700; margin: 2px 0 0 0;">
                             <?= esc(!empty($ownerInfo['dept']) ? $ownerInfo['dept'] : ($isDocOpcr ? 'Office of the University President' : 'Office of the University President')) ?>
                         </p>
                     </div>
@@ -1670,7 +2250,7 @@
                                         <tr>
                                             <td style="border: none; padding: 3px 0; font-weight: bold; color: #0f172a;">Date:</td>
                                             <td style="border: none; padding: 3px 0;">
-                                                <input type="date" class="field-approver-date spms-meta-input" id="approver-date" value="<?= esc($supervisors[0]['date'] ?? $cascadeDate ?? '') ?>" onclick="this.showPicker && this.showPicker()" style="width: 130px; padding: 2px 4px; cursor: pointer;" <?= $canEditApprover ? '' : 'disabled' ?>>
+                                                <input type="date" class="field-approver-date spms-meta-input dark:[color-scheme:dark]" id="approver-date" value="<?= esc($supervisors[0]['date'] ?? $cascadeDate ?? '') ?>" onclick="this.showPicker && this.showPicker()" style="width: 130px; padding: 2px 4px; cursor: pointer;" <?= $canEditApprover ? '' : 'disabled' ?>>
                                             </td>
                                         </tr>
                                     </table>
@@ -1688,7 +2268,7 @@
                                     </div>
                                     <div style="font-size: 11px; color: #334155; margin-top: 3px; font-weight: 600;">Name of Employee</div>
                                     <div style="margin-top: 4px; font-size: 11px; color: #334155;">
-                                        Date: <input type="date" id="ratee-sign-date" value="<?= esc($cascadeDate ?? '') ?>" onclick="this.showPicker && this.showPicker()" class="spms-meta-input" style="width: 130px; cursor: pointer; padding: 1px 2px;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                        Date: <input type="date" id="ratee-sign-date" value="<?= esc($cascadeDate ?? '') ?>" onclick="this.showPicker && this.showPicker()" class="spms-meta-input dark:[color-scheme:dark]" style="width: 130px; cursor: pointer; padding: 1px 2px;" <?= $canEditTargets ? '' : 'disabled' ?>>
                                     </div>
                                 </div>
 
@@ -1750,27 +2330,22 @@
                 <!-- MAIN TABLE OF DELIVERABLES & RATINGS -->
                 <div class="spms-table-responsive-wrapper">
                     <div class="lg:hidden flex items-center justify-between text-[11px] text-zinc-500 bg-zinc-200 dark:bg-zinc-800/40 px-3 py-1.5 rounded border border-zinc-200 dark:border-zinc-700 mb-2 print-hide">
-                        <span class="flex items-center gap-1 font-medium">↔ Swipe matrix horizontally to view ratings & remarks</span>
-                        <span class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider"><?= ($isDocDpcr || $isDocOpcr) ? ($canEditTargets ? '12 Columns' : '11 Columns') : ($canEditTargets ? '10 Columns' : '9 Columns') ?></span>
+                        <span class="flex items-center gap-1 font-medium">↔ Swipe matrix horizontally to view ratings</span>
+                        <span class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider"><?= ($isDocDpcr || $isDocOpcr) ? '9 Columns' : '7 Columns' ?></span>
                     </div>
                     <table class="spms-table">
                         <?php if ($isDocDpcr): ?>
-                        <!-- Column Widths (11 columns matching standard DPCR Sheet + TWG Comments) -->
+                        <!-- Column Widths (9 columns matching streamlined DPCR Sheet) -->
                         <colgroup>
-                            <col style="width: 13%;"> <!-- PROGRAMS, PROJECTS, ACTIVITIES -->
-                            <col style="width: 15%;"> <!-- SUCCESS INDICATORS -->
-                            <col style="width: 9%;">  <!-- ALLOTTED BUDGET -->
-                            <col style="width: 11%;"> <!-- INDIVIDUALS / OFFICES ACCOUNTABLE -->
-                            <col style="width: 15%;"> <!-- ACTUAL ACCOMPLISHMENTS -->
+                            <col style="width: 20%;"> <!-- PROGRAMS, PROJECTS, ACTIVITIES -->
+                            <col style="width: 24%;"> <!-- SUCCESS INDICATORS -->
+                            <col style="width: 11%;"> <!-- ALLOTTED BUDGET -->
+                            <col style="width: 13%;"> <!-- INDIVIDUALS / OFFICES ACCOUNTABLE -->
+                            <col style="width: 17%;"> <!-- ACTUAL ACCOMPLISHMENTS -->
                             <col style="width: 3.5%;"> <!-- Q -->
                             <col style="width: 3.5%;"> <!-- T -->
                             <col style="width: 3.5%;"> <!-- E -->
                             <col style="width: 4.5%;"> <!-- Ave. -->
-                            <col style="width: 10%;"> <!-- REMARKS -->
-                            <col class="print-hide" style="width: 12%;"> <!-- TWG COMMENTS -->
-                            <?php if ($canEditTargets): ?>
-                            <col class="print-hide" style="width: 3%;">  <!-- ACT -->
-                            <?php endif; ?>
                         </colgroup>
 
                         <!-- Two-Row Header with Executive Neutral Slate Background -->
@@ -1787,11 +2362,6 @@
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">INDIVIDUALS /<br>OFFICES ACCOUNTABLE</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENTS</th>
                                 <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
-                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
-                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;" class="print-hide">TWG/PMT COMMENTS</th>
-                                <?php if ($canEditTargets): ?>
-                                <th rowspan="2" style="border: 1px solid #000; padding: 4px;" class="print-hide">ACT</th>
-                                <?php endif; ?>
                             </tr>
                             <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
                                 <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
@@ -1801,22 +2371,17 @@
                             </tr>
                         </thead>
                         <?php elseif ($isDocOpcr): ?>
-                        <!-- Column Widths (11 columns matching Vice President OPCR Sheet + TWG Comments) -->
+                        <!-- Column Widths (9 columns matching Vice President OPCR Sheet) -->
                         <colgroup>
-                            <col style="width: 13%;"> <!-- PROJECT/ PROGRAM/ ACTIVITIES -->
-                            <col style="width: 15%;"> <!-- SUCCESS INDICATORS (TARGETS + MEASURES) PERFORMANCE -->
-                            <col style="width: 9%;">  <!-- ALLOTTED BUDGET -->
-                            <col style="width: 11%;"> <!-- DIVISIONS ACCOUNTABLE -->
-                            <col style="width: 15%;"> <!-- ACTUAL ACCOMPLISHMENT -->
+                            <col style="width: 20%;"> <!-- PROJECT/ PROGRAM/ ACTIVITIES -->
+                            <col style="width: 24%;"> <!-- SUCCESS INDICATORS (TARGETS + MEASURES) PERFORMANCE -->
+                            <col style="width: 11%;"> <!-- ALLOTTED BUDGET -->
+                            <col style="width: 13%;"> <!-- DIVISIONS ACCOUNTABLE -->
+                            <col style="width: 17%;"> <!-- ACTUAL ACCOMPLISHMENT -->
                             <col style="width: 3.5%;"> <!-- Q -->
                             <col style="width: 3.5%;"> <!-- T -->
                             <col style="width: 3.5%;"> <!-- E -->
                             <col style="width: 4.5%;"> <!-- AVE -->
-                            <col style="width: 10%;"> <!-- REMARKS -->
-                            <col class="print-hide" style="width: 12%;"> <!-- TWG COMMENTS -->
-                            <?php if ($canEditTargets): ?>
-                            <col class="print-hide" style="width: 3%;">  <!-- ACT -->
-                            <?php endif; ?>
                         </colgroup>
 
                         <!-- Two-Row Header with Executive Neutral Slate Background -->
@@ -1833,11 +2398,6 @@
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">DIVISIONS<br>ACCOUNTABLE</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENT</th>
                                 <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATINGS</th>
-                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
-                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;" class="print-hide">TWG/PMT COMMENTS</th>
-                                <?php if ($canEditTargets): ?>
-                                <th rowspan="2" style="border: 1px solid #000; padding: 4px;" class="print-hide">ACT</th>
-                                <?php endif; ?>
                             </tr>
                             <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
                                 <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
@@ -1847,20 +2407,15 @@
                             </tr>
                         </thead>
                         <?php elseif ($isDocIperf): ?>
-                        <!-- IPERF Layout (+ TWG Comments & Action column in web view) Matching COS & Job Order Sheet -->
+                        <!-- IPERF Layout Matching COS & Job Order Sheet (7 columns) -->
                         <colgroup>
-                            <col style="width: 20%;"> <!-- OFFICE PPA -->
-                            <col style="width: 20%;"> <!-- EXPECTED OUTPUTS -->
-                            <col style="width: 20%;"> <!-- ACTUAL ACCOMPLISHMENTS -->
-                            <col style="width: 4%;">  <!-- Q -->
-                            <col style="width: 4%;">  <!-- T -->
-                            <col style="width: 4%;">  <!-- E -->
-                            <col style="width: 5%;">  <!-- Ave. -->
-                            <col style="width: 11%;"> <!-- REMARKS -->
-                            <col class="print-hide" style="width: 12%;"> <!-- TWG COMMENTS -->
-                            <?php if ($canEditTargets): ?>
-                            <col class="print-hide" style="width: 3%;">  <!-- ACT -->
-                            <?php endif; ?>
+                            <col style="width: 28%;"> <!-- OFFICE PPA -->
+                            <col style="width: 30%;"> <!-- EXPECTED OUTPUTS -->
+                            <col style="width: 27%;"> <!-- ACTUAL ACCOMPLISHMENTS -->
+                            <col style="width: 3.5%;"> <!-- Q -->
+                            <col style="width: 3.5%;"> <!-- T -->
+                            <col style="width: 3.5%;"> <!-- E -->
+                            <col style="width: 4.5%;"> <!-- Ave. -->
                         </colgroup>
 
                         <!-- Two-Row Header with Soft Neutral #f1f5f9 Background -->
@@ -1876,11 +2431,6 @@
                                 </th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENTS</th>
                                 <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
-                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
-                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;" class="print-hide">TWG/PMT COMMENTS</th>
-                                <?php if ($canEditTargets): ?>
-                                <th rowspan="2" style="border: 1px solid #000; padding: 4px;" class="print-hide">ACT</th>
-                                <?php endif; ?>
                             </tr>
                             <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
                                 <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
@@ -1890,20 +2440,15 @@
                             </tr>
                         </thead>
                         <?php else: ?>
-                        <!-- Column Widths (10 total columns matching BSU IPCR + TWG Comments) -->
+                        <!-- Column Widths (7 total columns matching BSU IPCR) -->
                         <colgroup>
-                            <col style="width: 20%;">
-                            <col style="width: 20%;">
-                            <col style="width: 20%;">
-                            <col style="width: 4%;">
-                            <col style="width: 4%;">
-                            <col style="width: 4%;">
-                            <col style="width: 5%;">
-                            <col style="width: 11%;">
-                            <col class="print-hide" style="width: 12%;">
-                            <?php if ($canEditTargets): ?>
-                            <col class="print-hide" style="width: 3%;">
-                            <?php endif; ?>
+                            <col style="width: 28%;">
+                            <col style="width: 30%;">
+                            <col style="width: 27%;">
+                            <col style="width: 3.5%;">
+                            <col style="width: 3.5%;">
+                            <col style="width: 3.5%;">
+                            <col style="width: 4.5%;">
                         </colgroup>
 
                         <!-- Two-Row Header: Q, T, E, Ave side-by-side with Executive Neutral Slate Background -->
@@ -1913,11 +2458,6 @@
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">SUCCESS INDICATORS<br><span style="font-size: 9px; font-weight: normal; text-transform: none;">(TARGETS + MEASURES)</span></th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ACTUAL ACCOMPLISHMENTS</th>
                                 <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
-                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
-                                <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;" class="print-hide">TWG/PMT COMMENTS</th>
-                                <?php if ($canEditTargets): ?>
-                                <th rowspan="2" style="border: 1px solid #000; padding: 4px;" class="print-hide">ACT</th>
-                                <?php endif; ?>
                             </tr>
                             <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
                                 <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
@@ -1932,35 +2472,21 @@
                         <!-- IPERF FLAT DELIVERABLES LIST (NO CATEGORIES) -->
                         <tbody id="tbody-core">
                         </tbody>
-                        <!-- Add Row Footer for IPERF -->
-                        <tbody class="print-hide" id="tfoot-add-core" style="<?= $canEditTargets ? '' : 'display: none;' ?>">
-                            <tr>
-                                <td colspan="10" style="padding: 6px; background: #ffffff; text-align: center; border: 1px solid #000;">
-                                    <button type="button" onclick="addTableRow('core')" class="btn-add-dashed">
-                                        + Add Deliverable / Office PPA Row
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
 
                         <!-- OVERALL AVERAGE RATING -->
                         <tfoot>
                             <tr style="background-color: #f8fafc; font-weight: bold; border-top: 2px solid #000; border-bottom: 2px solid #000;">
-                                <td colspan="6" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #000000; border: 1px solid #000; text-align: left;">
+                                <td colspan="3" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #000000; border: 1px solid #000; text-align: left;">
                                     OVERALL AVERAGE RATING
                                 </td>
-                                <td style="padding: 8px 4px; text-align: center; font-weight: 900; color: #047857; font-size: 12px; border: 1px solid #000;" id="iperf-overall-average">
+                                <td colspan="2" style="padding: 8px 4px; text-align: center; font-weight: 900; color: #047857; font-size: 12px; border: 1px solid #000;" id="iperf-overall-average">
                                     0.000
                                 </td>
-                                <td style="padding: 6px 8px; text-align: center; border: 1px solid #000;">
+                                <td colspan="2" style="padding: 6px 8px; text-align: center; border: 1px solid #000;">
                                     <span id="iperf-adjectival-badge" style="display: inline-block; background: #475569; color: #ffffff; font-weight: 900; font-size: 10px; text-transform: uppercase; padding: 2px 8px; border-radius: 4px;">
                                         PENDING EVALUATION
                                     </span>
                                 </td>
-                                <td style="border: 1px solid #000;" class="print-hide"></td>
-                                <?php if ($canEditTargets): ?>
-                                <td style="border: 1px solid #000;" class="print-hide"></td>
-                                <?php endif; ?>
                             </tr>
                         </tfoot>
 
@@ -1972,23 +2498,13 @@
                         <!-- 1. CORE FUNCTIONS -->
                         <tbody id="tbody-core">
                             <tr style="background-color: #f1f5f9; border-top: 2px solid #000; border-bottom: 1px solid #000; font-weight: bold;">
-                                <td colspan="5" id="label-cat-core" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
+                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? 5 : 3 ?>" id="label-cat-core" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
                                     CORE FUNCTIONS <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
                                 </td>
-                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? ($canEditTargets ? 7 : 6) : ($canEditTargets ? 5 : 4) ?>" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
+                                <td colspan="4" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
                                     <span style="display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
                                         Core Subtotal: <span id="badge-core-subtotal" style="color: #047857;">0.000</span>
                                     </span>
-                                </td>
-                            </tr>
-                        </tbody>
-                        <!-- Add Row Footer for Core -->
-                        <tbody class="print-hide" id="tfoot-add-core" style="<?= $canEditTargets ? '' : 'display: none;' ?>">
-                            <tr>
-                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? ($canEditTargets ? 12 : 11) : ($canEditTargets ? 10 : 9) ?>" style="padding: 6px; background: #ffffff; text-align: center; border: 1px solid #000;">
-                                    <button type="button" onclick="addTableRow('core')" class="btn-add-dashed">
-                                        + Add Deliverable Row to Core Functions
-                                    </button>
                                 </td>
                             </tr>
                         </tbody>
@@ -1996,23 +2512,13 @@
                         <!-- 2. STRATEGIC FUNCTIONS -->
                         <tbody id="tbody-strategic">
                             <tr style="background-color: #f1f5f9; border-top: 2px solid #000; border-bottom: 1px solid #000; font-weight: bold;">
-                                <td colspan="5" id="label-cat-strategic" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
+                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? 5 : 3 ?>" id="label-cat-strategic" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
                                     STRATEGIC FUNCTIONS <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
                                 </td>
-                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? ($canEditTargets ? 7 : 6) : ($canEditTargets ? 5 : 4) ?>" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
+                                <td colspan="4" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
                                     <span style="display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
                                         Strategic Subtotal: <span id="badge-strategic-subtotal" style="color: #047857;">0.000</span>
                                     </span>
-                                </td>
-                            </tr>
-                        </tbody>
-                        <!-- Add Row Footer for Strategic -->
-                        <tbody class="print-hide" id="tfoot-add-strategic" style="<?= $canEditTargets ? '' : 'display: none;' ?>">
-                            <tr>
-                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? ($canEditTargets ? 12 : 11) : ($canEditTargets ? 10 : 9) ?>" style="padding: 6px; background: #ffffff; text-align: center; border: 1px solid #000;">
-                                    <button type="button" onclick="addTableRow('strategic')" class="btn-add-dashed">
-                                        + Add Deliverable Row to Strategic Functions
-                                    </button>
                                 </td>
                             </tr>
                         </tbody>
@@ -2020,23 +2526,13 @@
                         <!-- 3. SUPPORT FUNCTIONS -->
                         <tbody id="tbody-support">
                             <tr style="background-color: #f1f5f9; border-top: 2px solid #000; border-bottom: 1px solid #000; font-weight: bold;">
-                                <td colspan="5" id="label-cat-support" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
+                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? 5 : 3 ?>" id="label-cat-support" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a; border: 1px solid #000;">
                                     SUPPORT FUNCTIONS <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>
                                 </td>
-                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? ($canEditTargets ? 7 : 6) : ($canEditTargets ? 5 : 4) ?>" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
+                                <td colspan="4" style="padding: 6px 12px; text-align: right; border: 1px solid #000;">
                                     <span style="display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-weight: 800; font-size: 11px; padding: 2px 8px; border-radius: 4px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
                                         Support Subtotal: <span id="badge-support-subtotal" style="color: #047857;">0.000</span>
                                     </span>
-                                </td>
-                            </tr>
-                        </tbody>
-                        <!-- Add Row Footer for Support -->
-                        <tbody class="print-hide" id="tfoot-add-support" style="<?= $canEditTargets ? '' : 'display: none;' ?>">
-                            <tr>
-                                <td colspan="<?= ($isDocDpcr || $isDocOpcr) ? ($canEditTargets ? 12 : 11) : ($canEditTargets ? 10 : 9) ?>" style="padding: 6px; background: #ffffff; text-align: center; border: 1px solid #000;">
-                                    <button type="button" onclick="addTableRow('support')" class="btn-add-dashed">
-                                        + Add Deliverable Row to Support Functions
-                                    </button>
                                 </td>
                             </tr>
                         </tbody>
@@ -2167,7 +2663,7 @@
                                 <input type="text" id="sig-targets-prepared-name" value="" placeholder="(Signature over Printed Name)" class="spms-meta-input" style="width: 90%; font-weight: bold; padding: 2px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>>
                                 <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Employee (Ratee)</div>
                                 <div style="margin-top: 4px; font-size: 10.5px; color: #334155;">
-                                    Date: <input type="date" id="sig-targets-prepared-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                    Date: <input type="date" id="sig-targets-prepared-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input dark:[color-scheme:dark]" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>>
                                 </div>
                             </div>
 
@@ -2177,7 +2673,7 @@
                                 <input type="text" id="sig-targets-approved-name" value="" placeholder="(Signature over Printed Name)" class="spms-meta-input" style="width: 90%; font-weight: bold; padding: 2px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>>
                                 <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Immediate Supervisor (Rater)</div>
                                 <div style="margin-top: 4px; font-size: 10.5px; color: #334155;">
-                                    Date: <input type="date" id="sig-targets-approved-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                    Date: <input type="date" id="sig-targets-approved-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input dark:[color-scheme:dark]" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>>
                                 </div>
                             </div>
                         </td>
@@ -2194,7 +2690,7 @@
                                 <input type="text" id="sig-eval-rated-name" value="" placeholder="(Signature over Printed Name)" class="spms-meta-input" style="width: 90%; font-weight: bold; padding: 2px 4px;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
                                 <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Immediate Supervisor (Rater)</div>
                                 <div style="margin-top: 4px; font-size: 10.5px; color: #334155;">
-                                    Date: <input type="date" id="sig-eval-rated-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
+                                    Date: <input type="date" id="sig-eval-rated-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input dark:[color-scheme:dark]" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
                                 </div>
                             </div>
 
@@ -2204,7 +2700,7 @@
                                 <input type="text" id="sig-eval-conforme-name" value="" placeholder="(Signature over Printed Name)" class="spms-meta-input" style="width: 90%; font-weight: bold; padding: 2px 4px;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
                                 <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Employee (Ratee)</div>
                                 <div style="margin-top: 4px; font-size: 10.5px; color: #334155;">
-                                    Date: <input type="date" id="sig-eval-conforme-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
+                                    Date: <input type="date" id="sig-eval-conforme-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input dark:[color-scheme:dark]" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
                                 </div>
                             </div>
                         </td>
@@ -2257,7 +2753,7 @@
                                 <input type="text" id="sig-ratee-pos" value="<?= esc($ownerInfo['position'] ?? '') ?>" placeholder="(position here)" class="spms-meta-input" style="width: 70%; padding: 2px 4px;">
                             </div>
                             <div style="margin-bottom: 6px; color: #0f172a;">
-                                Date: <input type="date" id="sig-ratee-date" value="<?= esc($cascadeDate ?? '') ?>" onclick="this.showPicker && this.showPicker()" class="spms-meta-input" style="width: 130px; cursor: pointer; padding: 1px 4px;">
+                                Date: <input type="date" id="sig-ratee-date" value="<?= esc($cascadeDate ?? '') ?>" onclick="this.showPicker && this.showPicker()" class="spms-meta-input dark:[color-scheme:dark]" style="width: 130px; cursor: pointer; padding: 1px 4px;">
                             </div>
                         </td>
 
@@ -2278,7 +2774,7 @@
                                         <input type="text" class="field-footer-approver-pos spms-meta-input" id="sig-dean-pos" value="<?= esc($supervisors[0]['position'] ?? '') ?>" placeholder="(position of office head)" style="width: 70%; padding: 2px 4px;">
                                     </div>
                                     <div style="margin-bottom: 6px; color: #0f172a;">
-                                        Date: <input type="date" class="field-footer-approver-date spms-meta-input" id="sig-dean-date" value="<?= esc($supervisors[0]['evalDate'] ?? $cascadeDate ?? '') ?>" onclick="this.showPicker && this.showPicker()" style="width: 130px; cursor: pointer; padding: 1px 4px;">
+                                        Date: <input type="date" class="field-footer-approver-date spms-meta-input dark:[color-scheme:dark]" id="sig-dean-date" value="<?= esc($supervisors[0]['evalDate'] ?? $cascadeDate ?? '') ?>" onclick="this.showPicker && this.showPicker()" style="width: 130px; cursor: pointer; padding: 1px 4px;">
                                     </div>
                                     <div style="color: #64748b; font-size: 10px; font-style: italic;">(may add signatories depending on position/designation)</div>
                                 </div>
@@ -2415,6 +2911,10 @@
             ['TWG/PMT COMMENTS', 'TWG/PMT Comments', '+ [' . ($sysRole === 'PMT' ? 'PMT' : ($sysRole === 'TWG' ? 'TWG' : 'TWG/PMT')) . ']', 'Enter TWG/PMT calibration comment...', 'No TWG/PMT comment', 'Technical Working Group / Performance Management Team (TWG/PMT)', ($sysRole === 'PMT' ? 'PMT' : 'TWG') . ' tag', 'TWG/PMT'],
             $tabsJson
         );
+        // Permanently strip legacy Add Deliverable footers and buttons from stored tab HTML
+        $tabsJson = preg_replace('/<tbody[^>]*id=[\'"]tfoot-add-[^\'"]*[\'"][^>]*>.*?<\/tbody>/si', '', $tabsJson);
+        $tabsJson = preg_replace('/<button[^>]*class=[\'"][^\'"]*btn-add-dashed[^\'"]*[\'"][^>]*>.*?<\/button>/si', '', $tabsJson);
+        $tabsJson = preg_replace('/<button[^>]*onclick=[\'"]addTableRow\([^\)]*\)[\'"][^>]*>.*?<\/button>/si', '', $tabsJson);
     }
     ?>
     let tabs = <?= $tabsJson ?>;
@@ -3624,7 +4124,7 @@
                 <tr>
                     <td style="border: none; padding: 3px 0; font-weight: bold; color: ${isDpcrOrOpcr ? '#0f172a' : '#64748b'};">Date:</td>
                     <td style="border: none; padding: 3px 0;">
-                        <input type="date" class="field-approver-date spms-meta-input" ${isActuallyFirst ? 'id="approver-date"' : ''} value="${escapeHtml(date)}" onclick="this.showPicker && this.showPicker()" style="width: 130px; padding: 2px 4px; cursor: pointer;" ${disabledAttr}>
+                        <input type="date" class="field-approver-date spms-meta-input dark:[color-scheme:dark]" ${isActuallyFirst ? 'id="approver-date"' : ''} value="${escapeHtml(date)}" onclick="this.showPicker && this.showPicker()" style="width: 130px; padding: 2px 4px; cursor: pointer;" ${disabledAttr}>
                     </td>
                 </tr>
             </table>
@@ -3665,7 +4165,7 @@
                     <input type="text" class="field-footer-approver-pos spms-meta-input" ${isActuallyFirst ? 'id="sig-dean-pos"' : ''} value="${escapeHtml(position)}" placeholder="${footerPosPlaceholder}" style="width: 70%; padding: 2px 4px;" ${namePosDisabled}>
                 </div>
                 <div style="margin-bottom: 6px; color: #0f172a;">
-                    Date: <input type="date" class="field-footer-approver-date spms-meta-input" ${isActuallyFirst ? 'id="sig-dean-date"' : ''} value="${escapeHtml(evalDate)}" onclick="this.showPicker && this.showPicker()" style="width: 130px; cursor: pointer; padding: 1px 4px;" ${evalDateDisabled}>
+                    Date: <input type="date" class="field-footer-approver-date spms-meta-input dark:[color-scheme:dark]" ${isActuallyFirst ? 'id="sig-dean-date"' : ''} value="${escapeHtml(evalDate)}" onclick="this.showPicker && this.showPicker()" style="width: 130px; cursor: pointer; padding: 1px 4px;" ${evalDateDisabled}>
                 </div>
                 ${isActuallyFirst ? `
                 <div style="color: #64748b; font-size: 10px; font-style: italic;">(may add signatories depending on position/designation)</div>
@@ -4200,26 +4700,10 @@
             window.syncSpmsActiveTab();
         }
 
-        // Update add buttons visibility based on phase permissions
-        document.querySelectorAll('.btn-add-dashed').forEach(btn => {
-            const tfoot = btn.closest('tbody') || btn.closest('tfoot');
-            if (!canEditTargets) {
-                btn.style.display = 'none';
-                if (tfoot) tfoot.style.display = 'none';
-            } else {
-                btn.style.display = '';
-                if (tfoot) tfoot.style.display = '';
-            }
+        // Permanently remove all "+ Add Deliverable" buttons across all forms and categories (rows managed via right-click)
+        document.querySelectorAll('.btn-add-dashed, .btn-add-row, [id^="tfoot-add-"]').forEach(el => {
+            el.remove();
         });
-
-        // Specifically hide strategic and support for IPERF even if canEditTargets is true
-        if (isIperf) {
-            ['strategic', 'support'].forEach(cat => {
-                document.querySelectorAll(`#tfoot-add-${cat}`).forEach(tfoot => {
-                    tfoot.style.display = 'none';
-                });
-            });
-        }
 
         // Update header ratee inputs based on phase permissions and attach live styling listeners
         ['ratee-name', 'ratee-position', 'ratee-dept', 'ratee-period', 'ratee-sign-name', 'ratee-sign-date', 'approver-name', 'approver-pos', 'approver-date', 'sig-ratee-name', 'sig-ratee-pos', 'sig-ratee-date', 'sig-dean-name', 'sig-dean-pos', 'sig-dean-date', 'sig-targets-prepared-date', 'sig-targets-approved-date', 'sig-eval-rated-date', 'sig-eval-conforme-date'].forEach(id => {
@@ -4294,6 +4778,10 @@
                 });
             }
         });
+
+        if (typeof applyAllCellCommentBadges === 'function') {
+            applyAllCellCommentBadges();
+        }
     }
 
     // ==========================================
@@ -4438,14 +4926,15 @@
         const isX = attr.val === 'X' || attr.val === 'N/A';
         const fieldClass = 'field-' + fieldKey;
 
-        // In Target Drafting mode: Document owner can toggle dimension N/A status
+        // In Target Drafting mode: the entire cell toggles the dimension's N/A status
         if (canEditTargets) {
             return `
-                <td style="padding: 2px 2px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="spms-score-cell ${isX ? 'bg-zinc-100 dark:bg-zinc-800/40' : ''}">
-                    <button type="button" onclick="toggleQte(this, '${fieldClass}')" title="Toggle Not Applicable (N/A) for this dimension" 
-                        class="print-hide flex items-center justify-center ${isX ? 'bg-zinc-700 text-white hover:bg-zinc-800' : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'} transition-all" 
-                        style="position: absolute; top: 2px; right: 2px; width: 22px; height: 13px; font-size: 8px; font-weight: 900; border-radius: 3px; cursor: pointer; z-index: 10; display: flex !important; border: 1px solid ${isX ? '#52525b' : '#cbd5e1'};">N/A</button>
-                    
+                <td style="padding: 0; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;"
+                    class="spms-score-cell qte-toggleable ${isX ? 'qte-na' : ''}" data-field-name="${fieldKey}"
+                    tabindex="0" role="switch" aria-checked="${isX ? 'false' : 'true'}"
+                    onclick="toggleQte(this, '${fieldClass}')"
+                    onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleQte(this, '${fieldClass}'); }"
+                    title="${isX ? 'Not Applicable — click to enable this dimension' : 'Click to mark this dimension as Not Applicable (N/A)'}">
                     <input type="text" 
                         value="${isX ? 'N/A' : (attr.val || '')}" 
                         placeholder="—" 
@@ -4456,8 +4945,8 @@
                         data-last-actor="${escapeHtml(attr.lastActor)}"
                         data-eval-disabled="${evalDisabled}"
                         disabled
-                        title="${isX ? 'Dimension disabled (N/A)' : 'Locked (Scores are entered during Evaluation Phase)'}" 
-                        class="spms-score-input ${fieldClass} ${isX ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 font-bold border-dashed border-zinc-300 dark:border-zinc-700 cursor-not-allowed' : ''}">
+                        tabindex="-1"
+                        class="spms-score-input ${fieldClass}">
                     
                     ${renderScoreBadgeHtml(attr, attr.val)}
                 </td>
@@ -4468,7 +4957,7 @@
         // NO toggle button is rendered at all!
         if (isX) {
             return `
-                <td style="padding: 2px 2px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="spms-score-cell bg-zinc-100/60 dark:bg-zinc-800/40">
+                <td style="padding: 0; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="spms-score-cell bg-zinc-100/60 dark:bg-zinc-800/40" data-field-name="${fieldKey}">
                     <input type="text" 
                         value="N/A" 
                         data-field="${fieldKey}"
@@ -4485,7 +4974,7 @@
         }
 
         return `
-            <td style="padding: 2px 2px; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="spms-score-cell">
+            <td style="padding: 0; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="spms-score-cell" data-field-name="${fieldKey}">
                 <input type="number" min="1" max="5" step="1" 
                     value="${attr.val}" 
                     placeholder="—" 
@@ -4635,10 +5124,10 @@
         if (modal) modal.classList.add('hidden');
     }
 
-    function addTableRow(category, rowData = null) {
+    function addTableRow(category, rowData = null, referenceRow = null, insertPosition = 'append') {
         if (!canEditTargets && !rowData) return;
         const tbody = document.getElementById(`tbody-${category}`);
-        if (!tbody) return;
+        if (!tbody && !referenceRow) return;
 
         const data = rowData || (window.isCurrentDocIperf ? {
             row_id: 'row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7),
@@ -4701,52 +5190,56 @@
         const tr = document.createElement('tr');
         tr.className = `table-row-${category}`;
         tr.dataset.rowId = rowId;
+        tr.dataset.remarks = data.remarks || '';
+        tr.dataset.twgComment = data.twg_comment || '';
         tr.id = rowId;
         tr.style.borderBottom = '1px solid #000000';
 
         if (window.isCurrentDocIperf) {
             tr.innerHTML = `
                 <!-- 1. Office PPA (Target Phase) -->
-                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                <td class="spms-cell-input spms-cell-mfo" data-field-name="mfo" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
                     <textarea class="spms-textarea field-mfo" rows="3" placeholder="Enter office/project/programs/activities aligned with office deliverables..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.mfo)}</textarea>
                 </td>
 
                 <!-- 2. Expected Outputs (Target Phase) -->
-                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                <td class="spms-cell-input spms-cell-indicators" data-field-name="indicators" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
                     <textarea class="spms-textarea field-indicators" rows="3" placeholder="Enter expected outputs based on contract or duties..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.indicators)}</textarea>
                 </td>
 
                 <!-- 3. Actual Accomplishments (Evaluation Phase) -->
-                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                    <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishments..." ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : ''}>${escapeHtml(data.accomplishments)}</textarea>
-                    
-                    <!-- MOV Evidence Toolbar (Only visible during Evaluation Phase) -->
-                    ${isEvaluationPhase ? `
-                    <div class="mov-toolbar flex items-center justify-between mt-1 pt-1 border-t border-zinc-200 dark:border-zinc-800 text-[10px] print-hide">
-                        ${hasFiles ? `
-                        <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25" 
-                                title="View Means of Verification (MOV) evidence proof for this accomplishment">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                            </svg>
-                            <span class="mov-btn-text">MOV (${fileCount})</span>
-                        </button>
-                        ` : (canEditEvaluation ? `
-                        <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
-                                title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                            </svg>
-                            <span class="mov-btn-text">Attach MOV</span>
-                        </button>
-                        ` : `
-                        <span class="text-[9px] text-zinc-400 italic">No MOV</span>
-                        `)}
-                        <span class="text-[9px] text-zinc-400 font-medium italic">Evidence</span>
+                <td class="spms-cell-input spms-cell-accomplishments" data-field-name="accomplishments" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
+                    <div style="display: flex; flex-direction: column; width: 100%; height: 100%;">
+                        <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishments..." ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : ''} style="flex: 1 1 auto;">${escapeHtml(data.accomplishments)}</textarea>
+                        
+                        <!-- MOV Evidence Toolbar (Only visible during Evaluation Phase) -->
+                        ${isEvaluationPhase ? `
+                        <div class="mov-toolbar flex items-center justify-between text-[10px] print-hide" style="padding: 3px 6px; background: #f8fafc; border-top: 1px dashed #cbd5e1; flex-shrink: 0;">
+                            ${hasFiles ? `
+                            <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
+                                    class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25" 
+                                    title="View Means of Verification (MOV) evidence proof for this accomplishment">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                </svg>
+                                <span class="mov-btn-text">MOV (${fileCount})</span>
+                            </button>
+                            ` : (canEditEvaluation ? `
+                            <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
+                                    class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
+                                    title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                </svg>
+                                <span class="mov-btn-text">Attach MOV</span>
+                            </button>
+                            ` : `
+                            <span class="text-[9px] text-zinc-400 italic">No MOV</span>
+                            `)}
+                            <span class="text-[9px] text-zinc-400 font-medium italic">Evidence</span>
+                        </div>
+                        ` : ''}
                     </div>
-                    ` : ''}
                 </td>
 
                 <!-- 4. Rating Q (Evaluation Phase) -->
@@ -4759,108 +5252,70 @@
                 ${renderScoreCellTdHtml('e', data, evalDisabled, canEditTargets, canEditEvaluation)}
 
                 <!-- 7. Row Average -->
-                <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f8fafc; border: 1px solid #000;">
-                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <td style="padding: 0; text-align: center; vertical-align: middle; background: #f8fafc; border: 1px solid #000;">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 48px;">
                         <span class="field-row-avg" style="font-weight: 900; color: #0f172a; font-size: 11px;">—</span>
-                        <span style="font-size: 8px; font-weight: 700; color: #64748b; text-transform: uppercase;">auto</span>
                     </div>
                 </td>
-
-                <!-- 8. Remarks -->
-                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                    <div class="flex items-center justify-between mb-1 print-hide">
-                        <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-tight">Remarks</span>
-                        ${!isOwner && !window.isTwg ? `
-                            <button type="button" onclick="stampRoleTag(this)" class="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-800 transition-colors cursor-pointer" title="Stamp your role tag into remarks">
-                                + Tag [${escapeHtml(window.currentReviewerRole || 'Reviewer')}]
-                            </button>
-                        ` : ''}
-                    </div>
-                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." ${window.isTwg ? 'disabled title="Official remarks are entered by the ratee or supervisor. Use TWG/PMT Comments for calibration notes."' : (isOwner && (status === FolderStatus.PENDING_TARGET_APPROVAL || status === FolderStatus.SUBMITTED || status === FolderStatus.TARGET_APPROVED || status === FolderStatus.APPROVED) ? 'disabled title="Locked while submitted or approved"' : '')}>${escapeHtml(data.remarks)}</textarea>
-                </td>
-
-                <!-- TWG/PMT Comments (Screen-only, omitted from printed papers) -->
-                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;" class="print-hide twg-col">
-                    <div class="flex items-center justify-between mb-1">
-                        <span class="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-tight flex items-center gap-1">
-                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
-                            TWG/PMT
-                        </span>
-                        ${isTwgUser ? `
-                            <button type="button" onclick="stampTwgTag(this)" class="text-[8.5px] font-extrabold text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 px-1 py-0.5 rounded border border-amber-300 dark:border-amber-800 transition-colors cursor-pointer" title="Stamp ${window.sysRole === 'PMT' ? 'PMT' : 'TWG'} tag">
-                                + [${window.sysRole === 'PMT' ? 'PMT' : (window.sysRole === 'TWG' ? 'TWG' : 'TWG/PMT')}]
-                            </button>
-                        ` : ''}
-                    </div>
-                    <textarea class="spms-textarea field-twg-comment print-borderless" rows="3" placeholder="${isTwgUser ? 'Enter TWG/PMT calibration comment...' : 'No TWG/PMT comment'}" ${canEditTwg ? '' : 'disabled title="Only editable by Technical Working Group / Performance Management Team (TWG/PMT)"'} style="font-size: 11px; color: #b45309; background: ${canEditTwg ? '#fffbeb' : '#fafafa'}; border: 1px solid ${canEditTwg ? '#fde68a' : 'transparent'}; border-radius: 3px;">${escapeHtml(data.twg_comment || '')}</textarea>
-                </td>
-
-                ${canEditTargets ? `
-                <!-- 9. Delete Action (Target Phase Only) -->
-                <td style="padding: 2px; text-align: center; vertical-align: middle; border: 1px solid #000;" class="print-hide">
-                    <button type="button" onclick="deleteTableRow(this)" title="Delete Row" class="btn-del-row">
-                        <svg xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                    </button>
-                </td>` : ''}
             `;
         } else if (window.isCurrentDocDpcr) {
             tr.innerHTML = `
                 <!-- 1. Programs, Projects, Activities (Target Phase) -->
-                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                <td class="spms-cell-input spms-cell-mfo" data-field-name="mfo" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
                     <textarea class="spms-textarea field-mfo" rows="3" placeholder="Enter programs, projects, activities..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.mfo)}</textarea>
                 </td>
 
                 <!-- 2. Success Indicators (Target Phase) -->
-                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                <td class="spms-cell-input spms-cell-indicators" data-field-name="indicators" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
                     <textarea class="spms-textarea field-indicators" rows="3" placeholder="Enter success indicators (targets + measures)..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.indicators)}</textarea>
                 </td>
 
                 <!-- 3. Allotted Budget (Target Phase) - Decimal with Editable Currency -->
-                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                <td class="spms-cell-input spms-cell-budget" data-field-name="budget" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
                     <div class="budget-input-wrapper">
-                        <input type="text" class="field-budget-currency" value="${escapeHtml(rowCurrency)}" placeholder="₱" title="Currency (editable, defaults to ₱)" style="width: 18px; text-align: center; font-weight: 700; color: #0284c7; border: none; border-right: 1px solid #e2e8f0; outline: none; background: transparent; font-size: 10px; padding: 1px 2px 1px 0; cursor: pointer; flex-shrink: 0;" ${mfoDisabled ? 'disabled' : ''}>
-                        <input type="text" inputmode="decimal" spellcheck="false" autocomplete="off" class="spms-input field-budget" maxlength="18" data-raw-value="${escapeHtml(rawBudget)}" data-full-value="${escapeHtml(fullBudget)}" value="${escapeHtml(fullBudget)}" placeholder="0.00" style="flex: 1; min-width: 0; width: 100%; border: none; outline: none; font-size: 11px; text-align: right; background: transparent; font-family: inherit; font-weight: 500; color: #0f172a; padding: 1px 1px; transition: font-size 0.1s ease;" ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>
+                        <input type="text" class="field-budget-currency" value="${escapeHtml(rowCurrency)}" placeholder="₱" title="Currency (editable, defaults to ₱)" style="width: 18px; text-align: center; font-weight: 700; color: #0284c7; cursor: pointer; flex-shrink: 0;" ${mfoDisabled ? 'disabled' : ''}>
+                        <input type="text" inputmode="decimal" spellcheck="false" autocomplete="off" class="field-budget" maxlength="18" data-raw-value="${escapeHtml(rawBudget)}" data-full-value="${escapeHtml(fullBudget)}" value="${escapeHtml(fullBudget)}" placeholder="0.00" style="flex: 1; min-width: 0; width: 100%; font-size: 11px; text-align: right; padding-right: 12px !important; font-family: inherit; font-weight: 500; color: #0f172a; transition: font-size 0.1s ease;" ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>
                     </div>
                 </td>
 
                 <!-- 4. Individuals / Offices Accountable (Target Phase) -->
-                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                <td class="spms-cell-input spms-cell-accountable" data-field-name="accountable" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
                     <textarea class="spms-textarea field-accountable" rows="3" placeholder="Individuals / offices accountable..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.accountable || '')}</textarea>
                 </td>
 
                 <!-- 5. Actual Accomplishments (Evaluation Phase) -->
-                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                    <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishments..." ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : ''}>${escapeHtml(data.accomplishments)}</textarea>
-                    
-                    <!-- MOV Evidence Toolbar (Only visible during Evaluation Phase) -->
-                    ${isEvaluationPhase ? `
-                    <div class="mov-toolbar flex items-center justify-between mt-1 pt-1 border-t border-zinc-200 dark:border-zinc-800 text-[10px] print-hide">
-                        ${hasFiles ? `
-                        <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25" 
-                                title="View Means of Verification (MOV) evidence proof for this accomplishment">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                            </svg>
-                            <span class="mov-btn-text">MOV (${fileCount})</span>
-                        </button>
-                        ` : (canEditEvaluation ? `
-                        <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
-                                title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                            </svg>
-                            <span class="mov-btn-text">Attach MOV</span>
-                        </button>
-                        ` : `
-                        <span class="text-[9px] text-zinc-400 italic">No MOV</span>
-                        `)}
-                        <span class="text-[9px] text-zinc-400 font-medium italic">Evidence</span>
+                <td class="spms-cell-input spms-cell-accomplishments" data-field-name="accomplishments" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
+                    <div style="display: flex; flex-direction: column; width: 100%; height: 100%;">
+                        <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishments..." ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : ''} style="flex: 1 1 auto;">${escapeHtml(data.accomplishments)}</textarea>
+                        
+                        <!-- MOV Evidence Toolbar (Only visible during Evaluation Phase) -->
+                        ${isEvaluationPhase ? `
+                        <div class="mov-toolbar flex items-center justify-between text-[10px] print-hide" style="padding: 3px 6px; background: #f8fafc; border-top: 1px dashed #cbd5e1; flex-shrink: 0;">
+                            ${hasFiles ? `
+                            <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
+                                    class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25" 
+                                    title="View Means of Verification (MOV) evidence proof for this accomplishment">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                </svg>
+                                <span class="mov-btn-text">MOV (${fileCount})</span>
+                            </button>
+                            ` : (canEditEvaluation ? `
+                            <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
+                                    class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
+                                    title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                </svg>
+                                <span class="mov-btn-text">Attach MOV</span>
+                            </button>
+                            ` : `
+                            <span class="text-[9px] text-zinc-400 italic">No MOV</span>
+                            `)}
+                            <span class="text-[9px] text-zinc-400 font-medium italic">Evidence</span>
+                        </div>
+                        ` : ''}
                     </div>
-                    ` : ''}
                 </td>
 
                 <!-- Rating Q, T, E Inputs (Evaluation Phase) -->
@@ -4869,108 +5324,70 @@
                 ${renderScoreCellTdHtml('e', data, evalDisabled, canEditTargets, canEditEvaluation)}
 
                 <!-- Row Average -->
-                <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f8fafc; border: 1px solid #000;">
-                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <td style="padding: 0; text-align: center; vertical-align: middle; background: #f8fafc; border: 1px solid #000;">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 48px;">
                         <span class="field-row-avg" style="font-weight: 900; color: #0f172a; font-size: 11px;">—</span>
-                        <span style="font-size: 8px; font-weight: 700; color: #64748b; text-transform: uppercase;">auto</span>
                     </div>
                 </td>
-
-                <!-- Remarks -->
-                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                    <div class="flex items-center justify-between mb-1 print-hide">
-                        <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-tight">Remarks</span>
-                        ${!isOwner && !window.isTwg ? `
-                            <button type="button" onclick="stampRoleTag(this)" class="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-800 transition-colors cursor-pointer" title="Stamp your role tag into remarks">
-                                + Tag [${escapeHtml(window.currentReviewerRole || 'Reviewer')}]
-                            </button>
-                        ` : ''}
-                    </div>
-                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." ${window.isTwg ? 'disabled title="Official remarks are entered by the ratee or supervisor. Use TWG/PMT Comments for calibration notes."' : (isOwner && (status === FolderStatus.PENDING_TARGET_APPROVAL || status === FolderStatus.SUBMITTED || status === FolderStatus.TARGET_APPROVED || status === FolderStatus.APPROVED) ? 'disabled title="Locked while submitted or approved"' : '')}>${escapeHtml(data.remarks)}</textarea>
-                </td>
-
-                <!-- TWG/PMT Comments (Screen-only, omitted from printed papers) -->
-                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;" class="print-hide twg-col">
-                    <div class="flex items-center justify-between mb-1">
-                        <span class="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-tight flex items-center gap-1">
-                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
-                            TWG/PMT
-                        </span>
-                        ${isTwgUser ? `
-                            <button type="button" onclick="stampTwgTag(this)" class="text-[8.5px] font-extrabold text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 px-1 py-0.5 rounded border border-amber-300 dark:border-amber-800 transition-colors cursor-pointer" title="Stamp ${window.sysRole === 'PMT' ? 'PMT' : 'TWG'} tag">
-                                + [${window.sysRole === 'PMT' ? 'PMT' : (window.sysRole === 'TWG' ? 'TWG' : 'TWG/PMT')}]
-                            </button>
-                        ` : ''}
-                    </div>
-                    <textarea class="spms-textarea field-twg-comment print-borderless" rows="3" placeholder="${isTwgUser ? 'Enter TWG/PMT calibration comment...' : 'No TWG/PMT comment'}" ${canEditTwg ? '' : 'disabled title="Only editable by Technical Working Group / Performance Management Team (TWG/PMT)"'} style="font-size: 11px; color: #b45309; background: ${canEditTwg ? '#fffbeb' : '#fafafa'}; border: 1px solid ${canEditTwg ? '#fde68a' : 'transparent'}; border-radius: 3px;">${escapeHtml(data.twg_comment || '')}</textarea>
-                </td>
-
-                ${canEditTargets ? `
-                <!-- Delete Action (Target Phase Only) -->
-                <td style="padding: 2px; text-align: center; vertical-align: middle; border: 1px solid #000;" class="print-hide">
-                    <button type="button" onclick="deleteTableRow(this)" title="Delete Row" class="btn-del-row">
-                        <svg xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                    </button>
-                </td>` : ''}
             `;
         } else if (window.isCurrentDocOpcr) {
             tr.innerHTML = `
                 <!-- 1. Programs, Projects, Activities (Target Phase) -->
-                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                <td class="spms-cell-input spms-cell-mfo" data-field-name="mfo" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
                     <textarea class="spms-textarea field-mfo" rows="3" placeholder="Enter project, program, activities..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.mfo)}</textarea>
                 </td>
 
                 <!-- 2. Success Indicators (Targets + Measures) Performance (Target Phase) -->
-                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                <td class="spms-cell-input spms-cell-indicators" data-field-name="indicators" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
                     <textarea class="spms-textarea field-indicators" rows="3" placeholder="Enter success indicators (targets + measures)..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.indicators)}</textarea>
                 </td>
 
                 <!-- 3. Allotted Budget (Target Phase) - Decimal with Editable Currency -->
-                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                <td class="spms-cell-input spms-cell-budget" data-field-name="budget" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
                     <div class="budget-input-wrapper">
-                        <input type="text" class="field-budget-currency" value="${escapeHtml(rowCurrency)}" placeholder="₱" title="Currency (editable, defaults to ₱)" style="width: 18px; text-align: center; font-weight: 700; color: #0284c7; border: none; border-right: 1px solid #e2e8f0; outline: none; background: transparent; font-size: 10px; padding: 1px 2px 1px 0; cursor: pointer; flex-shrink: 0;" ${mfoDisabled ? 'disabled' : ''}>
-                        <input type="text" inputmode="decimal" spellcheck="false" autocomplete="off" class="spms-input field-budget" maxlength="18" data-raw-value="${escapeHtml(rawBudget)}" data-full-value="${escapeHtml(fullBudget)}" value="${escapeHtml(fullBudget)}" placeholder="0.00" style="flex: 1; min-width: 0; width: 100%; border: none; outline: none; font-size: 11px; text-align: right; background: transparent; font-family: inherit; font-weight: 500; color: #0f172a; padding: 1px 1px; transition: font-size 0.1s ease;" ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>
+                        <input type="text" class="field-budget-currency" value="${escapeHtml(rowCurrency)}" placeholder="₱" title="Currency (editable, defaults to ₱)" style="width: 18px; text-align: center; font-weight: 700; color: #0284c7; cursor: pointer; flex-shrink: 0;" ${mfoDisabled ? 'disabled' : ''}>
+                        <input type="text" inputmode="decimal" spellcheck="false" autocomplete="off" class="field-budget" maxlength="18" data-raw-value="${escapeHtml(rawBudget)}" data-full-value="${escapeHtml(fullBudget)}" value="${escapeHtml(fullBudget)}" placeholder="0.00" style="flex: 1; min-width: 0; width: 100%; font-size: 11px; text-align: right; padding-right: 12px !important; font-family: inherit; font-weight: 500; color: #0f172a; transition: font-size 0.1s ease;" ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>
                     </div>
                 </td>
 
                 <!-- 4. Divisions Accountable (Target Phase) -->
-                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
+                <td class="spms-cell-input spms-cell-accountable" data-field-name="accountable" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
                     <textarea class="spms-textarea field-accountable" rows="3" placeholder="Divisions accountable..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.accountable || '')}</textarea>
                 </td>
 
                 <!-- 5. Actual Accomplishment (Evaluation Phase) -->
-                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                    <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishment..." ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : ''}>${escapeHtml(data.accomplishments)}</textarea>
-                    
-                    <!-- MOV Evidence Toolbar (Only visible during Evaluation Phase) -->
-                    ${isEvaluationPhase ? `
-                    <div class="mov-toolbar flex items-center justify-between mt-1 pt-1 border-t border-zinc-200 dark:border-zinc-800 text-[10px] print-hide">
-                        ${hasFiles ? `
-                        <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25" 
-                                title="View Means of Verification (MOV) evidence proof for this accomplishment">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                            </svg>
-                            <span class="mov-btn-text">MOV (${fileCount})</span>
-                        </button>
-                        ` : (canEditEvaluation ? `
-                        <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
-                                title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                            </svg>
-                            <span class="mov-btn-text">Attach MOV</span>
-                        </button>
-                        ` : `
-                        <span class="text-[9px] text-zinc-400 italic">No MOV</span>
-                        `)}
-                        <span class="text-[9px] text-zinc-400 font-medium italic">Evidence</span>
+                <td class="spms-cell-input spms-cell-accomplishments" data-field-name="accomplishments" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
+                    <div style="display: flex; flex-direction: column; width: 100%; height: 100%;">
+                        <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishment..." ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : ''} style="flex: 1 1 auto;">${escapeHtml(data.accomplishments)}</textarea>
+                        
+                        <!-- MOV Evidence Toolbar (Only visible during Evaluation Phase) -->
+                        ${isEvaluationPhase ? `
+                        <div class="mov-toolbar flex items-center justify-between text-[10px] print-hide" style="padding: 3px 6px; background: #f8fafc; border-top: 1px dashed #cbd5e1; flex-shrink: 0;">
+                            ${hasFiles ? `
+                            <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
+                                    class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25" 
+                                    title="View Means of Verification (MOV) evidence proof for this accomplishment">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                </svg>
+                                <span class="mov-btn-text">MOV (${fileCount})</span>
+                            </button>
+                            ` : (canEditEvaluation ? `
+                            <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
+                                    class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
+                                    title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                </svg>
+                                <span class="mov-btn-text">Attach MOV</span>
+                            </button>
+                            ` : `
+                            <span class="text-[9px] text-zinc-400 italic">No MOV</span>
+                            `)}
+                            <span class="text-[9px] text-zinc-400 font-medium italic">Evidence</span>
+                        </div>
+                        ` : ''}
                     </div>
-                    ` : ''}
                 </td>
 
                 <!-- Rating Q, T, E Inputs (Evaluation Phase) -->
@@ -4979,152 +5396,89 @@
                 ${renderScoreCellTdHtml('e', data, evalDisabled, canEditTargets, canEditEvaluation)}
 
                 <!-- Row Average -->
-                <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f8fafc; border: 1px solid #000;">
-                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <td style="padding: 0; text-align: center; vertical-align: middle; background: #f8fafc; border: 1px solid #000;">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 48px;">
                         <span class="field-row-avg" style="font-weight: 900; color: #0f172a; font-size: 11px;">—</span>
-                        <span style="font-size: 8px; font-weight: 700; color: #64748b; text-transform: uppercase;">auto</span>
                     </div>
                 </td>
-
-                <!-- Remarks -->
-                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                    <div class="flex items-center justify-between mb-1 print-hide">
-                        <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-tight">Remarks</span>
-                        ${!isOwner && !window.isTwg ? `
-                            <button type="button" onclick="stampRoleTag(this)" class="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-800 transition-colors cursor-pointer" title="Stamp your role tag into remarks">
-                                + Tag [${escapeHtml(window.currentReviewerRole || 'Reviewer')}]
-                            </button>
-                        ` : ''}
-                    </div>
-                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." ${window.isTwg ? 'disabled title="Official remarks are entered by the ratee or supervisor. Use TWG/PMT Comments for calibration notes."' : (isOwner && (status === FolderStatus.PENDING_TARGET_APPROVAL || status === FolderStatus.SUBMITTED || status === FolderStatus.TARGET_APPROVED || status === FolderStatus.APPROVED) ? 'disabled title="Locked while submitted or approved"' : '')}>${escapeHtml(data.remarks)}</textarea>
-                </td>
-
-                <!-- TWG/PMT Comments (Screen-only, omitted from printed papers) -->
-                <td style="padding: 4px; vertical-align: top; border: 1px solid #000;" class="print-hide twg-col">
-                    <div class="flex items-center justify-between mb-1">
-                        <span class="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-tight flex items-center gap-1">
-                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
-                            TWG/PMT
-                        </span>
-                        ${isTwgUser ? `
-                            <button type="button" onclick="stampTwgTag(this)" class="text-[8.5px] font-extrabold text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 px-1 py-0.5 rounded border border-amber-300 dark:border-amber-800 transition-colors cursor-pointer" title="Stamp ${window.sysRole === 'PMT' ? 'PMT' : 'TWG'} tag">
-                                + [${window.sysRole === 'PMT' ? 'PMT' : (window.sysRole === 'TWG' ? 'TWG' : 'TWG/PMT')}]
-                            </button>
-                        ` : ''}
-                    </div>
-                    <textarea class="spms-textarea field-twg-comment print-borderless" rows="3" placeholder="${isTwgUser ? 'Enter TWG/PMT calibration comment...' : 'No TWG/PMT comment'}" ${canEditTwg ? '' : 'disabled title="Only editable by Technical Working Group / Performance Management Team (TWG/PMT)"'} style="font-size: 11px; color: #b45309; background: ${canEditTwg ? '#fffbeb' : '#fafafa'}; border: 1px solid ${canEditTwg ? '#fde68a' : 'transparent'}; border-radius: 3px;">${escapeHtml(data.twg_comment || '')}</textarea>
-                </td>
-
-                ${canEditTargets ? `
-                <!-- Delete Action (Target Phase Only) -->
-                <td style="padding: 2px; text-align: center; vertical-align: middle; border: 1px solid #000;" class="print-hide">
-                    <button type="button" onclick="deleteTableRow(this)" title="Delete Row" class="btn-del-row">
-                        <svg xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                    </button>
-                </td>` : ''}
             `;
         } else {
             tr.innerHTML = `
-            <!-- Major Final Output (Only modifiable during Target Phase) -->
-            <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                <textarea class="spms-textarea field-mfo" rows="3" placeholder="Enter academic function / major final output..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.mfo)}</textarea>
-            </td>
+                <!-- Major Final Output (Only modifiable during Target Phase) -->
+                <td class="spms-cell-input spms-cell-mfo" data-field-name="mfo" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
+                    <textarea class="spms-textarea field-mfo" rows="3" placeholder="Enter academic function / major final output..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.mfo)}</textarea>
+                </td>
 
-            <!-- Success Indicators (Only modifiable during Target Phase) -->
-            <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                <textarea class="spms-textarea field-indicators" rows="3" placeholder="Enter success indicators (targets + measures)..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.indicators)}</textarea>
-            </td>
+                <!-- Success Indicators (Only modifiable during Target Phase) -->
+                <td class="spms-cell-input spms-cell-indicators" data-field-name="indicators" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
+                    <textarea class="spms-textarea field-indicators" rows="3" placeholder="Enter success indicators (targets + measures)..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.indicators)}</textarea>
+                </td>
 
-            <!-- Actual Accomplishments (Unlocked during evaluation phase) -->
-            <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishments..." ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : ''}>${escapeHtml(data.accomplishments)}</textarea>
-                
-                <!-- MOV Evidence Toolbar (Only visible during Evaluation Phase) -->
-                ${isEvaluationPhase ? `
-                <div class="mov-toolbar flex items-center justify-between mt-1 pt-1 border-t border-zinc-200 dark:border-zinc-800 text-[10px] print-hide">
-                    ${hasFiles ? `
-                    <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                            class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25" 
-                            title="View Means of Verification (MOV) evidence proof for this accomplishment">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                        </svg>
-                        <span class="mov-btn-text">MOV (${fileCount})</span>
-                    </button>
-                    ` : (canEditEvaluation ? `
-                    <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                            class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
-                            title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                        </svg>
-                        <span class="mov-btn-text">Attach MOV</span>
-                    </button>
-                    ` : `
-                    <span class="text-[9px] text-zinc-400 italic">No MOV</span>
-                    `)}
-                    <span class="text-[9px] text-zinc-400 font-medium italic">Evidence</span>
-                </div>
-                ` : ''}
-            </td>
-
-            <!-- Rating Q, T, E Inputs (Unlocked during evaluation phase) -->
-            ${renderScoreCellTdHtml('q', data, evalDisabled, canEditTargets, canEditEvaluation)}
-            ${renderScoreCellTdHtml('t', data, evalDisabled, canEditTargets, canEditEvaluation)}
-            ${renderScoreCellTdHtml('e', data, evalDisabled, canEditTargets, canEditEvaluation)}
-
-                <!-- Row Average -->
-                <td style="padding: 4px 2px; text-align: center; vertical-align: middle; background: #f8fafc; border: 1px solid #000;">
-                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                        <span class="field-row-avg" style="font-weight: 900; color: #0f172a; font-size: 11px;">—</span>
-                        <span style="font-size: 8px; font-weight: 700; color: #64748b; text-transform: uppercase;">auto</span>
+                <!-- Actual Accomplishments (Unlocked during evaluation phase) -->
+                <td class="spms-cell-input spms-cell-accomplishments" data-field-name="accomplishments" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
+                    <div style="display: flex; flex-direction: column; width: 100%; height: 100%;">
+                        <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishments..." ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : ''} style="flex: 1 1 auto;">${escapeHtml(data.accomplishments)}</textarea>
+                        
+                        <!-- MOV Evidence Toolbar (Only visible during Evaluation Phase) -->
+                        ${isEvaluationPhase ? `
+                        <div class="mov-toolbar flex items-center justify-between text-[10px] print-hide" style="padding: 3px 6px; background: #f8fafc; border-top: 1px dashed #cbd5e1; flex-shrink: 0;">
+                            ${hasFiles ? `
+                            <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
+                                    class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25" 
+                                    title="View Means of Verification (MOV) evidence proof for this accomplishment">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                </svg>
+                                <span class="mov-btn-text">MOV (${fileCount})</span>
+                            </button>
+                            ` : (canEditEvaluation ? `
+                            <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
+                                    class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
+                                    title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                </svg>
+                                <span class="mov-btn-text">Attach MOV</span>
+                            </button>
+                            ` : `
+                            <span class="text-[9px] text-zinc-400 italic">No MOV</span>
+                            `)}
+                            <span class="text-[9px] text-zinc-400 font-medium italic">Evidence</span>
+                        </div>
+                        ` : ''}
                     </div>
                 </td>
 
-            <!-- Remarks -->
-            <td style="padding: 4px; vertical-align: top; border: 1px solid #000;">
-                <div class="flex items-center justify-between mb-1 print-hide">
-                    <span class="text-[9px] font-bold text-zinc-400 uppercase tracking-tight">Remarks</span>
-                    ${!isOwner && !window.isTwg ? `
-                        <button type="button" onclick="stampRoleTag(this)" class="text-[9px] font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-800 transition-colors cursor-pointer" title="Stamp your role tag into remarks">
-                            + Tag [${escapeHtml(window.currentReviewerRole || 'Reviewer')}]
-                        </button>
-                    ` : ''}
-                </div>
-                <textarea class="spms-textarea field-remarks" rows="3" placeholder="Enter remarks..." ${window.isTwg ? 'disabled title="Official remarks are entered by the ratee or supervisor. Use TWG/PMT Comments for calibration notes."' : (isOwner && (status === FolderStatus.PENDING_TARGET_APPROVAL || status === FolderStatus.SUBMITTED || status === FolderStatus.TARGET_APPROVED || status === FolderStatus.APPROVED) ? 'disabled title="Locked while submitted or approved"' : '')}>${escapeHtml(data.remarks)}</textarea>
-            </td>
+                <!-- Rating Q, T, E Inputs (Unlocked during evaluation phase) -->
+                ${renderScoreCellTdHtml('q', data, evalDisabled, canEditTargets, canEditEvaluation)}
+                ${renderScoreCellTdHtml('t', data, evalDisabled, canEditTargets, canEditEvaluation)}
+                ${renderScoreCellTdHtml('e', data, evalDisabled, canEditTargets, canEditEvaluation)}
 
-            <!-- TWG/PMT Comments (Screen-only, omitted from printed papers) -->
-            <td style="padding: 4px; vertical-align: top; border: 1px solid #000;" class="print-hide twg-col">
-                <div class="flex items-center justify-between mb-1">
-                    <span class="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-tight flex items-center gap-1">
-                        <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
-                        TWG/PMT
-                    </span>
-                    ${isTwgUser ? `
-                        <button type="button" onclick="stampTwgTag(this)" class="text-[8.5px] font-extrabold text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 px-1 py-0.5 rounded border border-amber-300 dark:border-amber-800 transition-colors cursor-pointer" title="Stamp ${window.sysRole === 'PMT' ? 'PMT' : 'TWG'} tag">
-                            + [${window.sysRole === 'PMT' ? 'PMT' : (window.sysRole === 'TWG' ? 'TWG' : 'TWG/PMT')}]
-                        </button>
-                    ` : ''}
-                </div>
-                <textarea class="spms-textarea field-twg-comment print-borderless" rows="3" placeholder="${isTwgUser ? 'Enter TWG/PMT calibration comment...' : 'No TWG/PMT comment'}" ${canEditTwg ? '' : 'disabled title="Only editable by Technical Working Group / Performance Management Team (TWG/PMT)"'} style="font-size: 11px; color: #b45309; background: ${canEditTwg ? '#fffbeb' : '#fafafa'}; border: 1px solid ${canEditTwg ? '#fde68a' : 'transparent'}; border-radius: 3px;">${escapeHtml(data.twg_comment || '')}</textarea>
-            </td>
-
-            ${canEditTargets ? `
-            <!-- Delete Action (Target Phase Only) -->
-            <td style="padding: 2px; text-align: center; vertical-align: middle; border: 1px solid #000;" class="print-hide">
-                <button type="button" onclick="deleteTableRow(this)" title="Delete Row" class="btn-del-row">
-                    <svg xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                </button>
-            </td>` : ''}
+                <!-- Row Average -->
+                <td style="padding: 0; text-align: center; vertical-align: middle; background: #f8fafc; border: 1px solid #000;">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: 48px;">
+                        <span class="field-row-avg" style="font-weight: 900; color: #0f172a; font-size: 11px;">—</span>
+                    </div>
+                </td>
             `;
         }
 
-        tbody.appendChild(tr);
+        if (referenceRow && referenceRow.parentNode) {
+            if (insertPosition === 'above') {
+                referenceRow.parentNode.insertBefore(tr, referenceRow);
+            } else {
+                referenceRow.parentNode.insertBefore(tr, referenceRow.nextSibling);
+            }
+        } else if (tbody) {
+            tbody.appendChild(tr);
+        }
+
+        if (typeof bindCellContextMenu === 'function') {
+            bindCellContextMenu(tr);
+        }
+        if (typeof applyCellCommentBadgesToRow === 'function') {
+            applyCellCommentBadgesToRow(tr);
+        }
 
         // Track changes for autoSave
         tr.querySelectorAll('textarea, input').forEach(el => {
@@ -5168,14 +5522,17 @@
         recalculateForm();
     }
 
-    function deleteTableRow(button) {
-        const tr = button.closest('tr');
+    function deleteTableRow(target) {
+        if (!target) return;
+        const tr = target.tagName === 'TR' ? target : target.closest('tr');
         if (!tr) return;
         window._userExplicitlyDeletedRow = true;
         tr.remove();
         recalculateForm();
         window.syncSpmsActiveTab();
-        AppState.setDirty(true);
+        if (typeof AppState !== 'undefined' && typeof AppState.setDirty === 'function') {
+            AppState.setDirty(true);
+        }
     }
 
     function clearScore(input) {
@@ -5282,45 +5639,69 @@
         return num;
     }
 
-    function toggleQte(btn, fieldClass) {
+    function toggleQte(el, fieldClass) {
         if (!canEditTargets) return;
-        const td = btn.closest('td');
+        // Ignore clicks on the calibration audit marker inside the cell
+        const ev = window.event;
+        if (ev && ev.target && ev.target.closest && ev.target.closest('.score-notif-marker')) return;
+
+        const td = el.closest('td');
+        if (!td) return;
         const input = td.querySelector('.' + fieldClass);
+        if (!input) return;
         const isX = (input.value === 'X' || input.value === 'N/A');
         const actor = getCurrentScoreActor();
+        const dim = fieldClass.replace('field-', '');
         
         if (isX) {
-            td.classList.remove('bg-zinc-100', 'dark:bg-zinc-800/40');
+            td.classList.remove('qte-na', 'bg-zinc-100', 'dark:bg-zinc-800/40');
+            td.setAttribute('aria-checked', 'true');
+            td.title = 'Click to mark this dimension as Not Applicable (N/A)';
             input.value = '';
             input.type = 'text';
             input.placeholder = '—';
-            input.title = 'Locked (Scores are entered during Evaluation Phase)';
             input.className = `spms-score-input ${fieldClass}`;
             input.disabled = true;
-            
-            btn.className = "print-hide flex items-center justify-center bg-zinc-100 text-zinc-500 hover:bg-zinc-200 transition-all";
-            btn.style.borderColor = '#cbd5e1';
             
             if (actor === 'self') input.dataset.selfScore = '';
             else if (actor === 'head') input.dataset.headScore = '';
             else if (actor === 'twg') input.dataset.twgScore = '';
             input.dataset.lastActor = actor;
+
+            // Purge any 'N/A' placeholder text that leaked into this row's rubric criteria
+            const tr = td.closest('tr');
+            const rowId = tr ? (tr.dataset.rowId || tr.id) : null;
+            const rubrics = window.digitalRubricsData;
+            if (rowId && rubrics && rubrics[rowId]) {
+                [5, 4, 3, 2, 1].forEach(sc => {
+                    const cell = rubrics[rowId][sc];
+                    if (cell && typeof cell[dim] === 'string' && cell[dim].trim().toUpperCase() === 'N/A') {
+                        cell[dim] = '';
+                    }
+                });
+                if (tabs[0]) {
+                    if (!tabs[0].formData) tabs[0].formData = {};
+                    tabs[0].formData.rubrics = rubrics;
+                }
+            }
         } else {
-            td.classList.add('bg-zinc-100', 'dark:bg-zinc-800/40');
+            td.classList.add('qte-na');
+            td.setAttribute('aria-checked', 'false');
+            td.title = 'Not Applicable — click to enable this dimension';
             input.type = 'text';
             input.value = 'N/A';
-            input.title = 'Dimension disabled (N/A)';
-            input.className = `spms-score-input ${fieldClass} bg-zinc-100 dark:bg-zinc-800 text-zinc-400 font-bold border-dashed border-zinc-300 dark:border-zinc-700 cursor-not-allowed`;
+            input.className = `spms-score-input ${fieldClass}`;
             input.disabled = true;
-            
-            btn.className = "print-hide flex items-center justify-center bg-zinc-700 text-white hover:bg-zinc-800 transition-all";
-            btn.style.borderColor = '#52525b';
 
             if (actor === 'self') input.dataset.selfScore = 'X';
             else if (actor === 'head') input.dataset.headScore = 'X';
             else if (actor === 'twg') input.dataset.twgScore = 'X';
             input.dataset.lastActor = actor;
         }
+
+        td.classList.remove('qte-just-toggled');
+        void td.offsetWidth;
+        td.classList.add('qte-just-toggled');
         
         updateScoreCellBadge(td, input);
         recalculateForm();
@@ -5784,7 +6165,7 @@
     function autoResizeTextarea(el) {
         if (!el) return;
         el.style.height = 'auto';
-        el.style.height = Math.max(el.scrollHeight, 46) + 'px';
+        el.style.height = Math.max(el.scrollHeight, 56) + 'px';
     }
 
     // Single Full Sheet Table View (Cards view removed)
@@ -5847,10 +6228,10 @@
         let filled = 0;
         [5, 4, 3, 2, 1].forEach(sc => {
             const d = rowData[sc];
-            if (d && (d.q || d.t || d.e)) {
-                if (d.q) filled++;
-                if (d.t) filled++;
-                if (d.e) filled++;
+            if (d) {
+                if (d.q && String(d.q).trim().toUpperCase() !== 'N/A') filled++;
+                if (d.t && String(d.t).trim().toUpperCase() !== 'N/A') filled++;
+                if (d.e && String(d.e).trim().toUpperCase() !== 'N/A') filled++;
             }
         });
         badge.innerText = `${filled}/15 Defined`;
@@ -5895,6 +6276,16 @@
         }
 
         const savedRubrics = window.digitalRubricsData || tabs[0]?.formData?.rubrics || {};
+        // Clean legacy data: the literal "N/A" display text was previously persisted as a criterion
+        Object.values(savedRubrics || {}).forEach(rowRub => {
+            if (!rowRub || typeof rowRub !== 'object') return;
+            Object.values(rowRub).forEach(cell => {
+                if (!cell || typeof cell !== 'object') return;
+                ['q', 't', 'e'].forEach(d => {
+                    if (typeof cell[d] === 'string' && cell[d].trim().toUpperCase() === 'N/A') cell[d] = '';
+                });
+            });
+        });
 
         const isIperf = (typeof window.isCurrentDocIperf !== 'undefined') ? window.isCurrentDocIperf : <?= $isDocIperf ? 'true' : 'false' ?>;
         const isDpcr = (typeof window.isCurrentDocDpcr !== 'undefined') ? window.isCurrentDocDpcr : <?= $isDocDpcr ? 'true' : 'false' ?>;
@@ -5986,9 +6377,9 @@
                 const rubricData = savedRubrics[rowId] || {};
                 [5, 4, 3, 2, 1].forEach(sc => {
                     const s = rubricData[sc];
-                    if (s?.q) catFilledCriteria++;
-                    if (s?.t) catFilledCriteria++;
-                    if (s?.e) catFilledCriteria++;
+                    if (s?.q && String(s.q).trim().toUpperCase() !== 'N/A') catFilledCriteria++;
+                    if (s?.t && String(s.t).trim().toUpperCase() !== 'N/A') catFilledCriteria++;
+                    if (s?.e && String(s.e).trim().toUpperCase() !== 'N/A') catFilledCriteria++;
                 });
             });
             totalConfiguredCriteria += catFilledCriteria;
@@ -6026,9 +6417,9 @@
                     let rowFilledCount = 0;
                     [5, 4, 3, 2, 1].forEach(sc => {
                         const s = rubricData[sc];
-                        if (s?.q) rowFilledCount++;
-                        if (s?.t) rowFilledCount++;
-                        if (s?.e) rowFilledCount++;
+                        if (s?.q && String(s.q).trim().toUpperCase() !== 'N/A') rowFilledCount++;
+                        if (s?.t && String(s.t).trim().toUpperCase() !== 'N/A') rowFilledCount++;
+                        if (s?.e && String(s.e).trim().toUpperCase() !== 'N/A') rowFilledCount++;
                     });
 
                     const badgeCompClass = rowFilledCount === 15 
@@ -6052,6 +6443,9 @@
                         const scData = rubricData[score] || { q: '', t: '', e: '' };
                         const meta = scoreMeta[score];
                         const isFirst = (sIdx === 0);
+                        const cleanQ = (scData.q && String(scData.q).trim().toUpperCase() === 'N/A') ? '' : (scData.q || '');
+                        const cleanT = (scData.t && String(scData.t).trim().toUpperCase() === 'N/A') ? '' : (scData.t || '');
+                        const cleanE = (scData.e && String(scData.e).trim().toUpperCase() === 'N/A') ? '' : (scData.e || '');
 
                         sheetHtml += `<tr class="border-b border-surface-border hover:bg-surface-border/5 transition-colors" data-category="${catKey}" data-deliverable-id="${escapeHtml(rowId)}">`;
 
@@ -6087,26 +6481,26 @@
                                     </span>
                                 </div>
                             </td>
-                            <td class="p-2 align-top border-r border-surface-border ${del.isQ_na ? 'bg-zinc-100 dark:bg-zinc-900/50' : ''}">
+                            <td class="rubric-score-td border-r border-surface-border ${del.isQ_na ? 'rubric-dim-na' : ''}">
                                 <textarea data-row-id="${escapeHtml(rowId)}" data-score="${score}" data-dim="q" ${del.isQ_na ? 'disabled' : readonlyAttr}
                                           placeholder="${del.isQ_na ? '' : (canEditTargets ? 'e.g. No revisions / zero defect...' : '—')}"
                                           rows="2"
                                           oninput="autoResizeTextarea(this); onDigitalRubricChange(this)"
-                                          class="w-full text-xs p-2.5 rounded-xl transition-all resize-none leading-relaxed font-sans ${del.isQ_na ? 'bg-transparent text-text-muted/40 cursor-not-allowed border-transparent font-black uppercase text-center' : inputBg}">${del.isQ_na ? 'N/A' : escapeHtml(scData.q || '')}</textarea>
+                                          class="rubric-cell-textarea ${del.isQ_na ? 'is-na' : ''}">${del.isQ_na ? 'N/A' : escapeHtml(cleanQ)}</textarea>
                             </td>
-                            <td class="p-2 align-top border-r border-surface-border ${del.isT_na ? 'bg-zinc-100 dark:bg-zinc-900/50' : ''}">
+                            <td class="rubric-score-td border-r border-surface-border ${del.isT_na ? 'rubric-dim-na' : ''}">
                                 <textarea data-row-id="${escapeHtml(rowId)}" data-score="${score}" data-dim="t" ${del.isT_na ? 'disabled' : readonlyAttr}
                                           placeholder="${del.isT_na ? '' : (canEditTargets ? 'e.g. within 1–2 working days ahead...' : '—')}"
                                           rows="2"
                                           oninput="autoResizeTextarea(this); onDigitalRubricChange(this)"
-                                          class="w-full text-xs p-2.5 rounded-xl transition-all resize-none leading-relaxed font-sans ${del.isT_na ? 'bg-transparent text-text-muted/40 cursor-not-allowed border-transparent font-black uppercase text-center' : inputBg}">${del.isT_na ? 'N/A' : escapeHtml(scData.t || '')}</textarea>
+                                          class="rubric-cell-textarea ${del.isT_na ? 'is-na' : ''}">${del.isT_na ? 'N/A' : escapeHtml(cleanT)}</textarea>
                             </td>
-                            <td class="p-2 align-top ${del.isE_na ? 'bg-zinc-100 dark:bg-zinc-900/50' : ''}">
+                            <td class="rubric-score-td ${del.isE_na ? 'rubric-dim-na' : ''}">
                                 <textarea data-row-id="${escapeHtml(rowId)}" data-score="${score}" data-dim="e" ${del.isE_na ? 'disabled' : readonlyAttr}
                                           placeholder="${del.isE_na ? '' : (canEditTargets ? 'e.g. 100% of target accomplished...' : '—')}"
                                           rows="2"
                                           oninput="autoResizeTextarea(this); onDigitalRubricChange(this)"
-                                          class="w-full text-xs p-2.5 rounded-xl transition-all resize-none leading-relaxed font-sans ${del.isE_na ? 'bg-transparent text-text-muted/40 cursor-not-allowed border-transparent font-black uppercase text-center' : inputBg}">${del.isE_na ? 'N/A' : escapeHtml(scData.e || '')}</textarea>
+                                          class="rubric-cell-textarea ${del.isE_na ? 'is-na' : ''}">${del.isE_na ? 'N/A' : escapeHtml(cleanE)}</textarea>
                             </td>
                         </tr>`;
                     });
@@ -6175,6 +6569,8 @@
         }
 
         container.querySelectorAll('textarea[data-row-id]').forEach(ta => {
+            // Disabled N/A cells only display "N/A" — never persist that placeholder as a criterion
+            if (ta.disabled) return;
             const rowId = ta.getAttribute('data-row-id');
             const score = ta.getAttribute('data-score');
             const dim = ta.getAttribute('data-dim');
@@ -6622,8 +7018,1078 @@
         if (new URLSearchParams(window.location.search).get('print') === '1') {
             setTimeout(() => exportToPdf(), 700);
         }
+        if (typeof fetchDocumentComments === 'function') {
+            fetchDocumentComments();
+        }
     });
+
+    // ==========================================
+    // SPREADSHEET CONTEXT MENU & THREADED COMMENTS
+    // ==========================================
+    window.docComments = [];
+    window.activeContextTarget = null;
+    window.activeCommentThread = null;
+    window.currentUserId = <?= (int)(session()->get('user_id') ?? 0) ?>;
+    window.currentSysRole = '<?= esc(session()->get('role') ?? 'Employee') ?>';
+
+    function bindCellContextMenu(rowOrEl) {
+        if (!rowOrEl) return;
+        const tds = rowOrEl.tagName === 'TD' ? [rowOrEl] : rowOrEl.querySelectorAll('td.spms-cell-input, td[data-field-name]');
+        tds.forEach(td => {
+            td.removeEventListener('contextmenu', handleCellContextMenu);
+            td.addEventListener('contextmenu', handleCellContextMenu);
+        });
+    }
+
+    window.activeSelectedCell = null;
+
+    function selectSpreadsheetCell(td) {
+        if (!td) return;
+        if (window.activeSelectedCell && window.activeSelectedCell !== td) {
+            window.activeSelectedCell.classList.remove('spms-cell-active');
+        }
+        window.activeSelectedCell = td;
+        td.classList.add('spms-cell-active');
+
+        const tr = td.closest('tr');
+        const input = td.querySelector('textarea, input') || (['TEXTAREA', 'INPUT'].includes(td.tagName) ? td : null);
+        const fieldName = td.dataset.fieldName || (input && (input.className.match(/field-([a-z_]+)/) || [])[1]) || 'row';
+        const rowId = tr ? tr.dataset.rowId : null;
+        const categoryMatch = tr ? tr.className.match(/table-row-([a-z_]+)/) : null;
+        const category = categoryMatch ? categoryMatch[1] : 'core';
+
+        window.activeContextTarget = { tr, td, input, fieldName, rowId, category };
+    }
+
+    function handleCellContextMenu(e) {
+        const td = e.currentTarget || (e.target ? e.target.closest('td') : null);
+        if (!td) return;
+        const tr = td.closest('tr');
+        if (!tr || !tr.dataset.rowId) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        selectSpreadsheetCell(td);
+
+        const input = td.querySelector('textarea, input') || (['TEXTAREA', 'INPUT'].includes(e.target.tagName) ? e.target : null);
+        const fieldName = td.dataset.fieldName || (input && (input.className.match(/field-([a-z_]+)/) || [])[1]) || 'row';
+        const rowId = tr.dataset.rowId;
+        const categoryMatch = tr.className.match(/table-row-([a-z_]+)/);
+        const category = categoryMatch ? categoryMatch[1] : 'core';
+
+        window.activeContextTarget = { tr, td, input, fieldName, rowId, category };
+
+        const posX = (e.clientX && e.clientX > 0) ? e.clientX : (cellTouchStartPos.x || window.innerWidth / 2);
+        const posY = (e.clientY && e.clientY > 0) ? e.clientY : (cellTouchStartPos.y || window.innerHeight / 2);
+        showContextMenu(posX, posY);
+    }
+
+    // Delegated contextmenu listener on table workspace
+    document.addEventListener('contextmenu', (e) => {
+        const td = e.target.closest('td.spms-cell-input, td[data-field-name], td.spms-score-cell, #printable-form table tbody tr td');
+        if (td && td.closest('#printable-form')) {
+            const tr = td.closest('tr');
+            if (tr && tr.dataset.rowId) {
+                handleCellContextMenu(e);
+            }
+        }
+    });
+
+    // Mobile Touch Long-Press support for spreadsheet context menu
+    let cellTouchTimer = null;
+    let cellTouchStartPos = { x: 0, y: 0 };
+    let isCellLongPress = false;
+
+    document.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) {
+            if (cellTouchTimer) { clearTimeout(cellTouchTimer); cellTouchTimer = null; }
+            return;
+        }
+
+        const touch = e.touches[0];
+        cellTouchStartPos = { x: touch.clientX, y: touch.clientY };
+        isCellLongPress = false;
+
+        const td = e.target.closest('td.spms-cell-input, td[data-field-name], td.spms-score-cell, #printable-form table tbody tr td');
+        if (!td || !td.closest('#printable-form')) return;
+        const tr = td.closest('tr');
+        if (!tr || !tr.dataset.rowId) return;
+
+        // Visually highlight cell immediately on touch
+        selectSpreadsheetCell(td);
+
+        cellTouchTimer = setTimeout(() => {
+            isCellLongPress = true;
+
+            // Blur active element so virtual keyboard closes
+            if (document.activeElement && typeof document.activeElement.blur === 'function') {
+                document.activeElement.blur();
+            }
+
+            const input = td.querySelector('textarea, input') || (['TEXTAREA', 'INPUT'].includes(e.target.tagName) ? e.target : null);
+            const fieldName = td.dataset.fieldName || (input && (input.className.match(/field-([a-z_]+)/) || [])[1]) || 'row';
+            const rowId = tr.dataset.rowId;
+            const categoryMatch = tr.className.match(/table-row-([a-z_]+)/);
+            const category = categoryMatch ? categoryMatch[1] : 'core';
+
+            window.activeContextTarget = { tr, td, input, fieldName, rowId, category };
+
+            if (navigator.vibrate) {
+                try { navigator.vibrate(40); } catch(err) {}
+            }
+            showContextMenu(cellTouchStartPos.x, cellTouchStartPos.y);
+        }, 380);
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e) => {
+        if (!cellTouchTimer) return;
+        const touch = e.touches[0];
+        if (Math.abs(touch.clientX - cellTouchStartPos.x) > 20 || Math.abs(touch.clientY - cellTouchStartPos.y) > 20) {
+            clearTimeout(cellTouchTimer);
+            cellTouchTimer = null;
+        }
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+        if (cellTouchTimer) {
+            clearTimeout(cellTouchTimer);
+            cellTouchTimer = null;
+        }
+        if (isCellLongPress) {
+            if (e.cancelable) {
+                e.preventDefault();
+            }
+            setTimeout(() => { isCellLongPress = false; }, 400);
+        }
+    });
+
+    document.addEventListener('touchcancel', () => {
+        if (cellTouchTimer) {
+            clearTimeout(cellTouchTimer);
+            cellTouchTimer = null;
+        }
+        isCellLongPress = false;
+    });
+
+    // Double-click on cell: opens comment thread immediately if cell is locked or viewing
+    document.addEventListener('dblclick', (e) => {
+        const td = e.target.closest('td.spms-cell-input, td[data-field-name], td.spms-score-cell, #printable-form table tbody tr td');
+        if (!td || !td.closest('#printable-form')) return;
+        const tr = td.closest('tr');
+        if (!tr || !tr.dataset.rowId) return;
+
+        const input = td.querySelector('textarea, input');
+        const isEditable = input && !input.disabled && !input.readOnly && (window.canEditTargets || window.canEditEvaluation);
+
+        if (!isEditable) {
+            e.preventDefault();
+            e.stopPropagation();
+            selectSpreadsheetCell(td);
+            const fieldName = td.dataset.fieldName || (input && (input.className.match(/field-([a-z_]+)/) || [])[1]) || 'row';
+            openCommentOverlay(tr.dataset.rowId, fieldName, td);
+        }
+    });
+
+    // Synchronize active spreadsheet cell on focusin
+    document.addEventListener('focusin', (e) => {
+        const td = e.target.closest('td.spms-cell-input, td[data-field-name], td.spms-score-cell, #printable-form table tbody tr td');
+        if (td && td.closest('#printable-form')) {
+            selectSpreadsheetCell(td);
+        }
+    });
+
+    function showContextMenu(x, y) {
+        window._lastContextMenuOpenTime = Date.now();
+        const menu = document.getElementById('spms-context-menu');
+        const backdrop = document.getElementById('spms-context-backdrop');
+        if (!menu) return;
+
+        const target = window.activeContextTarget;
+        // Determine if target cell / document is currently editable
+        const isEditable = target && target.input && !target.input.disabled && !target.input.readOnly && (window.canEditTargets || window.canEditEvaluation);
+
+        // Edit mutating actions (Cut, Paste, Clear Cell) - only show when cell is editable
+        const editActions = menu.querySelectorAll('[data-action="cut"], [data-action="paste"], [data-action="clear"]');
+        editActions.forEach(el => {
+            el.style.display = isEditable ? 'flex' : 'none';
+        });
+
+        // Row structural actions (Insert Above, Insert Below, Delete Row) - only during target drafting
+        const canModifyRows = isEditable && window.canEditTargets;
+        const targetActions = menu.querySelectorAll('[data-action="insert-above"], [data-action="insert-below"], [data-action="delete-row"]');
+        targetActions.forEach(el => {
+            el.style.display = canModifyRows ? 'flex' : 'none';
+        });
+
+        // Context Menu Dividers
+        const div1 = document.getElementById('spms-ctx-div-1');
+        const div2 = document.getElementById('spms-ctx-div-2');
+        if (div1) {
+            // Keep divider between Comment and Copy
+            div1.style.display = 'block';
+        }
+        if (div2) {
+            // Only show divider 2 if row actions are visible
+            div2.style.display = canModifyRows ? 'block' : 'none';
+        }
+
+        menu.style.display = 'block';
+        menu.classList.remove('hidden');
+
+        if (backdrop && window.innerWidth <= 768) {
+            backdrop.style.display = 'block';
+            backdrop.classList.remove('hidden');
+        }
+
+        const menuWidth = 190;
+        const menuHeight = isEditable ? 260 : 80;
+        let left = x;
+        let top = y;
+
+        if (window.innerWidth <= 640) {
+            left = Math.max(16, Math.min(x - 20, window.innerWidth - menuWidth - 16));
+            top = Math.max(16, Math.min(y - 20, window.innerHeight - menuHeight - 16));
+        } else {
+            if (left + menuWidth > window.innerWidth) {
+                left = Math.max(10, window.innerWidth - menuWidth - 15);
+            }
+            if (top + menuHeight > window.innerHeight) {
+                top = Math.max(10, window.innerHeight - menuHeight - 15);
+            }
+        }
+
+        menu.style.left = `${left}px`;
+        menu.style.top = `${top}px`;
+    }
+
+    function closeContextMenu() {
+        const menu = document.getElementById('spms-context-menu');
+        const backdrop = document.getElementById('spms-context-backdrop');
+        if (menu) {
+            menu.classList.add('hidden');
+            menu.style.display = 'none';
+        }
+        if (backdrop) {
+            backdrop.classList.add('hidden');
+            backdrop.style.display = 'none';
+        }
+    }
+
+    // Dismiss context menu on click outside, or open comment directly on badge tap
+    document.addEventListener('click', (e) => {
+        // Suppress synthetic click right after long-press open
+        if (Date.now() - (window._lastContextMenuOpenTime || 0) < 550) {
+            return;
+        }
+
+        // Direct tap on comment indicator badge (top-right corner of cell) opens comment thread immediately
+        const tdComment = e.target.closest('td.has-cell-comment');
+        if (tdComment) {
+            const rect = tdComment.getBoundingClientRect();
+            // If click/tap occurred within 32px of top-right corner
+            if (e.clientX >= rect.right - 32 && e.clientY <= rect.top + 32) {
+                e.preventDefault();
+                e.stopPropagation();
+                closeContextMenu();
+                const tr = tdComment.closest('tr');
+                if (tr && tr.dataset.rowId) {
+                    const input = tdComment.querySelector('textarea, input');
+                    const fieldName = tdComment.dataset.fieldName || (input && (input.className.match(/field-([a-z_]+)/) || [])[1]) || 'row';
+                    openCommentOverlay(tr.dataset.rowId, fieldName, tdComment);
+                    return;
+                }
+            }
+        }
+
+        // Cell selection on click
+        const td = e.target.closest('td.spms-cell-input, td[data-field-name], td.spms-score-cell, #printable-form table tbody tr td');
+        if (td && td.closest('#printable-form')) {
+            selectSpreadsheetCell(td);
+        } else if (!e.target.closest('#spms-context-menu') && !e.target.closest('#spms-comment-overlay') && !e.target.closest('.modal') && !e.target.closest('button')) {
+            if (window.activeSelectedCell) {
+                window.activeSelectedCell.classList.remove('spms-cell-active');
+                window.activeSelectedCell = null;
+            }
+        }
+
+        if (!e.target.closest('#spms-context-menu')) {
+            closeContextMenu();
+        }
+    });
+
+    // Helper to copy text to clipboard with HTTP fallback
+    async function copyTextToClipboard(text) {
+        if (!text) return false;
+        let copied = false;
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(text);
+                copied = true;
+            }
+        } catch(err) {}
+        if (!copied) {
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                copied = document.execCommand('copy');
+                document.body.removeChild(ta);
+            } catch(err) {}
+        }
+        if (copied && typeof showToast === 'function') {
+            showToast('Copied cell text to clipboard', 'info');
+        }
+        return copied;
+    }
+
+    document.addEventListener('keydown', async (e) => {
+        if (e.key === 'Escape') {
+            closeContextMenu();
+            closeCommentOverlay();
+        }
+
+        // Alt+M or Ctrl+Alt+M to open comment on active cell (works whether document is locked or unlocked)
+        if ((e.altKey && (e.key === 'm' || e.key === 'M')) || (e.ctrlKey && e.altKey && (e.key === 'm' || e.key === 'M'))) {
+            const activeEl = document.activeElement;
+            const td = (activeEl && (activeEl.tagName === 'TD' ? activeEl : activeEl.closest('td'))) || window.activeSelectedCell;
+            if (td) {
+                const tr = td.closest('tr');
+                if (tr && tr.dataset.rowId) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const input = td.querySelector('textarea, input');
+                    const fieldName = td.dataset.fieldName || (input && (input.className.match(/field-([a-z_]+)/) || [])[1]) || 'row';
+                    openCommentOverlay(tr.dataset.rowId, fieldName, td);
+                }
+            }
+        }
+
+        // Ctrl+C / Cmd+C when cell is selected on locked documents
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
+            const activeEl = document.activeElement;
+            const isEditing = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA') && !activeEl.disabled;
+            if (!isEditing && window.activeSelectedCell) {
+                const td = window.activeSelectedCell;
+                const input = td.querySelector('textarea, input');
+                const text = input ? input.value : td.innerText.trim();
+                if (text) {
+                    await copyTextToClipboard(text);
+                }
+            }
+        }
+
+        // Keyboard arrow navigation on locked documents or table grid
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+            const activeEl = document.activeElement;
+            const isEditing = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA') && !activeEl.disabled;
+            if (!isEditing && window.activeSelectedCell) {
+                const td = window.activeSelectedCell;
+                const tr = td.closest('tr');
+                if (tr) {
+                    let nextTd = null;
+                    if (e.key === 'ArrowRight') {
+                        nextTd = td.nextElementSibling;
+                    } else if (e.key === 'ArrowLeft') {
+                        nextTd = td.previousElementSibling;
+                    } else if (e.key === 'ArrowDown') {
+                        const nextTr = tr.nextElementSibling;
+                        if (nextTr && nextTr.children) {
+                            nextTd = nextTr.children[td.cellIndex] || nextTr.children[0];
+                        }
+                    } else if (e.key === 'ArrowUp') {
+                        const prevTr = tr.previousElementSibling;
+                        if (prevTr && prevTr.children) {
+                            nextTd = prevTr.children[td.cellIndex] || prevTr.children[0];
+                        }
+                    }
+                    if (nextTd && nextTd.tagName === 'TD') {
+                        e.preventDefault();
+                        selectSpreadsheetCell(nextTd);
+                        nextTd.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                    }
+                }
+            }
+        }
+    });
+
+    // Handle Context Menu Actions
+    document.addEventListener('DOMContentLoaded', () => {
+        const menu = document.getElementById('spms-context-menu');
+        if (!menu) return;
+
+        menu.querySelectorAll('.spms-ctx-item').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const action = btn.dataset.action;
+                const target = window.activeContextTarget;
+                closeContextMenu();
+                if (!target) return;
+
+                const { tr, td, input, fieldName, rowId, category } = target;
+
+                if (action === 'comment') {
+                    openCommentOverlay(rowId, fieldName, td);
+                } else if (action === 'cut') {
+                    if (input && !input.disabled) {
+                        input.focus();
+                        let text = '';
+                        if (input.selectionStart !== input.selectionEnd) {
+                            text = input.value.substring(input.selectionStart, input.selectionEnd);
+                            input.setRangeText('', input.selectionStart, input.selectionEnd, 'end');
+                        } else {
+                            text = input.value;
+                            input.value = '';
+                        }
+                        await copyTextToClipboard(text);
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                } else if (action === 'copy') {
+                    let text = '';
+                    if (input) {
+                        if (input.selectionStart !== undefined && input.selectionStart !== input.selectionEnd) {
+                            text = input.value.substring(input.selectionStart, input.selectionEnd);
+                        } else {
+                            text = input.value;
+                        }
+                    } else if (td) {
+                        text = td.innerText.trim();
+                    }
+                    if (text) {
+                        await copyTextToClipboard(text);
+                    }
+                } else if (action === 'paste') {
+                    if (input && !input.disabled) {
+                        input.focus();
+                        try {
+                            const text = await navigator.clipboard.readText();
+                            if (text) {
+                                if (input.selectionStart !== undefined) {
+                                    input.setRangeText(text, input.selectionStart, input.selectionEnd, 'end');
+                                } else {
+                                    input.value = text;
+                                }
+                                input.dispatchEvent(new Event('input', { bubbles: true }));
+                                input.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
+                        } catch(err) {}
+                    }
+                } else if (action === 'clear') {
+                    if (input && !input.disabled) {
+                        input.value = '';
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                } else if (action === 'insert-above') {
+                    addTableRow(category, null, tr, 'above');
+                } else if (action === 'insert-below') {
+                    addTableRow(category, null, tr, 'below');
+                } else if (action === 'delete-row') {
+                    deleteTableRow(tr);
+                }
+            });
+        });
+    });
+
+    // ==========================================
+    // THREADED COMMENTS ENGINE
+    // ==========================================
+    async function fetchDocumentComments() {
+        const docId = '<?= esc($doc['id'] ?? '') ?>';
+        if (!docId) return;
+
+        try {
+            const resp = await fetch(`<?= site_url('document/comments') ?>?doc_id=${encodeURIComponent(docId)}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await resp.json();
+            if (data.status === 'success') {
+                window.docComments = data.threads || [];
+                applyAllCellCommentBadges();
+            }
+        } catch(err) {
+            console.error('Failed to fetch document comments', err);
+        }
+    }
+
+    function applyAllCellCommentBadges() {
+        document.querySelectorAll('tr[data-row-id]').forEach(tr => {
+            applyCellCommentBadgesToRow(tr);
+        });
+    }
+
+    function applyCellCommentBadgesToRow(tr) {
+        if (!tr) return;
+        const rowId = tr.dataset.rowId;
+        if (!rowId) return;
+
+        const tds = tr.querySelectorAll('td.spms-cell-input, td[data-field-name]');
+        tds.forEach(td => {
+            const fieldName = td.dataset.fieldName || 'row';
+            const thread = (window.docComments || []).find(t => t.row_id === rowId && (t.field_name === fieldName || (!fieldName && t.field_name === 'row')));
+            
+            if (thread && thread.status !== 'deleted') {
+                td.classList.add('has-cell-comment');
+                if (thread.status === 'resolved') {
+                    td.classList.add('comment-resolved');
+                    td.title = `Resolved Comment by ${thread.author_name}: "${thread.comment_text.substring(0, 50)}..." (Alt+M or Right-click to view)`;
+                } else {
+                    td.classList.remove('comment-resolved');
+                    td.title = `Comment by ${thread.author_name} (${thread.author_role}): "${thread.comment_text.substring(0, 50)}..." (Alt+M or Right-click to view)`;
+                }
+            } else {
+                td.classList.remove('has-cell-comment', 'comment-resolved');
+            }
+        });
+    }
+
+    function openCommentOverlay(rowId, fieldName, targetEl) {
+        if (!rowId) return;
+        const overlay = document.getElementById('spms-comment-overlay');
+        if (!overlay) return;
+
+        fieldName = fieldName || 'row';
+        const docId = '<?= esc($doc['id'] ?? '') ?>';
+
+        // Find existing thread
+        let thread = (window.docComments || []).find(t => t.row_id === rowId && t.field_name === fieldName);
+        window.activeCommentThread = thread ? JSON.parse(JSON.stringify(thread)) : {
+            id: null,
+            document_id: docId,
+            row_id: rowId,
+            field_name: fieldName,
+            status: 'open',
+            replies: []
+        };
+
+        renderCommentThreadBody();
+
+        overlay.style.display = 'flex';
+        overlay.classList.remove('hidden');
+
+        // Position overlay near target cell (or centered cleanly on mobile)
+        if (window.innerWidth <= 640) {
+            overlay.style.left = '50%';
+            overlay.style.top = '50%';
+            overlay.style.transform = 'translate(-50%, -50%)';
+            overlay.style.width = 'calc(100vw - 24px)';
+            overlay.style.maxWidth = '360px';
+        } else if (targetEl) {
+            overlay.style.transform = '';
+            overlay.style.width = '340px';
+            overlay.style.maxWidth = '340px';
+            const rect = targetEl.getBoundingClientRect();
+            let left = rect.right + 12;
+            let top = rect.top;
+
+            if (left + 350 > window.innerWidth) {
+                left = Math.max(10, rect.left - 355);
+            }
+            if (top + 420 > window.innerHeight) {
+                top = Math.max(10, window.innerHeight - 430);
+            }
+
+            overlay.style.left = `${left}px`;
+            overlay.style.top = `${top}px`;
+        } else {
+            overlay.style.left = '50%';
+            overlay.style.top = '50%';
+            overlay.style.transform = 'translate(-50%, -50%)';
+            overlay.style.width = '340px';
+            overlay.style.maxWidth = '340px';
+        }
+
+        setTimeout(() => {
+            const input = document.getElementById('comment-reply-input');
+            if (input) input.focus();
+        }, 80);
+    }
+
+    function closeCommentOverlay() {
+        const overlay = document.getElementById('spms-comment-overlay');
+        if (overlay) {
+            overlay.classList.add('hidden');
+            overlay.style.display = 'none';
+        }
+        window.activeCommentThread = null;
+    }
+
+    function renderCommentThreadBody() {
+        const thread = window.activeCommentThread;
+        const bodyEl = document.getElementById('spms-comment-thread-body');
+        const titleEl = document.getElementById('comment-overlay-title');
+        const dotEl = document.getElementById('comment-status-dot');
+        const resolveBtn = document.getElementById('btn-toggle-resolve-thread');
+
+        if (!bodyEl || !thread) return;
+
+        const fieldTitle = thread.field_name && thread.field_name !== 'row' 
+            ? thread.field_name.toUpperCase() 
+            : 'DELIVERABLE';
+        titleEl.textContent = `${fieldTitle} Comments`;
+
+        if (thread.id) {
+            resolveBtn.style.display = 'inline-block';
+            if (thread.status === 'resolved') {
+                dotEl.className = 'w-2 h-2 rounded-full bg-emerald-500';
+                resolveBtn.textContent = 'Reopen';
+                resolveBtn.className = 'text-[10px] font-bold px-2 py-0.5 rounded border transition-colors cursor-pointer text-amber-700 bg-amber-50 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800 hover:bg-amber-100';
+            } else {
+                dotEl.className = 'w-2 h-2 rounded-full bg-amber-500';
+                resolveBtn.textContent = 'Resolve';
+                resolveBtn.className = 'text-[10px] font-bold px-2 py-0.5 rounded border transition-colors cursor-pointer text-emerald-700 bg-emerald-50 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 hover:bg-emerald-100';
+            }
+        } else {
+            dotEl.className = 'w-2 h-2 rounded-full bg-zinc-400';
+            resolveBtn.style.display = 'none';
+        }
+
+        if (!thread.id) {
+            bodyEl.innerHTML = `
+                <div class="py-6 text-center text-zinc-400">
+                    <svg class="w-8 h-8 mx-auto text-zinc-300 dark:text-zinc-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                    <p class="font-medium text-xs">No comments on this cell yet.</p>
+                    <p class="text-[10px] text-zinc-500 mt-0.5">Start a conversation with reviewers or TWG/PMT below.</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Aggregate root comment and all replies chronologically into a messaging chat stream
+        let allItems = [thread];
+        if (Array.isArray(thread.replies) && thread.replies.length > 0) {
+            allItems = allItems.concat(thread.replies);
+        }
+
+        let html = '<div class="flex flex-col space-y-2.5 w-full pb-1">';
+        allItems.forEach((c, idx) => {
+            html += renderSingleCommentCard(c, idx === 0);
+        });
+        html += '</div>';
+
+        bodyEl.innerHTML = html;
+        bodyEl.scrollTop = bodyEl.scrollHeight;
+    }
+
+    function renderSingleCommentCard(c, isRoot = false) {
+        const isMe = Boolean(window.currentUserId && (Number(c.user_id) === Number(window.currentUserId)));
+        const canDelete = Boolean(window.currentUserId && (Number(c.user_id) === Number(window.currentUserId) || window.currentSysRole === 'Admin'));
+        const initials = (c.author_name || 'U').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+        const role = c.author_role || 'Reviewer';
+        const roleBadgeClass = getRoleBadgeClass(role);
+        const timeStr = formatCommentTime(c.created_at);
+
+        if (isMe) {
+            // OUTGOING / "MY" COMMENT: Positioned on the RIGHT like messaging apps
+            return `
+                <div class="flex flex-col items-end self-end ml-auto max-w-[88%] text-left" style="text-align: left !important;">
+                    <div class="flex items-center gap-1.5 mb-1 pr-1 text-[10px] text-zinc-400 text-left">
+                        ${canDelete ? `
+                            <button type="button" onclick="deleteCommentItem(${c.id}, ${isRoot ? 'true' : 'false'})" class="text-zinc-400 hover:text-red-500 p-0.5 rounded transition-colors cursor-pointer" title="Delete comment">
+                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        ` : ''}
+                        <span title="${escapeHtml(c.created_at || '')}">${timeStr}</span>
+                        <span class="font-bold text-emerald-700 dark:text-emerald-300 text-[10.5px]">You</span>
+                        <span class="px-1.5 py-0.2 rounded text-[8px] font-extrabold uppercase tracking-tight ${roleBadgeClass}">
+                            ${escapeHtml(role)}
+                        </span>
+                        <div class="w-4 h-4 rounded-full flex items-center justify-center font-black text-[8px] text-white flex-shrink-0" style="background-color: ${c.author_avatar_color || '#059669'};">
+                            ${escapeHtml(initials)}
+                        </div>
+                    </div>
+                    <div class="bg-emerald-600 dark:bg-emerald-600 text-white rounded-2xl rounded-tr-xs px-3.5 py-2 shadow-xs text-xs text-left" style="text-align: left !important;"><div class="text-[12px] leading-relaxed break-words whitespace-pre-wrap text-left text-white" style="text-align: left !important;">${escapeHtml(c.comment_text)}</div></div>
+                </div>
+            `;
+        } else {
+            // INCOMING / OTHER USER'S COMMENT: Positioned on the LEFT
+            return `
+                <div class="flex flex-col items-start self-start mr-auto max-w-[88%] text-left" style="text-align: left !important;">
+                    <div class="flex items-center gap-1.5 mb-1 pl-1 text-[10px] text-zinc-400 text-left">
+                        <div class="w-4 h-4 rounded-full flex items-center justify-center font-black text-[8px] text-white flex-shrink-0" style="background-color: ${c.author_avatar_color || '#059669'};">
+                            ${escapeHtml(initials)}
+                        </div>
+                        <span class="font-bold text-zinc-900 dark:text-zinc-100 truncate text-[10.5px]">${escapeHtml(c.author_name)}</span>
+                        <span class="px-1.5 py-0.2 rounded text-[8px] font-extrabold uppercase tracking-tight ${roleBadgeClass}">
+                            ${escapeHtml(role)}
+                        </span>
+                        <span title="${escapeHtml(c.created_at || '')}">${timeStr}</span>
+                        ${canDelete ? `
+                            <button type="button" onclick="deleteCommentItem(${c.id}, ${isRoot ? 'true' : 'false'})" class="text-zinc-400 hover:text-red-500 p-0.5 rounded transition-colors cursor-pointer" title="Delete comment">
+                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        ` : ''}
+                    </div>
+                    <div class="bg-zinc-200/90 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-2xl rounded-tl-xs px-3.5 py-2 shadow-xs text-xs text-left" style="text-align: left !important;"><div class="text-[12px] leading-relaxed break-words whitespace-pre-wrap text-left text-zinc-900 dark:text-zinc-100" style="text-align: left !important;">${escapeHtml(c.comment_text)}</div></div>
+                </div>
+            `;
+        }
+    }
+
+    function getRoleBadgeClass(role) {
+        const r = (role || '').toUpperCase();
+        if (r.includes('RATEE')) return 'bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300';
+        if (r.includes('SUPERVISOR')) return 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300';
+        if (r.includes('DEAN') || r.includes('VP')) return 'bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300';
+        if (r.includes('TWG') || r.includes('PMT')) return 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300';
+        if (r.includes('ADMIN')) return 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300';
+        return 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300';
+    }
+
+    function formatCommentTime(dateStr) {
+        if (!dateStr) return '';
+        try {
+            const d = new Date(dateStr.replace(/-/g, '/'));
+            if (isNaN(d.getTime())) return dateStr;
+
+            const now = new Date();
+            const isToday = (d.toDateString() === now.toDateString());
+            
+            const yesterday = new Date();
+            yesterday.setDate(now.getDate() - 1);
+            const isYesterday = (d.toDateString() === yesterday.toDateString());
+
+            const isSameYear = (d.getFullYear() === now.getFullYear());
+
+            const timeFormatted = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+            if (isToday) {
+                return `Today, ${timeFormatted}`;
+            } else if (isYesterday) {
+                return `Yesterday, ${timeFormatted}`;
+            } else if (isSameYear) {
+                const monthDay = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                return `${monthDay}, ${timeFormatted}`;
+            } else {
+                const fullDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                return `${fullDate}, ${timeFormatted}`;
+            }
+        } catch(e) {
+            return dateStr;
+        }
+    }
+
+    function getCsrfData() {
+        const metaName = document.querySelector('meta[name="csrf-token-name"]')?.getAttribute('content') || 'csrf_test_name';
+        const metaHash = document.querySelector('meta[name="csrf-token-hash"]')?.getAttribute('content') || '';
+        return { name: metaName, hash: metaHash };
+    }
+
+    function updateCsrfFromResponse(resp) {
+        if (!resp || !resp.headers) return;
+        const newHash = resp.headers.get('x-csrf-token') || resp.headers.get('X-CSRF-TOKEN');
+        if (newHash) {
+            document.querySelector('meta[name="csrf-token-hash"]')?.setAttribute('content', newHash);
+        }
+    }
+
+    async function postCurrentCommentOrReply() {
+        const input = document.getElementById('comment-reply-input');
+        if (!input) return;
+        const text = input.value.trim();
+        if (!text) return;
+
+        const thread = window.activeCommentThread;
+        if (!thread) return;
+
+        const docId = '<?= esc($doc['id'] ?? '') ?>';
+        const sendBtn = document.getElementById('btn-post-comment-reply');
+        if (sendBtn) sendBtn.disabled = true;
+
+        try {
+            const { name: csrfName, hash: csrfHash } = getCsrfData();
+            const formData = new FormData();
+            formData.append('doc_id', docId);
+            if (csrfHash) {
+                formData.append(csrfName, csrfHash);
+            }
+
+            const reqHeaders = {
+                'X-Requested-With': 'XMLHttpRequest'
+            };
+            if (csrfHash) {
+                reqHeaders['X-CSRF-TOKEN'] = csrfHash;
+            }
+
+            if (thread.id) {
+                // Reply to existing thread
+                formData.append('parent_id', thread.id);
+                formData.append('reply_text', text);
+
+                const resp = await fetch('<?= site_url('document/comment/reply') ?>', {
+                    method: 'POST',
+                    headers: reqHeaders,
+                    body: formData
+                });
+                updateCsrfFromResponse(resp);
+                let res;
+                try {
+                    res = await resp.json();
+                } catch(e) {
+                    res = { status: 'error', message: resp.status === 403 ? 'CSRF security token expired. Please refresh the page.' : 'Failed to post reply.' };
+                }
+                if (res.status === 'success' && res.reply) {
+                    if (!thread.replies) thread.replies = [];
+                    thread.replies.push(res.reply);
+                    input.value = '';
+                    renderCommentThreadBody();
+
+                    // Update local docComments cache
+                    const idx = (window.docComments || []).findIndex(t => t.id === thread.id);
+                    if (idx !== -1) window.docComments[idx] = thread;
+                    applyAllCellCommentBadges();
+                } else {
+                    alert(res.message || 'Failed to post reply.');
+                }
+            } else {
+                // Create new root comment
+                formData.append('row_id', thread.row_id);
+                formData.append('field_name', thread.field_name);
+                formData.append('comment_text', text);
+
+                const resp = await fetch('<?= site_url('document/comment/create') ?>', {
+                    method: 'POST',
+                    headers: reqHeaders,
+                    body: formData
+                });
+                updateCsrfFromResponse(resp);
+                let res;
+                try {
+                    res = await resp.json();
+                } catch(e) {
+                    res = { status: 'error', message: resp.status === 403 ? 'CSRF security token expired. Please refresh the page.' : 'Failed to create comment.' };
+                }
+                if (res.status === 'success' && res.comment) {
+                    window.activeCommentThread = res.comment;
+                    input.value = '';
+                    renderCommentThreadBody();
+
+                    if (!window.docComments) window.docComments = [];
+                    window.docComments.push(res.comment);
+                    applyAllCellCommentBadges();
+                } else {
+                    alert(res.message || 'Failed to create comment.');
+                }
+            }
+        } catch(err) {
+            console.error('Comment submission error', err);
+            alert('An error occurred while posting your comment.');
+        } finally {
+            if (sendBtn) sendBtn.disabled = false;
+        }
+    }
+
+    async function toggleResolveCurrentThread() {
+        const thread = window.activeCommentThread;
+        if (!thread || !thread.id) return;
+
+        const nextStatus = thread.status === 'resolved' ? 'open' : 'resolved';
+        const { name: csrfName, hash: csrfHash } = getCsrfData();
+        const formData = new FormData();
+        formData.append('comment_id', thread.id);
+        formData.append('status', nextStatus);
+        if (csrfHash) {
+            formData.append(csrfName, csrfHash);
+        }
+
+        const reqHeaders = {
+            'X-Requested-With': 'XMLHttpRequest'
+        };
+        if (csrfHash) {
+            reqHeaders['X-CSRF-TOKEN'] = csrfHash;
+        }
+
+        try {
+            const resp = await fetch('<?= site_url('document/comment/resolve') ?>', {
+                method: 'POST',
+                headers: reqHeaders,
+                body: formData
+            });
+            updateCsrfFromResponse(resp);
+            let res;
+            try {
+                res = await resp.json();
+            } catch(e) {
+                res = { status: 'error' };
+            }
+            if (res.status === 'success') {
+                thread.status = nextStatus;
+                renderCommentThreadBody();
+
+                const idx = (window.docComments || []).findIndex(t => t.id === thread.id);
+                if (idx !== -1) window.docComments[idx].status = nextStatus;
+                applyAllCellCommentBadges();
+            }
+        } catch(err) {
+            console.error('Failed to resolve comment', err);
+        }
+    }
+
+    async function deleteCommentItem(commentId, isRoot = false) {
+        if (!confirm('Are you sure you want to delete this comment?')) return;
+
+        const { name: csrfName, hash: csrfHash } = getCsrfData();
+        const formData = new FormData();
+        formData.append('comment_id', commentId);
+        if (csrfHash) {
+            formData.append(csrfName, csrfHash);
+        }
+
+        const reqHeaders = {
+            'X-Requested-With': 'XMLHttpRequest'
+        };
+        if (csrfHash) {
+            reqHeaders['X-CSRF-TOKEN'] = csrfHash;
+        }
+
+        try {
+            const resp = await fetch('<?= site_url('document/comment/delete') ?>', {
+                method: 'POST',
+                headers: reqHeaders,
+                body: formData
+            });
+            updateCsrfFromResponse(resp);
+            let res;
+            try {
+                res = await resp.json();
+            } catch(e) {
+                res = { status: 'error' };
+            }
+            if (res.status === 'success') {
+                if (isRoot) {
+                    if (window.activeCommentThread && window.activeCommentThread.replies && window.activeCommentThread.replies.length > 0) {
+                        const nextRoot = window.activeCommentThread.replies.shift();
+                        nextRoot.replies = window.activeCommentThread.replies;
+                        window.activeCommentThread = nextRoot;
+                        const idx = (window.docComments || []).findIndex(t => t.id === commentId);
+                        if (idx !== -1) {
+                            window.docComments[idx] = nextRoot;
+                        }
+                        renderCommentThreadBody();
+                        applyAllCellCommentBadges();
+                    } else {
+                        window.docComments = (window.docComments || []).filter(t => t.id !== commentId);
+                        closeCommentOverlay();
+                        applyAllCellCommentBadges();
+                    }
+                } else {
+                    if (window.activeCommentThread && window.activeCommentThread.replies) {
+                        window.activeCommentThread.replies = window.activeCommentThread.replies.filter(r => r.id !== commentId);
+                        renderCommentThreadBody();
+                    }
+                }
+            } else {
+                alert(res.message || 'Could not delete comment.');
+            }
+        } catch(err) {
+            console.error('Delete comment error', err);
+        }
+    }
+
+    // Ctrl+Enter on reply input
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'Enter') {
+            const input = document.getElementById('comment-reply-input');
+            if (document.activeElement === input) {
+                e.preventDefault();
+                postCurrentCommentOrReply();
+            }
+        }
+    });
+
+    // Ensure comments are fetched immediately
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', fetchDocumentComments);
+    } else {
+        fetchDocumentComments();
+    }
 </script>
+
+<!-- Mobile backdrop for spreadsheet context menu -->
+<div id="spms-context-backdrop" class="hidden fixed inset-0 bg-black/25 backdrop-blur-xs transition-opacity" style="z-index: 99999;" onclick="closeContextMenu()"></div>
+
+<!-- Custom Context Menu for Document Grid -->
+<div id="spms-context-menu" class="hidden fixed bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-2xl py-1 text-xs text-zinc-700 dark:text-zinc-200" style="z-index: 100000; min-width: 190px;">
+    <button type="button" class="spms-ctx-item flex items-center gap-2.5 px-3 py-1.5 w-full text-left hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors" data-action="comment">
+        <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
+        <span class="flex-1 font-semibold">New / View Comment</span>
+        <span class="text-[10px] text-zinc-400">Alt+M</span>
+    </button>
+    <div id="spms-ctx-div-1" class="h-px bg-zinc-200 dark:bg-zinc-800 my-1"></div>
+    <button type="button" class="spms-ctx-item flex items-center gap-2.5 px-3 py-1.5 w-full text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" data-action="cut">
+        <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0z"/></svg>
+        <span class="flex-1">Cut</span>
+        <span class="text-[10px] text-zinc-400">Ctrl+X</span>
+    </button>
+    <button type="button" class="spms-ctx-item flex items-center gap-2.5 px-3 py-1.5 w-full text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" data-action="copy">
+        <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+        <span class="flex-1">Copy</span>
+        <span class="text-[10px] text-zinc-400">Ctrl+C</span>
+    </button>
+    <button type="button" class="spms-ctx-item flex items-center gap-2.5 px-3 py-1.5 w-full text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" data-action="paste">
+        <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        <span class="flex-1">Paste</span>
+        <span class="text-[10px] text-zinc-400">Ctrl+V</span>
+    </button>
+    <button type="button" class="spms-ctx-item flex items-center gap-2.5 px-3 py-1.5 w-full text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" data-action="clear">
+        <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        <span class="flex-1">Clear Cell</span>
+        <span class="text-[10px] text-zinc-400">Del</span>
+    </button>
+    <div id="spms-ctx-div-2" class="h-px bg-zinc-200 dark:bg-zinc-800 my-1"></div>
+    <button type="button" class="spms-ctx-item flex items-center gap-2.5 px-3 py-1.5 w-full text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" data-action="insert-above">
+        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 11l7-7 7 7M5 19l7-7 7 7"/></svg>
+        <span class="flex-1">Insert Row Above</span>
+    </button>
+    <button type="button" class="spms-ctx-item flex items-center gap-2.5 px-3 py-1.5 w-full text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" data-action="insert-below">
+        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 13l-7 7-7-7m14-8l-7 7-7-7"/></svg>
+        <span class="flex-1">Insert Row Below</span>
+    </button>
+    <button type="button" class="spms-ctx-item flex items-center gap-2.5 px-3 py-1.5 w-full text-left hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 transition-colors" data-action="delete-row">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        <span class="flex-1 font-semibold">Delete Row</span>
+    </button>
+</div>
+
+<!-- Threaded Cell Comment Card Overlay -->
+<div id="spms-comment-overlay" class="hidden fixed bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl shadow-2xl overflow-hidden animate-in fade-in duration-150 flex flex-col text-left" style="z-index: 100001; width: 340px; max-height: 480px; text-align: left !important;">
+    <!-- Header -->
+    <div class="px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800/80 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-left" style="text-align: left !important;">
+        <div class="flex items-center gap-2 text-left" style="text-align: left !important;">
+            <div class="w-2 h-2 rounded-full bg-amber-500" id="comment-status-dot"></div>
+            <span class="font-bold text-xs text-zinc-900 dark:text-zinc-100" id="comment-overlay-title">Cell Comment</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+            <button type="button" id="btn-toggle-resolve-thread" onclick="toggleResolveCurrentThread()" class="text-[10px] font-bold px-2 py-0.5 rounded border transition-colors cursor-pointer text-emerald-700 bg-emerald-50 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 hover:bg-emerald-100" title="Mark this comment thread as resolved">
+                Resolve
+            </button>
+            <button type="button" onclick="closeCommentOverlay()" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-0.5 rounded transition-colors cursor-pointer">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+    </div>
+    <!-- Thread Items Body -->
+    <div id="spms-comment-thread-body" class="p-3 overflow-y-auto space-y-2.5 flex-1 text-xs text-left" style="text-align: left !important;">
+        <!-- Rendered dynamically -->
+    </div>
+    <!-- Reply Composer -->
+    <div class="p-3 bg-zinc-50/70 dark:bg-zinc-800/40 border-t border-zinc-200 dark:border-zinc-800">
+        <div class="relative">
+            <textarea id="comment-reply-input" rows="2" placeholder="Write a comment or reply..." class="w-full text-xs p-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 placeholder-zinc-400 focus:outline-emerald-500 resize-none"></textarea>
+            <div class="flex justify-between items-center mt-1.5">
+                <span class="text-[10px] text-zinc-400">Ctrl+Enter to post</span>
+                <button type="button" id="btn-post-comment-reply" onclick="postCurrentCommentOrReply()" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-md shadow-xs transition-colors cursor-pointer flex items-center gap-1">
+                    <span>Send</span>
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Score Attribution Audit Modal (Screen Only) -->
 <div id="spms-score-audit-modal" style="z-index: 99999 !important;" class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden print-hide" onclick="closeScoreAuditModal(event)">
