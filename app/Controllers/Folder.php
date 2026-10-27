@@ -1592,9 +1592,16 @@ class Folder extends BaseController
             $approvingName = trim($this->request->getPost('approving_authority_name') ?? '');
             $approvingPos  = trim($this->request->getPost('approving_authority_position') ?? '');
 
+            $academicYear = trim($this->request->getPost('academic_year') ?? '');
+            $semester     = trim($this->request->getPost('semester') ?? '');
+            $ratingPeriod = trim($this->request->getPost('rating_period') ?? '');
+
             $payload = [
                 'title'                        => resolve_unique_title($title, ['user_id' => $userId], 'title', $documentFolderModel),
                 'user_id'                      => $userId,
+                'academic_year'                => $academicYear ?: null,
+                'semester'                     => $semester ?: null,
+                'rating_period'                => $ratingPeriod ?: null,
                 'approving_authority_name'     => $approvingName ?: null,
                 'approving_authority_position' => $approvingPos ?: null,
                 'status'                       => FolderStatus::DRAFT_TARGET->value,
@@ -1955,11 +1962,17 @@ class Folder extends BaseController
             $genEvalStart   = $this->request->getPost('general_eval_start');
             $genEvalEnd     = $this->request->getPost('general_eval_end');
 
-            $docTypes = ['ipcr', 'cdpcr', 'dpcr', 'opcr', 'iperf'];
+            $docTypes = ['opcr', 'dpcr', 'ipcr', 'iperf'];
             $approvingName = trim($this->request->getPost('approving_authority_name') ?? '');
             $approvingPos  = trim($this->request->getPost('approving_authority_position') ?? '');
+            $academicYear  = trim($this->request->getPost('academic_year') ?? '');
+            $semester      = trim($this->request->getPost('semester') ?? '');
+            $ratingPeriod  = trim($this->request->getPost('rating_period') ?? '');
             $folderData = [
                 'title'                        => $title,
+                'academic_year'                => $academicYear ?: null,
+                'semester'                     => $semester ?: null,
+                'rating_period'                => $ratingPeriod ?: null,
                 'approving_authority_name'     => $approvingName ?: null,
                 'approving_authority_position' => $approvingPos ?: null
             ];
@@ -2012,21 +2025,18 @@ class Folder extends BaseController
 
             if (!empty($childFolders)) {
                 foreach ($childFolders as $child) {
-                    $childData = ['title' => $title];
+                    $childData = [
+                        'title'         => $title,
+                        'academic_year' => $academicYear ?: null,
+                        'semester'      => $semester ?: null,
+                        'rating_period' => $ratingPeriod ?: null,
+                    ];
                     if (empty($child['cycle_folder_id'])) {
                         $childData['cycle_folder_id'] = $folderId;
                     }
                     
                     $userDocType = strtolower($child['doc_type'] ?? 'ipcr');
-                    $pos = strtolower($child['position'] ?? '');
-                    $email = strtolower($child['email'] ?? '');
-                    $isDean = str_contains($pos, 'dean') || str_contains($email, 'dean');
-
-                    if (($userDocType === 'dpcr' || $userDocType === 'cdpcr') && $isDean) {
-                        $effectiveType = (!empty($cycleDeadlines['cdpcr_target_start']) || !empty($cycleDeadlines['cdpcr_target_end']) || !empty($cycleDeadlines['cdpcr_eval_start']) || !empty($cycleDeadlines['cdpcr_eval_end'])) ? 'cdpcr' : 'dpcr';
-                    } else {
-                        $effectiveType = in_array($userDocType, $docTypes) ? $userDocType : 'ipcr';
-                    }
+                    $effectiveType = in_array($userDocType, $docTypes) ? $userDocType : 'ipcr';
 
                     $targetStart = $cycleDeadlines["{$effectiveType}_target_start"] ?? $cycleDeadlines['dpcr_target_start'];
                     $targetEnd   = $cycleDeadlines["{$effectiveType}_target_end"] ?? $cycleDeadlines['dpcr_target_end'];

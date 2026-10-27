@@ -66,7 +66,7 @@ class DocumentModel extends Model
             ->join('users u', 'u.id = df.user_id', 'left')
             ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
             ->join('positions pos', 'pos.id = p.position_id', 'left')
-            ->join('cycle_deadlines cd', 'cd.cycle_folder_id = COALESCE(df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = CASE WHEN (LOWER(COALESCE(u.doc_type, "ipcr")) = "dpcr" AND (pos.title LIKE "%dean%" OR u.email LIKE "%dean%")) THEN "cdpcr" ELSE LOWER(COALESCE(u.doc_type, "ipcr")) END', 'left')
+            ->join('cycle_deadlines cd', 'cd.cycle_folder_id = COALESCE(df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = LOWER(COALESCE(u.doc_type, "ipcr"))', 'left')
             ->where('d.id', $docId)
             ->get()->getRowArray();
 

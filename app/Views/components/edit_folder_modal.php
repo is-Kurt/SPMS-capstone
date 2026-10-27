@@ -32,21 +32,13 @@
                     'border_cls' => 'border-l-purple-500',
                     'badge_cls'  => 'bg-purple-500/10 text-purple-600 dark:text-purple-300 border-purple-200 dark:border-purple-800/40',
                 ],
-                'cdpcr' => [
-                    'title'      => 'DPCR Dean',
-                    'badge'      => 'College Deans',
+                'dpcr'  => [
+                    'title'      => 'DPCR',
+                    'badge'      => 'Deans & Dept Chairs',
                     'dot'        => 'bg-emerald-500',
                     'ring_cls'   => 'ring-emerald-500/20',
                     'border_cls' => 'border-l-emerald-500',
                     'badge_cls'  => 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40',
-                ],
-                'dpcr'  => [
-                    'title'      => 'DPCR Department Chair',
-                    'badge'      => 'Department Chairs',
-                    'dot'        => 'bg-amber-500',
-                    'ring_cls'   => 'ring-amber-500/20',
-                    'border_cls' => 'border-l-amber-500',
-                    'badge_cls'  => 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-200 dark:border-amber-800/40',
                 ],
                 'ipcr'  => [
                     'title'      => 'IPCR',
@@ -72,11 +64,52 @@
             <input type="hidden" name="folder_id" id="edit-folder-id">
 
             <div class="space-y-6">
-                <!-- FOLDER TITLE INPUT -->
+                <!-- RATING CYCLE DETAILS -->
                 <div class="bg-zinc-50 dark:bg-zinc-800/40 p-4 rounded-xl border border-surface-border">
-                    <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Folder Name / Batch Title</label>
-                    <input type="text" name="title" id="edit-folder-title" placeholder="e.g., 2026-2027 Evaluation Cycle"
-                           class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-xl px-4 py-2.5 text-sm font-semibold focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none text-text transition-all shadow-2xs placeholder:text-text-muted/60" />
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="text-xs font-black uppercase tracking-wider text-text block">Rating Cycle &amp; Evaluation Period</span>
+                            <span class="text-[10px] text-text-muted font-medium block">Configure cycle term and official Civil Service Commission (CSC) coverage dates</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                        <div>
+                            <label class="block text-[9px] font-bold uppercase tracking-wider text-text-muted mb-1">Academic / Calendar Year</label>
+                            <input type="text" name="academic_year" id="edit-cycle-academic-year" placeholder="e.g., 2026-2027"
+                                   class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-xl px-3.5 py-2 text-xs font-semibold focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none text-text transition-all shadow-2xs placeholder:text-text-muted/60" />
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-bold uppercase tracking-wider text-text-muted mb-1">Semester / Term</label>
+                            <select name="semester" id="edit-cycle-semester"
+                                    class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-xl px-3.5 py-2 text-xs font-semibold focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none text-text transition-all shadow-2xs cursor-pointer">
+                                <option value="1st Semester">1st Semester (Aug – Dec)</option>
+                                <option value="2nd Semester">2nd Semester (Jan – Jun)</option>
+                                <option value="Summer / Mid-Year">Summer / Mid-Year</option>
+                                <option value="Annual / Full Year">Annual / Full Year</option>
+                                <option value="Custom Term">Custom Term</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-bold uppercase tracking-wider text-text-muted mb-1">Rating Period (CSC Header)</label>
+                            <input type="text" name="rating_period" id="edit-cycle-rating-period" placeholder="e.g., July - December 2026"
+                                   class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-xl px-3.5 py-2 text-xs font-semibold focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none text-text transition-all shadow-2xs placeholder:text-text-muted/60" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[9px] font-bold uppercase tracking-wider text-text-muted mb-1 flex items-center justify-between">
+                            <span>Folder Name / Batch Title</span>
+                            <span class="text-[8px] text-text-muted font-normal">Auto-generated or custom</span>
+                        </label>
+                        <input type="text" name="title" id="edit-folder-title" placeholder="e.g., 1st Semester AY 2026–2027"
+                               class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-xl px-3.5 py-2 text-xs font-semibold focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none text-text transition-all shadow-2xs placeholder:text-text-muted/60" />
+                    </div>
                 </div>
 
                 <!-- APPROVING AUTHORITY / HEAD OF AGENCY SIGNATORY -->

@@ -913,29 +913,28 @@
                                         </button>
                                     <?php else: ?>
                                         <button type="button" onclick='openEditFolderModal(<?= json_encode([
-                                            "id"    => $activeFolder["id"],
-                                            "title" => $activeFolder["title"],
-                                            "ipcr_target_start" => $activeFolder["ipcr_target_start"] ?? "",
-                                            "ipcr_target_end"   => $activeFolder["ipcr_target_end"] ?? "",
-                                            "ipcr_eval_start"   => $activeFolder["ipcr_eval_start"] ?? "",
-                                            "ipcr_eval_end"     => $activeFolder["ipcr_eval_end"] ?? "",
-                                            "cdpcr_target_start" => $activeFolder["cdpcr_target_start"] ?? "",
-                                            "cdpcr_target_end"   => $activeFolder["cdpcr_target_end"] ?? "",
-                                            "cdpcr_eval_start"   => $activeFolder["cdpcr_eval_start"] ?? "",
-                                            "cdpcr_eval_end"     => $activeFolder["cdpcr_eval_end"] ?? "",
-                                            "dpcr_target_start" => $activeFolder["dpcr_target_start"] ?? "",
-                                            "dpcr_target_end"   => $activeFolder["dpcr_target_end"] ?? "",
-                                            "dpcr_eval_start"   => $activeFolder["dpcr_eval_start"] ?? "",
-                                            "dpcr_eval_end"     => $activeFolder["dpcr_eval_end"] ?? "",
-                                            "opcr_target_start" => $activeFolder["opcr_target_start"] ?? "",
-                                            "opcr_target_end"   => $activeFolder["opcr_target_end"] ?? "",
-                                            "opcr_eval_start"   => $activeFolder["opcr_eval_start"] ?? "",
-                                            "opcr_eval_end"     => $activeFolder["opcr_eval_end"] ?? "",
-                                            "iperf_target_start" => $activeFolder["iperf_target_start"] ?? "",
-                                            "iperf_target_end"   => $activeFolder["iperf_target_end"] ?? "",
-                                            "iperf_eval_start"   => $activeFolder["iperf_eval_start"] ?? "",
-                                            "iperf_eval_end"     => $activeFolder["iperf_eval_end"] ?? "",
-                                            "approving_authority_name" => $activeFolder["approving_authority_name"] ?? "",
+                                            "id"                           => $activeFolder["id"],
+                                            "title"                        => $activeFolder["title"],
+                                            "academic_year"                => $activeFolder["academic_year"] ?? "",
+                                            "semester"                     => $activeFolder["semester"] ?? "",
+                                            "rating_period"                => $activeFolder["rating_period"] ?? "",
+                                            "ipcr_target_start"            => $activeFolder["ipcr_target_start"] ?? "",
+                                            "ipcr_target_end"              => $activeFolder["ipcr_target_end"] ?? "",
+                                            "ipcr_eval_start"              => $activeFolder["ipcr_eval_start"] ?? "",
+                                            "ipcr_eval_end"                => $activeFolder["ipcr_eval_end"] ?? "",
+                                            "dpcr_target_start"            => $activeFolder["dpcr_target_start"] ?? "",
+                                            "dpcr_target_end"              => $activeFolder["dpcr_target_end"] ?? "",
+                                            "dpcr_eval_start"              => $activeFolder["dpcr_eval_start"] ?? "",
+                                            "dpcr_eval_end"                => $activeFolder["dpcr_eval_end"] ?? "",
+                                            "opcr_target_start"            => $activeFolder["opcr_target_start"] ?? "",
+                                            "opcr_target_end"              => $activeFolder["opcr_target_end"] ?? "",
+                                            "opcr_eval_start"              => $activeFolder["opcr_eval_start"] ?? "",
+                                            "opcr_eval_end"                => $activeFolder["opcr_eval_end"] ?? "",
+                                            "iperf_target_start"           => $activeFolder["iperf_target_start"] ?? "",
+                                            "iperf_target_end"             => $activeFolder["iperf_target_end"] ?? "",
+                                            "iperf_eval_start"             => $activeFolder["iperf_eval_start"] ?? "",
+                                            "iperf_eval_end"               => $activeFolder["iperf_eval_end"] ?? "",
+                                            "approving_authority_name"     => $activeFolder["approving_authority_name"] ?? "",
                                             "approving_authority_position" => $activeFolder["approving_authority_position"] ?? ""
                                         ]) ?>)' class="spms-hub-btn-primary">
                                             Edit Cycle Dates
@@ -984,13 +983,10 @@
                                 $effectiveDocType = 'OPCR';
                                 $officialPaperName = 'Office Performance Commitment and Review (OPCR)';
                             } elseif (str_contains($pTitleUpper, 'DPCR') || str_contains($pTitleUpper, 'DIVISION') || str_contains($pTitleUpper, 'DEPARTMENT')) {
-                                if (!empty($isOwnerDean)) {
-                                    $effectiveDocType = 'CDPCR';
-                                    $officialPaperName = 'DPCR Dean (Collegiate Performance Commitment and Review)';
-                                } else {
-                                    $effectiveDocType = 'DPCR';
-                                    $officialPaperName = 'DPCR Department Chair (Departmental Performance Commitment and Review)';
-                                }
+                                $effectiveDocType = 'DPCR';
+                                $officialPaperName = !empty($isOwnerDean)
+                                    ? 'DPCR (Collegiate / Division Performance Commitment and Review)'
+                                    : 'DPCR (Departmental Performance Commitment and Review)';
                             } elseif (str_contains($pTitleUpper, 'IPERF') || str_contains($pTitleUpper, 'NON-TEACHING')) {
                                 $effectiveDocType = 'IPERF';
                                 $officialPaperName = 'Individual Performance Evaluation Review Form (IPERF)';
@@ -1001,8 +997,7 @@
                                 $effectiveDocType = strtoupper($ownerDocType ?? 'IPCR');
                                 $officialPaperName = match($effectiveDocType) {
                                     'OPCR'  => 'Office Performance Commitment and Review (OPCR)',
-                                    'CDPCR' => 'DPCR Dean (Collegiate Performance Commitment and Review)',
-                                    'DPCR'  => 'DPCR Department Chair (Departmental Performance Commitment and Review)',
+                                    'DPCR'  => 'Department / Collegiate Performance Commitment and Review (DPCR)',
                                     'IPERF' => 'Individual Performance Evaluation Review Form (IPERF)',
                                     default => 'Individual Performance Commitment and Review (IPCR)'
                                 };
@@ -1027,9 +1022,6 @@
                             $statusBadgeText = $cFolderStatus->label();
 
                             $docTypeKey = strtolower($effectiveDocType);
-                            if ($docTypeKey === 'cdpcr' && empty($activeFolder['cdpcr_target_start']) && empty($activeFolder['cdpcr_target_end']) && empty($activeFolder['cdpcr_eval_start']) && empty($activeFolder['cdpcr_eval_end'])) {
-                                $docTypeKey = 'dpcr';
-                            }
                             $tStartDate = !empty($activeFolder[$docTypeKey . '_target_start']) ? strtotime($activeFolder[$docTypeKey . '_target_start']) : null;
                             $tEndDate   = !empty($activeFolder[$docTypeKey . '_target_end'])   ? strtotime($activeFolder[$docTypeKey . '_target_end'])   : null;
                             $eStartDate = !empty($activeFolder[$docTypeKey . '_eval_start'])   ? strtotime($activeFolder[$docTypeKey . '_eval_start'])   : null;
@@ -1684,9 +1676,6 @@
                                 || str_contains($userPos, 'dean')
                                 || $isOpcrFolder;
             $canCascade = $isUserAdmin || ($isSupervisorOrChair && ($activeFolder['user_id'] == session()->get('user_id'))); 
-            if (($docType === 'dpcr' || $docType === 'cdpcr') && !empty($isOwnerDean)) {
-                $docType = (!empty($activeFolder['cdpcr_target_start']) || !empty($activeFolder['cdpcr_target_end']) || !empty($activeFolder['cdpcr_eval_start']) || !empty($activeFolder['cdpcr_eval_end'])) ? 'cdpcr' : 'dpcr';
-            }
             $tStartDate = !empty($activeFolder[$docType . '_target_start']) ? date('M d, Y', strtotime($activeFolder[$docType . '_target_start'])) : null;
             $tEndDate   = !empty($activeFolder[$docType . '_target_end'])   ? date('M d, Y', strtotime($activeFolder[$docType . '_target_end']))   : null;
             $eStartDate = !empty($activeFolder[$docType . '_eval_start'])   ? date('M d, Y', strtotime($activeFolder[$docType . '_eval_start']))   : null;
@@ -1971,29 +1960,28 @@
                         <div class="flex flex-col gap-2">
                             <div class="grid grid-cols-2 gap-2">
                                 <button onclick='openEditFolderModal(<?= json_encode([
-                                    "id"    => $activeFolder["id"],
-                                    "title" => $activeFolder["title"],
-                                    "ipcr_target_start" => $activeFolder["ipcr_target_start"] ?? "",
-                                    "ipcr_target_end"   => $activeFolder["ipcr_target_end"] ?? "",
-                                    "ipcr_eval_start"   => $activeFolder["ipcr_eval_start"] ?? "",
-                                    "ipcr_eval_end"     => $activeFolder["ipcr_eval_end"] ?? "",
-                                    "cdpcr_target_start" => $activeFolder["cdpcr_target_start"] ?? "",
-                                    "cdpcr_target_end"   => $activeFolder["cdpcr_target_end"] ?? "",
-                                    "cdpcr_eval_start"   => $activeFolder["cdpcr_eval_start"] ?? "",
-                                    "cdpcr_eval_end"     => $activeFolder["cdpcr_eval_end"] ?? "",
-                                    "dpcr_target_start" => $activeFolder["dpcr_target_start"] ?? "",
-                                    "dpcr_target_end"   => $activeFolder["dpcr_target_end"] ?? "",
-                                    "dpcr_eval_start"   => $activeFolder["dpcr_eval_start"] ?? "",
-                                    "dpcr_eval_end"     => $activeFolder["dpcr_eval_end"] ?? "",
-                                    "opcr_target_start" => $activeFolder["opcr_target_start"] ?? "",
-                                    "opcr_target_end"   => $activeFolder["opcr_target_end"] ?? "",
-                                    "opcr_eval_start"   => $activeFolder["opcr_eval_start"] ?? "",
-                                    "opcr_eval_end"     => $activeFolder["opcr_eval_end"] ?? "",
-                                    "iperf_target_start" => $activeFolder["iperf_target_start"] ?? "",
-                                    "iperf_target_end"  => $activeFolder["iperf_target_end"] ?? "",
-                                    "iperf_eval_start"  => $activeFolder["iperf_eval_start"] ?? "",
-                                    "iperf_eval_end"    => $activeFolder["iperf_eval_end"] ?? "",
-                                    "approving_authority_name" => $activeFolder["approving_authority_name"] ?? "",
+                                    "id"                           => $activeFolder["id"],
+                                    "title"                        => $activeFolder["title"],
+                                    "academic_year"                => $activeFolder["academic_year"] ?? "",
+                                    "semester"                     => $activeFolder["semester"] ?? "",
+                                    "rating_period"                => $activeFolder["rating_period"] ?? "",
+                                    "ipcr_target_start"            => $activeFolder["ipcr_target_start"] ?? "",
+                                    "ipcr_target_end"              => $activeFolder["ipcr_target_end"] ?? "",
+                                    "ipcr_eval_start"              => $activeFolder["ipcr_eval_start"] ?? "",
+                                    "ipcr_eval_end"                => $activeFolder["ipcr_eval_end"] ?? "",
+                                    "dpcr_target_start"            => $activeFolder["dpcr_target_start"] ?? "",
+                                    "dpcr_target_end"              => $activeFolder["dpcr_target_end"] ?? "",
+                                    "dpcr_eval_start"              => $activeFolder["dpcr_eval_start"] ?? "",
+                                    "dpcr_eval_end"                => $activeFolder["dpcr_eval_end"] ?? "",
+                                    "opcr_target_start"            => $activeFolder["opcr_target_start"] ?? "",
+                                    "opcr_target_end"              => $activeFolder["opcr_target_end"] ?? "",
+                                    "opcr_eval_start"              => $activeFolder["opcr_eval_start"] ?? "",
+                                    "opcr_eval_end"                => $activeFolder["opcr_eval_end"] ?? "",
+                                    "iperf_target_start"           => $activeFolder["iperf_target_start"] ?? "",
+                                    "iperf_target_end"             => $activeFolder["iperf_target_end"] ?? "",
+                                    "iperf_eval_start"             => $activeFolder["iperf_eval_start"] ?? "",
+                                    "iperf_eval_end"               => $activeFolder["iperf_eval_end"] ?? "",
+                                    "approving_authority_name"     => $activeFolder["approving_authority_name"] ?? "",
                                     "approving_authority_position" => $activeFolder["approving_authority_position"] ?? ""
                                 ]) ?>)'
                                         class="w-full text-emerald-700 dark:text-[#34d399] hover:text-emerald-800 dark:hover:text-[#6ee7b7] bg-emerald-50 hover:bg-emerald-100 dark:bg-zinc-800 border border-emerald-200 dark:border-zinc-700 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-2xs">

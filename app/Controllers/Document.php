@@ -277,12 +277,14 @@ class Document extends BaseController
             ? date('Y-m-d', strtotime($currentFolderRec['created_at'])) 
             : date('Y-m-d');
 
-        // Resolve evaluation period (e.g. January - June 2026 or July - December 2026)
+        // Resolve evaluation period (from cycle rating_period configuration or month fallback)
         $refTime = !empty($docInfo['target_start']) ? strtotime($docInfo['target_start']) 
                  : (!empty($currentFolderRec['created_at']) ? strtotime($currentFolderRec['created_at']) : time());
         $m = (int)date('n', $refTime);
         $y = date('Y', $refTime);
-        $docPeriod = ($m <= 6) ? "January - June {$y}" : "July - December {$y}";
+        $docPeriod = !empty($currentFolderRec['rating_period'])
+            ? $currentFolderRec['rating_period']
+            : (($m <= 6) ? "January - June {$y}" : "July - December {$y}");
 
         $isCycleArchived = !empty($docInfo['folder_deleted_at']) || (!empty($parentFolder) && !empty($parentFolder['deleted_at']));
 
@@ -298,6 +300,9 @@ class Document extends BaseController
             if ($pObj) {
                 $rootCycle = $pObj;
             }
+        }
+        if (!empty($rootCycle['rating_period'])) {
+            $docPeriod = $rootCycle['rating_period'];
         }
         $data['rootFolderId'] = $rootFolderId;
 

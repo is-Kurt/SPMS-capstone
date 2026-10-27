@@ -32,6 +32,9 @@ class  DocumentFolderModel extends Model
         'eval_period_open_sent_at',
         'routing_preset_id',
         'status',
+        'academic_year',
+        'semester',
+        'rating_period',
         'approving_authority_name',
         'approving_authority_position',
         'deleted_at'
@@ -191,7 +194,7 @@ class  DocumentFolderModel extends Model
             ->join('roles r', 'r.id = ur.role_id', 'left')
             ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
             ->join('positions pos', 'pos.id = p.position_id', 'left')
-            ->join('cycle_deadlines cd', 'cd.cycle_folder_id = COALESCE(df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = CASE WHEN (LOWER(COALESCE(u.doc_type, "ipcr")) = "dpcr" AND (pos.title LIKE "%dean%" OR u.email LIKE "%dean%")) THEN "cdpcr" ELSE LOWER(COALESCE(u.doc_type, "ipcr")) END', 'left')
+            ->join('cycle_deadlines cd', 'cd.cycle_folder_id = COALESCE(df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = LOWER(COALESCE(u.doc_type, "ipcr"))', 'left')
             ->where('df.deleted_at IS NULL')
             ->where('df.status', FolderStatus::DRAFT_EVALUATION->value)
             ->where('df.deadline_reminder_sent_at IS NULL')
@@ -220,7 +223,7 @@ class  DocumentFolderModel extends Model
             ->join('roles r', 'r.id = ur.role_id', 'left')
             ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
             ->join('positions pos', 'pos.id = p.position_id', 'left')
-            ->join('cycle_deadlines cd', 'cd.cycle_folder_id = COALESCE(df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = CASE WHEN (LOWER(COALESCE(u.doc_type, "ipcr")) = "dpcr" AND (pos.title LIKE "%dean%" OR u.email LIKE "%dean%")) THEN "cdpcr" ELSE LOWER(COALESCE(u.doc_type, "ipcr")) END', 'left')
+            ->join('cycle_deadlines cd', 'cd.cycle_folder_id = COALESCE(df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = LOWER(COALESCE(u.doc_type, "ipcr"))', 'left')
             ->where('df.deleted_at IS NULL')
             ->where('df.status', FolderStatus::DRAFT_TARGET->value)
             ->where('df.target_deadline_reminder_sent_at IS NULL')
@@ -237,7 +240,7 @@ class  DocumentFolderModel extends Model
         $today = date('Y-m-d');
         $tomorrow = date('Y-m-d', strtotime('+1 day'));
 
-        $docTypes = ['ipcr', 'cdpcr', 'dpcr', 'opcr', 'iperf'];
+        $docTypes = ['opcr', 'dpcr', 'ipcr', 'iperf'];
         foreach ($docTypes as $type) {
             if (empty($data['data']["{$type}_eval_start"]) && empty($data['data']["{$type}_eval_end"])) {
                 $data['data']["{$type}_eval_start"] = $today . ' 00:00:00';
@@ -261,7 +264,7 @@ class  DocumentFolderModel extends Model
             ->join('users u', 'u.id = df.user_id')
             ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
             ->join('positions pos', 'pos.id = p.position_id', 'left')
-            ->join('cycle_deadlines cd', 'cd.cycle_folder_id = COALESCE(df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = CASE WHEN (LOWER(COALESCE(u.doc_type, "ipcr")) = "dpcr" AND (pos.title LIKE "%dean%" OR u.email LIKE "%dean%")) THEN "cdpcr" ELSE LOWER(COALESCE(u.doc_type, "ipcr")) END', 'left')
+            ->join('cycle_deadlines cd', 'cd.cycle_folder_id = COALESCE(df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = LOWER(COALESCE(u.doc_type, "ipcr"))', 'left')
             ->where('df.deleted_at IS NULL')
             ->where('df.status', \App\Enums\FolderStatus::DRAFT_TARGET->value)
             ->where('df.target_period_open_sent_at IS NULL')
@@ -294,7 +297,7 @@ class  DocumentFolderModel extends Model
             ->join('users u', 'u.id = df.user_id')
             ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
             ->join('positions pos', 'pos.id = p.position_id', 'left')
-            ->join('cycle_deadlines cd', 'cd.cycle_folder_id = COALESCE(df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = CASE WHEN (LOWER(COALESCE(u.doc_type, "ipcr")) = "dpcr" AND (pos.title LIKE "%dean%" OR u.email LIKE "%dean%")) THEN "cdpcr" ELSE LOWER(COALESCE(u.doc_type, "ipcr")) END', 'left')
+            ->join('cycle_deadlines cd', 'cd.cycle_folder_id = COALESCE(df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = LOWER(COALESCE(u.doc_type, "ipcr"))', 'left')
             ->where('df.deleted_at IS NULL')
             ->whereIn('df.status', [
                 \App\Enums\FolderStatus::DRAFT_TARGET->value,
@@ -449,10 +452,6 @@ class  DocumentFolderModel extends Model
         $cycleFolderId = $folder['cycle_folder_id'] ?? $this->getRootCycleFolderId($folder['id']);
         $deadlineModel = new \App\Models\CycleDeadlineModel();
         $deadline = $deadlineModel->getDeadline($cycleFolderId, $docType);
-
-        if ($docType === 'cdpcr' && (empty($deadline) || (empty($deadline['target_start']) && empty($deadline['target_end']) && empty($deadline['eval_start']) && empty($deadline['eval_end'])))) {
-            $deadline = $deadlineModel->getDeadline($cycleFolderId, 'dpcr');
-        }
 
         if (empty($deadline) || (empty($deadline['target_start']) && empty($deadline['target_end']) && empty($deadline['eval_start']) && empty($deadline['eval_end']))) {
             $all = $deadlineModel->getDeadlinesForCycle($cycleFolderId);

@@ -38,7 +38,7 @@ class CycleDeadlineModel extends Model
     /**
      * Supported official SPMS document forms in the institutional cascade.
      */
-    public const SUPPORTED_DOC_TYPES = ['opcr', 'cdpcr', 'dpcr', 'ipcr', 'iperf'];
+    public const SUPPORTED_DOC_TYPES = ['opcr', 'dpcr', 'ipcr', 'iperf'];
 
     /**
      * Fetches all deadline records for a given root cycle folder, keyed by doc_type.
@@ -58,8 +58,12 @@ class CycleDeadlineModel extends Model
      */
     public function getDeadline(string $cycleFolderId, string $docType): ?array
     {
+        $dt = strtolower($docType);
+        if ($dt === 'cdpcr') {
+            $dt = 'dpcr';
+        }
         return $this->where('cycle_folder_id', $cycleFolderId)
-                    ->where('doc_type', strtolower($docType))
+                    ->where('doc_type', $dt)
                     ->first();
     }
 
@@ -80,6 +84,12 @@ class CycleDeadlineModel extends Model
             $flat["{$type}_eval_start"]   = $d['eval_start'] ?? null;
             $flat["{$type}_eval_end"]     = $d['eval_end'] ?? null;
         }
+
+        // Backward compatibility aliases for cdpcr
+        $flat['cdpcr_target_start'] = $flat['dpcr_target_start'] ?? null;
+        $flat['cdpcr_target_end']   = $flat['dpcr_target_end'] ?? null;
+        $flat['cdpcr_eval_start']   = $flat['dpcr_eval_start'] ?? null;
+        $flat['cdpcr_eval_end']     = $flat['dpcr_eval_end'] ?? null;
 
         return $flat;
     }
