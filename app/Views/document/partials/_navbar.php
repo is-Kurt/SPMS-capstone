@@ -267,7 +267,7 @@
                             <?php endif; ?>
                         <?php else: ?>
                             <!-- TWG in Evaluation Phase -->
-                            <?php if ($status === FolderStatus::TWG_APPROVED->value || $status === FolderStatus::EVAL_APPROVED->value): ?>
+                            <?php if ($canonStatus === FolderStatus::EVAL_APPROVED): ?>
                                 <button id="btn-twg-revoke" type="button" 
                                         onclick="setTwgStatus('revoke')" 
                                         class="bg-warning-500 hover:bg-warning-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg shadow-warning-500/20 transition-all active:scale-[0.98] cursor-pointer">

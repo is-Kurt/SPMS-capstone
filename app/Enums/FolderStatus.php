@@ -22,28 +22,6 @@ enum FolderStatus: string
     case EVAL_APPROVED    = 'eval_approved';
     case UNEVALUATED      = 'unevaluated';
 
-    // ==========================================
-    // LEGACY ALIASES (Preserved for safety & backwards compatibility)
-    // ==========================================
-    case PENDING_TARGET_APPROVAL = 'pending_target_approval';
-    case TARGET_UNAPPROVED       = 'target_unapproved';
-    case TARGET_CALIBRATING      = 'target_calibrating';
-    case TARGET_TWG_DISAPPROVED  = 'target_twg_disapproved';
-    case TARGET_UNVERIFIED       = 'target_unverified';
-
-    case TO_EVALUATE             = 'to evaluate';
-    case TO_EVALUATE_UNDERSCORE  = 'to_evaluate';
-    case DRAFT                   = 'draft';
-    case SUBMITTED               = 'submitted';
-    case EVALUATED               = 'evaluated';
-    case APPROVED                = 'approved';
-    case REEVALUATE              = 'reevaluate';
-    case EVAL_CALIBRATING        = 'eval_calibrating';
-    case TWG_DISAPPROVED         = 'twg_disapproved';
-    case TWG_APPROVED            = 'twg_approved';
-    case EVAL_MISSED             = 'eval_missed';
-    case EVAL_UNVERIFIED         = 'eval_unverified';
-
     /**
      * Normalizes any raw status string (canonical or legacy) into a canonical FolderStatus case.
      */
@@ -76,11 +54,6 @@ enum FolderStatus: string
             self::TARGET_RETURNED,
             self::TARGET_APPROVED,
             self::TARGET_MISSED,
-            self::PENDING_TARGET_APPROVAL,
-            self::TARGET_UNAPPROVED,
-            self::TARGET_CALIBRATING,
-            self::TARGET_TWG_DISAPPROVED,
-            self::TARGET_UNVERIFIED,
         ], true);
     }
 
@@ -98,16 +71,17 @@ enum FolderStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::DRAFT_TARGET => 'DRAFT TARGET',
-            self::TARGET_SUBMITTED, self::PENDING_TARGET_APPROVAL => 'TARGET SUBMITTED',
-            self::TARGET_RETURNED, self::TARGET_UNAPPROVED, self::TARGET_TWG_DISAPPROVED => 'TARGET RETURNED',
-            self::TARGET_APPROVED, self::TARGET_CALIBRATING, self::TARGET_UNVERIFIED => 'TARGET APPROVED',
-            self::TARGET_MISSED, self::UNEVALUATED, self::EVAL_MISSED => 'MISSED DEADLINE',
+            self::DRAFT_TARGET     => 'DRAFT TARGET',
+            self::TARGET_SUBMITTED => 'TARGET SUBMITTED',
+            self::TARGET_RETURNED  => 'TARGET RETURNED',
+            self::TARGET_APPROVED  => 'TARGET APPROVED',
+            self::TARGET_MISSED    => 'MISSED DEADLINE',
 
-            self::DRAFT_EVALUATION, self::TO_EVALUATE, self::TO_EVALUATE_UNDERSCORE, self::DRAFT => 'DRAFT EVALUATION',
-            self::EVAL_SUBMITTED, self::SUBMITTED, self::EVALUATED, self::EVAL_CALIBRATING, self::EVAL_UNVERIFIED => 'EVALUATION SUBMITTED',
-            self::EVAL_RETURNED, self::REEVALUATE, self::TWG_DISAPPROVED => 'EVALUATION RETURNED',
-            self::EVAL_APPROVED, self::APPROVED, self::TWG_APPROVED => 'EVALUATION APPROVED',
+            self::DRAFT_EVALUATION => 'DRAFT EVALUATION',
+            self::EVAL_SUBMITTED   => 'EVALUATION SUBMITTED',
+            self::EVAL_RETURNED    => 'EVALUATION RETURNED',
+            self::EVAL_APPROVED    => 'EVALUATION APPROVED',
+            self::UNEVALUATED      => 'MISSED DEADLINE',
         };
     }
 
@@ -116,13 +90,13 @@ enum FolderStatus: string
      */
     public function stepperIndex(): int
     {
-        if (in_array($this, [self::EVAL_APPROVED, self::APPROVED, self::TWG_APPROVED, self::TWG_DISAPPROVED], true)) {
+        if ($this === self::EVAL_APPROVED) {
             return 4; // Final Rating / Calibrated
         }
-        if (in_array($this, [self::DRAFT_EVALUATION, self::EVAL_SUBMITTED, self::EVAL_RETURNED, self::UNEVALUATED, self::DRAFT, self::SUBMITTED, self::TO_EVALUATE, self::EVALUATED, self::REEVALUATE], true)) {
+        if (in_array($this, [self::DRAFT_EVALUATION, self::EVAL_SUBMITTED, self::EVAL_RETURNED, self::UNEVALUATED], true)) {
             return 3; // Evaluation Phase
         }
-        if (in_array($this, [self::TARGET_APPROVED, self::TARGET_CALIBRATING, self::TARGET_UNVERIFIED], true)) {
+        if ($this === self::TARGET_APPROVED) {
             return 2; // Target Approved
         }
         return 1; // Target Setting

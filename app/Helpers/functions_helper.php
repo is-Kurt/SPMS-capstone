@@ -401,11 +401,9 @@ function sync_user_papers_mid_target_setting(int $userId, ?string $targetPaperTy
     // Mid target setting statuses (before targets are approved or evaluation begins)
     $targetSettingStatuses = [
         \App\Enums\FolderStatus::DRAFT_TARGET->value,
-        \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
+        \App\Enums\FolderStatus::TARGET_SUBMITTED->value,
         \App\Enums\FolderStatus::TARGET_RETURNED->value,
-        \App\Enums\FolderStatus::TARGET_UNAPPROVED->value,
-        \App\Enums\FolderStatus::DRAFT->value,
-        \App\Enums\FolderStatus::UNEVALUATED->value,
+        \App\Enums\FolderStatus::TARGET_MISSED->value,
     ];
 
     $folders = $folderModel->where('user_id', $userId)
@@ -429,7 +427,7 @@ function sync_user_papers_mid_target_setting(int $userId, ?string $targetPaperTy
         }
 
         // If paper type changed while pending approval, revert folder to draft_target so ratee can review & resubmit
-        if ($folderHadDocUpdated && $folder['status'] === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value) {
+        if ($folderHadDocUpdated && $folder['status'] === \App\Enums\FolderStatus::TARGET_SUBMITTED->value) {
             $folderModel->update($folder['id'], [
                 'status'              => \App\Enums\FolderStatus::DRAFT_TARGET->value,
                 'target_submitted_at' => null

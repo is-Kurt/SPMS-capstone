@@ -261,7 +261,7 @@ class DepartmentSeeder extends Seeder
                         'tier'       => 'dean',
                         'unit_level' => 'college',
                         'rating'     => 4.95,
-                        'status'     => FolderStatus::APPROVED->value,
+                        'status'     => FolderStatus::EVAL_APPROVED->value,
                         'remark'     => null
                     ],
                     [
@@ -274,7 +274,7 @@ class DepartmentSeeder extends Seeder
                         'tier'       => 'chair',
                         'unit_level' => 'department',
                         'rating'     => 4.83,
-                        'status'     => FolderStatus::APPROVED->value,
+                        'status'     => FolderStatus::EVAL_APPROVED->value,
                         'remark'     => null
                     ],
                     [
@@ -287,7 +287,7 @@ class DepartmentSeeder extends Seeder
                         'tier'       => 'faculty',
                         'unit_level' => 'department',
                         'rating'     => 4.90,
-                        'status'     => FolderStatus::APPROVED->value,
+                        'status'     => FolderStatus::EVAL_APPROVED->value,
                         'remark'     => null
                     ],
                     [
@@ -300,7 +300,7 @@ class DepartmentSeeder extends Seeder
                         'tier'       => 'faculty',
                         'unit_level' => 'department',
                         'rating'     => null,
-                        'status'     => FolderStatus::TO_EVALUATE->value,
+                        'status'     => FolderStatus::DRAFT_EVALUATION->value,
                         'remark'     => 'Targets approved; currently self-rating accomplishments.'
                     ],
                 ]
@@ -368,7 +368,7 @@ class DepartmentSeeder extends Seeder
                         'tier'       => 'dean',
                         'unit_level' => 'college',
                         'rating'     => 4.88,
-                        'status'     => FolderStatus::APPROVED->value,
+                        'status'     => FolderStatus::EVAL_APPROVED->value,
                         'remark'     => null
                     ],
                     [
@@ -381,7 +381,7 @@ class DepartmentSeeder extends Seeder
                         'tier'       => 'chair',
                         'unit_level' => 'department',
                         'rating'     => 4.75,
-                        'status'     => FolderStatus::APPROVED->value,
+                        'status'     => FolderStatus::EVAL_APPROVED->value,
                         'remark'     => null
                     ],
                     [
@@ -394,7 +394,7 @@ class DepartmentSeeder extends Seeder
                         'tier'       => 'faculty',
                         'unit_level' => 'department',
                         'rating'     => 4.82,
-                        'status'     => FolderStatus::APPROVED->value,
+                        'status'     => FolderStatus::EVAL_APPROVED->value,
                         'remark'     => null
                     ],
                     [
@@ -407,7 +407,7 @@ class DepartmentSeeder extends Seeder
                         'tier'       => 'faculty',
                         'unit_level' => 'department',
                         'rating'     => null,
-                        'status'     => FolderStatus::PENDING_TARGET_APPROVAL->value,
+                        'status'     => FolderStatus::TARGET_SUBMITTED->value,
                         'remark'     => 'Targets submitted; pending immediate supervisor approval.'
                     ],
                 ]
@@ -428,7 +428,7 @@ class DepartmentSeeder extends Seeder
                         'tier'       => 'dean',
                         'unit_level' => 'college',
                         'rating'     => 4.92,
-                        'status'     => FolderStatus::APPROVED->value,
+                        'status'     => FolderStatus::EVAL_APPROVED->value,
                         'remark'     => null
                     ],
                     [
@@ -441,7 +441,7 @@ class DepartmentSeeder extends Seeder
                         'tier'       => 'chair',
                         'unit_level' => 'department',
                         'rating'     => 4.79,
-                        'status'     => FolderStatus::APPROVED->value,
+                        'status'     => FolderStatus::EVAL_APPROVED->value,
                         'remark'     => null
                     ],
                     [
@@ -454,7 +454,7 @@ class DepartmentSeeder extends Seeder
                         'tier'       => 'faculty',
                         'unit_level' => 'department',
                         'rating'     => 4.86,
-                        'status'     => FolderStatus::APPROVED->value,
+                        'status'     => FolderStatus::EVAL_APPROVED->value,
                         'remark'     => null
                     ],
                     [
@@ -488,7 +488,7 @@ class DepartmentSeeder extends Seeder
                         'tier'       => 'dean',
                         'unit_level' => 'college',
                         'rating'     => 4.80,
-                        'status'     => FolderStatus::APPROVED->value,
+                        'status'     => FolderStatus::EVAL_APPROVED->value,
                         'remark'     => null
                     ],
                     [
@@ -501,7 +501,7 @@ class DepartmentSeeder extends Seeder
                         'tier'       => 'chair',
                         'unit_level' => 'department',
                         'rating'     => 4.65,
-                        'status'     => FolderStatus::APPROVED->value,
+                        'status'     => FolderStatus::EVAL_APPROVED->value,
                         'remark'     => null
                     ],
                     [
@@ -514,7 +514,7 @@ class DepartmentSeeder extends Seeder
                         'tier'       => 'faculty',
                         'unit_level' => 'department',
                         'rating'     => 4.70,
-                        'status'     => FolderStatus::APPROVED->value,
+                        'status'     => FolderStatus::EVAL_APPROVED->value,
                         'remark'     => null
                     ],
                     [
@@ -548,7 +548,7 @@ class DepartmentSeeder extends Seeder
                         'tier'       => 'chair',
                         'unit_level' => 'college',
                         'rating'     => 4.60,
-                        'status'     => FolderStatus::APPROVED->value,
+                        'status'     => FolderStatus::EVAL_APPROVED->value,
                         'remark'     => null
                     ],
                     [
@@ -561,7 +561,7 @@ class DepartmentSeeder extends Seeder
                         'tier'       => 'faculty',
                         'unit_level' => 'college',
                         'rating'     => null,
-                        'status'     => FolderStatus::SUBMITTED->value,
+                        'status'     => FolderStatus::EVAL_SUBMITTED->value,
                         'remark'     => 'Accomplishments and MOVs submitted for head rating.'
                     ],
                     [
@@ -718,7 +718,7 @@ class DepartmentSeeder extends Seeder
 
                     $isTargetPhase = in_array($u['status'], [
                         FolderStatus::DRAFT_TARGET->value,
-                        FolderStatus::PENDING_TARGET_APPROVAL->value,
+                        FolderStatus::TARGET_SUBMITTED->value,
                         FolderStatus::TARGET_RETURNED->value
                     ]);
 
@@ -734,7 +734,7 @@ class DepartmentSeeder extends Seeder
                             'status'              => $u['status'],
                             'target_submitted_at' => $now,
                             'target_approved_at'  => $isTargetPhase ? null : $now,
-                            'submitted_at'        => in_array($u['status'], [FolderStatus::SUBMITTED->value, FolderStatus::APPROVED->value]) ? $now : null,
+                            'submitted_at'        => in_array($u['status'], [FolderStatus::EVAL_SUBMITTED->value, FolderStatus::EVAL_APPROVED->value]) ? $now : null,
                             'rated_at'            => $u['rating'] ? $now : null,
                             'created_at'          => $now,
                             'updated_at'          => $now
@@ -759,7 +759,7 @@ class DepartmentSeeder extends Seeder
                             'final_rating'        => $u['rating'],
                             'target_submitted_at' => $now,
                             'target_approved_at'  => $isTargetPhase ? null : ($existingFolder['target_approved_at'] ?: $now),
-                            'submitted_at'        => in_array($u['status'], [FolderStatus::SUBMITTED->value, FolderStatus::APPROVED->value]) ? $now : null,
+                            'submitted_at'        => in_array($u['status'], [FolderStatus::EVAL_SUBMITTED->value, FolderStatus::EVAL_APPROVED->value]) ? $now : null,
                             'rated_at'            => $u['rating'] ? $now : null,
                             'updated_at'          => $now
                         ]);

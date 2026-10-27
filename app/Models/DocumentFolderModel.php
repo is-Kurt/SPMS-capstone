@@ -96,7 +96,7 @@ class  DocumentFolderModel extends Model
             ->join('document_folders pf', 'pf.id = df.parent_folder_id', 'left')
             ->where('df.parent_folder_id IS NOT NULL')
             ->where('df.deleted_at IS NULL')
-            ->whereNotIn('df.status', [FolderStatus::DRAFT_TARGET->value, FolderStatus::DRAFT_EVALUATION->value, FolderStatus::DRAFT->value]);
+            ->whereNotIn('df.status', [FolderStatus::DRAFT_TARGET->value, FolderStatus::DRAFT_EVALUATION->value]);
 
         if ($parentFolderId) {
             $allDescendantIds = $this->getAllDescendantFolderIds($parentFolderId);
@@ -193,7 +193,7 @@ class  DocumentFolderModel extends Model
             ->join('positions pos', 'pos.id = p.position_id', 'left')
             ->join('cycle_deadlines cd', 'cd.cycle_folder_id = COALESCE(df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = CASE WHEN (LOWER(COALESCE(u.doc_type, "ipcr")) = "dpcr" AND (pos.title LIKE "%dean%" OR u.email LIKE "%dean%")) THEN "cdpcr" ELSE LOWER(COALESCE(u.doc_type, "ipcr")) END', 'left')
             ->where('df.deleted_at IS NULL')
-            ->whereIn('df.status', [FolderStatus::DRAFT_EVALUATION->value, FolderStatus::DRAFT->value])
+            ->where('df.status', FolderStatus::DRAFT_EVALUATION->value)
             ->where('df.deadline_reminder_sent_at IS NULL')
             ->groupStart()
                 ->where('r.name !=', 'Admin')
@@ -300,7 +300,6 @@ class  DocumentFolderModel extends Model
                 \App\Enums\FolderStatus::DRAFT_TARGET->value,
                 \App\Enums\FolderStatus::TARGET_SUBMITTED->value,
                 \App\Enums\FolderStatus::TARGET_RETURNED->value,
-                \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
             ])
             ->where('cd.target_end <', $now)
             ->get()->getResultArray();
@@ -332,8 +331,6 @@ class  DocumentFolderModel extends Model
             ->whereIn('df.status', [
                 \App\Enums\FolderStatus::TARGET_APPROVED->value,
                 \App\Enums\FolderStatus::DRAFT_EVALUATION->value,
-                \App\Enums\FolderStatus::SUBMITTED->value,
-                \App\Enums\FolderStatus::TO_EVALUATE->value
             ])
             ->where('df.eval_period_open_sent_at IS NULL')
             ->where('cd.eval_start <=', $now)
@@ -374,9 +371,6 @@ class  DocumentFolderModel extends Model
             ->where('df.deleted_at IS NULL')
             ->whereNotIn('df.status', [
                 \App\Enums\FolderStatus::EVAL_APPROVED->value,
-                \App\Enums\FolderStatus::APPROVED->value,
-                \App\Enums\FolderStatus::TWG_APPROVED->value,
-                \App\Enums\FolderStatus::TWG_DISAPPROVED->value,
                 \App\Enums\FolderStatus::UNEVALUATED->value,
                 \App\Enums\FolderStatus::TARGET_MISSED->value,
                 \App\Enums\FolderStatus::DRAFT_TARGET->value,
@@ -493,8 +487,6 @@ class  DocumentFolderModel extends Model
             FolderStatus::TARGET_RETURNED->value,
             FolderStatus::TARGET_APPROVED->value,
             FolderStatus::DRAFT_EVALUATION->value,
-            FolderStatus::PENDING_TARGET_APPROVAL->value,
-            FolderStatus::DRAFT->value
         ]);
         
         $dates = $this->getFolderDates($folder);

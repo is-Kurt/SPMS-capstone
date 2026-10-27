@@ -108,7 +108,7 @@ class Rating extends BaseController
                             'folder_id'           => $cf['id'],
                             'evaluator_id'        => $userId,
                             'evaluator_folder_id' => $cf['parent_folder_id'],
-                            'status'              => $cf['status'] ?? \App\Enums\FolderStatus::DRAFT->value,
+                            'status'              => $cf['status'] ?? \App\Enums\FolderStatus::DRAFT_TARGET->value,
                             'created_at'          => date('Y-m-d H:i:s'),
                             'updated_at'          => date('Y-m-d H:i:s')
                         ]);
@@ -294,7 +294,7 @@ class Rating extends BaseController
         }
 
         // Privacy guard: Unsubmitted work-in-progress drafts cannot be viewed for evaluation
-        if (in_array($subFolder['status'], [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::DRAFT_TARGET->value])) {
+        if (in_array($subFolder['status'], [\App\Enums\FolderStatus::DRAFT_TARGET->value, \App\Enums\FolderStatus::DRAFT_EVALUATION->value])) {
             session()->setFlashdata('error', 'This folder is currently being drafted by the employee and has not yet been submitted for evaluation.');
             return redirect()->to(site_url('ratings'));
         }

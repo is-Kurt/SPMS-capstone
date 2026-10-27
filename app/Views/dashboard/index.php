@@ -756,12 +756,12 @@
                                         </span>
                                     </td>
                                     <td class="py-3 px-4 text-right whitespace-nowrap">
-                                        <?php if (!empty($rf['folder_id']) && !in_array($rf['folder_status'] ?? '', [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::DRAFT_TARGET->value, 'unstarted'])): ?>
+                                        <?php if (!empty($rf['folder_id']) && !in_array($rf['folder_status'] ?? '', [\App\Enums\FolderStatus::DRAFT_TARGET->value, 'unstarted'])): ?>
                                             <a href="<?= site_url('ratings/show/' . $rf['folder_id']) ?>"
                                                class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:hover:bg-white/5 transition-colors shadow-2xs">
                                                 Inspect
                                             </a>
-                                        <?php elseif (in_array($rf['folder_status'] ?? '', [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::DRAFT_TARGET->value])): ?>
+                                        <?php elseif (($rf['folder_status'] ?? '') === \App\Enums\FolderStatus::DRAFT_TARGET->value): ?>
                                             <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700/40">
                                                 Drafting
                                             </span>

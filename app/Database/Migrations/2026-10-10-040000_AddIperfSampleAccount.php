@@ -155,7 +155,7 @@ class AddIperfSampleAccount extends Migration
                         'folder_id'           => $folderId,
                         'evaluator_id'        => $hrdoHeadId,
                         'evaluator_folder_id' => $activeCycle['id'],
-                        'status'              => FolderStatus::DRAFT->value,
+                        'status'              => \App\Enums\EvaluationRoutingStatus::PENDING->value,
                         'created_at'          => $now,
                         'updated_at'          => $now
                     ]);

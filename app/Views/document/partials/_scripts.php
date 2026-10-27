@@ -1055,17 +1055,16 @@
 
     // Enum values exported for JS use
     window.FolderStatus = <?= json_encode([
-        'DRAFT_TARGET'            => \App\Enums\FolderStatus::DRAFT_TARGET->value,
-        'PENDING_TARGET_APPROVAL' => \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
-        'TARGET_APPROVED'         => \App\Enums\FolderStatus::TARGET_APPROVED->value,
-        'TARGET_RETURNED'         => \App\Enums\FolderStatus::TARGET_RETURNED->value,
-        'DRAFT'                   => \App\Enums\FolderStatus::DRAFT->value,
-        'SUBMITTED'               => \App\Enums\FolderStatus::SUBMITTED->value,
-        'TO_EVALUATE'             => \App\Enums\FolderStatus::TO_EVALUATE->value,
-        'EVALUATED'               => \App\Enums\FolderStatus::EVALUATED->value,
-        'APPROVED'                => \App\Enums\FolderStatus::APPROVED->value,
-        'REEVALUATE'              => \App\Enums\FolderStatus::REEVALUATE->value,
-        'UNEVALUATED'             => \App\Enums\FolderStatus::UNEVALUATED->value,
+        'DRAFT_TARGET'     => \App\Enums\FolderStatus::DRAFT_TARGET->value,
+        'TARGET_SUBMITTED' => \App\Enums\FolderStatus::TARGET_SUBMITTED->value,
+        'TARGET_RETURNED'  => \App\Enums\FolderStatus::TARGET_RETURNED->value,
+        'TARGET_APPROVED'  => \App\Enums\FolderStatus::TARGET_APPROVED->value,
+        'TARGET_MISSED'    => \App\Enums\FolderStatus::TARGET_MISSED->value,
+        'DRAFT_EVALUATION' => \App\Enums\FolderStatus::DRAFT_EVALUATION->value,
+        'EVAL_SUBMITTED'   => \App\Enums\FolderStatus::EVAL_SUBMITTED->value,
+        'EVAL_RETURNED'    => \App\Enums\FolderStatus::EVAL_RETURNED->value,
+        'EVAL_APPROVED'    => \App\Enums\FolderStatus::EVAL_APPROVED->value,
+        'UNEVALUATED'      => \App\Enums\FolderStatus::UNEVALUATED->value,
     ]) ?>;
 
 

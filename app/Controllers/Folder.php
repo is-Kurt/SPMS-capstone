@@ -107,7 +107,7 @@ class Folder extends BaseController
                     ($routingModel->where('folder_id', $activeFolder['id'])->where('evaluator_id', $userId)->countAllResults() > 0);
 
                 if ($isAuthorizedEvaluator) {
-                    if (in_array($activeFolder['status'], [FolderStatus::DRAFT->value, FolderStatus::DRAFT_TARGET->value])) {
+                    if ($activeFolder['status'] === FolderStatus::DRAFT_TARGET->value) {
                         session()->setFlashdata('error', 'This folder is currently being drafted by the employee and has not yet been submitted for evaluation.');
                         return redirect()->to(site_url('ratings'));
                     }
@@ -631,9 +631,8 @@ class Folder extends BaseController
             // Allow cascading during the target setting phase (drafting, submitted, or approved targets)
             $allowedStatuses = [
                 \App\Enums\FolderStatus::DRAFT_TARGET->value, 
-                \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
+                \App\Enums\FolderStatus::TARGET_SUBMITTED->value,
                 \App\Enums\FolderStatus::TARGET_APPROVED->value,
-                \App\Enums\FolderStatus::DRAFT->value
             ];
             if (!in_array($activeFolder['status'], $allowedStatuses)) {
                 return $this->respondError("You cannot cascade this folder because it has already moved past the target setting phase.", 400);
@@ -711,7 +710,7 @@ class Folder extends BaseController
                             'folder_id'           => $newFolderId,
                             'evaluator_id'        => $userId,
                             'evaluator_folder_id' => $folderId,
-                            'status'              => FolderStatus::DRAFT->value
+                            'status'              => \App\Enums\EvaluationRoutingStatus::DRAFT->value
                         ]);
                     }
 
@@ -781,7 +780,7 @@ class Folder extends BaseController
                                 'folder_id'           => $subFolder['id'],
                                 'evaluator_id'        => $userId,
                                 'evaluator_folder_id' => $folderId,
-                                'status'              => FolderStatus::DRAFT->value
+                                'status'              => \App\Enums\EvaluationRoutingStatus::DRAFT->value
                             ]);
 
                             notify_user((int) $member['user_id'], [
@@ -834,11 +833,9 @@ class Folder extends BaseController
 
             $allowedStatuses = [
                 \App\Enums\FolderStatus::DRAFT_TARGET->value,
-                \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
+                \App\Enums\FolderStatus::TARGET_SUBMITTED->value,
                 \App\Enums\FolderStatus::TARGET_APPROVED->value,
                 \App\Enums\FolderStatus::TARGET_RETURNED->value,
-                \App\Enums\FolderStatus::TARGET_UNAPPROVED->value,
-                \App\Enums\FolderStatus::DRAFT->value
             ];
             if ($role !== 'Admin' && !in_array($activeFolder['status'], $allowedStatuses)) {
                 return $this->respondError("You cannot revoke the cascade for a folder that has moved past the target setting phase or is locked.", 400);
@@ -937,9 +934,8 @@ class Folder extends BaseController
             // Gating: Target setting phase
             $allowedStatuses = [
                 \App\Enums\FolderStatus::DRAFT_TARGET->value, 
-                \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
+                \App\Enums\FolderStatus::TARGET_SUBMITTED->value,
                 \App\Enums\FolderStatus::TARGET_APPROVED->value,
-                \App\Enums\FolderStatus::DRAFT->value
             ];
             if ($role !== 'Admin' && !in_array($activeFolder['status'], $allowedStatuses)) {
                 return $this->respondError("Cannot sync cascade: this folder has already moved past the target setting phase.", 400);
@@ -1013,7 +1009,7 @@ class Folder extends BaseController
                             'folder_id'           => $existingCycleFolder['id'],
                             'evaluator_id'        => $userId,
                             'evaluator_folder_id' => $activeFolder['id'],
-                            'status'              => FolderStatus::DRAFT->value
+                            'status'              => \App\Enums\EvaluationRoutingStatus::DRAFT->value
                         ]);
                     }
                     $this->ensureUserDocumentExists($existingCycleFolder['id'], $targetUserId, $activeFolder['title']);
@@ -1040,7 +1036,7 @@ class Folder extends BaseController
                         'folder_id'           => $newFolderId,
                         'evaluator_id'        => $userId,
                         'evaluator_folder_id' => $activeFolder['id'],
-                        'status'              => FolderStatus::DRAFT->value
+                        'status'              => \App\Enums\EvaluationRoutingStatus::DRAFT->value
                     ]);
                 }
 
@@ -1105,11 +1101,9 @@ class Folder extends BaseController
             // Gating: Target setting phase only
             $allowedStatuses = [
                 \App\Enums\FolderStatus::DRAFT_TARGET->value,
-                \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
+                \App\Enums\FolderStatus::TARGET_SUBMITTED->value,
                 \App\Enums\FolderStatus::TARGET_APPROVED->value,
                 \App\Enums\FolderStatus::TARGET_RETURNED->value,
-                \App\Enums\FolderStatus::TARGET_UNAPPROVED->value,
-                \App\Enums\FolderStatus::DRAFT->value
             ];
             if ($role !== 'Admin' && !in_array($parentFolder['status'], $allowedStatuses)) {
                 return $this->respondError("Cannot remove subordinate: this evaluation cycle has already moved past the target setting phase.", 400);
@@ -1213,10 +1207,10 @@ class Folder extends BaseController
 
         foreach ($routings as $r) {
             $st = strtolower(trim((string)($r['status'] ?? 'pending')));
-            if ($st === 'returned' || $st === FolderStatus::REEVALUATE->value || $st === 'eval_returned') {
+            if ($st === 'returned' || $st === FolderStatus::EVAL_RETURNED->value) {
                 $hasRevision = true;
             }
-            if ($st !== 'approved' && $st !== FolderStatus::APPROVED->value && $st !== FolderStatus::EVAL_APPROVED->value) {
+            if ($st !== 'approved' && $st !== FolderStatus::EVAL_APPROVED->value) {
                 $allApproved = false;
             }
         }
@@ -1282,17 +1276,15 @@ class Folder extends BaseController
             // Check if folder is mid target setting
             $isMidTargetSetting = in_array($status, [
                 FolderStatus::DRAFT_TARGET->value,
-                FolderStatus::PENDING_TARGET_APPROVAL->value,
+                FolderStatus::TARGET_SUBMITTED->value,
                 FolderStatus::TARGET_RETURNED->value,
-                FolderStatus::TARGET_UNAPPROVED->value,
-                FolderStatus::DRAFT->value,
-                FolderStatus::UNEVALUATED->value,
+                FolderStatus::TARGET_MISSED->value,
             ]);
 
             // If account changed paper type mid target setting, synchronize their paper to match
             if ($isMidTargetSetting) {
                 $changed = convert_document_paper_type($existing['id'], $docType);
-                if ($changed && $status === FolderStatus::PENDING_TARGET_APPROVAL->value) {
+                if ($changed && $status === FolderStatus::TARGET_SUBMITTED->value) {
                     $folderModel->update($folderId, [
                         'status'              => FolderStatus::DRAFT_TARGET->value,
                         'target_submitted_at' => null
@@ -1985,11 +1977,10 @@ class Folder extends BaseController
             
             $targetStatuses = [
                 FolderStatus::TARGET_APPROVED->value,
-                FolderStatus::SUBMITTED->value,
-                FolderStatus::TO_EVALUATE->value,
+                FolderStatus::DRAFT_EVALUATION->value,
+                FolderStatus::EVAL_SUBMITTED->value,
+                FolderStatus::EVAL_APPROVED->value,
                 FolderStatus::UNEVALUATED->value,
-                FolderStatus::EVALUATED->value,
-                FolderStatus::APPROVED->value
             ];
 
             $didResetAny = false;
@@ -2049,18 +2040,18 @@ class Folder extends BaseController
 
                     $isInTargetStatus = in_array($child['status'], $targetStatuses);
                     
-                    if ($child['status'] === FolderStatus::TARGET_UNAPPROVED->value && $isTargetNowActive) {
+                    if ($child['status'] === FolderStatus::TARGET_RETURNED->value && $isTargetNowActive) {
                         $childData['status'] = FolderStatus::DRAFT_TARGET->value;
                     }
 
                     if ($isInTargetStatus) {
                         if ($isEvalOpen) {
                             $didResetAny = true;
-                            $childData['status'] = FolderStatus::TO_EVALUATE->value;
+                            $childData['status'] = FolderStatus::DRAFT_EVALUATION->value;
                             $childData['final_rating'] = null; 
                             $childData['rated_at']     = null; 
                             $routingModel->where('folder_id', $child['id'])
-                                         ->set(['status' => FolderStatus::DRAFT->value])
+                                         ->set(['status' => \App\Enums\EvaluationRoutingStatus::DRAFT->value])
                                          ->update();
                         } elseif ($isEvalFuture) {
                             $didResetAny = true;
@@ -2068,9 +2059,9 @@ class Folder extends BaseController
                             $childData['final_rating'] = null; 
                             $childData['rated_at']     = null; 
                             $routingModel->where('folder_id', $child['id'])
-                                         ->set(['status' => FolderStatus::DRAFT->value])
+                                         ->set(['status' => \App\Enums\EvaluationRoutingStatus::DRAFT->value])
                                          ->update();
-                        } elseif ($isEvalExpired && in_array($child['status'], [FolderStatus::TARGET_APPROVED->value, FolderStatus::TO_EVALUATE->value, FolderStatus::SUBMITTED->value])) {
+                        } elseif ($isEvalExpired && in_array($child['status'], [FolderStatus::TARGET_APPROVED->value, FolderStatus::DRAFT_EVALUATION->value, FolderStatus::EVAL_SUBMITTED->value])) {
                             $childData['status'] = FolderStatus::UNEVALUATED->value;
                         }
                     }
@@ -2104,9 +2095,6 @@ class Folder extends BaseController
             $validSubmitStatuses = [
                 FolderStatus::DRAFT_EVALUATION->value,
                 FolderStatus::EVAL_RETURNED->value,
-                FolderStatus::DRAFT->value,
-                FolderStatus::TO_EVALUATE->value,
-                FolderStatus::REEVALUATE->value
             ];
             if (!$folder || !in_array($folder['status'], $validSubmitStatuses, true)) {
                 return $this->respondError("This folder cannot be submitted at this time.", 400);
@@ -2163,7 +2151,7 @@ class Folder extends BaseController
 
             $folder = $folderModel->find($folderId);
 
-            if (!$folder || !in_array($folder['status'], [FolderStatus::EVAL_SUBMITTED->value, FolderStatus::EVALUATED->value, FolderStatus::SUBMITTED->value])) {
+            if (!$folder || $folder['status'] !== FolderStatus::EVAL_SUBMITTED->value) {
                 return $this->respondError("This folder cannot be unsubmitted at this time.", 400);
             }
 
@@ -2176,7 +2164,7 @@ class Folder extends BaseController
 
             $routingModel = new \App\Models\EvaluationRoutingModel();
             $hasApproval = $routingModel->where('folder_id', $folderId)
-                                        ->whereIn('status', ['approved', FolderStatus::APPROVED->value])
+                                        ->where('status', 'approved')
                                         ->countAllResults() > 0;
             if ($hasApproval) {
                 return $this->respondError("Cannot unsubmit: An evaluator has already approved your rating.", 400);
@@ -2237,8 +2225,6 @@ class Folder extends BaseController
             $validEvalStatuses = [
                 FolderStatus::DRAFT_EVALUATION->value, 
                 FolderStatus::EVAL_RETURNED->value,
-                FolderStatus::TO_EVALUATE->value, 
-                FolderStatus::REEVALUATE->value
             ];
             if ($isEvalWindowOpen) {
                 $validEvalStatuses[] = FolderStatus::TARGET_APPROVED->value;
@@ -2312,10 +2298,7 @@ class Folder extends BaseController
 
             $validSubmitStatuses = [
                 FolderStatus::DRAFT_TARGET->value,
-                FolderStatus::DRAFT->value,
                 FolderStatus::TARGET_RETURNED->value,
-                FolderStatus::TARGET_UNAPPROVED->value,
-                FolderStatus::TARGET_TWG_DISAPPROVED->value
             ];
             if (!in_array($folder['status'], $validSubmitStatuses, true)) {
                 return $this->respondError("Targets cannot be submitted at this stage (current status: " . esc($folder['status']) . ").", 400);
@@ -2424,13 +2407,13 @@ class Folder extends BaseController
                 return $this->respondError("The target setting period has already ended.", 400);
             }
 
-            if (!in_array($folder['status'], [FolderStatus::TARGET_SUBMITTED->value, FolderStatus::PENDING_TARGET_APPROVAL->value], true)) {
+            if ($folder['status'] !== FolderStatus::TARGET_SUBMITTED->value) {
                 return $this->respondError("Only pending targets can be unsubmitted.", 400);
             }
 
             $routingModel = new \App\Models\EvaluationRoutingModel();
             $hasApproval = $routingModel->where('folder_id', $folderId)
-                                        ->whereIn('status', ['approved', FolderStatus::APPROVED->value, 'target_approved'])
+                                        ->whereIn('status', ['approved', 'target_approved'])
                                         ->countAllResults() > 0;
             if ($hasApproval) {
                 return $this->respondError("Cannot unsubmit: A supervisor has already approved your targets.", 400);
@@ -2482,10 +2465,6 @@ class Folder extends BaseController
                 FolderStatus::EVAL_SUBMITTED->value,
                 FolderStatus::EVAL_APPROVED->value,
                 FolderStatus::EVAL_RETURNED->value,
-                FolderStatus::EVALUATED->value, 
-                FolderStatus::APPROVED->value, 
-                FolderStatus::TWG_APPROVED->value, 
-                FolderStatus::TWG_DISAPPROVED->value
             ];
 
             $userRole = session()->get('role');
@@ -2493,7 +2472,6 @@ class Folder extends BaseController
 
             $allowedStatuses = [
                 FolderStatus::TARGET_SUBMITTED->value, 
-                FolderStatus::PENDING_TARGET_APPROVAL->value, 
                 ...$evalStatuses
             ];
             // TWG, PMT, and Admin are authorized to verify targets after supervising authority approval
@@ -2707,7 +2685,7 @@ class Folder extends BaseController
                                 'folder_id'           => $newFolderId,
                                 'evaluator_id'        => $folder['user_id'],
                                 'evaluator_folder_id' => $folder['id'],
-                                'status'              => FolderStatus::DRAFT->value
+                                'status'              => \App\Enums\EvaluationRoutingStatus::DRAFT->value
                             ]);
                         }
 
@@ -2754,7 +2732,7 @@ class Folder extends BaseController
                                 'folder_id'           => $newFolderId,
                                 'evaluator_id'        => $folder['user_id'],
                                 'evaluator_folder_id' => $folder['id'],
-                                'status'              => FolderStatus::DRAFT->value
+                                'status'              => \App\Enums\EvaluationRoutingStatus::DRAFT->value
                             ]);
                         }
 
@@ -2768,7 +2746,7 @@ class Folder extends BaseController
                                         'folder_id'           => $newFolderId,
                                         'evaluator_id'        => $vpaaFolder['user_id'],
                                         'evaluator_folder_id' => $vpaaFolder['id'],
-                                        'status'              => FolderStatus::DRAFT->value
+                                        'status'              => \App\Enums\EvaluationRoutingStatus::DRAFT->value
                                     ]);
                                 }
                             }
@@ -2811,7 +2789,7 @@ class Folder extends BaseController
                                 'folder_id'           => $newFolderId,
                                 'evaluator_id'        => $folder['user_id'],
                                 'evaluator_folder_id' => $folder['id'],
-                                'status'              => FolderStatus::DRAFT->value
+                                'status'              => \App\Enums\EvaluationRoutingStatus::DRAFT->value
                             ]);
                         }
                         $releasedCount++;
@@ -2870,7 +2848,7 @@ class Folder extends BaseController
                                 'folder_id'           => $newFolderId,
                                 'evaluator_id'        => $folder['user_id'],
                                 'evaluator_folder_id' => $folder['id'],
-                                'status'              => FolderStatus::DRAFT->value
+                                'status'              => \App\Enums\EvaluationRoutingStatus::DRAFT->value
                             ]);
                         }
 
@@ -2882,7 +2860,7 @@ class Folder extends BaseController
                                     'folder_id'           => $newFolderId,
                                     'evaluator_id'        => $deanUserId,
                                     'evaluator_folder_id' => $deanFolderId,
-                                    'status'              => FolderStatus::DRAFT->value
+                                    'status'              => \App\Enums\EvaluationRoutingStatus::DRAFT->value
                                 ]);
                             }
                         }
@@ -3046,7 +3024,7 @@ class Folder extends BaseController
             $folder = $folderModel->find($folderId);
             if (!$folder) return $this->respondError("Folder not found.", 400);
 
-            if (!in_array($folder['status'], [FolderStatus::TARGET_SUBMITTED->value, FolderStatus::PENDING_TARGET_APPROVAL->value], true)) {
+            if ($folder['status'] !== FolderStatus::TARGET_SUBMITTED->value) {
                 return $this->respondError("Cannot return targets: The employee has already revoked or unsubmitted their targets. Please refresh the page.", 409);
             }
 
@@ -3134,12 +3112,7 @@ class Folder extends BaseController
 
             $validEvalStatuses = [
                 FolderStatus::EVAL_SUBMITTED->value,
-                FolderStatus::EVALUATED->value,
-                FolderStatus::SUBMITTED->value,
                 FolderStatus::EVAL_APPROVED->value,
-                FolderStatus::APPROVED->value,
-                FolderStatus::TWG_APPROVED->value,
-                FolderStatus::TWG_DISAPPROVED->value
             ];
             if (!in_array($folder['status'], $validEvalStatuses, true)) {
                 return $this->respondError("Cannot approve evaluation: The employee has revoked their self-rating submission. Please refresh the page.", 409);
@@ -3231,7 +3204,7 @@ class Folder extends BaseController
                 // Check if actually approved by this user
                 $routing = $routingModel->where('folder_id', $folderId)->where('evaluator_id', session()->get('user_id'))->first();
                 $rSt = strtolower(trim((string)($routing['status'] ?? '')));
-                if (!$routing || ($rSt !== 'approved' && $rSt !== FolderStatus::APPROVED->value)) {
+                if (!$routing || $rSt !== 'approved') {
                     return $this->respondError("You have not approved this folder.", 400);
                 }
 
@@ -3314,8 +3287,6 @@ class Folder extends BaseController
             $validPostStatuses = [
                 FolderStatus::EVAL_APPROVED->value,
                 FolderStatus::EVAL_RETURNED->value,
-                FolderStatus::TWG_APPROVED->value, 
-                FolderStatus::TWG_DISAPPROVED->value, 
                 'revoke'
             ];
             if (!in_array($status, $validPostStatuses, true)) {
@@ -3332,10 +3303,6 @@ class Folder extends BaseController
                 FolderStatus::EVAL_SUBMITTED->value,
                 FolderStatus::EVAL_APPROVED->value,
                 FolderStatus::EVAL_RETURNED->value,
-                FolderStatus::EVALUATED->value,
-                FolderStatus::APPROVED->value,
-                FolderStatus::TWG_APPROVED->value,
-                FolderStatus::TWG_DISAPPROVED->value
             ];
             if ($status !== 'revoke' && !in_array($folder['status'], $validTwgStatuses, true)) {
                 return $this->respondError("Cannot perform TWG review: The employee's submission is no longer under evaluation. Please refresh the page.", 409);
@@ -3347,7 +3314,7 @@ class Folder extends BaseController
                 return $this->respond(['status' => 'success', 'message' => 'TWG decision revoked successfully!']);
             }
 
-            $canonicalStatus = ($status === FolderStatus::TWG_DISAPPROVED->value || $status === FolderStatus::EVAL_RETURNED->value)
+            $canonicalStatus = ($status === FolderStatus::EVAL_RETURNED->value)
                 ? FolderStatus::EVAL_RETURNED->value
                 : FolderStatus::EVAL_APPROVED->value;
 
@@ -3394,9 +3361,6 @@ class Folder extends BaseController
             $validEvalStatuses = [
                 FolderStatus::EVAL_SUBMITTED->value,
                 FolderStatus::EVAL_APPROVED->value,
-                FolderStatus::EVALUATED->value,
-                FolderStatus::SUBMITTED->value,
-                FolderStatus::APPROVED->value
             ];
             if (!in_array($folder['status'], $validEvalStatuses, true)) {
                 return $this->respondError("Cannot return evaluation: The employee has already revoked their self-rating submission. Please refresh the page.", 409);
@@ -3686,7 +3650,7 @@ class Folder extends BaseController
                     'folder_id'           => $folderId,
                     'evaluator_id'        => $adminUserId,
                     'evaluator_folder_id' => $evalFolderId,
-                    'status'              => FolderStatus::DRAFT->value,
+                    'status'              => \App\Enums\EvaluationRoutingStatus::DRAFT->value,
                     'created_at'          => date('Y-m-d H:i:s'),
                     'updated_at'          => date('Y-m-d H:i:s')
                 ]);
