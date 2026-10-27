@@ -85,14 +85,18 @@ Module 2: Authentic BSU Organizational Structure & Department Transfer Managemen
 - Admin Unit Edit & Transfer Capability: Enables administrators to edit department names or transfer an academic department from one college to another via an interactive search modal.
 - Hierarchical Integrity: Validates against self-parenting and circular references. Dynamic descendant queries adapt future target cascades immediately, while previous evaluation cycles remain historically frozen.
 
-Module 3: Full 4-Tier SPMS Cascading Architecture
+Module 3: Full 4-Tier SPMS Cascading Architecture & Status Architecture
 - Tier-to-Tier Target Cascading:
   - VPAA OPCR -> Spawns 15 College Dean DPCR folders
   - College Dean DPCR -> Spawns Department Chair DPCR folders
   - Department Chair DPCR -> Spawns Faculty IPCR folders
+- 3-Layer Unified Status Architecture: Governs the institutional performance lifecycle through Layer 1 (10-state global machine & dynamic Hub badges), Layer 2 (normalized supervisor & TWG authority review cards), and Layer 3 (minimalist action verbs `Submit`, `Unsubmit`, `Approve`, `Return`, `Unapprove`).
+- Sequential Supervisor-to-TWG Target Verification Pipeline: Enforces two-stage sign-off where all supervising authorities must review and approve first; once consensus is achieved, the document is forwarded to the assigned Technical Working Group (TWG) reviewer who performs final verification (`target_approver_role = 'TWG'`) to unlock `TARGET APPROVED`.
+- Instant Self-Withdrawal (Unsubmit): Empowers ratees to pull back submitted commitments or accomplishments into editable draft prior to superior review without administrative escalation.
+- Submission Deadline Immunity: Protects on-time submissions against deadline expiry (`target_missed`, `unevaluated`), ensuring late reviews by superiors or TWG do not penalize ratees.
 - Superior Basis Static Sheet: Displays the approved targets of the immediate supervisor in a persistent reference pane (Faculty see Chair targets; Chairs see Dean targets; Deans see VPAA targets).
 - Dynamic Approval & Release Actions: Customizes action buttons according to ratee tier ("Approve & Release to Deans", "Approve & Release to Department Chairs", "Approve & Release to Faculty").
-- Inline Target Review Remarks: Enables supervisors to return targets with specific line-item instructions. Upon revised re-submission and approval, temporary remarks are wiped clean.
+- Inline Target Review Remarks: Enables supervisors and TWG to return targets with specific line-item instructions. Upon revised re-submission and approval, temporary remarks are wiped clean.
 
 Module 4: Performance Matrix & Automated CSC Scoring Engine
 - Category Breakdown: Organizes commitments into Core Functions (60-70%), Strategic Priorities (20-25%), and Support Functions (10-15%).
@@ -170,6 +174,7 @@ documents              | Performance commitment documents (OPCR, DPCR, IPCR, IPE
 document_attachments   | Means of verification (MOV) file metadata attached to accomplishment rows
 templates              | Template structures and default category percentage weights
 evaluation_routings    | Designated evaluators, calibrators, and multi-tier approval routing
+twg_unit_assignments  | Assigned unit jurisdictions for Technical Working Group (TWG) reviewers
 routing_presets        | Saved evaluator teams and department rosters
 activity_logs          | Tamper-evident forensic audit trail of all institutional actions
 email_queues           | Asynchronous outbound notification queue
@@ -188,6 +193,9 @@ Unit Edit & Transfer Management     | Reassign department parent colleges with l
 Full 4-Tier Target Cascading        | VPAA OPCR -> Dean DPCR -> Chair DPCR -> Faculty IPCR     | Full 4-tier tree with tier-specific cascade actions       | 100%
 Immediate Superior Basis Guide      | Subordinates view approved targets of immediate superior | Persistent reference sheet on document edit screens       | 100%
 Target Review & Return Workflow     | Supervisors leave line remarks and return targets        | Inline remarks, revision tracking, and auto-cleanup       | 100%
+3-Layer Status System Architecture  | Decoupled status machine, cards, and minimal actions     | 10 canonical Layer 1 states, Layer 2 cards, Layer 3 verbs | 100%
+Sequential Target Approval Pipeline | Supervisors review first -> TWG verifies -> Final Approval| Full 2-stage verification pipeline with gating & stamps   | 100%
+Submission Deadline Immunity        | Protect on-time ratee submissions against deadline expiry| Only unsubmitted drafts transition to missed; reviews safe| 100%
 Digital Performance Matrix          | Formatted categories (Core, Strategic, Support)          | Dynamic table rows, weights, and automated math           | 100%
 CSC Scoring & Adjectival Brackets   | Quality, Efficiency, Timeliness with adjectival ratings  | Auto-computed composite score and CSC bracket converter   | 100%
 Means of Verification (MOV) Uploads | Attach proof files (PDF, images, docs) to output rows    | File upload, secure validation, and in-app preview modal  | 100%

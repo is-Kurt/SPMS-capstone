@@ -56,7 +56,7 @@ Department Chairs submit Department Division Targets (DPCR)
 Teachers and Staff submit Individual Targets (IPCR / IPERF)
       |
       v
-Supervisors approve or return targets with inline feedback remarks
+Supervisors approve first, then Technical Working Group (TWG) performs final verification
       |
       v
 (Semester happens, people do their actual work)
@@ -98,15 +98,17 @@ Here is every major feature in the system, broken down into normal words.
 
 ---
 
-### B. Full 4-Tier SPMS Cascading Architecture [Completed]
+### B. Full 4-Tier SPMS Cascading Architecture & Verification Pipeline [Completed]
 *The true government-grade performance tree spanning the entire university.*
 
 * **Tier 1 (VPAA OPCR):** Apex university commitments. Approved by the Admin / PMT and released to all 15 collegiate deans.
 * **Tier 2 (College Dean DPCR):** College-level performance commitments parented directly to the VPAA OPCR. Features a dedicated "Approve & Release to Department Chairs" workflow.
 * **Tier 3 (Department Chair DPCR):** Academic department commitments parented directly to the Dean's DPCR. Features an "Approve & Release to Faculty" workflow.
 * **Tier 4 (Faculty / Staff IPCR & IPERF):** Individual commitments parented directly to the Department Chair's DPCR.
+* **Sequential Supervisor & TWG Target Approval Pipeline:** Targets are audited through a synchronized 2-stage verification workflow. Supervising authorities (Chairs, Deans, VPAA) must all review and approve first. Once all supervisors sign off, the document automatically forwards to the assigned Technical Working Group (TWG) reviewer, who performs the final compliance audit and stamps the document as TARGET APPROVED before downstream cascading can proceed.
 * **Dynamic Superior Basis Sheet:** Subordinates never have to guess what their boss wants. When creating targets, a static reference sheet automatically displays the exact approved commitments of their immediate superior (Faculty view Chair targets, Chairs view Dean targets, Deans view VPAA targets).
-* **Return for Revision:** If a supervisor identifies unrealistic or incomplete targets, they can return the document with specific feedback remarks. Once corrected and approved, review remarks are automatically cleaned.
+* **Minimalist Action Controls & Instant Unsubmit:** Replaces confusing labels with clean action verbs (Submit, Unsubmit, Approve, Return, Unapprove). Ratees can instantly unsubmit their commitments or accomplishments back to draft before superior review, eliminating administrative friction.
+* **Return for Revision:** If a supervisor or TWG identifies unrealistic or incomplete targets, they can return the document with specific feedback remarks. Once corrected and approved, review remarks are automatically cleaned.
 
 ---
 

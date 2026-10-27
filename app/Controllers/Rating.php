@@ -169,9 +169,10 @@ class Rating extends BaseController
 
         foreach ($rawFolders as $f) {
             $status = $f['folder_status'];
+            $cStatus = \App\Enums\FolderStatus::canonical($status);
 
             // Skip unsubmitted drafts for privacy - they are monitored on the Dashboard roster, not the review queue
-            if (in_array($status, [\App\Enums\FolderStatus::DRAFT_TARGET->value, \App\Enums\FolderStatus::DRAFT->value])) {
+            if (in_array($cStatus, [\App\Enums\FolderStatus::DRAFT_TARGET, \App\Enums\FolderStatus::DRAFT_EVALUATION], true)) {
                 continue;
             }
 
@@ -181,23 +182,23 @@ class Rating extends BaseController
                 $adminCascadedTotalCount++;
             }
 
-            if (in_array($status, [\App\Enums\FolderStatus::APPROVED->value, \App\Enums\FolderStatus::TWG_APPROVED->value, \App\Enums\FolderStatus::TWG_DISAPPROVED->value, \App\Enums\FolderStatus::UNEVALUATED->value])) {
+            if (in_array($cStatus, [\App\Enums\FolderStatus::EVAL_APPROVED, \App\Enums\FolderStatus::UNEVALUATED], true)) {
                 $periods['evaluation']['tabs']['completed']['folders'][] = $f;
                 $evalOverallCount++;
                 if ($isCascaded) $evalCascadedCount++;
-            } elseif ($status === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value) {
+            } elseif ($cStatus === \App\Enums\FolderStatus::TARGET_SUBMITTED) {
                 $periods['target']['tabs']['target_approval']['folders'][] = $f;
                 $targetOverallCount++;
                 if ($isCascaded) $targetCascadedCount++;
-            } elseif ($status === \App\Enums\FolderStatus::TARGET_RETURNED->value || $status === \App\Enums\FolderStatus::TARGET_UNAPPROVED->value) {
+            } elseif (in_array($cStatus, [\App\Enums\FolderStatus::TARGET_RETURNED, \App\Enums\FolderStatus::TARGET_MISSED], true)) {
                 $periods['target']['tabs']['target_returned']['folders'][] = $f;
                 $targetOverallCount++;
                 if ($isCascaded) $targetCascadedCount++;
-            } elseif ($status === \App\Enums\FolderStatus::TARGET_APPROVED->value) {
+            } elseif ($cStatus === \App\Enums\FolderStatus::TARGET_APPROVED) {
                 $periods['target']['tabs']['target_approved']['folders'][] = $f;
                 $targetOverallCount++;
                 if ($isCascaded) $targetCascadedCount++;
-            } elseif ($status === \App\Enums\FolderStatus::REEVALUATE->value) {
+            } elseif ($cStatus === \App\Enums\FolderStatus::EVAL_RETURNED) {
                 $periods['evaluation']['tabs']['pending']['folders'][] = $f;
                 $evalOverallCount++;
                 if ($isCascaded) $evalCascadedCount++;
@@ -379,8 +380,7 @@ class Rating extends BaseController
         if (!empty($subFolder['parent_folder_id'])) {
             $parentFolder = $folderModel->find($subFolder['parent_folder_id']);
             if ($parentFolder) {
-                $candidateBasis = $documentModel->where('document_folder_id', $parentFolder['id'])->where('is_target', 1)->first()
-                               ?? $documentModel->where('document_folder_id', $parentFolder['id'])->first();
+                $candidateBasis = $documentModel->where('document_folder_id', $parentFolder['id'])->first();
                 $candidateTitleUpper = strtoupper($candidateBasis['title'] ?? '');
                 $isParentDocOpcr = str_contains($candidateTitleUpper, 'OPCR') || str_contains($candidateTitleUpper, 'OFFICE') || (strtoupper($candidateBasis['doc_type'] ?? '') === 'OPCR');
 
@@ -393,16 +393,7 @@ class Rating extends BaseController
 
         // Open the employee's document directly
         if (!empty($myDocs)) {
-            $targetDoc = null;
-            foreach ($myDocs as $d) {
-                if (!empty($d['is_target'])) {
-                    $targetDoc = $d;
-                    break;
-                }
-            }
-            if (!$targetDoc) {
-                $targetDoc = reset($myDocs);
-            }
+            $targetDoc = reset($myDocs);
 
             if ($targetDoc && !empty($targetDoc['id'])) {
                 return redirect()->to(site_url('document/' . $targetDoc['id']));

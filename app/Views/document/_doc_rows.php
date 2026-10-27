@@ -967,11 +967,7 @@
                         </div>
                     <?php else: ?>
                         <?php 
-                            $primaryDoc = null;
-                            foreach ($myDocs as $d) {
-                                if (!empty($d['is_target'])) { $primaryDoc = $d; break; }
-                            }
-                            if (!$primaryDoc) $primaryDoc = reset($myDocs);
+                            $primaryDoc = reset($myDocs);
 
                             $attachmentCount = 0;
                             $attachmentsList = [];
@@ -1013,36 +1009,22 @@
                             }
 
                             $rawStatus = $activeFolder['status'] ?? 'draft_target';
-                            
-                            $totalSups = !empty($evaluatorSupervisors) ? count($evaluatorSupervisors) : 0;
-                            $approvedSups = !empty($evaluatorSupervisors) ? count(array_filter($evaluatorSupervisors, fn($s) => $s['status'] === 'approved')) : 0;
-                            $returnedSups = !empty($evaluatorSupervisors) ? count(array_filter($evaluatorSupervisors, fn($s) => $s['status'] === 'returned')) : 0;
-                            $allSupervisorsApproved = ($totalSups > 0 && $approvedSups === $totalSups);
-
-                            $statusBadgeText = match($rawStatus) {
-                                'approved', 'twg_approved' => 'APPROVED',
-                                'twg_disapproved' => 'TWG DISAPPROVED',
-                                'submitted', 'to evaluate' => 'SUBMITTED',
-                                'evaluated' => 'EVALUATED',
-                                'pending_target_approval' => ($approvedSups > 0 ? "PARTIALLY APPROVED ({$approvedSups}/{$totalSups})" : 'TARGET SUBMITTED'),
-                                'target_approved' => 'TARGET APPROVED',
-                                'target_returned', 'target_unapproved' => 'TARGET REVISION',
-                                'reevaluate' => 'REVISION',
-                                'unevaluated' => 'UNEVALUATED',
-                                'draft' => 'DRAFT EVALUATION',
-                                default => 'DRAFT TARGET'
-                            };
+                            $cFolderStatus = \App\Enums\FolderStatus::canonical($rawStatus);
 
                             // Stepper active index (1: Target Setting, 2: Target Approved, 3: Evaluation, 4: Final Rating)
-                            if (in_array($rawStatus, ['approved', 'twg_approved', 'twg_disapproved'])) {
-                                $currentStepIndex = 4;
-                            } elseif (in_array($rawStatus, ['draft', 'submitted', 'to evaluate', 'evaluated', 'reevaluate', 'unevaluated'])) {
-                                $currentStepIndex = 3;
-                            } elseif ($rawStatus === 'target_approved') {
-                                $currentStepIndex = 2;
-                            } else {
-                                $currentStepIndex = 1;
-                            }
+                            $currentStepIndex = $cFolderStatus->stepperIndex();
+
+                            $isTargetPhaseStatus = $cFolderStatus->isTargetPhase();
+                            $activeSupsForCount = $isTargetPhaseStatus
+                                ? ($targetSupervisors ?? $evaluatorSupervisors ?? [])
+                                : ($evalSupervisors ?? $evaluatorSupervisors ?? []);
+
+                            $totalSups = !empty($activeSupsForCount) ? count($activeSupsForCount) : 0;
+                            $approvedSups = !empty($activeSupsForCount) ? count(array_filter($activeSupsForCount, fn($s) => $s['status'] === 'approved')) : 0;
+                            $returnedSups = !empty($activeSupsForCount) ? count(array_filter($activeSupsForCount, fn($s) => $s['status'] === 'returned')) : 0;
+                            $allSupervisorsApproved = ($totalSups > 0 && $approvedSups === $totalSups);
+
+                            $statusBadgeText = $cFolderStatus->label();
 
                             $docTypeKey = strtolower($effectiveDocType);
                             if ($docTypeKey === 'cdpcr' && empty($activeFolder['cdpcr_target_start']) && empty($activeFolder['cdpcr_target_end']) && empty($activeFolder['cdpcr_eval_start']) && empty($activeFolder['cdpcr_eval_end'])) {
@@ -1053,7 +1035,7 @@
                             $eStartDate = !empty($activeFolder[$docTypeKey . '_eval_start'])   ? strtotime($activeFolder[$docTypeKey . '_eval_start'])   : null;
                             $eEndDate   = !empty($activeFolder[$docTypeKey . '_eval_end'])     ? strtotime($activeFolder[$docTypeKey . '_eval_end'])     : null;
 
-                            $isEvaluationPhase = ($currentStepIndex >= 3);
+                            $isEvaluationPhase = $cFolderStatus->isEvaluationPhase();
                             $activeStart = $isEvaluationPhase ? $eStartDate : $tStartDate;
                             $activeEnd   = $isEvaluationPhase ? $eEndDate : $tEndDate;
                             $phasePrefix = $isEvaluationPhase ? 'Eval: ' : 'Target: ';
@@ -1322,7 +1304,7 @@
                                 $targetSupsList = $targetSupervisors ?? $evaluatorSupervisors ?? [];
                                 $evalSupsList   = $evalSupervisors ?? $evaluatorSupervisors ?? [];
                                 $hasSupervisors = !empty($targetSupsList) || !empty($evalSupsList);
-                                $defaultSubtab  = ($currentStepIndex >= 3) ? 'eval' : 'target';
+                                $defaultSubtab  = $cFolderStatus->isEvaluationPhase() ? 'eval' : 'target';
 
                                 // Split Target authorities into regular supervisors and assigned TWG
                                 $tRegularSups = array_values(array_filter($targetSupsList, fn($s) => empty($s['is_twg'])));
@@ -1414,7 +1396,7 @@
                                                                 </span>
                                                             <?php elseif ($sup['status'] === 'draft'): ?>
                                                                 <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
-                                                                    <?= esc($sup['status_label'] ?: 'Draft') ?>
+                                                                    <?= esc($sup['status_label'] ?: 'Awaiting Submission') ?>
                                                                 </span>
                                                             <?php else: ?>
                                                                 <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
@@ -1474,7 +1456,7 @@
                                                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-emerald-600 dark:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
                                                                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                                                                     </svg>
-                                                                    <?= esc($tTwgSup['status_label'] ?: 'TWG Verified') ?>
+                                                                    <?= esc($tTwgSup['status_label'] ?: 'Approved') ?>
                                                                 </span>
                                                             <?php elseif ($tTwgSup['status'] === 'returned'): ?>
                                                                 <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
@@ -1541,7 +1523,7 @@
                                                                 </span>
                                                             <?php elseif ($sup['status_label'] === 'Awaiting Eval Window' || $sup['status'] === 'draft'): ?>
                                                                 <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
-                                                                    <?= esc($sup['status_label']) ?>
+                                                                    <?= esc($sup['status_label'] ?: ($sup['status'] === 'draft' ? 'Awaiting Submission' : 'Awaiting Eval Window')) ?>
                                                                 </span>
                                                             <?php else: ?>
                                                                 <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
@@ -1601,18 +1583,18 @@
                                                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-emerald-600 dark:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
                                                                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                                                                     </svg>
-                                                                    <?= esc($eTwgSup['status_label'] ?: 'TWG Approved') ?>
+                                                                    <?= esc($eTwgSup['status_label'] ?: 'Approved') ?>
                                                                 </span>
                                                             <?php elseif ($eTwgSup['status'] === 'returned'): ?>
                                                                 <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
                                                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-rose-600 dark:text-rose-400" viewBox="0 0 20 20" fill="currentColor">
                                                                         <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1z" clip-rule="evenodd" />
                                                                     </svg>
-                                                                    <?= esc($eTwgSup['status_label'] ?: 'TWG Disapproved') ?>
+                                                                    <?= esc($eTwgSup['status_label'] ?: 'Returned') ?>
                                                                 </span>
                                                             <?php elseif ($eTwgSup['status_label'] === 'Awaiting Eval Window' || $eTwgSup['status'] === 'draft'): ?>
                                                                 <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
-                                                                    <?= esc($eTwgSup['status_label']) ?>
+                                                                    <?= esc($eTwgSup['status_label'] ?: ($eTwgSup['status'] === 'draft' ? 'Awaiting Submission' : 'Awaiting Eval Window')) ?>
                                                                 </span>
                                                             <?php else: ?>
                                                                 <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
@@ -1620,7 +1602,7 @@
                                                                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                                                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                                                     </svg>
-                                                                    <?= esc($eTwgSup['status_label'] ?: 'Pending Review') ?>
+                                                                    <?= esc($eTwgSup['status_label'] ?: 'Pending Verification') ?>
                                                                 </span>
                                                             <?php endif; ?>
                                                         </div>
@@ -1737,12 +1719,7 @@
 
                     <?php 
                         // Supervisors can cascade immediately once formulating commitments in target phase
-                        $inTargetPhase = in_array($activeFolder['status'], [
-                            \App\Enums\FolderStatus::DRAFT_TARGET->value,
-                            \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value,
-                            \App\Enums\FolderStatus::TARGET_APPROVED->value,
-                            \App\Enums\FolderStatus::DRAFT->value
-                        ]);
+                        $inTargetPhase = \App\Enums\FolderStatus::canonical($activeFolder['status'] ?? '')->isTargetPhase();
                         $canActuallyCascade = $isUserAdmin || $inTargetPhase;
                         $hasPresets = !empty($presets);
                     ?>
@@ -1833,8 +1810,9 @@
                                 <div id="cascaded-subordinates-list" class="space-y-2 overflow-y-auto custom-scrollbar flex-1 min-h-0 pr-0.5">
                                     <?php foreach ($cascadedChildren as $cIndex => $child): ?>
                                         <?php 
-                                             $isPending = ($child['status'] === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value);
-                                             $isApproved = ($child['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
+                                             $childCanon = \App\Enums\FolderStatus::canonical($child['status'] ?? '');
+                                             $isPending  = ($childCanon === \App\Enums\FolderStatus::TARGET_SUBMITTED);
+                                             $isApproved = ($childCanon === \App\Enums\FolderStatus::TARGET_APPROVED || $childCanon->isEvaluationPhase());
                                              $fInit = mb_substr($child['first_name'] ?? '', 0, 1);
                                              $lInit = mb_substr($child['last_name'] ?? '', 0, 1);
                                              $initials = strtoupper($fInit . $lInit) ?: 'U';
@@ -2050,29 +2028,11 @@
                     $currentPhaseLabel = $isPastTarget ? 'Eval Phase' : 'Target Phase';
                     $phaseDotColor = $isPastTarget ? 'bg-sky-500' : 'bg-emerald-500';
 
-                    $rawStatus = $activeFolder['status'] ?? 'draft';
-                    $statusBadgeText = match($rawStatus) {
-                        'approved', 'twg_approved' => 'Approved',
-                        'twg_disapproved' => 'TWG Disapproved',
-                        'to evaluate', 'submitted' => 'Submitted',
-                        'evaluated' => 'Evaluated',
-                        'draft_target' => 'Target Phase',
-                        'pending_target_approval' => 'Target Submitted',
-                        'target_approved' => 'Target Approved',
-                        'target_returned', 'target_unapproved' => 'Target Revision',
-                        'reevaluate' => 'Revision',
-                        'unevaluated' => 'Unevaluated',
-                        default => 'Draft'
-                    };
+                    $rawStatus = $activeFolder['status'] ?? 'draft_target';
+                    $statusBadgeText = \App\Enums\FolderStatus::canonical($rawStatus)->label();
 
                     // Derive official form type from the primary document inside the folder
-                    $primaryDoc = null;
-                    if (!empty($myDocs)) {
-                        foreach ($myDocs as $d) {
-                            if (!empty($d['is_target'])) { $primaryDoc = $d; break; }
-                        }
-                        if (!$primaryDoc) $primaryDoc = reset($myDocs);
-                    }
+                    $primaryDoc = !empty($myDocs) ? reset($myDocs) : null;
 
                     $pTitleUpper = strtoupper($primaryDoc['title'] ?? '');
                     if (str_contains($pTitleUpper, 'OPCR') || str_contains($pTitleUpper, 'OFFICE')) {
@@ -2125,24 +2085,27 @@
                     </div>
 
 
-                    <?php if ($activeFolder['status'] === \App\Enums\FolderStatus::PENDING_TARGET_APPROVAL->value): ?>
+                    <?php 
+                        $cActiveStatus = \App\Enums\FolderStatus::canonical($activeFolder['status'] ?? '');
+                    ?>
+                    <?php if ($cActiveStatus === \App\Enums\FolderStatus::TARGET_SUBMITTED): ?>
                         <?php if ($activeFolder['user_id'] == session()->get('user_id')): ?>
                             <button onclick="unsubmitTargetFolder('<?= $activeFolder['id'] ?>', this)" 
                                     class="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                                 </svg>
-                                Revoke Target Submission
+                                Unsubmit
                             </button>
                         <?php endif; ?>
-                    <?php elseif ($activeFolder['status'] === \App\Enums\FolderStatus::EVALUATED->value): ?>
+                    <?php elseif ($cActiveStatus === \App\Enums\FolderStatus::EVAL_SUBMITTED): ?>
                         <?php if ($activeFolder['user_id'] == session()->get('user_id')): ?>
                             <button onclick="unsubmitEvaluationFolder('<?= $activeFolder['id'] ?>', this)" 
                                     class="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                                 </svg>
-                                Revoke Self-Rating
+                                Unsubmit
                             </button>
                         <?php endif; ?>
                     <?php endif; ?>
@@ -2386,15 +2349,6 @@
             });
         }
 
-        function setTargetDocument(docId, folderId, targetState) {
-            const formData = new FormData();
-            formData.append('doc_id', docId);
-            formData.append('folder_id', folderId);
-            formData.append('is_target', targetState);
-            apiPost('<?= site_url('document/target') ?>', formData, {
-                onSuccess: () => window.location.reload()
-            });
-        }
 
         const isUserAdmin = <?= json_encode((session()->get('role') === 'Admin')) ?>;
         let sending = false;

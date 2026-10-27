@@ -28,10 +28,10 @@ class GuestFilter implements FilterInterface
         helper('functions');
 
         if (session()->get('user_id') || restore_session_from_cookie()) {
-            $role = session()->get('role');
-            if (in_array($role, ['TWG', 'PMT'])) {
+            $uRole = \App\Enums\UserRole::canonical(session()->get('role'));
+            if ($uRole?->isComplianceAuthority()) {
                 $dest = 'ratings';
-            } elseif ($role === 'Admin') {
+            } elseif ($uRole === \App\Enums\UserRole::ADMIN) {
                 $dest = 'dashboard';
             } else {
                 $dest = 'folders';

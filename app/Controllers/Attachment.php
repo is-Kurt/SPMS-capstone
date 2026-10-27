@@ -48,28 +48,14 @@ class Attachment extends BaseController
         }
 
         $status = $doc['folder_status'] ?? '';
-        $evalPhaseStatuses = [
-            FolderStatus::SUBMITTED->value,
-            FolderStatus::TO_EVALUATE->value,
-            FolderStatus::REEVALUATE->value,
-            FolderStatus::EVALUATED->value,
-            FolderStatus::APPROVED->value,
-            FolderStatus::TWG_APPROVED->value,
-            FolderStatus::TWG_DISAPPROVED->value,
-            FolderStatus::UNEVALUATED->value,
-        ];
+        $cStatus = FolderStatus::canonical($status);
 
         $isRubricUpload = ($rowId === 'rubric');
 
         if ($isRubricUpload) {
             // Rubric attachments can be uploaded during the Target-Setting Phase (Draft / Pending Approval)
             // or whenever target editing is permissible
-            $targetUploadStatuses = [
-                FolderStatus::DRAFT->value,
-                FolderStatus::PENDING_TARGET_APPROVAL->value,
-                FolderStatus::TARGET_APPROVED->value,
-            ];
-            $canUploadRubric = in_array($status, $targetUploadStatuses) || ($sysRole === 'Admin');
+            $canUploadRubric = $cStatus->isTargetPhase() || ($sysRole === 'Admin');
             if (!$canUploadRubric && $sysRole !== 'Admin') {
                 return $this->response->setStatusCode(403)->setJSON([
                     'status'  => 'error',
@@ -84,7 +70,7 @@ class Attachment extends BaseController
             $tEnd = $doc[$targetEndCol] ?? null;
             $isPastTargetDate = (!empty($tEnd) && $now > $tEnd);
 
-            $isEvaluationPhase = in_array($status, $evalPhaseStatuses) || $isPastTargetDate;
+            $isEvaluationPhase = $cStatus->isEvaluationPhase() || $isPastTargetDate;
 
             if (!$isEvaluationPhase && $sysRole !== 'Admin') {
                 return $this->response->setStatusCode(403)->setJSON([
@@ -93,7 +79,13 @@ class Attachment extends BaseController
                 ]);
             }
 
-            if ($sysRole !== 'Admin' && !in_array($status, [FolderStatus::DRAFT->value, FolderStatus::TARGET_APPROVED->value, FolderStatus::TO_EVALUATE->value, FolderStatus::REEVALUATE->value]) && !$isPastTargetDate) {
+            $canUploadMOV = in_array($cStatus, [
+                FolderStatus::DRAFT_EVALUATION,
+                FolderStatus::TARGET_APPROVED,
+                FolderStatus::EVAL_RETURNED,
+            ], true) || $isPastTargetDate || ($sysRole === 'Admin');
+
+            if (!$canUploadMOV) {
                 return $this->response->setStatusCode(403)->setJSON([
                     'status'  => 'error',
                     'message' => 'Evidence attachments can only be uploaded while evaluating accomplishments.'
@@ -241,26 +233,12 @@ class Attachment extends BaseController
         }
 
         $status = $doc['folder_status'] ?? '';
-        $evalPhaseStatuses = [
-            FolderStatus::SUBMITTED->value,
-            FolderStatus::TO_EVALUATE->value,
-            FolderStatus::REEVALUATE->value,
-            FolderStatus::EVALUATED->value,
-            FolderStatus::APPROVED->value,
-            FolderStatus::TWG_APPROVED->value,
-            FolderStatus::TWG_DISAPPROVED->value,
-            FolderStatus::UNEVALUATED->value,
-        ];
+        $cStatus = FolderStatus::canonical($status);
 
         $isRubricUpload = ($rowId === 'rubric');
 
         if ($isRubricUpload) {
-            $targetUploadStatuses = [
-                FolderStatus::DRAFT->value,
-                FolderStatus::PENDING_TARGET_APPROVAL->value,
-                FolderStatus::TARGET_APPROVED->value,
-            ];
-            $canUploadRubric = in_array($status, $targetUploadStatuses) || ($sysRole === 'Admin');
+            $canUploadRubric = $cStatus->isTargetPhase() || ($sysRole === 'Admin');
             if (!$canUploadRubric && $sysRole !== 'Admin') {
                 return $this->response->setStatusCode(403)->setJSON([
                     'status'  => 'error',
@@ -274,7 +252,7 @@ class Attachment extends BaseController
             $tEnd = $doc[$targetEndCol] ?? null;
             $isPastTargetDate = (!empty($tEnd) && $now > $tEnd);
 
-            $isEvaluationPhase = in_array($status, $evalPhaseStatuses) || $isPastTargetDate;
+            $isEvaluationPhase = $cStatus->isEvaluationPhase() || $isPastTargetDate;
 
             if (!$isEvaluationPhase && $sysRole !== 'Admin') {
                 return $this->response->setStatusCode(403)->setJSON([
@@ -283,7 +261,13 @@ class Attachment extends BaseController
                 ]);
             }
 
-            if ($sysRole !== 'Admin' && !in_array($status, [FolderStatus::DRAFT->value, FolderStatus::TARGET_APPROVED->value, FolderStatus::TO_EVALUATE->value, FolderStatus::REEVALUATE->value]) && !$isPastTargetDate) {
+            $canUploadMOV = in_array($cStatus, [
+                FolderStatus::DRAFT_EVALUATION,
+                FolderStatus::TARGET_APPROVED,
+                FolderStatus::EVAL_RETURNED,
+            ], true) || $isPastTargetDate || ($sysRole === 'Admin');
+
+            if (!$canUploadMOV) {
                 return $this->response->setStatusCode(403)->setJSON([
                     'status'  => 'error',
                     'message' => 'Evidence attachments can only be added while evaluating accomplishments.'
@@ -384,23 +368,14 @@ class Attachment extends BaseController
 
         // Check if in Evaluation Phase
         $status = $doc['folder_status'] ?? '';
-        $evalPhaseStatuses = [
-            FolderStatus::SUBMITTED->value,
-            FolderStatus::TO_EVALUATE->value,
-            FolderStatus::REEVALUATE->value,
-            FolderStatus::EVALUATED->value,
-            FolderStatus::APPROVED->value,
-            FolderStatus::TWG_APPROVED->value,
-            FolderStatus::TWG_DISAPPROVED->value,
-            FolderStatus::UNEVALUATED->value,
-        ];
+        $cStatus = FolderStatus::canonical($status);
         $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
         $now = date('Y-m-d H:i:s');
         $targetEndCol = $ownerDocType . '_target_end';
         $tEnd = $doc[$targetEndCol] ?? null;
         $isPastTargetDate = (!empty($tEnd) && $now > $tEnd);
 
-        $isEvaluationPhase = in_array($status, $evalPhaseStatuses) || $isPastTargetDate;
+        $isEvaluationPhase = $cStatus->isEvaluationPhase() || $isPastTargetDate;
 
         if (!$isEvaluationPhase && $sysRole !== 'Admin') {
             return $this->response->setStatusCode(403)->setJSON([

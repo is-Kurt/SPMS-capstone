@@ -1,6 +1,9 @@
 <?php
+    use App\Enums\UserRole;
+
     $currentUri = uri_string();
     $role = session()->get('role');
+    $uRole = UserRole::canonical($role);
     $userPos = strtolower(session()->get('position') ?? '');
     $userEmail = strtolower(session()->get('email') ?? '');
     $isPresident = session()->get('is_president') 
@@ -10,12 +13,12 @@
     $navItems = [];
 
     // Executive Analytics Dashboard (Admin, PMT) / College Submission Monitor (Supervisor)
-    if (in_array($role, ['Admin', 'Supervisor', 'PMT'])) {
+    if ($uRole && in_array($uRole, [UserRole::ADMIN, UserRole::SUPERVISOR, UserRole::PMT], true)) {
         $navItems['dashboard'] = 'Dashboard';
     }
 
     // TWG, PMT only review performance; they don't author personal folders.
-    if (!in_array($role, ['TWG', 'PMT']) && ($role === 'Admin' || !$isPresident)) {
+    if ($uRole && !$uRole->isComplianceAuthority() && ($uRole === UserRole::ADMIN || !$isPresident)) {
         $navItems['folders'] = 'Folders';
     }
 
@@ -25,17 +28,17 @@
     if ($sessUserId) {
         $isEvaluator = (new \App\Models\EvaluationRoutingModel())->where('evaluator_id', $sessUserId)->countAllResults() > 0;
     }
-    if (in_array($role, ['Admin', 'Supervisor', 'HR', 'TWG', 'PMT']) || $isEvaluator || $isPresident) {
+    if (($uRole && ($uRole->isReviewer() || $uRole === UserRole::HR)) || $isEvaluator || $isPresident) {
         $navItems['ratings'] = 'Ratings';
     }
 
     // Admins, Supervisors, and Department Chairs create Distribution Lists (Teams)
-    $canManageTeams = ($role === 'Admin') || (!$isPresident && (in_array($role, ['Admin', 'Supervisor']) || str_contains($userPos, 'chair') || str_contains($userPos, 'head')));
+    $canManageTeams = ($uRole === UserRole::ADMIN) || (!$isPresident && (($uRole && $uRole->isAdministrative()) || str_contains($userPos, 'chair') || str_contains($userPos, 'head')));
     if ($canManageTeams) {
         $navItems['teams'] = 'My Teams';
     }
 
-    if ($role === 'Admin') {
+    if ($uRole === UserRole::ADMIN) {
         $navItems['accounts'] = 'Accounts';
         $navItems['audit-logs'] = 'Audit Trail';
     }

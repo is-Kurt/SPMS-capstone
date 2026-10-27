@@ -422,25 +422,21 @@
 
                                                     <div class="lg:hidden shrink-0 mt-0.5">
                                                         <?php 
-                                                            $s = strtolower($row['folder_status']);
+                                                            $cStatus = \App\Enums\FolderStatus::canonical($row['folder_status'] ?? '');
                                                             $badgeColors = [
-                                                                'approved'                => 'bg-success-100 text-success-700 border-success-200 dark:bg-success-500/20 dark:text-success-400',
-                                                                'target_approved'         => 'bg-success-100 text-success-700 border-success-200 dark:bg-success-500/20 dark:text-success-400',
-                                                                'twg_approved'            => 'bg-success-100 text-success-700 border-success-200 dark:bg-success-500/20 dark:text-success-400',
-                                                                'submitted'               => 'bg-info-100 text-info-700 border-info-200 dark:bg-info-500/20 dark:text-info-400',
-                                                                'evaluated'               => 'bg-info-100 text-info-700 border-info-200 dark:bg-info-500/20 dark:text-info-400',
-                                                                'pending_target_approval' => 'bg-warning-100 text-warning-700 border-warning-200 dark:bg-warning-500/20 dark:text-warning-400',
-                                                                'to evaluate'             => 'bg-warning-100 text-warning-700 border-warning-200 dark:bg-warning-500/20 dark:text-warning-400',
-                                                                'reevaluate'              => 'bg-revision-100 text-revision-700 border-revision-200 dark:bg-revision-500/20 dark:text-revision-400',
-                                                                'target_returned'         => 'bg-revision-100 text-revision-700 border-revision-200 dark:bg-revision-500/20 dark:text-revision-400',
-                                                                'target_unapproved'       => 'bg-revision-100 text-revision-700 border-revision-200 dark:bg-revision-500/20 dark:text-revision-400',
-                                                                'twg_disapproved'         => 'bg-danger-100 text-danger-700 border-danger-200 dark:bg-danger-500/20 dark:text-danger-400',
-                                                                'unevaluated'             => 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400',
-                                                                'draft'                   => 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400',
-                                                                'draft_target'            => 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400'
+                                                                \App\Enums\FolderStatus::TARGET_APPROVED->value => 'bg-success-100 text-success-700 border-success-200 dark:bg-success-500/20 dark:text-success-400',
+                                                                \App\Enums\FolderStatus::EVAL_APPROVED->value   => 'bg-success-100 text-success-700 border-success-200 dark:bg-success-500/20 dark:text-success-400',
+                                                                \App\Enums\FolderStatus::TARGET_SUBMITTED->value=> 'bg-info-100 text-info-700 border-info-200 dark:bg-info-500/20 dark:text-info-400',
+                                                                \App\Enums\FolderStatus::EVAL_SUBMITTED->value  => 'bg-info-100 text-info-700 border-info-200 dark:bg-info-500/20 dark:text-info-400',
+                                                                \App\Enums\FolderStatus::TARGET_RETURNED->value => 'bg-revision-100 text-revision-700 border-revision-200 dark:bg-revision-500/20 dark:text-revision-400',
+                                                                \App\Enums\FolderStatus::EVAL_RETURNED->value   => 'bg-revision-100 text-revision-700 border-revision-200 dark:bg-revision-500/20 dark:text-revision-400',
+                                                                \App\Enums\FolderStatus::TARGET_MISSED->value   => 'bg-danger-100 text-danger-700 border-danger-200 dark:bg-danger-500/20 dark:text-danger-400',
+                                                                \App\Enums\FolderStatus::UNEVALUATED->value     => 'bg-danger-100 text-danger-700 border-danger-200 dark:bg-danger-500/20 dark:text-danger-400',
+                                                                \App\Enums\FolderStatus::DRAFT_TARGET->value    => 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400',
+                                                                \App\Enums\FolderStatus::DRAFT_EVALUATION->value=> 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400',
                                                             ];
-                                                            $c = $badgeColors[$s] ?? 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400';
-                                                            $displayStatus = ucwords(str_replace('_', ' ', $row['folder_status']));
+                                                            $c = $badgeColors[$cStatus->value] ?? 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400';
+                                                            $displayStatus = $cStatus->label();
                                                         ?>
                                                         <span class="px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border <?= $c ?> whitespace-nowrap">
                                                             <?= esc($displayStatus) ?>

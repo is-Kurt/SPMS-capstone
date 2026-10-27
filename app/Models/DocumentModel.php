@@ -16,8 +16,7 @@ class DocumentModel extends Model
         'id', 
         'title', 
         'tabs',
-        'document_folder_id', 
-        'is_target'
+        'document_folder_id'
     ];
 
     protected bool $allowEmptyInserts = false;
@@ -57,20 +56,31 @@ class DocumentModel extends Model
      */
     public function getDocumentWithFolderInfo(string $docId): ?array
     {
-        return $this->db->table('documents d')
-            ->select('d.*, df.user_id as owner_id, df.status as folder_status, df.parent_folder_id, df.title as folder_title, df.deleted_at as folder_deleted_at,
-                      df.ipcr_target_start, df.ipcr_target_end, df.ipcr_eval_start, df.ipcr_eval_end,
-                      df.cdpcr_target_start, df.cdpcr_target_end, df.cdpcr_eval_start, df.cdpcr_eval_end,
-                      df.dpcr_target_start, df.dpcr_target_end, df.dpcr_eval_start, df.dpcr_eval_end,
-                      df.opcr_target_start, df.opcr_target_end, df.opcr_eval_start, df.opcr_eval_end,
-                      df.iperf_target_start, df.iperf_target_end, df.iperf_eval_start, df.iperf_eval_end,
+        $row = $this->db->table('documents d')
+            ->select('d.*, df.user_id as owner_id, df.status as folder_status, df.parent_folder_id, df.cycle_folder_id, df.title as folder_title, df.deleted_at as folder_deleted_at,
                       df.target_submitted_at, df.target_approved_at, df.target_approved_by, df.target_approver_role,
                       df.routing_preset_id, df.final_rating,
+                      cd.target_start, cd.target_end, cd.eval_start, cd.eval_end,
                       u.doc_type')
             ->join('document_folders df', 'df.id = d.document_folder_id')
             ->join('users u', 'u.id = df.user_id', 'left')
+            ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
+            ->join('positions pos', 'pos.id = p.position_id', 'left')
+            ->join('cycle_deadlines cd', 'cd.cycle_folder_id = COALESCE(df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = CASE WHEN (LOWER(COALESCE(u.doc_type, "ipcr")) = "dpcr" AND (pos.title LIKE "%dean%" OR u.email LIKE "%dean%")) THEN "cdpcr" ELSE LOWER(COALESCE(u.doc_type, "ipcr")) END', 'left')
             ->where('d.id', $docId)
             ->get()->getRowArray();
+
+        if ($row) {
+            $effectiveDocType = strtolower($row['doc_type'] ?? 'ipcr');
+            $row["{$effectiveDocType}_target_start"] = $row['target_start'] ?? null;
+            $row["{$effectiveDocType}_target_end"]   = $row['target_end'] ?? null;
+            $row["{$effectiveDocType}_eval_start"]   = $row['eval_start'] ?? null;
+            $row["{$effectiveDocType}_eval_end"]     = $row['eval_end'] ?? null;
+            $row['cdpcr_target_end'] = $row['target_end'] ?? null;
+            $row['dpcr_target_end']  = $row['target_end'] ?? null;
+        }
+
+        return $row;
     }
 
     public function getUserDocuments(int $userId, ?string $docId = null)

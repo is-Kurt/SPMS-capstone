@@ -54,7 +54,8 @@ class Document extends BaseController
             }
 
             // Privacy guard: Evaluators, Admins, and TWG cannot read an unsubmitted private draft
-            if (in_array($docInfo['folder_status'] ?? '', [\App\Enums\FolderStatus::DRAFT->value, \App\Enums\FolderStatus::DRAFT_TARGET->value])) {
+            $cFolderStatus = \App\Enums\FolderStatus::canonical($docInfo['folder_status'] ?? '');
+            if (in_array($cFolderStatus, [\App\Enums\FolderStatus::DRAFT_TARGET, \App\Enums\FolderStatus::DRAFT_EVALUATION], true)) {
                 session()->setFlashdata('error', 'This document is currently being drafted by the employee and has not yet been submitted for evaluation.');
                 return redirect()->to(site_url('ratings'));
             }
@@ -78,8 +79,7 @@ class Document extends BaseController
                     $parentFolder = null;
                     $basisDoc = null;
                 } else {
-                    $candidateBasis = $documentModel->where('document_folder_id', $parentFolder['id'])->where('is_target', 1)->first()
-                                   ?? $documentModel->where('document_folder_id', $parentFolder['id'])->first();
+                    $candidateBasis = $documentModel->where('document_folder_id', $parentFolder['id'])->first();
 
                     if ($candidateBasis) {
                         $candidateTitleUpper = strtoupper($candidateBasis['title'] ?? '');
@@ -87,7 +87,8 @@ class Document extends BaseController
                         $isParentDocDpcr = str_contains($candidateTitleUpper, 'DPCR') || str_contains($candidateTitleUpper, 'DEPARTMENT') || str_contains($candidateTitleUpper, 'DIVISION') || (strtoupper($candidateBasis['doc_type'] ?? '') === 'DPCR');
 
                         // Under CSC SPMS guidelines, subordinates require their superior's approved targets as a basis
-                        $isParentTargetApproved = ($parentFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
+                        $pCanon = \App\Enums\FolderStatus::canonical($parentFolder['status'] ?? '');
+                        $isParentTargetApproved = ($pCanon === \App\Enums\FolderStatus::TARGET_APPROVED || $pCanon->isEvaluationPhase());
                         $basisDoc = $candidateBasis;
                         $superiorUser = $userModel->find($parentFolder['user_id']);
                         if ($superiorUser) {
@@ -151,12 +152,8 @@ class Document extends BaseController
                             'docs' => $docs
                         ];
 
-                        // Identify target or primary document in superior's folder
-                        $targetDoc = null;
-                        foreach ($docs as $d) {
-                            if (!empty($d['is_target'])) { $targetDoc = $d; break; }
-                        }
-                        if (!$targetDoc) $targetDoc = $docs[0];
+                        // Identify primary document in superior's folder
+                        $targetDoc = $docs[0] ?? null;
 
                         $bFormData = null;
                         $bContent  = $targetDoc['content'] ?? '';
@@ -170,7 +167,8 @@ class Document extends BaseController
                             }
                         }
 
-                        $isSupApproved = ($guideFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value);
+                        $gCanon = \App\Enums\FolderStatus::canonical($guideFolder['status'] ?? '');
+                        $isSupApproved = ($gCanon === \App\Enums\FolderStatus::TARGET_APPROVED || $gCanon->isEvaluationPhase());
 
                         $tTitleUpper = strtoupper($targetDoc['title'] ?? '');
                         $sDocType = str_contains($tTitleUpper, 'OPCR') ? 'OPCR' : (str_contains($tTitleUpper, 'DPCR') ? 'DPCR' : (str_contains($tTitleUpper, 'IPERF') ? 'IPERF' : 'IPCR'));
@@ -204,11 +202,7 @@ class Document extends BaseController
                                 $pName = trim(($pUser['first_name'] ?? '') . ' ' . ($pUser['last_name'] ?? ''));
                                 $pPos  = $pPlantilla['position'] ?? 'Supervisor';
 
-                                $targetDoc = null;
-                                foreach ($adminDocs as $d) {
-                                    if (!empty($d['is_target'])) { $targetDoc = $d; break; }
-                                }
-                                if (!$targetDoc) $targetDoc = $adminDocs[0];
+                                $targetDoc = $adminDocs[0] ?? null;
 
                                 $bFormData = null;
                                 $bContent  = $targetDoc['content'] ?? '';
@@ -225,6 +219,7 @@ class Document extends BaseController
                                 $pTitleUpper = strtoupper($targetDoc['title'] ?? '');
                                 $pDocType = str_contains($pTitleUpper, 'OPCR') ? 'OPCR' : (str_contains($pTitleUpper, 'DPCR') ? 'DPCR' : (str_contains($pTitleUpper, 'IPERF') ? 'IPERF' : 'IPCR'));
 
+                                $aCanon = \App\Enums\FolderStatus::canonical($adminFolder['status'] ?? '');
                                 $allBasisGuides[] = [
                                     'id'            => $targetDoc['id'],
                                     'title'         => $targetDoc['title'] ?? 'Basis Document',
@@ -232,7 +227,7 @@ class Document extends BaseController
                                     'superior_id'   => $pUid,
                                     'superior_name' => $pName,
                                     'superior_role' => $pPos,
-                                    'is_approved'   => ($adminFolder['status'] === \App\Enums\FolderStatus::TARGET_APPROVED->value),
+                                    'is_approved'   => ($aCanon === \App\Enums\FolderStatus::TARGET_APPROVED || $aCanon->isEvaluationPhase()),
                                     'folder_id'     => $adminFolder['id'],
                                     'content'       => $bContent,
                                     'formData'      => $bFormData,
@@ -283,7 +278,7 @@ class Document extends BaseController
             : date('Y-m-d');
 
         // Resolve evaluation period (e.g. January - June 2026 or July - December 2026)
-        $refTime = !empty($currentFolderRec['ipcr_target_start']) ? strtotime($currentFolderRec['ipcr_target_start']) 
+        $refTime = !empty($docInfo['target_start']) ? strtotime($docInfo['target_start']) 
                  : (!empty($currentFolderRec['created_at']) ? strtotime($currentFolderRec['created_at']) : time());
         $m = (int)date('n', $refTime);
         $y = date('Y', $refTime);
@@ -446,8 +441,7 @@ class Document extends BaseController
                 continue;
             }
 
-            $sDoc = $documentModel->where('document_folder_id', $sFolderId)->where('is_target', 1)->first()
-                 ?? $documentModel->where('document_folder_id', $sFolderId)->first();
+            $sDoc = $documentModel->where('document_folder_id', $sFolderId)->first();
             if (!$sDoc || empty($sDoc['tabs'])) continue;
 
             $sTabs = is_string($sDoc['tabs']) ? json_decode($sDoc['tabs'], true) : $sDoc['tabs'];
@@ -619,18 +613,27 @@ class Document extends BaseController
         // Resolve supervisor approval status for each supervisor
         $supervisorApprovals = [];
         $currentEvaluatorRoute = null;
+        $totalSupervisorsCount = 0;
+        $approvedSupervisorsCount = 0;
         if (!empty($docInfo['document_folder_id'])) {
             $routingModel = new \App\Models\EvaluationRoutingModel();
             $routes = $routingModel->where('folder_id', $docInfo['document_folder_id'])->findAll();
             foreach ($routes as $r) {
                 $eId = (int)$r['evaluator_id'];
+                if ($eId === (int)($docInfo['user_id'] ?? 0)) continue;
                 if ($userModel->hasRole($eId, 'Admin')) continue;
                 $supervisorApprovals[$eId] = $r['status'];
+                $totalSupervisorsCount++;
+                $st = strtolower(trim((string)$r['status']));
+                if ($st === 'approved' || $st === 'target_approved') {
+                    $approvedSupervisorsCount++;
+                }
                 if ($eId === (int)$userId) {
                     $currentEvaluatorRoute = $r;
                 }
             }
         }
+        $data['allSupervisorsApproved'] = ($totalSupervisorsCount === 0 || $approvedSupervisorsCount >= $totalSupervisorsCount);
 
         $data['allBasisGuides']         = $allBasisGuides;
         $data['allBasisGuidesJson']     = array_map(function($g) {
@@ -680,18 +683,11 @@ class Document extends BaseController
                 ];
             }
 
-            $hasExistingTarget = $documentModel->where('document_folder_id', $folderId)->where('is_target', 1)->first();
-            $isTarget = (!$hasExistingTarget || !empty($templateId)) ? 1 : 0;
-            if ($isTarget && $hasExistingTarget && !empty($templateId)) {
-                $documentModel->where('document_folder_id', $folderId)->set(['is_target' => 0])->update();
-            }
-
             $docs = $documentModel->getUserDocuments($userId);
             $payload = [
                 'title'              => resolve_unique_title($title, $docs),
                 'document_folder_id' => $folderId,
-                'tabs'               => $initialTabs,
-                'is_target'          => $isTarget
+                'tabs'               => $initialTabs
             ];
             $newId = create_unique_row($documentModel, $payload);
 
@@ -769,40 +765,6 @@ class Document extends BaseController
      */
     public function setTarget() {
         return $this->tryOrFail(function() {
-            $docId = $this->request->getPost('doc_id');
-            $folderId = $this->request->getPost('folder_id');
-            $isTarget = $this->request->getPost('is_target') !== null ? (int)$this->request->getPost('is_target') : 1;
-            $userId = session()->get('user_id');
-            $role   = session()->get('role');
-
-            $folderModel = new \App\Models\DocumentFolderModel();
-            $folder = $folderModel->find($folderId);
-
-            if (!$folder) {
-                return $this->respondError('Folder not found.', 404);
-            }
-
-            // Must be the folder owner, or an Admin/routed evaluator
-            $isOwner = ($folder['user_id'] == $userId);
-            $isAdmin = ($role === 'Admin');
-            $isEvaluator = (new \App\Models\EvaluationRoutingModel())
-                ->where('folder_id', $folderId)
-                ->where('evaluator_id', $userId)
-                ->countAllResults() > 0;
-
-            if (!$isOwner && !$isAdmin && !$isEvaluator) {
-                return $this->respondError('Unauthorized to modify targets for this folder.', 403);
-            }
-
-            $documentModel = new DocumentModel();
-
-            // Clear any existing target in the folder
-            $documentModel->where('document_folder_id', $folderId)->set(['is_target' => 0])->update();
-            
-            if ($isTarget === 1) {
-                $documentModel->where('id', $docId)->where('document_folder_id', $folderId)->set(['is_target' => 1])->update();
-            }
-
             return $this->respond(['status' => 'success', 'message' => 'Target document updated.']);
         });
     }

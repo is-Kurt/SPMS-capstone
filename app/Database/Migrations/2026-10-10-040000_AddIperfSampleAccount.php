@@ -144,7 +144,6 @@ class AddIperfSampleAccount extends Migration
                     'id'                 => $docId,
                     'document_folder_id' => $folderId,
                     'title'              => 'IPERF — Danilo Ocampo',
-                    'is_target'          => 1,
                     'tabs'               => json_encode($tabs),
                     'created_at'         => $now,
                     'updated_at'         => $now

@@ -168,6 +168,86 @@ class TwgUnitAssignmentModel extends Model
     }
 
     /**
+     * Resolve the assigned TWG reviewer for a given folder or folder ID.
+     * Checks direct unit assignment, and falls back to parent college if in sub-department.
+     *
+     * @param array|string|int $folder
+     * @return array|null
+     */
+    public function resolveAssignedTwgForFolder(array|string|int $folder): ?array
+    {
+        if (!is_array($folder)) {
+            $folder = $this->db->table('document_folders')
+                ->select('id, user_id, title')
+                ->where('id', $folder)
+                ->get()->getRowArray();
+        }
+
+        if (!$folder || empty($folder['user_id'])) {
+            return null;
+        }
+
+        $ownerId = (int)$folder['user_id'];
+        $plantillaModel = new PlantillaModel();
+        $ownerPlantillas = $plantillaModel->where('user_id', $ownerId)->where('ended_at IS NULL')->findAll();
+        $ownerUnitIds = array_filter(array_map('intval', array_column($ownerPlantillas, 'unit_id')));
+
+        if (empty($ownerUnitIds)) {
+            return null;
+        }
+
+        // Strictly non-cascading: Match TWG reviewer assigned directly to the owner's unit
+        $twgAssignment = $this->db->table($this->table . ' tua')
+            ->select('u.id, u.first_name, u.last_name, u.email, un.name as college_name')
+            ->join('users u', 'u.id = tua.user_id')
+            ->join('units un', 'un.id = tua.unit_id')
+            ->whereIn('tua.unit_id', $ownerUnitIds)
+            ->where('u.is_active', 1)
+            ->get()->getRowArray();
+
+        // If owner is in a sub-program department with no direct assignment, fallback only to their immediate college (never executive OVPAA/OVPAF)
+        if (!$twgAssignment) {
+            $unitModel = new UnitModel();
+            $parentCollegeIds = [];
+            foreach ($ownerUnitIds as $uId) {
+                $college = $unitModel->getParentCollege($uId);
+                if ($college && !empty($college['id']) && !in_array($college['name'], ['OVPAA', 'OVPAF', 'Office of the President'], true)) {
+                    $parentCollegeIds[] = (int)$college['id'];
+                }
+            }
+            $parentCollegeIds = array_diff(array_unique($parentCollegeIds), $ownerUnitIds);
+            if (!empty($parentCollegeIds)) {
+                $twgAssignment = $this->db->table($this->table . ' tua')
+                    ->select('u.id, u.first_name, u.last_name, u.email, un.name as college_name')
+                    ->join('users u', 'u.id = tua.user_id')
+                    ->join('units un', 'un.id = tua.unit_id')
+                    ->whereIn('tua.unit_id', $parentCollegeIds)
+                    ->where('u.is_active', 1)
+                    ->get()->getRowArray();
+            }
+        }
+
+        if (!$twgAssignment) {
+            return null;
+        }
+
+        $twgCollege = trim((string)($twgAssignment['college_name'] ?? ''));
+        $twgPosition = 'Technical Working Group';
+        if (!empty($twgCollege) && stripos($twgCollege, 'OVPAA') === false) {
+            $twgPosition .= ' (' . $twgCollege . ')';
+        }
+
+        return [
+            'id'           => (int)$twgAssignment['id'],
+            'name'         => trim(($twgAssignment['first_name'] ?? '') . ' ' . ($twgAssignment['last_name'] ?? '')),
+            'email'        => $twgAssignment['email'],
+            'position'     => $twgPosition,
+            'college'      => $twgAssignment['college_name'],
+            'is_twg'       => true
+        ];
+    }
+
+    /**
      * Get all active TWG reviewers with their full names, email, and active status.
      *
      * @return array

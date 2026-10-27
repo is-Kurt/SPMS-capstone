@@ -83,8 +83,9 @@ Accomplishments Reported ➔ MOVs / Drive Proof Attached ➔ Q-E-T Scoring ➔ T
 1. Once your deliverables, success indicators, and percentage weights are finalized, scroll to the top-right header of your matrix.
 2. Click the green **Submit Targets** button.
 3. A confirmation dialog will appear. Click **Confirm Submission**.
-4. **Target Lock:** Once submitted, target editing is locked while your Department Chair or Dean reviews the document.
-5. **If Changes Are Needed:** Your supervisor will return the document with inline remarks. You will receive an instant in-app notification. Open your document, review the remarks, edit your targets, and click **Submit Targets** again.
+4. **Target Lock:** Once submitted, target editing is locked while your Department Chair, Dean, and assigned TWG reviewer inspect the commitments.
+5. **Withdrawing Submission (Unsubmit):** If you accidentally submitted your targets before you were completely finished, you can click the **Unsubmit** button in the top navigation bar at any time before your supervisor approves. This immediately returns your targets to draft mode.
+6. **If Changes Are Needed:** Your supervisor or TWG will return the document with inline remarks. You will receive an instant in-app notification. Open your document, review the remarks, edit your targets, and click **Submit Targets** again.
 
 ### 1.4 Attaching Verification Proof (MOVs & Google Drive)
 The Civil Service Commission requires verifiable **Means of Verification (MOV)** before any accomplishment can be graded.
@@ -112,7 +113,7 @@ At the end of the semester or cycle:
    - **E (Efficiency):** Resource utilization, volume handled.
    - **T (Timeliness):** Completed on or ahead of deadlines.
 5. **Dimension Gating (N/A):** If Efficiency or Timeliness is not measurable or applicable for a specific duty, select **N/A**. The formula automatically excludes that dimension and computes the average cleanly.
-6. When complete, click **Submit Evaluation** to route your accomplishments to your supervisor.
+6. When complete, click **Submit Evaluation** to route your accomplishments to your supervisor. If needed before supervisor review, you can click **Unsubmit** to withdraw back to draft.
 
 ### 1.6 Exporting to Official CSC Excel & Printing
 1. After your supervisor and evaluator have finalized and approved your ratings, click **Export Excel** in the document viewer header.
@@ -126,8 +127,8 @@ At the end of the semester or cycle:
 
 ### 2.1 Cascading Institutional Targets Downwards
 The SPMS requires strict top-down alignment:
-1. **Dean Cascading:** Before a College Dean can cascade to Department Chairs, the Dean's collegiate DPCR must first be submitted and approved by the VPAA/Apex authority.
-2. **Department Chair Cascading:** Before a Chair can distribute semester folders to faculty, the Chair's departmental DPCR must first be approved by the Dean.
+1. **Dean Cascading:** Before a College Dean can cascade to Department Chairs, the Dean's collegiate DPCR must first be submitted, reviewed by supervising authorities, and verified by the TWG.
+2. **Department Chair Cascading:** Before a Chair can distribute semester folders to faculty, the Chair's departmental DPCR must first achieve `TARGET APPROVED`.
 3. **Distributing to Team Members:**
    - Open your approved DPCR document.
    - Click the **Team / Distribution** button in the header toolbar to open the team drawer.
@@ -141,8 +142,12 @@ The SPMS requires strict top-down alignment:
    - Deliverables support departmental PPAs.
    - Target metrics are realistic and quantifiable.
    - Percentage category weights equal **100%**.
-4. **Approval:** If satisfied, click **Approve Targets**. The subordinate's commitments become locked for the semester.
-5. **Revisions:** If adjustments are needed, click **Return for Revision**. Enter clear, actionable notes explaining what needs modification.
+4. **Sequential Target Approval Pipeline:**
+   - **Step A — Supervising Authorities Review First:** The Immediate Supervisor (and next-in-rank superiors if routed) review the document and click **Approve**. Throughout this review period, the master folder status cleanly remains **TARGET SUBMITTED**, with individual approval progress tracked directly on each supervisor's card in Layer 2.
+   - **Step B — Forwarding to TWG:** When all routed supervising authorities have approved, an automated notification is sent to the assigned Technical Working Group (TWG) reviewer, unlocking their verification controls (`Approve` and `Return` buttons become active).
+   - **Step C — TWG Final Verification:** The assigned TWG audits compliance against university standards and clicks **Approve**. TWG is the **final approver** that officially unlocks the document into **TARGET APPROVED** (`target_approver_role = 'TWG'`), enabling downstream cascading.
+5. **Revisions:** If adjustments are needed at any stage, click **Return**. Enter clear, actionable notes explaining what needs modification.
+6. **Unapproving:** If an error is noticed after approval, reviewers can click **Unapprove** to pull the document back to pending review (available as long as the deadline window remains active).
 
 ### 2.3 Inspecting Evidence & Verification Proof
 1. During the evaluation phase, open the subordinate's submitted paper.
@@ -253,7 +258,7 @@ To ensure 100% compliance with Civil Service Commission documentation audits:
 > 2. Or reset your adjustments back to the original submitted rating to re-enable direct approval.
 
 ### Q2: Why is my document locked and read-only?
-> **Answer:** Once you click **Submit Targets** or **Submit Evaluation**, the matrix is locked to prevent unauthorized tampering during superior review. If you need to make corrections, ask your Department Chair or Dean to click **Return for Revision**, which re-opens your document for editing.
+> **Answer:** Once you click **Submit Targets** or **Submit Evaluation**, the matrix is locked to prevent unauthorized tampering during superior review. If you need to make corrections, click **Unsubmit** (if not yet approved) or ask your Department Chair/Dean to click **Return**, which re-opens your document for editing.
 
 ### Q3: Why does the system say my weights must equal 100%?
 > **Answer:** Under CSC guidelines, the combined percentage weights of your categories (Core Functions + Strategic Priorities + Support Functions) must sum to exactly **100%**. Check the percentage input fields in each category header and ensure they add up to 100.
@@ -265,13 +270,16 @@ To ensure 100% compliance with Civil Service Commission documentation audits:
 > **Answer:** The default institutional unlock password for all exported CSC Excel spreadsheets is `spms`.
 
 ### Q6: Can I take back a document after accidentally clicking Submit?
-> **Answer:** If your supervisor has not approved it yet, contact your supervisor and request that they click **Return for Revision**. This instantly returns the paper to draft status with all your previous inputs intact.
+> **Answer:** Yes! In both the Target Setting and Evaluation phases, a clean **Unsubmit** button appears in your document header. As long as your supervisor has not yet approved your submission, clicking **Unsubmit** instantly withdraws your document back to editable draft status without requiring supervisor intervention.
 
 ### Q7: Where did the browser Print / PDF button go?
 > **Answer:** It was intentionally removed and replaced by **Export Excel**. Browser PDF prints frequently broke table layouts and cropped text. The exported Excel file provides 100% CSC fidelity and prints cleanly via <kbd>Ctrl + P</kbd>.
 
 ### Q8: What does the "N/A" option mean in the scoring columns?
 > **Answer:** "N/A" stands for Dimension Gating. If a specific task cannot be fairly judged on Efficiency (e.g., qualitative student mentorship) or Timeliness (e.g., ongoing research), select **N/A**. The system automatically excludes that dimension from the row average calculation.
+
+### Q9: What happens if the submission deadline passes while my document is still waiting for supervisor or TWG review?
+> **Answer:** You do NOT receive a missed deadline penalty! The SPMS deadline safeguard strictly protects on-time submissions. As long as you clicked **Submit** before the deadline cutoff, your document remains safely under active review. The "Missed Deadline" status only applies to ratees who failed to submit their draft before the window closed.
 
 ---
 

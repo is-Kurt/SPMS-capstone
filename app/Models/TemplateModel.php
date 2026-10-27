@@ -4,45 +4,37 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
+/**
+ * Legacy TemplateModel - Table 'templates' has been dropped in favor of
+ * dynamic view templates (app/Views/document/templates/) and DocType enum.
+ * This class provides backward-compatible fallback mocks without querying the database.
+ */
 class TemplateModel extends Model
 {
-    protected $table            = 'templates';
-    protected $primaryKey       = 'id';
-    protected $useAutoIncrement = true;
-    protected $returnType       = 'array';
-    protected $useSoftDeletes   = false;
-    protected $protectFields    = true;
-    protected $allowedFields    = ['title', 'tabs'];
+    protected $table = 'templates';
 
-    protected bool $allowEmptyInserts = false;
-    protected bool $updateOnlyChanged = false;
+    public function findAll(?int $limit = null, int $offset = 0)
+    {
+        return [
+            ['id' => 1, 'title' => 'IPCR', 'tabs' => []],
+            ['id' => 2, 'title' => 'DPCR', 'tabs' => []],
+            ['id' => 3, 'title' => 'OPCR', 'tabs' => []],
+            ['id' => 4, 'title' => 'IPERF', 'tabs' => []],
+        ];
+    }
 
-    protected array $casts = [
-        'tabs' => 'json-array'
-    ];
-    protected array $castHandlers = [];
+    public function first()
+    {
+        return null;
+    }
 
-    // Dates
-    protected $useTimestamps = true;
-    protected $dateFormat    = 'datetime';
-    protected $createdField  = 'created_at';
-    protected $updatedField  = 'updated_at';
-    protected $deletedField  = 'deleted_at';
+    public function where($key, $value = null, ?bool $escape = null)
+    {
+        return $this;
+    }
 
-    // Validation
-    protected $validationRules      = [];
-    protected $validationMessages   = [];
-    protected $skipValidation       = false;
-    protected $cleanValidationRules = true;
-
-    // Callbacks
-    protected $allowCallbacks = true;
-    protected $beforeInsert   = [];
-    protected $afterInsert    = [];
-    protected $beforeUpdate   = [];
-    protected $afterUpdate    = [];
-    protected $beforeFind     = [];
-    protected $afterFind      = [];
-    protected $beforeDelete   = [];
-    protected $afterDelete    = [];
+    public function like($field, string $match = '', string $side = 'both', ?bool $escape = null, bool $insensitiveSearch = false)
+    {
+        return $this;
+    }
 }

@@ -26,11 +26,7 @@ class CreateDocumentsTable extends Migration
                 'type'           => 'TEXT',
                 'null'           => true,
             ],
-            'is_target' => [
-                'type'       => 'TINYINT',
-                'constraint' => 1,
-                'default'    => 0,
-            ],
+
             'created_at' => [
                 'type'           => 'DATETIME',
                 'null'           => true,

@@ -119,6 +119,7 @@ class Folder extends BaseController
             }
 
             $isReadOnly = false;
+            $activeFolder = $folderModel->enrichFolderWithDeadlines($activeFolder);
 
             $isFolderOpcr = $this->isOpcrFolder($activeFolder, $userId);
 
@@ -240,12 +241,10 @@ class Folder extends BaseController
                 $parentRoleName = $parentRolePivot ? ((new \App\Models\RoleModel())->find($parentRolePivot['role_id'])['name'] ?? '') : '';
                 $isParentAdmin = ($parentRoleName === 'Admin');
 
-                $myPrimaryDoc = $documentModel->where('document_folder_id', $activeFolder['id'])->where('is_target', 1)->first()
-                             ?? $documentModel->where('document_folder_id', $activeFolder['id'])->first();
+                $myPrimaryDoc = $documentModel->where('document_folder_id', $activeFolder['id'])->first();
                 $myDocTitleUpper = strtoupper($myPrimaryDoc['title'] ?? '');
                 $isMyDocOpcr = str_contains($myDocTitleUpper, 'OPCR') || str_contains($myDocTitleUpper, 'OFFICE') || (strtoupper($myPrimaryDoc['doc_type'] ?? '') === 'OPCR');
-                $candidateBasis = $documentModel->where('document_folder_id', $parentFolder['id'])->where('is_target', 1)->first()
-                             ?? $documentModel->where('document_folder_id', $parentFolder['id'])->first();
+                $candidateBasis = $documentModel->where('document_folder_id', $parentFolder['id'])->first();
                 $candidateTitleUpper = strtoupper($candidateBasis['title'] ?? '');
                 $isParentDocOpcr = str_contains($candidateTitleUpper, 'OPCR') || str_contains($candidateTitleUpper, 'OFFICE') || (strtoupper($candidateBasis['doc_type'] ?? '') === 'OPCR');
 
@@ -320,72 +319,15 @@ class Folder extends BaseController
         }
 
         // 1. Resolve assigned TWG for this folder owner's college/unit
-        $assignedTwg = null;
-        if (!empty($activeFolder['user_id'])) {
-            $ownerId = (int)$activeFolder['user_id'];
-            $plantillaModel = new \App\Models\PlantillaModel();
-            $ownerPlantillas = $plantillaModel->where('user_id', $ownerId)->where('ended_at IS NULL')->findAll();
-            $ownerUnitIds = array_filter(array_map('intval', array_column($ownerPlantillas, 'unit_id')));
-            
-            if (!empty($ownerUnitIds)) {
-                $db = \Config\Database::connect();
-                // Strictly non-cascading: Match TWG reviewer assigned directly to the owner's unit
-                $twgAssignment = $db->table('twg_unit_assignments tua')
-                    ->select('u.id, u.first_name, u.last_name, u.email, un.name as college_name')
-                    ->join('users u', 'u.id = tua.user_id')
-                    ->join('units un', 'un.id = tua.unit_id')
-                    ->whereIn('tua.unit_id', $ownerUnitIds)
-                    ->where('u.is_active', 1)
-                    ->get()->getRowArray();
+        $assignedTwg = (new \App\Models\TwgUnitAssignmentModel())->resolveAssignedTwgForFolder($activeFolder);
 
-                // If owner is in a sub-program department with no direct assignment, fallback only to their immediate college (never executive OVPAA/OVPAF)
-                if (!$twgAssignment) {
-                    $unitModel = new \App\Models\UnitModel();
-                    $parentCollegeIds = [];
-                    foreach ($ownerUnitIds as $uId) {
-                        $college = $unitModel->getParentCollege($uId);
-                        if ($college && !empty($college['id']) && !in_array($college['name'], ['OVPAA', 'OVPAF', 'Office of the President'], true)) {
-                            $parentCollegeIds[] = (int)$college['id'];
-                        }
-                    }
-                    $parentCollegeIds = array_diff(array_unique($parentCollegeIds), $ownerUnitIds);
-                    if (!empty($parentCollegeIds)) {
-                        $twgAssignment = $db->table('twg_unit_assignments tua')
-                            ->select('u.id, u.first_name, u.last_name, u.email, un.name as college_name')
-                            ->join('users u', 'u.id = tua.user_id')
-                            ->join('units un', 'un.id = tua.unit_id')
-                            ->whereIn('tua.unit_id', $parentCollegeIds)
-                            ->where('u.is_active', 1)
-                            ->get()->getRowArray();
-                    }
-                }
-
-                if ($twgAssignment) {
-                    $twgCollege = trim((string)($twgAssignment['college_name'] ?? ''));
-                    $twgPosition = 'Technical Working Group';
-                    if (!empty($twgCollege) && stripos($twgCollege, 'OVPAA') === false) {
-                        $twgPosition .= ' (' . $twgCollege . ')';
-                    }
-
-                    $assignedTwg = [
-                        'id'           => (int)$twgAssignment['id'],
-                        'name'         => trim(($twgAssignment['first_name'] ?? '') . ' ' . ($twgAssignment['last_name'] ?? '')),
-                        'email'        => $twgAssignment['email'],
-                        'position'     => $twgPosition,
-                        'college'      => $twgAssignment['college_name'],
-                        'is_twg'       => true
-                    ];
-                }
-            }
-        }
-
-        $rawFolderStatus = $activeFolder['status'] ?? 'draft_target';
-        $isTargetApprovedFolder = in_array($rawFolderStatus, ['target_approved', 'draft', 'submitted', 'to evaluate', 'to_evaluate', 'evaluated', 'reevaluate', 'approved', 'twg_approved', 'twg_disapproved', 'eval_submitted', 'eval_returned', 'eval_calibrating', 'eval_unverified', 'eval_missed'], true)
+        $rawFolderStatus = $activeFolder['status'] ?? FolderStatus::DRAFT_TARGET->value;
+        $isTargetApprovedFolder = in_array($rawFolderStatus, ['target_approved', 'draft_evaluation', 'eval_submitted', 'eval_returned', 'eval_approved', 'unevaluated', 'to evaluate', 'to_evaluate', 'draft', 'submitted', 'evaluated', 'reevaluate', 'approved', 'twg_approved', 'twg_disapproved'], true)
             || !empty($activeFolder['target_approved_at']);
-        $isTargetReturnedFolder = in_array($rawFolderStatus, ['target_returned', 'target_unapproved', 'target_twg_disapproved'], true);
-        $isInEvaluationPhase = in_array($rawFolderStatus, ['draft', 'submitted', 'to evaluate', 'to_evaluate', 'evaluated', 'reevaluate', 'approved', 'twg_approved', 'twg_disapproved', 'eval_submitted', 'eval_returned', 'eval_calibrating', 'eval_unverified', 'eval_missed'], true);
-        $isEvalApprovedFolder = in_array($rawFolderStatus, ['approved', 'twg_approved'], true);
-        $isEvalReturnedFolder = in_array($rawFolderStatus, ['reevaluate', 'eval_returned'], true);
+        $isTargetReturnedFolder = in_array($rawFolderStatus, ['target_returned', 'target_missed', 'target_unapproved', 'target_twg_disapproved'], true);
+        $isInEvaluationPhase = in_array($rawFolderStatus, ['draft_evaluation', 'eval_submitted', 'eval_returned', 'eval_approved', 'unevaluated', 'to evaluate', 'to_evaluate', 'draft', 'submitted', 'evaluated', 'reevaluate', 'approved', 'twg_approved', 'twg_disapproved'], true);
+        $isEvalApprovedFolder = in_array($rawFolderStatus, ['eval_approved', 'approved', 'twg_approved'], true);
+        $isEvalReturnedFolder = in_array($rawFolderStatus, ['eval_returned', 'reevaluate', 'twg_disapproved'], true);
 
         // Gather all supervising authorities separated by phase
         $targetSupervisors    = [];
@@ -414,35 +356,38 @@ class Folder extends BaseController
 
                 $rStatus = strtolower(trim((string)($r['status'] ?? 'pending')));
 
-                // Target Phase Status
-                if ($rStatus === 'target_approved' || $rStatus === 'approved' || $isTargetApprovedFolder) {
+                // Target Phase Status (Layer 2)
+                if ($rStatus === 'approved' || $rStatus === 'target_approved' || $isTargetApprovedFolder) {
                     $tStatus = 'approved';
                     $tLabel  = 'Approved';
-                } elseif ($rStatus === 'target_returned' || $rStatus === 'target_unapproved' || $isTargetReturnedFolder) {
+                } elseif ($rStatus === 'returned' || $rStatus === 'target_returned' || $rStatus === 'target_unapproved' || $isTargetReturnedFolder) {
                     $tStatus = 'returned';
                     $tLabel  = 'Returned';
-                } elseif ($rawFolderStatus === 'pending_target_approval') {
+                } elseif ($rawFolderStatus === 'target_submitted' || $rawFolderStatus === 'pending_target_approval') {
                     $tStatus = 'pending';
-                    $tLabel  = 'Pending';
+                    $tLabel  = 'Pending Review';
                 } else {
-                    $tStatus = 'pending';
-                    $tLabel  = 'Draft';
+                    $tStatus = 'draft';
+                    $tLabel  = 'Awaiting Submission';
                 }
 
-                // Evaluation Phase Status
+                // Evaluation Phase Status (Layer 2)
                 if (!$isInEvaluationPhase) {
-                    $eStatus = 'pending';
+                    $eStatus = 'draft';
                     $eLabel  = 'Awaiting Eval Window';
                 } else {
                     if ($isEvalApprovedFolder || $rStatus === 'approved') {
                         $eStatus = 'approved';
                         $eLabel  = 'Approved';
-                    } elseif ($isEvalReturnedFolder || $rStatus === 'reevaluate') {
+                    } elseif ($isEvalReturnedFolder || $rStatus === 'returned' || $rStatus === 'reevaluate') {
                         $eStatus = 'returned';
                         $eLabel  = 'Returned';
-                    } else {
+                    } elseif ($rawFolderStatus === 'eval_submitted' || $rawFolderStatus === 'submitted' || $rawFolderStatus === 'evaluated') {
                         $eStatus = 'pending';
                         $eLabel  = 'Pending Review';
+                    } else {
+                        $eStatus = 'draft';
+                        $eLabel  = 'Awaiting Submission';
                     }
                 }
 
@@ -483,11 +428,27 @@ class Folder extends BaseController
                             $pName = trim(($pUser['first_name'] ?? '') . ' ' . ($pUser['last_name'] ?? ''));
                             $pPos  = $pPlan['position'] ?? 'Immediate Supervisor';
 
-                            $tStatus = $isTargetApprovedFolder ? 'approved' : ($isTargetReturnedFolder ? 'returned' : 'pending');
-                            $tLabel  = ucfirst($tStatus);
+                            if ($isTargetApprovedFolder) {
+                                $tStatus = 'approved'; $tLabel = 'Approved';
+                            } elseif ($isTargetReturnedFolder) {
+                                $tStatus = 'returned'; $tLabel = 'Returned';
+                            } elseif ($rawFolderStatus === 'target_submitted' || $rawFolderStatus === 'pending_target_approval') {
+                                $tStatus = 'pending'; $tLabel = 'Pending Review';
+                            } else {
+                                $tStatus = 'draft'; $tLabel = 'Awaiting Submission';
+                            }
 
-                            $eStatus = !$isInEvaluationPhase ? 'pending' : ($isEvalApprovedFolder ? 'approved' : ($isEvalReturnedFolder ? 'returned' : 'pending'));
-                            $eLabel  = !$isInEvaluationPhase ? 'Awaiting Eval Window' : ucfirst($eStatus);
+                            if (!$isInEvaluationPhase) {
+                                $eStatus = 'draft'; $eLabel = 'Awaiting Eval Window';
+                            } elseif ($isEvalApprovedFolder) {
+                                $eStatus = 'approved'; $eLabel = 'Approved';
+                            } elseif ($isEvalReturnedFolder) {
+                                $eStatus = 'returned'; $eLabel = 'Returned';
+                            } elseif ($rawFolderStatus === 'eval_submitted' || $rawFolderStatus === 'submitted' || $rawFolderStatus === 'evaluated') {
+                                $eStatus = 'pending'; $eLabel = 'Pending Review';
+                            } else {
+                                $eStatus = 'draft'; $eLabel = 'Awaiting Submission';
+                            }
 
                             $basePData = [
                                 'id'         => (int)$pFold['user_id'],
@@ -512,11 +473,27 @@ class Folder extends BaseController
                     $approverTitle = $activeFolder['approving_authority_name'] ?: 'University President';
                     $approverPos   = $activeFolder['approving_authority_position'] ?: 'University President';
 
-                    $tStatus = $isTargetApprovedFolder ? 'approved' : ($isTargetReturnedFolder ? 'returned' : 'pending');
-                    $tLabel  = ucfirst($tStatus);
+                    if ($isTargetApprovedFolder) {
+                        $tStatus = 'approved'; $tLabel = 'Approved';
+                    } elseif ($isTargetReturnedFolder) {
+                        $tStatus = 'returned'; $tLabel = 'Returned';
+                    } elseif ($rawFolderStatus === 'target_submitted' || $rawFolderStatus === 'pending_target_approval') {
+                        $tStatus = 'pending'; $tLabel = 'Pending Review';
+                    } else {
+                        $tStatus = 'draft'; $tLabel = 'Awaiting Submission';
+                    }
 
-                    $eStatus = !$isInEvaluationPhase ? 'pending' : ($isEvalApprovedFolder ? 'approved' : ($isEvalReturnedFolder ? 'returned' : 'pending'));
-                    $eLabel  = !$isInEvaluationPhase ? 'Awaiting Eval Window' : ucfirst($eStatus);
+                    if (!$isInEvaluationPhase) {
+                        $eStatus = 'draft'; $eLabel = 'Awaiting Eval Window';
+                    } elseif ($isEvalApprovedFolder) {
+                        $eStatus = 'approved'; $eLabel = 'Approved';
+                    } elseif ($isEvalReturnedFolder) {
+                        $eStatus = 'returned'; $eLabel = 'Returned';
+                    } elseif ($rawFolderStatus === 'eval_submitted' || $rawFolderStatus === 'submitted' || $rawFolderStatus === 'evaluated') {
+                        $eStatus = 'pending'; $eLabel = 'Pending Review';
+                    } else {
+                        $eStatus = 'draft'; $eLabel = 'Awaiting Submission';
+                    }
 
                     $baseAdminData = [
                         'id'           => null,
@@ -539,8 +516,18 @@ class Folder extends BaseController
             // Append Assigned TWG to both phases if present
             if ($assignedTwg) {
                 $isTwgTargetVerified = in_array($activeFolder['target_approver_role'] ?? '', ['TWG', 'PMT'], true);
-                $twgTargetStatus = $isTwgTargetVerified ? 'approved' : ($isTargetReturnedFolder ? 'returned' : 'pending');
-                $twgTargetLabel  = $isTwgTargetVerified ? (($activeFolder['target_approver_role'] === 'PMT') ? 'PMT Verified' : 'TWG Verified') : ($isTargetReturnedFolder ? 'Returned' : 'Pending Verification');
+                $areAllSupervisorsApproved = !empty($targetSupervisors) && empty(array_filter($targetSupervisors, fn($s) => $s['status'] !== 'approved'));
+
+                if ($isTwgTargetVerified) {
+                    $twgTargetStatus = 'approved';
+                    $twgTargetLabel  = 'Approved';
+                } elseif ($isTargetReturnedFolder) {
+                    $twgTargetStatus = 'returned';
+                    $twgTargetLabel  = 'Returned';
+                } else {
+                    $twgTargetStatus = 'pending';
+                    $twgTargetLabel  = 'Pending Verification';
+                }
 
                 $targetSupervisors[] = [
                     'id'           => $assignedTwg['id'],
@@ -553,21 +540,15 @@ class Folder extends BaseController
                     'is_twg'       => true
                 ];
 
-                if (!$isInEvaluationPhase) {
-                    $twgEvalStatus = 'pending';
-                    $twgEvalLabel  = 'Awaiting Eval Window';
-                } elseif ($rawFolderStatus === 'twg_approved') {
+                if ($rawFolderStatus === 'eval_approved' || $rawFolderStatus === 'twg_approved') {
                     $twgEvalStatus = 'approved';
-                    $twgEvalLabel  = 'TWG Approved';
-                } elseif ($rawFolderStatus === 'twg_disapproved') {
+                    $twgEvalLabel  = 'Approved';
+                } elseif ($rawFolderStatus === 'eval_returned' || $rawFolderStatus === 'twg_disapproved') {
                     $twgEvalStatus = 'returned';
-                    $twgEvalLabel  = 'TWG Disapproved';
-                } elseif ($rawFolderStatus === 'approved') {
-                    $twgEvalStatus = 'pending';
-                    $twgEvalLabel  = 'Pending TWG Review';
+                    $twgEvalLabel  = 'Returned';
                 } else {
                     $twgEvalStatus = 'pending';
-                    $twgEvalLabel  = 'Pending Review';
+                    $twgEvalLabel  = 'Pending Verification';
                 }
 
                 $evalSupervisors[] = [
@@ -577,6 +558,17 @@ class Folder extends BaseController
                     'status'       => $twgEvalStatus,
                     'status_label' => $twgEvalLabel,
                     'updated_at'   => null,
+                    'folder_id'    => null,
+                    'is_twg'       => true
+                ];
+
+                $evaluatorSupervisors[] = [
+                    'id'           => $assignedTwg['id'],
+                    'name'         => $assignedTwg['name'],
+                    'position'     => $assignedTwg['position'],
+                    'status'       => $isInEvaluationPhase ? $twgEvalStatus : $twgTargetStatus,
+                    'status_label' => $isInEvaluationPhase ? $twgEvalLabel : $twgTargetLabel,
+                    'updated_at'   => $isInEvaluationPhase ? null : ($isTwgTargetVerified ? ($activeFolder['target_approved_at'] ?? null) : null),
                     'folder_id'    => null,
                     'is_twg'       => true
                 ];
@@ -686,38 +678,15 @@ class Folder extends BaseController
                                           ->where('deleted_at IS NULL')->first();
                     
                     if (!$exists) {
+                        $cycleFolderId = $activeFolder['cycle_folder_id'] ?? $folderModel->getRootCycleFolderId($activeFolder['id']);
                         $newFolderId = create_unique_row($folderModel, [
                             'title'                        => $activeFolder['title'],
                             'user_id'                      => $member['user_id'],
                             'parent_folder_id'             => $activeFolder['id'],
+                            'cycle_folder_id'              => $cycleFolderId,
                             'approving_authority_name'     => $activeFolder['approving_authority_name'] ?? null,
                             'approving_authority_position' => $activeFolder['approving_authority_position'] ?? null,
-                            'ipcr_target_start'            => $activeFolder['ipcr_target_start'],
-                            'ipcr_target_end'     => $activeFolder['ipcr_target_end'],
-                            'ipcr_eval_start'     => $activeFolder['ipcr_eval_start'],
-                            'ipcr_eval_end'       => $activeFolder['ipcr_eval_end'],
-                            
-                            'cdpcr_target_start'  => $activeFolder['cdpcr_target_start'] ?? null,
-                            'cdpcr_target_end'    => $activeFolder['cdpcr_target_end'] ?? null,
-                            'cdpcr_eval_start'    => $activeFolder['cdpcr_eval_start'] ?? null,
-                            'cdpcr_eval_end'      => $activeFolder['cdpcr_eval_end'] ?? null,
-
-                            'dpcr_target_start'   => $activeFolder['dpcr_target_start'],
-                            'dpcr_target_end'     => $activeFolder['dpcr_target_end'],
-                            'dpcr_eval_start'     => $activeFolder['dpcr_eval_start'],
-                            'dpcr_eval_end'       => $activeFolder['dpcr_eval_end'],
-                            
-                            'opcr_target_start'   => $activeFolder['opcr_target_start'],
-                            'opcr_target_end'     => $activeFolder['opcr_target_end'],
-                            'opcr_eval_start'     => $activeFolder['opcr_eval_start'],
-                            'opcr_eval_end'       => $activeFolder['opcr_eval_end'],
-                            
-                            'iperf_target_start'  => $activeFolder['iperf_target_start'],
-                            'iperf_target_end'    => $activeFolder['iperf_target_end'],
-                            'iperf_eval_start'    => $activeFolder['iperf_eval_start'],
-                            'iperf_eval_end'      => $activeFolder['iperf_eval_end'],
-                            
-                            'status'              => \App\Enums\FolderStatus::DRAFT_TARGET->value
+                            'status'                       => \App\Enums\FolderStatus::DRAFT_TARGET->value
                         ]);
                     } else {
                         $newFolderId = $exists['id']; 
@@ -789,38 +758,15 @@ class Folder extends BaseController
                     }
 
                     if (!$subFolder) {
+                        $cycleFolderId = $activeFolder['cycle_folder_id'] ?? $folderModel->getRootCycleFolderId($activeFolder['id']);
                         $newFolderId = create_unique_row($folderModel, [
                             'title'                        => $activeFolder['title'],
                             'user_id'                      => $member['user_id'],
                             'parent_folder_id'             => $batchId,
+                            'cycle_folder_id'              => $cycleFolderId,
                             'approving_authority_name'     => $activeFolder['approving_authority_name'] ?? null,
                             'approving_authority_position' => $activeFolder['approving_authority_position'] ?? null,
-                            'ipcr_target_start'            => $activeFolder['ipcr_target_start'],
-                            'ipcr_target_end'     => $activeFolder['ipcr_target_end'],
-                            'ipcr_eval_start'     => $activeFolder['ipcr_eval_start'],
-                            'ipcr_eval_end'       => $activeFolder['ipcr_eval_end'],
-                            
-                            'cdpcr_target_start'  => $activeFolder['cdpcr_target_start'] ?? null,
-                            'cdpcr_target_end'    => $activeFolder['cdpcr_target_end'] ?? null,
-                            'cdpcr_eval_start'    => $activeFolder['cdpcr_eval_start'] ?? null,
-                            'cdpcr_eval_end'      => $activeFolder['cdpcr_eval_end'] ?? null,
-
-                            'dpcr_target_start'   => $activeFolder['dpcr_target_start'],
-                            'dpcr_target_end'     => $activeFolder['dpcr_target_end'],
-                            'dpcr_eval_start'     => $activeFolder['dpcr_eval_start'],
-                            'dpcr_eval_end'       => $activeFolder['dpcr_eval_end'],
-                            
-                            'opcr_target_start'   => $activeFolder['opcr_target_start'],
-                            'opcr_target_end'     => $activeFolder['opcr_target_end'],
-                            'opcr_eval_start'     => $activeFolder['opcr_eval_start'],
-                            'opcr_eval_end'       => $activeFolder['opcr_eval_end'],
-                            
-                            'iperf_target_start'  => $activeFolder['iperf_target_start'],
-                            'iperf_target_end'    => $activeFolder['iperf_target_end'],
-                            'iperf_eval_start'    => $activeFolder['iperf_eval_start'],
-                            'iperf_eval_end'      => $activeFolder['iperf_eval_end'],
-                            
-                            'status'              => \App\Enums\FolderStatus::DRAFT_TARGET->value
+                            'status'                       => \App\Enums\FolderStatus::DRAFT_TARGET->value
                         ]);
                         $subFolder = $folderModel->find($newFolderId);
                     }
@@ -1076,36 +1022,12 @@ class Folder extends BaseController
                 }
 
                 // Create new child folder for this missing member
+                $cycleFolderId = $activeFolder['cycle_folder_id'] ?? $folderModel->getRootCycleFolderId($activeFolder['id']);
                 $newFolderId = create_unique_row($folderModel, [
                     'title'               => $activeFolder['title'],
                     'user_id'             => $targetUserId,
                     'parent_folder_id'    => $activeFolder['id'],
-                    
-                    'ipcr_target_start'   => $activeFolder['ipcr_target_start'],
-                    'ipcr_target_end'     => $activeFolder['ipcr_target_end'],
-                    'ipcr_eval_start'     => $activeFolder['ipcr_eval_start'],
-                    'ipcr_eval_end'       => $activeFolder['ipcr_eval_end'],
-                    
-                    'cdpcr_target_start'  => $activeFolder['cdpcr_target_start'] ?? null,
-                    'cdpcr_target_end'    => $activeFolder['cdpcr_target_end'] ?? null,
-                    'cdpcr_eval_start'    => $activeFolder['cdpcr_eval_start'] ?? null,
-                    'cdpcr_eval_end'      => $activeFolder['cdpcr_eval_end'] ?? null,
-
-                    'dpcr_target_start'   => $activeFolder['dpcr_target_start'],
-                    'dpcr_target_end'     => $activeFolder['dpcr_target_end'],
-                    'dpcr_eval_start'     => $activeFolder['dpcr_eval_start'],
-                    'dpcr_eval_end'       => $activeFolder['dpcr_eval_end'],
-                    
-                    'opcr_target_start'   => $activeFolder['opcr_target_start'],
-                    'opcr_target_end'     => $activeFolder['opcr_target_end'],
-                    'opcr_eval_start'     => $activeFolder['opcr_eval_start'],
-                    'opcr_eval_end'       => $activeFolder['opcr_eval_end'],
-                    
-                    'iperf_target_start'  => $activeFolder['iperf_target_start'],
-                    'iperf_target_end'    => $activeFolder['iperf_target_end'],
-                    'iperf_eval_start'    => $activeFolder['iperf_eval_start'],
-                    'iperf_eval_end'      => $activeFolder['iperf_eval_end'],
-                    
+                    'cycle_folder_id'     => $cycleFolderId,
                     'status'              => \App\Enums\FolderStatus::DRAFT_TARGET->value
                 ]);
 
@@ -1290,16 +1212,21 @@ class Folder extends BaseController
         $allApproved = true;
 
         foreach ($routings as $r) {
-            if ($r['status'] === FolderStatus::REEVALUATE->value) $hasRevision = true;
-            if ($r['status'] !== FolderStatus::APPROVED->value) $allApproved = false;
+            $st = strtolower(trim((string)($r['status'] ?? 'pending')));
+            if ($st === 'returned' || $st === FolderStatus::REEVALUATE->value || $st === 'eval_returned') {
+                $hasRevision = true;
+            }
+            if ($st !== 'approved' && $st !== FolderStatus::APPROVED->value && $st !== FolderStatus::EVAL_APPROVED->value) {
+                $allApproved = false;
+            }
         }
 
         if ($hasRevision) {
-            $folderModel->update($folderId, ['status' => FolderStatus::REEVALUATE->value]);
+            $folderModel->update($folderId, ['status' => FolderStatus::EVAL_RETURNED->value]);
         } elseif ($allApproved) {
-            $folderModel->update($folderId, ['status' => FolderStatus::APPROVED->value, 'rated_at' => date('Y-m-d H:i:s')]);
+            $folderModel->update($folderId, ['status' => FolderStatus::EVAL_APPROVED->value, 'rated_at' => date('Y-m-d H:i:s')]);
         } else {
-            $folderModel->update($folderId, ['status' => FolderStatus::EVALUATED->value, 'rated_at' => null]);
+            $folderModel->update($folderId, ['status' => FolderStatus::EVAL_SUBMITTED->value, 'rated_at' => null]);
         }
     }
 
@@ -1442,8 +1369,7 @@ class Folder extends BaseController
                     continue;
                 }
 
-                $sDoc = $documentModel->where('document_folder_id', $sFid)->where('is_target', 1)->first()
-                     ?? $documentModel->where('document_folder_id', $sFid)->first();
+                $sDoc = $documentModel->where('document_folder_id', $sFid)->first();
                 if (!$sDoc || empty($sDoc['tabs'])) continue;
 
                 $sTabs = is_string($sDoc['tabs']) ? json_decode($sDoc['tabs'], true) : $sDoc['tabs'];
@@ -1524,8 +1450,7 @@ class Folder extends BaseController
         return create_unique_row($documentModel, [
             'title'              => $docType,
             'document_folder_id' => $folderId,
-            'tabs'               => $initialTabs,
-            'is_target'          => 1
+            'tabs'               => $initialTabs
         ]);
     }
 
@@ -1578,8 +1503,7 @@ class Folder extends BaseController
                 continue;
             }
 
-            $sDoc = $documentModel->where('document_folder_id', $sFid)->where('is_target', 1)->first()
-                 ?? $documentModel->where('document_folder_id', $sFid)->first();
+            $sDoc = $documentModel->where('document_folder_id', $sFid)->first();
             if (!$sDoc || empty($sDoc['tabs'])) continue;
 
             $sTabs = is_string($sDoc['tabs']) ? json_decode($sDoc['tabs'], true) : $sDoc['tabs'];
@@ -1685,48 +1609,18 @@ class Folder extends BaseController
                 'target_approved_at'           => null,
             ];
 
-            $scheduleMode   = $this->request->getPost('schedule_mode');
-            $genTargetStart = $this->request->getPost('general_target_start');
-            $genTargetEnd   = $this->request->getPost('general_target_end');
-            $genEvalStart   = $this->request->getPost('general_eval_start');
-            $genEvalEnd     = $this->request->getPost('general_eval_end');
-
-            $docTypes = ['ipcr', 'cdpcr', 'dpcr', 'opcr', 'iperf'];
-
-            // If general schedule mode is active or general dates are provided without specific dates
-            $isGeneralMode = ($scheduleMode === 'general') || (!empty($genTargetStart) && empty($this->request->getPost('opcr_target_start')));
-
-            if ($isGeneralMode && (!empty($genTargetStart) || !empty($genTargetEnd) || !empty($genEvalStart) || !empty($genEvalEnd))) {
-                $cleanGenTStart = !empty($genTargetStart) ? str_replace('T', ' ', (string) $genTargetStart) : null;
-                $cleanGenTEnd   = !empty($genTargetEnd)   ? str_replace('T', ' ', (string) $genTargetEnd)   : null;
-                $cleanGenEStart = !empty($genEvalStart)   ? str_replace('T', ' ', (string) $genEvalStart)   : null;
-                $cleanGenEEnd   = !empty($genEvalEnd)     ? str_replace('T', ' ', (string) $genEvalEnd)     : null;
-
-                foreach ($docTypes as $type) {
-                    $payload["{$type}_target_start"] = $cleanGenTStart;
-                    $payload["{$type}_target_end"]   = $cleanGenTEnd;
-                    $payload["{$type}_eval_start"]   = $cleanGenEStart;
-                    $payload["{$type}_eval_end"]     = $cleanGenEEnd;
-                }
-            } else {
-                foreach ($docTypes as $type) {
-                    $tStart = $this->request->getPost("{$type}_target_start") ?: $genTargetStart;
-                    $tEnd   = $this->request->getPost("{$type}_target_end")   ?: $genTargetEnd;
-                    $eStart = $this->request->getPost("{$type}_eval_start")   ?: $genEvalStart;
-                    $eEnd   = $this->request->getPost("{$type}_eval_end")     ?: $genEvalEnd;
-
-                    $payload["{$type}_target_start"] = !empty($tStart) ? str_replace('T', ' ', (string) $tStart) : null;
-                    $payload["{$type}_target_end"]   = !empty($tEnd)   ? str_replace('T', ' ', (string) $tEnd)   : null;
-                    $payload["{$type}_eval_start"]   = !empty($eStart) ? str_replace('T', ' ', (string) $eStart) : null;
-                    $payload["{$type}_eval_end"]     = !empty($eEnd)   ? str_replace('T', ' ', (string) $eEnd)   : null;
-                }
-            }
-            
             $newId = create_unique_row($documentFolderModel, $payload);
 
             if (!$newId) {
                 return $this->respondError("Could not generate a unique ID.", 400);
             }
+
+            // Set cycle_folder_id to self (root cycle folder)
+            $documentFolderModel->update($newId, ['cycle_folder_id' => $newId]);
+
+            // Save deadlines to cycle_deadlines table
+            $cycleDeadlineModel = new \App\Models\CycleDeadlineModel();
+            $cycleDeadlineModel->saveDeadlinesFromRequest($newId, $this->request);
 
             // Create the owner's official evaluation paper (Admins initiate cycles and do not fill forms)
             $role = session()->get('role');
@@ -1859,6 +1753,7 @@ class Folder extends BaseController
         if ($folderId) {
             $activeFolder = $folderModel->find($folderId);
             if ($activeFolder && $activeFolder['user_id'] == $userId) {
+                $activeFolder = $folderModel->enrichFolderWithDeadlines($activeFolder);
                 if ($role !== 'Admin') {
                     $this->ensureUserDocumentExists($folderId, $userId, $activeFolder['title']);
                 }
@@ -2077,33 +1972,13 @@ class Folder extends BaseController
                 'approving_authority_position' => $approvingPos ?: null
             ];
             
-            $isGeneralMode = ($scheduleMode === 'general') || (!empty($genTargetStart) && empty($this->request->getPost('opcr_target_start')));
+            // 1. Update the Master Folder
+            $folderModel->update($folderId, $folderData);
 
-            if ($isGeneralMode && (!empty($genTargetStart) || !empty($genTargetEnd) || !empty($genEvalStart) || !empty($genEvalEnd))) {
-                $cleanGenTStart = !empty($genTargetStart) ? str_replace('T', ' ', (string) $genTargetStart) : null;
-                $cleanGenTEnd   = !empty($genTargetEnd)   ? str_replace('T', ' ', (string) $genTargetEnd)   : null;
-                $cleanGenEStart = !empty($genEvalStart)   ? str_replace('T', ' ', (string) $genEvalStart)   : null;
-                $cleanGenEEnd   = !empty($genEvalEnd)     ? str_replace('T', ' ', (string) $genEvalEnd)     : null;
-
-                foreach ($docTypes as $type) {
-                    $folderData["{$type}_target_start"] = $cleanGenTStart;
-                    $folderData["{$type}_target_end"]   = $cleanGenTEnd;
-                    $folderData["{$type}_eval_start"]   = $cleanGenEStart;
-                    $folderData["{$type}_eval_end"]     = $cleanGenEEnd;
-                }
-            } else {
-                foreach ($docTypes as $type) {
-                    $tStart = $this->request->getPost("{$type}_target_start") ?: $genTargetStart;
-                    $tEnd   = $this->request->getPost("{$type}_target_end")   ?: $genTargetEnd;
-                    $eStart = $this->request->getPost("{$type}_eval_start")   ?: $genEvalStart;
-                    $eEnd   = $this->request->getPost("{$type}_eval_end")     ?: $genEvalEnd;
-
-                    $folderData["{$type}_target_start"] = !empty($tStart) ? str_replace('T', ' ', (string) $tStart) : null;
-                    $folderData["{$type}_target_end"]   = !empty($tEnd)   ? str_replace('T', ' ', (string) $tEnd)   : null;
-                    $folderData["{$type}_eval_start"]   = !empty($eStart) ? str_replace('T', ' ', (string) $eStart) : null;
-                    $folderData["{$type}_eval_end"]     = !empty($eEnd)   ? str_replace('T', ' ', (string) $eEnd)   : null;
-                }
-            }
+            // 2. Save deadlines to cycle_deadlines table
+            $cycleDeadlineModel = new \App\Models\CycleDeadlineModel();
+            $cycleDeadlineModel->saveDeadlinesFromRequest($folderId, $this->request);
+            $cycleDeadlines = $cycleDeadlineModel->getCycleDatesFlat($folderId);
 
             $now = date('Y-m-d H:i:s');
             $routingModel = new EvaluationRoutingModel();
@@ -2119,10 +1994,7 @@ class Folder extends BaseController
 
             $didResetAny = false;
 
-            // 1. Update the Master Folder
-            $folderModel->update($folderId, $folderData);
-
-            // 2. Fetch and Process All Descendant Cascaded Folders (all tiers: Deans, Chairs, Faculty)
+            // 3. Fetch and Process All Descendant Cascaded Folders (all tiers: Deans, Chairs, Faculty)
             $db = \Config\Database::connect();
             $allDescendantIds = [];
             $toVisit = [$folderId];
@@ -2149,7 +2021,10 @@ class Folder extends BaseController
 
             if (!empty($childFolders)) {
                 foreach ($childFolders as $child) {
-                    $childData = $folderData;
+                    $childData = ['title' => $title];
+                    if (empty($child['cycle_folder_id'])) {
+                        $childData['cycle_folder_id'] = $folderId;
+                    }
                     
                     $userDocType = strtolower($child['doc_type'] ?? 'ipcr');
                     $pos = strtolower($child['position'] ?? '');
@@ -2157,15 +2032,15 @@ class Folder extends BaseController
                     $isDean = str_contains($pos, 'dean') || str_contains($email, 'dean');
 
                     if (($userDocType === 'dpcr' || $userDocType === 'cdpcr') && $isDean) {
-                        $effectiveType = (!empty($folderData['cdpcr_target_start']) || !empty($folderData['cdpcr_target_end']) || !empty($folderData['cdpcr_eval_start']) || !empty($folderData['cdpcr_eval_end'])) ? 'cdpcr' : 'dpcr';
+                        $effectiveType = (!empty($cycleDeadlines['cdpcr_target_start']) || !empty($cycleDeadlines['cdpcr_target_end']) || !empty($cycleDeadlines['cdpcr_eval_start']) || !empty($cycleDeadlines['cdpcr_eval_end'])) ? 'cdpcr' : 'dpcr';
                     } else {
                         $effectiveType = in_array($userDocType, $docTypes) ? $userDocType : 'ipcr';
                     }
 
-                    $targetStart = $folderData["{$effectiveType}_target_start"] ?? $folderData['dpcr_target_start'];
-                    $targetEnd   = $folderData["{$effectiveType}_target_end"] ?? $folderData['dpcr_target_end'];
-                    $dateStart   = $folderData["{$effectiveType}_eval_start"] ?? $folderData['dpcr_eval_start'];
-                    $dateEnd     = $folderData["{$effectiveType}_eval_end"] ?? $folderData['dpcr_eval_end'];
+                    $targetStart = $cycleDeadlines["{$effectiveType}_target_start"] ?? $cycleDeadlines['dpcr_target_start'];
+                    $targetEnd   = $cycleDeadlines["{$effectiveType}_target_end"] ?? $cycleDeadlines['dpcr_target_end'];
+                    $dateStart   = $cycleDeadlines["{$effectiveType}_eval_start"] ?? $cycleDeadlines['dpcr_eval_start'];
+                    $dateEnd     = $cycleDeadlines["{$effectiveType}_eval_end"] ?? $cycleDeadlines['dpcr_eval_end'];
                     
                     $isEvalFuture  = !empty($dateStart) && $dateStart > $now;
                     $isEvalOpen    = !empty($dateStart) && !empty($dateEnd) && $dateStart <= $now && $dateEnd >= $now;
@@ -2217,7 +2092,7 @@ class Folder extends BaseController
         });
     }
 
-    /** POST /folder/submit - Owner submits a Draft folder for evaluation (requires a Basis Target document set). */
+    /** POST /folder/submit - Owner submits for evaluation (actual accomplishments & self-rating). */
     public function submit() {
         return $this->tryOrFail(function() {
             $folderId = $this->request->getPost('folder_id');
@@ -2226,39 +2101,42 @@ class Folder extends BaseController
 
             $folder = $folderModel->find($folderId);
 
-            if (!$folder || $folder['status'] !== FolderStatus::DRAFT->value) {
+            $validSubmitStatuses = [
+                FolderStatus::DRAFT_EVALUATION->value,
+                FolderStatus::EVAL_RETURNED->value,
+                FolderStatus::DRAFT->value,
+                FolderStatus::TO_EVALUATE->value,
+                FolderStatus::REEVALUATE->value
+            ];
+            if (!$folder || !in_array($folder['status'], $validSubmitStatuses, true)) {
                 return $this->respondError("This folder cannot be submitted at this time.", 400);
             }
 
-            if (!$folder || $folder['user_id'] != $userId) {
+            if ($folder['user_id'] != $userId) {
                 return $this->respondError("Unauthorized to submit this folder.", 400);
             }
 
-            // --- NEW: Target Document Validation ---
+            // --- Document Validation ---
             $documentModel = new DocumentModel();
-            $hasTarget = $documentModel->where('document_folder_id', $folderId)
-                                       ->where('is_target', 1)
-                                       ->countAllResults();
+            $hasDoc = $documentModel->where('document_folder_id', $folderId)->countAllResults();
             
-            if ($hasTarget == 0) {
-                return $this->respondError("Submission Failed: You must set at least one document as the Basis Target before submitting.", 400);
+            if ($hasDoc == 0) {
+                return $this->respondError("Submission Failed: No document found in this folder.", 400);
             }
             // ---------------------------------------
 
             $now = date('Y-m-d H:i:s');
 
-            // If the eval window is already open at submit time, skip straight to
-            // "To Evaluate" instead of leaving it at "Submitted" for up to a minute
-            // waiting on updateTimeBasedStatuses()'s cron sweep - keep this condition
-            // in sync with that method's "Submitted -> To Evaluate" check.
-            $dates = $folderModel->getFolderDates($folder);
-            $windowAlreadyOpen = !empty($dates['eval_date_start']) && !empty($dates['eval_date_end'])
-                && $dates['eval_date_start'] <= $now && $dates['eval_date_end'] >= $now;
-
             $folderModel->update($folderId, [
-                'status'       => $windowAlreadyOpen ? FolderStatus::TO_EVALUATE->value : FolderStatus::SUBMITTED->value,
+                'status'       => FolderStatus::EVAL_SUBMITTED->value,
                 'submitted_at' => $now
             ]);
+
+            // Sync all evaluator routes to pending review
+            $routingModel = new \App\Models\EvaluationRoutingModel();
+            $routingModel->where('folder_id', $folderId)
+                         ->set(['status' => 'pending', 'updated_at' => $now])
+                         ->update();
 
             audit_log('ACCOMPLISHMENT_SUBMITTED', 'RATING', 'document_folder', (int) $folderId, "Actual accomplishments submitted for evaluation: {$folder['title']}");
 
@@ -2272,34 +2150,11 @@ class Folder extends BaseController
                 'file'
             );
 
-            $message = $windowAlreadyOpen
-                ? 'Folder submitted - the evaluation period is already open, so it has moved straight to evaluation.'
-                : 'Folder submitted for evaluation.';
-
-            $response = $this->respond(['status' => 'success', 'message' => $message]);
-
-            if ($windowAlreadyOpen) {
-                $userModel = new UserModel();
-                if (!$userModel->hasRole($userId, 'Admin')) {
-                    $owner = $userModel->find($userId);
-                    queue_email(
-                        $owner['email'],
-                        'Action Required: Evaluation Period Open',
-                        render_email('evaluation_period_open', [
-                            'firstName' => $owner['first_name'],
-                            'title'     => $folder['title'],
-                            'link'      => site_url("folders/" . $folderId),
-                        ])
-                    );
-                    return dispatch_email_now($response, 1);
-                }
-            }
-
-            return $response;
+            return $this->respond(['status' => 'success', 'message' => 'Folder submitted for evaluation.']);
         });
     }
 
-    /** POST /folder/unsubmit - Owner recalls an Evaluated/Submitted folder back to To Evaluate, only while the eval window is still open. */
+    /** POST /folder/unsubmit - Owner recalls an eval_submitted folder back to draft_evaluation while the eval window is still open. */
     public function unsubmit() {
         return $this->tryOrFail(function() {
             $folderId = $this->request->getPost('folder_id');
@@ -2308,7 +2163,7 @@ class Folder extends BaseController
 
             $folder = $folderModel->find($folderId);
 
-            if (!$folder || !in_array($folder['status'], [FolderStatus::EVALUATED->value, FolderStatus::SUBMITTED->value])) {
+            if (!$folder || !in_array($folder['status'], [FolderStatus::EVAL_SUBMITTED->value, FolderStatus::EVALUATED->value, FolderStatus::SUBMITTED->value])) {
                 return $this->respondError("This folder cannot be unsubmitted at this time.", 400);
             }
 
@@ -2316,43 +2171,49 @@ class Folder extends BaseController
 
             $dates = $folderModel->getFolderDates($folder);
             if (!empty($dates['eval_date_end']) && date('Y-m-d H:i:s') > $dates['eval_date_end']) {
-                return $this->respondError("Cannot revoke: Evaluation window has already closed.", 400);
+                return $this->respondError("Cannot unsubmit: Evaluation window has already closed.", 400);
             }
 
             $routingModel = new \App\Models\EvaluationRoutingModel();
             $hasApproval = $routingModel->where('folder_id', $folderId)
-                                        ->where('status', FolderStatus::APPROVED->value)
+                                        ->whereIn('status', ['approved', FolderStatus::APPROVED->value])
                                         ->countAllResults() > 0;
             if ($hasApproval) {
-                return $this->respondError("Cannot revoke: An evaluator has already approved your rating.", 400);
+                return $this->respondError("Cannot unsubmit: An evaluator has already approved your rating.", 400);
             }
 
+            $now = date('Y-m-d H:i:s');
             $folderModel->update($folderId, [
-                'status'       => FolderStatus::TO_EVALUATE->value,
+                'status'       => FolderStatus::DRAFT_EVALUATION->value,
                 'final_rating' => null,
                 'rated_at'     => null,
                 'submitted_at' => null
             ]);
-            audit_log('EVALUATION_REVOKED', 'RATING', 'document_folder', (int) $folderId, "Self-evaluation submission revoked back to drafting: {$folder['title']}");
+
+            // Sync all evaluator routes back to draft
+            $routingModel->where('folder_id', $folderId)
+                         ->set(['status' => 'draft', 'updated_at' => $now])
+                         ->update();
+
+            audit_log('EVALUATION_REVOKED', 'RATING', 'document_folder', (int) $folderId, "Self-evaluation submission unsubmitted back to drafting: {$folder['title']}");
 
             $subUser = (new UserModel())->find($userId);
             $subName = trim(($subUser['first_name'] ?? '') . ' ' . ($subUser['last_name'] ?? '')) ?: 'Employee';
             $this->notifyFolderEvaluators(
                 $folder,
-                'Self-Evaluation Revoked',
-                "{$subName} revoked their self-evaluation submission for \"{$folder['title']}\" and returned it to drafting.",
+                'Self-Evaluation Unsubmitted',
+                "{$subName} unsubmitted their evaluation for \"{$folder['title']}\" and returned it to drafting.",
                 'eval_unsubmitted',
                 'file'
             );
 
-            return $this->respond(['status' => 'success', 'message' => 'Self-evaluation revoked successfully.']);
+            return $this->respond(['status' => 'success', 'message' => 'Evaluation unsubmitted successfully.']);
         });
     }
 
     /**
      * POST /folder/evaluate - Owner locks in their self-rating (final_rating) on the
-     * target document, then emails every evaluator assigned to this folder so they
-     * know it's ready for their review.
+     * target document and submits accomplishments for evaluator review.
      */
     public function evaluate() {
         return $this->tryOrFail(function() {
@@ -2373,7 +2234,12 @@ class Folder extends BaseController
             $isEvalWindowOpen = !empty($dates['eval_date_start']) && !empty($dates['eval_date_end'])
                 && $dates['eval_date_start'] <= $now && $dates['eval_date_end'] >= $now;
 
-            $validEvalStatuses = [FolderStatus::TO_EVALUATE->value, FolderStatus::REEVALUATE->value];
+            $validEvalStatuses = [
+                FolderStatus::DRAFT_EVALUATION->value, 
+                FolderStatus::EVAL_RETURNED->value,
+                FolderStatus::TO_EVALUATE->value, 
+                FolderStatus::REEVALUATE->value
+            ];
             if ($isEvalWindowOpen) {
                 $validEvalStatuses[] = FolderStatus::TARGET_APPROVED->value;
             }
@@ -2383,23 +2249,25 @@ class Folder extends BaseController
             }
 
             $folderModel->update($folderId, [
-                'status'       => FolderStatus::EVALUATED->value,
+                'status'       => FolderStatus::EVAL_SUBMITTED->value,
                 'final_rating' => $finalRating !== '' && $finalRating !== null ? (float) $finalRating : null,
-                'rated_at'     => date('Y-m-d H:i:s')
+                'rated_at'     => $now,
+                'submitted_at' => $now
             ]);
 
-            $userModel    = new UserModel();
+            // Sync all evaluator routes to pending review
             $routingModel = new EvaluationRoutingModel();
+            $routingModel->where('folder_id', $folderId)
+                         ->set(['status' => 'pending', 'updated_at' => $now])
+                         ->update();
 
+            $userModel   = new UserModel();
             $subordinate = $userModel->find($folder['user_id']);
-            $routings = $routingModel->where('folder_id', $folderId)->findAll();
+            $routings    = $routingModel->where('folder_id', $folderId)->findAll();
             
             foreach ($routings as $route) {
                 $evaluator = $userModel->find($route['evaluator_id']);
 
-                // Admins already see every folder on their dashboard without needing
-                // a nudge, and oversee the whole system rather than being a specific
-                // assigned reviewer - so they're skipped even if routed as one.
                 if ($evaluator && !$userModel->hasRole($evaluator['id'], 'Admin')) {
                     $link = site_url("ratings/show/" . $folderId);
 
@@ -2417,7 +2285,7 @@ class Folder extends BaseController
                 }
             }
 
-            return $this->respond(['status' => 'success', 'message' => 'Folder successfully evaluated and locked.']);
+            return $this->respond(['status' => 'success', 'message' => 'Evaluation submitted successfully.']);
         });
     }
 
@@ -2478,12 +2346,10 @@ class Folder extends BaseController
 
             // --- Target Document Validation ---
             $documentModel = new \App\Models\DocumentModel();
-            $targetDoc = $documentModel->where('document_folder_id', $folderId)
-                                       ->where('is_target', 1)
-                                       ->first();
+            $targetDoc = $documentModel->where('document_folder_id', $folderId)->first();
             
             if (!$targetDoc) {
-                return $this->respondError("Submission Failed: You must set at least one document as the Basis Target before submitting targets.", 400);
+                return $this->respondError("Submission Failed: No document found in this folder.", 400);
             }
 
             // Category percentage weights are required on non-IPERF documents (must total 100%)
@@ -2507,14 +2373,14 @@ class Folder extends BaseController
             // ---------------------------------------
 
             $folderModel->update($folderId, [
-                'status'              => FolderStatus::PENDING_TARGET_APPROVAL->value,
+                'status'              => FolderStatus::TARGET_SUBMITTED->value,
                 'target_submitted_at' => date('Y-m-d H:i:s')
             ]);
             
-            // Sync all evaluator routes to pending_target_approval
+            // Sync all evaluator routes to pending review
             $routingModel = new \App\Models\EvaluationRoutingModel();
             $routingModel->where('folder_id', $folderId)
-                         ->set(['status' => FolderStatus::PENDING_TARGET_APPROVAL->value, 'updated_at' => date('Y-m-d H:i:s')])
+                         ->set(['status' => 'pending', 'updated_at' => date('Y-m-d H:i:s')])
                          ->update();
 
             audit_log('TARGET_SUBMITTED', 'TARGET', 'document_folder', (int) $folderId, "Targets submitted for approval: {$folder['title']}");
@@ -2558,8 +2424,16 @@ class Folder extends BaseController
                 return $this->respondError("The target setting period has already ended.", 400);
             }
 
-            if ($folder['status'] !== FolderStatus::PENDING_TARGET_APPROVAL->value) {
+            if (!in_array($folder['status'], [FolderStatus::TARGET_SUBMITTED->value, FolderStatus::PENDING_TARGET_APPROVAL->value], true)) {
                 return $this->respondError("Only pending targets can be unsubmitted.", 400);
+            }
+
+            $routingModel = new \App\Models\EvaluationRoutingModel();
+            $hasApproval = $routingModel->where('folder_id', $folderId)
+                                        ->whereIn('status', ['approved', FolderStatus::APPROVED->value, 'target_approved'])
+                                        ->countAllResults() > 0;
+            if ($hasApproval) {
+                return $this->respondError("Cannot unsubmit: A supervisor has already approved your targets.", 400);
             }
 
             $folderModel->update($folderId, [
@@ -2568,19 +2442,18 @@ class Folder extends BaseController
             ]);
 
             // Sync all evaluator routes back to draft
-            $routingModel = new \App\Models\EvaluationRoutingModel();
             $routingModel->where('folder_id', $folderId)
-                         ->set(['status' => FolderStatus::DRAFT->value, 'updated_at' => date('Y-m-d H:i:s')])
+                         ->set(['status' => 'draft', 'updated_at' => date('Y-m-d H:i:s')])
                          ->update();
 
-            audit_log('TARGET_REVOKED', 'TARGET', 'document_folder', (int) $folderId, "Target submission revoked back to draft: {$folder['title']}");
+            audit_log('TARGET_REVOKED', 'TARGET', 'document_folder', (int) $folderId, "Target submission unsubmitted back to draft: {$folder['title']}");
 
             $sender = (new UserModel())->find($userId);
             $senderName = $sender ? trim(($sender['first_name'] ?? '') . ' ' . ($sender['last_name'] ?? '')) : 'The employee';
             $this->notifyFolderEvaluators(
                 $folder,
-                'Target Submission Revoked',
-                "{$senderName} revoked their target submission for \"{$folder['title']}\" and returned it to draft.",
+                'Target Submission Unsubmitted',
+                "{$senderName} unsubmitted their target commitments for \"{$folder['title']}\" and returned it to draft.",
                 'target_unsubmitted',
                 'file'
             );
@@ -2606,6 +2479,9 @@ class Folder extends BaseController
             if (!$folder) return $this->respondError("Folder not found.", 400);
 
             $evalStatuses = [
+                FolderStatus::EVAL_SUBMITTED->value,
+                FolderStatus::EVAL_APPROVED->value,
+                FolderStatus::EVAL_RETURNED->value,
                 FolderStatus::EVALUATED->value, 
                 FolderStatus::APPROVED->value, 
                 FolderStatus::TWG_APPROVED->value, 
@@ -2615,7 +2491,11 @@ class Folder extends BaseController
             $userRole = session()->get('role');
             $isTwgReviewer = in_array($userRole, ['TWG', 'PMT'], true);
 
-            $allowedStatuses = [FolderStatus::PENDING_TARGET_APPROVAL->value, ...$evalStatuses];
+            $allowedStatuses = [
+                FolderStatus::TARGET_SUBMITTED->value, 
+                FolderStatus::PENDING_TARGET_APPROVAL->value, 
+                ...$evalStatuses
+            ];
             // TWG, PMT, and Admin are authorized to verify targets after supervising authority approval
             if ($isTwgReviewer || $userRole === 'Admin') {
                 $allowedStatuses[] = FolderStatus::TARGET_APPROVED->value;
@@ -2655,7 +2535,7 @@ class Folder extends BaseController
                 $supervisorRoutes[] = $r;
             }
 
-            // If current user is one of the routed evaluators, update their specific route
+            // If current user is one of the routed evaluators, update their specific route to approved
             $isRoutedEvaluator = false;
             foreach ($supervisorRoutes as $r) {
                 if ((int)$r['evaluator_id'] === $currentUserId) {
@@ -2668,7 +2548,7 @@ class Folder extends BaseController
                 $routingModel->where('folder_id', $folderId)
                              ->where('evaluator_id', $currentUserId)
                              ->set([
-                                 'status'     => FolderStatus::TARGET_APPROVED->value,
+                                 'status'     => 'approved',
                                  'updated_at' => date('Y-m-d H:i:s')
                              ])
                              ->update();
@@ -2686,7 +2566,8 @@ class Folder extends BaseController
                 if ($userModel->hasRole($eId, 'Admin')) continue;
 
                 $totalSupervisors++;
-                if ($r['status'] === FolderStatus::TARGET_APPROVED->value || $r['status'] === 'approved') {
+                $st = strtolower(trim((string)$r['status']));
+                if ($st === 'approved' || $st === FolderStatus::TARGET_APPROVED->value) {
                     $approvedSupervisors++;
                 } else {
                     $u = $userModel->find($eId);
@@ -2694,14 +2575,44 @@ class Folder extends BaseController
                 }
             }
 
-            $approverRole = $isTwgReviewer 
-                ? $userRole 
-                : ((session()->get('is_president') || session()->get('role') === 'Admin') ? 'University President' : (session()->get('role') ?: 'Supervisor'));
+            // If current reviewer is TWG / PMT:
+            if ($isTwgReviewer) {
+                // TWG can ONLY approve after all routed supervisors have approved!
+                if ($totalSupervisors > 0 && $approvedSupervisors < $totalSupervisors) {
+                    return $this->respondError("Cannot verify targets yet: All supervising authorities must approve first (currently {$approvedSupervisors} of {$totalSupervisors} approved).", 403);
+                }
 
-            // If there are multiple supervisors and NOT all have approved yet (skip for TWG reviewers):
-            if (!$isTwgReviewer && $totalSupervisors > 1 && $approvedSupervisors < $totalSupervisors) {
+                // TWG is the final approver!
                 $folderModel->update($folderId, [
-                    'status' => FolderStatus::PENDING_TARGET_APPROVAL->value
+                    'status'               => $targetStatus,
+                    'target_approved_at'   => date('Y-m-d H:i:s'),
+                    'target_approved_by'   => $currentUserId,
+                    'target_approver_role' => $userRole
+                ]);
+
+                // In-app notification to the employee whose target was verified
+                notify_user((int) $folder['user_id'], [
+                    'sender_id' => $currentUserId,
+                    'type'      => 'target_approved',
+                    'title'     => 'Target Commitments Verified',
+                    'message'   => "Your target commitments for \"{$folder['title']}\" have been verified and approved by {$userRole}.",
+                    'link'      => 'folders/' . $folderId,
+                    'icon'      => 'check',
+                ]);
+
+                audit_log('TARGET_APPROVED', 'TARGET', 'document_folder', (int) $folderId, "Target commitments verified and approved by {$userRole}: " . $folder['title']);
+
+                return $this->respond(['status' => 'success', 'message' => "Targets verified and approved by {$userRole} successfully."]);
+            }
+
+            $approverRole = (session()->get('is_president') || session()->get('role') === 'Admin') 
+                ? 'University President' 
+                : (session()->get('role') ?: 'Supervisor');
+
+            // If there are multiple supervisors and NOT all have approved yet:
+            if ($totalSupervisors > 1 && $approvedSupervisors < $totalSupervisors) {
+                $folderModel->update($folderId, [
+                    'status' => FolderStatus::TARGET_SUBMITTED->value
                 ]);
 
                 audit_log('TARGET_APPROVED_PARTIAL', 'TARGET', 'document_folder', (int) $folderId, "Target commitment approved by " . (session()->get('name') ?: 'supervisor') . " ({$approvedSupervisors}/{$totalSupervisors} supervisors approved): {$folder['title']}");
@@ -2710,7 +2621,43 @@ class Folder extends BaseController
                 return $this->respond(['status' => 'success', 'message' => $msg]);
             }
 
-            // When ALL supervising authorities have approved (or single supervisor / direct OPCR)
+            // All supervising authorities have approved! Check if an assigned TWG exists for this folder / unit:
+            $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
+            $assignedTwg = $twgAssignmentModel->resolveAssignedTwgForFolder($folder);
+
+            if ($assignedTwg) {
+                // Keep status at TARGET_SUBMITTED so TWG performs the final verification
+                $folderModel->update($folderId, [
+                    'status' => FolderStatus::TARGET_SUBMITTED->value
+                ]);
+
+                // Notify TWG
+                notify_user((int) $assignedTwg['id'], [
+                    'sender_id' => $currentUserId,
+                    'type'      => 'twg_target_pending',
+                    'title'     => 'Targets Ready for TWG Verification',
+                    'message'   => "All supervising authorities have approved targets for \"{$folder['title']}\". Ready for your final TWG verification.",
+                    'link'      => 'folders/' . $folderId,
+                    'icon'      => 'clipboard-check',
+                ]);
+
+                // Notify employee
+                notify_user((int) $folder['user_id'], [
+                    'sender_id' => $currentUserId,
+                    'type'      => 'target_supervisors_approved',
+                    'title'     => 'Supervising Authorities Approved Targets',
+                    'message'   => "All supervising authorities have approved your target commitments for \"{$folder['title']}\". The document has been forwarded to TWG for final verification.",
+                    'link'      => 'folders/' . $folderId,
+                    'icon'      => 'check',
+                ]);
+
+                audit_log('TARGET_APPROVED_SUPERVISORS', 'TARGET', 'document_folder', (int) $folderId, "All supervising authorities approved targets for {$folder['title']}. Forwarded to TWG ({$assignedTwg['name']}).");
+
+                $msg = "Targets approved by you. All supervising authorities have approved; the document has been forwarded to the Technical Working Group (TWG) for final verification.";
+                return $this->respond(['status' => 'success', 'message' => $msg]);
+            }
+
+            // When ALL supervising authorities have approved AND no assigned TWG exists (or direct OPCR)
             $folderModel->update($folderId, [
                 'status'               => $targetStatus,
                 'target_approved_at'   => date('Y-m-d H:i:s'),
@@ -2720,6 +2667,7 @@ class Folder extends BaseController
 
             $unitModel = new \App\Models\UnitModel();
             $releasedCount = 0;
+            $cycleFolderId = $folder['cycle_folder_id'] ?? $folderModel->getRootCycleFolderId($folder['id']);
 
             // --- TIER 1 -> TIER 2: APPROVE & RELEASE TO COLLEGE DEANS (FROM OPCR) ---
             if ($releaseToDeans) {
@@ -2745,27 +2693,8 @@ class Folder extends BaseController
                             'title'               => $folder['title'],
                             'user_id'             => $dean['id'],
                             'parent_folder_id'    => $folder['id'],
+                            'cycle_folder_id'     => $cycleFolderId,
                             'status'              => FolderStatus::DRAFT_TARGET->value,
-                            'ipcr_target_start'   => $folder['ipcr_target_start'],
-                            'ipcr_target_end'     => $folder['ipcr_target_end'],
-                            'ipcr_eval_start'     => $folder['ipcr_eval_start'],
-                            'ipcr_eval_end'       => $folder['ipcr_eval_end'],
-                            'cdpcr_target_start'  => $folder['cdpcr_target_start'] ?? null,
-                            'cdpcr_target_end'    => $folder['cdpcr_target_end'] ?? null,
-                            'cdpcr_eval_start'    => $folder['cdpcr_eval_start'] ?? null,
-                            'cdpcr_eval_end'      => $folder['cdpcr_eval_end'] ?? null,
-                            'dpcr_target_start'   => $folder['dpcr_target_start'],
-                            'dpcr_target_end'     => $folder['dpcr_target_end'],
-                            'dpcr_eval_start'     => $folder['dpcr_eval_start'],
-                            'dpcr_eval_end'       => $folder['dpcr_eval_end'],
-                            'opcr_target_start'   => $folder['opcr_target_start'],
-                            'opcr_target_end'     => $folder['opcr_target_end'],
-                            'opcr_eval_start'     => $folder['opcr_eval_start'],
-                            'opcr_eval_end'       => $folder['opcr_eval_end'],
-                            'iperf_target_start'  => $folder['iperf_target_start'],
-                            'iperf_target_end'    => $folder['iperf_target_end'],
-                            'iperf_eval_start'    => $folder['iperf_eval_start'],
-                            'iperf_eval_end'      => $folder['iperf_eval_end'],
                         ]);
                         
                         // Force DPCR paper generation for the Dean
@@ -2811,27 +2740,8 @@ class Folder extends BaseController
                             'title'               => $folder['title'],
                             'user_id'             => $chair['user_id'],
                             'parent_folder_id'    => $folder['id'],
+                            'cycle_folder_id'     => $cycleFolderId,
                             'status'              => FolderStatus::DRAFT_TARGET->value,
-                            'ipcr_target_start'   => $folder['ipcr_target_start'],
-                            'ipcr_target_end'     => $folder['ipcr_target_end'],
-                            'ipcr_eval_start'     => $folder['ipcr_eval_start'],
-                            'ipcr_eval_end'       => $folder['ipcr_eval_end'],
-                            'cdpcr_target_start'  => $folder['cdpcr_target_start'] ?? null,
-                            'cdpcr_target_end'    => $folder['cdpcr_target_end'] ?? null,
-                            'cdpcr_eval_start'    => $folder['cdpcr_eval_start'] ?? null,
-                            'cdpcr_eval_end'      => $folder['cdpcr_eval_end'] ?? null,
-                            'dpcr_target_start'   => $folder['dpcr_target_start'],
-                            'dpcr_target_end'     => $folder['dpcr_target_end'],
-                            'dpcr_eval_start'     => $folder['dpcr_eval_start'],
-                            'dpcr_eval_end'       => $folder['dpcr_eval_end'],
-                            'opcr_target_start'   => $folder['opcr_target_start'],
-                            'opcr_target_end'     => $folder['opcr_target_end'],
-                            'opcr_eval_start'     => $folder['opcr_eval_start'],
-                            'opcr_eval_end'       => $folder['opcr_eval_end'],
-                            'iperf_target_start'  => $folder['iperf_target_start'],
-                            'iperf_target_end'    => $folder['iperf_target_end'],
-                            'iperf_eval_start'    => $folder['iperf_eval_start'],
-                            'iperf_eval_end'      => $folder['iperf_eval_end'],
                         ]);
 
                         // Force DPCR paper generation for the Department Chair
@@ -2890,27 +2800,8 @@ class Folder extends BaseController
                             'title'               => $folder['title'],
                             'user_id'             => $dp['user_id'],
                             'parent_folder_id'    => $folder['id'],
+                            'cycle_folder_id'     => $cycleFolderId,
                             'status'              => FolderStatus::DRAFT_TARGET->value,
-                            'ipcr_target_start'   => $folder['ipcr_target_start'],
-                            'ipcr_target_end'     => $folder['ipcr_target_end'],
-                            'ipcr_eval_start'     => $folder['ipcr_eval_start'],
-                            'ipcr_eval_end'       => $folder['ipcr_eval_end'],
-                            'cdpcr_target_start'  => $folder['cdpcr_target_start'] ?? null,
-                            'cdpcr_target_end'    => $folder['cdpcr_target_end'] ?? null,
-                            'cdpcr_eval_start'    => $folder['cdpcr_eval_start'] ?? null,
-                            'cdpcr_eval_end'      => $folder['cdpcr_eval_end'] ?? null,
-                            'dpcr_target_start'   => $folder['dpcr_target_start'],
-                            'dpcr_target_end'     => $folder['dpcr_target_end'],
-                            'dpcr_eval_start'     => $folder['dpcr_eval_start'],
-                            'dpcr_eval_end'       => $folder['dpcr_eval_end'],
-                            'opcr_target_start'   => $folder['opcr_target_start'],
-                            'opcr_target_end'     => $folder['opcr_target_end'],
-                            'opcr_eval_start'     => $folder['opcr_eval_start'],
-                            'opcr_eval_end'       => $folder['opcr_eval_end'],
-                            'iperf_target_start'  => $folder['iperf_target_start'],
-                            'iperf_target_end'    => $folder['iperf_target_end'],
-                            'iperf_eval_start'    => $folder['iperf_eval_start'],
-                            'iperf_eval_end'      => $folder['iperf_eval_end'],
                         ]);
                         $this->ensureUserDocumentExists($newFolderId, $dp['user_id'], $folder['title'], 'IPCR');
 
@@ -2965,27 +2856,8 @@ class Folder extends BaseController
                             'title'               => $folder['title'],
                             'user_id'             => $faculty['user_id'],
                             'parent_folder_id'    => $folder['id'],
+                            'cycle_folder_id'     => $cycleFolderId,
                             'status'              => FolderStatus::DRAFT_TARGET->value,
-                            'ipcr_target_start'   => $folder['ipcr_target_start'],
-                            'ipcr_target_end'     => $folder['ipcr_target_end'],
-                            'ipcr_eval_start'     => $folder['ipcr_eval_start'],
-                            'ipcr_eval_end'       => $folder['ipcr_eval_end'],
-                            'cdpcr_target_start'  => $folder['cdpcr_target_start'] ?? null,
-                            'cdpcr_target_end'    => $folder['cdpcr_target_end'] ?? null,
-                            'cdpcr_eval_start'    => $folder['cdpcr_eval_start'] ?? null,
-                            'cdpcr_eval_end'      => $folder['cdpcr_eval_end'] ?? null,
-                            'dpcr_target_start'   => $folder['dpcr_target_start'],
-                            'dpcr_target_end'     => $folder['dpcr_target_end'],
-                            'dpcr_eval_start'     => $folder['dpcr_eval_start'],
-                            'dpcr_eval_end'       => $folder['dpcr_eval_end'],
-                            'opcr_target_start'   => $folder['opcr_target_start'],
-                            'opcr_target_end'     => $folder['opcr_target_end'],
-                            'opcr_eval_start'     => $folder['opcr_eval_start'],
-                            'opcr_eval_end'       => $folder['opcr_eval_end'],
-                            'iperf_target_start'  => $folder['iperf_target_start'],
-                            'iperf_target_end'    => $folder['iperf_target_end'],
-                            'iperf_eval_start'    => $folder['iperf_eval_start'],
-                            'iperf_eval_end'      => $folder['iperf_eval_end'],
                         ]);
 
                         // Ensure IPCR paper exists for Faculty
@@ -3074,64 +2946,91 @@ class Folder extends BaseController
             $folderModel = new DocumentFolderModel();
             
             $folder = $folderModel->find($folderId);
+            if (!$folder) {
+                return $this->respondError("Folder not found.", 404);
+            }
+
             $dates = $folderModel->getFolderDates($folder);
-            
             if (!empty($dates['target_date_end']) && date('Y-m-d H:i:s') > $dates['target_date_end']) {
                 return $this->respondError("Cannot remove approval: The target setting window has already closed.", 400);
-            }
-            
-            if ($folder['status'] !== FolderStatus::TARGET_APPROVED->value) {
-                return $this->respondError("This folder is not currently approved.", 400);
             }
             
             $currentUserId = (int)session()->get('user_id');
             $userRole      = session()->get('role');
             $isTwgReviewer = in_array($userRole, ['TWG', 'PMT'], true);
+            $isAdmin       = ($userRole === 'Admin');
             $routingModel  = new \App\Models\EvaluationRoutingModel();
             
             if ($isTwgReviewer) {
-                // TWG / PMT un-verifies the folder: revert target_approver_role back to supervisor authority
-                $fallbackRole = 'Supervisor';
-                if (!empty($folder['approving_authority_name']) || empty($folder['parent_folder_id'])) {
-                    $fallbackRole = 'University President';
+                if ($folder['status'] !== FolderStatus::TARGET_APPROVED->value || !in_array($folder['target_approver_role'] ?? '', ['TWG', 'PMT'], true)) {
+                    return $this->respondError("This folder is not currently approved by TWG.", 400);
                 }
+
+                // TWG / PMT un-verifies the folder: revert target_approver_role and status back to pending verification
                 $folderModel->update($folderId, [
-                    'target_approver_role' => $fallbackRole
+                    'status'               => FolderStatus::TARGET_SUBMITTED->value,
+                    'target_approved_at'   => null,
+                    'target_approved_by'   => null,
+                    'target_approver_role' => null
                 ]);
 
                 audit_log('TWG_TARGET_UNVERIFIED', 'TARGET', 'document_folder', (int) $folderId, "Target verification revoked by {$userRole}: {$folder['title']}");
 
-                return $this->respond(['status' => 'success', 'message' => "Target verification removed successfully."]);
+                notify_user((int) $folder['user_id'], [
+                    'sender_id' => $currentUserId,
+                    'type'      => 'target_unapproved',
+                    'title'     => 'Target Verification Revoked',
+                    'message'   => "Target verification for \"{$folder['title']}\" was revoked by {$userRole} and reverted to pending verification.",
+                    'link'      => 'folders/' . $folderId,
+                    'icon'      => 'alert',
+                ]);
+
+                return $this->respond(['status' => 'success', 'message' => "Target verification removed successfully. Reverted to pending verification."]);
             }
             
-            // Revert this evaluator's specific route back to pending
-            $routingModel->where('folder_id', $folderId)
-                         ->where('evaluator_id', $currentUserId)
-                         ->set([
-                             'status'     => FolderStatus::PENDING_TARGET_APPROVAL->value,
-                             'updated_at' => date('Y-m-d H:i:s')
-                         ])
-                         ->update();
+            // Supervisor / Admin unapproving their routing
+            $myRoute = $routingModel->where('folder_id', $folderId)
+                                    ->where('evaluator_id', $currentUserId)
+                                    ->first();
+            $hasRouteApproval = ($myRoute && in_array(strtolower(trim($myRoute['status'] ?? '')), ['approved', 'target_approved'], true));
+            $isDirectApprover = ($folder['target_approved_by'] == $currentUserId);
+            $isFolderApproved = ($folder['status'] === FolderStatus::TARGET_APPROVED->value);
 
+            if (!$hasRouteApproval && !$isDirectApprover && !$isFolderApproved && !$isAdmin) {
+                return $this->respondError("You do not have an active approval on this folder to remove.", 400);
+            }
+
+            // Revert this evaluator's specific route back to pending
+            if ($myRoute) {
+                $routingModel->where('folder_id', $folderId)
+                             ->where('evaluator_id', $currentUserId)
+                             ->set([
+                                 'status'     => 'pending',
+                                 'updated_at' => date('Y-m-d H:i:s')
+                             ])
+                             ->update();
+            }
+
+            // Always revert folder status to TARGET_SUBMITTED and clear target approval sign-offs
             $folderModel->update($folderId, [
-                'status'               => FolderStatus::PENDING_TARGET_APPROVAL->value,
+                'status'               => FolderStatus::TARGET_SUBMITTED->value,
                 'target_approved_at'   => null,
                 'target_approved_by'   => null,
                 'target_approver_role' => null
             ]);
             
             notify_user((int) $folder['user_id'], [
-                'sender_id' => session()->get('user_id'),
+                'sender_id' => $currentUserId,
                 'type'      => 'target_unapproved',
                 'title'     => 'Target Approval Revoked',
-                'message'   => "Target commitment approval for \"{$folder['title']}\" was revoked and returned to pending review.",
+                'message'   => "Target commitment approval for \"{$folder['title']}\" was revoked by " . (session()->get('name') ?: 'supervisor') . " and returned to pending review.",
                 'link'      => 'folders/' . $folderId,
                 'icon'      => 'alert',
             ]);
 
-            audit_log('TARGET_UNAPPROVED', 'TARGET', 'document_folder', (int) $folderId, "Target commitment approval revoked: {$folder['title']}");
+            audit_log('TARGET_UNAPPROVED', 'TARGET', 'document_folder', (int) $folderId, "Target commitment approval revoked by " . (session()->get('name') ?: 'supervisor') . ": {$folder['title']}");
 
-            return $this->respond(['status' => 'success', 'message' => 'Approval removed.']);
+            return $this->respond(['status' => 'success', 'message' => 'Approval removed successfully. Reverted to pending review.']);
         });
     }
 
@@ -3147,7 +3046,7 @@ class Folder extends BaseController
             $folder = $folderModel->find($folderId);
             if (!$folder) return $this->respondError("Folder not found.", 400);
 
-            if ($folder['status'] !== FolderStatus::PENDING_TARGET_APPROVAL->value) {
+            if (!in_array($folder['status'], [FolderStatus::TARGET_SUBMITTED->value, FolderStatus::PENDING_TARGET_APPROVAL->value], true)) {
                 return $this->respondError("Cannot return targets: The employee has already revoked or unsubmitted their targets. Please refresh the page.", 409);
             }
 
@@ -3157,16 +3056,40 @@ class Folder extends BaseController
             }
             
             $currentUserId = (int)session()->get('user_id');
+            $userRole      = session()->get('role');
+            $isTwgReviewer = in_array($userRole, ['TWG', 'PMT'], true);
             $routingModel  = new \App\Models\EvaluationRoutingModel();
+            $userModel     = new \App\Models\UserModel();
 
-            // Mark this evaluator's specific route as target_returned
-            $routingModel->where('folder_id', $folderId)
-                         ->where('evaluator_id', $currentUserId)
-                         ->set([
-                             'status'     => FolderStatus::TARGET_RETURNED->value,
-                             'updated_at' => date('Y-m-d H:i:s')
-                         ])
-                         ->update();
+            if ($isTwgReviewer) {
+                // TWG can only return targets if all supervising authorities have completed their review
+                $allRoutes = $routingModel->where('folder_id', $folderId)->findAll();
+                $totalSupervisors = 0;
+                $approvedSupervisors = 0;
+                foreach ($allRoutes as $r) {
+                    $eId = (int)$r['evaluator_id'];
+                    if ($eId === (int)$folder['user_id']) continue;
+                    if ($userModel->hasRole($eId, 'Admin')) continue;
+                    $totalSupervisors++;
+                    $st = strtolower(trim((string)$r['status']));
+                    if ($st === 'approved' || $st === FolderStatus::TARGET_APPROVED->value) {
+                        $approvedSupervisors++;
+                    }
+                }
+
+                if ($totalSupervisors > 0 && $approvedSupervisors < $totalSupervisors) {
+                    return $this->respondError("Cannot return targets yet: All supervising authorities must approve first before TWG verification.", 403);
+                }
+            } else {
+                // Mark this supervisor's specific route as returned
+                $routingModel->where('folder_id', $folderId)
+                             ->where('evaluator_id', $currentUserId)
+                             ->set([
+                                 'status'     => 'returned',
+                                 'updated_at' => date('Y-m-d H:i:s')
+                             ])
+                             ->update();
+            }
 
             $folderModel->update($folderId, [
                 'status' => FolderStatus::TARGET_RETURNED->value
@@ -3210,8 +3133,10 @@ class Folder extends BaseController
             }
 
             $validEvalStatuses = [
+                FolderStatus::EVAL_SUBMITTED->value,
                 FolderStatus::EVALUATED->value,
                 FolderStatus::SUBMITTED->value,
+                FolderStatus::EVAL_APPROVED->value,
                 FolderStatus::APPROVED->value,
                 FolderStatus::TWG_APPROVED->value,
                 FolderStatus::TWG_DISAPPROVED->value
@@ -3225,10 +3150,10 @@ class Folder extends BaseController
 
             if ($isAdmin) {
                 $routingModel->where('folder_id', $folderId)
-                    ->set(['status' => FolderStatus::APPROVED->value, 'updated_at' => date('Y-m-d H:i:s')])
+                    ->set(['status' => 'approved', 'updated_at' => date('Y-m-d H:i:s')])
                     ->update();
                 $updateData = [
-                    'status'   => FolderStatus::APPROVED->value,
+                    'status'   => FolderStatus::EVAL_APPROVED->value,
                     'rated_at' => date('Y-m-d H:i:s')
                 ];
                 if ($finalScore !== null && $finalScore !== '' && is_numeric($finalScore)) {
@@ -3238,7 +3163,7 @@ class Folder extends BaseController
             } else {
                 $routingModel->where('folder_id', $folderId)
                     ->where('evaluator_id', session()->get('user_id'))
-                    ->set(['status' => FolderStatus::APPROVED->value, 'updated_at' => date('Y-m-d H:i:s')])
+                    ->set(['status' => 'approved', 'updated_at' => date('Y-m-d H:i:s')])
                     ->update();
                 if ($finalScore !== null && $finalScore !== '' && is_numeric($finalScore)) {
                     $folderModel->update($folderId, ['final_rating' => (float) $finalScore]);
@@ -3253,9 +3178,6 @@ class Folder extends BaseController
             $supervisor = $userModel->find(session()->get('user_id'));
             $link = site_url("folders/" . $folderId);
 
-            // Admins oversee the whole system rather than being an evaluated
-            // employee, so they don't get this notification even if it's their
-            // own folder that just got approved.
             if (!$userModel->hasRole($subordinate['id'], 'Admin')) {
                 queue_email($subordinate['email'], 'Folder Approved: ' . $folder['title'], render_email('folder_approved', [
                     'firstName'           => $subordinate['first_name'],
@@ -3284,7 +3206,7 @@ class Folder extends BaseController
     }
 
     /**
-     * POST /folder/unapprove - Reverts the current evaluator's approval back to TO_EVALUATE.
+     * POST /folder/unapprove - Reverts the current evaluator's approval back to pending review.
      */
     public function unapprove() {
         return $this->tryOrFail(function() {
@@ -3303,18 +3225,19 @@ class Folder extends BaseController
 
             if ($isAdmin) {
                 $routingModel->where('folder_id', $folderId)
-                    ->set(['status' => FolderStatus::TO_EVALUATE->value, 'updated_at' => date('Y-m-d H:i:s')])
+                    ->set(['status' => 'pending', 'updated_at' => date('Y-m-d H:i:s')])
                     ->update();
             } else {
                 // Check if actually approved by this user
                 $routing = $routingModel->where('folder_id', $folderId)->where('evaluator_id', session()->get('user_id'))->first();
-                if (!$routing || $routing['status'] !== FolderStatus::APPROVED->value) {
+                $rSt = strtolower(trim((string)($routing['status'] ?? '')));
+                if (!$routing || ($rSt !== 'approved' && $rSt !== FolderStatus::APPROVED->value)) {
                     return $this->respondError("You have not approved this folder.", 400);
                 }
 
                 $routingModel->where('folder_id', $folderId)
                     ->where('evaluator_id', session()->get('user_id'))
-                    ->set(['status' => FolderStatus::TO_EVALUATE->value, 'updated_at' => date('Y-m-d H:i:s')])
+                    ->set(['status' => 'pending', 'updated_at' => date('Y-m-d H:i:s')])
                     ->update();
             }
 
@@ -3388,7 +3311,14 @@ class Folder extends BaseController
                 }
             }
             
-            if (!in_array($status, [FolderStatus::TWG_APPROVED->value, FolderStatus::TWG_DISAPPROVED->value, 'revoke'])) {
+            $validPostStatuses = [
+                FolderStatus::EVAL_APPROVED->value,
+                FolderStatus::EVAL_RETURNED->value,
+                FolderStatus::TWG_APPROVED->value, 
+                FolderStatus::TWG_DISAPPROVED->value, 
+                'revoke'
+            ];
+            if (!in_array($status, $validPostStatuses, true)) {
                 return $this->fail('Invalid status');
             }
             
@@ -3399,12 +3329,15 @@ class Folder extends BaseController
             }
 
             $validTwgStatuses = [
+                FolderStatus::EVAL_SUBMITTED->value,
+                FolderStatus::EVAL_APPROVED->value,
+                FolderStatus::EVAL_RETURNED->value,
                 FolderStatus::EVALUATED->value,
                 FolderStatus::APPROVED->value,
                 FolderStatus::TWG_APPROVED->value,
                 FolderStatus::TWG_DISAPPROVED->value
             ];
-            if ($status !== 'revoke' && !in_array($folder['status'], $validTwgStatuses)) {
+            if ($status !== 'revoke' && !in_array($folder['status'], $validTwgStatuses, true)) {
                 return $this->respondError("Cannot perform TWG review: The employee's submission is no longer under evaluation. Please refresh the page.", 409);
             }
 
@@ -3414,25 +3347,29 @@ class Folder extends BaseController
                 return $this->respond(['status' => 'success', 'message' => 'TWG decision revoked successfully!']);
             }
 
+            $canonicalStatus = ($status === FolderStatus::TWG_DISAPPROVED->value || $status === FolderStatus::EVAL_RETURNED->value)
+                ? FolderStatus::EVAL_RETURNED->value
+                : FolderStatus::EVAL_APPROVED->value;
+
             $folderModel->update($folderId, [
-                'status' => $status, 
+                'status'     => $canonicalStatus, 
                 'updated_at' => date('Y-m-d H:i:s')
             ]);
             
             $folder = $folderModel->find($folderId);
-            $isApproved = ($status === FolderStatus::TWG_APPROVED->value);
+            $isApproved = ($canonicalStatus === FolderStatus::EVAL_APPROVED->value);
             notify_user((int) $folder['user_id'], [
                 'sender_id' => session()->get('user_id'),
                 'type'      => $isApproved ? 'twg_approved' : 'twg_disapproved',
-                'title'     => $isApproved ? 'SPMS Rating Verified by TWG' : 'SPMS Rating Disapproved by TWG',
+                'title'     => $isApproved ? 'SPMS Rating Verified by TWG' : 'SPMS Rating Returned by TWG',
                 'message'   => $isApproved 
                     ? "Official SPMS performance ratings for \"{$folder['title']}\" have been verified and finalized by the Technical Working Group."
-                    : "Official SPMS performance ratings for \"{$folder['title']}\" were not approved by the Technical Working Group.",
+                    : "Official SPMS performance ratings for \"{$folder['title']}\" were returned for revision by the Technical Working Group.",
                 'link'      => 'folders/' . $folderId,
                 'icon'      => $isApproved ? 'award' : 'alert',
             ]);
 
-            audit_log($isApproved ? 'TWG_APPROVED' : 'TWG_DISAPPROVED', 'RATING', 'document_folder', (int) $folderId, "Official SPMS rating " . ($isApproved ? 'verified and approved' : 'disapproved') . " by TWG for {$folder['title']}");
+            audit_log($isApproved ? 'TWG_APPROVED' : 'TWG_DISAPPROVED', 'RATING', 'document_folder', (int) $folderId, "Official SPMS rating " . ($isApproved ? 'verified and approved' : 'returned') . " by TWG for {$folder['title']}");
 
             return $this->respond(['status' => 'success', 'message' => 'Status updated successfully!']);
         });
@@ -3455,17 +3392,19 @@ class Folder extends BaseController
             }
 
             $validEvalStatuses = [
+                FolderStatus::EVAL_SUBMITTED->value,
+                FolderStatus::EVAL_APPROVED->value,
                 FolderStatus::EVALUATED->value,
                 FolderStatus::SUBMITTED->value,
                 FolderStatus::APPROVED->value
             ];
-            if (!in_array($folder['status'], $validEvalStatuses)) {
+            if (!in_array($folder['status'], $validEvalStatuses, true)) {
                 return $this->respondError("Cannot return evaluation: The employee has already revoked their self-rating submission. Please refresh the page.", 409);
             }
 
             $routingModel->where('folder_id', $folderId)
                 ->where('evaluator_id', session()->get('user_id'))
-                ->set(['status' => FolderStatus::REEVALUATE->value, 'updated_at' => date('Y-m-d H:i:s')])
+                ->set(['status' => 'returned', 'updated_at' => date('Y-m-d H:i:s')])
                 ->update();
 
             $this->updateFolderConsensus($folderId);
@@ -3529,8 +3468,7 @@ class Folder extends BaseController
         $reviewerName = trim(($reviewer['first_name'] ?? '') . ' ' . ($reviewer['last_name'] ?? ''));
         $reviewerRole = $plantilla['position'] ?? (session()->get('role') ?: 'Reviewer');
 
-        $doc = $documentModel->where('document_folder_id', $folderId)->where('is_target', 1)->first()
-            ?? $documentModel->where('document_folder_id', $folderId)->first();
+        $doc = $documentModel->where('document_folder_id', $folderId)->first();
 
         if ($doc) {
             $tabs = $doc['tabs'] ?? [];
