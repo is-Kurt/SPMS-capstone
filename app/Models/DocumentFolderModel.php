@@ -329,7 +329,7 @@ class  DocumentFolderModel extends Model
             ->join('users u', 'u.id = df.user_id')
             ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
             ->join('positions pos', 'pos.id = p.position_id', 'left')
-            ->join('cycle_deadlines cd', 'cd.cycle_folder_id = COALESCE(df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = CASE WHEN (LOWER(COALESCE(u.doc_type, "ipcr")) = "dpcr" AND (pos.title LIKE "%dean%" OR u.email LIKE "%dean%")) THEN "cdpcr" ELSE LOWER(COALESCE(u.doc_type, "ipcr")) END', 'left')
+            ->join('cycle_deadlines cd', 'cd.cycle_folder_id = COALESCE(df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = LOWER(COALESCE(u.doc_type, "ipcr"))', 'left')
             ->where('df.deleted_at IS NULL')
             ->whereIn('df.status', [
                 \App\Enums\FolderStatus::TARGET_APPROVED->value,
@@ -370,7 +370,7 @@ class  DocumentFolderModel extends Model
             ->join('users u', 'u.id = df.user_id')
             ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
             ->join('positions pos', 'pos.id = p.position_id', 'left')
-            ->join('cycle_deadlines cd', 'cd.cycle_folder_id = COALESCE(df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = CASE WHEN (LOWER(COALESCE(u.doc_type, "ipcr")) = "dpcr" AND (pos.title LIKE "%dean%" OR u.email LIKE "%dean%")) THEN "cdpcr" ELSE LOWER(COALESCE(u.doc_type, "ipcr")) END', 'left')
+            ->join('cycle_deadlines cd', 'cd.cycle_folder_id = COALESCE(df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = LOWER(COALESCE(u.doc_type, "ipcr"))', 'left')
             ->where('df.deleted_at IS NULL')
             ->whereNotIn('df.status', [
                 \App\Enums\FolderStatus::EVAL_APPROVED->value,
@@ -435,12 +435,8 @@ class  DocumentFolderModel extends Model
             $isChair = str_contains($pos, 'chair') || str_contains($pos, 'head') || str_contains($email, 'chair');
 
             $docType = !empty($owner['doc_type']) ? strtolower($owner['doc_type']) : null;
-            if (($docType === 'dpcr' || $docType === 'cdpcr') && $isDean) {
-                $docType = 'cdpcr';
-            } elseif (!$docType) {
-                if ($isDean) {
-                    $docType = 'cdpcr';
-                } elseif ($isChair) {
+            if (!$docType) {
+                if ($isDean || $isChair) {
                     $docType = 'dpcr';
                 } elseif (str_contains($pos, 'president') || str_contains($pos, 'vpaa') || str_contains($email, 'vpaa')) {
                     $docType = 'opcr';

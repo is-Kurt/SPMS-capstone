@@ -11,16 +11,13 @@
     $docTitleUpper = strtoupper(trim($doc['title'] ?? ''));
     $isTrueOpcr = str_contains($docTitleUpper, 'OPCR') || str_contains($docTitleUpper, 'OFFICE') || (strtoupper($doc['doc_type'] ?? '') === 'OPCR');
     $isTrueDpcr = str_contains($docTitleUpper, 'DPCR') || str_contains($docTitleUpper, 'DIVISION') || str_contains($docTitleUpper, 'DEPARTMENT') || (strtoupper($doc['doc_type'] ?? '') === 'DPCR');
-    $isDocDpcr = in_array($ownerDocType, ['dpcr', 'cdpcr']) || $isTrueDpcr;
+    $isDocDpcr = ($ownerDocType === 'dpcr') || $isTrueDpcr;
     $ownerPos = strtolower($ownerInfo['position'] ?? '');
     $isOwnerDean = str_contains($ownerPos, 'dean');
     $isDocOpcr = (!$isDocDpcr) && ($isTrueOpcr || str_contains($ownerPos, 'vice president'));
     $isDocIperf = (!$isDocDpcr && !$isDocOpcr) && ($ownerDocType === 'iperf' || stripos($doc['title'] ?? '', 'iperf') !== false);
-    if (($ownerDocType === 'dpcr' || $ownerDocType === 'cdpcr') && $isOwnerDean) {
-        $targetEndCol = (!empty($doc['cdpcr_target_end'])) ? 'cdpcr_target_end' : 'dpcr_target_end';
-    } else {
-        $targetEndCol = $ownerDocType . '_target_end';
-    }
+    $activeDocType = $isDocDpcr ? 'dpcr' : ($isDocOpcr ? 'opcr' : ($isDocIperf ? 'iperf' : 'ipcr'));
+    $targetEndCol = $activeDocType . '_target_end';
     $now = date('Y-m-d H:i:s');
     $tEnd = $doc[$targetEndCol] ?? null;
     $isPastTargetDate = (!empty($tEnd) && $now > $tEnd);

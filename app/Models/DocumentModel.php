@@ -76,8 +76,9 @@ class DocumentModel extends Model
             $row["{$effectiveDocType}_target_end"]   = $row['target_end'] ?? null;
             $row["{$effectiveDocType}_eval_start"]   = $row['eval_start'] ?? null;
             $row["{$effectiveDocType}_eval_end"]     = $row['eval_end'] ?? null;
-            $row['cdpcr_target_end'] = $row['target_end'] ?? null;
-            $row['dpcr_target_end']  = $row['target_end'] ?? null;
+            if ($effectiveDocType === 'dpcr') {
+                $row['dpcr_target_end'] = $row['target_end'] ?? null;
+            }
         }
 
         return $row;
