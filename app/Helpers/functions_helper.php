@@ -178,7 +178,7 @@ function restore_session_from_cookie(): bool {
             'username'   => $user['first_name'] . ' ' . $user['last_name'],
             'doc_type'   => $user['doc_type'] ?? null,
             'isLoggedIn' => true,
-            'avatar_image'  => $user['avatar_image'],
+            'avatar_image'  => $user['avatar_image'] ?? $user['avatar'] ?? null,
             'avatar_color'  => $user['avatar_color'] ?? '#' . substr(md5($user['email']), 0, 6),
             'avatar_letter' => $user['avatar_letter'] ?? strtoupper(substr($user['first_name'], 0, 1)),
         ]);
@@ -197,10 +197,58 @@ function restore_session_from_cookie(): bool {
  * @param string $targetPaperType Target paper type ('IPCR', 'DPCR', 'OPCR', 'IPERF')
  * @return bool True if document was converted/updated, False if no change needed or invalid.
  */
+/**
+ * Returns the official standard form blueprint / tabs JSON for a given doc_type
+ * (OPCR, DPCR, IPCR, IPERF) without requiring a database query.
+ */
+function get_default_form_template(string $docType): array
+{
+    $docType = strtoupper(trim($docType));
+    $officialTitles = [
+        'OPCR'  => 'OFFICE PERFORMANCE COMMITMENT AND REVIEW (OPCR)',
+        'DPCR'  => 'DEPARTMENT PERFORMANCE COMMITMENT AND REVIEW (DPCR)',
+        'IPCR'  => 'INDIVIDUAL PERFORMANCE COMMITMENT AND REVIEW (IPCR)',
+        'IPERF' => 'INDIVIDUAL PERFORMANCE EVALUATION RATING FORM FOR CONTRACT OF SERVICE AND JOB ORDER PERSONNEL',
+    ];
+
+    $title = $officialTitles[$docType] ?? $docType;
+    $lower = strtolower($docType);
+
+    return [
+        [
+            'id'       => 'tab-target',
+            'title'    => 'Target Form',
+            'formData' => [
+                'doc_type'   => $lower,
+                'title'      => $title,
+                'categories' => [
+                    'core' => [
+                        [
+                            'row_id'          => 'row_core_1',
+                            'mfo'             => '',
+                            'indicators'      => '',
+                            'budget'          => '',
+                            'accountable'     => '',
+                            'accomplishments' => '',
+                            'q'               => '',
+                            't'               => '',
+                            'e'               => '',
+                            'remarks'         => '',
+                            'twg_comment'     => ''
+                        ]
+                    ],
+                    'strategic' => [],
+                    'support'   => []
+                ]
+            ],
+            'content'  => ''
+        ]
+    ];
+}
+
 function convert_document_paper_type(string $docId, string $targetPaperType): bool
 {
     $documentModel = new \App\Models\DocumentModel();
-    $templateModel = new \App\Models\TemplateModel();
 
     $doc = $documentModel->find($docId);
     if (!$doc) return false;
@@ -212,23 +260,25 @@ function convert_document_paper_type(string $docId, string $targetPaperType): bo
 
     $currentTitleUpper = strtoupper(trim($doc['title'] ?? ''));
     $tabs = !empty($doc['tabs']) ? (is_string($doc['tabs']) ? json_decode($doc['tabs'], true) : $doc['tabs']) : [];
+    $tabTitleUpper = strtoupper(trim($tabs[0]['formData']['title'] ?? ''));
 
-    // Identify current paper type
+    // Identify current paper type from document title or tab form title
     $currentDocType = null;
-    if (str_contains($currentTitleUpper, 'OPCR') || str_contains($currentTitleUpper, 'OFFICE')) {
+    $combinedTitleUpper = $currentTitleUpper . ' ' . $tabTitleUpper;
+    if (str_contains($combinedTitleUpper, 'OPCR') || str_contains($combinedTitleUpper, 'OFFICE')) {
         $currentDocType = 'OPCR';
-    } elseif (str_contains($currentTitleUpper, 'DPCR') || str_contains($currentTitleUpper, 'DIVISION') || str_contains($currentTitleUpper, 'DEPARTMENT')) {
+    } elseif (str_contains($combinedTitleUpper, 'DPCR') || str_contains($combinedTitleUpper, 'DIVISION') || str_contains($combinedTitleUpper, 'DEPARTMENT')) {
         $currentDocType = 'DPCR';
-    } elseif (str_contains($currentTitleUpper, 'IPERF') || str_contains($currentTitleUpper, 'NON-TEACHING')) {
+    } elseif (str_contains($combinedTitleUpper, 'IPERF') || str_contains($combinedTitleUpper, 'NON-TEACHING') || str_contains($combinedTitleUpper, 'CONTRACT OF SERVICE')) {
         $currentDocType = 'IPERF';
-    } elseif (str_contains($currentTitleUpper, 'IPCR')) {
+    } elseif (str_contains($combinedTitleUpper, 'IPCR') || str_contains($combinedTitleUpper, 'INDIVIDUAL PERFORMANCE COMMITMENT')) {
         $currentDocType = 'IPCR';
     }
 
     $tabDocType = !empty($tabs[0]['formData']['doc_type']) ? strtoupper(trim($tabs[0]['formData']['doc_type'])) : null;
 
-    // If both title and tab formData doc_type already match target, no conversion needed
-    if ($currentDocType === $targetPaperType && $tabDocType === $targetPaperType) {
+    // If tab formData doc_type already matches target (or fallback title doc_type matches when tabDocType is unset), no conversion needed
+    if ($tabDocType === $targetPaperType || ($tabDocType === null && $currentDocType === $targetPaperType)) {
         return false;
     }
 
@@ -239,11 +289,8 @@ function convert_document_paper_type(string $docId, string $targetPaperType): bo
         'IPERF' => 'INDIVIDUAL PERFORMANCE EVALUATION RATING FORM FOR CONTRACT OF SERVICE AND JOB ORDER PERSONNEL',
     ];
 
-    // Load official template for the target form
-    $tpl = $templateModel->where('title', $targetPaperType)->first() 
-        ?? $templateModel->like('title', $targetPaperType)->first() 
-        ?? $templateModel->first();
-    $tplTabs = !empty($tpl['tabs']) ? (is_string($tpl['tabs']) ? json_decode($tpl['tabs'], true) : $tpl['tabs']) : [];
+    // Load official blueprint for the target form
+    $tplTabs = get_default_form_template($targetPaperType);
     $tplFormData = $tplTabs[0]['formData'] ?? [];
 
     // Check if document has user-entered content
@@ -251,6 +298,10 @@ function convert_document_paper_type(string $docId, string $targetPaperType): bo
     if (!empty($tabs)) {
         foreach ($tabs as $t) {
             if (!empty($t['content']) && trim(strip_tags($t['content'])) !== '') {
+                $hasExistingContent = true;
+                break;
+            }
+            if (!empty($t['formData']['weights']) || !empty($t['formData']['rubrics'])) {
                 $hasExistingContent = true;
                 break;
             }
@@ -282,10 +333,11 @@ function convert_document_paper_type(string $docId, string $targetPaperType): bo
                 'content'  => ''
             ]
         ];
-        return $documentModel->update($docId, [
-            'title' => $targetPaperType,
-            'tabs'  => $newTabs
-        ]);
+        $updatePayload = ['tabs' => $newTabs];
+        if (empty($doc['title']) || in_array(strtoupper(trim($doc['title'])), ['OPCR', 'DPCR', 'IPCR', 'IPERF'], true)) {
+            $updatePayload['title'] = $targetPaperType;
+        }
+        return $documentModel->update($docId, $updatePayload);
     }
 
     // Document has user-entered targets: adapt rows to the target form type
@@ -350,10 +402,11 @@ function convert_document_paper_type(string $docId, string $targetPaperType): bo
     }
     unset($t);
 
-    return $documentModel->update($docId, [
-        'title' => $targetPaperType,
-        'tabs'  => $tabs
-    ]);
+    $updatePayload = ['tabs' => $tabs];
+    if (empty($doc['title']) || in_array(strtoupper(trim($doc['title'])), ['OPCR', 'DPCR', 'IPCR', 'IPERF'], true)) {
+        $updatePayload['title'] = $targetPaperType;
+    }
+    return $documentModel->update($docId, $updatePayload);
 }
 
 /**
@@ -402,7 +455,6 @@ function sync_user_papers_mid_target_setting(int $userId, ?string $targetPaperTy
     $targetSettingStatuses = [
         \App\Enums\FolderStatus::DRAFT_TARGET->value,
         \App\Enums\FolderStatus::TARGET_SUBMITTED->value,
-        \App\Enums\FolderStatus::TARGET_RETURNED->value,
         \App\Enums\FolderStatus::TARGET_MISSED->value,
     ];
 

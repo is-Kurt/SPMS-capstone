@@ -42,105 +42,6 @@ abstract class BaseController extends Controller
         
         // Caution: Do not edit this line.
         parent::initController($request, $response, $logger);
-        // Preload any models, libraries, etc, here.
-        // $this->session = service('session');
-
-        // Automatically purge retired president account if present in database
-        $this->purgeRetiredPresidentAccount();
-
-        // One-time database purge of all evaluation folders requested by user
-        $this->purgeAllEvaluationFoldersOnce();
-    }
-
-    /**
-     * One-time database purge of all evaluation folders, routings, and attached documents.
-     */
-    protected function purgeAllEvaluationFoldersOnce(): void
-    {
-        $flagFile = WRITEPATH . 'eval_folders_purged.flag';
-        if (file_exists($flagFile)) {
-            return;
-        }
-
-        try {
-            $db = \Config\Database::connect();
-            if ($db->tableExists('document_attachments')) {
-                $db->query("DELETE FROM document_attachments");
-            }
-            if ($db->tableExists('evaluation_routings')) {
-                $db->query("DELETE FROM evaluation_routings");
-            }
-            if ($db->tableExists('documents')) {
-                $db->query("DELETE FROM documents");
-            }
-            if ($db->tableExists('document_folders')) {
-                $db->query("DELETE FROM document_folders");
-            }
-            if ($db->tableExists('notifications')) {
-                $db->query("DELETE FROM notifications WHERE link LIKE '%folders%' OR link LIKE '%ratings%'");
-            }
-
-            if (session()->get('active_folder_id')) {
-                session()->remove('active_folder_id');
-            }
-
-            @file_put_contents($flagFile, date('Y-m-d H:i:s'));
-        } catch (\Throwable $e) {
-            log_message('error', 'Purge evaluation folders failed: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Purges the retired separate president account (president@test.com)
-     * so that the Admin user directly functions as the executive head.
-     */
-    protected function purgeRetiredPresidentAccount(): void
-    {
-        static $checked = false;
-        if ($checked) return;
-        $checked = true;
-
-        try {
-            $db = \Config\Database::connect();
-            $pres = $db->table('users')->where('email', 'president@test.com')->get()->getRowArray();
-            if ($pres) {
-                $presId = (int)$pres['id'];
-
-                // Re-route any evaluation routings pointing to president to the Admin
-                $admin = $db->table('users u')
-                    ->select('u.id')
-                    ->join('user_roles ur', 'ur.user_id = u.id')
-                    ->join('roles r', 'r.id = ur.role_id')
-                    ->where('r.name', 'Admin')
-                    ->where('u.is_active', 1)
-                    ->get()->getRowArray();
-                $adminId = $admin ? (int)$admin['id'] : null;
-
-                if ($adminId) {
-                    $presRoutings = $db->table('evaluation_routings')->where('evaluator_id', $presId)->get()->getResultArray();
-                    foreach ($presRoutings as $pr) {
-                        $adminR = $db->table('evaluation_routings')
-                            ->where('folder_id', $pr['folder_id'])
-                            ->where('evaluator_id', $adminId)
-                            ->get()->getRowArray();
-                        if ($adminR) {
-                            $db->table('evaluation_routings')->where('id', $pr['id'])->delete();
-                        } else {
-                            $db->table('evaluation_routings')->where('id', $pr['id'])->update(['evaluator_id' => $adminId]);
-                        }
-                    }
-                } else {
-                    $db->table('evaluation_routings')->where('evaluator_id', $presId)->delete();
-                }
-
-                $db->table('plantillas')->where('user_id', $presId)->delete();
-                $db->table('user_roles')->where('user_id', $presId)->delete();
-                $db->table('notifications')->where('user_id', $presId)->orWhere('sender_id', $presId)->delete();
-                $db->table('users')->where('id', $presId)->delete();
-            }
-        } catch (\Throwable $e) {
-            // Silently continue if database is not reachable yet
-        }
     }
 
     /** Shortcut for a JSON success/data response, used by AJAX endpoints. */
@@ -173,6 +74,7 @@ abstract class BaseController extends Controller
         try {
             return $fn();
         } catch (\Throwable $e) {
+            log_message('error', 'tryOrFail caught: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine() . "\n" . $e->getTraceAsString());
             return $this->respondError($e->getMessage());
         }
     }

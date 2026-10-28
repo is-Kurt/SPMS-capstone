@@ -1,24 +1,24 @@
 <div id="modal-edit-unit" class="fixed inset-0 z-[200] hidden overflow-y-auto items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
     <div class="relative w-full max-w-md rounded-2xl bg-surface border border-surface-border p-8 shadow-2xl transition-all m-4">
-        <h3 class="text-xl font-black text-text tracking-tight mb-2">Edit / Transfer Unit</h3>
-        <p class="text-xs font-bold text-text-muted uppercase tracking-widest mb-6">Modify details or reassign parent college</p>
+        <h3 class="text-xl font-black text-text tracking-tight mb-2">Edit / Transfer Department / Unit</h3>
+        <p class="text-xs font-bold text-text-muted uppercase tracking-widest mb-6">Modify details or reassign parent department / unit</p>
 
         <?= form_open('account/unit/update', ['id' => 'form-edit-unit', 'data-ajax' => 'update-unit']) ?>
             <input type="hidden" name="id" id="edit-unit-id" value="">
 
             <div class="space-y-4">
                 <div>
-                    <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Unit / Department Name</label>
+                    <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Department / Unit Name</label>
                     <input type="text" name="name" id="edit-unit-name" required placeholder="e.g. Department of Biology" class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none text-text transition-all" />
                 </div>
                 <div class="relative">
-                    <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Parent Unit / College</label>
+                    <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Parent Department / Unit</label>
                     <input type="hidden" name="parent_id" id="edit-hidden-parent-id" value="">
                     
                     <div id="edit-parent-dropdown-menu" class="bg-surface border border-surface-border rounded-xl overflow-hidden flex flex-col">
                         <div class="p-2 border-b border-surface-border/50 shrink-0">
                             <div class="relative w-full">
-                                <input type="text" id="edit-parent-search-input" placeholder="Search parent college or unit..." class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-700 rounded-lg pl-3 pr-10 py-2 text-xs focus:border-accent focus:outline-none text-text transition-all">
+                                <input type="text" id="edit-parent-search-input" placeholder="Search parent department or unit..." class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-700 rounded-lg pl-3 pr-10 py-2 text-xs focus:border-accent focus:outline-none text-text transition-all">
                                 <div class="absolute inset-y-0 right-0 flex items-center" style="padding-right: 8px;">
                                     <button type="button" id="edit-clear-parent-search" class="text-text-muted hover:text-text cursor-pointer hidden">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>

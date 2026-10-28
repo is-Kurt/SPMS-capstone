@@ -149,7 +149,7 @@
                             font-weight: 800;
                             letter-spacing: -0.01em;
                             line-height: 1.25;
-                            margin: 3px 0 0 0;
+                            margin: 0;
                         }
                         .dark .spms-hub-title {
                             color: #ffffff !important;
@@ -157,7 +157,7 @@
                         @media (min-width: 640px) {
                             .spms-hub-title {
                                 font-size: 24px;
-                                margin-top: 6px;
+                                margin: 0;
                             }
                         }
                         @media (min-width: 1024px) {
@@ -411,6 +411,9 @@
                                 grid-template-columns: repeat(3, minmax(0, 1fr));
                                 gap: 12px;
                                 margin-bottom: 22px;
+                            }
+                            .spms-hub-stat-grid.spms-hub-stat-grid-2 {
+                                grid-template-columns: repeat(2, minmax(0, 1fr));
                             }
                         }
                         @media (min-width: 768px) {
@@ -792,9 +795,9 @@
                         <!-- ADMIN INSTITUTIONAL CYCLE MONITORING HUB CARD -->
                         <div class="spms-hub-card">
                             <!-- HEADER -->
-                            <div class="mb-3 sm:mb-5">
-                                <div class="flex items-center justify-between gap-2 mb-1 sm:mb-2">
-                                    <span class="spms-hub-kicker text-zinc-500 dark:text-zinc-400">INSTITUTIONAL EVALUATION CYCLE</span>
+                            <div class="flex items-center justify-between gap-3 mb-3 sm:mb-5">
+                                <h2 class="spms-hub-title min-w-0 truncate"><?= esc($activeFolder['title'] ?: 'Untitled Cycle') ?></h2>
+                                <div class="shrink-0">
                                     <?php if ($isArchived): ?>
                                         <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
                                             <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
@@ -807,10 +810,6 @@
                                         </div>
                                     <?php endif; ?>
                                 </div>
-                                <h2 class="spms-hub-title"><?= esc($activeFolder['title'] ?: 'Untitled Cycle') ?></h2>
-                                <p class="spms-hub-subtitle">
-                                    Cycle Coordinator: <span class="spms-hub-subtitle-val"><?= esc(session()->get('name') ?? 'System Administrator') ?></span> (Administrator)
-                                </p>
                             </div>
 
                             <!-- TIMELINE INFORMATION BANNER -->
@@ -852,8 +851,8 @@
                                     ($activeFolder['iperf_target_start'] ?? $hubTargetStart) === $hubTargetStart
                                 );
                             ?>
-                            <!-- 3 STAT TILES -->
-                            <div class="spms-hub-stat-grid">
+                            <!-- 2 STAT TILES -->
+                            <div class="spms-hub-stat-grid spms-hub-stat-grid-2">
                                 <!-- 1. Target Period -->
                                 <div class="spms-hub-stat-tile">
                                     <div>
@@ -885,24 +884,6 @@
                                         </div>
                                     </div>
                                 </div>
-
-                                <!-- 3. Release Status (Admin) -->
-                                <?php $cascadedTeamId = $activeFolder['routing_preset_id'] ?? null; ?>
-                                <div class="spms-hub-stat-tile">
-                                    <div>
-                                        <div class="spms-hub-tile-label">Release Status</div>
-                                        <div class="spms-hub-tile-value">
-                                            <?= $cascadedTeamId ? 'Released to Vice Presidents' : 'Awaiting Release' ?>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <?php if ($cascadedTeamId): ?>
-                                            <span class="spms-hub-status-text text-emerald-700 dark:text-emerald-400 font-medium">Cycle Released</span>
-                                        <?php else: ?>
-                                            <span class="spms-hub-status-text text-amber-600 dark:text-[#f59e0b] font-medium">Select VP Team on Right</span>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
                             </div>
 
                                 <!-- ACTIONS -->
@@ -915,8 +896,6 @@
                                         <button type="button" onclick='openEditFolderModal(<?= json_encode([
                                             "id"                           => $activeFolder["id"],
                                             "title"                        => $activeFolder["title"],
-                                            "academic_year"                => $activeFolder["academic_year"] ?? "",
-                                            "semester"                     => $activeFolder["semester"] ?? "",
                                             "rating_period"                => $activeFolder["rating_period"] ?? "",
                                             "ipcr_target_start"            => $activeFolder["ipcr_target_start"] ?? "",
                                             "ipcr_target_end"              => $activeFolder["ipcr_target_end"] ?? "",
@@ -1022,50 +1001,61 @@
                             $statusBadgeText = $cFolderStatus->label();
 
                             $docTypeKey = strtolower($effectiveDocType);
-                            $tStartDate = !empty($activeFolder[$docTypeKey . '_target_start']) ? strtotime($activeFolder[$docTypeKey . '_target_start']) : null;
-                            $tEndDate   = !empty($activeFolder[$docTypeKey . '_target_end'])   ? strtotime($activeFolder[$docTypeKey . '_target_end'])   : null;
-                            $eStartDate = !empty($activeFolder[$docTypeKey . '_eval_start'])   ? strtotime($activeFolder[$docTypeKey . '_eval_start'])   : null;
-                            $eEndDate   = !empty($activeFolder[$docTypeKey . '_eval_end'])     ? strtotime($activeFolder[$docTypeKey . '_eval_end'])     : null;
+                            $rawTStart  = $activeFolder[$docTypeKey . '_target_start'] ?? $activeFolder['ipcr_target_start'] ?? $activeFolder['opcr_target_start'] ?? $activeFolder['dpcr_target_start'] ?? $activeFolder['iperf_target_start'] ?? null;
+                            $rawTEnd    = $activeFolder[$docTypeKey . '_target_end']   ?? $activeFolder['ipcr_target_end']   ?? $activeFolder['opcr_target_end']   ?? $activeFolder['dpcr_target_end']   ?? $activeFolder['iperf_target_end']   ?? null;
+                            $rawEStart  = $activeFolder[$docTypeKey . '_eval_start']   ?? $activeFolder['ipcr_eval_start']   ?? $activeFolder['opcr_eval_start']   ?? $activeFolder['dpcr_eval_start']   ?? $activeFolder['iperf_eval_start']   ?? null;
+                            $rawEEnd    = $activeFolder[$docTypeKey . '_eval_end']     ?? $activeFolder['ipcr_eval_end']     ?? $activeFolder['opcr_eval_end']     ?? $activeFolder['dpcr_eval_end']     ?? $activeFolder['iperf_eval_end']     ?? null;
 
-                            $isEvaluationPhase = $cFolderStatus->isEvaluationPhase();
-                            $activeStart = $isEvaluationPhase ? $eStartDate : $tStartDate;
-                            $activeEnd   = $isEvaluationPhase ? $eEndDate : $tEndDate;
-                            $phasePrefix = $isEvaluationPhase ? 'Eval: ' : 'Target: ';
+                            $tStartDate = !empty($rawTStart) ? strtotime($rawTStart) : null;
+                            $tEndDate   = !empty($rawTEnd)   ? strtotime($rawTEnd)   : null;
+                            $eStartDate = !empty($rawEStart) ? strtotime($rawEStart) : null;
+                            $eEndDate   = !empty($rawEEnd)   ? strtotime($rawEEnd)   : null;
 
-                            if ($activeStart && $activeEnd) {
-                                if (date('m Y', $activeStart) === date('m Y', $activeEnd)) {
-                                    $windowDateStr = $phasePrefix . date('M j', $activeStart) . ' – ' . date('j', $activeEnd);
-                                } else {
-                                    $windowDateStr = $phasePrefix . date('M j', $activeStart) . ' – ' . date('M j', $activeEnd);
-                                }
-                            } elseif ($activeStart || $activeEnd) {
-                                $windowDateStr = $phasePrefix . date('M j, Y', $activeStart ?: $activeEnd);
-                            } else {
-                                $windowDateStr = $phasePrefix . 'Sept 1 – 15';
-                            }
+                            $targetWindowDateStr = ($tStartDate && $tEndDate)
+                                ? date('M j', $tStartDate) . ' – ' . date('M j, Y', $tEndDate)
+                                : (($tStartDate || $tEndDate) ? date('M j, Y', $tStartDate ?: $tEndDate) : 'Dates Not Configured');
+
+                            $evalWindowDateStr = ($eStartDate && $eEndDate)
+                                ? date('M j', $eStartDate) . ' – ' . date('M j, Y', $eEndDate)
+                                : (($eStartDate || $eEndDate) ? date('M j, Y', $eStartDate ?: $eEndDate) : 'Scheduled Following Targets');
 
                             $now = time();
-                            if (!$activeEnd) {
-                                $windowPillText = 'ACTIVE • 2 days left';
-                            } elseif ($now <= $activeEnd) {
-                                $daysLeft = ceil(($activeEnd - $now) / 86400);
-                                if ($daysLeft > 1) {
-                                    $windowPillText = "ACTIVE • {$daysLeft} days left";
-                                } elseif ($daysLeft == 1) {
-                                    $windowPillText = "ACTIVE • 1 day left";
-                                } else {
-                                    $windowPillText = "ACTIVE • Due Today";
+                            $buildPhaseWindowPill = static function (?int $startTs, ?int $endTs, string $fallbackLabel) use ($now, $isArchived): array {
+                                if ($isArchived) {
+                                    return ['dot' => 'bg-amber-500', 'text' => 'ARCHIVED'];
                                 }
-                            } elseif ($now < $activeStart) {
-                                $daysToStart = ceil(($activeStart - $now) / 86400);
-                                $windowPillText = "ACTIVE • Starts in {$daysToStart}d";
-                            } else {
-                                $windowPillText = ($currentStepIndex === 4) ? 'COMPLETED' : 'CLOSED';
-                            }
+                                if (!$startTs && !$endTs) {
+                                    return ['dot' => 'bg-sky-600 dark:bg-sky-400', 'text' => $fallbackLabel];
+                                }
+                                $startDayTs = $startTs ? strtotime(date('Y-m-d', $startTs) . ' 00:00:00') : null;
+                                $endDayTs   = $endTs   ? strtotime(date('Y-m-d', $endTs) . ' 23:59:59')   : null;
+
+                                if ($startDayTs && $now < $startDayTs) {
+                                    $daysUntil = (int) ceil(($startDayTs - $now) / 86400);
+                                    $txt = $daysUntil <= 1 ? 'UPCOMING • Starts in 1 day' : "UPCOMING • Starts in {$daysUntil} days";
+                                    return ['dot' => 'bg-sky-600 dark:bg-sky-400', 'text' => $txt];
+                                }
+                                if ($endDayTs && $now <= $endDayTs) {
+                                    $daysLeft = (int) floor(($endDayTs - $now) / 86400);
+                                    if ($daysLeft > 1) {
+                                        $txt = "ACTIVE • {$daysLeft} days left";
+                                    } elseif ($daysLeft === 1) {
+                                        $txt = 'ACTIVE • 1 day left';
+                                    } else {
+                                        $txt = 'ACTIVE • Due Today';
+                                    }
+                                    return ['dot' => 'bg-emerald-600 dark:bg-emerald-400', 'text' => $txt];
+                                }
+                                return ['dot' => 'bg-zinc-400 dark:bg-zinc-500', 'text' => 'CLOSED'];
+                            };
+
+                            $targetPhasePill = $buildPhaseWindowPill($tStartDate, $tEndDate, 'TARGET PHASE');
+                            $evalPhasePill   = $buildPhaseWindowPill($eStartDate, $eEndDate, 'EVAL PHASE');
 
                             $finalRatingVal = $activeFolder['final_rating'] ?? null;
-                            if (!empty($finalRatingVal) && (float)$finalRatingVal > 0) {
-                                $num = number_format((float)$finalRatingVal, 2);
+                            $hasFinalRating = (!empty($finalRatingVal) && (float) $finalRatingVal > 0);
+                            if ($hasFinalRating) {
+                                $num = number_format((float) $finalRatingVal, 2);
                                 $adjective = match(true) {
                                     $finalRatingVal >= 4.50 => 'Outstanding',
                                     $finalRatingVal >= 3.50 => 'Very Satisfactory',
@@ -1073,34 +1063,20 @@
                                     $finalRatingVal >= 1.50 => 'Unsatisfactory',
                                     default => 'Poor'
                                 };
-                                $finalRatingDisplay = "{$num} • {$adjective}";
+                                $finalRatingDisplay = "{$num} · {$adjective}";
                             } else {
-                                $finalRatingDisplay = 'Pending Evaluation';
+                                $finalRatingDisplay = 'Pending';
                             }
 
-                            $ratingPeriodText = ($activeFolder['title'] && $activeFolder['title'] !== 'Untitled Evaluation') 
-                                ? $activeFolder['title'] 
-                                : '1st Semester, AY 2026–2027';
+                            $folderTitleText = $activeFolder['title'] ?: 'Untitled Folder';
                         ?>
 
                         <!-- EXECUTIVE PERFORMANCE PAPER HUB CARD -->
                         <div class="spms-hub-card">
                             <!-- HEADER -->
-                            <div class="spms-hub-header-wrap">
-                                <div class="spms-hub-header-main">
-                                    <div class="spms-hub-kicker-row">
-                                        <span class="spms-hub-kicker">OFFICIAL PERFORMANCE PAPER</span>
-                                        <div class="spms-hub-status-pill spms-hub-status-pill-mobile">
-                                            <span class="spms-hub-status-dot"></span>
-                                            <span><?= esc($statusBadgeText) ?></span>
-                                        </div>
-                                    </div>
-                                    <h2 class="spms-hub-title"><?= esc($officialPaperName) ?></h2>
-                                    <p class="spms-hub-subtitle">
-                                        Current Rating Period: <span class="spms-hub-subtitle-val"><?= esc($ratingPeriodText) ?></span>
-                                    </p>
-                                </div>
-                                <div class="spms-hub-status-pill-desktop shrink-0">
+                            <div class="flex items-center justify-between gap-3 mb-3 sm:mb-5">
+                                <h2 class="spms-hub-title min-w-0 truncate"><?= esc($folderTitleText) ?></h2>
+                                <div class="shrink-0">
                                     <div class="spms-hub-status-pill">
                                         <span class="spms-hub-status-dot"></span>
                                         <span><?= esc($statusBadgeText) ?></span>
@@ -1110,7 +1086,25 @@
 
                             <!-- CYCLE PROGRESS TRACKER -->
                             <div>
-                                <div class="spms-hub-tracker-label">CYCLE PROGRESS TRACKER</div>
+                                <div class="flex flex-wrap items-center justify-between gap-2 mt-[18px] mb-3 sm:mt-7 sm:mb-4">
+                                    <span class="spms-hub-tracker-label" style="margin: 0;">CYCLE PROGRESS TRACKER</span>
+                                    <div class="inline-flex items-center gap-2 tabular-nums">
+                                        <span class="text-[10.5px] sm:text-[11px] font-extrabold uppercase tracking-[0.08em] text-slate-500 dark:text-zinc-400">Final Score</span>
+                                        <?php if ($hasFinalRating): ?>
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-extrabold border <?= $currentStepIndex === 4 ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800' : 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-zinc-800 dark:text-zinc-100 dark:border-zinc-700' ?>">
+                                                <span><?= esc($num) ?></span>
+                                                <span class="text-[10px] font-semibold opacity-60">/ 5.00</span>
+                                                <span class="opacity-40">&middot;</span>
+                                                <span><?= esc($adjective) ?></span>
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-slate-100/80 text-slate-500 border border-slate-200/80 dark:bg-zinc-900 dark:text-zinc-400 dark:border-zinc-800">
+                                                <span>--</span>
+                                                <span class="text-[10px] font-semibold opacity-60">/ 5.00</span>
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                                 <div class="spms-hub-stepper-row">
                                     
                                     <!-- Step 1: Target Setting -->
@@ -1239,28 +1233,31 @@
 
                             <!-- 3 STAT TILES -->
                             <div class="spms-hub-stat-grid">
-                                <!-- 1. Current Window -->
+                                <!-- 1. Target Setting Period -->
                                 <div class="spms-hub-stat-tile">
                                     <div>
-                                        <div class="spms-hub-tile-label">Current Window</div>
-                                        <div class="spms-hub-tile-value"><?= esc($windowDateStr) ?></div>
+                                        <div class="spms-hub-tile-label">Target Setting Period</div>
+                                        <div class="spms-hub-tile-value"><?= esc($targetWindowDateStr) ?></div>
                                     </div>
                                     <div>
                                         <div class="spms-hub-window-pill">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400 inline-block"></span>
-                                            <span><?= esc($windowPillText) ?></span>
+                                            <span class="w-1.5 h-1.5 rounded-full <?= $targetPhasePill['dot'] ?> inline-block"></span>
+                                            <span><?= esc($targetPhasePill['text']) ?></span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- 2. Final Rating -->
+                                <!-- 2. Evaluation Period -->
                                 <div class="spms-hub-stat-tile">
                                     <div>
-                                        <div class="spms-hub-tile-label">Final Rating</div>
-                                        <div class="spms-hub-tile-value"><?= esc($finalRatingDisplay) ?></div>
+                                        <div class="spms-hub-tile-label">Evaluation Period</div>
+                                        <div class="spms-hub-tile-value"><?= esc($evalWindowDateStr) ?></div>
                                     </div>
                                     <div>
-                                        <div class="spms-hub-tile-dash"></div>
+                                        <div class="spms-hub-window-pill">
+                                            <span class="w-1.5 h-1.5 rounded-full <?= $evalPhasePill['dot'] ?> inline-block"></span>
+                                            <span><?= esc($evalPhasePill['text']) ?></span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1300,16 +1297,16 @@
 
                                 // Split Target authorities into regular supervisors and assigned TWG
                                 $tRegularSups = array_values(array_filter($targetSupsList, fn($s) => empty($s['is_twg'])));
-                                $tTwgSup      = array_values(array_filter($targetSupsList, fn($s) => !empty($s['is_twg'])))[0] ?? null;
+                                $tTwgSups     = array_values(array_filter($targetSupsList, fn($s) => !empty($s['is_twg'])));
 
                                 // Split Eval authorities into regular supervisors and assigned TWG
                                 $eRegularSups = array_values(array_filter($evalSupsList, fn($s) => empty($s['is_twg'])));
-                                $eTwgSup      = array_values(array_filter($evalSupsList, fn($s) => !empty($s['is_twg'])))[0] ?? null;
+                                $eTwgSups     = array_values(array_filter($evalSupsList, fn($s) => !empty($s['is_twg'])));
                             ?>
                             <?php if ($hasSupervisors): ?>
                                 <div class="mt-6 pt-5 border-t border-slate-200 dark:border-zinc-800">
                                     <!-- TOP ROW: Subtabs on TOP LEFT -->
-                                    <div class="mb-3.5">
+                                    <div class="mb-4">
                                         <div class="inline-flex items-center p-0.5 bg-slate-100 dark:bg-zinc-800/90 rounded-xl border border-slate-200/80 dark:border-zinc-700/80 shadow-2xs self-start">
                                             <button type="button" 
                                                     id="tab-btn-target" 
@@ -1326,90 +1323,87 @@
                                         </div>
                                     </div>
 
-                                    <!-- SECTION TITLE & DYNAMIC SUBTITLE -->
-                                    <div class="flex items-center gap-2 mb-3.5">
-                                        <div class="w-6 h-6 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/80 flex items-center justify-center shrink-0">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-zinc-200">
-                                                Supervising Authorities & Approval Status
-                                            </h4>
-                                            <p id="sup-desc-target" class="text-[11px] text-slate-500 dark:text-zinc-400 <?= $defaultSubtab === 'target' ? '' : 'hidden' ?>">
-                                                Target setting approvals and commitment sign-offs by supervising authorities.
-                                            </p>
-                                            <p id="sup-desc-eval" class="text-[11px] text-slate-500 dark:text-zinc-400 <?= $defaultSubtab === 'eval' ? '' : 'hidden' ?>">
-                                                Performance evaluation rating approvals and TWG review status.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <!-- Pane 1: Target Setting -->
+                                    <!-- Pane 1: Target Setting (2-Column Grid: 1st Col Supervisor, 2nd Col TWG) -->
                                     <div id="pane-supervisors-target" class="<?= $defaultSubtab === 'target' ? '' : 'hidden' ?>">
-                                        <?php if (empty($tRegularSups)): ?>
-                                            <div class="p-4 rounded-xl border border-dashed border-slate-200 dark:border-zinc-800 text-center text-xs text-slate-400 dark:text-zinc-500">
-                                                No supervising authorities recorded for Target Setting.
-                                            </div>
-                                        <?php else: ?>
-                                            <?php $tCols = max(min(count($tRegularSups), 3), 2); ?>
-                                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-<?= $tCols ?> gap-3">
-                                                <?php foreach ($tRegularSups as $sup): ?>
-                                                    <div class="flex items-center justify-between p-3 rounded-xl border bg-slate-50/70 dark:bg-zinc-900/60 border-slate-200/80 dark:border-zinc-800 transition-all hover:border-slate-300 dark:hover:border-zinc-700">
-                                                        <div class="flex items-center gap-3 min-w-0 pr-2">
-                                                            <div class="w-8 h-8 rounded-full bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-zinc-300 shrink-0 shadow-xs">
-                                                                <?= strtoupper(substr($sup['name'] ?: 'S', 0, 1)) ?>
-                                                            </div>
-                                                            <div class="min-w-0">
-                                                                <div class="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
-                                                                    <?= esc($sup['name']) ?>
-                                                                </div>
-                                                                <div class="text-[10px] text-slate-500 dark:text-zinc-400 truncate">
-                                                                    <?= esc($sup['position']) ?>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        <div class="shrink-0">
-                                                            <?php if ($sup['status'] === 'approved'): ?>
-                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-emerald-600 dark:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
-                                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                                                    </svg>
-                                                                    <?= esc($sup['status_label'] ?: 'Approved') ?>
-                                                                </span>
-                                                            <?php elseif ($sup['status'] === 'returned'): ?>
-                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-rose-600 dark:text-rose-400" viewBox="0 0 20 20" fill="currentColor">
-                                                                        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1z" clip-rule="evenodd" />
-                                                                    </svg>
-                                                                    <?= esc($sup['status_label'] ?: 'Returned') ?>
-                                                                </span>
-                                                            <?php elseif ($sup['status'] === 'draft'): ?>
-                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
-                                                                    <?= esc($sup['status_label'] ?: 'Awaiting Submission') ?>
-                                                                </span>
-                                                            <?php else: ?>
-                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                                    </svg>
-                                                                    <?= esc($sup['status_label'] ?: 'Pending Review') ?>
-                                                                </span>
-                                                            <?php endif; ?>
-                                                        </div>
+                                        <div class="spms-supervisors-grid grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-6">
+                                            <!-- Col 1: Supervising Authorities -->
+                                            <div class="flex flex-col">
+                                                <div class="flex items-center gap-2 mb-3">
+                                                    <div class="w-6 h-6 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/80 flex items-center justify-center shrink-0">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                                        </svg>
                                                     </div>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        <?php endif; ?>
+                                                    <div>
+                                                        <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-zinc-200">
+                                                            Supervising Authorities
+                                                        </h4>
+                                                        <p class="text-[11px] text-slate-500 dark:text-zinc-400">
+                                                            Target setting approvals and commitment sign-offs.
+                                                        </p>
+                                                    </div>
+                                                </div>
 
-                                        <!-- TWG on next line separated by line with proper spacing and dedicated header (if assigned) -->
-                                        <?php if ($tTwgSup): ?>
-                                            <div class="mt-6 pt-5 border-t border-slate-200 dark:border-zinc-800">
-                                                <!-- TWG Section Title & Subtitle for Target Setting -->
-                                                <div class="flex items-center gap-2 mb-3.5">
+                                                <div class="space-y-3 flex-1">
+                                                    <?php if (empty($tRegularSups)): ?>
+                                                        <div class="p-4 rounded-xl border border-dashed border-slate-200 dark:border-zinc-800 text-center text-xs text-slate-400 dark:text-zinc-500">
+                                                            No supervising authorities recorded for Target Setting.
+                                                        </div>
+                                                    <?php else: ?>
+                                                        <?php foreach ($tRegularSups as $sup): ?>
+                                                            <div class="flex items-center justify-between p-3 rounded-xl border bg-slate-50/70 dark:bg-zinc-900/60 border-slate-200/80 dark:border-zinc-800 transition-all hover:border-slate-300 dark:hover:border-zinc-700">
+                                                                <div class="flex items-center gap-3 min-w-0 pr-2">
+                                                                    <div class="w-8 h-8 rounded-full bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-zinc-300 shrink-0 shadow-xs">
+                                                                        <?= strtoupper(substr($sup['name'] ?: 'S', 0, 1)) ?>
+                                                                    </div>
+                                                                    <div class="min-w-0">
+                                                                        <div class="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
+                                                                            <?= esc($sup['name']) ?>
+                                                                        </div>
+                                                                        <div class="text-[10px] text-slate-500 dark:text-zinc-400 truncate">
+                                                                            <?= esc($sup['position']) ?>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="shrink-0">
+                                                                    <?php if ($sup['status'] === 'approved'): ?>
+                                                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-emerald-600 dark:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
+                                                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                                                            </svg>
+                                                                            <?= esc($sup['status_label'] ?: 'Approved') ?>
+                                                                        </span>
+                                                                    <?php elseif ($sup['status'] === 'returned'): ?>
+                                                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-rose-600 dark:text-rose-400" viewBox="0 0 20 20" fill="currentColor">
+                                                                                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1z" clip-rule="evenodd" />
+                                                                            </svg>
+                                                                            <?= esc($sup['status_label'] ?: 'Returned') ?>
+                                                                        </span>
+                                                                    <?php elseif ($sup['status'] === 'draft'): ?>
+                                                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                                                                            <?= esc($sup['status_label'] ?: 'Awaiting Submission') ?>
+                                                                        </span>
+                                                                    <?php else: ?>
+                                                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                            </svg>
+                                                                            <?= esc($sup['status_label'] ?: 'Pending Review') ?>
+                                                                        </span>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                            </div>
+                                                        <?php endforeach; ?>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+
+                                            <!-- Col 2: TWG / PMT Verification -->
+                                            <div class="flex flex-col">
+                                                <div class="flex items-center gap-2 mb-3">
                                                     <div class="w-6 h-6 rounded-md bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800/80 flex items-center justify-center shrink-0">
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                                                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -1417,126 +1411,161 @@
                                                     </div>
                                                     <div>
                                                         <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-zinc-200">
-                                                            Technical Working Group (TWG) / PMT Verification
+                                                            Technical Working Group (TWG) / PMT
                                                         </h4>
                                                         <p class="text-[11px] text-slate-500 dark:text-zinc-400">
-                                                            Target setting verification and standards compliance review by TWG/PMT.
+                                                            Target setting verification and standards compliance review.
                                                         </p>
                                                     </div>
                                                 </div>
 
-                                                <?php $tCols = max(min(count($tRegularSups), 3), 2); ?>
-                                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-<?= $tCols ?> gap-3">
-                                                    <div class="flex items-center justify-between p-3 rounded-xl border bg-slate-50/70 dark:bg-zinc-900/60 border-slate-200/80 dark:border-zinc-800 transition-all hover:border-slate-300 dark:hover:border-zinc-700">
-                                                        <div class="flex items-center gap-3 min-w-0 pr-2">
-                                                            <div class="w-8 h-8 rounded-full bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-zinc-300 shrink-0 shadow-xs">
-                                                                <?= strtoupper(substr($tTwgSup['name'] ?: 'T', 0, 1)) ?>
-                                                            </div>
-                                                            <div class="min-w-0">
-                                                                <div class="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
-                                                                    <?= esc($tTwgSup['name']) ?>
-                                                                </div>
-                                                                <div class="text-[10px] text-slate-500 dark:text-zinc-400 truncate">
-                                                                    <?= esc($tTwgSup['position']) ?>
-                                                                </div>
-                                                            </div>
+                                                <div class="space-y-3 flex-1">
+                                                    <?php if (empty($tTwgSups)): ?>
+                                                        <div class="p-4 rounded-xl border border-dashed border-slate-200 dark:border-zinc-800 text-center text-xs text-slate-400 dark:text-zinc-500">
+                                                            No TWG / PMT reviewer assigned.
                                                         </div>
+                                                    <?php else: ?>
+                                                        <?php foreach ($tTwgSups as $twg): ?>
+                                                            <div class="flex items-center justify-between p-3 rounded-xl border bg-slate-50/70 dark:bg-zinc-900/60 border-slate-200/80 dark:border-zinc-800 transition-all hover:border-slate-300 dark:hover:border-zinc-700">
+                                                                <div class="flex items-center gap-3 min-w-0 pr-2">
+                                                                    <div class="w-8 h-8 rounded-full bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-zinc-300 shrink-0 shadow-xs">
+                                                                        <?= strtoupper(substr($twg['name'] ?: 'T', 0, 1)) ?>
+                                                                    </div>
+                                                                    <div class="min-w-0">
+                                                                        <div class="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
+                                                                            <?= esc($twg['name']) ?>
+                                                                        </div>
+                                                                        <div class="text-[10px] text-slate-500 dark:text-zinc-400 truncate">
+                                                                            <?= esc($twg['position']) ?>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
 
-                                                        <div class="shrink-0">
-                                                            <?php if ($tTwgSup['status'] === 'approved'): ?>
-                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-emerald-600 dark:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
-                                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                                                    </svg>
-                                                                    <?= esc($tTwgSup['status_label'] ?: 'Approved') ?>
-                                                                </span>
-                                                            <?php elseif ($tTwgSup['status'] === 'returned'): ?>
-                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-rose-600 dark:text-rose-400" viewBox="0 0 20 20" fill="currentColor">
-                                                                        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1z" clip-rule="evenodd" />
-                                                                    </svg>
-                                                                    <?= esc($tTwgSup['status_label'] ?: 'Returned') ?>
-                                                                </span>
-                                                            <?php else: ?>
-                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                                    </svg>
-                                                                    <?= esc($tTwgSup['status_label'] ?: 'Pending Verification') ?>
-                                                                </span>
-                                                            <?php endif; ?>
-                                                        </div>
-                                                    </div>
+                                                                <div class="shrink-0">
+                                                                    <?php if ($twg['status'] === 'approved'): ?>
+                                                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-emerald-600 dark:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
+                                                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                                                            </svg>
+                                                                            <?= esc($twg['status_label'] ?: 'Approved') ?>
+                                                                        </span>
+                                                                    <?php elseif ($twg['status'] === 'returned'): ?>
+                                                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-rose-600 dark:text-rose-400" viewBox="0 0 20 20" fill="currentColor">
+                                                                                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1z" clip-rule="evenodd" />
+                                                                            </svg>
+                                                                            <?= esc($twg['status_label'] ?: 'Returned') ?>
+                                                                        </span>
+                                                                    <?php elseif ($twg['status'] === 'queued'): ?>
+                                                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-800" title="Waiting for all supervising authorities to approve first">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                            </svg>
+                                                                            <?= esc($twg['status_label'] ?: 'Queued for Verification') ?>
+                                                                        </span>
+                                                                    <?php elseif ($twg['status'] === 'draft'): ?>
+                                                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                                                                            <?= esc($twg['status_label'] ?: 'Awaiting Submission') ?>
+                                                                        </span>
+                                                                    <?php else: ?>
+                                                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                            </svg>
+                                                                            <?= esc($twg['status_label'] ?: 'Pending Verification') ?>
+                                                                        </span>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                            </div>
+                                                        <?php endforeach; ?>
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
-                                        <?php endif; ?>
+                                        </div>
                                     </div>
 
-                                    <!-- Pane 2: Evaluation Phase -->
+                                    <!-- Pane 2: Evaluation Phase (2-Column Grid: 1st Col Supervisor, 2nd Col TWG) -->
                                     <div id="pane-supervisors-eval" class="<?= $defaultSubtab === 'eval' ? '' : 'hidden' ?>">
-                                        <?php if (empty($eRegularSups)): ?>
-                                            <div class="p-4 rounded-xl border border-dashed border-slate-200 dark:border-zinc-800 text-center text-xs text-slate-400 dark:text-zinc-500">
-                                                No supervising authorities recorded for Evaluation Phase.
-                                            </div>
-                                        <?php else: ?>
-                                            <?php $eCols = max(min(count($eRegularSups), 3), 2); ?>
-                                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-<?= $eCols ?> gap-3">
-                                                <?php foreach ($eRegularSups as $sup): ?>
-                                                    <div class="flex items-center justify-between p-3 rounded-xl border bg-slate-50/70 dark:bg-zinc-900/60 border-slate-200/80 dark:border-zinc-800 transition-all hover:border-slate-300 dark:hover:border-zinc-700">
-                                                        <div class="flex items-center gap-3 min-w-0 pr-2">
-                                                            <div class="w-8 h-8 rounded-full bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-zinc-300 shrink-0 shadow-xs">
-                                                                <?= strtoupper(substr($sup['name'] ?: 'S', 0, 1)) ?>
-                                                            </div>
-                                                            <div class="min-w-0">
-                                                                <div class="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
-                                                                    <?= esc($sup['name']) ?>
-                                                                </div>
-                                                                <div class="text-[10px] text-slate-500 dark:text-zinc-400 truncate">
-                                                                    <?= esc($sup['position']) ?>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        <div class="shrink-0">
-                                                            <?php if ($sup['status'] === 'approved'): ?>
-                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-emerald-600 dark:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
-                                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                                                    </svg>
-                                                                    <?= esc($sup['status_label'] ?: 'Approved') ?>
-                                                                </span>
-                                                            <?php elseif ($sup['status'] === 'returned'): ?>
-                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-rose-600 dark:text-rose-400" viewBox="0 0 20 20" fill="currentColor">
-                                                                        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1z" clip-rule="evenodd" />
-                                                                    </svg>
-                                                                    <?= esc($sup['status_label'] ?: 'Returned') ?>
-                                                                </span>
-                                                            <?php elseif ($sup['status_label'] === 'Awaiting Eval Window' || $sup['status'] === 'draft'): ?>
-                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
-                                                                    <?= esc($sup['status_label'] ?: ($sup['status'] === 'draft' ? 'Awaiting Submission' : 'Awaiting Eval Window')) ?>
-                                                                </span>
-                                                            <?php else: ?>
-                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                                    </svg>
-                                                                    <?= esc($sup['status_label'] ?: 'Pending Review') ?>
-                                                                </span>
-                                                            <?php endif; ?>
-                                                        </div>
+                                        <div class="spms-supervisors-grid grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-6">
+                                            <!-- Col 1: Supervising Authorities -->
+                                            <div class="flex flex-col">
+                                                <div class="flex items-center gap-2 mb-3">
+                                                    <div class="w-6 h-6 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/80 flex items-center justify-center shrink-0">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                                        </svg>
                                                     </div>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        <?php endif; ?>
+                                                    <div>
+                                                        <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-zinc-200">
+                                                            Supervising Authorities
+                                                        </h4>
+                                                        <p class="text-[11px] text-slate-500 dark:text-zinc-400">
+                                                            Performance evaluation rating approvals.
+                                                        </p>
+                                                    </div>
+                                                </div>
 
-                                        <!-- TWG on next line separated by line with proper spacing and dedicated header (if assigned) -->
-                                        <?php if ($eTwgSup): ?>
-                                            <div class="mt-6 pt-5 border-t border-slate-200 dark:border-zinc-800">
-                                                <!-- TWG Section Title & Subtitle for Evaluation Phase -->
-                                                <div class="flex items-center gap-2 mb-3.5">
+                                                <div class="space-y-3 flex-1">
+                                                    <?php if (empty($eRegularSups)): ?>
+                                                        <div class="p-4 rounded-xl border border-dashed border-slate-200 dark:border-zinc-800 text-center text-xs text-slate-400 dark:text-zinc-500">
+                                                            No supervising authorities recorded for Evaluation Phase.
+                                                        </div>
+                                                    <?php else: ?>
+                                                        <?php foreach ($eRegularSups as $sup): ?>
+                                                            <div class="flex items-center justify-between p-3 rounded-xl border bg-slate-50/70 dark:bg-zinc-900/60 border-slate-200/80 dark:border-zinc-800 transition-all hover:border-slate-300 dark:hover:border-zinc-700">
+                                                                <div class="flex items-center gap-3 min-w-0 pr-2">
+                                                                    <div class="w-8 h-8 rounded-full bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-zinc-300 shrink-0 shadow-xs">
+                                                                        <?= strtoupper(substr($sup['name'] ?: 'S', 0, 1)) ?>
+                                                                    </div>
+                                                                    <div class="min-w-0">
+                                                                        <div class="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
+                                                                            <?= esc($sup['name']) ?>
+                                                                        </div>
+                                                                        <div class="text-[10px] text-slate-500 dark:text-zinc-400 truncate">
+                                                                            <?= esc($sup['position']) ?>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="shrink-0">
+                                                                    <?php if ($sup['status'] === 'approved'): ?>
+                                                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-emerald-600 dark:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
+                                                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                                                            </svg>
+                                                                            <?= esc($sup['status_label'] ?: 'Approved') ?>
+                                                                        </span>
+                                                                    <?php elseif ($sup['status'] === 'returned'): ?>
+                                                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-rose-600 dark:text-rose-400" viewBox="0 0 20 20" fill="currentColor">
+                                                                                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1z" clip-rule="evenodd" />
+                                                                            </svg>
+                                                                            <?= esc($sup['status_label'] ?: 'Returned') ?>
+                                                                        </span>
+                                                                    <?php elseif ($sup['status_label'] === 'Awaiting Eval Window' || $sup['status'] === 'draft'): ?>
+                                                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                                                                            <?= esc($sup['status_label'] ?: ($sup['status'] === 'draft' ? 'Awaiting Submission' : 'Awaiting Eval Window')) ?>
+                                                                        </span>
+                                                                    <?php else: ?>
+                                                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                            </svg>
+                                                                            <?= esc($sup['status_label'] ?: 'Pending Review') ?>
+                                                                        </span>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                            </div>
+                                                        <?php endforeach; ?>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+
+                                            <!-- Col 2: TWG / PMT Calibration -->
+                                            <div class="flex flex-col">
+                                                <div class="flex items-center gap-2 mb-3">
                                                     <div class="w-6 h-6 rounded-md bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800/80 flex items-center justify-center shrink-0">
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                                                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -1544,64 +1573,78 @@
                                                     </div>
                                                     <div>
                                                         <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-zinc-200">
-                                                            Technical Working Group (TWG) / PMT Calibration
+                                                            Technical Working Group (TWG) / PMT
                                                         </h4>
                                                         <p class="text-[11px] text-slate-500 dark:text-zinc-400">
-                                                            Performance rating calibration and MOV compliance review by TWG/PMT.
+                                                            Performance rating calibration and MOV compliance review.
                                                         </p>
                                                     </div>
                                                 </div>
 
-                                                <?php $eCols = max(min(count($eRegularSups), 3), 2); ?>
-                                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-<?= $eCols ?> gap-3">
-                                                    <div class="flex items-center justify-between p-3 rounded-xl border bg-slate-50/70 dark:bg-zinc-900/60 border-slate-200/80 dark:border-zinc-800 transition-all hover:border-slate-300 dark:hover:border-zinc-700">
-                                                        <div class="flex items-center gap-3 min-w-0 pr-2">
-                                                            <div class="w-8 h-8 rounded-full bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-zinc-300 shrink-0 shadow-xs">
-                                                                <?= strtoupper(substr($eTwgSup['name'] ?: 'T', 0, 1)) ?>
-                                                            </div>
-                                                            <div class="min-w-0">
-                                                                <div class="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
-                                                                    <?= esc($eTwgSup['name']) ?>
-                                                                </div>
-                                                                <div class="text-[10px] text-slate-500 dark:text-zinc-400 truncate">
-                                                                    <?= esc($eTwgSup['position']) ?>
-                                                                </div>
-                                                            </div>
+                                                <div class="space-y-3 flex-1">
+                                                    <?php if (empty($eTwgSups)): ?>
+                                                        <div class="p-4 rounded-xl border border-dashed border-slate-200 dark:border-zinc-800 text-center text-xs text-slate-400 dark:text-zinc-500">
+                                                            No TWG / PMT reviewer assigned.
                                                         </div>
+                                                    <?php else: ?>
+                                                        <?php foreach ($eTwgSups as $twg): ?>
+                                                            <div class="flex items-center justify-between p-3 rounded-xl border bg-slate-50/70 dark:bg-zinc-900/60 border-slate-200/80 dark:border-zinc-800 transition-all hover:border-slate-300 dark:hover:border-zinc-700">
+                                                                <div class="flex items-center gap-3 min-w-0 pr-2">
+                                                                    <div class="w-8 h-8 rounded-full bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-zinc-300 shrink-0 shadow-xs">
+                                                                        <?= strtoupper(substr($twg['name'] ?: 'T', 0, 1)) ?>
+                                                                    </div>
+                                                                    <div class="min-w-0">
+                                                                        <div class="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
+                                                                            <?= esc($twg['name']) ?>
+                                                                        </div>
+                                                                        <div class="text-[10px] text-slate-500 dark:text-zinc-400 truncate">
+                                                                            <?= esc($twg['position']) ?>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
 
-                                                        <div class="shrink-0">
-                                                            <?php if ($eTwgSup['status'] === 'approved'): ?>
-                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-emerald-600 dark:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
-                                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                                                    </svg>
-                                                                    <?= esc($eTwgSup['status_label'] ?: 'Approved') ?>
-                                                                </span>
-                                                            <?php elseif ($eTwgSup['status'] === 'returned'): ?>
-                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-rose-600 dark:text-rose-400" viewBox="0 0 20 20" fill="currentColor">
-                                                                        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1z" clip-rule="evenodd" />
-                                                                    </svg>
-                                                                    <?= esc($eTwgSup['status_label'] ?: 'Returned') ?>
-                                                                </span>
-                                                            <?php elseif ($eTwgSup['status_label'] === 'Awaiting Eval Window' || $eTwgSup['status'] === 'draft'): ?>
-                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
-                                                                    <?= esc($eTwgSup['status_label'] ?: ($eTwgSup['status'] === 'draft' ? 'Awaiting Submission' : 'Awaiting Eval Window')) ?>
-                                                                </span>
-                                                            <?php else: ?>
-                                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                                    </svg>
-                                                                    <?= esc($eTwgSup['status_label'] ?: 'Pending Verification') ?>
-                                                                </span>
-                                                            <?php endif; ?>
-                                                        </div>
-                                                    </div>
+                                                                <div class="shrink-0">
+                                                                    <?php if ($twg['status'] === 'approved'): ?>
+                                                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-emerald-600 dark:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
+                                                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                                                            </svg>
+                                                                            <?= esc($twg['status_label'] ?: 'Approved') ?>
+                                                                        </span>
+                                                                    <?php elseif ($twg['status'] === 'returned'): ?>
+                                                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-rose-600 dark:text-rose-400" viewBox="0 0 20 20" fill="currentColor">
+                                                                                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1z" clip-rule="evenodd" />
+                                                                            </svg>
+                                                                            <?= esc($twg['status_label'] ?: 'Returned') ?>
+                                                                        </span>
+                                                                    <?php elseif ($twg['status'] === 'queued'): ?>
+                                                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-800" title="Waiting for all supervising authorities to approve first">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                            </svg>
+                                                                            <?= esc($twg['status_label'] ?: 'Queued for Verification') ?>
+                                                                        </span>
+                                                                    <?php elseif ($twg['status_label'] === 'Awaiting Eval Window' || $twg['status'] === 'draft'): ?>
+                                                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                                                                            <?= esc($twg['status_label'] ?: ($twg['status'] === 'draft' ? 'Awaiting Submission' : 'Awaiting Eval Window')) ?>
+                                                                        </span>
+                                                                    <?php else: ?>
+                                                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                            </svg>
+                                                                            <?= esc($twg['status_label'] ?: 'Pending Verification') ?>
+                                                                        </span>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                            </div>
+                                                        <?php endforeach; ?>
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
-                                        <?php endif; ?>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1611,8 +1654,6 @@
                                         var paneEval   = document.getElementById('pane-supervisors-eval');
                                         var btnTarget  = document.getElementById('tab-btn-target');
                                         var btnEval    = document.getElementById('tab-btn-eval');
-                                        var descTarget = document.getElementById('sup-desc-target');
-                                        var descEval   = document.getElementById('sup-desc-eval');
 
                                         if (!paneTarget || !paneEval || !btnTarget || !btnEval) return;
 
@@ -1626,18 +1667,12 @@
 
                                             btnTarget.className = activeBtn;
                                             btnEval.className   = inactiveBtn;
-
-                                            if (descTarget) descTarget.classList.remove('hidden');
-                                            if (descEval) descEval.classList.add('hidden');
                                         } else {
                                             paneEval.classList.remove('hidden');
                                             paneTarget.classList.add('hidden');
 
                                             btnEval.className   = activeBtn;
                                             btnTarget.className = inactiveBtn;
-
-                                            if (descEval) descEval.classList.remove('hidden');
-                                            if (descTarget) descTarget.classList.add('hidden');
                                         }
                                     }
                                 </script>
@@ -1686,7 +1721,7 @@
         ?>
 
         <!-- RIGHT SIDEBAR (CASCADE DISTRIBUTION FOR ADMINS / FOLDER DETAILS FOR USERS) -->
-        <div id="bottom-sheet" class="custom-scrollbar fixed inset-x-0 bottom-0 z-50 shadow-2xl lg:shadow-xl rounded-t-3xl lg:rounded-2xl transition-transform duration-300 transform spms-bottom-sheet-collapsed lg:static lg:translate-y-0 lg:w-80 lg:shrink-0 flex flex-col p-4 sm:p-5 gap-4 overflow-hidden lg:overflow-y-auto max-h-[85vh] lg:max-h-none bg-surface dark:bg-zinc-950 border border-surface-border dark:border-zinc-800">
+        <div id="bottom-sheet" class="custom-scrollbar fixed inset-x-0 bottom-0 z-50 shadow-2xl lg:shadow-xl rounded-t-3xl lg:rounded-2xl transition-transform duration-300 transform spms-bottom-sheet-collapsed lg:static lg:translate-y-0 lg:w-80 lg:shrink-0 <?= $canCascade ? 'lg:self-start lg:h-fit' : '' ?> flex flex-col p-4 sm:p-5 gap-4 overflow-hidden lg:overflow-y-auto max-h-[85vh] lg:max-h-none bg-surface dark:bg-zinc-950 border border-surface-border dark:border-zinc-800">
             
             <div class="lg:hidden flex justify-center py-2 cursor-pointer touch-none" onclick="toggleBottomSheet()">
                 <div class="w-12 h-1 bg-zinc-300 dark:bg-zinc-600 rounded-full"></div>
@@ -1694,208 +1729,127 @@
 
             <?php if ($canCascade): ?>
                 <!-- CASCADE MANAGEMENT SECTION (For Admins & Supervisors) -->
-                <div class="flex flex-col gap-3 flex-1 min-h-0">
+                <div class="flex flex-col gap-3 shrink-0">
                     <?php 
                         $isUserAdmin = (session()->get('role') === 'Admin');
                         $cascadedTeamId = $activeFolder['routing_preset_id'] ?? null; 
                     ?>
                     <div class="flex items-center justify-between shrink-0">
                         <h4 class="text-[10px] font-black uppercase text-text-muted tracking-wider"><?= $isUserAdmin ? 'Cycle Release Management' : 'Cascade Management' ?></h4>
-                        <?php if ($cascadedTeamId): ?>
-                            <span class="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-[#0e291e] px-2 py-0.5 rounded-md border border-emerald-200 dark:border-[#144630]"><?= $isUserAdmin ? 'Released' : 'Cascaded' ?></span>
-                        <?php endif; ?>
                     </div>
 
                     <?php 
-                        // Supervisors can cascade immediately once formulating commitments in target phase
-                        $inTargetPhase = \App\Enums\FolderStatus::canonical($activeFolder['status'] ?? '')->isTargetPhase();
-                        $canActuallyCascade = $isUserAdmin || $inTargetPhase;
+                        $cActiveStatus = \App\Enums\FolderStatus::canonical($activeFolder['status'] ?? '');
+                        $inActiveTargetStatus = $isUserAdmin || in_array($cActiveStatus, [
+                            \App\Enums\FolderStatus::DRAFT_TARGET,
+                            \App\Enums\FolderStatus::TARGET_SUBMITTED,
+                            \App\Enums\FolderStatus::TARGET_APPROVED,
+                        ], true);
+
+                        if ($isUserAdmin) {
+                            $adminTargetEnds = array_filter([
+                                $activeFolder['opcr_target_end'] ?? null,
+                                $activeFolder['dpcr_target_end'] ?? null,
+                                $activeFolder['ipcr_target_end'] ?? null,
+                                $activeFolder['iperf_target_end'] ?? null,
+                                $activeFolder['target_date_end'] ?? null,
+                            ]);
+                            $isTargetDeadlineEnded = !empty($adminTargetEnds) && empty(array_filter(
+                                $adminTargetEnds,
+                                static fn($d) => strtotime((string)$d) === false || time() <= strtotime((string)$d)
+                            ));
+                        } else {
+                            $targetDeadlineStr = $activeFolder['target_date_end'] ?? null;
+                            $isTargetDeadlineEnded = !empty($targetDeadlineStr) && strtotime((string)$targetDeadlineStr) !== false && time() > strtotime((string)$targetDeadlineStr);
+                        }
+
+                        $canActuallyCascade = $inActiveTargetStatus && !$isTargetDeadlineEnded && !$isArchived;
                         $hasPresets = !empty($presets);
+                        $isAlreadyCascaded = !empty($cascadedTeamId) || !empty($cascadedChildren);
                     ?>
 
-                    <?php if (!$canActuallyCascade && !$cascadedTeamId): ?>
-                        <div class="p-3 rounded-xl border border-amber-300 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 flex flex-col gap-1.5">
-                            <div class="flex items-center gap-1.5 font-extrabold text-[11px] uppercase tracking-wider text-amber-800 dark:text-amber-300">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                </svg>
-                                <span><?= $isUserAdmin ? 'Release Period Closed' : 'Cascade Closed' ?></span>
-                            </div>
-                            <p class="text-[10px] leading-tight text-amber-700 dark:text-amber-400">
-                                <?= $isUserAdmin ? 'The target setting phase has ended for this cycle. Evaluation folders can no longer be released to recipients.' : 'The target setting phase has ended for this cycle. Subordinates can no longer be cascaded.' ?>
-                            </p>
-                        </div>
-                    <?php elseif ($cascadedTeamId || !empty($cascadedChildren)): ?>
+                    <?php if ($isAlreadyCascaded || !$canActuallyCascade): ?>
                         <div class="relative w-full shrink-0">
                             <select id="team-cascade-select" disabled class="w-full bg-zinc-50 dark:bg-zinc-900 text-xs font-bold text-text outline-none pl-3.5 pr-8 py-2.5 rounded-xl appearance-none border border-surface-border opacity-60 cursor-not-allowed">
-                                <?php foreach($presets as $preset): ?>
-                                    <option value="<?= $preset['id'] ?>" <?= ($cascadedTeamId == $preset['id']) ? 'selected' : '' ?> class="bg-surface text-text">
-                                        <?= esc($preset['name']) ?>
+                                <?php if (!empty($cascadedTeamId)): ?>
+                                    <?php foreach ($presets as $preset): ?>
+                                        <option value="<?= $preset['id'] ?>" <?= ($cascadedTeamId == $preset['id']) ? 'selected' : '' ?> class="bg-surface text-text">
+                                            <?= esc($preset['name']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php elseif (!empty($cascadedChildren)): ?>
+                                    <option value="" selected class="bg-surface text-text">
+                                        <?= $isUserAdmin ? 'Released Recipients' : 'Cascaded Staff' ?> (<?= count($cascadedChildren) ?>)
                                     </option>
-                                <?php endforeach; ?>
+                                <?php else: ?>
+                                    <option value="" selected class="bg-surface text-text-muted">
+                                        <?= $isUserAdmin ? 'No Staff Released' : 'No Staff Cascaded' ?>
+                                    </option>
+                                <?php endif; ?>
                             </select>
                             <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-text-muted">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-between px-1 shrink-0">
-                            <span class="text-[10px] text-text-muted font-medium">Team Roster</span>
-                            <?php if (!$isArchived): ?>
-                                <a href="<?= site_url('teams?team_id=' . $cascadedTeamId) ?>" class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1">
-                                    + Manage Members in Teams
-                                </a>
-                            <?php endif; ?>
-                        </div>
-
-                        <?php $pendingCount = (int)($pendingTeamMembersCount ?? 0); ?>
-                        <?php if ($pendingCount > 0 && $canActuallyCascade && !$isArchived): ?>
-                            <!-- SYNC NOTICE: MISSING MEMBERS DETECTED -->
-                            <div class="p-3 rounded-xl border border-emerald-300 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 flex flex-col gap-2 shadow-2xs">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-1.5 font-bold text-xs text-emerald-800 dark:text-emerald-300">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                                        </svg>
-                                        <span>New Members (+<?= $pendingCount ?>)</span>
+                        <?php if ($canActuallyCascade): ?>
+                            <?php $pendingCount = (int)($pendingTeamMembersCount ?? 0); ?>
+                            <?php if ($pendingCount > 0): ?>
+                                <!-- SYNC NOTICE: MISSING MEMBERS DETECTED -->
+                                <div class="p-3 rounded-xl border border-emerald-300 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 flex flex-col gap-2 shadow-2xs">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-1.5 font-bold text-xs text-emerald-800 dark:text-emerald-300">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                            </svg>
+                                            <span>New Staff (+<?= $pendingCount ?>)</span>
+                                        </div>
+                                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-200 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200">
+                                            Sync Available
+                                        </span>
                                     </div>
-                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-200 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200">
-                                        Sync Available
-                                    </span>
+                                    <p class="text-[10px] leading-relaxed text-emerald-700 dark:text-emerald-400 font-medium">
+                                        <?= $pendingCount ?> member<?= $pendingCount === 1 ? ' was' : 's were' ?> added to this staff list. <?= $isUserAdmin ? 'Sync to release evaluation folders to new members.' : 'Sync to provision their target folders without affecting existing cascaded members.' ?>
+                                    </p>
+                                    <button id="btn-sync-cascade" onclick="triggerSyncCascade('<?= $activeFolder['id'] ?>')" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs shadow-xs transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-1.5">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                        <span><?= $isUserAdmin ? "Sync & Release (+{$pendingCount} New)" : "Sync Staff (+{$pendingCount} New)" ?></span>
+                                    </button>
                                 </div>
-                                <p class="text-[10px] leading-relaxed text-emerald-700 dark:text-emerald-400 font-medium">
-                                    <?= $pendingCount ?> member<?= $pendingCount === 1 ? ' was' : 's were' ?> added to this team. <?= $isUserAdmin ? 'Sync to release evaluation folders to new members.' : 'Sync to provision their target folders without affecting existing cascaded members.' ?>
-                                </p>
-                                <button id="btn-sync-cascade" onclick="triggerSyncCascade('<?= $activeFolder['id'] ?>')" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs shadow-xs transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-1.5">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                    </svg>
-                                    <span><?= $isUserAdmin ? "Sync & Release (+{$pendingCount} New)" : "Sync Team (+{$pendingCount} New)" ?></span>
-                                </button>
-                            </div>
-                        <?php endif; ?>
+                            <?php endif; ?>
 
-                        <?php if ($isArchived): ?>
-                            <button type="button" disabled class="w-full py-2.5 text-rose-400/50 border border-rose-900/30 bg-rose-950/10 rounded-xl opacity-40 cursor-not-allowed flex justify-center items-center gap-1.5 font-bold text-xs uppercase tracking-wider shrink-0" title="Archived evaluation cycles cannot be revoked. Restore the cycle first.">
-                                <?= $isUserAdmin ? 'Revoke Cycle Release' : 'Revoke Cascade' ?>
-                            </button>
-                        <?php else: ?>
                             <button onclick="triggerUncascade('<?= $activeFolder['id'] ?>')" class="w-full py-2.5 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-300 dark:border-[#361a1f] bg-rose-50 dark:bg-[#1c1214] hover:bg-rose-600 dark:hover:bg-[#261619] rounded-xl transition-colors cursor-pointer flex justify-center items-center gap-1.5 font-bold text-xs uppercase tracking-wider shrink-0">
                                 <?= $isUserAdmin ? 'Revoke Cycle Release' : 'Revoke Cascade' ?>
                             </button>
-                        <?php endif; ?>
-
-                        <?php if (!empty($cascadedChildren)): ?>
-                            <?php 
-                                $subPageSize = 6;
-                                $totalSubPages = ceil(count($cascadedChildren) / $subPageSize) ?: 1;
-                            ?>
-                            <div class="mt-1 flex flex-col gap-2 flex-1 min-h-0">
-                                <div class="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-text-muted shrink-0">
-                                    <span><?= $isUserAdmin ? 'Released Recipients' : 'Cascaded Subordinates' ?></span>
-                                    <span id="subordinates-count-badge" class="px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 font-extrabold text-[9px]"><?= count($cascadedChildren) ?></span>
+                        <?php elseif (!$isArchived): ?>
+                            <div class="p-3 rounded-xl border border-amber-300 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 flex flex-col gap-1.5">
+                                <div class="flex items-center gap-1.5 font-extrabold text-[11px] uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                    </svg>
+                                    <span><?= $isUserAdmin ? 'Release Period Closed' : 'Cascade Closed' ?></span>
                                 </div>
-
-                                <div id="cascaded-subordinates-list" class="space-y-2 overflow-y-auto custom-scrollbar flex-1 min-h-0 pr-0.5">
-                                    <?php foreach ($cascadedChildren as $cIndex => $child): ?>
-                                        <?php 
-                                             $childCanon = \App\Enums\FolderStatus::canonical($child['status'] ?? '');
-                                             $isPending  = ($childCanon === \App\Enums\FolderStatus::TARGET_SUBMITTED);
-                                             $isApproved = ($childCanon === \App\Enums\FolderStatus::TARGET_APPROVED || $childCanon->isEvaluationPhase());
-                                             $fInit = mb_substr($child['first_name'] ?? '', 0, 1);
-                                             $lInit = mb_substr($child['last_name'] ?? '', 0, 1);
-                                             $initials = strtoupper($fInit . $lInit) ?: 'U';
-                                        ?>
-                                        <div class="subordinate-card <?= ($cIndex >= $subPageSize) ? 'hidden' : '' ?> p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 flex flex-col gap-1.5 text-xs transition-all duration-150" data-subordinate-index="<?= $cIndex ?>">
-                                            <div class="flex items-center justify-between gap-1.5">
-                                                <div class="flex items-center gap-2.5 min-w-0">
-                                                    <div class="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 font-black text-[11px] flex items-center justify-center shrink-0">
-                                                        <?= esc($initials) ?>
-                                                    </div>
-                                                    <div class="min-w-0">
-                                                        <span class="font-bold text-zinc-800 dark:text-white block text-[11px] leading-tight truncate">
-                                                            <?= esc($child['first_name'] . ' ' . $child['last_name']) ?>
-                                                        </span>
-                                                        <span class="text-[9px] text-zinc-500 dark:text-zinc-400 block truncate">
-                                                            <?= esc($child['position'] ?: $child['email']) ?>
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div class="flex items-center gap-1.5 shrink-0">
-                                                    <?php if ($isPending): ?>
-                                                        <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300 shrink-0">
-                                                            Awaiting Approval
-                                                        </span>
-                                                    <?php elseif ($isApproved): ?>
-                                                        <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-[#0e291e] text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-[#144630] shrink-0">
-                                                            Target Approved
-                                                        </span>
-                                                    <?php else: ?>
-                                                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 shrink-0">
-                                                            Drafting
-                                                        </span>
-                                                    <?php endif; ?>
-
-                                                    <?php if ($canActuallyCascade && !$isArchived): ?>
-                                                        <button type="button"
-                                                                onclick="triggerRemoveCascadedSubordinate('<?= $child['id'] ?>', '<?= esc(addslashes($child['first_name'] . ' ' . $child['last_name'])) ?>', '<?= $activeFolder['id'] ?>')"
-                                                                title="<?= $isUserAdmin ? 'Revoke cycle release for this recipient' : 'Remove from this cycle' ?>"
-                                                                class="p-1 rounded-md text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer shrink-0">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                            </svg>
-                                                        </button>
-                                                    <?php endif; ?>
-                                                </div>
-                                            </div>
-                                            <?php if ($isPending): ?>
-                                                <a href="<?= site_url('ratings/show/' . $child['id']) ?>" 
-                                                    class="w-full py-1.5 px-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg font-bold text-[10px] text-center flex items-center justify-center gap-1 shadow-xs transition-colors">
-                                                    <span>Review Targets</span>
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
-                                                </a>
-                                            <?php endif; ?>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-
-                                <div id="subordinates-pagination" class="shrink-0 pt-2 flex items-center justify-between text-xs <?= ($totalSubPages <= 1) ? 'hidden' : '' ?>">
-                                    <span id="sub-page-info" class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                                        1–<?= min($subPageSize, count($cascadedChildren)) ?> of <?= count($cascadedChildren) ?>
-                                    </span>
-                                    <div class="flex items-center gap-1.5">
-                                        <button type="button" id="sub-prev-btn" onclick="changeSubPage(-1)" 
-                                                class="p-1 px-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-[#13271b] text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer text-xs font-bold flex items-center gap-1"
-                                                title="Previous page">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-                                            </svg>
-                                        </button>
-                                        <span id="sub-page-indicator" class="text-[11px] font-extrabold text-emerald-600 dark:text-emerald-400 px-1">
-                                            1 / <?= $totalSubPages ?>
-                                        </span>
-                                        <button type="button" id="sub-next-btn" onclick="changeSubPage(1)" 
-                                                class="p-1 px-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-[#13271b] text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer text-xs font-bold flex items-center gap-1"
-                                                title="Next page">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
+                                <p class="text-[10px] leading-tight text-amber-700 dark:text-amber-400">
+                                    <?= $isUserAdmin ? 'The target setting phase has ended for this cycle. Evaluation folders can no longer be released or revoked.' : 'The target setting phase has ended for this cycle. Subordinates can no longer be cascaded or revoked.' ?>
+                                </p>
                             </div>
                         <?php endif; ?>
                     <?php elseif ($hasPresets): ?>
                         <div class="flex flex-col gap-2">
                             <label for="team-cascade-select" class="text-[10px] font-bold text-text-muted uppercase tracking-wider">
-                                <?= $isUserAdmin ? 'Select Recipient Team' : 'Select Distribution Team' ?>
+                                <?= $isUserAdmin ? 'Select Recipient Staff' : 'Select Distribution Staff' ?>
                             </label>
                             <div class="relative w-full">
                                 <select id="team-cascade-select" <?= ($isLocked || !$canActuallyCascade) ? 'disabled' : '' ?> class="w-full bg-zinc-50 dark:bg-zinc-900 text-xs font-bold text-text outline-none pl-3.5 pr-8 py-2.5 rounded-xl appearance-none border border-surface-border <?= ($isLocked || !$canActuallyCascade) ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer focus:border-emerald-500/50' ?>">
-                                    <option value="" disabled selected class="bg-surface text-text-muted"><?= $isUserAdmin ? '-- Select a Team to Release --' : '-- Select a Team to Cascade --' ?></option>
+                                    <?php $onlyOnePreset = (count($presets) === 1); ?>
+                                    <?php if (!$onlyOnePreset): ?>
+                                        <option value="" disabled selected class="bg-surface text-text-muted"><?= $isUserAdmin ? '-- Select Staff to Release --' : '-- Select Staff to Cascade --' ?></option>
+                                    <?php endif; ?>
                                     <?php foreach($presets as $preset): ?>
                                         <?php $mCount = (int)($preset['member_count'] ?? 0); ?>
-                                        <option value="<?= $preset['id'] ?>" class="bg-surface text-text">
+                                        <option value="<?= $preset['id'] ?>" <?= $onlyOnePreset ? 'selected' : '' ?> class="bg-surface text-text">
                                             <?= esc($preset['name']) ?> (<?= $mCount ?> <?= ($mCount === 1 ? 'member' : 'members') ?>)
                                         </option>
                                     <?php endforeach; ?>
@@ -1906,14 +1860,14 @@
                             </div>
                             <div class="flex justify-end">
                                 <a href="<?= site_url('teams') ?>" class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1">
-                                    + Manage / Create Teams
+                                    + Manage / Create Staff
                                 </a>
                             </div>
                         </div>
 
                         <?php if (!$isLocked && $canActuallyCascade): ?>
                             <button onclick="triggerCascade('<?= $activeFolder['id'] ?>')" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-zinc-950 rounded-xl shadow-md transition-all cursor-pointer flex justify-center items-center gap-1.5 font-black text-xs uppercase tracking-wider active:scale-98">
-                                <?= $isUserAdmin ? 'Release to Selected Team' : ($isOpcrFolder ? 'Cascade OPCR Commitments' : 'Cascade to Selected Team') ?>
+                                <?= $isUserAdmin ? 'Release to Selected Staff' : ($isOpcrFolder ? 'Cascade OPCR Commitments' : 'Cascade to Selected Staff') ?>
                             </button>
                         <?php endif; ?>
                     <?php else: ?>
@@ -1923,10 +1877,10 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                 </svg>
                             </div>
-                            <div class="text-xs font-bold text-text"><?= $isUserAdmin ? 'No Recipient Teams Created Yet' : 'No Teams Created Yet' ?></div>
-                            <p class="text-[10px] text-text-muted leading-tight"><?= $isUserAdmin ? 'Create a recipient team with members in Teams before you can release evaluation cycles.' : 'Create a distribution team with members in Teams before you can cascade targets.' ?></p>
+                            <div class="text-xs font-bold text-text"><?= $isUserAdmin ? 'No Recipient Staff Created Yet' : 'No Staff Created Yet' ?></div>
+                            <p class="text-[10px] text-text-muted leading-tight"><?= $isUserAdmin ? 'Create a recipient staff list with members in My Staff before you can release evaluation cycles.' : 'Create a distribution staff list with members in My Staff before you can cascade targets.' ?></p>
                             <a href="<?= site_url('teams') ?>" class="mt-1 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs transition-colors shadow-xs inline-flex items-center gap-1.5">
-                                <span>Go to Teams Builder</span>
+                                <span>Go to My Staff</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
                             </a>
                         </div>
@@ -1935,7 +1889,7 @@
 
                 <!-- FOLDER MANAGEMENT BUTTONS (Admin Only) -->
                 <?php if (session()->get('role') === 'Admin'): ?>
-                <div class="flex flex-col gap-3 border-t border-zinc-200 dark:border-zinc-800/60 pt-4 mt-auto shrink-0">
+                <div class="flex flex-col gap-3 border-t border-zinc-200 dark:border-zinc-800/60 pt-4 shrink-0">
                     <h4 class="text-[10px] font-black uppercase text-text-muted tracking-wider">Folder Management</h4>
                     
                     <?php if (!empty($activeFolder['deleted_at'])): ?>
@@ -1962,8 +1916,6 @@
                                 <button onclick='openEditFolderModal(<?= json_encode([
                                     "id"                           => $activeFolder["id"],
                                     "title"                        => $activeFolder["title"],
-                                    "academic_year"                => $activeFolder["academic_year"] ?? "",
-                                    "semester"                     => $activeFolder["semester"] ?? "",
                                     "rating_period"                => $activeFolder["rating_period"] ?? "",
                                     "ipcr_target_start"            => $activeFolder["ipcr_target_start"] ?? "",
                                     "ipcr_target_end"              => $activeFolder["ipcr_target_end"] ?? "",
@@ -2077,7 +2029,7 @@
                         $cActiveStatus = \App\Enums\FolderStatus::canonical($activeFolder['status'] ?? '');
                     ?>
                     <?php if ($cActiveStatus === \App\Enums\FolderStatus::TARGET_SUBMITTED): ?>
-                        <?php if ($activeFolder['user_id'] == session()->get('user_id')): ?>
+                        <?php if ($activeFolder['user_id'] == session()->get('user_id') && empty($hasSupervisorApproval)): ?>
                             <button onclick="unsubmitTargetFolder('<?= $activeFolder['id'] ?>', this)" 
                                     class="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -2087,7 +2039,7 @@
                             </button>
                         <?php endif; ?>
                     <?php elseif ($cActiveStatus === \App\Enums\FolderStatus::EVAL_SUBMITTED): ?>
-                        <?php if ($activeFolder['user_id'] == session()->get('user_id')): ?>
+                        <?php if ($activeFolder['user_id'] == session()->get('user_id') && empty($hasSupervisorApproval)): ?>
                             <button onclick="unsubmitEvaluationFolder('<?= $activeFolder['id'] ?>', this)" 
                                     class="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -2347,7 +2299,7 @@
             const selectEl = document.getElementById('team-cascade-select');
             const teamId = selectEl ? selectEl.value : '';
             if (!teamId) {
-                window.appAlert(isUserAdmin ? "Please select a team to release the cycle to." : "Please select a team to cascade to.");
+                window.appAlert(isUserAdmin ? "Please select a staff list to release the cycle to." : "Please select a staff list to cascade to.");
                 return;
             }
 
@@ -2410,7 +2362,7 @@
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    <span>Syncing Team...</span>
+                    <span>Syncing Staff...</span>
                 `;
             }
             sending = true;
@@ -2423,7 +2375,7 @@
                     window.location.reload();
                 },
                 onError: async (errMsg) => {
-                    await window.appAlert(errMsg || "An error occurred while syncing team members.");
+                    await window.appAlert(errMsg || "An error occurred while syncing staff members.");
                     sending = false;
                     window.location.reload();
                 }

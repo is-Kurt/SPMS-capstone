@@ -23,18 +23,16 @@ The 3-layer architecture resolves this by strictly decoupling:
 
 Layer 1 operates at the **Folder Level** and is persisted in `document_folders.status`. It is backed by the PHP enum [`App\Enums\FolderStatus`](file:///home/ubuntu/server/html/SPMS-capstone/app/Enums/FolderStatus.php).
 
-### Canonical Status Roster (10 States)
+### Canonical Status Roster (8 States)
 
 | Phase | Canonical Status Key | UI Badge Text | Badge Styling | Description |
 |---|---|---|---|---|
-| **Phase 1: Targets** | `draft_target` | `DRAFT TARGET` | Neutral Slate | Ratee is drafting performance commitments. Not yet submitted to evaluators. |
+| **Phase 1: Targets** | `draft_target` | `DRAFT TARGET` | Neutral Slate | Ratee is drafting performance commitments (or revising after return). |
 | **Phase 1: Targets** | `target_submitted` | `TARGET SUBMITTED` | Amber Pulsing / Sky | Ratee submitted targets. Stays in this state until all supervising authorities and the TWG complete their reviews. |
-| **Phase 1: Targets** | `target_returned` | `TARGET RETURNED` | Rose / Revision | A reviewer or TWG returned targets with revision comments. |
 | **Phase 1: Targets** | `target_approved` | `TARGET APPROVED` | Emerald / Success | Final approval granted by the TWG (or supervising authority if no TWG assigned). Targets are locked for the semester. |
 | **Phase 1: Targets** | `target_missed` | `MISSED DEADLINE` | Rose / Danger | Employee failed to submit target commitments before the target window deadline closed. |
-| **Phase 2: Evaluation** | `draft_evaluation` | `DRAFT EVALUATION` | Neutral Slate | Evaluation window is open. Ratee is drafting self-ratings, actual accomplishments, and MOVs. |
+| **Phase 2: Evaluation** | `draft_evaluation` | `DRAFT EVALUATION` | Neutral Slate | Evaluation window is open. Ratee is drafting self-ratings, actual accomplishments, and MOVs (or revising after return). |
 | **Phase 2: Evaluation** | `eval_submitted` | `EVALUATION SUBMITTED` | Amber Pulsing / Sky | Ratee locked self-ratings and submitted accomplishments for evaluation review. |
-| **Phase 2: Evaluation** | `eval_returned` | `EVALUATION RETURNED` | Rose / Revision | Reviewer or TWG returned evaluation for adjustment or additional MOVs. |
 | **Phase 2: Evaluation** | `eval_approved` | `EVALUATION APPROVED` | Emerald / Success | Final numerical rating is calibrated and formally approved by all authorities. Cycle completed. |
 | **Phase 2: Evaluation** | `unevaluated` | `MISSED DEADLINE` | Rose / Danger | Employee failed to submit accomplishments before the evaluation window deadline closed. |
 
@@ -133,7 +131,7 @@ Layer 3 adheres to **strict verb minimalism**:
 - **`[Approve]`** (`#btn-approve-target`): Acts as the **final approver** for target commitments. Once TWG approves, the document officially reaches `TARGET APPROVED` (`target_approver_role = 'TWG'`).
 - **`[Return]`** (`#btn-return-target`): Returns targets to the employee for revision with feedback remarks.
 - **`[Unapprove]`** (`#btn-unapprove-target`): Reverts the document back to `TARGET_SUBMITTED` (`Pending Verification`).
-- **Evaluation Phase Controls**: In Phase 2, TWG utilizes `[Approve]` (`#btn-twg-approve`), `[Return]` (`#btn-twg-disapprove`), and `[Unapprove]` (`#btn-twg-revoke`).
+- **Evaluation Phase Controls**: In Phase 2, TWG/PMT utilizes the unified `[Approve]` (`#btn-approve`), `[Return]` (`#btn-return`), and `[Unapprove]` (`#btn-unapprove-evaluation`) controls routed through `Folder::approve`, `Folder::returnRevision`, and `Folder::unapprove`.
 
 #### 4. Read-Only Deadline State
 - **`Missed Deadline`**: If the phase ended with no submission, a clean badge replaces action buttons.
@@ -216,7 +214,7 @@ stateDiagram-v2
 | [`app/Enums/FolderStatus.php`](file:///home/ubuntu/server/html/SPMS-capstone/app/Enums/FolderStatus.php) | Central canonical status definition, legacy string normalizer, stepper index calculator, and phase helpers. |
 | [`app/Models/DocumentFolderModel.php`](file:///home/ubuntu/server/html/SPMS-capstone/app/Models/DocumentFolderModel.php) | Automatic deadline transitions (`target_missed`, `unevaluated`), folder lock guards, and status queries. |
 | [`app/Models/TwgUnitAssignmentModel.php`](file:///home/ubuntu/server/html/SPMS-capstone/app/Models/TwgUnitAssignmentModel.php) | Unit-level and collegiate TWG reviewer assignment resolution and folder routing checks. |
-| [`app/Controllers/Folder.php`](file:///home/ubuntu/server/html/SPMS-capstone/app/Controllers/Folder.php) | Lifecycle endpoints (`submitTarget`, `unsubmitTarget`, `approveTarget`, `returnTarget`, `evaluate`, `unsubmit`, `approve`, `returnRevision`, `twgApprove`). Enforces sequential supervisor -> TWG target approval pipeline. |
+| [`app/Controllers/Folder.php`](file:///home/ubuntu/server/html/SPMS-capstone/app/Controllers/Folder.php) | Lifecycle endpoints (`submitTarget`, `unsubmitTarget`, `approveTarget`, `unapproveTarget`, `evaluate`, `unsubmit`, `approve`, `unapprove`, `returnRevision`). Enforces sequential supervisor -> TWG/PMT approval pipeline across both phases. |
 | [`app/Controllers/Rating.php`](file:///home/ubuntu/server/html/SPMS-capstone/app/Controllers/Rating.php) | Queue partitioning and bucket filtering for supervisor review queues using canonical statuses. |
 | [`app/Controllers/Dashboard.php`](file:///home/ubuntu/server/html/SPMS-capstone/app/Controllers/Dashboard.php) | Executive overview, compliance percentages, revision counters, and subordinate roster tags. |
 | [`app/Controllers/Attachment.php`](file:///home/ubuntu/server/html/SPMS-capstone/app/Controllers/Attachment.php) | Rubric (Phase 1) vs MOV (Phase 2) upload permission enforcement based on canonical phase. |

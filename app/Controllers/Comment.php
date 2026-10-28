@@ -32,7 +32,10 @@ class Comment extends BaseController
                 return $this->respondError('Document ID is required.', 400);
             }
 
-            $threads = $this->commentModel->getDocumentThreads($docId);
+            $versionParam = $this->request->getGet('version');
+            $version = ($versionParam !== null && $versionParam !== '') ? max(1, (int)$versionParam) : null;
+
+            $threads = $this->commentModel->getDocumentThreads($docId, $version);
             return $this->respond([
                 'status'  => 'success',
                 'threads' => $threads
@@ -81,9 +84,12 @@ class Comment extends BaseController
                 ?: (trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?: 'User');
             $avatarColor = session()->get('avatar_color') ?: '#059669';
 
-            // Check if a thread already exists on this cell
+            $currentVersion = max(1, (int)($doc['current_version'] ?? 1));
+
+            // Check if a thread already exists on this cell in the current version
             $existingRoot = $this->commentModel
                 ->where('document_id', $docId)
+                ->where('version', $currentVersion)
                 ->where('row_id', $rowId)
                 ->where('field_name', $fieldName)
                 ->where('status !=', 'deleted')
@@ -94,6 +100,7 @@ class Comment extends BaseController
 
             $commentId = $this->commentModel->insert([
                 'document_id'         => $docId,
+                'version'             => $currentVersion,
                 'row_id'              => $rowId,
                 'field_name'          => $fieldName,
                 'parent_id'           => $parentId,
@@ -120,7 +127,7 @@ class Comment extends BaseController
             }
 
             // Retrieve updated unified thread for this cell
-            $threads = $this->commentModel->getDocumentThreads($docId);
+            $threads = $this->commentModel->getDocumentThreads($docId, $currentVersion);
             $unifiedThread = null;
             foreach ($threads as $t) {
                 if ($t['row_id'] === $rowId && ($t['field_name'] ?? 'row') === $fieldName) {
@@ -177,6 +184,7 @@ class Comment extends BaseController
 
             $replyId = $this->commentModel->insert([
                 'document_id'         => $docId,
+                'version'             => max(1, (int)($parent['version'] ?? ($doc['current_version'] ?? 1))),
                 'row_id'              => $parent['row_id'],
                 'field_name'          => $parent['field_name'],
                 'parent_id'           => $parentId,

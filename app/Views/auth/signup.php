@@ -172,7 +172,7 @@
                     <h3 class="text-[10px] font-black uppercase tracking-widest text-text-muted mb-6 flex items-center justify-between">
                         <div class="flex items-center gap-2">
                             <span class="w-5 h-5 rounded-full bg-accent text-white flex items-center justify-center num-badge">3</span>
-                            Position & Unit
+                            Designation
                         </div>
                         <button type="button" class="btn-remove hidden text-danger-500 hover:text-danger-700 transition-colors">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -184,7 +184,7 @@
                             <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Department / Unit</label>
                             <div class="relative">
                                 <select name="units[]" required data-custom-select class="w-full bg-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border-2 border-dashed border-surface-border hover:border-accent hover:text-accent rounded-xl px-4 py-3 text-sm focus:outline-none text-text cursor-pointer font-bold transition-all">
-                                    <option value="" disabled <?= empty($selectedUnit) ? 'selected' : '' ?>>Select Unit...</option>
+                                    <option value="" disabled <?= empty($selectedUnit) ? 'selected' : '' ?>>Select Department / Unit...</option>
                                     <?php $renderOptionsTree(0, 0, $selectedUnit); ?>
                                 </select>
                             </div>
@@ -196,7 +196,7 @@
                         </div>
 
                         <div class="col-span-1">
-                            <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Official Position</label>
+                            <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Position</label>
                             <div class="relative">
                                 <select name="positions[]" required data-custom-select class="w-full bg-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border-2 border-dashed border-surface-border hover:border-accent hover:text-accent rounded-xl px-4 py-3 text-sm focus:outline-none text-text cursor-pointer font-bold transition-all">
                                     <option value="" disabled <?= empty($selectedPos) ? 'selected' : '' ?>>Select Position...</option>

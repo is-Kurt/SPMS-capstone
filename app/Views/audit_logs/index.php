@@ -295,15 +295,24 @@ $exportQuery = http_build_query(array_filter([
                         <?php endif; ?>
                     </div>
 
-                    <!-- Card Footer: Timestamp, Relative Time, Client Info -->
-                    <div class="pt-2 border-t border-surface-border/40 flex items-center justify-between gap-2 text-[11px] text-text-muted">
+                    <!-- Card Footer: Timestamp, Relative Time, Client Info & Device Fingerprint -->
+                    <div class="pt-2 border-t border-surface-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-[11px] text-text-muted">
                         <div class="flex items-center gap-1.5 truncate">
                             <span><?= date('M d, Y, h:i A', strtotime($log['created_at'])) ?></span>
                             <span>•</span>
                             <span class="font-medium text-emerald-600 dark:text-emerald-400 shrink-0"><?= time_ago_str($log['created_at']) ?></span>
                         </div>
-                        <div class="font-mono text-[10px] shrink-0 text-text-muted/80">
-                            <?= $clientInfo ?>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <?php if (!empty($log['device_id'])): ?>
+                                <span class="inline-flex items-center gap-1 font-mono text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                                      title="Browser Device Fingerprint: <?= esc($log['device_id']) ?>">
+                                    <svg class="w-2.5 h-2.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 004.07 9m5.93 11a10.01 10.01 0 01-2.92-5.464" />
+                                    </svg>
+                                    FP: <?= esc(substr($log['device_id'], 0, 8)) ?>...
+                                </span>
+                            <?php endif; ?>
+                            <span class="font-mono text-[10px] text-text-muted/80"><?= $clientInfo ?></span>
                         </div>
                     </div>
                 </div>
@@ -321,7 +330,7 @@ $exportQuery = http_build_query(array_filter([
                         <th class="py-3.5 px-4">Actor</th>
                         <th class="py-3.5 px-4">Action Code</th>
                         <th class="py-3.5 px-4">Event Details</th>
-                        <th class="py-3.5 px-4">Client / IP</th>
+                        <th class="py-3.5 px-4">Client / Device Fingerprint</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-surface-border/60">
@@ -424,12 +433,23 @@ $exportQuery = http_build_query(array_filter([
                                     <?php endif; ?>
                                 </td>
 
-                                <!-- Client IP & Agent -->
+                                <!-- Client IP & Device Fingerprint -->
                                 <td class="py-3.5 px-4 whitespace-nowrap">
-                                    <div class="font-mono text-[11px] text-text">
+                                    <div class="font-mono text-[11px] text-text font-bold">
                                         <?= esc($log['ip_address'] ?? '127.0.0.1') ?>
                                     </div>
-                                    <div class="text-[10px] text-text-muted mt-0.5 truncate max-w-[160px]" title="<?= esc($log['user_agent'] ?? '') ?>">
+                                    <?php if (!empty($log['device_id'])): ?>
+                                        <div class="flex items-center gap-1 mt-1">
+                                            <span class="inline-flex items-center gap-1 font-mono text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                                                  title="Browser Device Fingerprint: <?= esc($log['device_id']) ?> (Unique hardware/browser signature, persists across CGNAT and IP changes)">
+                                                <svg class="w-2.5 h-2.5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 004.07 9m5.93 11a10.01 10.01 0 01-2.92-5.464" />
+                                                </svg>
+                                                <span>FP: <?= esc(substr($log['device_id'], 0, 10)) ?>...</span>
+                                            </span>
+                                        </div>
+                                    <?php endif; ?>
+                                    <div class="text-[10px] text-text-muted mt-0.5 truncate max-w-[170px]" title="<?= esc($log['user_agent'] ?? '') ?>">
                                         <?= $clientInfo ?>
                                     </div>
                                 </td>

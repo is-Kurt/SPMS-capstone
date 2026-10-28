@@ -19,7 +19,7 @@
 
             <!-- Roles Filter -->
             <div class="shrink-0 pb-4 border-b border-surface-border/50">
-                <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group" onclick="
+                <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group cursor-pointer" onclick="
                     this.nextElementSibling.classList.toggle('hidden');
                     this.querySelector('svg').classList.toggle('-rotate-180');
                 ">
@@ -38,7 +38,7 @@
 
             <!-- Status Filter -->
             <div class="shrink-0 pb-4 border-b border-surface-border/50">
-                <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group" onclick="
+                <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group cursor-pointer" onclick="
                     this.nextElementSibling.classList.toggle('hidden');
                     this.querySelector('svg').classList.toggle('-rotate-180');
                 ">
@@ -59,7 +59,7 @@
 
             <!-- Expiry Filter -->
             <div class="shrink-0 pb-2">
-                <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group" onclick="
+                <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group cursor-pointer" onclick="
                     this.nextElementSibling.classList.toggle('hidden');
                     this.querySelector('svg').classList.toggle('-rotate-180');
                 ">

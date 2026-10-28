@@ -47,19 +47,26 @@
         <div class="p-4 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4">
             <!-- Search -->
             <div class="shrink-0 pb-4 border-b border-surface-border/50">
-                <input type="text" id="search-rating" placeholder="Search employee name..." class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-xl px-3 py-2 text-xs focus:border-accent outline-none text-text font-bold shadow-sm">
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    <input type="text" id="search-rating" placeholder="Search employee name..." class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-xl pl-9 pr-3 py-2 text-xs focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all text-text font-bold shadow-sm">
+                </div>
             </div>
 
-            <!-- Role / Type Filter -->
+            <!-- Staff Type Filter -->
             <div class="shrink-0 pb-4 border-b border-surface-border/50">
-                <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group" onclick="
+                <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group cursor-pointer" onclick="
                     this.nextElementSibling.classList.toggle('hidden');
                     this.querySelector('svg').classList.toggle('-rotate-180');
                 ">
-                    <span>Role / Type</span>
+                    <span>Staff Type</span>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
                 </button>
-                <div class="flex flex-col gap-1">
+                <div class="space-y-1">
                     <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
                         <input type="checkbox" name="filter_type[]" value="1" class="checkbox ratings-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
                         <span>Teaching</span>
@@ -72,13 +79,15 @@
             </div>
 
             <!-- Dynamic Cascading Unit / Department Filter -->
+            <?php if (!isset($hasLowerLevels) || !empty($hasLowerLevels)): ?>
             <div id="dynamic-unit-filter-container" class="shrink-0 pb-4 border-b border-surface-border/50 space-y-3">
                 <!-- Populated dynamically by JavaScript -->
             </div>
+            <?php endif; ?>
 
             <!-- Positions Filter -->
             <div class="shrink-0 pb-4 border-b border-surface-border/50">
-                <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group" onclick="
+                <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group cursor-pointer" onclick="
                     this.nextElementSibling.classList.toggle('hidden');
                     this.querySelector('svg').classList.toggle('-rotate-180');
                 ">
@@ -250,36 +259,38 @@
                             $overallTabCount = $group['overall_count'] ?? count($group['folders']);
                             $displayTabCount = ($sysRole === 'Admin') ? $cascadedTabCount : $overallTabCount;
                             
+                            $isTwgOrPmt = in_array($sysRole, ['TWG', 'PMT'], true);
                             $defaultColor = match($key) {
-                                'action', 'target_approval' => 'text-amber-500',
-                                'pending', 'target_returned' => 'text-rose-500',
-                                'completed', 'target_approved' => 'text-emerald-500',
+                                'target_all', 'eval_all'                 => 'text-sky-500',
+                                'target_in_progress', 'eval_in_progress' => 'text-indigo-500',
+                                'target_for_review', 'eval_for_review'   => 'text-amber-500',
+                                'target_completed', 'eval_completed'     => 'text-emerald-500',
                                 default => 'text-text-muted'
                             };
 
                             $activeBorderColor = match($key) {
-                                'action', 'target_approval' => 'border-amber-500 dark:border-amber-400 text-amber-500 dark:text-amber-400',
-                                'pending', 'target_returned' => 'border-rose-500 dark:border-rose-400 text-rose-500 dark:text-rose-400',
-                                'completed', 'target_approved' => 'border-emerald-500 dark:border-emerald-400 text-emerald-500 dark:text-emerald-400',
+                                'target_all', 'eval_all'                 => 'border-sky-500 dark:border-sky-400 text-sky-600 dark:text-sky-400',
+                                'target_in_progress', 'eval_in_progress' => 'border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400',
+                                'target_for_review', 'eval_for_review'   => 'border-amber-500 dark:border-amber-400 text-amber-500 dark:text-amber-400',
+                                'target_completed', 'eval_completed'     => 'border-emerald-500 dark:border-emerald-400 text-emerald-500 dark:text-emerald-400',
                                 default => 'border-accent text-accent'
                             };
 
                             $activeBadgeClass = match($key) {
-                                'action', 'target_approval' => 'px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30',
-                                'pending', 'target_returned' => 'px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30',
-                                'completed', 'target_approved' => 'px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30',
+                                'target_all', 'eval_all'                 => 'px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/30',
+                                'target_in_progress', 'eval_in_progress' => 'px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30',
+                                'target_for_review', 'eval_for_review'   => 'px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30',
+                                'target_completed', 'eval_completed'     => 'px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30',
                                 default => 'px-2 py-0.5 rounded-full text-[10px] font-black bg-accent/20 text-accent border border-accent/30'
                             };
 
                             $defaultBadgeClass = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface-border/50 text-text-muted group-hover:text-text';
 
                             $shortLabel = match($key) {
-                                'action' => 'Action',
-                                'pending' => 'Returned',
-                                'completed' => 'Completed',
-                                'target_approval' => 'Review',
-                                'target_returned' => 'Returned',
-                                'target_approved' => 'Approved',
+                                'target_all', 'eval_all'                 => 'All',
+                                'target_in_progress', 'eval_in_progress' => $isTwgOrPmt ? 'Endorsement' : 'In Progress',
+                                'target_for_review', 'eval_for_review'   => $isTwgOrPmt ? 'Verify' : 'For Review',
+                                'target_completed', 'eval_completed'     => $isTwgOrPmt ? 'Verified' : 'Completed',
                                 default => $group['label']
                             };
                         ?>
@@ -294,25 +305,21 @@
                             
                             <!-- Icon -->
                             <span class="tab-icon">
-                                <?php if ($key === 'action'): ?>
+                                <?php if (in_array($key, ['target_all', 'eval_all'], true)): ?>
+                                    <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-sky-500 dark:text-sky-400' : 'text-text-muted group-hover:text-sky-500' ?>" data-default-color="text-text-muted group-hover:text-sky-500" data-active-color="text-sky-500 dark:text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                                    </svg>
+                                <?php elseif (in_array($key, ['target_in_progress', 'eval_in_progress'], true)): ?>
+                                    <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-indigo-500 dark:text-indigo-400' : 'text-text-muted group-hover:text-indigo-500' ?>" data-default-color="text-text-muted group-hover:text-indigo-500" data-active-color="text-indigo-500 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                <?php elseif (in_array($key, ['target_for_review', 'eval_for_review'], true)): ?>
                                     <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-amber-500 dark:text-amber-400' : 'text-text-muted group-hover:text-amber-500' ?>" data-default-color="text-text-muted group-hover:text-amber-500" data-active-color="text-amber-500 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                     </svg>
-                                <?php elseif ($key === 'pending'): ?>
-                                    <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-rose-500 dark:text-rose-400' : 'text-text-muted group-hover:text-rose-500' ?>" data-default-color="text-text-muted group-hover:text-rose-500" data-active-color="text-rose-500 dark:text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                    </svg>
-                                <?php elseif ($key === 'completed' || $key === 'target_approved'): ?>
+                                <?php else: ?>
                                     <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-emerald-500 dark:text-emerald-400' : 'text-text-muted group-hover:text-emerald-500' ?>" data-default-color="text-text-muted group-hover:text-emerald-500" data-active-color="text-emerald-500 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                <?php elseif ($key === 'target_approval'): ?>
-                                    <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-amber-500 dark:text-amber-400' : 'text-text-muted group-hover:text-amber-500' ?>" data-default-color="text-text-muted group-hover:text-amber-500" data-active-color="text-amber-500 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                    </svg>
-                                <?php elseif ($key === 'target_returned'): ?>
-                                    <svg class="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 <?= $isActive ? 'text-rose-500 dark:text-rose-400' : 'text-text-muted group-hover:text-rose-500' ?>" data-default-color="text-text-muted group-hover:text-rose-500" data-active-color="text-rose-500 dark:text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                                     </svg>
                                 <?php endif; ?>
                             </span>
@@ -339,12 +346,12 @@
                 <div id="tab-content-<?= $key ?>" class="tab-content <?= ($pKey === $firstPeriodKey && $key === $firstTabKey) ? 'flex flex-col flex-1 min-w-0 min-h-0 h-full' : 'hidden' ?>">
                     
                     <?php
-                        $colWidths = ($sysRole === 'Admin') ? ['28%', '16%'] : ['40%'];
+                        $colWidths = ($sysRole === 'Admin') ? ['28%', '20%'] : ['40%'];
                         
                         if ($pKey === 'target') {
-                            $colWidths = array_merge($colWidths, ($sysRole === 'Admin') ? ['34%', '22%'] : ['38%', '22%']); // Only Folder Status and Action
+                            $colWidths = array_merge($colWidths, ($sysRole === 'Admin') ? ['30%', '22%'] : ['38%', '22%']); // Only Folder Status and Action
                         } else {
-                            $colWidths = array_merge($colWidths, ($sysRole === 'Admin') ? ['18%', '16%', '22%'] : ['20%', '18%', '22%']); // Folder Status, Score, Action
+                            $colWidths = array_merge($colWidths, ($sysRole === 'Admin') ? ['18%', '14%', '20%'] : ['20%', '18%', '22%']); // Folder Status, Score, Action
                         }
                     ?>
                     <div id="ratings-header-<?= $key ?>" class="hidden lg:block shrink-0 overflow-hidden bg-zinc-50 dark:bg-zinc-800/30 border-b border-surface-border" data-frozen-header>
@@ -356,7 +363,7 @@
                                 <tr>
                                     <th class="px-6 py-4">User / Position</th>
                                     <?php if ($sysRole === 'Admin'): ?>
-                                        <th class="px-6 py-4">Department</th>
+                                        <th class="px-6 py-4">Department / Unit</th>
                                     <?php endif; ?>
                                     <th class="px-6 py-4 min-w-[110px]">Folder Status</th>
                                     <?php if ($pKey !== 'target'): ?>
@@ -423,13 +430,12 @@
                                                     <div class="lg:hidden shrink-0 mt-0.5">
                                                         <?php 
                                                             $cStatus = \App\Enums\FolderStatus::canonical($row['folder_status'] ?? '');
+                                                            $isTwgRole = in_array($sysRole, ['TWG', 'PMT'], true);
                                                             $badgeColors = [
                                                                 \App\Enums\FolderStatus::TARGET_APPROVED->value => 'bg-success-100 text-success-700 border-success-200 dark:bg-success-500/20 dark:text-success-400',
                                                                 \App\Enums\FolderStatus::EVAL_APPROVED->value   => 'bg-success-100 text-success-700 border-success-200 dark:bg-success-500/20 dark:text-success-400',
                                                                 \App\Enums\FolderStatus::TARGET_SUBMITTED->value=> 'bg-info-100 text-info-700 border-info-200 dark:bg-info-500/20 dark:text-info-400',
                                                                 \App\Enums\FolderStatus::EVAL_SUBMITTED->value  => 'bg-info-100 text-info-700 border-info-200 dark:bg-info-500/20 dark:text-info-400',
-                                                                \App\Enums\FolderStatus::TARGET_RETURNED->value => 'bg-revision-100 text-revision-700 border-revision-200 dark:bg-revision-500/20 dark:text-revision-400',
-                                                                \App\Enums\FolderStatus::EVAL_RETURNED->value   => 'bg-revision-100 text-revision-700 border-revision-200 dark:bg-revision-500/20 dark:text-revision-400',
                                                                 \App\Enums\FolderStatus::TARGET_MISSED->value   => 'bg-danger-100 text-danger-700 border-danger-200 dark:bg-danger-500/20 dark:text-danger-400',
                                                                 \App\Enums\FolderStatus::UNEVALUATED->value     => 'bg-danger-100 text-danger-700 border-danger-200 dark:bg-danger-500/20 dark:text-danger-400',
                                                                 \App\Enums\FolderStatus::DRAFT_TARGET->value    => 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400',
@@ -437,6 +443,16 @@
                                                             ];
                                                             $c = $badgeColors[$cStatus->value] ?? 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400';
                                                             $displayStatus = $cStatus->label();
+
+                                                            if ($isTwgRole && in_array($cStatus, [\App\Enums\FolderStatus::TARGET_SUBMITTED, \App\Enums\FolderStatus::EVAL_SUBMITTED], true)) {
+                                                                if (!empty($row['all_supervisors_approved'])) {
+                                                                    $displayStatus = 'PENDING VERIFICATION';
+                                                                    $c = 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30';
+                                                                } else {
+                                                                    $displayStatus = 'QUEUED FOR VERIFICATION';
+                                                                    $c = 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30';
+                                                                }
+                                                            }
                                                         ?>
                                                         <span class="px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border <?= $c ?> whitespace-nowrap">
                                                             <?= esc($displayStatus) ?>
@@ -446,8 +462,8 @@
                                             </td>
 
                                             <?php if ($sysRole === 'Admin'): ?>
-                                                <td class="hidden lg:table-cell px-6 py-4">
-                                                    <span class="text-xs font-semibold text-text-muted"><?= esc($row['department'] ?? 'N/A') ?></span>
+                                                <td class="hidden lg:table-cell px-6 py-4 min-w-0 overflow-hidden">
+                                                    <span class="text-xs font-semibold text-text-muted truncate block max-w-full" title="<?= esc($row['department'] ?? 'N/A') ?>"><?= esc($row['department'] ?? 'N/A') ?></span>
                                                 </td>
                                             <?php endif; ?>
 
@@ -479,16 +495,40 @@
                                             <td class="block lg:table-cell px-0 lg:px-6 pt-1 pb-0 lg:py-4 text-right lg:min-w-[135px]">
                                                 <?php 
                                                     $isDirect = empty($sysRole) || $sysRole !== 'Admin' || !empty($row['is_cascaded_by_me']);
-                                                    $actionLabel = $isDirect 
-                                                        ? (($pKey === 'target') ? 'Review Targets' : 'Open Evaluation') 
-                                                        : (($pKey === 'target') ? 'Monitor Targets' : 'Monitor Review');
-                                                    $btnClass = $isDirect
-                                                        ? 'bg-accent hover:bg-accent-hover text-zinc-950 font-black'
-                                                        : 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-text font-bold border border-surface-border';
+                                                    $rowBucket = $row['queue_bucket'] ?? (
+                                                        in_array($key, ['target_in_progress', 'eval_in_progress'], true) ? 'in_progress' : (
+                                                        in_array($key, ['target_completed', 'eval_completed'], true) ? 'completed' : 'for_review'
+                                                    ));
+                                                    $isInProgressTab = ($rowBucket === 'in_progress');
+                                                    $isCompletedTab  = ($rowBucket === 'completed');
+
+                                                    if ($isInProgressTab) {
+                                                        $actionLabel = 'View & Comment';
+                                                        $btnClass = 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-text font-bold border border-surface-border';
+                                                    } elseif ($isCompletedTab) {
+                                                        $actionLabel = 'View Form';
+                                                        $btnClass = 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-text font-bold border border-surface-border';
+                                                    } else {
+                                                        if (in_array($sysRole, ['TWG', 'PMT'], true)) {
+                                                            $actionLabel = ($pKey === 'target') ? 'Verify Targets' : 'Verify Evaluation';
+                                                            $btnClass = 'bg-accent hover:bg-accent-hover text-zinc-950 font-black';
+                                                        } else {
+                                                            $actionLabel = $isDirect 
+                                                                ? (($pKey === 'target') ? 'Review Targets' : 'Open Evaluation') 
+                                                                : (($pKey === 'target') ? 'Monitor Targets' : 'Monitor Review');
+                                                            $btnClass = $isDirect
+                                                                ? 'bg-accent hover:bg-accent-hover text-zinc-950 font-black'
+                                                                : 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-text font-bold border border-surface-border';
+                                                        }
+                                                    }
                                                 ?>
                                                 <a href="<?= site_url('ratings/show/' . $row['folder_id']) ?>" 
                                                 class="w-full lg:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 lg:py-2 <?= $btnClass ?> rounded-xl text-xs transition-all shadow-sm active:scale-95 cursor-pointer whitespace-nowrap">
-                                                    <?php if (!$isDirect): ?>
+                                                    <?php if ($isInProgressTab): ?>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                                                        </svg>
+                                                    <?php elseif (!$isDirect || $isCompletedTab): ?>
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -617,14 +657,20 @@
             if (data.status === 'success') {
                 const nullBadges = document.querySelectorAll(`.adj-badge-null-${folderId}`);
                 const adjBadges = document.querySelectorAll(`.adj-badge-${folderId}`);
+                const allScoreInputs = document.querySelectorAll(`.score-input[data-folder-id="${folderId}"]`);
 
                 if (score === '') {
-                    inputElem.classList.add('italic', 'text-text-muted');
+                    allScoreInputs.forEach(inp => {
+                        inp.value = '';
+                        inp.classList.add('italic', 'text-text-muted');
+                    });
                     nullBadges.forEach(b => b.classList.remove('hidden'));
                     adjBadges.forEach(b => b.classList.add('hidden'));
                 } else {
-                    inputElem.classList.remove('italic', 'text-text-muted');
-                    inputElem.value = parseFloat(score).toFixed(3);
+                    allScoreInputs.forEach(inp => {
+                        inp.classList.remove('italic', 'text-text-muted');
+                        inp.value = parseFloat(score).toFixed(2);
+                    });
                     
                     const adj = getAdjectivalRating(parseFloat(score));
                     const styles = {
@@ -911,6 +957,7 @@
         'parent_id' => !empty($u['parent_id']) ? (int)$u['parent_id'] : 0
     ], $allUnits ?? [])) ?>;
     window.SPMS_USER_ROLE = '<?= esc($sysRole) ?>';
+    window.SPMS_MY_UNIT_IDS = <?= json_encode(array_map('intval', $myUnitIds ?? [])) ?>;
     window.SPMS_ASSIGNED_UNIT_IDS = <?= json_encode(array_values(array_map('intval', array_column($assignedUnits ?? [], 'unit_id') ?: array_column($assignedUnits ?? [], 'id') ?: []))) ?>;
 
     function escapeHtml(str) {
@@ -965,20 +1012,21 @@
 
     function getLevelTitle(level, parentUnit) {
         if (level === 1) {
-            return 'COLLEGE / DIVISION';
+            return 'DEPARTMENT / UNIT';
         }
-        return parentUnit ? escapeHtml(parentUnit.name) : 'DEPARTMENT / PROGRAM';
+        return parentUnit ? escapeHtml(parentUnit.name) : 'SUB-UNIT';
     }
 
     function getDefaultOptionLabel(level, parentUnit) {
         if (level === 1) {
-            return 'All Colleges &amp; Divisions';
+            return 'All Departments &amp; Units';
         }
-        return parentUnit ? `All in ${escapeHtml(parentUnit.name)}` : 'All Departments';
+        return parentUnit ? `All in ${escapeHtml(parentUnit.name)}` : 'All Departments &amp; Units';
     }
 
     function renderDynamicUnitLevel(level, parentUnitId, targetContainer) {
         if (!targetContainer) return;
+        const wasCollapsed = level === 1 && Boolean(targetContainer.querySelector(':scope > .dynamic-unit-level > .js-unit-level-body.hidden'));
         targetContainer.innerHTML = '';
 
         const units = window.SPMS_RATINGS_UNITS || [];
@@ -993,10 +1041,13 @@
                 const assignedIds = window.SPMS_ASSIGNED_UNIT_IDS || [];
                 availableUnits = units.filter(u => assignedIds.includes(u.id));
                 if (availableUnits.length === 0) {
-                    availableUnits = units.filter(u => (!u.parent_id || !unitsById[u.parent_id]) && !['OVPAA', 'OVPAF', 'Office of the President'].includes(u.name));
+                    availableUnits = units.filter(u => !u.parent_id || !unitsById[u.parent_id]);
                 }
-            } else {
+            } else if (window.SPMS_USER_ROLE === 'Admin' || window.SPMS_USER_ROLE === 'PMT') {
                 availableUnits = units.filter(u => !u.parent_id || !unitsById[u.parent_id]);
+            } else {
+                const myUnits = window.SPMS_MY_UNIT_IDS || [];
+                availableUnits = units.filter(u => myUnits.includes(u.parent_id));
             }
         } else {
             const numParentId = parseInt(parentUnitId, 10);
@@ -1021,31 +1072,35 @@
         });
 
         const levelWrapper = document.createElement('div');
-        levelWrapper.className = 'space-y-1.5 dynamic-unit-level';
+        levelWrapper.className = 'dynamic-unit-level';
         levelWrapper.dataset.level = level;
 
+        const headerSpacing = level === 1 ? 'mb-3 tracking-widest' : 'mb-1.5 tracking-wider';
         const headerHtml = `
-            <div class="flex items-center justify-between">
-                <label for="ratings-filter-unit-level-${level}" class="block text-[10px] font-black uppercase tracking-wider ${theme.labelColor} truncate pr-2" title="${title}">
-                    ${title}
-                </label>
-                <span class="text-[10px] font-medium text-text-muted italic shrink-0">(${availableUnits.length} options)</span>
-            </div>`;
+            <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase ${headerSpacing} ${theme.labelColor} hover:text-text focus:outline-none group cursor-pointer" onclick="
+                this.nextElementSibling.classList.toggle('hidden');
+                this.querySelector('svg').classList.toggle('-rotate-180');
+            ">
+                <span class="truncate pr-2 text-left" title="${title}">${title}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${wasCollapsed ? '-rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+            </button>`;
 
         levelWrapper.innerHTML = `
             ${headerHtml}
-            <div class="relative w-full">
-                <select id="ratings-filter-unit-level-${level}"
-                    class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border ${theme.focusRing} rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
-                    ${optionsHtml}
-                </select>
-                <div class="pointer-events-none absolute inset-y-0 flex items-center text-text-muted" style="right: 10px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
+            <div class="js-unit-level-body ${wasCollapsed ? 'hidden' : ''}">
+                <div class="relative w-full">
+                    <select id="ratings-filter-unit-level-${level}"
+                        class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border ${theme.focusRing} rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
+                        ${optionsHtml}
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 flex items-center text-text-muted" style="right: 10px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </div>
                 </div>
+                <div id="ratings-dynamic-unit-children-${level}" class="relative pl-3.5 ml-2.5 border-l-2 border-dashed ${theme.connector} space-y-3 pt-2 hidden"></div>
             </div>
-            <div id="ratings-dynamic-unit-children-${level}" class="relative pl-3.5 ml-2.5 border-l-2 border-dashed ${theme.connector} space-y-3 pt-2 hidden"></div>
         `;
 
         targetContainer.appendChild(levelWrapper);

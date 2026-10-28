@@ -49,7 +49,6 @@
     window.canEditApprover = canEditApprover;
     window.canEditEvaluation = canEditEvaluation;
 
-    window.rubricAttachments = [];
     window.digitalRubricsData = (tabs[0]?.formData?.rubrics && !Array.isArray(tabs[0]?.formData?.rubrics)) ? tabs[0].formData.rubrics : {};
     
 
@@ -78,31 +77,7 @@
             
             const span = document.createElement('span');
             span.textContent = (tab.title && tab.title.trim()) ? tab.title : 'Target Form';
-            
-            <?php if ($isEditable): ?>
-            span.contentEditable = "true";
-            span.title = 'Click to edit tab name';
-            span.className = 'outline-none cursor-text px-1 min-w-[20px] inline-block rounded focus:bg-surface-border/30';
-            
-            span.onblur = (e) => {
-                let newName = e.target.textContent.trim();
-                if (!newName) {
-                    newName = tab.title || 'Target Form';
-                }
-                if (newName !== tab.title) {
-                    tab.title = getUniqueTitle(newName, tab.id);
-                    AppState.setDirty(true);
-                }
-                e.target.textContent = tab.title;
-            };
-            
-            span.onkeydown = (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    e.target.blur();
-                }
-            };
-            <?php endif; ?>
+            span.className = 'px-1 inline-block select-none cursor-pointer';
             
             btn.appendChild(span);
 
@@ -131,9 +106,6 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
             </svg>
             <span>Rubrics Matrix</span>
-            <span id="tab-rubrics-badge" class="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30">
-                Standards
-            </span>
         `;
         tabBar.appendChild(rubricsBtn);
 
@@ -290,6 +262,9 @@
         isDirty: false,
         setDirty(val) {
             this.isDirty = val;
+            if (val && typeof window.triggerDebouncedAutoSave === 'function') {
+                window.triggerDebouncedAutoSave();
+            }
         }
     };
     
@@ -406,6 +381,10 @@
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         });
+    }
+
+    function formatBudgetDisplay(num) {
+        return formatBudgetFull(num);
     }
 
     // Auto-shrink font size for large budget values + dynamic hover tooltip
@@ -587,24 +566,36 @@
     }
 
     async function approveFolderEvaluation() {
+        const isTwgOrPmt = (window.sysRole === 'TWG' || window.sysRole === 'PMT');
+        const roleLabel = (window.sysRole === 'PMT') ? 'PMT' : 'TWG';
         let finalScore = document.getElementById('grand-score')?.innerText?.trim() || '';
         if (finalScore === '0.000' || finalScore === '—') finalScore = '';
 
         const btnApprove = document.getElementById('btn-approve');
         if (btnApprove && btnApprove.disabled) {
-            await window.appAlert("Cannot approve evaluation directly while score adjustments exist.\n\nPlease click 'Return for Revision' to return the document to the employee with feedback, or revert your score adjustments to their original ratings to approve.", {
-                title: 'Score Adjustments Present',
-                variant: 'warning'
-            });
+            await window.appAlert(
+                isTwgOrPmt
+                    ? `Cannot approve evaluation directly while ${roleLabel} calibration adjustments exist.\n\nPlease click 'Return' to return the document with feedback, or revert your score calibrations to approve.`
+                    : "Cannot approve evaluation directly while score adjustments exist.\n\nPlease click 'Return' to return the document to the employee with feedback, or revert your score adjustments to their original ratings to approve.",
+                {
+                    title: isTwgOrPmt ? 'Calibrations Present' : 'Score Adjustments Present',
+                    variant: 'warning'
+                }
+            );
             return;
         }
 
-        const ok = await window.appConfirm("Complete and approve this evaluation?", { 
-            title: 'Approve Evaluation',
-            confirmText: 'Approve',
-            cancelText: 'Cancel',
-            variant: 'success'
-        });
+        const ok = await window.appConfirm(
+            isTwgOrPmt
+                ? `Are you sure you want to finalize and approve this rating as the ${roleLabel}?`
+                : "Complete and approve this evaluation?",
+            {
+                title: isTwgOrPmt ? 'Verify Rating' : 'Approve Evaluation',
+                confirmText: isTwgOrPmt ? 'Verify & Approve' : 'Approve',
+                cancelText: 'Cancel',
+                variant: 'success'
+            }
+        );
         if (!ok) return;
 
         // Ensure all reviewer remarks (PMT remarks and row remarks) are saved before approving
@@ -621,7 +612,7 @@
             onSuccess: () => window.location.reload(),
             onError: async (errMsg) => {
                 if (btnApprove) {
-                    btnApprove.innerHTML = 'Approve<span class="hidden sm:inline"> Rating</span>';
+                    btnApprove.innerText = 'Approve';
                 }
                 await window.appAlert(errMsg || "An error occurred while approving the evaluation.", {
                     title: 'Action Conflict',
@@ -633,12 +624,19 @@
     }
 
     async function unapproveFolderEvaluation() {
-        const ok = await window.appConfirm("Remove your approval and revert to To Evaluate?", { 
-            title: 'Remove Approval',
-            confirmText: 'Remove Approval',
-            cancelText: 'Cancel',
-            variant: 'warning'
-        });
+        const isTwgOrPmt = (window.sysRole === 'TWG' || window.sysRole === 'PMT');
+        const roleLabel = (window.sysRole === 'PMT') ? 'PMT' : 'TWG';
+        const ok = await window.appConfirm(
+            isTwgOrPmt
+                ? `Are you sure you want to revoke your previous ${roleLabel} verification?`
+                : "Remove your approval and revert to pending review?",
+            {
+                title: isTwgOrPmt ? `Revoke ${roleLabel} Verification` : 'Remove Approval',
+                confirmText: isTwgOrPmt ? 'Revoke Verification' : 'Remove Approval',
+                cancelText: 'Cancel',
+                variant: isTwgOrPmt ? 'undo' : 'warning'
+            }
+        );
         if (!ok) return;
 
         const formData = new FormData();
@@ -649,7 +647,7 @@
         apiPost('<?= site_url('folder/unapprove') ?>', formData, {
             onSuccess: () => window.location.reload(),
             onError: async (errMsg) => {
-                if (btnUnapp) btnUnapp.innerHTML = 'Remove<span class="hidden sm:inline"> Approval</span>';
+                if (btnUnapp) btnUnapp.innerText = 'Unapprove';
                 await window.appAlert(errMsg || "An error occurred while removing approval.", {
                     title: 'Action Conflict',
                     variant: 'warning'
@@ -659,65 +657,15 @@
         });
     }
 
-    async function setTwgStatus(status) {
-        const roleLabel = (window.sysRole === 'PMT') ? 'PMT' : (window.sysRole === 'TWG' ? 'TWG' : 'TWG/PMT');
-        if (status === 'twg_approved') {
-            const btnTwgApprove = document.getElementById('btn-twg-approve');
-            if (btnTwgApprove && btnTwgApprove.disabled) {
-                await window.appAlert(`Cannot approve evaluation directly while ${roleLabel} calibration adjustments exist.\n\nPlease click 'Disapprove' to return the document with feedback, or revert your score calibrations to approve.`, {
-                    title: 'Calibrations Present',
-                    variant: 'warning'
-                });
-                return;
-            }
-        }
-
-        let title = `Verify ${roleLabel} Action`;
-        let msg = 'Are you sure you want to proceed?';
-        let variant = 'success';
-        let confirmText = 'Verify & Approve';
-        
-        if (status === 'twg_approved') {
-            title = 'Verify Rating';
-            msg = `Are you sure you want to finalize and approve this rating as the ${roleLabel}?`;
-            variant = 'success';
-            confirmText = 'Verify & Approve';
-        } else if (status === 'twg_disapproved') {
-            title = 'Disapprove Rating';
-            msg = `Are you sure you want to disapprove this rating as the ${roleLabel}?`;
-            variant = 'warning';
-            confirmText = 'Disapprove Rating';
-        } else if (status === 'revoke') {
-            title = `Revoke ${roleLabel} Decision`;
-            msg = `Are you sure you want to revoke your previous ${roleLabel} decision?`;
-            variant = 'undo';
-            confirmText = 'Revoke Decision';
-        }
-
-        const ok = await window.appConfirm(msg, {
-            title: title,
-            confirmText: confirmText,
-            cancelText: 'Cancel',
-            variant: variant
-        });
-        if (!ok) return;
-
-        const formData = new FormData();
-        formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
-        formData.append('status', status);
-
-        apiPost('<?= site_url('folder/twg_approve') ?>', formData, {
-            onSuccess: () => window.location.reload(),
-            onError: async (errMsg) => {
-                await window.appAlert(errMsg || "An error occurred.");
-                window.location.reload();
-            }
-        });
-    }
-
     async function returnFolderRevision() {
-        const ok = await window.appConfirm("Return this evaluation to the employee for revision?\n\nAll notes and feedback entered in the Remarks column will be saved and returned to the employee.", {
-            title: 'Return Evaluation for Revision',
+        const isTargetPhase = <?= $isTargetPhase ? 'true' : 'false' ?>;
+        const promptTitle = isTargetPhase ? 'Return Targets for Revision' : 'Return Evaluation for Revision';
+        const promptMsg = isTargetPhase
+            ? "Return targets to the employee for revision?\n\nAll notes and feedback entered in the Remarks column or comments will be saved and returned to the employee."
+            : "Return this evaluation to the employee for revision?\n\nAll notes and feedback entered in the Remarks column or comments will be saved and returned to the employee.";
+
+        const ok = await window.appConfirm(promptMsg, {
+            title: promptTitle,
             confirmText: 'Return for Revision',
             cancelText: 'Cancel',
             variant: 'warning'
@@ -733,12 +681,12 @@
         formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
         formData.append('reason', '');
 
-        const btn = document.getElementById('btn-return');
+        const btn = document.getElementById('btn-return') || document.getElementById('btn-return-target');
         if (btn) btn.innerText = 'Returning...';
         apiPost('<?= site_url('folder/return') ?>', formData, {
             onSuccess: () => window.location.reload(),
             onError: async (errMsg) => {
-                if (btn) btn.innerHTML = 'Return<span class="hidden sm:inline"> for Revision</span>';
+                if (btn) btn.innerText = 'Return';
                 await window.appAlert(errMsg || "An error occurred while returning for revision.", {
                     title: 'Action Conflict',
                     variant: 'warning'
@@ -973,39 +921,6 @@
         });
     }
 
-    async function returnTargetRevision() {
-        const ok = await window.appConfirm("Return targets to the employee for revision?\n\nAll notes and feedback entered in the Remarks column will be saved and returned to the employee.", {
-            title: 'Return Targets for Revision',
-            confirmText: 'Return for Revision',
-            cancelText: 'Cancel',
-            variant: 'warning'
-        });
-        if (!ok) return;
-        
-        // Save any reviewer notes in the Remarks column before returning
-        if (typeof saveDocument === 'function') {
-            await saveDocument(true);
-        }
-
-        const formData = new FormData();
-        formData.append('folder_id', '<?= $doc['document_folder_id'] ?>');
-        formData.append('reason', '');
-
-        const btn = document.getElementById('btn-return-target');
-        if (btn) btn.innerText = 'Returning...';
-        apiPost('<?= site_url('folder/return_target') ?>', formData, {
-            onSuccess: () => window.location.reload(),
-            onError: async (errMsg) => {
-                if (btn) btn.innerText = 'Return for Revision';
-                await window.appAlert(errMsg || "An error occurred while returning targets.", {
-                    title: 'Action Conflict',
-                    variant: 'warning'
-                });
-                window.location.reload();
-            }
-        });
-    }
-
     function stampRoleTag(btn) {
         const td = btn.closest('td');
         if (!td) return;
@@ -1052,17 +967,18 @@
     window.isTwg = <?= $isTwg ? 'true' : 'false' ?>;
     window.isTwgUser = <?= ($isTwg || $isAdmin) ? 'true' : 'false' ?>;
     window.canEditTwg = <?= $canEditTwg ? 'true' : 'false' ?>;
+    window.currentDocVersion = <?= (int)($currentVersion ?? 1) ?>;
+    window.viewingDocVersion = <?= (int)($viewingVersion ?? 1) ?>;
+    window.isHistoricalVersion = <?= !empty($isHistoricalVersion) ? 'true' : 'false' ?>;
 
     // Enum values exported for JS use
     window.FolderStatus = <?= json_encode([
         'DRAFT_TARGET'     => \App\Enums\FolderStatus::DRAFT_TARGET->value,
         'TARGET_SUBMITTED' => \App\Enums\FolderStatus::TARGET_SUBMITTED->value,
-        'TARGET_RETURNED'  => \App\Enums\FolderStatus::TARGET_RETURNED->value,
         'TARGET_APPROVED'  => \App\Enums\FolderStatus::TARGET_APPROVED->value,
         'TARGET_MISSED'    => \App\Enums\FolderStatus::TARGET_MISSED->value,
         'DRAFT_EVALUATION' => \App\Enums\FolderStatus::DRAFT_EVALUATION->value,
         'EVAL_SUBMITTED'   => \App\Enums\FolderStatus::EVAL_SUBMITTED->value,
-        'EVAL_RETURNED'    => \App\Enums\FolderStatus::EVAL_RETURNED->value,
         'EVAL_APPROVED'    => \App\Enums\FolderStatus::EVAL_APPROVED->value,
         'UNEVALUATED'      => \App\Enums\FolderStatus::UNEVALUATED->value,
     ]) ?>;
@@ -2061,7 +1977,7 @@
             }
         });
 
-        // Supervisor / HoO Approve Rating button
+        // Supervisor / HoO / TWG / PMT Approve button
         const btnApprove = document.getElementById('btn-approve');
         if (btnApprove) {
             if (adjustedCount > 0) {
@@ -2073,23 +1989,7 @@
                 btnApprove.disabled = false;
                 btnApprove.classList.remove('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
                 btnApprove.classList.add('hover:bg-success-600', 'active:scale-[0.98]', 'cursor-pointer');
-                btnApprove.title = 'Approve Rating';
-            }
-        }
-
-        // TWG Approve button
-        const btnTwgApprove = document.getElementById('btn-twg-approve');
-        if (btnTwgApprove) {
-            if (adjustedCount > 0) {
-                btnTwgApprove.disabled = true;
-                btnTwgApprove.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
-                btnTwgApprove.classList.remove('hover:bg-success-600', 'active:scale-[0.98]', 'cursor-pointer');
-                btnTwgApprove.title = `Cannot approve directly: ${adjustedCount} calibrated score(s) present. Return/Disapprove for revision, or revert calibrations to approve.`;
-            } else {
-                btnTwgApprove.disabled = false;
-                btnTwgApprove.classList.remove('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
-                btnTwgApprove.classList.add('hover:bg-success-600', 'active:scale-[0.98]', 'cursor-pointer');
-                btnTwgApprove.title = 'Approve';
+                btnApprove.title = 'Approve';
             }
         }
     }
@@ -2322,7 +2222,7 @@
             : '';
         const numBudget = parseFloat(rawBudget);
         const fullBudget = !isNaN(numBudget) ? formatBudgetFull(numBudget) : rawBudget;
-        const displayBudget = !isNaN(numBudget) ? formatBudgetDisplay(numBudget) : rawBudget;
+        const displayBudget = fullBudget;
         const rowCurrency = data.budget_currency || (typeof window !== 'undefined' && window.currentDocCurrency) || '₱';
         const rowFiles = (window.documentAttachments && window.documentAttachments[rowId]) || [];
         const fileCount = rowFiles.length;
@@ -4275,12 +4175,33 @@
 
     window.activeSelectedCell = null;
 
-    function selectSpreadsheetCell(td) {
+    function selectSpreadsheetCell(td, fromContextMenu = false) {
         if (!td) return;
-        if (td.classList.contains('qte-na') || td.classList.contains('rubric-dim-na')) {
+        if (td.id?.startsWith('label-cat-') || td.closest('tr')?.querySelector('[id^="label-cat-"]') || td.classList.contains('spms-category-header-cell') || td.querySelector('#badge-core-subtotal, #badge-strategic-subtotal, #badge-support-subtotal')) {
             if (window.activeSelectedCell) {
                 window.activeSelectedCell.classList.remove('spms-cell-active');
                 window.activeSelectedCell = null;
+            }
+            return;
+        }
+        const cellInput = td.querySelector('textarea, input') || (['TEXTAREA', 'INPUT'].includes(td.tagName) ? td : null);
+        const isDisabledOrReadonlyRubricCell = Boolean(
+            td.closest('#digital-rubrics-table') && (
+                !td.classList.contains('rubric-score-td') ||
+                td.classList.contains('rubric-dim-na') ||
+                !cellInput ||
+                cellInput.disabled ||
+                cellInput.readOnly ||
+                cellInput.classList.contains('is-na')
+            )
+        );
+        if (td.classList.contains('qte-na') || td.classList.contains('rubric-dim-na') || (!fromContextMenu && isDisabledOrReadonlyRubricCell)) {
+            if (window.activeSelectedCell) {
+                window.activeSelectedCell.classList.remove('spms-cell-active');
+                window.activeSelectedCell = null;
+            }
+            if (document.activeElement && (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT')) {
+                document.activeElement.blur();
             }
             return;
         }
@@ -4317,11 +4238,25 @@
         if (!td) return;
 
         const tr = td.closest('tr');
-        if (!tr) return;
-        const rowId = td.dataset.rowId || tr.dataset.rowId || tr.dataset.deliverableId;
-        if (!rowId) return;
+        const rowId = td.dataset.rowId || (tr ? (tr.dataset.rowId || tr.dataset.deliverableId) : null);
+        const isHeaderOrNa = !tr || !rowId ||
+            td.classList.contains('qte-na') ||
+            td.classList.contains('rubric-dim-na') ||
+            td.id?.startsWith('label-cat-') ||
+            tr.querySelector('[id^="label-cat-"]') ||
+            td.classList.contains('spms-category-header-cell') ||
+            (td.closest('#digital-rubrics-table') && !td.classList.contains('rubric-score-td'));
 
-        selectSpreadsheetCell(td);
+        if (isHeaderOrNa) {
+            closeContextMenu();
+            if (window.activeSelectedCell) {
+                window.activeSelectedCell.classList.remove('spms-cell-active');
+                window.activeSelectedCell = null;
+            }
+            return;
+        }
+
+        selectSpreadsheetCell(td, true);
 
         const input = td.querySelector('textarea, input') || (e && e.target && ['TEXTAREA', 'INPUT'].includes(e.target.tagName) ? e.target : null);
         const inRubric = Boolean(td.closest('#digital-rubrics-table') || (input && input.classList.contains('rubric-cell-textarea')));
@@ -4339,8 +4274,8 @@
     // Delegated contextmenu listener on table workspace (Desktop RMB & Mobile contextmenu)
     document.addEventListener('contextmenu', (e) => {
         // Intercept right-clicks on Digital Rubrics Matrix table cells and textareas
-        const rubricTd = e.target.closest('#digital-rubrics-table td.rubric-score-td, #digital-rubrics-table td, #digital-rubrics-modal table td');
-        if (rubricTd) {
+        const rubricTd = e.target.closest('#digital-rubrics-table td.rubric-score-td');
+        if (rubricTd && !rubricTd.classList.contains('rubric-dim-na')) {
             const tr = rubricTd.closest('tr');
             const rowId = rubricTd.dataset.rowId || (tr ? (tr.dataset.rowId || tr.dataset.deliverableId) : null);
             if (rowId) {
@@ -4352,13 +4287,22 @@
         }
 
         const td = e.target.closest('td.spms-cell-input, td[data-field-name], td.spms-score-cell, #printable-form table tbody tr td');
-        if (td && td.closest('#printable-form')) {
+        if (td && td.closest('#printable-form') && !td.classList.contains('qte-na')) {
             const tr = td.closest('tr');
             if (tr && (tr.dataset.rowId || tr.dataset.deliverableId)) {
                 e.preventDefault();
                 e.stopPropagation();
                 handleCellContextMenu(e);
+                return;
             }
+        }
+
+        // Outside actionable cells: suppress native browser RMB menu and dismiss any open custom menu / cell selection
+        e.preventDefault();
+        closeContextMenu();
+        if (window.activeSelectedCell) {
+            window.activeSelectedCell.classList.remove('spms-cell-active');
+            window.activeSelectedCell = null;
         }
     });
 
@@ -4387,7 +4331,7 @@
         if (!tr || !rowId) return;
 
         // Visually highlight cell immediately on touch
-        selectSpreadsheetCell(td);
+        selectSpreadsheetCell(td, true);
 
         cellTouchTimer = setTimeout(() => {
             isCellLongPress = true;
@@ -4443,9 +4387,12 @@
 
     // Synchronize active spreadsheet cell on focusin
     document.addEventListener('focusin', (e) => {
+        if (e.target.classList.contains('spms-cat-weight-input') || e.target.closest('[id^="label-cat-"]')) {
+            return;
+        }
         const td = e.target.closest('td.spms-cell-input, td[data-field-name], td.spms-score-cell, td.rubric-score-td, #digital-rubrics-table td, #printable-form table tbody tr td');
         if (td && (td.closest('#printable-form') || td.closest('#digital-rubrics-table'))) {
-            selectSpreadsheetCell(td);
+            selectSpreadsheetCell(td, false);
         }
     });
 
@@ -4555,9 +4502,30 @@
         }
 
         // Cell selection on click
+        if (e.target.classList.contains('spms-cat-weight-input') || e.target.closest('[id^="label-cat-"]')) {
+            return;
+        }
+        const ctxMenu = document.getElementById('spms-context-menu');
+        const wasContextMenuOpen = Boolean(ctxMenu && !ctxMenu.classList.contains('hidden') && ctxMenu.style.display !== 'none');
+
+        if (wasContextMenuOpen && !e.target.closest('#spms-context-menu')) {
+            closeContextMenu();
+            if (window.activeSelectedCell) {
+                window.activeSelectedCell.classList.remove('spms-cell-active');
+                window.activeSelectedCell = null;
+            }
+            const clickedInput = e.target.closest('textarea, input');
+            if (!clickedInput || clickedInput.disabled || clickedInput.readOnly) {
+                if (document.activeElement && (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT')) {
+                    document.activeElement.blur();
+                }
+                return;
+            }
+        }
+
         const td = e.target.closest('td.spms-cell-input, td[data-field-name], td.spms-score-cell, td.rubric-score-td, #digital-rubrics-table td, #printable-form table tbody tr td');
         if (td && (td.closest('#printable-form') || td.closest('#digital-rubrics-table'))) {
-            selectSpreadsheetCell(td);
+            selectSpreadsheetCell(td, false);
         } else if (!e.target.closest('#spms-context-menu') && !e.target.closest('#spms-comment-overlay') && !e.target.closest('.modal') && !e.target.closest('button')) {
             if (window.activeSelectedCell) {
                 window.activeSelectedCell.classList.remove('spms-cell-active');
@@ -4756,7 +4724,8 @@
         if (!docId) return;
 
         try {
-            const resp = await fetch(`<?= site_url('document/comments') ?>?doc_id=${encodeURIComponent(docId)}`, {
+            const verParam = window.viewingDocVersion ? `&version=${encodeURIComponent(window.viewingDocVersion)}` : '';
+            const resp = await fetch(`<?= site_url('document/comments') ?>?doc_id=${encodeURIComponent(docId)}${verParam}`, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
             const data = await resp.json();
@@ -4897,7 +4866,7 @@
         }
         titleEl.textContent = `${fieldTitle} Comments`;
 
-        if (thread.id) {
+        if (thread.id && !window.isHistoricalVersion) {
             resolveBtn.style.display = 'inline-block';
             if (thread.status === 'resolved') {
                 dotEl.className = 'w-2 h-2 rounded-full bg-emerald-500';
@@ -4909,8 +4878,13 @@
                 resolveBtn.className = 'text-[10px] font-bold px-2 py-0.5 rounded border transition-colors cursor-pointer text-emerald-700 bg-emerald-50 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 hover:bg-emerald-100';
             }
         } else {
-            dotEl.className = 'w-2 h-2 rounded-full bg-zinc-400';
+            dotEl.className = thread.id ? (thread.status === 'resolved' ? 'w-2 h-2 rounded-full bg-emerald-500' : 'w-2 h-2 rounded-full bg-amber-500') : 'w-2 h-2 rounded-full bg-zinc-400';
             resolveBtn.style.display = 'none';
+        }
+
+        const inputContainer = document.getElementById('comment-reply-input')?.closest('div.p-3, div.border-t');
+        if (inputContainer) {
+            inputContainer.style.display = window.isHistoricalVersion ? 'none' : '';
         }
 
         if (!thread.id) {
@@ -4942,7 +4916,7 @@
 
     function renderSingleCommentCard(c, isRoot = false) {
         const isMe = Boolean(window.currentUserId && (Number(c.user_id) === Number(window.currentUserId)));
-        const canDelete = Boolean(window.currentUserId && (Number(c.user_id) === Number(window.currentUserId) || window.currentSysRole === 'Admin'));
+        const canDelete = !window.isHistoricalVersion && Boolean(window.currentUserId && (Number(c.user_id) === Number(window.currentUserId) || window.currentSysRole === 'Admin'));
         const initials = (c.author_name || 'U').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
         const role = c.author_role || 'Reviewer';
         const roleBadgeClass = getRoleBadgeClass(role);

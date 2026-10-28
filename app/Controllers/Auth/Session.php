@@ -83,6 +83,18 @@ class Session extends BaseController
         $ipAddress = $this->request->getIPAddress();
         $deviceId = $this->request->getPost('device_id');
 
+        if (!empty($deviceId)) {
+            session()->set('device_id', $deviceId);
+            $isSecure = (ENVIRONMENT === 'production') || (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on');
+            setcookie('spms_device_id', $deviceId, [
+                'expires'  => time() + (365 * 24 * 60 * 60),
+                'path'     => '/',
+                'httponly' => false,
+                'secure'   => $isSecure,
+                'samesite' => 'Lax'
+            ]);
+        }
+
         $db = \Config\Database::connect();
         $attemptBuilder = $db->table('login_attempts');
         
@@ -260,6 +272,8 @@ class Session extends BaseController
             }
         }
 
+        $deviceId = session()->get('device_id') ?: ($this->request->getCookie('spms_device_id') ?: $this->request->getPost('device_id'));
+
         // Security: Regenerate session ID upon successful login to prevent session fixation
         session()->regenerate();
 
@@ -273,12 +287,13 @@ class Session extends BaseController
             'username'      => $user['first_name'] . ' ' . $user['last_name'],
             'doc_type'      => $user['doc_type'] ?? null,
             'isLoggedIn'    => true,
-            'avatar_image'  => $user['avatar_image'],
+            'device_id'     => $deviceId,
+            'avatar_image'  => $user['avatar_image'] ?? $user['avatar'] ?? null,
             'avatar_color'  => $user['avatar_color'] ?? '#' . substr(md5($user['email']), 0, 6),
             'avatar_letter' => $user['avatar_letter'] ?? strtoupper(substr($user['first_name'], 0, 1)),
         ]);
 
-        audit_log('LOGIN', 'AUTH', 'user', (int) $user['id'], 'User logged in successfully as ' . $systemRole, (int) $user['id']);
+        audit_log('LOGIN', 'AUTH', 'user', (int) $user['id'], 'User logged in successfully as ' . $systemRole, (int) $user['id'], $deviceId);
 
         if ($rememberMe) {
             $token = bin2hex(random_bytes(32));

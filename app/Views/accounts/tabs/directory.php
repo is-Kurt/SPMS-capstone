@@ -27,7 +27,7 @@
 
             <!-- Roles Filter -->
             <div class="shrink-0 pb-4 border-b border-surface-border/50">
-                <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group" onclick="
+                <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group cursor-pointer" onclick="
                     this.nextElementSibling.classList.toggle('hidden');
                     this.querySelector('svg').classList.toggle('-rotate-180');
                 ">
@@ -51,7 +51,7 @@
 
             <!-- Positions Filter with mini-search -->
             <div class="shrink-0 pb-2">
-                <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group" onclick="
+                <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group cursor-pointer" onclick="
                     this.nextElementSibling.classList.toggle('hidden');
                     this.querySelector('svg').classList.toggle('-rotate-180');
                 ">
@@ -105,7 +105,7 @@
                     <tr>
                         <th class="px-6 py-2.5">Name / Email</th>
                         <th class="px-6 py-2.5 min-w-[90px]">Role</th>
-                        <th class="px-6 py-2.5">Department / Position</th>
+                        <th class="px-6 py-2.5">Department / Unit &amp; Position</th>
                         <th class="px-6 py-2.5 min-w-[80px] text-center">Status</th>
                         <th class="px-6 py-2.5 min-w-[190px] text-right">Actions</th>
                     </tr>
@@ -159,7 +159,7 @@
                                         <?php elseif (str_contains($u['role_name'] ?? '', 'PMT')): ?>
                                             <span class="text-xs font-bold text-text truncate">PMT Reviewer</span>
                                         <?php else: ?>
-                                            <span class="text-xs font-bold text-text truncate"><?= esc($u['department'] ?? 'No Unit') ?></span>
+                                            <span class="text-xs font-bold text-text truncate"><?= esc($u['department'] ?? 'No Department / Unit') ?></span>
                                             <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate"><?= esc($u['position'] ?? 'No Position') ?></span>
                                         <?php endif; ?>
                                     </div>
@@ -175,7 +175,7 @@
                                         <span class="text-xs font-bold text-text truncate">PMT Reviewer</span>
                                         <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate">Performance Management Team</span>
                                     <?php else: ?>
-                                        <span class="text-xs font-bold text-text truncate"><?= esc($u['department'] ?? 'No Unit') ?></span>
+                                        <span class="text-xs font-bold text-text truncate"><?= esc($u['department'] ?? 'No Department / Unit') ?></span>
                                         <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate"><?= esc($u['position'] ?? 'No Position') ?></span>
                                     <?php endif; ?>
                                 </div>

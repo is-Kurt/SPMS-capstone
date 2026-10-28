@@ -40,11 +40,11 @@ class AccountManagement extends BaseController
 
         $roles                 = $roleModel->where('name !=', 'Admin')->orderBy('name', 'ASC')->findAll();
         $positions             = $positionModel->orderBy('title', 'ASC')->findAll();
-        $unitModel->unnestCollegesFromOvpaa();
         $units                 = $unitModel->orderBy('name', 'ASC')->findAll();
         $invitations           = $invitationModel->getAllWithRoleNames();
         $twgUsers              = $twgAssignmentModel->getTwgUsers();
         $twgAssignmentsGrouped = $twgAssignmentModel->getAllAssignmentsGrouped();
+        $twgUnitCoverageMeta   = $twgAssignmentModel->getUnitCoverageMetadata();
 
         return view('accounts/index', [
             'users'                 => $users,
@@ -54,7 +54,8 @@ class AccountManagement extends BaseController
             'invitations'           => $invitations,
             'activeTab'             => $activeTab,
             'twgUsers'              => $twgUsers,
-            'twgAssignmentsGrouped' => $twgAssignmentsGrouped
+            'twgAssignmentsGrouped' => $twgAssignmentsGrouped,
+            'twgUnitCoverageMeta'   => $twgUnitCoverageMeta,
         ]);
     }
 
@@ -318,12 +319,14 @@ class AccountManagement extends BaseController
             $assignedNames = array_column($assigned, 'unit_name');
             $assignedText = !empty($assignedNames) ? implode(', ', $assignedNames) : 'None';
 
-            audit_log('TWG_ASSIGNMENTS_UPDATED', 'ACCOUNT', 'user', $targetId, "TWG office assignments updated for {$targetUser['email']}: {$assignedText}");
+            audit_log('TWG_ASSIGNMENTS_UPDATED', 'ACCOUNT', 'user', $targetId, "TWG department & unit assignments updated for {$targetUser['email']}: {$assignedText}");
 
             return $this->respond([
-                'status'   => 'success',
-                'message'  => 'Assigned offices updated successfully.',
-                'assigned' => $assigned
+                'status'                => 'success',
+                'message'               => 'Assigned departments & units updated successfully.',
+                'assigned'              => $assigned,
+                'allAssignmentsGrouped' => $twgAssignmentModel->getAllAssignmentsGrouped(),
+                'unitCoverageMeta'      => $twgAssignmentModel->getUnitCoverageMetadata(),
             ]);
         });
     }
@@ -392,12 +395,12 @@ class AccountManagement extends BaseController
         $name = trim($this->request->getPost('name') ?? '');
         $parentId = $this->request->getPost('parent_id') ?: null;
 
-        if (empty($name)) return $this->respondError('Unit name is required.');
+        if (empty($name)) return $this->respondError('Department / unit name is required.');
 
         $unitModel = new UnitModel();
         $existing = $unitModel->where('LOWER(name)', strtolower($name))->first();
         if ($existing) {
-            return $this->respondError("A unit named '{$name}' already exists.");
+            return $this->respondError("A department / unit named '{$name}' already exists.");
         }
 
         $id = $unitModel->insert([
@@ -412,7 +415,7 @@ class AccountManagement extends BaseController
             $parentName = $parent['name'] ?? null;
         }
 
-        audit_log('UNIT_CREATED', 'ACCOUNT', 'unit', (int) $id, "Created new unit / college: {$name}" . ($parentName ? " (under {$parentName})" : ""));
+        audit_log('UNIT_CREATED', 'ACCOUNT', 'unit', (int) $id, "Created new department / unit: {$name}" . ($parentName ? " (under {$parentName})" : ""));
 
         return $this->respond(['status' => 'success', 'item' => ['id' => $id, 'name' => $name, 'parent_id' => $parentId, 'parent_name' => $parentName]]);
     }
@@ -428,29 +431,29 @@ class AccountManagement extends BaseController
         $parentId = $this->request->getPost('parent_id');
         $parentId = ($parentId !== '' && $parentId !== null && $parentId !== '0') ? (int) $parentId : null;
 
-        if (!$unitId) return $this->respondError('Invalid unit ID.');
-        if (empty($name)) return $this->respondError('Unit name is required.');
+        if (!$unitId) return $this->respondError('Invalid department / unit ID.');
+        if (empty($name)) return $this->respondError('Department / unit name is required.');
 
         $unitModel = new UnitModel();
         $unit = $unitModel->find($unitId);
-        if (!$unit) return $this->respondError('Unit not found.');
+        if (!$unit) return $this->respondError('Department / unit not found.');
 
         // Prevent duplicate unit names
         $existing = $unitModel->where('LOWER(name)', strtolower($name))->where('id !=', $unitId)->first();
         if ($existing) {
-            return $this->respondError("A unit named '{$name}' already exists.");
+            return $this->respondError("A department / unit named '{$name}' already exists.");
         }
 
         // Prevent self-parenting
         if ($parentId && $parentId === $unitId) {
-            return $this->respondError('A unit cannot be its own parent.');
+            return $this->respondError('A department / unit cannot be its own parent.');
         }
 
         // Prevent circular parenting (cannot set parent to one of its own descendants)
         if ($parentId) {
             $descendants = $unitModel->getDescendantIds([$unitId]);
             if (in_array($parentId, $descendants, true)) {
-                return $this->respondError('Cannot set parent to a descendant unit.');
+                return $this->respondError('Cannot set parent to a descendant department / unit.');
             }
         }
 
@@ -497,11 +500,11 @@ class AccountManagement extends BaseController
             
             $unitModel->delete($unitId);
 
-            audit_log('UNIT_DELETED', 'ACCOUNT', 'unit', (int) $unitId, "Deleted unit / college: {$unitName}");
+            audit_log('UNIT_DELETED', 'ACCOUNT', 'unit', (int) $unitId, "Deleted department / unit: {$unitName}");
 
             return $this->respond(['status' => 'success']);
         } catch (\Exception $e) {
-            return $this->respondError('Could not delete this unit.');
+            return $this->respondError('Could not delete this department / unit.');
         }
     }
 }

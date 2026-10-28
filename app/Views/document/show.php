@@ -7,15 +7,21 @@
     $status = $doc['folder_status']; 
     $isOwner = ($doc['owner_id'] == session()->get('user_id'));
     
-    $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
-    $docTitleUpper = strtoupper(trim($doc['title'] ?? ''));
-    $isTrueOpcr = str_contains($docTitleUpper, 'OPCR') || str_contains($docTitleUpper, 'OFFICE') || (strtoupper($doc['doc_type'] ?? '') === 'OPCR');
-    $isTrueDpcr = str_contains($docTitleUpper, 'DPCR') || str_contains($docTitleUpper, 'DIVISION') || str_contains($docTitleUpper, 'DEPARTMENT') || (strtoupper($doc['doc_type'] ?? '') === 'DPCR');
-    $isDocDpcr = ($ownerDocType === 'dpcr') || $isTrueDpcr;
+    $rawTabsForType = !empty($doc['tabs']) ? (is_string($doc['tabs']) ? json_decode($doc['tabs'], true) : $doc['tabs']) : [];
+    $tabFormDocType = strtolower(trim($rawTabsForType[0]['formData']['doc_type'] ?? ''));
+    $tabFormTitleUpper = strtoupper(trim($rawTabsForType[0]['formData']['title'] ?? ''));
+
+    $ownerDocType = strtolower($doc['doc_type'] ?? ($tabFormDocType ?: 'ipcr'));
+    $docTitleUpper = strtoupper(trim($doc['title'] ?? '')) . ' ' . $tabFormTitleUpper;
     $ownerPos = strtolower($ownerInfo['position'] ?? '');
     $isOwnerDean = str_contains($ownerPos, 'dean');
-    $isDocOpcr = (!$isDocDpcr) && ($isTrueOpcr || str_contains($ownerPos, 'vice president'));
-    $isDocIperf = (!$isDocDpcr && !$isDocOpcr) && ($ownerDocType === 'iperf' || stripos($doc['title'] ?? '', 'iperf') !== false);
+    $isOwnerChairOrHead = str_contains($ownerPos, 'chair') || str_contains($ownerPos, 'head');
+
+    $isTrueOpcr = $tabFormDocType === 'opcr' || str_contains($docTitleUpper, 'OPCR') || str_contains($docTitleUpper, 'OFFICE') || (strtoupper($doc['doc_type'] ?? '') === 'OPCR');
+    $isTrueDpcr = $tabFormDocType === 'dpcr' || str_contains($docTitleUpper, 'DPCR') || str_contains($docTitleUpper, 'DIVISION') || str_contains($docTitleUpper, 'DEPARTMENT') || (strtoupper($doc['doc_type'] ?? '') === 'DPCR');
+    $isDocDpcr = ($ownerDocType === 'dpcr') || $isTrueDpcr || (empty($doc['doc_type']) && empty($tabFormDocType) && ($isOwnerDean || $isOwnerChairOrHead));
+    $isDocOpcr = (!$isDocDpcr) && ($isTrueOpcr || str_contains($ownerPos, 'vice president') || str_contains($ownerPos, 'president'));
+    $isDocIperf = (!$isDocDpcr && !$isDocOpcr) && ($ownerDocType === 'iperf' || $tabFormDocType === 'iperf' || stripos($docTitleUpper, 'iperf') !== false || (empty($doc['doc_type']) && empty($tabFormDocType) && isset($ownerInfo['is_teaching']) && (int)$ownerInfo['is_teaching'] === 0));
     $activeDocType = $isDocDpcr ? 'dpcr' : ($isDocOpcr ? 'opcr' : ($isDocIperf ? 'iperf' : 'ipcr'));
     $targetEndCol = $activeDocType . '_target_end';
     $now = date('Y-m-d H:i:s');
@@ -28,7 +34,6 @@
 
     $canEditTargets = ($isOwner && in_array($cTopStatus, [
         FolderStatus::DRAFT_TARGET,
-        FolderStatus::TARGET_RETURNED,
     ], true) && !$isPastTargetDate && !$isGuide);
 
     $canEditApprover = ($canEditTargets || (!$isOwner && in_array($cTopStatus, [
@@ -42,19 +47,17 @@
     $canEditTwg = ($isTwg || $isAdmin) && empty($isCycleArchived) && !$isGuide;
 
     $canEditEvaluation = ($isEvaluationPhase && (
-        ($isOwner && in_array($cTopStatus, [FolderStatus::DRAFT_EVALUATION, FolderStatus::TARGET_APPROVED, FolderStatus::EVAL_RETURNED], true)) ||
+        ($isOwner && in_array($cTopStatus, [FolderStatus::DRAFT_EVALUATION, FolderStatus::TARGET_APPROVED], true)) ||
         (!$isOwner && (!empty($isCascadedByMe) || isset($routingStatus)) && in_array($cTopStatus, [FolderStatus::EVAL_SUBMITTED], true))
     ) && !$isGuide);
 
     $editableStatuses = [
         FolderStatus::DRAFT_TARGET->value,
-        FolderStatus::TARGET_RETURNED->value,
         FolderStatus::DRAFT_EVALUATION->value,
-        FolderStatus::EVAL_RETURNED->value,
     ];
     $isEditable = ($canEditTargets || $canEditEvaluation || $canEditTwg);
 
-    if (!empty($isCycleArchived)) {
+    if (!empty($isCycleArchived) || !empty($isHistoricalVersion)) {
         $canEditTargets = false;
         $canEditEvaluation = false;
         $canEditApprover = false;
@@ -147,6 +150,7 @@
 
 <?= view('document/partials/_scripts', $viewData) ?>
 <?= view('document/partials/_comments_drawer', $viewData) ?>
+<?= view('document/partials/_unsaved_modal', $viewData) ?>
 
 <?= view('document/_mov_modal', [
     'isOwner'           => $isOwner ?? false,

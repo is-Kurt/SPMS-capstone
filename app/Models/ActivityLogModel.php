@@ -19,6 +19,7 @@ class ActivityLogModel extends Model
         'entity_type',
         'entity_id',
         'ip_address',
+        'device_id',
         'user_agent',
         'details',
         'created_at',
@@ -60,6 +61,7 @@ class ActivityLogModel extends Model
                 ->like('al.action', $search)
                 ->orLike('al.details', $search)
                 ->orLike('al.ip_address', $search)
+                ->orLike('al.device_id', $search)
                 ->orLike('u.first_name', $search)
                 ->orLike('u.last_name', $search)
                 ->orLike('u.email', $search)

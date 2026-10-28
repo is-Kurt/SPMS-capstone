@@ -7,14 +7,14 @@
 -->
 <div id="modal-create-team" class="fixed inset-0 z-[150] hidden overflow-y-auto items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
     <div class="relative w-full max-w-md rounded-2xl bg-surface border border-surface-border p-8 shadow-2xl transition-all m-4">
-        <h3 class="text-xl font-black text-text tracking-tight mb-2">Create New Team</h3>
+        <h3 class="text-xl font-black text-text tracking-tight mb-2">Create New Staff</h3>
         <p class="text-xs font-bold text-text-muted uppercase tracking-widest mb-6">Distribution List</p>
 
         <form id="form-create-team" action="<?= site_url('teams/create-shell') ?>" method="POST">
             <?= csrf_field() ?>
             <div class="space-y-4">
                 <div>
-                    <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Team Name</label>
+                    <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Staff Name</label>
                     <input type="text" name="name" placeholder="e.g., OVPAA Staff" class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none text-text transition-all" />
                 </div>
                 <div>

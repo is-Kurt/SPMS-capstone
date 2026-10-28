@@ -53,6 +53,7 @@ class UnitModel extends Model
      */
     public function syncHierarchyWithOfficialPrograms(): void
     {
+        return; // Deprecated: strictly read from database rather than mutating at runtime
         $bsuHierarchy = [
             'College of Agriculture' => [
                 'Bachelor of Science in Agriculture',
@@ -546,6 +547,7 @@ class UnitModel extends Model
                     ->like('pos.title', 'Vice President', 'both')
                     ->orLike('u.email', 'vpaa', 'both')
                     ->orLike('u.email', 'cao', 'both')
+                    ->orLike('un.name', 'Vice President', 'both')
                     ->orLike('un.name', 'OVPAA', 'both')
                     ->orLike('un.name', 'OVPAF', 'both')
                 ->groupEnd()
@@ -575,6 +577,7 @@ class UnitModel extends Model
                     ->like('pos.title', 'Vice President', 'both')
                     ->orLike('u.email', 'vpaa', 'both')
                     ->orLike('u.email', 'cao', 'both')
+                    ->orLike('un.name', 'Vice President', 'both')
                     ->orLike('un.name', 'OVPAA', 'both')
                     ->orLike('un.name', 'OVPAF', 'both')
                 ->groupEnd()

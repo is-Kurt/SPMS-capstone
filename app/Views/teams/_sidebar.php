@@ -1,6 +1,6 @@
 <nav id="sidebar-nav" class="flex flex-col gap-1.5">
     <?php if (empty($presets)): ?>
-        <p class="px-4 text-xs text-text-muted italic">No teams saved yet.</p>
+        <p class="px-4 text-xs text-text-muted italic">No staff saved yet.</p>
     <?php else: ?>
         <?php foreach ($presets as $preset): ?>
             <?php $isActive = ($selectedTeamId == $preset['id']); ?>

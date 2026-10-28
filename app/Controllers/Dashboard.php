@@ -287,10 +287,6 @@ class Dashboard extends BaseController
                 $deptLeaderboard[$dept]['target_approved']++;
             }
 
-            if (in_array($cStatus, [FolderStatus::TARGET_RETURNED, FolderStatus::EVAL_RETURNED], true)) {
-                $deptLeaderboard[$dept]['revisions_needed']++;
-            }
-
             if ($cStatus === FolderStatus::EVAL_APPROVED) {
                 $deptLeaderboard[$dept]['eval_completed']++;
             }
@@ -334,8 +330,10 @@ class Dashboard extends BaseController
         $totalMovCount = 0;
         if (!empty($targetFolderIds)) {
             $totalMovCount = $db->table('document_attachments da')
-                ->join('documents d', 'd.id = da.document_id')
-                ->whereIn('d.document_folder_id', $targetFolderIds)
+                ->groupStart()
+                    ->whereIn('da.folder_id', $targetFolderIds)
+                    ->orWhereIn('da.document_id', $targetFolderIds)
+                ->groupEnd()
                 ->countAllResults();
         }
 
@@ -667,10 +665,6 @@ class Dashboard extends BaseController
                 $f['target_state'] = 'submitted';
                 $f['target_label'] = 'Submitted (Pending Review)';
                 $f['target_badge'] = 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-info-500/10 dark:text-blue-400 dark:border-info-500/20';
-            } elseif ($cStatus === FolderStatus::TARGET_RETURNED) {
-                $f['target_state'] = 'returned';
-                $f['target_label'] = 'Needs Revision';
-                $f['target_badge'] = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800/80';
             } elseif ($cStatus === FolderStatus::TARGET_MISSED) {
                 $f['target_state'] = 'missed';
                 $f['target_label'] = 'Missed Deadline';
@@ -690,10 +684,6 @@ class Dashboard extends BaseController
                 $f['eval_state'] = 'missed';
                 $f['eval_label'] = 'Missed Deadline';
                 $f['eval_badge'] = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-danger-500/10 dark:text-rose-400 dark:border-danger-500/20';
-            } elseif ($cStatus === FolderStatus::EVAL_RETURNED) {
-                $f['eval_state'] = 'returned';
-                $f['eval_label'] = 'Needs Revision';
-                $f['eval_badge'] = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800/80';
             } elseif ($cStatus === FolderStatus::EVAL_SUBMITTED) {
                 $f['eval_state'] = 'submitted';
                 $f['eval_label'] = 'Submitted (Pending Review)';

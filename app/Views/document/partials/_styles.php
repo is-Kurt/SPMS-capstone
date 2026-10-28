@@ -123,6 +123,38 @@
         z-index: 10 !important;
         background-color: #ffffff !important;
     }
+    /* Exclude Category Header Rows and Weight Inputs from Spreadsheet Cell Selection */
+    .spms-table td[id^="label-cat-"],
+    .spms-table td[id^="label-cat-"].spms-cell-active,
+    .spms-table td[id^="label-cat-"]:focus-within,
+    .spms-table tr.spms-category-header td,
+    .spms-table tr.spms-category-header td.spms-cell-active,
+    .spms-table tr.spms-category-header td:focus-within {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+    html.dark .spms-table td[id^="label-cat-"],
+    html.dark .spms-table tr.spms-category-header td {
+        background-color: #27272a !important;
+    }
+    .spms-cat-weight-input:focus {
+        background: transparent !important;
+        outline: none !important;
+        border-bottom-color: #10b981 !important;
+    }
+    /* Supervising Authorities & TWG 2-Column Responsive Layout */
+    .spms-supervisors-grid {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 1.25rem !important;
+    }
+    @media (min-width: 640px) {
+        .spms-supervisors-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 1.5rem !important;
+            align-items: start !important;
+        }
+    }
     .spms-table td.spms-cell-input,
     .spms-table td[data-field-name],
     .spms-table td.spms-score-cell {
@@ -867,6 +899,7 @@
     }
     #digital-rubrics-table td.rubric-score-td.rubric-dim-na {
         background-color: #f8fafc !important;
+        cursor: default !important;
     }
     .rubric-cell-textarea {
         width: 100% !important;
@@ -898,9 +931,15 @@
     .rubric-cell-textarea:focus {
         background: #ffffff !important;
     }
+    .rubric-cell-textarea:disabled,
+    .rubric-cell-textarea[readonly] {
+        cursor: default !important;
+        pointer-events: none !important;
+    }
     .rubric-cell-textarea.is-na,
     .rubric-cell-textarea:disabled {
-        cursor: not-allowed !important;
+        cursor: default !important;
+        pointer-events: none !important;
         text-align: center !important;
         font-weight: 800 !important;
         text-transform: uppercase !important;

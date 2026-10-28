@@ -12,6 +12,7 @@ if (!function_exists('audit_log')) {
      * @param int|null $entityId   ID of the affected resource
      * @param mixed $details       Optional details (string or array to be JSON-encoded)
      * @param int|null $userId     Optional user ID overriding session user
+     * @param string|null $deviceId Optional device fingerprint/ID overriding auto-detection
      * @return bool
      */
     function audit_log(
@@ -20,7 +21,8 @@ if (!function_exists('audit_log')) {
         ?string $entityType = null,
         ?int $entityId = null,
         $details = null,
-        ?int $userId = null
+        ?int $userId = null,
+        ?string $deviceId = null
     ): bool {
         try {
             // Determine active user ID if not explicitly passed
@@ -31,7 +33,7 @@ if (!function_exists('audit_log')) {
                 }
             }
 
-            // Determine client IP and User-Agent
+            // Determine client IP, User-Agent, and Device Fingerprint
             $request = service('request');
             $ipAddress = null;
             $userAgent = null;
@@ -42,9 +44,27 @@ if (!function_exists('audit_log')) {
                 if ($agent) {
                     $userAgent = substr((string) $agent, 0, 250);
                 }
+
+                if ($deviceId === null) {
+                    $deviceId = $request->getPost('device_id')
+                        ?: ($request->getCookie('spms_device_id')
+                        ?: ($_COOKIE['spms_device_id'] ?? null
+                        ?: (session()->has('device_id') ? session()->get('device_id') : null)));
+                }
             } elseif ($request instanceof \CodeIgniter\HTTP\CLIRequest) {
                 $ipAddress = '127.0.0.1 (CLI)';
                 $userAgent = 'CLI / Spark Command';
+                if ($deviceId === null) {
+                    $deviceId = 'CLI';
+                }
+            }
+
+            // Clean device ID
+            if ($deviceId !== null) {
+                $deviceId = substr(trim((string) $deviceId), 0, 100);
+                if ($deviceId === '') {
+                    $deviceId = null;
+                }
             }
 
             // Format details as string
@@ -63,6 +83,7 @@ if (!function_exists('audit_log')) {
                 'entity_type' => $entityType,
                 'entity_id'   => $entityId,
                 'ip_address'  => $ipAddress,
+                'device_id'   => $deviceId,
                 'user_agent'  => $userAgent,
                 'details'     => $detailsStr,
                 'created_at'  => date('Y-m-d H:i:s'),

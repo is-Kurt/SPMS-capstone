@@ -141,21 +141,49 @@ class Rating extends BaseController
 
         unset($f);
 
+        $isTwgOrPmt = in_array($sysRole, ['TWG', 'PMT'], true);
+
         $periods = [
             'target' => [
                 'label' => 'Target Approval Period',
                 'tabs' => [
-                    'target_approval' => ['label' => 'Pending Approval', 'folders' => []],
-                    'target_returned' => ['label' => 'Returned', 'folders' => []],
-                    'target_approved' => ['label' => 'Approved', 'folders' => []]
+                    'target_all' => [
+                        'label'   => 'All',
+                        'folders' => []
+                    ],
+                    'target_in_progress' => [
+                        'label'   => $isTwgOrPmt ? 'Awaiting Endorsement' : 'In Progress',
+                        'folders' => []
+                    ],
+                    'target_for_review' => [
+                        'label'   => $isTwgOrPmt ? 'Ready for Verification' : 'For Review',
+                        'folders' => []
+                    ],
+                    'target_completed' => [
+                        'label'   => $isTwgOrPmt ? 'Verified' : 'Completed',
+                        'folders' => []
+                    ]
                 ]
             ],
             'evaluation' => [
                 'label' => 'Evaluation Period',
                 'tabs' => [
-                    'action'    => ['label' => 'Action Required', 'folders' => []],
-                    'pending'   => ['label' => 'Returned for Revision', 'folders' => []],
-                    'completed' => ['label' => 'Completed', 'folders' => []]
+                    'eval_all' => [
+                        'label'   => 'All',
+                        'folders' => []
+                    ],
+                    'eval_in_progress' => [
+                        'label'   => $isTwgOrPmt ? 'Awaiting Endorsement' : 'In Progress',
+                        'folders' => []
+                    ],
+                    'eval_for_review' => [
+                        'label'   => $isTwgOrPmt ? 'Ready for Verification' : 'For Review',
+                        'folders' => []
+                    ],
+                    'eval_completed' => [
+                        'label'   => $isTwgOrPmt ? 'Verified' : 'Completed',
+                        'folders' => []
+                    ]
                 ]
             ]
         ];
@@ -170,11 +198,8 @@ class Rating extends BaseController
         foreach ($rawFolders as $f) {
             $status = $f['folder_status'];
             $cStatus = \App\Enums\FolderStatus::canonical($status);
-
-            // Skip unsubmitted drafts for privacy - they are monitored on the Dashboard roster, not the review queue
-            if (in_array($cStatus, [\App\Enums\FolderStatus::DRAFT_TARGET, \App\Enums\FolderStatus::DRAFT_EVALUATION], true)) {
-                continue;
-            }
+            $myRoutingStatus = strtolower(trim((string)($f['my_routing_status'] ?? '')));
+            $allSupsApproved = !empty($f['all_supervisors_approved']);
 
             $overallTotalCount++;
             $isCascaded = !empty($f['is_cascaded_by_me']);
@@ -182,30 +207,68 @@ class Rating extends BaseController
                 $adminCascadedTotalCount++;
             }
 
-            if (in_array($cStatus, [\App\Enums\FolderStatus::EVAL_APPROVED, \App\Enums\FolderStatus::UNEVALUATED], true)) {
-                $periods['evaluation']['tabs']['completed']['folders'][] = $f;
-                $evalOverallCount++;
-                if ($isCascaded) $evalCascadedCount++;
-            } elseif ($cStatus === \App\Enums\FolderStatus::TARGET_SUBMITTED) {
-                $periods['target']['tabs']['target_approval']['folders'][] = $f;
+            if ($cStatus->isTargetPhase()) {
                 $targetOverallCount++;
                 if ($isCascaded) $targetCascadedCount++;
-            } elseif (in_array($cStatus, [\App\Enums\FolderStatus::TARGET_RETURNED, \App\Enums\FolderStatus::TARGET_MISSED], true)) {
-                $periods['target']['tabs']['target_returned']['folders'][] = $f;
-                $targetOverallCount++;
-                if ($isCascaded) $targetCascadedCount++;
-            } elseif ($cStatus === \App\Enums\FolderStatus::TARGET_APPROVED) {
-                $periods['target']['tabs']['target_approved']['folders'][] = $f;
-                $targetOverallCount++;
-                if ($isCascaded) $targetCascadedCount++;
-            } elseif ($cStatus === \App\Enums\FolderStatus::EVAL_RETURNED) {
-                $periods['evaluation']['tabs']['pending']['folders'][] = $f;
-                $evalOverallCount++;
-                if ($isCascaded) $evalCascadedCount++;
+
+                if ($cStatus === \App\Enums\FolderStatus::TARGET_APPROVED) {
+                    $f['queue_bucket'] = 'completed';
+                    $periods['target']['tabs']['target_completed']['folders'][] = $f;
+                } elseif ($cStatus === \App\Enums\FolderStatus::TARGET_SUBMITTED) {
+                    if ($isTwgOrPmt) {
+                        if ($allSupsApproved) {
+                            $f['queue_bucket'] = 'for_review';
+                            $periods['target']['tabs']['target_for_review']['folders'][] = $f;
+                        } else {
+                            $f['queue_bucket'] = 'in_progress';
+                            $periods['target']['tabs']['target_in_progress']['folders'][] = $f;
+                        }
+                    } else {
+                        if (in_array($myRoutingStatus, ['approved', 'target_approved'], true)) {
+                            $f['queue_bucket'] = 'completed';
+                            $periods['target']['tabs']['target_completed']['folders'][] = $f;
+                        } else {
+                            $f['queue_bucket'] = 'for_review';
+                            $periods['target']['tabs']['target_for_review']['folders'][] = $f;
+                        }
+                    }
+                } else {
+                    // DRAFT_TARGET (including returned for revision) or TARGET_MISSED
+                    $f['queue_bucket'] = 'in_progress';
+                    $periods['target']['tabs']['target_in_progress']['folders'][] = $f;
+                }
+                $periods['target']['tabs']['target_all']['folders'][] = $f;
             } else {
-                $periods['evaluation']['tabs']['action']['folders'][] = $f;
                 $evalOverallCount++;
                 if ($isCascaded) $evalCascadedCount++;
+
+                if (in_array($cStatus, [\App\Enums\FolderStatus::EVAL_APPROVED, \App\Enums\FolderStatus::UNEVALUATED], true)) {
+                    $f['queue_bucket'] = 'completed';
+                    $periods['evaluation']['tabs']['eval_completed']['folders'][] = $f;
+                } elseif ($cStatus === \App\Enums\FolderStatus::EVAL_SUBMITTED) {
+                    if ($isTwgOrPmt) {
+                        if ($allSupsApproved) {
+                            $f['queue_bucket'] = 'for_review';
+                            $periods['evaluation']['tabs']['eval_for_review']['folders'][] = $f;
+                        } else {
+                            $f['queue_bucket'] = 'in_progress';
+                            $periods['evaluation']['tabs']['eval_in_progress']['folders'][] = $f;
+                        }
+                    } else {
+                        if ($myRoutingStatus === 'approved') {
+                            $f['queue_bucket'] = 'completed';
+                            $periods['evaluation']['tabs']['eval_completed']['folders'][] = $f;
+                        } else {
+                            $f['queue_bucket'] = 'for_review';
+                            $periods['evaluation']['tabs']['eval_for_review']['folders'][] = $f;
+                        }
+                    }
+                } else {
+                    // DRAFT_EVALUATION (including returned for revision)
+                    $f['queue_bucket'] = 'in_progress';
+                    $periods['evaluation']['tabs']['eval_in_progress']['folders'][] = $f;
+                }
+                $periods['evaluation']['tabs']['eval_all']['folders'][] = $f;
             }
         }
 
@@ -231,8 +294,25 @@ class Rating extends BaseController
         sort($filterPositions);
 
         $unitModel = new UnitModel();
-        $unitModel->unnestCollegesFromOvpaa();
-        $allUnits = $unitModel->orderBy('name', 'ASC')->findAll();
+        $myUnitIds = [];
+        $hasLowerLevels = true;
+
+        if (!in_array($sysRole, ['Admin', 'TWG', 'PMT'], true)) {
+            $db = \Config\Database::connect();
+            $userPlantillas = $db->table('plantillas')
+                ->select('unit_id')
+                ->where('user_id', $userId)
+                ->where('ended_at IS NULL')
+                ->where('unit_id IS NOT NULL')
+                ->get()->getResultArray();
+            $myUnitIds = array_unique(array_filter(array_map('intval', array_column($userPlantillas, 'unit_id'))));
+            $allowedUnitIds = !empty($myUnitIds) ? $unitModel->getDescendantIds($myUnitIds) : [];
+            $childUnits = array_diff($allowedUnitIds, $myUnitIds);
+            $hasLowerLevels = !empty($childUnits);
+            $allUnits = !empty($allowedUnitIds) ? $unitModel->whereIn('id', $allowedUnitIds)->orderBy('name', 'ASC')->findAll() : [];
+        } else {
+            $allUnits = $unitModel->orderBy('name', 'ASC')->findAll();
+        }
 
         $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
         $assignedUnits = ($sysRole === 'TWG') ? $twgAssignmentModel->getAssignmentsByUser($userId) : [];
@@ -249,6 +329,8 @@ class Rating extends BaseController
                 'filterPositions'         => $filterPositions,
                 'allUnits'                => $allUnits,
                 'assignedUnits'           => $assignedUnits,
+                'myUnitIds'               => $myUnitIds,
+                'hasLowerLevels'          => $hasLowerLevels,
                 'adminCascadedTotalCount' => $adminCascadedTotalCount,
                 'overallTotalCount'       => $overallTotalCount,
                 'targetCascadedCount'     => $targetCascadedCount,
@@ -293,22 +375,13 @@ class Rating extends BaseController
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
         }
 
-        // Privacy guard: Unsubmitted work-in-progress drafts cannot be viewed for evaluation
-        if (in_array($subFolder['status'], [\App\Enums\FolderStatus::DRAFT_TARGET->value, \App\Enums\FolderStatus::DRAFT_EVALUATION->value])) {
-            session()->setFlashdata('error', 'This folder is currently being drafted by the employee and has not yet been submitted for evaluation.');
-            return redirect()->to(site_url('ratings'));
-        }
-
         $isAuthorized = false;
 
         if (in_array($sysRole, ['Admin', 'PMT'])) {
             $isAuthorized = true;
         } elseif ($sysRole === 'TWG') {
             $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
-            $assignedUnits = $twgAssignmentModel->getAssignedUnitIds($userId);
-            // If TWG reviewer has specific unit assignments, verify folder owner belongs to their assigned units.
-            // If no assignments are configured, fallback to institutional scope.
-            if (empty($assignedUnits) || $twgAssignmentModel->isTwgAssignedToFolder($userId, $subFolderId)) {
+            if ($twgAssignmentModel->isTwgAssignedToFolder($userId, $subFolderId)) {
                 $isAuthorized = true;
             }
         } else {

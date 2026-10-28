@@ -132,7 +132,7 @@
 
         <?php if (!$isAdmin && !$isTwg && empty($isPmt)): ?>
         <div class="px-8 py-5 border-t border-surface-border bg-zinc-50 dark:bg-zinc-800/30">
-            <h2 class="text-[11px] font-black uppercase tracking-widest text-text">Positions & Units</h2>
+            <h2 class="text-[11px] font-black uppercase tracking-widest text-text">Positions &amp; Departments / Units</h2>
         </div>
         <div class="p-8 flex flex-col gap-6 bg-zinc-50/50 dark:bg-zinc-900/10">
             <div id="positions-container" class="flex flex-col gap-4">
@@ -154,7 +154,7 @@
                             <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Department / Unit</label>
                             <div class="relative">
                                 <select name="units[]" required data-custom-select class="w-full bg-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border-2 border-dashed border-surface-border hover:border-accent hover:text-accent rounded-xl px-4 py-3 text-sm focus:outline-none text-text cursor-pointer font-bold transition-all">
-                                    <option value="" disabled <?= empty($plantilla['unit_id']) ? 'selected' : '' ?>>Select Unit...</option>
+                                    <option value="" disabled <?= empty($plantilla['unit_id']) ? 'selected' : '' ?>>Select Department / Unit...</option>
                                     <?php 
                                         $unitTree = [];
                                         foreach ($units as $u) {
@@ -177,7 +177,7 @@
                         </div>
 
                         <div class="col-span-1">
-                            <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Official Position</label>
+                            <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Position</label>
                             <div class="relative">
                                 <select name="positions[]" required data-custom-select class="w-full bg-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border-2 border-dashed border-surface-border hover:border-accent hover:text-accent rounded-xl px-4 py-3 text-sm focus:outline-none text-text cursor-pointer font-bold transition-all">
                                     <option value="" disabled <?= empty($plantilla['position_id']) ? 'selected' : '' ?>>Select Position...</option>

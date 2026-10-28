@@ -52,13 +52,6 @@ class Document extends BaseController
             if ($routing) {
                 $routingStatus = is_object($routing) ? $routing->status : $routing['status'];
             }
-
-            // Privacy guard: Evaluators, Admins, and TWG cannot read an unsubmitted private draft
-            $cFolderStatus = \App\Enums\FolderStatus::canonical($docInfo['folder_status'] ?? '');
-            if (in_array($cFolderStatus, [\App\Enums\FolderStatus::DRAFT_TARGET, \App\Enums\FolderStatus::DRAFT_EVALUATION], true)) {
-                session()->setFlashdata('error', 'This document is currently being drafted by the employee and has not yet been submitted for evaluation.');
-                return redirect()->to(site_url('ratings'));
-            }
         }
 
         $parentFolder = null;
@@ -623,22 +616,66 @@ class Document extends BaseController
         if (!empty($docInfo['document_folder_id'])) {
             $routingModel = new \App\Models\EvaluationRoutingModel();
             $routes = $routingModel->where('folder_id', $docInfo['document_folder_id'])->findAll();
+            $nonAdminRoutes = [];
+            $adminRoutes = [];
             foreach ($routes as $r) {
                 $eId = (int)$r['evaluator_id'];
                 if ($eId === (int)($docInfo['user_id'] ?? 0)) continue;
-                if ($userModel->hasRole($eId, 'Admin')) continue;
+                if ($userModel->hasRole($eId, 'TWG') || $userModel->hasRole($eId, 'PMT')) continue;
+
+                if ($eId === (int)$userId) {
+                    $currentEvaluatorRoute = $r;
+                }
+                if ($userModel->hasRole($eId, 'Admin')) {
+                    $adminRoutes[] = $r;
+                } else {
+                    $nonAdminRoutes[] = $r;
+                }
+            }
+            $effectiveRoutes = !empty($nonAdminRoutes) ? $nonAdminRoutes : $adminRoutes;
+            foreach ($effectiveRoutes as $r) {
+                $eId = (int)$r['evaluator_id'];
                 $supervisorApprovals[$eId] = $r['status'];
                 $totalSupervisorsCount++;
                 $st = strtolower(trim((string)$r['status']));
                 if ($st === 'approved' || $st === 'target_approved') {
                     $approvedSupervisorsCount++;
                 }
-                if ($eId === (int)$userId) {
-                    $currentEvaluatorRoute = $r;
-                }
             }
         }
-        $data['allSupervisorsApproved'] = ($totalSupervisorsCount === 0 || $approvedSupervisorsCount >= $totalSupervisorsCount);
+        $data['allSupervisorsApproved'] = ($totalSupervisorsCount > 0 && $approvedSupervisorsCount >= $totalSupervisorsCount)
+            || ($totalSupervisorsCount === 0 && !empty($docInfo['target_approved_at']));
+
+        // Version History resolution
+        $currentVersion = max(1, (int)($currentFolderRec['current_version'] ?? ($docInfo['current_version'] ?? 1)));
+        $folderVersions = [];
+        $viewingVersionSnapshot = null;
+        $requestedVersionParam = $this->request->getGet('version');
+        $viewingVersion = ($requestedVersionParam !== null && $requestedVersionParam !== '')
+            ? max(1, (int)$requestedVersionParam)
+            : $currentVersion;
+        if ($viewingVersion > $currentVersion) {
+            $viewingVersion = $currentVersion;
+        }
+        $isHistoricalVersion = ($viewingVersion < $currentVersion);
+
+        if (!empty($docInfo['document_folder_id']) && $folderModel->db->tableExists('document_versions')) {
+            $versionModel = new \App\Models\DocumentVersionModel();
+            $folderVersions = $versionModel->getFolderVersions((string)$docInfo['document_folder_id']);
+            $viewingVersionSnapshot = $versionModel->getVersionSnapshot((string)$docInfo['document_folder_id'], $viewingVersion);
+            if ($isHistoricalVersion && $viewingVersionSnapshot && !empty($viewingVersionSnapshot['tabs'])) {
+                $docInfo['tabs'] = is_string($viewingVersionSnapshot['tabs'])
+                    ? json_decode($viewingVersionSnapshot['tabs'], true)
+                    : $viewingVersionSnapshot['tabs'];
+                $data['doc'] = $docInfo;
+            }
+        }
+
+        $data['currentVersion']         = $currentVersion;
+        $data['viewingVersion']         = $viewingVersion;
+        $data['isHistoricalVersion']    = $isHistoricalVersion;
+        $data['folderVersions']         = $folderVersions;
+        $data['viewingVersionSnapshot'] = $viewingVersionSnapshot;
 
         $data['allBasisGuides']         = $allBasisGuides;
         $data['allBasisGuidesJson']     = array_map(function($g) {
@@ -712,10 +749,9 @@ class Document extends BaseController
 
         $documentModel = new DocumentModel();
 
-        $docOwnerInfo = $documentModel->db->table('documents d')
+        $docOwnerInfo = $documentModel->db->table('document_folders df')
             ->select('df.user_id as owner_id, df.id as folder_id, df.deleted_at as folder_deleted_at, df.parent_folder_id')
-            ->join('document_folders df', 'df.id = d.document_folder_id')
-            ->where('d.id', $docId)->get()->getRowArray();
+            ->where('df.id', $docId)->get()->getRowArray();
 
         if (!$docOwnerInfo) return $this->response->setJSON(['status' => 'error', 'message' => 'Document not found']);
 

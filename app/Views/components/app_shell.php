@@ -44,7 +44,7 @@
                         </svg>
                     </button>
                 <?php elseif ($context === 'teams'): ?>
-                    <button id="btn-create-team-modal" class="w-7 h-7 rounded-lg flex items-center justify-center text-accent hover:text-accent-hover hover:bg-accent/10 transition-colors cursor-pointer" title="New Team">
+                    <button id="btn-create-team-modal" class="w-7 h-7 rounded-lg flex items-center justify-center text-accent hover:text-accent-hover hover:bg-accent/10 transition-colors cursor-pointer" title="New Staff">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                         </svg>
@@ -120,8 +120,8 @@
 <?php if ($context === 'folders'): ?>
     <script type="module" src="<?= base_url('assets/js/main/modals/deleteModal.js') ?>"></script>
     <script type="module" src="<?= base_url('assets/js/main/modals/createFileModal.js') ?>"></script>
-    <script type="module" src="<?= base_url('assets/js/main/modals/createFolderModal.js') ?>"></script>
-    <script type="module" src="<?= base_url('assets/js/main/modals/editFolderModal.js') ?>"></script>
+    <script type="module" src="<?= base_url('assets/js/main/modals/createFolderModal.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/main/modals/createFolderModal.js') ?: time() ?>"></script>
+    <script type="module" src="<?= base_url('assets/js/main/modals/editFolderModal.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/main/modals/editFolderModal.js') ?: time() ?>"></script>
 <?php elseif ($context === 'teams'): ?>
     <script type="module" src="<?= base_url('assets/js/main/modals/createTeamModal.js') ?>"></script>
 <?php endif; ?>

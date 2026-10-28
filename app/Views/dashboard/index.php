@@ -52,7 +52,7 @@
             $colleges = [];
             $adminOffices = [];
             $subDepts = [];
-            $selectedUnitDisplayName = 'All Colleges & Divisions';
+            $selectedUnitDisplayName = 'All Departments & Units';
             if (!empty($allUnits)) {
                 foreach ($allUnits as $u) {
                     if (!empty($selectedUnitId) && (int)$selectedUnitId === (int)$u['id']) {
@@ -102,7 +102,7 @@
                                 <input type="text" 
                                        id="college-dropdown-search-mobile" 
                                        oninput="filterCollegeDropdownOptions(this.value, 'mobile')"
-                                       placeholder="Filter colleges & divisions..." 
+                                       placeholder="Filter departments & units..." 
                                        class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500" />
                             </div>
                         </div>
@@ -111,9 +111,9 @@
                         <div id="college-dropdown-list-mobile" class="max-h-60 overflow-y-auto p-1.5 space-y-0.5 text-xs">
                             <!-- Reset / All Option -->
                             <button type="button" 
-                                    onclick="selectCollegeOption('', 'All Colleges & Divisions')"
+                                    onclick="selectCollegeOption('', 'All Departments & Units')"
                                     class="college-opt-item-mobile w-full flex items-center justify-between px-3 py-2 rounded-lg font-bold transition-colors <?= empty($selectedUnitId) ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800' ?>">
-                                <span class="truncate">All Colleges &amp; Divisions</span>
+                                <span class="truncate">All Departments &amp; Units</span>
                                 <?php if (empty($selectedUnitId)): ?>
                                     <svg class="w-3.5 h-3.5 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
                                 <?php endif; ?>
@@ -140,7 +140,7 @@
 
                             <?php if (!empty($adminOffices)): ?>
                                 <div class="college-opt-group-mobile pt-2 pb-0.5 px-2 text-[10px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-                                    Administrative Offices / Divisions
+                                    Administrative Departments &amp; Units
                                 </div>
                                 <?php foreach ($adminOffices as $ao): 
                                     $isSelected = (!empty($selectedUnitId) && (int)$selectedUnitId === (int)$ao['id']);
@@ -269,7 +269,7 @@
                                         <input type="text" 
                                                id="college-dropdown-search" 
                                                oninput="filterCollegeDropdownOptions(this.value, 'desktop')"
-                                               placeholder="Filter colleges & divisions..." 
+                                               placeholder="Filter departments & units..." 
                                                class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500" />
                                     </div>
                                 </div>
@@ -278,9 +278,9 @@
                                 <div id="college-dropdown-list" class="max-h-64 overflow-y-auto p-1.5 space-y-0.5 text-xs">
                                     <!-- Reset / All Option -->
                                     <button type="button" 
-                                            onclick="selectCollegeOption('', 'All Colleges & Divisions')"
+                                            onclick="selectCollegeOption('', 'All Departments & Units')"
                                             class="college-opt-item-desktop w-full flex items-center justify-between px-3 py-2 rounded-lg font-bold transition-colors <?= empty($selectedUnitId) ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800' ?>">
-                                        <span class="truncate">All Colleges &amp; Divisions</span>
+                                        <span class="truncate">All Departments &amp; Units</span>
                                         <?php if (empty($selectedUnitId)): ?>
                                             <svg class="w-3.5 h-3.5 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
                                         <?php endif; ?>
@@ -307,7 +307,7 @@
 
                                     <?php if (!empty($adminOffices)): ?>
                                         <div class="college-opt-group-desktop pt-2 pb-0.5 px-2 text-[10px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-                                            Administrative Offices / Divisions
+                                            Administrative Departments &amp; Units
                                         </div>
                                         <?php foreach ($adminOffices as $ao): 
                                             $isSelected = (!empty($selectedUnitId) && (int)$selectedUnitId === (int)$ao['id']);
@@ -1213,20 +1213,20 @@
                         <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
                             STAGE 2 MONITORING
                         </span>
-                        <h3 class="text-base font-bold text-zinc-900 dark:text-white">Target Calibration &amp; Per-Office Compliance</h3>
+                        <h3 class="text-base font-bold text-zinc-900 dark:text-white">Target Calibration &amp; Department / Unit Compliance</h3>
                     </div>
                     <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        Monitoring and coaching status across all academic colleges and administrative delivery units.
+                        Monitoring and coaching status across all departments &amp; units.
                     </p>
                 </div>
 
-                <!-- Search Bar for Offices -->
+                <!-- Search Bar for Departments & Units -->
                 <div class="relative w-full sm:w-64">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </div>
                     <input type="text" id="office-table-search" onkeyup="filterOfficeLeaderboard()"
-                           placeholder="Search college or office..."
+                           placeholder="Search department or unit..."
                            class="w-full text-xs font-medium py-2 pl-9 pr-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/40 shadow-2xs" />
                 </div>
             </div>
@@ -1260,21 +1260,21 @@
                 <table class="w-full text-left border-collapse" id="office-leaderboard-table">
                     <thead>
                         <tr class="bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 text-[10px] sm:text-[11px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-wider">
-                            <th class="py-3 px-3.5">Office / Academic College</th>
+                            <th class="py-3 px-3.5">Department / Unit</th>
                             <th class="py-3 px-3 text-center">Headcount</th>
                             <th class="py-3 px-3 text-center">Target Calibration</th>
                             <th class="py-3 px-3 text-center">Revisions</th>
                             <th class="py-3 px-3 text-center">Final Evaluations</th>
                             <th class="py-3 px-3 text-center">Average Rating</th>
                             <th class="py-3 px-3 text-center">Status</th>
-                            <th class="py-3 px-3.5 text-right">View Office</th>
+                            <th class="py-3 px-3.5 text-right">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-zinc-100 dark:divide-[#1a2b22] text-xs">
                         <?php if (empty($deptLeaderboard)): ?>
                             <tr>
                                 <td colspan="8" class="py-8 px-4 text-center text-zinc-400 italic">
-                                    No office records available for this cycle.
+                                    No department / unit records available for this cycle.
                                 </td>
                             </tr>
                         <?php else: ?>
@@ -1337,7 +1337,7 @@
                                         <?php if (!empty($matchedUnitId)): ?>
                                             <button type="button" onclick="selectCollegeOption('<?= $matchedUnitId ?>', '<?= esc(addslashes($dept['name'])) ?>')"
                                                     class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all shadow-2xs cursor-pointer">
-                                                <span>View Office</span>
+                                                <span>View Department / Unit</span>
                                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                                             </button>
                                         <?php else: ?>
@@ -1349,7 +1349,7 @@
                         <?php endif; ?>
                         <tr id="office-empty-row" class="hidden">
                             <td colspan="8" class="py-8 px-4 text-center text-zinc-400 italic">
-                                No offices matching search query.
+                                No departments &amp; units matching search query.
                             </td>
                         </tr>
                     </tbody>
@@ -1599,7 +1599,7 @@
                                     </svg>
                                 </div>
                                 <input type="text" id="masterlist-search" onkeyup="filterMasterlist()"
-                                       placeholder="Search personnel name, email, department, or position..."
+                                       placeholder="Search personnel name, email, department / unit, or position..."
                                        class="w-full text-xs font-medium py-2.5 pl-10 pr-4 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/40 dark:focus:ring-zinc-600/40 shadow-2xs" />
                             </div>
 
@@ -1639,7 +1639,7 @@
                                 <tr class="bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 text-[11px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-wider">
                                     <th class="py-3 px-3 w-10 text-center">#</th>
                                     <th class="py-3 px-3">Personnel / Ratee</th>
-                                    <th class="py-3 px-3">College / Division</th>
+                                    <th class="py-3 px-3">Department / Unit</th>
                                     <th class="py-3 px-3">Position</th>
                                     <th class="py-3 px-3 text-center whitespace-nowrap">Employment Status</th>
                                     <th class="py-3 px-3 text-center whitespace-nowrap">Numerical Rating</th>

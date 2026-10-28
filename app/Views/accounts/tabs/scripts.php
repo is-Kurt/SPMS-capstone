@@ -377,7 +377,7 @@
                     modal.classList.add('hidden');
                     modal.classList.remove('flex');
                 }
-                await window.appAlert('Unit updated successfully!', { title: 'Unit Updated', variant: 'success' });
+                await window.appAlert('Department / unit updated successfully!', { title: 'Department / Unit Updated', variant: 'success' });
                 window.location.reload();
                 break;
             }
@@ -477,7 +477,7 @@
                                     ${parentId === 0 ? '<span class="text-[9px] font-bold text-info-500 uppercase tracking-widest mt-0.5">Top Level Node</span>' : ''}
                                 </div>
                             </div>
-                            <form action="${form.getAttribute('action').replace('/add', '/delete')}" method="post" data-ajax="delete-unit" data-confirm="Delete this unit? Staff currently assigned to it will keep their account but lose that unit. Sub-units under it will be deleted too." data-confirm-title="Delete Unit">
+                            <form action="${form.getAttribute('action').replace('/add', '/delete')}" method="post" data-ajax="delete-unit" data-confirm="Delete this department / unit? Staff currently assigned to it will keep their account but lose that designation. Sub-units under it will be deleted too." data-confirm-title="Delete Department / Unit">
                                 <input type="hidden" name="id" value="${item.id}">
                                 <button type="submit" class="text-danger-400 hover:text-danger-600 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-1 cursor-pointer">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -824,6 +824,7 @@
 
     function renderDynamicDirectoryUnitLevel(level, parentUnitId, targetContainer) {
         if (!targetContainer) return;
+        const wasCollapsed = level === 1 && Boolean(targetContainer.querySelector(':scope > .dynamic-unit-level > .js-unit-level-body.hidden'));
         targetContainer.innerHTML = '';
 
         const units = window.SPMS_UNITS_MAP || [];
@@ -859,31 +860,35 @@
         });
 
         const levelWrapper = document.createElement('div');
-        levelWrapper.className = 'space-y-1.5 dynamic-unit-level';
+        levelWrapper.className = 'dynamic-unit-level';
         levelWrapper.dataset.level = level;
 
-        const headerHtml = level === 1 ? `
-            <div class="flex items-center justify-between">
-                <label for="filter-dir-unit-level-${level}" class="block text-[10px] font-black uppercase tracking-wider ${theme.labelColor} truncate pr-2" title="${title}">
-                    ${title}
-                </label>
-                <span class="text-[10px] font-medium text-text-muted italic shrink-0">(${availableUnits.length} options)</span>
-            </div>` : '';
+        const headerSpacing = level === 1 ? 'mb-3 tracking-widest' : 'mb-1.5 tracking-wider';
+        const headerHtml = `
+            <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase ${headerSpacing} ${theme.labelColor} hover:text-text focus:outline-none group cursor-pointer" onclick="
+                this.nextElementSibling.classList.toggle('hidden');
+                this.querySelector('svg').classList.toggle('-rotate-180');
+            ">
+                <span class="truncate pr-2 text-left" title="${title}">${title}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${wasCollapsed ? '-rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+            </button>`;
 
         levelWrapper.innerHTML = `
             ${headerHtml}
-            <div class="relative w-full">
-                <select id="filter-dir-unit-level-${level}"
-                    class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border ${theme.focusRing} rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
-                    ${optionsHtml}
-                </select>
-                <div class="pointer-events-none absolute inset-y-0 flex items-center text-text-muted" style="right: 10px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
+            <div class="js-unit-level-body ${wasCollapsed ? 'hidden' : ''}">
+                <div class="relative w-full">
+                    <select id="filter-dir-unit-level-${level}"
+                        class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border ${theme.focusRing} rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
+                        ${optionsHtml}
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 flex items-center text-text-muted" style="right: 10px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </div>
                 </div>
+                <div id="dynamic-dir-unit-children-${level}" class="relative pl-3.5 ml-2.5 border-l-2 border-dashed ${theme.connector} space-y-3 pt-2 hidden"></div>
             </div>
-            <div id="dynamic-dir-unit-children-${level}" class="relative pl-3.5 ml-2.5 border-l-2 border-dashed ${theme.connector} space-y-3 pt-2 hidden"></div>
         `;
 
         targetContainer.appendChild(levelWrapper);
@@ -1630,39 +1635,392 @@
     // ==========================================
     // TWG ASSIGNMENTS JAVASCRIPT LOGIC
     // ==========================================
+    const twgState = (() => {
+        const el = document.getElementById('twg-initial-state');
+        let parsed = {};
+        if (el) {
+            try {
+                parsed = JSON.parse(el.textContent || '{}');
+            } catch (e) {
+                parsed = {};
+            }
+        }
+        return {
+            unitCoverageMeta: parsed.unitCoverageMeta || {},
+            assignmentsGrouped: parsed.assignmentsGrouped || {},
+            twgUsers: parsed.twgUsers || {},
+            activeAssignModalUserId: null,
+            activePositionsModalUserId: null,
+            activePositionsModalTab: 'positions',
+        };
+    })();
+
+    function getAssignedUnitIdsForUser(userId) {
+        const list = twgState.assignmentsGrouped[userId] || twgState.assignmentsGrouped[String(userId)] || [];
+        return list.map(item => Number(item.unit_id));
+    }
+
+    function computeTwgCoverageDetails(userId, unitIdsOverride = null) {
+        const uidNum = Number(userId);
+        const unitIds = Array.isArray(unitIdsOverride)
+            ? unitIdsOverride.map(Number)
+            : getAssignedUnitIdsForUser(uidNum);
+
+        const offices = [];
+        const positionsMap = new Map();
+        const uniqueStaffIds = new Set();
+        const searchTokens = new Set();
+
+        unitIds.forEach(unitId => {
+            const meta = twgState.unitCoverageMeta[unitId] || twgState.unitCoverageMeta[String(unitId)];
+            if (!meta) return;
+
+            const coReviewers = (meta.reviewers || []).filter(r => Number(r.id) !== uidNum);
+            const personnel = (meta.personnel || []).filter(p => Number(p.user_id) !== uidNum);
+
+            searchTokens.add(String(meta.unit_name || '').toLowerCase());
+
+            const officePositionsMap = new Map();
+            personnel.forEach(p => {
+                uniqueStaffIds.add(Number(p.user_id));
+                const posTitle = String(p.position || 'Unassigned Position').trim() || 'Unassigned Position';
+                const posKey = posTitle.toLowerCase();
+                searchTokens.add(posKey);
+
+                if (!officePositionsMap.has(posKey)) {
+                    officePositionsMap.set(posKey, {
+                        title: posTitle,
+                        is_teaching: Number(p.is_teaching || 0),
+                        staff: []
+                    });
+                }
+                officePositionsMap.get(posKey).staff.push(p);
+
+                if (!positionsMap.has(posKey)) {
+                    positionsMap.set(posKey, {
+                        key: posKey,
+                        title: posTitle,
+                        is_teaching: Number(p.is_teaching || 0),
+                        staffById: new Map(),
+                        unitsMap: new Map(),
+                    });
+                }
+                const entry = positionsMap.get(posKey);
+                if (!entry.staffById.has(Number(p.user_id))) {
+                    entry.staffById.set(Number(p.user_id), {
+                        user_id: Number(p.user_id),
+                        name: p.name,
+                        email: p.email,
+                        units: [meta.unit_name]
+                    });
+                } else {
+                    const existingStaff = entry.staffById.get(Number(p.user_id));
+                    if (!existingStaff.units.includes(meta.unit_name)) {
+                        existingStaff.units.push(meta.unit_name);
+                    }
+                }
+                if (!entry.unitsMap.has(unitId)) {
+                    entry.unitsMap.set(unitId, {
+                        unit_id: unitId,
+                        unit_name: meta.unit_name,
+                        coReviewers
+                    });
+                }
+            });
+
+            offices.push({
+                unit_id: unitId,
+                unit_name: meta.unit_name,
+                path_str: meta.path_str || meta.unit_name,
+                tier: Number(meta.tier || 1),
+                coReviewers,
+                personnel,
+                positions: Array.from(officePositionsMap.values()).sort((a, b) => a.title.localeCompare(b.title)),
+            });
+        });
+
+        offices.sort((a, b) => a.unit_name.localeCompare(b.unit_name));
+
+        const positions = Array.from(positionsMap.values())
+            .map(entry => ({
+                key: entry.key,
+                title: entry.title,
+                is_teaching: entry.is_teaching,
+                staff: Array.from(entry.staffById.values()).sort((a, b) => a.name.localeCompare(b.name)),
+                units: Array.from(entry.unitsMap.values()).sort((a, b) => a.unit_name.localeCompare(b.unit_name)),
+            }))
+            .sort((a, b) => a.title.localeCompare(b.title));
+
+        return {
+            offices,
+            positions,
+            officeCount: offices.length,
+            positionCount: positions.length,
+            staffCount: uniqueStaffIds.size,
+            searchTerms: Array.from(searchTokens).join(' '),
+        };
+    }
+
+    function refreshAllTwgUi() {
+        // 1. Update top institutional coverage bar
+        const allMeta = Object.values(twgState.unitCoverageMeta || {});
+        let coveredUnits = 0;
+        let sharedUnits = 0;
+        const coveredPositions = new Set();
+        const coveredStaff = new Set();
+
+        allMeta.forEach(uMeta => {
+            const revCount = (uMeta.reviewers || []).length;
+            if (revCount > 0) coveredUnits++;
+            if (revCount > 1) sharedUnits++;
+            (uMeta.personnel || []).forEach(p => {
+                if (revCount > 0) {
+                    const pKey = String(p.position || '').trim().toLowerCase();
+                    if (pKey) coveredPositions.add(pKey);
+                    if (p.user_id) coveredStaff.add(Number(p.user_id));
+                }
+            });
+        });
+
+        const unassignedUnits = Math.max(0, allMeta.length - coveredUnits);
+        const covEl = document.getElementById('twg-stat-covered-units');
+        const unassEl = document.getElementById('twg-stat-unassigned-units');
+        const unassCard = document.getElementById('twg-stat-unassigned-card');
+        const unassLabel = document.getElementById('twg-stat-unassigned-label');
+        const unassSub = document.getElementById('twg-stat-unassigned-sub');
+        const sharedEl = document.getElementById('twg-stat-shared-units');
+        const posEl = document.getElementById('twg-stat-covered-positions');
+        const staffEl = document.getElementById('twg-stat-covered-staff');
+
+        if (covEl) covEl.textContent = coveredUnits;
+        if (unassEl) unassEl.textContent = unassignedUnits;
+        if (unassSub) unassSub.textContent = unassignedUnits === 0 ? 'All covered' : 'Need TWG';
+        if (unassCard) {
+            unassCard.className = `px-3.5 py-2.5 rounded-xl border flex items-center justify-between gap-2 transition-colors ${unassignedUnits > 0 ? 'bg-amber-500/5 border-amber-500/30' : 'bg-input/60 border-surface-border'}`;
+        }
+        if (unassLabel) {
+            unassLabel.className = `text-[10px] font-black uppercase tracking-wider ${unassignedUnits > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-text-muted'}`;
+        }
+        if (sharedEl) sharedEl.textContent = sharedUnits;
+        if (posEl) posEl.textContent = coveredPositions.size;
+        if (staffEl) staffEl.textContent = coveredStaff.size;
+
+        // 2. Refresh every TWG reviewer card (so shared badges update across co-reviewers too)
+        document.querySelectorAll('.twg-reviewer-card').forEach(card => {
+            const uid = Number(card.dataset.userId);
+            if (!uid) return;
+            const details = computeTwgCoverageDetails(uid);
+            card.dataset.coverage = details.searchTerms;
+
+            const countLabel = document.getElementById(`twg-count-label-${uid}`);
+            if (countLabel) {
+                countLabel.textContent = details.officeCount > 0
+                    ? (details.officeCount === 1 ? '1 Department / Unit' : `${details.officeCount} Departments & Units`)
+                    : '0 Assigned';
+                countLabel.className = details.officeCount > 0
+                    ? 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-accent/15 border border-accent/30 text-amber-800 dark:text-accent js-assigned-count-label'
+                    : 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 js-assigned-count-label';
+            }
+
+            const subMeta = document.getElementById(`twg-submeta-${uid}`);
+            if (subMeta) {
+                subMeta.textContent = `${details.staffCount} staff covered`;
+            }
+
+            const chipsContainer = document.getElementById(`twg-chips-${uid}`);
+            if (chipsContainer) {
+                if (details.officeCount > 0) {
+                    chipsContainer.innerHTML = details.offices.map(off => {
+                        const isShared = off.coReviewers.length > 0;
+                        const sharedTip = isShared
+                            ? `Shared with: ${off.coReviewers.map(r => r.name).join(', ')}`
+                            : '';
+                        const fullTip = `${off.path_str}${sharedTip ? ' • ' + sharedTip : ''}`;
+                        const staffBadge = off.personnel.length > 0
+                            ? `<span class="px-1.5 py-0.2 rounded text-[10px] font-extrabold bg-surface border border-surface-border text-text-muted">${off.personnel.length}</span>`
+                            : '';
+                        const sharedBadge = isShared
+                            ? `<span class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-info-500/10 text-info-600 dark:text-info-400 border border-info-500/25" title="${escapeHtml(sharedTip)}">Shared</span>`
+                            : '';
+                        return `
+                            <span class="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-lg text-xs font-bold bg-input border border-surface-border text-text hover:border-accent/40 transition-colors"
+                                  title="${escapeHtml(fullTip)}">
+                                <span class="truncate max-w-[210px]">${escapeHtml(off.unit_name)}</span>
+                                ${staffBadge}
+                                ${sharedBadge}
+                                <button type="button"
+                                        onclick="quickRemoveTwgUnit(event, ${uid}, ${off.unit_id})"
+                                        class="w-4 h-4 rounded flex items-center justify-center text-text-muted hover:text-danger-500 hover:bg-danger-500/15 transition-colors cursor-pointer shrink-0"
+                                        title="Remove ${escapeHtml(off.unit_name)}">&times;</button>
+                            </span>
+                        `;
+                    }).join('');
+                } else {
+                    chipsContainer.innerHTML = `
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <span>No departments &amp; units assigned (Review queue is empty)</span>
+                        </span>
+                    `;
+                }
+            }
+        });
+
+        filterTwgReviewers();
+    }
+
+    function updateUnitCoverageBadgeOnCard(card, activeUserId) {
+        const badgeContainer = card.querySelector('.js-unit-coverage-badge');
+        if (!badgeContainer) return;
+
+        const unitId = Number(card.dataset.id);
+        const cb = card.querySelector('.js-unit-checkbox');
+        const isChecked = !!(cb && cb.checked);
+        const meta = twgState.unitCoverageMeta[unitId] || twgState.unitCoverageMeta[String(unitId)] || {};
+        const otherReviewers = (meta.reviewers || []).filter(r => Number(r.id) !== Number(activeUserId));
+
+        card.dataset.hasOthers = otherReviewers.length > 0 ? '1' : '0';
+
+        if (otherReviewers.length > 0) {
+            const names = otherReviewers.map(r => r.name).join(', ');
+            const shortLabel = otherReviewers.length === 1
+                ? otherReviewers[0].initials
+                : `${otherReviewers.length} TWGs`;
+            badgeContainer.innerHTML = `<span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-info-500/10 text-info-600 dark:text-info-400 border border-info-500/25" title="Also assigned to: ${escapeHtml(names)}">Shared &middot; ${escapeHtml(shortLabel)}</span>`;
+        } else if (!isChecked) {
+            badgeContainer.innerHTML = `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Unassigned</span>`;
+        } else {
+            badgeContainer.innerHTML = '';
+        }
+    }
+
     function syncUnitCardVisual(card, isChecked) {
         const indicator = card.querySelector('.unit-check-indicator');
         const icon = card.querySelector('.check-icon');
         const nameText = card.querySelector('.unit-name-text');
+        const isTier1 = card.dataset.tier === '1';
 
         if (isChecked) {
-            card.classList.add('border-accent', 'bg-accent/10', 'ring-1', 'ring-accent/40');
-            card.classList.remove('border-surface-border/70', 'bg-surface/50');
+            card.classList.add('border-accent', 'bg-accent/10', 'ring-1', 'ring-accent/35');
+            card.classList.remove('border-transparent', 'border-surface-border/80');
             if (indicator) {
                 indicator.classList.add('bg-accent', 'border-accent');
-                indicator.classList.remove('bg-input', 'bg-input/80', 'border-surface-border');
+                indicator.classList.remove('bg-input', 'border-surface-border');
             }
             if (icon) icon.classList.remove('hidden');
             if (nameText) {
-                nameText.classList.add('text-accent');
-                nameText.classList.remove('text-text-muted');
+                nameText.classList.add('text-amber-800', 'dark:text-accent');
+                nameText.classList.remove('text-text-muted', 'text-text');
             }
         } else {
-            card.classList.remove('border-accent', 'bg-accent/10', 'ring-1', 'ring-accent/40');
-            card.classList.add('border-surface-border/70', 'bg-surface/50');
+            card.classList.remove('border-accent', 'bg-accent/10', 'ring-1', 'ring-accent/35');
+            if (isTier1) {
+                card.classList.add('border-surface-border/80');
+            } else {
+                card.classList.add('border-transparent');
+            }
             if (indicator) {
                 indicator.classList.remove('bg-accent', 'border-accent');
                 indicator.classList.add('bg-input', 'border-surface-border');
             }
             if (icon) icon.classList.add('hidden');
             if (nameText) {
-                nameText.classList.remove('text-accent');
+                nameText.classList.remove('text-amber-800', 'dark:text-accent');
                 if (card.dataset.tier === '3') {
                     nameText.classList.add('text-text-muted');
+                } else {
+                    nameText.classList.add('text-text');
                 }
             }
         }
+
+        if (twgState.activeAssignModalUserId) {
+            updateUnitCoverageBadgeOnCard(card, twgState.activeAssignModalUserId);
+        }
     }
+
+    function syncTier3SectionCounters() {
+        document.querySelectorAll('.tier2-wrapper').forEach(wrapper => {
+            const t3Section = wrapper.querySelector('.tier3-section');
+            if (!t3Section) return;
+
+            const t3Checkboxes = Array.from(t3Section.querySelectorAll('.tier3-container .js-unit-checkbox'));
+            const checkedT3 = t3Checkboxes.filter(cb => cb.checked).length;
+            const totalT3 = t3Checkboxes.length;
+
+            const countPill = t3Section.querySelector('.js-tier3-selected-count');
+            if (countPill) {
+                if (checkedT3 > 0) {
+                    countPill.textContent = `${checkedT3}/${totalT3}`;
+                    countPill.classList.remove('hidden');
+                } else {
+                    countPill.classList.add('hidden');
+                }
+            }
+
+            const parentCb = wrapper.querySelector(':scope > .modal-unit-item .js-unit-checkbox');
+            const allBranchChecked = (parentCb ? parentCb.checked : true) && checkedT3 === totalT3 && totalT3 > 0;
+            const branchBtn = t3Section.querySelector('.js-branch-toggle-btn');
+            if (branchBtn) {
+                branchBtn.textContent = allBranchChecked ? 'Clear Branch' : '+ Sub-units';
+            }
+        });
+    }
+
+    function setTier3Expanded(t3Section, expand) {
+        if (!t3Section) return;
+        const container = t3Section.querySelector('.tier3-container');
+        const chevron = t3Section.querySelector('.js-tier3-chevron');
+        if (!container) return;
+
+        if (expand) {
+            container.classList.remove('hidden');
+            if (chevron) chevron.classList.remove('-rotate-90');
+        } else {
+            container.classList.add('hidden');
+            if (chevron) chevron.classList.add('-rotate-90');
+        }
+    }
+
+    function toggleTier3Collapse(btn, event) {
+        if (event) event.stopPropagation();
+        const t3Section = btn.closest('.tier3-section');
+        if (!t3Section) return;
+        const container = t3Section.querySelector('.tier3-container');
+        const isHidden = container ? container.classList.contains('hidden') : true;
+        setTier3Expanded(t3Section, isHidden);
+    }
+    window.toggleTier3Collapse = toggleTier3Collapse;
+
+    function toggleBranchUnits(btn, event) {
+        if (event) event.stopPropagation();
+        const wrapper = btn.closest('.tier2-wrapper');
+        if (!wrapper) return;
+
+        const cards = Array.from(wrapper.querySelectorAll('.modal-unit-item'));
+        const allChecked = cards.every(c => {
+            const cb = c.querySelector('.js-unit-checkbox');
+            return cb && cb.checked;
+        });
+        const targetState = !allChecked;
+
+        cards.forEach(c => {
+            const cb = c.querySelector('.js-unit-checkbox');
+            if (!cb) return;
+            cb.checked = targetState;
+            syncUnitCardVisual(c, targetState);
+        });
+
+        const t3Section = wrapper.querySelector('.tier3-section');
+        if (targetState && t3Section) {
+            setTier3Expanded(t3Section, true);
+        }
+
+        updateModalSelectedBadge();
+    }
+    window.toggleBranchUnits = toggleBranchUnits;
 
     function toggleUnitCard(card) {
         const cb = card.querySelector('.js-unit-checkbox');
@@ -1670,34 +2028,48 @@
         cb.checked = !cb.checked;
         syncUnitCardVisual(card, cb.checked);
         updateModalSelectedBadge();
+        if (document.getElementById('modal-coverage-filter')?.value !== 'all') {
+            filterModalUnits();
+        }
     }
     window.toggleUnitCard = toggleUnitCard;
 
-    function openTwgAssignmentModal(userId, name, email, assignedIds = []) {
+    function openTwgAssignmentModal(userId, fallbackName = '', fallbackEmail = '', fallbackIds = null) {
         const modal = document.getElementById('twg-assignment-modal');
         if (!modal) return;
 
-        document.getElementById('modal-user-id').value = userId;
-        document.getElementById('modal-reviewer-name').textContent = name;
-        document.getElementById('modal-reviewer-email').textContent = email ? `(${email})` : '';
+        const uid = Number(userId);
+        twgState.activeAssignModalUserId = uid;
 
-        // Reset search, tier, and sector filters
+        const userInfo = twgState.twgUsers[uid] || twgState.twgUsers[String(uid)] || {};
+        const name = userInfo.name || fallbackName || 'TWG Reviewer';
+        const email = userInfo.email || fallbackEmail || '';
+        const assignedIds = Array.isArray(fallbackIds) ? fallbackIds.map(Number) : getAssignedUnitIdsForUser(uid);
+
+        document.getElementById('modal-user-id').value = uid;
+        const reviewerNameEl = document.getElementById('modal-reviewer-name');
+        if (reviewerNameEl) reviewerNameEl.textContent = name;
+        const reviewerEmailEl = document.getElementById('modal-reviewer-email');
+        if (reviewerEmailEl) reviewerEmailEl.textContent = email ? `(${email})` : '';
+
         const filterInput = document.getElementById('modal-unit-filter');
         if (filterInput) filterInput.value = '';
-
         const tierFilter = document.getElementById('modal-tier-filter');
         if (tierFilter) tierFilter.value = 'all';
+        const covFilter = document.getElementById('modal-coverage-filter');
+        if (covFilter) covFilter.value = 'all';
 
-        const sectorFilter = document.getElementById('modal-sector-filter');
-        if (sectorFilter) sectorFilter.value = 'all';
-
-        // Set checkboxes and card visuals
-        const numericIds = (assignedIds || []).map(Number);
         document.querySelectorAll('.modal-unit-item').forEach(card => {
             const cb = card.querySelector('.js-unit-checkbox');
             if (!cb) return;
-            cb.checked = numericIds.includes(Number(cb.value));
+            cb.checked = assignedIds.includes(Number(cb.value));
             syncUnitCardVisual(card, cb.checked);
+        });
+
+        // Auto-expand Tier 3 sections that contain checked items; collapse others for clean scanning
+        document.querySelectorAll('.tier3-section').forEach(sec => {
+            const hasChecked = Array.from(sec.querySelectorAll('.tier3-container .js-unit-checkbox')).some(cb => cb.checked);
+            setTier3Expanded(sec, hasChecked);
         });
 
         filterModalUnits();
@@ -1713,45 +2085,63 @@
         if (!modal) return;
         modal.classList.remove('flex');
         modal.classList.add('hidden');
+        twgState.activeAssignModalUserId = null;
     }
     window.closeTwgAssignmentModal = closeTwgAssignmentModal;
 
     function filterModalUnits() {
         const query = (document.getElementById('modal-unit-filter')?.value || '').toLowerCase().trim();
         const tier = document.getElementById('modal-tier-filter')?.value || 'all';
-        const sector = (document.getElementById('modal-sector-filter')?.value || 'all').toLowerCase();
+        const coverage = document.getElementById('modal-coverage-filter')?.value || 'all';
 
         let visibleCount = 0;
 
-        // 1. Filter individual unit items
         document.querySelectorAll('.modal-unit-item').forEach(item => {
             const name = (item.dataset.name || '').toLowerCase();
             const path = (item.dataset.path || '').toLowerCase();
+            const positions = (item.dataset.positions || '').toLowerCase();
             const itemTier = item.dataset.tier || '';
-            const itemSector = (item.dataset.sector || '').toLowerCase();
+            const cb = item.querySelector('.js-unit-checkbox');
+            const isChecked = !!(cb && cb.checked);
+            const hasOthers = item.dataset.hasOthers === '1';
 
-            const matchQuery = !query || name.includes(query) || path.includes(query);
+            const matchQuery = !query || name.includes(query) || path.includes(query) || positions.includes(query);
             const matchTier = (tier === 'all') || (itemTier === tier);
-            const matchSector = (sector === 'all') || (itemSector === sector);
 
-            const isVisible = matchQuery && matchTier && matchSector;
+            let matchCoverage = true;
+            if (coverage === 'unassigned') {
+                matchCoverage = !isChecked && !hasOthers;
+            } else if (coverage === 'selected') {
+                matchCoverage = isChecked;
+            } else if (coverage === 'shared') {
+                matchCoverage = hasOthers;
+            }
+
+            const isVisible = matchQuery && matchTier && matchCoverage;
             item.style.display = isVisible ? '' : 'none';
             if (isVisible) visibleCount++;
         });
 
-        // 2. Hide Tier 2 wrapper if its Tier 2 item AND all its Tier 3 programs are hidden
+        const hasActiveFilter = !!query || tier !== 'all' || coverage !== 'all';
+
         document.querySelectorAll('.tier2-wrapper').forEach(wrapper => {
+            const t3Section = wrapper.querySelector('.tier3-section');
+            if (t3Section) {
+                const visibleT3 = Array.from(t3Section.querySelectorAll('.tier3-container .modal-unit-item')).some(it => it.style.display !== 'none');
+                t3Section.style.display = visibleT3 ? '' : 'none';
+                if (hasActiveFilter && visibleT3) {
+                    setTier3Expanded(t3Section, true);
+                }
+            }
             const hasVisibleChild = Array.from(wrapper.querySelectorAll('.modal-unit-item')).some(it => it.style.display !== 'none');
             wrapper.style.display = hasVisibleChild ? '' : 'none';
         });
 
-        // 3. Hide Tier 2 children container if no units inside are visible
         document.querySelectorAll('.tree-children-container').forEach(container => {
             const hasVisibleChild = Array.from(container.querySelectorAll('.modal-unit-item')).some(it => it.style.display !== 'none');
             container.style.display = hasVisibleChild ? '' : 'none';
         });
 
-        // 4. Hide entire root branch container if no units inside are visible
         document.querySelectorAll('.tree-branch-container').forEach(branch => {
             const hasVisibleItem = Array.from(branch.querySelectorAll('.modal-unit-item')).some(it => it.style.display !== 'none');
             branch.style.display = hasVisibleItem ? '' : 'none';
@@ -1764,46 +2154,82 @@
     }
     window.filterModalUnits = filterModalUnits;
 
-    function selectModalUnits(type) {
-        document.querySelectorAll('.modal-unit-item').forEach(card => {
+    async function selectModalUnits(type) {
+        const allCards = Array.from(document.querySelectorAll('.modal-unit-item'));
+
+        if (typeof window.appConfirm === 'function') {
+            if (type === 'visible') {
+                const visibleCards = allCards.filter(card => card.style.display !== 'none');
+                const ok = await window.appConfirm(
+                    `Select all ${visibleCards.length} currently visible ${visibleCards.length === 1 ? 'department / unit' : 'departments & units'}?`,
+                    {
+                        title: 'Select Visible Departments & Units',
+                        confirmText: 'Select Visible',
+                        cancelText: 'Cancel',
+                        variant: 'warning'
+                    }
+                );
+                if (!ok) return;
+            } else if (type === 'clear-visible') {
+                const visibleChecked = allCards.filter(card => card.style.display !== 'none' && card.querySelector('.js-unit-checkbox')?.checked);
+                const msg = visibleChecked.length > 0
+                    ? `Clear ${visibleChecked.length} selected visible ${visibleChecked.length === 1 ? 'department / unit' : 'departments & units'}?`
+                    : 'Clear all selections among currently visible departments & units?';
+                const ok = await window.appConfirm(msg, {
+                    title: 'Clear Visible Departments & Units',
+                    confirmText: 'Clear Visible',
+                    cancelText: 'Cancel',
+                    variant: 'danger'
+                });
+                if (!ok) return;
+            } else if (type === 'none') {
+                const totalChecked = allCards.filter(card => card.querySelector('.js-unit-checkbox')?.checked);
+                const msg = totalChecked.length > 0
+                    ? `Clear all ${totalChecked.length} selected ${totalChecked.length === 1 ? 'department / unit' : 'departments & units'}?`
+                    : 'Clear all selected departments & units?';
+                const ok = await window.appConfirm(msg, {
+                    title: 'Clear All Selections',
+                    confirmText: 'Clear All',
+                    cancelText: 'Cancel',
+                    variant: 'danger'
+                });
+                if (!ok) return;
+            }
+        }
+
+        allCards.forEach(card => {
             const cb = card.querySelector('.js-unit-checkbox');
             if (!cb) return;
 
             if (type === 'visible') {
-                if (card.style.display !== 'none') {
-                    cb.checked = true;
-                }
+                if (card.style.display !== 'none') cb.checked = true;
             } else if (type === 'clear-visible') {
-                if (card.style.display !== 'none') {
-                    cb.checked = false;
-                }
-            } else if (type === 'all') {
-                cb.checked = true;
+                if (card.style.display !== 'none') cb.checked = false;
             } else if (type === 'none') {
                 cb.checked = false;
-            } else if (type === 'tier1') {
-                if (card.dataset.tier === '1') {
-                    cb.checked = true;
-                }
-            } else if (type === 'colleges') {
-                if (card.dataset.type === 'college') {
-                    cb.checked = true;
-                }
-            } else if (type === 'admin') {
-                if (card.dataset.type === 'admin') {
-                    cb.checked = true;
-                }
             }
             syncUnitCardVisual(card, cb.checked);
         });
         updateModalSelectedBadge();
+        if (document.getElementById('modal-coverage-filter')?.value !== 'all') {
+            filterModalUnits();
+        }
     }
     window.selectModalUnits = selectModalUnits;
 
     function updateModalSelectedBadge() {
-        const checkedCount = document.querySelectorAll('.js-unit-checkbox:checked').length;
+        const checkedBoxes = Array.from(document.querySelectorAll('.js-unit-checkbox:checked'));
+        const selectedIds = checkedBoxes.map(cb => Number(cb.value));
+        const activeUid = twgState.activeAssignModalUserId || Number(document.getElementById('modal-user-id')?.value || 0);
+        const details = computeTwgCoverageDetails(activeUid, selectedIds);
+
         const badge = document.getElementById('modal-selected-badge');
-        if (badge) badge.textContent = checkedCount;
+        if (badge) badge.textContent = selectedIds.length;
+
+        const staffBadge = document.getElementById('modal-selected-staff-badge');
+        if (staffBadge) staffBadge.textContent = details.staffCount;
+
+        syncTier3SectionCounters();
     }
     window.updateModalSelectedBadge = updateModalSelectedBadge;
 
@@ -1813,18 +2239,51 @@
         }
     });
 
+    function saveTwgUnitsAjax(userId, unitIds, { onDone = null, showSuccessModal = false } = {}) {
+        const formData = new FormData();
+        formData.append('user_id', String(userId));
+        unitIds.forEach(id => formData.append('unit_ids[]', String(id)));
+
+        apiPost('<?= base_url('account/twg-assignments/update') ?>', formData, {
+            onSuccess: (data) => {
+                if (data.unitCoverageMeta) {
+                    twgState.unitCoverageMeta = data.unitCoverageMeta;
+                }
+                if (data.allAssignmentsGrouped) {
+                    twgState.assignmentsGrouped = data.allAssignmentsGrouped;
+                } else {
+                    twgState.assignmentsGrouped[userId] = data.assigned || [];
+                }
+
+                refreshAllTwgUi();
+                if (typeof onDone === 'function') onDone(true, data);
+
+                if (showSuccessModal) {
+                    window.appAlert(data.message || 'Assigned departments & units updated successfully!', {
+                        title: 'Assignments Saved',
+                        variant: 'success'
+                    });
+                }
+            },
+            onError: (errMsg) => {
+                if (typeof onDone === 'function') onDone(false, null);
+                window.appAlert(errMsg || 'Failed to save assignments.', { variant: 'danger' });
+            }
+        });
+    }
+
     async function submitTwgAssignments(event) {
         event.preventDefault();
         const form = event.target;
         const submitBtn = document.getElementById('btn-save-twg-assignments');
-        const userId = document.getElementById('modal-user-id')?.value;
+        const userId = Number(document.getElementById('modal-user-id')?.value || 0);
         if (!userId) return;
 
         if (submitBtn) {
             submitBtn.disabled = true;
             submitBtn.classList.add('opacity-75');
             submitBtn.innerHTML = `
-                <svg class="animate-spin h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg class="animate-spin h-4 w-4 text-black inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                 </svg>
@@ -1832,96 +2291,61 @@
             `;
         }
 
-        const formData = new FormData(form);
+        const checkedIds = Array.from(form.querySelectorAll('.js-unit-checkbox:checked')).map(cb => Number(cb.value));
 
-        apiPost('<?= base_url('account/twg-assignments/update') ?>', formData, {
-            onSuccess: (data) => {
-                closeTwgAssignmentModal();
+        saveTwgUnitsAjax(userId, checkedIds, {
+            showSuccessModal: true,
+            onDone: (ok) => {
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.classList.remove('opacity-75');
                     submitBtn.innerHTML = '<span>Save Assignments</span>';
                 }
-
-                window.appAlert(data.message || 'Office assignments updated successfully!', { 
-                    title: 'Assignments Saved', 
-                    variant: 'success' 
-                });
-
-                // Update the reviewer's card in the TWG tab
-                const assigned = data.assigned || [];
-                const count = assigned.length;
-                const newIds = assigned.map(a => Number(a.unit_id));
-
-                const countLabel = document.getElementById(`twg-count-label-${userId}`);
-                if (countLabel) {
-                    countLabel.textContent = count > 0 ? `${count} Office${count > 1 ? 's' : ''}` : '0 Assigned';
-                    if (count > 0) {
-                        countLabel.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-accent/10 border border-accent/20 text-accent js-assigned-count-label';
-                    } else {
-                        countLabel.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 border border-amber-500/20 text-amber-500 js-assigned-count-label';
-                    }
+                if (ok) {
+                    closeTwgAssignmentModal();
                 }
-
-                const chipsContainer = document.getElementById(`twg-chips-${userId}`);
-                if (chipsContainer) {
-                    if (count > 0) {
-                        chipsContainer.innerHTML = assigned.map(a => `
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-input border border-surface-border text-text hover:border-accent/40 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 shrink-0 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                </svg>
-                                <span class="truncate max-w-[220px]">${escapeHtml(a.unit_name)}</span>
-                            </span>
-                        `).join('');
-                    } else {
-                        chipsContainer.innerHTML = `
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                </svg>
-                                <span>No offices assigned (Review queue is empty)</span>
-                            </span>
-                        `;
-                    }
-                }
-
-                // Also update the button in the TWG card
-                const twgCard = document.getElementById(`twg-card-${userId}`);
-                if (twgCard) {
-                    const assignBtn = twgCard.querySelector('button[onclick^="openTwgAssignmentModal"]');
-                    if (assignBtn) {
-                        const name = twgCard.dataset.name || '';
-                        const email = twgCard.dataset.email || '';
-                        assignBtn.setAttribute('onclick', `openTwgAssignmentModal(${userId}, "${name}", "${email}", ${JSON.stringify(newIds)})`);
-                    }
-                }
-            },
-            onError: (errMsg) => {
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.classList.remove('opacity-75');
-                    submitBtn.innerHTML = '<span>Save Assignments</span>';
-                }
-                window.appAlert(errMsg || 'Failed to save assignments.', { variant: 'danger' });
             }
         });
     }
     window.submitTwgAssignments = submitTwgAssignments;
 
+    function quickRemoveTwgUnit(event, userId, unitId) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        const currentIds = getAssignedUnitIdsForUser(userId);
+        const remainingIds = currentIds.filter(id => Number(id) !== Number(unitId));
+        saveTwgUnitsAjax(userId, remainingIds, { showSuccessModal: false });
+    }
+    window.quickRemoveTwgUnit = quickRemoveTwgUnit;
+
     function filterTwgReviewers() {
         const query = (document.getElementById('twg-search-input')?.value || '').toLowerCase().trim();
+        let visibleCards = 0;
         document.querySelectorAll('.twg-reviewer-card').forEach(card => {
             const name = (card.dataset.name || '').toLowerCase();
             const email = (card.dataset.email || '').toLowerCase();
-            card.style.display = (!query || name.includes(query) || email.includes(query)) ? '' : 'none';
+            const coverage = (card.dataset.coverage || '').toLowerCase();
+            const match = !query || name.includes(query) || email.includes(query) || coverage.includes(query);
+            card.style.display = match ? '' : 'none';
+            if (match) visibleCards++;
         });
+        const emptyEl = document.getElementById('twg-reviewers-empty-search');
+        if (emptyEl) {
+            emptyEl.style.display = (visibleCards === 0) ? 'flex' : 'none';
+        }
     }
     window.filterTwgReviewers = filterTwgReviewers;
 
     // Close modal on backdrop click or ESC
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
+            const confirmModal = document.getElementById('confirm-modal');
+            if (confirmModal && !confirmModal.classList.contains('hidden')) {
+                document.getElementById('btn-confirm-cancel')?.click();
+                return;
+            }
             closeTwgAssignmentModal();
         }
     });

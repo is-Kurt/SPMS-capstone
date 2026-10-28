@@ -118,7 +118,7 @@
                             <div class="spms-recipe-row">
                                 <span class="spms-badge-pill">Step 3</span>
                                 <div class="spms-recipe-text">
-                                    <strong>Rubrics made simple:</strong> In <span class="spms-ui-badge spms-ui-badge-amber"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Rubrics Matrix</span>, simply upload your Word/PDF rubric file—leaving matrix rows blank is allowed!
+                                    <strong>Rubrics made simple:</strong> In <span class="spms-ui-badge spms-ui-badge-amber"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Rubrics Matrix</span>, fill in the rating standards (5 down to 1) for each deliverable.
                                 </div>
                             </div>
                             <div class="spms-recipe-row">
@@ -391,20 +391,6 @@
                             <h5 class="spms-faq-q">Why must weights equal 100%?</h5>
                             <p class="spms-faq-a">
                                 CSC rules mandate that category percentage weights total exactly <strong>100%</strong>. Adjust numbers in category headers until green.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="spms-faq-card" data-keywords="rubric rubrics matrix attach upload word pdf excel mandatory empty blank">
-                        <div class="spms-faq-icon text-amber-500">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
-                            </svg>
-                        </div>
-                        <div class="spms-faq-content">
-                            <h5 class="spms-faq-q">Must I type rubrics in the matrix?</h5>
-                            <p class="spms-faq-a">
-                                <strong>No.</strong> Click <span class="spms-ui-badge spms-ui-badge-amber">Rubrics Matrix</span> and attach your Word/PDF rubric file—leaving matrix rows blank is accepted!
                             </p>
                         </div>
                     </div>

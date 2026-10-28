@@ -6,24 +6,37 @@ use CodeIgniter\Model;
 
 class DocumentModel extends Model
 {
-    protected $table            = 'documents';
+    protected $table            = 'document_folders';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = false;
     protected $returnType       = 'array';
-    protected $useSoftDeletes   = false;
+    protected $useSoftDeletes   = true;
     protected $protectFields    = true;
     protected $allowedFields    = [
         'id', 
         'title', 
         'tabs',
-        'document_folder_id'
+        'user_id',
+        'cycle_id',
+        'cycle_folder_id',
+        'parent_folder_id',
+        'status',
+        'current_version',
+        'final_rating',
+        'target_submitted_at',
+        'target_approved_at',
+        'target_approved_by',
+        'target_approver_role',
+        'submitted_at',
+        'rated_at',
+        'deleted_at'
     ];
 
     protected bool $allowEmptyInserts = false;
     protected bool $updateOnlyChanged = false;
 
     protected array $casts = [
-        'tabs' => 'json-array'
+        'tabs' => '?json-array'
     ];
     protected array $castHandlers = [];
 
@@ -34,51 +47,76 @@ class DocumentModel extends Model
     protected $updatedField  = 'updated_at';
     protected $deletedField  = 'deleted_at';
 
-    // Validation
-    protected $validationRules      = [];
-    protected $validationMessages   = [];
-    protected $skipValidation       = false;
-    protected $cleanValidationRules = true;
+    /**
+     * Backward-compatibility translation: allows legacy calls filtering by 'document_folder_id'
+     * to smoothly filter by 'id'.
+     */
+    public function where($key, $value = null, ?bool $escape = null)
+    {
+        if ($key === 'document_folder_id') {
+            $key = 'id';
+        }
+        return parent::where($key, $value, $escape);
+    }
 
-    // Callbacks
-    protected $allowCallbacks = true;
-    protected $beforeInsert   = [];
-    protected $afterInsert    = [];
-    protected $beforeUpdate   = [];
-    protected $afterUpdate    = [];
-    protected $beforeFind     = [];
-    protected $afterFind      = [];
-    protected $beforeDelete   = [];
-    protected $afterDelete    = [];
+    public function whereIn(?string $key = null, $values = null, ?bool $escape = null)
+    {
+        if ($key === 'document_folder_id') {
+            $key = 'id';
+        }
+        return parent::whereIn($key, $values, $escape);
+    }
 
     /**
-     * For Document.php & BaseController: Secures document fetching by checking folder ownership.
+     * Backward-compatibility translation: map document_folder_id to id before saving.
+     */
+    public function save($data): bool
+    {
+        if (is_array($data)) {
+            if (empty($data['id']) && !empty($data['document_folder_id'])) {
+                $data['id'] = $data['document_folder_id'];
+            }
+            unset($data['document_folder_id']);
+        }
+        return parent::save($data);
+    }
+
+    /**
+     * Secures document fetching by checking folder ownership and enriching with cycle deadlines.
      */
     public function getDocumentWithFolderInfo(string $docId): ?array
     {
-        $row = $this->db->table('documents d')
-            ->select('d.*, df.user_id as owner_id, df.status as folder_status, df.parent_folder_id, df.cycle_folder_id, df.title as folder_title, df.deleted_at as folder_deleted_at,
+        // 1. Direct fetch from document_folders (unified schema)
+        $row = $this->db->table('document_folders df')
+            ->select('df.*, df.id as document_folder_id, df.user_id as owner_id, df.status as folder_status, df.title as folder_title, df.deleted_at as folder_deleted_at,
                       df.target_submitted_at, df.target_approved_at, df.target_approved_by, df.target_approver_role,
                       df.routing_preset_id, df.final_rating,
+                      u.doc_type, u.first_name, u.last_name, u.email,
+                      pos.title as position_title,
                       cd.target_start, cd.target_end, cd.eval_start, cd.eval_end,
-                      u.doc_type')
-            ->join('document_folders df', 'df.id = d.document_folder_id')
+                      rc.title as cycle_title, rc.rating_period as cycle_rating_period,
+                      rc.approving_authority_name, rc.approving_authority_position')
             ->join('users u', 'u.id = df.user_id', 'left')
             ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
             ->join('positions pos', 'pos.id = p.position_id', 'left')
-            ->join('cycle_deadlines cd', 'cd.cycle_folder_id = COALESCE(df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = LOWER(COALESCE(u.doc_type, "ipcr"))', 'left')
-            ->where('d.id', $docId)
+            ->join('rating_cycles rc', 'rc.id = df.cycle_id', 'left')
+            ->join('cycle_deadlines cd', 'cd.cycle_id = COALESCE(df.cycle_id, df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = LOWER(COALESCE(u.doc_type, "ipcr"))', 'left')
+            ->where('df.id', $docId)
             ->get()->getRowArray();
 
+
+
         if ($row) {
+            $cycleFolderId = $row['cycle_folder_id'] ?? $row['cycle_id'] ?? $row['parent_folder_id'] ?? $row['id'];
+            $deadlineModel = new \App\Models\CycleDeadlineModel();
+            $flatDates = $deadlineModel->getCycleDatesFlat($cycleFolderId);
+            $row = array_merge($row, $flatDates);
+
             $effectiveDocType = strtolower($row['doc_type'] ?? 'ipcr');
-            $row["{$effectiveDocType}_target_start"] = $row['target_start'] ?? null;
-            $row["{$effectiveDocType}_target_end"]   = $row['target_end'] ?? null;
-            $row["{$effectiveDocType}_eval_start"]   = $row['eval_start'] ?? null;
-            $row["{$effectiveDocType}_eval_end"]     = $row['eval_end'] ?? null;
-            if ($effectiveDocType === 'dpcr') {
-                $row['dpcr_target_end'] = $row['target_end'] ?? null;
-            }
+            $row['target_start'] = $row["{$effectiveDocType}_target_start"] ?? $row['target_start'] ?? null;
+            $row['target_end']   = $row["{$effectiveDocType}_target_end"] ?? $row['target_end'] ?? null;
+            $row['eval_start']   = $row["{$effectiveDocType}_eval_start"] ?? $row['eval_start'] ?? null;
+            $row['eval_end']     = $row["{$effectiveDocType}_eval_end"] ?? $row['eval_end'] ?? null;
         }
 
         return $row;
@@ -86,12 +124,12 @@ class DocumentModel extends Model
 
     public function getUserDocuments(int $userId, ?string $docId = null)
     {
-        $builder = $this->db->table('documents d')
-            ->select('d.*, df.user_id')
-            ->join('document_folders df', 'df.id = d.document_folder_id')
-            ->where('df.user_id', $userId);
+        $builder = $this->db->table('document_folders df')
+            ->select('df.*, df.id as document_folder_id, df.user_id')
+            ->where('df.user_id', $userId)
+            ->where('df.deleted_at IS NULL');
 
-        if ($docId !== null) $builder->where('d.id', $docId);
+        if ($docId !== null) $builder->where('df.id', $docId);
 
         return $docId !== null ? $builder->get()->getRowArray() : $builder->get()->getResultArray();
     }

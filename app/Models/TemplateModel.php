@@ -23,6 +23,30 @@ class TemplateModel extends Model
         ];
     }
 
+    public function find($id = null)
+    {
+        helper('functions');
+        $map = [
+            1 => 'IPCR',
+            2 => 'DPCR',
+            3 => 'OPCR',
+            4 => 'IPERF',
+            'IPCR' => 'IPCR',
+            'DPCR' => 'DPCR',
+            'OPCR' => 'OPCR',
+            'IPERF' => 'IPERF',
+        ];
+        $type = $map[$id] ?? (is_string($id) ? strtoupper($id) : null);
+        if ($type && function_exists('get_default_form_template')) {
+            return [
+                'id'    => $id,
+                'title' => $type,
+                'tabs'  => get_default_form_template($type),
+            ];
+        }
+        return null;
+    }
+
     public function first()
     {
         return null;

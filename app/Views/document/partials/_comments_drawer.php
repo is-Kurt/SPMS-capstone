@@ -6,7 +6,7 @@
 <div id="spms-context-menu" class="hidden fixed bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-2xl py-1 text-xs text-zinc-700 dark:text-zinc-200" style="z-index: 100000; min-width: 190px;">
     <button type="button" class="spms-ctx-item flex items-center gap-2.5 px-3 py-1.5 w-full text-left hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors" data-action="comment">
         <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
-        <span class="flex-1 font-semibold">New / View Comment</span>
+        <span class="flex-1 font-semibold">View Comment</span>
         <span class="text-[10px] text-zinc-400">Alt+M</span>
     </button>
     <div id="spms-ctx-div-1" class="h-px bg-zinc-200 dark:bg-zinc-800 my-1"></div>

@@ -13,6 +13,7 @@ class CycleDeadlineModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
+        'cycle_id',
         'cycle_folder_id',
         'doc_type',
         'target_start',
@@ -43,9 +44,13 @@ class CycleDeadlineModel extends Model
     /**
      * Fetches all deadline records for a given root cycle folder, keyed by doc_type.
      */
-    public function getDeadlinesForCycle(string $cycleFolderId): array
+    public function getDeadlinesForCycle($cycleId): array
     {
-        $rows = $this->where('cycle_folder_id', $cycleFolderId)->findAll();
+        $rows = $this->groupStart()
+                     ->where('cycle_id', (int)$cycleId)
+                     ->orWhere('cycle_folder_id', (string)$cycleId)
+                     ->groupEnd()
+                     ->findAll();
         $keyed = [];
         foreach ($rows as $row) {
             $keyed[$row['doc_type']] = $row;
@@ -54,15 +59,18 @@ class CycleDeadlineModel extends Model
     }
 
     /**
-     * Gets deadline for a specific doc_type within a cycle folder.
+     * Gets deadline for a specific doc_type within a cycle folder or rating cycle.
      */
-    public function getDeadline(string $cycleFolderId, string $docType): ?array
+    public function getDeadline($cycleId, string $docType): ?array
     {
         $dt = strtolower($docType);
         if ($dt === 'cdpcr') {
             $dt = 'dpcr';
         }
-        return $this->where('cycle_folder_id', $cycleFolderId)
+        return $this->groupStart()
+                    ->where('cycle_id', (int)$cycleId)
+                    ->orWhere('cycle_folder_id', (string)$cycleId)
+                    ->groupEnd()
                     ->where('doc_type', $dt)
                     ->first();
     }
@@ -98,8 +106,17 @@ class CycleDeadlineModel extends Model
      * Extracts dates from an HTTP request (supporting both 'general' and 'staggered' schedule modes)
      * and persists them to cycle_deadlines for the given cycle folder.
      */
-    public function saveDeadlinesFromRequest(string $cycleFolderId, $request): void
+    public function saveDeadlinesFromRequest(string|int $cycleFolderId, $request, ?int $cycleId = null): void
     {
+        if ($cycleId === null) {
+            $docFolder = (new \App\Models\DocumentFolderModel())->find($cycleFolderId);
+            if ($docFolder && !empty($docFolder['cycle_id'])) {
+                $cycleId = (int)$docFolder['cycle_id'];
+            } elseif (is_numeric($cycleFolderId)) {
+                $cycleId = (int)$cycleFolderId;
+            }
+        }
+
         $scheduleMode   = $request->getPost('schedule_mode');
         $genTargetStart = $request->getPost('general_target_start');
         $genTargetEnd   = $request->getPost('general_target_end');
@@ -131,12 +148,18 @@ class CycleDeadlineModel extends Model
                 $eEnd   = !empty($rawEEnd)   ? str_replace('T', ' ', (string) $rawEEnd)   : null;
             }
 
-            $existing = $this->where('cycle_folder_id', $cycleFolderId)
+            $existing = $this->where('cycle_folder_id', (string)$cycleFolderId)
                              ->where('doc_type', $type)
                              ->first();
+            if (!$existing && $cycleId) {
+                $existing = $this->where('cycle_id', $cycleId)
+                                 ->where('doc_type', $type)
+                                 ->first();
+            }
 
             $data = [
-                'cycle_folder_id' => $cycleFolderId,
+                'cycle_id'        => $cycleId,
+                'cycle_folder_id' => (string)$cycleFolderId,
                 'doc_type'        => $type,
                 'target_start'    => $tStart,
                 'target_end'      => $tEnd,

@@ -32,10 +32,10 @@
         $navItems['ratings'] = 'Ratings';
     }
 
-    // Admins, Supervisors, and Department Chairs create Distribution Lists (Teams)
+    // Admins, Supervisors, and Department Chairs create Distribution Lists (Staff)
     $canManageTeams = ($uRole === UserRole::ADMIN) || (!$isPresident && (($uRole && $uRole->isAdministrative()) || str_contains($userPos, 'chair') || str_contains($userPos, 'head')));
     if ($canManageTeams) {
-        $navItems['teams'] = 'My Teams';
+        $navItems['teams'] = 'My Staff';
     }
 
     if ($uRole === UserRole::ADMIN) {

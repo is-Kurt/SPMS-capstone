@@ -239,5 +239,20 @@
     <script type="module" src="<?= base_url('assets/js/main/modals/confirmModal.js') ?>"></script>
     <script src="<?= base_url('assets/js/main/passwordToggle.js') ?>"></script>
     <script src="<?= base_url('assets/js/main/navigationGuards.js') ?>"></script>
+    <script src="<?= base_url('assets/vendor/fingerprintjs/fp.min.js') ?>"></script>
+    <script>
+        // Ensure browser device fingerprint is set in cookie for institutional audit tracking (unaffected by CGNAT/proxies)
+        if (typeof FingerprintJS !== 'undefined') {
+            FingerprintJS.load().then(fp => fp.get()).then(res => {
+                if (res && res.visitorId) {
+                    const cookieMatch = document.cookie.split('; ').find(row => row.startsWith('spms_device_id='));
+                    if (!cookieMatch || cookieMatch.split('=')[1] !== res.visitorId) {
+                        const isHttps = location.protocol === 'https:';
+                        document.cookie = `spms_device_id=${res.visitorId}; path=/; max-age=31536000; SameSite=Lax${isHttps ? '; Secure' : ''}`;
+                    }
+                }
+            }).catch(() => {});
+        }
+    </script>
 </body>
 </html>

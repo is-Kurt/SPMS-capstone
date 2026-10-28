@@ -95,6 +95,7 @@ class AuditLog extends BaseController
             'Entity Type',
             'Entity ID',
             'Client IP',
+            'Device Fingerprint',
             'Event Details',
             'User Agent / Device'
         ]);
@@ -111,6 +112,7 @@ class AuditLog extends BaseController
                 $row['entity_type'] ?? '—',
                 $row['entity_id'] ?? '—',
                 $row['ip_address'] ?? '—',
+                $row['device_id'] ?? '—',
                 $row['details'] ?? '—',
                 $row['user_agent'] ?? '—',
             ]);

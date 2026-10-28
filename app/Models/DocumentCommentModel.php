@@ -14,6 +14,7 @@ class DocumentCommentModel extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         'document_id',
+        'version',
         'row_id',
         'field_name',
         'parent_id',
@@ -37,11 +38,17 @@ class DocumentCommentModel extends Model
     protected $updatedField  = 'updated_at';
 
     /**
-     * Fetch all comments for a document, structured as threads with nested replies per cell.
+     * Fetch all comments for a document (scoped by version), structured as threads with nested replies per cell.
      */
-    public function getDocumentThreads(string $docId): array
+    public function getDocumentThreads(string $docId, ?int $version = null): array
     {
+        if ($version === null) {
+            $folder = $this->db->table('document_folders')->select('current_version')->where('id', $docId)->get()->getRowArray();
+            $version = max(1, (int)($folder['current_version'] ?? 1));
+        }
+
         $allComments = $this->where('document_id', $docId)
+            ->where('version', $version)
             ->where('status !=', 'deleted')
             ->orderBy('created_at', 'ASC')
             ->orderBy('id', 'ASC')

@@ -138,10 +138,37 @@ async function saveDocument(manualSave = true) {
     return savePromise;
 }
 
+let debounceAutoSaveTimer = null;
+
+function triggerDebouncedAutoSave() {
+    if (debounceAutoSaveTimer) {
+        clearTimeout(debounceAutoSaveTimer);
+    }
+    debounceAutoSaveTimer = setTimeout(async () => {
+        if (typeof AppState !== 'undefined' && AppState.isDirty && !savePromise && !isClosing) {
+            try {
+                await saveDocument(false);
+            } catch (error) {
+                console.warn("Debounced auto-save skipped:", error);
+            }
+        }
+    }, 700);
+}
+window.triggerDebouncedAutoSave = triggerDebouncedAutoSave;
+
+// Instantly save whenever the user finishes editing and blurs an input/textarea
+document.addEventListener('focusout', (e) => {
+    if (e.target && e.target.matches && e.target.matches('input, textarea, select')) {
+        if (typeof AppState !== 'undefined' && AppState.isDirty && !savePromise && !isClosing) {
+            if (debounceAutoSaveTimer) clearTimeout(debounceAutoSaveTimer);
+            saveDocument(false);
+        }
+    }
+});
+
 function autoSave() {
     setTimeout(async () => {
-        if (AppState.isDirty && !savePromise) {
-            console.log("Auto-saving in the background...");
+        if (typeof AppState !== 'undefined' && AppState.isDirty && !savePromise && !isClosing) {
             try {
                 await saveDocument(false);
             } catch (error) {
@@ -149,7 +176,7 @@ function autoSave() {
             }
         }
         autoSave();
-    }, 2000);
+    }, 1500);
 }
 
 // Keyboard shortcut (Ctrl+S / Cmd+S)
@@ -160,11 +187,138 @@ window.addEventListener('keydown', function(e) {
     }
 });
 
-// Save before leaving the page and warn if unsaved changes exist
+// ==========================================
+// UNSAVED CHANGES CUSTOM EXIT MODAL & IN-APP NAVIGATION GUARD
+// ==========================================
 let isClosing = false;
-window.addEventListener('beforeunload', (e) => {
+window.pendingExitTarget = null;
+window.pendingExitHistoryBack = false;
+
+function openUnsavedChangesModal(targetUrl = null, prefersHistoryBack = false) {
+    window.pendingExitTarget = targetUrl;
+    window.pendingExitHistoryBack = prefersHistoryBack;
+    const modal = document.getElementById('unsaved-changes-modal');
+    const card = document.getElementById('unsaved-changes-card');
+    if (!modal) return;
+
+    modal.classList.remove('hidden');
+    void modal.offsetWidth;
+    if (card) {
+        card.classList.remove('scale-95', 'opacity-0');
+        card.classList.add('scale-100', 'opacity-100');
+    }
+}
+window.openUnsavedChangesModal = openUnsavedChangesModal;
+
+function closeUnsavedChangesModal() {
+    const modal = document.getElementById('unsaved-changes-modal');
+    const card = document.getElementById('unsaved-changes-card');
+    if (!modal) return;
+
+    if (card) {
+        card.classList.remove('scale-100', 'opacity-100');
+        card.classList.add('scale-95', 'opacity-0');
+    }
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        window.pendingExitTarget = null;
+        window.pendingExitHistoryBack = false;
+    }, 150);
+}
+window.closeUnsavedChangesModal = closeUnsavedChangesModal;
+
+async function handleSaveAndExit() {
+    const btn = document.getElementById('btn-save-and-exit');
+    const textEl = document.getElementById('btn-save-exit-text');
+    const origText = textEl ? textEl.innerText : 'Save and Exit';
+
+    if (btn) btn.disabled = true;
+    if (textEl) textEl.innerText = 'Saving...';
+
+    try {
+        await saveDocument(true);
+        if (typeof AppState !== 'undefined') AppState.setDirty(false);
+        isClosing = true;
+
+        const target = window.pendingExitTarget;
+        const useBack = window.pendingExitHistoryBack;
+        closeUnsavedChangesModal();
+
+        if (useBack && window.history.length > 1 && document.referrer && document.referrer.indexOf(window.location.host) !== -1) {
+            window.history.back();
+        } else if (target) {
+            window.location.href = target;
+        } else {
+            window.history.back();
+        }
+    } catch (err) {
+        console.error("Save on exit failed:", err);
+        if (btn) btn.disabled = false;
+        if (textEl) textEl.innerText = origText;
+        if (typeof window.appAlert === 'function') {
+            await window.appAlert("Could not save recent changes. Please review and try again.", { title: 'Save Failed', variant: 'danger' });
+        } else {
+            alert("Could not save recent changes. Please review and try again.");
+        }
+    }
+}
+window.handleSaveAndExit = handleSaveAndExit;
+
+function handleExitWithoutSaving() {
+    if (typeof AppState !== 'undefined') AppState.setDirty(false);
     isClosing = true;
-    if (AppState.isDirty) {
+
+    const target = window.pendingExitTarget;
+    const useBack = window.pendingExitHistoryBack;
+    closeUnsavedChangesModal();
+
+    if (useBack && window.history.length > 1 && document.referrer && document.referrer.indexOf(window.location.host) !== -1) {
+        window.history.back();
+    } else if (target) {
+        window.location.href = target;
+    } else {
+        window.history.back();
+    }
+}
+window.handleExitWithoutSaving = handleExitWithoutSaving;
+
+window.handleInAppExit = function(event, targetUrl, prefersHistoryBack = false) {
+    const isDirty = (typeof AppState !== 'undefined' && AppState.isDirty) || Boolean(savePromise);
+    if (isDirty) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        openUnsavedChangesModal(targetUrl, prefersHistoryBack);
+        return false;
+    }
+    if (prefersHistoryBack && window.history.length > 1 && document.referrer && document.referrer.indexOf(window.location.host) !== -1) {
+        if (event) event.preventDefault();
+        window.history.back();
+        return false;
+    }
+    return true;
+};
+
+// Global delegated capture listener for any in-app exit links
+document.addEventListener('click', (e) => {
+    const link = e.target.closest('a[href]:not([target="_blank"]):not([href^="#"]):not([href^="javascript:"]):not([download])');
+    if (!link) return;
+    // Skip if clicking inside modals or buttons
+    if (link.closest('#unsaved-changes-modal')) return;
+
+    const isDirty = (typeof AppState !== 'undefined' && AppState.isDirty) || Boolean(savePromise);
+    if (isDirty && !isClosing) {
+        e.preventDefault();
+        e.stopPropagation();
+        openUnsavedChangesModal(link.href, false);
+    }
+}, true);
+
+// Browser window/tab close safety net (only triggers when closing the whole browser tab directly while unsaved)
+window.addEventListener('beforeunload', (e) => {
+    if (isClosing) return;
+    if (typeof AppState !== 'undefined' && AppState.isDirty) {
         saveDocument(false);
         e.preventDefault();
         e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';

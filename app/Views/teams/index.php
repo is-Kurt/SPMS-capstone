@@ -11,22 +11,22 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
         </div>
-        <h3 class="text-lg font-bold text-text group-hover:text-accent transition-colors mb-1">Select or Create a Team</h3>
+        <h3 class="text-lg font-bold text-text group-hover:text-accent transition-colors mb-1">Select or Create Staff</h3>
         <p class="text-sm text-text-muted max-w-sm">Choose a distribution list from the sidebar to edit its members, or create a new one.</p>
     </button>
 <?php else: ?>
 
-    <form action="<?= site_url('teams/store') ?>" method="POST" class="flex-1 flex flex-col lg:absolute lg:inset-0 lg:pb-6">
+    <form id="team-edit-form" action="<?= site_url('teams/store') ?>" method="POST" class="flex-1 flex flex-col lg:absolute lg:inset-0 lg:pb-6">
         <?= csrf_field() ?>
         <input type="hidden" name="team_id" value="<?= $activeTeam['id'] ?>">
 
-        <!-- Team Info Inputs -->
+        <!-- Staff Info Inputs -->
         <div class="mb-4 shrink-0 flex flex-col sm:flex-row gap-3 lg:gap-4 bg-surface lg:bg-transparent p-4 lg:p-0 rounded-2xl lg:rounded-none border border-surface-border lg:border-none shadow-sm lg:shadow-none">
             <div class="w-full sm:w-[35%] flex flex-col justify-end">
-                <label class="block text-[10px] font-black uppercase tracking-widest text-accent mb-1 ml-1 lg:ml-0">Team Title</label>
+                <label class="block text-[10px] font-black uppercase tracking-widest text-accent mb-1 ml-1 lg:ml-0">Staff Title</label>
                 <div class="flex items-center gap-3">
                     <div class="flex-1 flex items-center gap-2 border-b border-transparent focus-within:border-accent/30 transition-colors pb-1">
-                        <input type="text" name="name" value="<?= esc($activeTeam['name']) ?>" placeholder="Team Name" class="w-full bg-transparent text-xl lg:text-2xl font-black text-text placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-0 px-1">
+                        <input type="text" name="name" value="<?= esc($activeTeam['name']) ?>" placeholder="Staff Name" class="w-full bg-transparent text-xl lg:text-2xl font-black text-text placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-0 px-1">
                         
                         <button type="button" onclick="toggleAppSidebar()" class="lg:hidden shrink-0 p-1 text-text-muted hover:text-accent transition-colors cursor-pointer rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -36,7 +36,7 @@
                     </div>
 
                     <!-- Delete button in a separate div/space -->
-                    <button type="button" onclick="deleteActiveTeam()" class="shrink-0 p-2 text-zinc-400 hover:text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10 transition-colors cursor-pointer rounded-xl bg-surface border border-surface-border lg:border-none lg:bg-transparent shadow-sm lg:shadow-none mb-1" title="Delete Team">
+                    <button type="button" onclick="deleteActiveTeam()" class="shrink-0 p-2 text-zinc-400 hover:text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10 transition-colors cursor-pointer rounded-xl bg-surface border border-surface-border lg:border-none lg:bg-transparent shadow-sm lg:shadow-none mb-1" title="Delete Staff">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
                 </div>
@@ -97,8 +97,8 @@
                                         </div>
                                         <div class="flex flex-col min-w-0 flex-1 pr-2">
                                             <span class="text-sm font-bold text-text truncate"><?= esc($user['first_name'] . ' ' . $user['last_name']) ?></span>
-                                            <span class="text-[10px] font-bold uppercase tracking-widest text-text-muted truncate">
-                                                <?= esc($user['position'] ?? 'No Position') ?> • <?= esc($user['department'] ?? 'No Unit') ?>
+                                            <span class="text-[10px] font-bold uppercase tracking-widest text-text-muted truncate" title="<?= esc($user['position'] ?? 'No Position') ?> • <?= esc($user['department'] ?? 'No Department / Unit') ?>">
+                                                <?= esc($user['position'] ?? 'No Position') ?> • <?= esc($user['department'] ?? 'No Department / Unit') ?>
                                             </span>
                                         </div>
                                     </div>
@@ -110,11 +110,11 @@
                         </div>
                     </div>
 
-                    <!-- Panel 2: Selected Team Members -->
+                    <!-- Panel 2: Selected Staff Members -->
                     <div id="panel-selected" class="flex-1 flex-col bg-surface lg:border border-surface-border rounded-none lg:rounded-2xl shadow-none lg:shadow-sm lg:overflow-hidden flex lg:absolute lg:inset-0">
                         <div class="border-b border-surface-border bg-success-50 dark:bg-success-500/10 shrink-0">
                             <div class="p-4 flex justify-between items-center">
-                                <h2 class="text-xs font-black uppercase tracking-widest text-success-600 dark:text-success-400">Selected Team Members (<span id="selected-count">0</span>)</h2>
+                                <h2 class="text-xs font-black uppercase tracking-widest text-success-600 dark:text-success-400">Selected Staff Members (<span id="selected-count">0</span>)</h2>
                                 <div class="flex items-center gap-4">
                                     <button type="button" onclick="toggleTeamsFilterSidebar()" class="lg:hidden text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-accent transition-colors cursor-pointer flex items-center gap-1" title="Filters">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -164,22 +164,22 @@
                     </div>
                 </div>
                 
-                <div class="p-4 border-b border-surface-border/50 shrink-0">
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </div>
-                        <input type="text" id="filter-search" placeholder="Search members..." class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-xl pl-9 pr-4 py-2 text-sm focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all text-text shadow-sm">
-                    </div>
-                </div>
-                
                 <div class="p-4 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4">
+                    <!-- Search -->
+                    <div class="shrink-0 pb-4 border-b border-surface-border/50">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+                            <input type="text" id="filter-search" placeholder="Search employee name..." class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-xl pl-9 pr-3 py-2 text-xs focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all text-text font-bold shadow-sm">
+                        </div>
+                    </div>
                     
                     <!-- Staff Type Filter -->
                     <div class="shrink-0 pb-4 border-b border-surface-border/50">
-                        <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group" onclick="
+                        <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group cursor-pointer" onclick="
                             this.nextElementSibling.classList.toggle('hidden');
                             this.querySelector('svg').classList.toggle('-rotate-180');
                         ">
@@ -188,12 +188,12 @@
                         </button>
                         <div class="space-y-1">
                             <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
-                                <input type="checkbox" name="filter_staff_type[]" value="teaching" class="checkbox team-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer">
-                                Teaching
+                                <input type="checkbox" name="filter_staff_type[]" value="teaching" class="checkbox team-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
+                                <span>Teaching</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
-                                <input type="checkbox" name="filter_staff_type[]" value="non-teaching" class="checkbox team-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer">
-                                Non-Teaching
+                                <input type="checkbox" name="filter_staff_type[]" value="non-teaching" class="checkbox team-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
+                                <span>Non-Teaching</span>
                             </label>
                         </div>
                     </div>
@@ -207,7 +207,7 @@
 
                     <!-- Positions Filter with mini-search -->
                     <div class="shrink-0 pb-4 border-b border-surface-border/50">
-                        <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group" onclick="
+                        <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group cursor-pointer" onclick="
                             this.nextElementSibling.classList.toggle('hidden');
                             this.querySelector('svg').classList.toggle('-rotate-180');
                         ">
@@ -228,7 +228,7 @@
                                 <?php endforeach; ?>
                             </div>
                             <!-- Positions Pagination Controls -->
-                            <div class="pt-2 flex justify-between items-center bg-transparent shrink-0" id="filter-pos-pagination">
+                            <div class="pt-2 flex justify-between items-center bg-transparent shrink-0 hidden" id="filter-pos-pagination">
                                 <div class="text-[9px] font-bold text-text-muted uppercase tracking-widest">
                                     <span id="f-pos-page-start">0</span>-<span id="f-pos-page-end">0</span> of <span id="f-pos-page-total">0</span>
                                 </div>
@@ -254,7 +254,7 @@
         <!-- Mobile Floating Save Button Location -->
         <div class="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-surface/90 backdrop-blur-md border-t border-surface-border z-50">
             <button type="submit" id="btn-save-mobile" class="w-full py-3.5 rounded-xl bg-accent text-white text-sm font-bold shadow-lg shadow-accent/20 active:scale-95 transition-all cursor-pointer">
-                Save Team Changes
+                Save Staff Changes
             </button>
         </div>
     </form>
@@ -323,7 +323,7 @@
             if (this.btnPrev) this.btnPrev.disabled = this.currentPage === 1;
             if (this.btnNext) this.btnNext.disabled = this.currentPage === totalPages;
             
-            this.container.classList.toggle('hidden', total === 0);
+            this.container.classList.toggle('hidden', totalPages <= 1);
         }
     }
 
@@ -398,12 +398,12 @@
     async function deleteActiveTeam() {
         <?php
             $confirmMessage = !empty($activeTeam['in_use'])
-                ? "This team is still cascaded to at least one evaluation folder. Are you sure you want to delete this team?"
-                : 'Are you sure you want to delete this team?';
+                ? "This staff list is still cascaded to at least one evaluation folder. Are you sure you want to delete this staff list?"
+                : 'Are you sure you want to delete this staff list?';
         ?>
         const ok = await window.appConfirm(<?= json_encode($confirmMessage) ?>, {
-            title: 'Delete Team',
-            confirmText: 'Delete Team'
+            title: 'Delete Staff',
+            confirmText: 'Delete Staff'
         });
         if (!ok) return;
 
@@ -546,6 +546,7 @@
 
     function renderDynamicUnitLevel(level, parentUnitId, targetContainer) {
         if (!targetContainer) return;
+        const wasCollapsed = level === 1 && Boolean(targetContainer.querySelector(':scope > .dynamic-unit-level > .js-unit-level-body.hidden'));
         targetContainer.innerHTML = '';
 
         const units = window.SPMS_TEAM_UNITS || [];
@@ -588,31 +589,35 @@
         });
 
         const levelWrapper = document.createElement('div');
-        levelWrapper.className = 'space-y-1.5 dynamic-unit-level';
+        levelWrapper.className = 'dynamic-unit-level';
         levelWrapper.dataset.level = level;
 
-        const headerHtml = level === 1 ? `
-            <div class="flex items-center justify-between">
-                <label for="filter-unit-level-${level}" class="block text-[10px] font-black uppercase tracking-wider ${theme.labelColor} truncate pr-2" title="${title}">
-                    ${title}
-                </label>
-                <span class="text-[10px] font-medium text-text-muted italic shrink-0">(${availableUnits.length} options)</span>
-            </div>` : '';
+        const headerSpacing = level === 1 ? 'mb-3 tracking-widest' : 'mb-1.5 tracking-wider';
+        const headerHtml = `
+            <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase ${headerSpacing} ${theme.labelColor} hover:text-text focus:outline-none group cursor-pointer" onclick="
+                this.nextElementSibling.classList.toggle('hidden');
+                this.querySelector('svg').classList.toggle('-rotate-180');
+            ">
+                <span class="truncate pr-2 text-left" title="${title}">${title}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${wasCollapsed ? '-rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+            </button>`;
 
         levelWrapper.innerHTML = `
             ${headerHtml}
-            <div class="relative w-full">
-                <select id="filter-unit-level-${level}"
-                    class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border ${theme.focusRing} rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
-                    ${optionsHtml}
-                </select>
-                <div class="pointer-events-none absolute inset-y-0 flex items-center text-text-muted" style="right: 10px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
+            <div class="js-unit-level-body ${wasCollapsed ? 'hidden' : ''}">
+                <div class="relative w-full">
+                    <select id="filter-unit-level-${level}"
+                        class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border ${theme.focusRing} rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
+                        ${optionsHtml}
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 flex items-center text-text-muted" style="right: 10px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </div>
                 </div>
+                <div id="dynamic-unit-children-${level}" class="relative pl-3.5 ml-2.5 border-l-2 border-dashed ${theme.connector} space-y-3 pt-2 hidden"></div>
             </div>
-            <div id="dynamic-unit-children-${level}" class="relative pl-3.5 ml-2.5 border-l-2 border-dashed ${theme.connector} space-y-3 pt-2 hidden"></div>
         `;
 
         targetContainer.appendChild(levelWrapper);
@@ -854,7 +859,7 @@
     };
 
     window.clearAllSelected = async function() {
-        const ok = await window.appConfirm("Are you sure you want to remove all currently visible users from the team?", { confirmText: 'Remove Visible' });
+        const ok = await window.appConfirm("Are you sure you want to remove all currently visible users from the staff list?", { confirmText: 'Remove Visible' });
         if (!ok) return;
         const selectedCards = document.querySelectorAll('#selected-list .user-card');
         selectedCards.forEach(clone => {
@@ -928,6 +933,65 @@
 
     // Initialize Dynamic Unit Cascading Filters
     initDynamicUnitFilters();
+
+    // Ongoing Staff List Save Confirmation Modal
+    const isTeamOngoing = <?= !empty($activeTeam['in_use']) ? 'true' : 'false' ?>;
+    const isTeamInTargetPhase = <?= !empty($activeTeam['in_target_phase']) ? 'true' : 'false' ?>;
+    const ongoingCycleTitles = <?= json_encode($activeTeam['cycle_titles'] ?? []) ?>;
+    const targetCycleTitles = <?= json_encode($activeTeam['target_cycle_titles'] ?? []) ?>;
+    const lockedCycleTitles = <?= json_encode($activeTeam['locked_cycle_titles'] ?? []) ?>;
+    const initialMemberSet = new Set((<?= json_encode($activeMemberIds ?? []) ?>).map(String));
+
+    const teamEditForm = document.getElementById('team-edit-form');
+    if (teamEditForm) {
+        teamEditForm.addEventListener('submit', async (e) => {
+            if (teamEditForm.dataset.confirmed === '1' || !isTeamOngoing) return;
+            e.preventDefault();
+
+            const currentIds = Array.from(selectedIds).map(String);
+            const currentSet = new Set(currentIds);
+            const addedCount = currentIds.filter(id => !initialMemberSet.has(id)).length;
+            const removedCount = Array.from(initialMemberSet).filter(id => !currentSet.has(id)).length;
+
+            const activeTargetLabel = targetCycleTitles.length > 0
+                ? `"${targetCycleTitles.join('", "')}"`
+                : 'an active Target Setting cycle';
+            const lockedEvalLabel = lockedCycleTitles.length > 0
+                ? `"${lockedCycleTitles.join('", "')}"`
+                : (ongoingCycleTitles.length > 0 ? `"${ongoingCycleTitles.join('", "')}"` : 'an ongoing evaluation cycle');
+            const lockedSuffix = lockedCycleTitles.length > 0
+                ? ` Folders in ${lockedEvalLabel} (past Target Setting) will remain unchanged.`
+                : '';
+
+            let confirmMsg = '';
+            let confirmVariant = 'warning';
+
+            if (!isTeamInTargetPhase) {
+                confirmMsg = `This staff list is linked to ${lockedEvalLabel}, which has already passed the Target Setting phase. Your changes will be saved for future cycles without modifying folders in the ongoing evaluation phase. Do you want to proceed?`;
+            } else if (addedCount > 0 && removedCount > 0) {
+                confirmMsg = `This staff list is currently active in ${activeTargetLabel}. Saving will automatically add ${addedCount} new member${addedCount === 1 ? '' : 's'} and remove ${removedCount} member${removedCount === 1 ? '' : 's'} from your cascade. Removed members with no other supervisor in that cycle will lose their folder and progress.${lockedSuffix} Do you want to proceed?`;
+                confirmVariant = 'danger';
+            } else if (addedCount > 0) {
+                confirmMsg = `This staff list is currently active in ${activeTargetLabel}. Saving will automatically cascade target folders to ${addedCount} newly added member${addedCount === 1 ? '' : 's'}.${lockedSuffix} Do you want to proceed?`;
+            } else if (removedCount > 0) {
+                confirmMsg = `This staff list is currently active in ${activeTargetLabel}. Saving will remove ${removedCount} member${removedCount === 1 ? '' : 's'} from your cascade. Removed members with no other supervisor in that cycle will lose their folder and progress.${lockedSuffix} Do you want to proceed?`;
+                confirmVariant = 'danger';
+            } else {
+                confirmMsg = `This staff list is currently active in ${activeTargetLabel}.${lockedSuffix} Are you sure you want to save changes to this staff list?`;
+            }
+
+            const ok = await window.appConfirm(confirmMsg, {
+                title: 'Update Ongoing Staff List',
+                confirmText: isTeamInTargetPhase ? 'Save & Sync' : 'Save Changes',
+                cancelText: 'Cancel',
+                variant: confirmVariant
+            });
+            if (!ok) return;
+
+            teamEditForm.dataset.confirmed = '1';
+            teamEditForm.submit();
+        });
+    }
 
 <?php endif; ?>
 </script>

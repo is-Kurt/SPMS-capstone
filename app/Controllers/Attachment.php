@@ -50,47 +50,32 @@ class Attachment extends BaseController
         $status = $doc['folder_status'] ?? '';
         $cStatus = FolderStatus::canonical($status);
 
-        $isRubricUpload = ($rowId === 'rubric');
+        // Check if folder is in the Evaluation Phase for MOV evidence
+        $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
+        $now = date('Y-m-d H:i:s');
+        $targetEndCol = $ownerDocType . '_target_end';
+        $tEnd = $doc[$targetEndCol] ?? null;
+        $isPastTargetDate = (!empty($tEnd) && $now > $tEnd);
 
-        if ($isRubricUpload) {
-            // Rubric attachments can be uploaded during the Target-Setting Phase (Draft / Pending Approval)
-            // or whenever target editing is permissible
-            $canUploadRubric = $cStatus->isTargetPhase() || ($sysRole === 'Admin');
-            if (!$canUploadRubric && $sysRole !== 'Admin') {
-                return $this->response->setStatusCode(403)->setJSON([
-                    'status'  => 'error',
-                    'message' => 'Rubric documents can only be attached while drafting or finalizing targets.'
-                ]);
-            }
-        } else {
-            // Check if folder is in the Evaluation Phase for MOV evidence
-            $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
-            $now = date('Y-m-d H:i:s');
-            $targetEndCol = $ownerDocType . '_target_end';
-            $tEnd = $doc[$targetEndCol] ?? null;
-            $isPastTargetDate = (!empty($tEnd) && $now > $tEnd);
+        $isEvaluationPhase = $cStatus->isEvaluationPhase() || $isPastTargetDate;
 
-            $isEvaluationPhase = $cStatus->isEvaluationPhase() || $isPastTargetDate;
+        if (!$isEvaluationPhase && $sysRole !== 'Admin') {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status'  => 'error',
+                'message' => 'Means of Verification (MOV) evidence can only be attached during the Evaluation Phase.'
+            ]);
+        }
 
-            if (!$isEvaluationPhase && $sysRole !== 'Admin') {
-                return $this->response->setStatusCode(403)->setJSON([
-                    'status'  => 'error',
-                    'message' => 'Means of Verification (MOV) evidence can only be attached during the Evaluation Phase.'
-                ]);
-            }
+        $canUploadMOV = in_array($cStatus, [
+            FolderStatus::DRAFT_EVALUATION,
+            FolderStatus::TARGET_APPROVED,
+        ], true) || $isPastTargetDate || ($sysRole === 'Admin');
 
-            $canUploadMOV = in_array($cStatus, [
-                FolderStatus::DRAFT_EVALUATION,
-                FolderStatus::TARGET_APPROVED,
-                FolderStatus::EVAL_RETURNED,
-            ], true) || $isPastTargetDate || ($sysRole === 'Admin');
-
-            if (!$canUploadMOV) {
-                return $this->response->setStatusCode(403)->setJSON([
-                    'status'  => 'error',
-                    'message' => 'Evidence attachments can only be uploaded while evaluating accomplishments.'
-                ]);
-            }
+        if (!$canUploadMOV) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status'  => 'error',
+                'message' => 'Evidence attachments can only be uploaded while evaluating accomplishments.'
+            ]);
         }
 
         $file = $this->request->getFile('file');
@@ -102,18 +87,13 @@ class Attachment extends BaseController
         }
 
         // Validate MIME / extension
-        $allowedExtensions = $isRubricUpload
-            ? ['pdf', 'xlsx', 'xls', 'docx', 'doc', 'csv', 'png', 'jpg', 'jpeg']
-            : ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'docx', 'doc'];
+        $allowedExtensions = ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'docx', 'doc'];
         $ext = strtolower($file->getClientExtension());
 
         if (!in_array($ext, $allowedExtensions)) {
-            $allowedMsg = $isRubricUpload
-                ? 'Allowed formats: PDF, XLSX, XLS, DOC, DOCX, CSV, PNG, JPG.'
-                : 'Allowed formats: PDF, PNG, JPG, WEBP, DOC, DOCX.';
             return $this->response->setStatusCode(422)->setJSON([
                 'status'  => 'error',
-                'message' => 'Invalid file format. ' . $allowedMsg
+                'message' => 'Invalid file format. Allowed formats: PDF, PNG, JPG, WEBP, DOC, DOCX.'
             ]);
         }
 
@@ -125,15 +105,14 @@ class Attachment extends BaseController
             ]);
         }
 
-        $subDir = $isRubricUpload ? 'uploads/rubrics/' : 'uploads/movs/';
+        $subDir = 'uploads/movs/';
         $uploadDir = WRITEPATH . $subDir;
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0755, true);
         }
 
         $clientName = $file->getClientName();
-        $prefix = $isRubricUpload ? 'rubric_' : 'mov_';
-        $newName = $prefix . $docId . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
+        $newName = 'mov_' . $docId . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
 
         // Read raw file content and encrypt with AES-256
         $rawContents = file_get_contents($file->getTempName());
@@ -149,17 +128,6 @@ class Attachment extends BaseController
 
         $attachmentModel = new DocumentAttachmentModel();
 
-        // If uploading a rubric, soft delete any older rubric attachments for this document
-        // so the single current active rubric is clean
-        if ($isRubricUpload) {
-            $existingRubrics = $attachmentModel->where('document_id', $docId)
-                                               ->where('row_id', 'rubric')
-                                               ->where('deleted_at IS NULL')
-                                               ->findAll();
-            foreach ($existingRubrics as $ex) {
-                $attachmentModel->delete($ex['id']);
-            }
-        }
         $data = [
             'document_id' => $docId,
             'row_id'      => $rowId,
@@ -235,44 +203,31 @@ class Attachment extends BaseController
         $status = $doc['folder_status'] ?? '';
         $cStatus = FolderStatus::canonical($status);
 
-        $isRubricUpload = ($rowId === 'rubric');
+        $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
+        $now = date('Y-m-d H:i:s');
+        $targetEndCol = $ownerDocType . '_target_end';
+        $tEnd = $doc[$targetEndCol] ?? null;
+        $isPastTargetDate = (!empty($tEnd) && $now > $tEnd);
 
-        if ($isRubricUpload) {
-            $canUploadRubric = $cStatus->isTargetPhase() || ($sysRole === 'Admin');
-            if (!$canUploadRubric && $sysRole !== 'Admin') {
-                return $this->response->setStatusCode(403)->setJSON([
-                    'status'  => 'error',
-                    'message' => 'Rubric links can only be attached while drafting or finalizing targets.'
-                ]);
-            }
-        } else {
-            $ownerDocType = strtolower($doc['doc_type'] ?? 'ipcr');
-            $now = date('Y-m-d H:i:s');
-            $targetEndCol = $ownerDocType . '_target_end';
-            $tEnd = $doc[$targetEndCol] ?? null;
-            $isPastTargetDate = (!empty($tEnd) && $now > $tEnd);
+        $isEvaluationPhase = $cStatus->isEvaluationPhase() || $isPastTargetDate;
 
-            $isEvaluationPhase = $cStatus->isEvaluationPhase() || $isPastTargetDate;
+        if (!$isEvaluationPhase && $sysRole !== 'Admin') {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status'  => 'error',
+                'message' => 'Means of Verification (MOV) evidence can only be attached during the Evaluation Phase.'
+            ]);
+        }
 
-            if (!$isEvaluationPhase && $sysRole !== 'Admin') {
-                return $this->response->setStatusCode(403)->setJSON([
-                    'status'  => 'error',
-                    'message' => 'Means of Verification (MOV) evidence can only be attached during the Evaluation Phase.'
-                ]);
-            }
+        $canUploadMOV = in_array($cStatus, [
+            FolderStatus::DRAFT_EVALUATION,
+            FolderStatus::TARGET_APPROVED,
+        ], true) || $isPastTargetDate || ($sysRole === 'Admin');
 
-            $canUploadMOV = in_array($cStatus, [
-                FolderStatus::DRAFT_EVALUATION,
-                FolderStatus::TARGET_APPROVED,
-                FolderStatus::EVAL_RETURNED,
-            ], true) || $isPastTargetDate || ($sysRole === 'Admin');
-
-            if (!$canUploadMOV) {
-                return $this->response->setStatusCode(403)->setJSON([
-                    'status'  => 'error',
-                    'message' => 'Evidence attachments can only be added while evaluating accomplishments.'
-                ]);
-            }
+        if (!$canUploadMOV) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'status'  => 'error',
+                'message' => 'Evidence attachments can only be added while evaluating accomplishments.'
+            ]);
         }
 
         // Determine link provider and default title
@@ -298,16 +253,6 @@ class Attachment extends BaseController
         $finalTitle = !empty($linkName) ? $linkName : $defaultTitle;
 
         $attachmentModel = new DocumentAttachmentModel();
-
-        if ($isRubricUpload) {
-            $existingRubrics = $attachmentModel->where('document_id', $docId)
-                                               ->where('row_id', 'rubric')
-                                               ->where('deleted_at IS NULL')
-                                               ->findAll();
-            foreach ($existingRubrics as $ex) {
-                $attachmentModel->delete($ex['id']);
-            }
-        }
 
         $data = [
             'document_id' => $docId,

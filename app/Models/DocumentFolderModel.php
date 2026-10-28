@@ -19,7 +19,9 @@ class  DocumentFolderModel extends Model
         'user_id', 
         'parent_folder_id',
         'final_rating',
+        'cycle_id',
         'cycle_folder_id',
+        'tabs',
         'target_submitted_at',
         'target_approved_at',
         'target_approved_by',
@@ -32,8 +34,7 @@ class  DocumentFolderModel extends Model
         'eval_period_open_sent_at',
         'routing_preset_id',
         'status',
-        'academic_year',
-        'semester',
+        'current_version',
         'rating_period',
         'approving_authority_name',
         'approving_authority_position',
@@ -61,7 +62,7 @@ class  DocumentFolderModel extends Model
 
     // Callbacks
     protected $allowCallbacks = true;
-    protected $beforeInsert   = ['setDefaultEvalDates'];
+    protected $beforeInsert   = [];
     protected $afterInsert    = ['updateTimeBasedStatuses'];
     protected $beforeUpdate   = [];
     protected $afterUpdate    = [];
@@ -90,6 +91,9 @@ class  DocumentFolderModel extends Model
                       GROUP_CONCAT(DISTINCT un.id) as unit_id,
                       MAX(pos.is_teaching) as is_teaching,
                       df.final_rating, df.status as folder_status,
+                      df.current_version, df.target_submitted_at, df.submitted_at,
+                      df.target_approved_at, df.target_approver_role,
+                      MAX(er_me.status) as my_routing_status,
                       MAX(CASE WHEN {$cascadedCondition} THEN 1 ELSE 0 END) as is_cascaded_by_me")
             ->join('users u', 'u.id = df.user_id')
             ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
@@ -99,7 +103,7 @@ class  DocumentFolderModel extends Model
             ->join('document_folders pf', 'pf.id = df.parent_folder_id', 'left')
             ->where('df.parent_folder_id IS NOT NULL')
             ->where('df.deleted_at IS NULL')
-            ->whereNotIn('df.status', [FolderStatus::DRAFT_TARGET->value, FolderStatus::DRAFT_EVALUATION->value]);
+            ->where('df.user_id !=', (int)$userId);
 
         if ($parentFolderId) {
             $allDescendantIds = $this->getAllDescendantFolderIds($parentFolderId);
@@ -135,7 +139,71 @@ class  DocumentFolderModel extends Model
         }
 
         $builder->groupBy('df.id');
-        return $builder->get()->getResultArray();
+        $rows = $builder->get()->getResultArray();
+
+        if (!empty($rows)) {
+            $folderIds = array_column($rows, 'folder_id');
+            $routeRows = $this->db->table('evaluation_routings er')
+                ->select('er.folder_id, er.evaluator_id, er.status, GROUP_CONCAT(r.name) as eval_roles')
+                ->join('user_roles ur', 'ur.user_id = er.evaluator_id', 'left')
+                ->join('roles r', 'r.id = ur.role_id', 'left')
+                ->whereIn('er.folder_id', $folderIds)
+                ->groupBy('er.id')
+                ->get()->getResultArray();
+
+            $routesByFolder = [];
+            foreach ($routeRows as $rr) {
+                $routesByFolder[$rr['folder_id']][] = $rr;
+            }
+
+            foreach ($rows as &$f) {
+                $fId = $f['folder_id'];
+                $fRoutes = $routesByFolder[$fId] ?? [];
+                $nonAdminRoutes = [];
+                $adminRoutes = [];
+
+                foreach ($fRoutes as $rr) {
+                    if ((int)$rr['evaluator_id'] === (int)$f['user_id']) continue;
+                    $rolesStr = strtoupper((string)($rr['eval_roles'] ?? ''));
+                    $rolesArr = array_map('trim', explode(',', $rolesStr));
+                    if (in_array('TWG', $rolesArr, true) || in_array('PMT', $rolesArr, true)) continue;
+
+                    if (in_array('ADMIN', $rolesArr, true)) {
+                        $adminRoutes[] = $rr;
+                    } else {
+                        $nonAdminRoutes[] = $rr;
+                    }
+                }
+
+                $effectiveRoutes = !empty($nonAdminRoutes) ? $nonAdminRoutes : $adminRoutes;
+                $allSupApproved = false;
+                $anyReturned = false;
+
+                if (!empty($effectiveRoutes)) {
+                    $allSupApproved = true;
+                    foreach ($effectiveRoutes as $er) {
+                        $st = strtolower(trim((string)($er['status'] ?? '')));
+                        if (!in_array($st, ['approved', 'target_approved'], true)) {
+                            $allSupApproved = false;
+                        }
+                        if (in_array($st, ['returned', 'target_returned', 'eval_returned', 'reevaluate'], true)) {
+                            $anyReturned = true;
+                        }
+                    }
+                } else {
+                    $allSupApproved = !empty($f['target_approved_at']) || in_array($f['folder_status'], [
+                        FolderStatus::TARGET_APPROVED->value,
+                        FolderStatus::EVAL_APPROVED->value
+                    ], true);
+                }
+
+                $f['all_supervisors_approved'] = $allSupApproved;
+                $f['has_returned_routing']     = $anyReturned;
+            }
+            unset($f);
+        }
+
+        return $rows;
     }
 
     /**
@@ -236,21 +304,6 @@ class  DocumentFolderModel extends Model
             ->get()->getResultArray();
     }
 
-    protected function setDefaultEvalDates(array $data): array {
-        $today = date('Y-m-d');
-        $tomorrow = date('Y-m-d', strtotime('+1 day'));
-
-        $docTypes = ['opcr', 'dpcr', 'ipcr', 'iperf'];
-        foreach ($docTypes as $type) {
-            if (empty($data['data']["{$type}_eval_start"]) && empty($data['data']["{$type}_eval_end"])) {
-                $data['data']["{$type}_eval_start"] = $today . ' 00:00:00';
-                $data['data']["{$type}_eval_end"] = $tomorrow . ' 23:59:59';
-            }
-        }
-
-        return $data;
-    }
-
     public function updateTimeBasedStatuses()
     {
         $db = \Config\Database::connect();
@@ -299,16 +352,15 @@ class  DocumentFolderModel extends Model
             ->join('positions pos', 'pos.id = p.position_id', 'left')
             ->join('cycle_deadlines cd', 'cd.cycle_folder_id = COALESCE(df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = LOWER(COALESCE(u.doc_type, "ipcr"))', 'left')
             ->where('df.deleted_at IS NULL')
-            ->whereIn('df.status', [
-                \App\Enums\FolderStatus::DRAFT_TARGET->value,
-                \App\Enums\FolderStatus::TARGET_SUBMITTED->value,
-                \App\Enums\FolderStatus::TARGET_RETURNED->value,
-            ])
+            ->where('df.status', \App\Enums\FolderStatus::DRAFT_TARGET->value)
+            ->where('df.target_submitted_at IS NULL')
             ->where('cd.target_end <', $now)
             ->get()->getResultArray();
 
+        $missedFolderIds = [];
         foreach ($unapprovedFolders as $folder) {
             if ($userModel->hasRole($folder['user_id'], 'Admin')) continue;
+            $missedFolderIds[] = $folder['id'];
 
             queue_email(
                 $folder['email'],
@@ -317,9 +369,9 @@ class  DocumentFolderModel extends Model
             );
         }
             
-        if (!empty($unapprovedFolders)) {
+        if (!empty($missedFolderIds)) {
             $db->table($this->table)
-                ->whereIn('id', array_column($unapprovedFolders, 'id'))
+                ->whereIn('id', $missedFolderIds)
                 ->update(['status' => \App\Enums\FolderStatus::TARGET_MISSED->value]);
         }
 
@@ -340,8 +392,10 @@ class  DocumentFolderModel extends Model
             ->where('cd.eval_end >=', $now)
             ->get()->getResultArray();
 
+        $startingFolderIds = [];
         foreach ($startingFolders as $folder) {
             if ($userModel->hasRole($folder['user_id'], 'Admin')) continue;
+            $startingFolderIds[] = $folder['id'];
 
             $link = site_url("folders/" . $folder['id']);
             queue_email(
@@ -355,9 +409,9 @@ class  DocumentFolderModel extends Model
             );
         }
 
-        if (!empty($startingFolders)) {
+        if (!empty($startingFolderIds)) {
             $db->table($this->table)
-                ->whereIn('id', array_column($startingFolders, 'id'))
+                ->whereIn('id', $startingFolderIds)
                 ->update([
                     'status' => \App\Enums\FolderStatus::DRAFT_EVALUATION->value,
                     'eval_period_open_sent_at' => $now
@@ -374,17 +428,20 @@ class  DocumentFolderModel extends Model
             ->where('df.deleted_at IS NULL')
             ->whereNotIn('df.status', [
                 \App\Enums\FolderStatus::EVAL_APPROVED->value,
+                \App\Enums\FolderStatus::EVAL_SUBMITTED->value,
                 \App\Enums\FolderStatus::UNEVALUATED->value,
                 \App\Enums\FolderStatus::TARGET_MISSED->value,
                 \App\Enums\FolderStatus::DRAFT_TARGET->value,
                 \App\Enums\FolderStatus::TARGET_SUBMITTED->value,
-                \App\Enums\FolderStatus::TARGET_RETURNED->value,
             ])
+            ->where('df.submitted_at IS NULL')
             ->where('cd.eval_end <', $now)
             ->get()->getResultArray();
 
+        $expiringFolderIds = [];
         foreach ($expiringFolders as $folder) {
             if ($userModel->hasRole($folder['user_id'], 'Admin')) continue;
+            $expiringFolderIds[] = $folder['id'];
 
             queue_email(
                 $folder['email'],
@@ -393,9 +450,9 @@ class  DocumentFolderModel extends Model
             );
         }
         
-        if (!empty($expiringFolders)) {
+        if (!empty($expiringFolderIds)) {
             $db->table($this->table)
-                ->whereIn('id', array_column($expiringFolders, 'id'))
+                ->whereIn('id', $expiringFolderIds)
                 ->update(['status' => \App\Enums\FolderStatus::UNEVALUATED->value]);
         }
     }
@@ -413,11 +470,11 @@ class  DocumentFolderModel extends Model
 
     public function enrichFolderWithDeadlines(?array $folder): ?array {
         if (!$folder) return null;
-        $cycleFolderId = $folder['cycle_folder_id'] ?? $this->getRootCycleFolderId($folder['id']);
+        $cycleFolderId = $folder['cycle_id'] ?? $folder['cycle_folder_id'] ?? $this->getRootCycleFolderId($folder['id']);
         $deadlineModel = new \App\Models\CycleDeadlineModel();
         $flatDates = $deadlineModel->getCycleDatesFlat($cycleFolderId);
         $folderDates = $this->getFolderDates($folder);
-        return array_merge($flatDates, $folderDates ?? [], $folder);
+        return array_merge($folder, $flatDates, $folderDates ?? []);
     }
 
     public function getFolderDates($folder) {
@@ -445,7 +502,7 @@ class  DocumentFolderModel extends Model
         }
         $docType = $docType ?: 'ipcr';
 
-        $cycleFolderId = $folder['cycle_folder_id'] ?? $this->getRootCycleFolderId($folder['id']);
+        $cycleFolderId = $folder['cycle_id'] ?? $folder['cycle_folder_id'] ?? $this->getRootCycleFolderId($folder['id']);
         $deadlineModel = new \App\Models\CycleDeadlineModel();
         $deadline = $deadlineModel->getDeadline($cycleFolderId, $docType);
 
@@ -479,7 +536,6 @@ class  DocumentFolderModel extends Model
         $isLocked = !in_array($folder['status'], [
             FolderStatus::DRAFT_TARGET->value,
             FolderStatus::TARGET_SUBMITTED->value,
-            FolderStatus::TARGET_RETURNED->value,
             FolderStatus::TARGET_APPROVED->value,
             FolderStatus::DRAFT_EVALUATION->value,
         ]);
