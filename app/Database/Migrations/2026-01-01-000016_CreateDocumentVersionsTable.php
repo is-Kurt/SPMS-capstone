@@ -4,7 +4,7 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreateNotificationsTable extends Migration
+class CreateDocumentVersionsTable extends Migration
 {
     public function up()
     {
@@ -15,45 +15,50 @@ class CreateNotificationsTable extends Migration
                 'unsigned'       => true,
                 'auto_increment' => true,
             ],
-            'user_id' => [
-                'type'       => 'INT',
+            'folder_id' => [
+                'type'       => 'VARCHAR',
                 'constraint' => 11,
-                'unsigned'   => true,
                 'null'       => false,
             ],
-            'sender_id' => [
+            'version_number' => [
                 'type'       => 'INT',
                 'constraint' => 11,
-                'unsigned'   => true,
-                'null'       => true,
+                'default'    => 1,
             ],
-            'type' => [
+            'phase' => [
                 'type'       => 'VARCHAR',
-                'constraint' => 50,
-                'default'    => 'system',
+                'constraint' => 20,
+                'default'    => 'target',
             ],
-            'title' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 255,
-                'null'       => false,
+            'tabs' => [
+                'type' => 'LONGTEXT',
+                'null' => true,
             ],
-            'message' => [
-                'type' => 'TEXT',
-                'null' => false,
-            ],
-            'link' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 255,
-                'null'       => true,
-            ],
-            'icon' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 50,
-                'null'       => true,
-                'default'    => 'bell',
-            ],
-            'read_at' => [
+            'submitted_at' => [
                 'type' => 'DATETIME',
+                'null' => true,
+            ],
+            'returned_by' => [
+                'type'       => 'INT',
+                'constraint' => 11,
+                'null'       => true,
+            ],
+            'returned_by_name' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 150,
+                'null'       => true,
+            ],
+            'returned_by_role' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 100,
+                'null'       => true,
+            ],
+            'returned_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
+            'return_remarks' => [
+                'type' => 'TEXT',
                 'null' => true,
             ],
             'created_at' => [
@@ -67,14 +72,13 @@ class CreateNotificationsTable extends Migration
         ]);
 
         $this->forge->addPrimaryKey('id');
-        $this->forge->addKey('user_id');
-        $this->forge->addKey('read_at');
-
-        $this->forge->createTable('notifications', true);
+        $this->forge->addKey(['folder_id', 'version_number']);
+        $this->forge->createTable('document_versions', true);
     }
 
     public function down()
     {
-        $this->forge->dropTable('notifications', true);
+        $this->forge->dropTable('document_versions', true);
     }
 }
+

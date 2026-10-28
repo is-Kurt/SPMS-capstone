@@ -4,27 +4,21 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class DropTemplatesTable extends Migration
+class CreateRolesTable extends Migration
 {
     public function up()
-    {
-        $this->forge->dropTable('templates', true);
-    }
-
-    public function down()
     {
         $this->forge->addField([
             'id' => [
                 'type'           => 'INT',
+                'constraint'     => 11,
+                'unsigned'       => true,
                 'auto_increment' => true,
             ],
-            'title' => [
+            'name' => [
                 'type'       => 'VARCHAR',
-                'constraint' => '255',
-            ],
-            'tabs' => [
-                'type' => 'LONGTEXT',
-                'null' => true,
+                'constraint' => '50',
+                'unique'     => true,
             ],
             'created_at' => [
                 'type' => 'DATETIME',
@@ -34,12 +28,13 @@ class DropTemplatesTable extends Migration
                 'type' => 'DATETIME',
                 'null' => true,
             ],
-            'deleted_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
-            ],
         ]);
         $this->forge->addPrimaryKey('id');
-        $this->forge->createTable('templates', true);
+        $this->forge->createTable('roles', true);
+    }
+
+    public function down()
+    {
+        $this->forge->dropTable('roles', true);
     }
 }

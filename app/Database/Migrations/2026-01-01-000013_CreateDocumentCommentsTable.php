@@ -20,6 +20,11 @@ class CreateDocumentCommentsTable extends Migration
                 'constraint' => 11,
                 'null'       => false,
             ],
+            'version' => [
+                'type'       => 'INT',
+                'constraint' => 11,
+                'default'    => 1,
+            ],
             'row_id' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 64,
@@ -90,12 +95,9 @@ class CreateDocumentCommentsTable extends Migration
             ],
         ]);
 
-        $this->forge->addKey('id', true);
+        $this->forge->addPrimaryKey('id');
         $this->forge->addKey(['document_id', 'row_id']);
         $this->forge->addKey('parent_id');
-        $this->forge->addForeignKey('document_id', 'documents', 'id', 'CASCADE', 'CASCADE');
-        $this->forge->addForeignKey('user_id', 'users', 'id', 'CASCADE', 'CASCADE');
-
         $this->forge->createTable('document_comments', true);
     }
 

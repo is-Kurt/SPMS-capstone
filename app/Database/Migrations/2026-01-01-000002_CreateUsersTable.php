@@ -36,6 +36,49 @@ class CreateUsersTable extends Migration
                 'constraint' => '255',
                 'null'       => false,
             ],
+            'avatar_image' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '255',
+                'null'       => true,
+            ],
+            'avatar' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '255',
+                'null'       => true,
+            ],
+            'avatar_color' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '20',
+                'null'       => true,
+            ],
+            'avatar_letter' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '5',
+                'null'       => true,
+            ],
+            'doc_type' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '20',
+                'null'       => true,
+                'default'    => null,
+            ],
+            'is_active' => [
+                'type'       => 'TINYINT',
+                'constraint' => 1,
+                'default'    => 1,
+                'null'       => false,
+            ],
+            'email_verified' => [
+                'type'       => 'TINYINT',
+                'constraint' => 1,
+                'default'    => 0,
+                'null'       => false,
+            ],
+            'email_verification_token' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '255',
+                'null'       => true,
+            ],
             'reset_code' => [
                 'type'       => 'VARCHAR',
                 'constraint' => '10',
@@ -46,9 +89,9 @@ class CreateUsersTable extends Migration
                 'null' => true,
             ],
             'reset_attempts' => [
-                'type'           => 'INT',
-                'constraint'     => 11,
-                'default'        => 0,
+                'type'       => 'INT',
+                'constraint' => 11,
+                'default'    => 0,
             ],
             'reset_last_attempt_at' => [
                 'type' => 'DATETIME',
@@ -63,12 +106,6 @@ class CreateUsersTable extends Migration
                 'type' => 'DATETIME',
                 'null' => true,
             ],
-            'doc_type' => [
-                'type'       => 'ENUM',
-                'constraint' => ['IPCR', 'DPCR', 'OPCR', 'IPERF'],
-                'null'       => true,
-                'default'    => null,
-            ],
             'two_factor_code' => [
                 'type'       => 'VARCHAR',
                 'constraint' => '10',
@@ -77,61 +114,6 @@ class CreateUsersTable extends Migration
             'two_factor_expires_at' => [
                 'type' => 'DATETIME',
                 'null' => true,
-            ],
-            'email_change_code' => [
-                'type'       => 'VARCHAR',
-                'constraint' => '10',
-                'null'       => true,
-            ],
-            'email_change_new_email' => [
-                'type'       => 'VARCHAR',
-                'constraint' => '255',
-                'null'       => true,
-            ],
-            'email_change_expires_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
-            ],
-            'email_change_attempts' => [
-                'type'       => 'INT',
-                'constraint' => 11,
-                'default'    => 0,
-                'null'       => false,
-            ],
-            'email_change_last_attempt_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
-            ],
-            'password_change_attempts' => [
-                'type'       => 'INT',
-                'constraint' => 11,
-                'default'    => 0,
-                'null'       => false,
-            ],
-            'password_change_last_attempt_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
-            ],
-            'is_active' => [
-                'type'       => 'TINYINT',
-                'constraint' => 1,
-                'default'    => 1,
-                'null'       => false,
-            ],
-            'avatar_image' => [
-                'type'       => 'VARCHAR',
-                'constraint' => '255',
-                'null'       => true,
-            ],
-            'avatar_color' => [
-                'type'       => 'VARCHAR',
-                'constraint' => '7',
-                'null'       => true,
-            ],
-            'avatar_letter' => [
-                'type'       => 'VARCHAR',
-                'constraint' => '2',
-                'null'       => true,
             ],
             'created_at' => [
                 'type' => 'DATETIME',
@@ -146,14 +128,12 @@ class CreateUsersTable extends Migration
                 'null' => true,
             ],
         ]);
-
-        $this->forge->addKey('id', true);
-
-        $this->forge->createTable('users');
+        $this->forge->addPrimaryKey('id');
+        $this->forge->createTable('users', true);
     }
 
     public function down()
     {
-        $this->forge->dropTable('users');
+        $this->forge->dropTable('users', true);
     }
 }

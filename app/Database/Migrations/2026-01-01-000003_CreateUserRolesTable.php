@@ -4,7 +4,7 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreateTwgUnitAssignmentsTable extends Migration
+class CreateUserRolesTable extends Migration
 {
     public function up()
     {
@@ -19,30 +19,29 @@ class CreateTwgUnitAssignmentsTable extends Migration
                 'type'       => 'INT',
                 'constraint' => 11,
                 'unsigned'   => true,
-                'null'       => false,
             ],
-            'unit_id' => [
+            'role_id' => [
                 'type'       => 'INT',
                 'constraint' => 11,
                 'unsigned'   => true,
-                'null'       => false,
             ],
             'created_at' => [
                 'type' => 'DATETIME',
                 'null' => true,
             ],
+            'updated_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
         ]);
-
-        $this->forge->addKey('id', true);
-        $this->forge->addUniqueKey(['user_id', 'unit_id']);
+        $this->forge->addPrimaryKey('id');
         $this->forge->addForeignKey('user_id', 'users', 'id', 'CASCADE', 'CASCADE');
-        $this->forge->addForeignKey('unit_id', 'units', 'id', 'CASCADE', 'CASCADE');
-
-        $this->forge->createTable('twg_unit_assignments');
+        $this->forge->addForeignKey('role_id', 'roles', 'id', 'CASCADE', 'CASCADE');
+        $this->forge->createTable('user_roles', true);
     }
 
     public function down()
     {
-        $this->forge->dropTable('twg_unit_assignments');
+        $this->forge->dropTable('user_roles', true);
     }
 }

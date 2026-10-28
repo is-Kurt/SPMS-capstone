@@ -18,13 +18,11 @@ class CreatePositionsTable extends Migration
             'title' => [
                 'type'       => 'VARCHAR',
                 'constraint' => '255',
-                'null'       => false,
             ],
             'is_teaching' => [
                 'type'       => 'TINYINT',
                 'constraint' => 1,
-                'default'    => 0,  // 0 = non-teaching, 1 = teaching
-                'null'       => false,
+                'default'    => 1,
             ],
             'created_at' => [
                 'type' => 'DATETIME',
@@ -34,19 +32,13 @@ class CreatePositionsTable extends Migration
                 'type' => 'DATETIME',
                 'null' => true,
             ],
-            'deleted_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
-            ],
         ]);
-
-        $this->forge->addKey('id', true);
-
-        $this->forge->createTable('positions');
+        $this->forge->addPrimaryKey('id');
+        $this->forge->createTable('positions', true);
     }
 
     public function down()
     {
-        $this->forge->dropTable('positions');
+        $this->forge->dropTable('positions', true);
     }
 }

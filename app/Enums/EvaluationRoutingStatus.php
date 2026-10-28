@@ -5,6 +5,7 @@ namespace App\Enums;
 enum EvaluationRoutingStatus: string
 {
     case DRAFT    = 'draft';
+    case QUEUED   = 'queued';
     case PENDING  = 'pending';
     case APPROVED = 'approved';
     case RETURNED = 'returned';
@@ -16,6 +17,7 @@ enum EvaluationRoutingStatus: string
     {
         return match ($this) {
             self::DRAFT    => 'Drafting',
+            self::QUEUED   => 'Queued for Verification',
             self::PENDING  => $isTwg ? 'Pending Verification' : 'Pending Review',
             self::APPROVED => 'Approved',
             self::RETURNED => 'Returned',

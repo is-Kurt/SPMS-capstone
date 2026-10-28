@@ -3,8 +3,9 @@
 namespace App\Database\Seeds;
 
 use CodeIgniter\Database\Seeder;
-use App\Models\DocumentFolderModel;
 use App\Enums\FolderStatus;
+use App\Enums\EvaluationRoutingStatus;
+use App\Enums\RatingCycleStatus;
 
 class DepartmentSeeder extends Seeder
 {
@@ -12,804 +13,865 @@ class DepartmentSeeder extends Seeder
     {
         helper('functions');
         $db = \Config\Database::connect();
-        $folderModel = new DocumentFolderModel();
+        $now = date('Y-m-d H:i:s');
+        $password = password_hash('123', PASSWORD_DEFAULT);
 
-        echo ">>> [SPMS] Seeding BSU La Trinidad 4-Tier College & Department Hierarchy...\n";
+        echo ">>> [SPMS DepartmentSeeder] Seeding Rating Cycle & 4-Tier Hierarchy...\n";
 
         // ==========================================
-        // 1. ROLES LOOKUP
+        // 1. LOOKUPS
         // ==========================================
         $roleMap = [];
-        $roles = $db->table('roles')->get()->getResultArray();
-        foreach ($roles as $r) {
+        foreach ($db->table('roles')->get()->getResultArray() as $r) {
             $roleMap[$r['name']] = (int)$r['id'];
         }
 
-        // ==========================================
-        // 2. ENSURE PARENT EXECUTIVE UNITS EXIST
-        // ==========================================
-        $opUnit = $db->table('units')->where('name', 'Office of the President')->get()->getRowArray();
-        if (!$opUnit) {
-            $db->table('units')->insert(['name' => 'Office of the President', 'parent_id' => null, 'created_at' => date('Y-m-d H:i:s')]);
-            $opUnitId = (int)$db->insertID();
-        } else {
-            $opUnitId = (int)$opUnit['id'];
-        }
-
-        $ovpaa = $db->table('units')->where('name', 'OVPAA')->get()->getRowArray();
-        if (!$ovpaa) {
-            $db->table('units')->insert(['name' => 'OVPAA', 'parent_id' => null, 'created_at' => date('Y-m-d H:i:s')]);
-            $ovpaaId = (int)$db->insertID();
-        } else {
-            $ovpaaId = (int)$ovpaa['id'];
-        }
-
-        $ovpaf = $db->table('units')->where('name', 'OVPAF')->get()->getRowArray();
-        if (!$ovpaf) {
-            $db->table('units')->insert(['name' => 'OVPAF', 'parent_id' => null, 'created_at' => date('Y-m-d H:i:s')]);
-            $ovpafId = (int)$db->insertID();
-        } else {
-            $ovpafId = (int)$ovpaf['id'];
-        }
-
-        // ==========================================
-        // 3. SEED / RESOLVE POSITIONS
-        // ==========================================
-        $positionsToEnsure = [
-            ['title' => 'University President',     'is_teaching' => 0],
-            ['title' => 'Vice President',           'is_teaching' => 0],
-            ['title' => 'Dean',                     'is_teaching' => 1],
-            ['title' => 'Department Chair',         'is_teaching' => 1],
-            ['title' => 'Instructor I',             'is_teaching' => 1],
-            ['title' => 'Instructor II',            'is_teaching' => 1],
-            ['title' => 'Assistant Professor',      'is_teaching' => 1],
-            ['title' => 'Associate Professor',      'is_teaching' => 1],
-            ['title' => 'Professor',                'is_teaching' => 1],
-            ['title' => 'Administrative Aide',      'is_teaching' => 0],
-            ['title' => 'Administrative Assistant', 'is_teaching' => 0],
-            ['title' => 'Unit Head',                'is_teaching' => 0],
-            ['title' => 'Security Officer',         'is_teaching' => 0],
-        ];
-
         $posMap = [];
-        foreach ($positionsToEnsure as $p) {
-            $existing = $db->table('positions')->where('title', $p['title'])->get()->getRowArray();
-            if ($existing) {
-                $posMap[$p['title']] = (int)$existing['id'];
-            } else {
-                $db->table('positions')->insert($p);
-                $posMap[$p['title']] = (int)$db->insertID();
-            }
+        foreach ($db->table('positions')->get()->getResultArray() as $p) {
+            $posMap[$p['title']] = (int)$p['id'];
         }
 
-        // Resolve Admin User (who acts as University President / Executive Evaluator)
-        $adminUser = $db->table('users u')
-            ->select('u.id')
-            ->join('user_roles ur', 'ur.user_id = u.id')
-            ->join('roles r', 'r.id = ur.role_id')
-            ->where('r.name', 'Admin')
-            ->where('u.is_active', 1)
-            ->get()->getRowArray();
-        $adminUserId = $adminUser ? (int)$adminUser['id'] : null;
-
-        // Ensure retired separate president account is removed
-        $presUser = $db->table('users')->where('email', 'president@test.com')->get()->getRowArray();
-        if ($presUser) {
-            $presId = (int)$presUser['id'];
-            $db->table('evaluation_routings')->where('evaluator_id', $presId)->delete();
-            $db->table('plantillas')->where('user_id', $presId)->delete();
-            $db->table('user_roles')->where('user_id', $presId)->delete();
-            $db->table('notifications')->where('user_id', $presId)->orWhere('sender_id', $presId)->delete();
-            $db->table('users')->where('id', $presId)->delete();
-        }
-
-        // Cache templates for form cloning
-        $templatesByTitle = [];
-        $templates = $db->table('templates')->get()->getResultArray();
-        foreach ($templates as $tpl) {
-            $templatesByTitle[$tpl['title']] = $tpl;
+        $unitMap = [];
+        foreach ($db->table('units')->get()->getResultArray() as $u) {
+            $unitMap[$u['name']] = (int)$u['id'];
         }
 
         // ==========================================
-        // 4. BSU LA TRINIDAD COLLEGES & DEPARTMENTS
+        // 2. SEED RATING CYCLE
         // ==========================================
-        $bsuHierarchy = [
-            'College of Agriculture' => [
-                'Bachelor of Science in Agriculture',
-                'Bachelor of Science in Agribusiness',
+        echo ">>> Seeding Rating Cycle...\n";
+        $cycleTitle    = '2nd Semester AY 2025–2026';
+        $ratingPeriod  = 'October 01, 2026 - March 31, 2027';
+        $authName      = 'Dr. Maria Santos';
+        $authPosition  = 'University President';
+
+        $db->table('rating_cycles')->insert([
+            'title'                        => $cycleTitle,
+            'rating_period'                => $ratingPeriod,
+            'approving_authority_name'     => $authName,
+            'approving_authority_position' => $authPosition,
+            'status'                       => RatingCycleStatus::ACTIVE->value,
+            'created_at'                   => $now,
+            'updated_at'                   => $now,
+        ]);
+        $cycleId = (int)$db->insertID();
+
+        // ==========================================
+        // 3. SEED CYCLE DEADLINES
+        // ==========================================
+        echo ">>> Seeding Cycle Deadlines...\n";
+        $rootCycleFolderId = 'cycle_2026_s2';
+
+        $deadlines = [
+            [
+                'cycle_id'        => $cycleId,
+                'cycle_folder_id' => $rootCycleFolderId,
+                'doc_type'        => 'opcr',
+                'target_start'    => '2026-10-01 08:00:00',
+                'target_end'      => '2026-11-05 17:00:00',
+                'eval_start'      => '2026-12-01 08:00:00',
+                'eval_end'        => '2026-12-15 17:00:00',
+                'created_at'      => $now,
+                'updated_at'      => $now,
             ],
-            'College of Arts and Humanities' => [
-                'Bachelor of Arts in Communication',
-                'Bachelor of Arts in English Language',
-                'Bachelor of Arts in Filipino Language',
+            [
+                'cycle_id'        => $cycleId,
+                'cycle_folder_id' => $rootCycleFolderId,
+                'doc_type'        => 'dpcr',
+                'target_start'    => '2026-10-01 08:00:00',
+                'target_end'      => '2026-11-15 17:00:00',
+                'eval_start'      => '2026-12-01 08:00:00',
+                'eval_end'        => '2026-12-22 17:00:00',
+                'created_at'      => $now,
+                'updated_at'      => $now,
             ],
-            'College of Engineering' => [
-                'Bachelor of Science in Agricultural and Biosystems Engineering',
-                'Bachelor of Science in Civil Engineering',
-                'Bachelor of Science in Electrical Engineering',
-                'Bachelor of Science in Industrial Engineering',
+            [
+                'cycle_id'        => $cycleId,
+                'cycle_folder_id' => $rootCycleFolderId,
+                'doc_type'        => 'ipcr',
+                'target_start'    => '2026-10-01 08:00:00',
+                'target_end'      => '2026-11-30 17:00:00',
+                'eval_start'      => '2026-12-01 08:00:00',
+                'eval_end'        => '2026-12-31 17:00:00',
+                'created_at'      => $now,
+                'updated_at'      => $now,
             ],
-            'College of Forestry' => [
-                'Bachelor of Science in Forestry',
+            [
+                'cycle_id'        => $cycleId,
+                'cycle_folder_id' => $rootCycleFolderId,
+                'doc_type'        => 'iperf',
+                'target_start'    => '2026-10-01 08:00:00',
+                'target_end'      => '2026-11-30 17:00:00',
+                'eval_start'      => '2026-12-01 08:00:00',
+                'eval_end'        => '2026-12-31 17:00:00',
+                'created_at'      => $now,
+                'updated_at'      => $now,
             ],
-            'College of Human Ecology' => [
-                'Bachelor of Science in Hospitality Management (BSHM)',
-                'Bachelor of Science in Nutrition and Dietetics (BSND)',
-                'Bachelor of Science in Entrepreneurship (BS Entrep)',
-                'Bachelor of Science in Food Technology (BSFT)',
-                'Bachelor of Science in Tourism Management (BSTM)',
+        ];
+        $db->table('cycle_deadlines')->insertBatch($deadlines);
+
+        // ==========================================
+        // 4. SEED APEX / SYSTEM USERS
+        // ==========================================
+        echo ">>> Seeding Apex / System Users...\n";
+        $apexUsers = [
+            'admin' => [
+                'email'      => 'admin@test.com',
+                'first_name' => 'Maria',
+                'last_name'  => 'Santos',
+                'role'       => 'Admin',
+                'position'   => 'University President',
+                'unit'       => 'Office of the President',
+                'doc_type'   => null,
             ],
-            'College of Human Kinetics' => [
-                'Bachelor of Science in Physical Education',
-                'Bachelor of Science in Exercise and Sports Sciences (BSESS)',
+            'twg' => [
+                'email'      => 'twg@test.com',
+                'first_name' => 'System',
+                'last_name'  => 'TWG Reviewer',
+                'role'       => 'TWG',
+                'position'   => 'Quality Assurance Officer',
+                'unit'       => 'Quality Assurance Office',
+                'doc_type'   => null,
             ],
-            'College of Information Sciences' => [
-                'Bachelor of Science in Development Communication (BSDC)',
-                'Bachelor of Science in Information Technology (BSIT)',
-                'Bachelor of Library and Information Science (BLIS)',
-            ],
-            'College of Medicine' => [
-                'Doctor of Medicine',
-            ],
-            'College of Natural Sciences' => [
-                'Bachelor of Science in Biology',
-                'Bachelor of Science in Chemistry',
-                'Bachelor of Science in Environmental Science',
-            ],
-            'College of Numeracy and Applied Sciences' => [
-                'Bachelor of Science in Statistics',
-                'Bachelor of Science in Mathematics',
-            ],
-            'College of Nursing' => [
-                'Bachelor of Science in Nursing (BSN)',
-            ],
-            'College of Public Administration and Governance' => [
-                'Bachelor of Public Administration',
-            ],
-            'College of Social Sciences' => [
-                'Bachelor of Science in Psychology',
-                'Bachelor of Arts in History',
-            ],
-            'College of Teacher Education' => [
-                'Bachelor of Early Childhood Education',
-                'Bachelor of Elementary Education',
-                'Bachelor of Secondary Education',
-                'Bachelor of Technology and Livelihood Education',
-            ],
-            'College of Veterinary Medicine' => [
-                'Doctor of Veterinary Medicine',
+            'pmt' => [
+                'email'      => 'pmt@test.com',
+                'first_name' => 'PMT',
+                'last_name'  => 'Committee Chair',
+                'role'       => 'PMT',
+                'position'   => 'Planning Officer',
+                'unit'       => 'Planning and Development Office',
+                'doc_type'   => null,
             ],
         ];
 
-        $unitIdMap = [];
-        $now = date('Y-m-d H:i:s');
-
-        // Seed 15 Colleges as Top-Level Units
-        foreach ($bsuHierarchy as $collegeName => $departments) {
-            $existingCollege = $db->table('units')->where('name', $collegeName)->get()->getRowArray();
-            if ($existingCollege) {
-                $collegeId = (int)$existingCollege['id'];
-                if ($existingCollege['parent_id'] !== null) {
-                    $db->table('units')->where('id', $collegeId)->update(['parent_id' => null]);
-                }
-            } else {
-                $db->table('units')->insert([
-                    'name'       => $collegeName,
-                    'parent_id'  => null,
-                    'created_at' => $now
-                ]);
-                $collegeId = (int)$db->insertID();
-            }
-            $unitIdMap[$collegeName] = $collegeId;
-
-            // Seed Constituent Departments under this College
-            foreach ($departments as $deptName) {
-                $existingDept = $db->table('units')->where('name', $deptName)->get()->getRowArray();
-                if ($existingDept) {
-                    $deptId = (int)$existingDept['id'];
-                    // Ensure linked to this college if not assigned
-                    if (empty($existingDept['parent_id'])) {
-                        $db->table('units')->where('id', $deptId)->update(['parent_id' => $collegeId]);
-                    }
-                } else {
-                    $db->table('units')->insert([
-                        'name'       => $deptName,
-                        'parent_id'  => $collegeId,
-                        'created_at' => $now
-                    ]);
-                    $deptId = (int)$db->insertID();
-                }
-                $unitIdMap[$deptName] = $deptId;
-            }
-        }
-
-        // Seed Non-Teaching Administrative Offices under OVPAF
-        $gso = $db->table('units')->where('name', 'General Services Office')->get()->getRowArray();
-        if (!$gso) {
-            $db->table('units')->insert([
-                'name'       => 'General Services Office',
-                'parent_id'  => $ovpafId,
-                'created_at' => $now
+        $userIdMap = [];
+        foreach ($apexUsers as $key => $u) {
+            $db->table('users')->insert([
+                'email'      => $u['email'],
+                'first_name' => $u['first_name'],
+                'last_name'  => $u['last_name'],
+                'password'   => $password,
+                'is_active'  => 1,
+                'doc_type'   => $u['doc_type'],
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
-            $gsoId = (int)$db->insertID();
-        } else {
-            $gsoId = (int)$gso['id'];
-            if ($gso['parent_id'] != $ovpafId) {
-                $db->table('units')->where('id', $gsoId)->update(['parent_id' => $ovpafId]);
-            }
+            $uid = (int)$db->insertID();
+            $userIdMap[$key] = $uid;
+
+            $db->table('user_roles')->insert([
+                'user_id' => $uid,
+                'role_id' => $roleMap[$u['role']] ?? 1,
+            ]);
+
+            $db->table('plantillas')->insert([
+                'user_id'     => $uid,
+                'position_id' => $posMap[$u['position']] ?? 1,
+                'unit_id'     => $unitMap[$u['unit']] ?? 1,
+                'started_at'  => '2020-01-01',
+                'ended_at'    => null,
+            ]);
         }
-        $unitIdMap['General Services Office'] = $gsoId;
+
+        $adminUserId = $userIdMap['admin'];
+
+        // Create Master Root Cycle Folder
+        $db->table('document_folders')->insert([
+            'id'                           => $rootCycleFolderId,
+            'cycle_id'                     => $cycleId,
+            'cycle_folder_id'              => $rootCycleFolderId,
+            'user_id'                      => $adminUserId,
+            'parent_folder_id'             => null,
+            'title'                        => $cycleTitle,
+            'status'                       => FolderStatus::TARGET_APPROVED->value,
+            'routing_preset_id'            => 'team_exec_council',
+            'rating_period'                => $ratingPeriod,
+            'approving_authority_name'     => $authName,
+            'approving_authority_position' => $authPosition,
+            'created_at'                   => $now,
+            'updated_at'                   => $now,
+        ]);
+
+        // Helper closures for generating document folders and routings
+        $createFolderRecord = function($folderId, $userId, $parentFolderId, $docType, $status, $rating = null, $remark = null, $routingPresetId = null) use ($db, $cycleId, $rootCycleFolderId, $cycleTitle, $ratingPeriod, $authName, $authPosition, $now) {
+            $tabs = get_default_form_template($docType);
+            if (!empty($remark) && !empty($tabs[0]['formData']['categories']['core'][0])) {
+                $tabs[0]['formData']['categories']['core'][0]['remarks'] = $remark;
+            }
+
+            $isTargetPhase = in_array($status, [
+                FolderStatus::DRAFT_TARGET->value,
+                FolderStatus::TARGET_SUBMITTED->value,
+            ]);
+
+            $isEvalPhase = in_array($status, [
+                FolderStatus::EVAL_SUBMITTED->value,
+                FolderStatus::EVAL_APPROVED->value,
+            ]);
+
+            $folderData = [
+                'id'                           => $folderId,
+                'cycle_id'                     => $cycleId,
+                'cycle_folder_id'              => $rootCycleFolderId,
+                'user_id'                      => $userId,
+                'parent_folder_id'             => $parentFolderId,
+                'title'                        => $cycleTitle,
+                'status'                       => $status,
+                'final_rating'                 => $rating,
+                'tabs'                         => json_encode($tabs),
+                'approving_authority_name'     => $authName,
+                'approving_authority_position' => $authPosition,
+                'routing_preset_id'            => $routingPresetId,
+                'rating_period'                => $ratingPeriod,
+                'target_submitted_at'          => $now,
+                'target_approved_at'           => $isTargetPhase ? null : $now,
+                'submitted_at'                 => $isEvalPhase ? $now : null,
+                'rated_at'                     => $rating ? $now : null,
+                'created_at'                   => $now,
+                'updated_at'                   => $now,
+            ];
+
+            $db->table('document_folders')->insert($folderData);
+            return $folderId;
+        };
+
+        $createRoutingRecord = function($folderId, $evaluatorId, $evaluatorFolderId, $status) use ($db, $now) {
+            $db->table('evaluation_routings')->insert([
+                'folder_id'           => $folderId,
+                'evaluator_id'        => $evaluatorId,
+                'evaluator_folder_id' => $evaluatorFolderId,
+                'status'              => $status,
+                'created_at'          => $now,
+                'updated_at'          => $now,
+            ]);
+        };
 
         // ==========================================
-        // 5. DEFINE REALISTIC 4-TIER ROSTERS
+        // 5. SEED VPAA ACADEMIC HIERARCHY
         // ==========================================
-        $password = password_hash('123', PASSWORD_DEFAULT);
+        echo ">>> Seeding Academic Affairs (VPAA) Hierarchy...\n";
 
-        $rosterGroups = [
-            // --- College of Information Sciences (Showcase) ---
+        // 5.1 VPAA (Dr. Ana Santos)
+        $db->table('users')->insert([
+            'email'      => 'vpaa@test.com',
+            'first_name' => 'Ana',
+            'last_name'  => 'Santos',
+            'password'   => $password,
+            'is_active'  => 1,
+            'doc_type'   => 'OPCR',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $vpaaUserId = (int)$db->insertID();
+
+        $db->table('user_roles')->insert([
+            'user_id' => $vpaaUserId,
+            'role_id' => $roleMap['Supervisor'] ?? 2,
+        ]);
+
+        $db->table('plantillas')->insert([
+            'user_id'     => $vpaaUserId,
+            'position_id' => $posMap['Vice President for Academic Affairs'] ?? $posMap['Vice President'],
+            'unit_id'     => $unitMap['Office of the Vice President for Academic Affairs'] ?? ($unitMap['Office of the Vice President for Academic Affairs (OVPAA)'] ?? 2),
+            'started_at'  => '2020-01-01',
+            'ended_at'    => null,
+        ]);
+
+        $vpaaFolderId = $createFolderRecord('fld_vpaa', $vpaaUserId, $rootCycleFolderId, 'OPCR', FolderStatus::EVAL_APPROVED->value, 4.95, null, 'team_vpaa_deans');
+        $createRoutingRecord($vpaaFolderId, $adminUserId, $rootCycleFolderId, EvaluationRoutingStatus::APPROVED->value);
+
+        // 5.2 College of Information Sciences (Showcase College)
+        // Dean CIS
+        $db->table('users')->insert([
+            'email'      => 'dean.cis@test.com',
+            'first_name' => 'Alexander',
+            'last_name'  => 'Mercado',
+            'password'   => $password,
+            'is_active'  => 1,
+            'doc_type'   => 'DPCR',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $deanCisId = (int)$db->insertID();
+        $db->table('user_roles')->insert(['user_id' => $deanCisId, 'role_id' => $roleMap['Supervisor']]);
+        $db->table('plantillas')->insert([
+            'user_id'     => $deanCisId,
+            'position_id' => $posMap['Dean'],
+            'unit_id'     => $unitMap['College of Information Sciences'],
+            'started_at'  => '2021-06-01',
+            'ended_at'    => null,
+        ]);
+        $deanCisFolderId = $createFolderRecord('fld_dean_cis', $deanCisId, $vpaaFolderId, 'DPCR', FolderStatus::EVAL_APPROVED->value, 4.92, null, 'team_cis_chairs');
+        $createRoutingRecord($deanCisFolderId, $vpaaUserId, $vpaaFolderId, EvaluationRoutingStatus::APPROVED->value);
+
+        // Chair BSIT
+        $db->table('users')->insert([
+            'email'      => 'chair.cis@test.com',
+            'first_name' => 'Clarissa',
+            'last_name'  => 'Diaz',
+            'password'   => $password,
+            'is_active'  => 1,
+            'doc_type'   => 'DPCR',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $chairCisId = (int)$db->insertID();
+        $db->table('user_roles')->insert(['user_id' => $chairCisId, 'role_id' => $roleMap['Supervisor']]);
+        $db->table('plantillas')->insert([
+            'user_id'     => $chairCisId,
+            'position_id' => $posMap['Department Chair'],
+            'unit_id'     => $unitMap['BS Information Technology'],
+            'started_at'  => '2022-08-01',
+            'ended_at'    => null,
+        ]);
+        $chairCisFolderId = $createFolderRecord('fld_chair_cis', $chairCisId, $deanCisFolderId, 'DPCR', FolderStatus::EVAL_APPROVED->value, 4.85, null, 'team_cis_faculty');
+        $createRoutingRecord($chairCisFolderId, $deanCisId, $deanCisFolderId, EvaluationRoutingStatus::APPROVED->value);
+
+        // Faculty BSIT 1 (Kenji Tanaka - Evaluated)
+        $db->table('users')->insert([
+            'email'      => 'faculty.cis1@test.com',
+            'first_name' => 'Kenji',
+            'last_name'  => 'Tanaka',
+            'password'   => $password,
+            'is_active'  => 1,
+            'doc_type'   => 'IPCR',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $facCis1Id = (int)$db->insertID();
+        $db->table('user_roles')->insert(['user_id' => $facCis1Id, 'role_id' => $roleMap['Employee']]);
+        $db->table('plantillas')->insert([
+            'user_id'     => $facCis1Id,
+            'position_id' => $posMap['Assistant Professor'],
+            'unit_id'     => $unitMap['BS Information Technology'],
+            'started_at'  => '2022-09-01',
+            'ended_at'    => null,
+        ]);
+        $facCis1FolderId = $createFolderRecord('fld_fac_cis1', $facCis1Id, $chairCisFolderId, 'IPCR', FolderStatus::EVAL_APPROVED->value, 4.90);
+        $createRoutingRecord($facCis1FolderId, $chairCisId, $chairCisFolderId, EvaluationRoutingStatus::APPROVED->value);
+
+        // Faculty BSIT 2 (Stephanie Reyes - Draft Evaluation)
+        $db->table('users')->insert([
+            'email'      => 'faculty.cis2@test.com',
+            'first_name' => 'Stephanie',
+            'last_name'  => 'Reyes',
+            'password'   => $password,
+            'is_active'  => 1,
+            'doc_type'   => 'IPCR',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $facCis2Id = (int)$db->insertID();
+        $db->table('user_roles')->insert(['user_id' => $facCis2Id, 'role_id' => $roleMap['Employee']]);
+        $db->table('plantillas')->insert([
+            'user_id'     => $facCis2Id,
+            'position_id' => $posMap['Instructor II'],
+            'unit_id'     => $unitMap['BS Information Technology'],
+            'started_at'  => '2023-01-15',
+            'ended_at'    => null,
+        ]);
+        $facCis2FolderId = $createFolderRecord('fld_fac_cis2', $facCis2Id, $chairCisFolderId, 'IPCR', FolderStatus::DRAFT_EVALUATION->value, null);
+        $createRoutingRecord($facCis2FolderId, $chairCisId, $chairCisFolderId, EvaluationRoutingStatus::DRAFT->value);
+
+        // 5.3 College of Nursing (CN) - Features test accounts dean@test.com, chair@test.com, faculty@test.com
+        // Dean CN (dean@test.com)
+        $db->table('users')->insert([
+            'email'      => 'dean@test.com',
+            'first_name' => 'Roberto',
+            'last_name'  => 'Reyes',
+            'password'   => $password,
+            'is_active'  => 1,
+            'doc_type'   => 'DPCR',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $deanCnId = (int)$db->insertID();
+        $db->table('user_roles')->insert(['user_id' => $deanCnId, 'role_id' => $roleMap['Supervisor']]);
+        $db->table('plantillas')->insert([
+            'user_id'     => $deanCnId,
+            'position_id' => $posMap['Dean'],
+            'unit_id'     => $unitMap['College of Nursing'],
+            'started_at'  => '2021-06-01',
+            'ended_at'    => null,
+        ]);
+        $deanCnFolderId = $createFolderRecord('fld_dean_cn', $deanCnId, $vpaaFolderId, 'DPCR', FolderStatus::TARGET_APPROVED->value, 4.85, null, 'team_cn_chairs');
+        $createRoutingRecord($deanCnFolderId, $vpaaUserId, $vpaaFolderId, EvaluationRoutingStatus::APPROVED->value);
+
+        // Chair BSN (chair@test.com)
+        $db->table('users')->insert([
+            'email'      => 'chair@test.com',
+            'first_name' => 'Miguel',
+            'last_name'  => 'Cruz',
+            'password'   => $password,
+            'is_active'  => 1,
+            'doc_type'   => 'DPCR',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $chairCnId = (int)$db->insertID();
+        $db->table('user_roles')->insert(['user_id' => $chairCnId, 'role_id' => $roleMap['Supervisor']]);
+        $db->table('plantillas')->insert([
+            'user_id'     => $chairCnId,
+            'position_id' => $posMap['Department Chair'],
+            'unit_id'     => $unitMap['BS Nursing'],
+            'started_at'  => '2022-08-15',
+            'ended_at'    => null,
+        ]);
+        $chairCnFolderId = $createFolderRecord('fld_chair_cn', $chairCnId, $deanCnFolderId, 'DPCR', FolderStatus::TARGET_APPROVED->value, 4.75, null, 'team_cn_faculty');
+        $createRoutingRecord($chairCnFolderId, $deanCnId, $deanCnFolderId, EvaluationRoutingStatus::APPROVED->value);
+
+        // Faculty BSN 1 (faculty@test.com / Carlos Lim)
+        $db->table('users')->insert([
+            'email'      => 'faculty@test.com',
+            'first_name' => 'Carlos',
+            'last_name'  => 'Lim',
+            'password'   => $password,
+            'is_active'  => 1,
+            'doc_type'   => 'IPCR',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $facCn1Id = (int)$db->insertID();
+        $db->table('user_roles')->insert(['user_id' => $facCn1Id, 'role_id' => $roleMap['Employee']]);
+        $db->table('plantillas')->insert([
+            'user_id'     => $facCn1Id,
+            'position_id' => $posMap['Assistant Professor'],
+            'unit_id'     => $unitMap['BS Nursing'],
+            'started_at'  => '2019-06-01',
+            'ended_at'    => null,
+        ]);
+        $facCn1FolderId = $createFolderRecord('fld_fac_cn1', $facCn1Id, $chairCnFolderId, 'IPCR', FolderStatus::TARGET_APPROVED->value, 4.80);
+        $createRoutingRecord($facCn1FolderId, $chairCnId, $chairCnFolderId, EvaluationRoutingStatus::APPROVED->value);
+
+        // Faculty BSN 2 (Teresa Garcia - Draft Target)
+        $db->table('users')->insert([
+            'email'      => 'faculty.cn2@test.com',
+            'first_name' => 'Teresa',
+            'last_name'  => 'Garcia',
+            'password'   => $password,
+            'is_active'  => 1,
+            'doc_type'   => 'IPCR',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $facCn2Id = (int)$db->insertID();
+        $db->table('user_roles')->insert(['user_id' => $facCn2Id, 'role_id' => $roleMap['Employee']]);
+        $db->table('plantillas')->insert([
+            'user_id'     => $facCn2Id,
+            'position_id' => $posMap['Instructor I'],
+            'unit_id'     => $unitMap['BS Nursing'],
+            'started_at'  => '2023-08-01',
+            'ended_at'    => null,
+        ]);
+        $facCn2FolderId = $createFolderRecord('fld_fac_cn2', $facCn2Id, $chairCnFolderId, 'IPCR', FolderStatus::DRAFT_TARGET->value, null);
+        $createRoutingRecord($facCn2FolderId, $chairCnId, $chairCnFolderId, EvaluationRoutingStatus::DRAFT->value);
+
+        // 5.4 College of Agriculture (CA)
+        // Dean CA
+        $db->table('users')->insert([
+            'email'      => 'dean.ca@test.com',
+            'first_name' => 'Bernardo',
+            'last_name'  => 'Ocampo',
+            'password'   => $password,
+            'is_active'  => 1,
+            'doc_type'   => 'DPCR',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $deanCaId = (int)$db->insertID();
+        $db->table('user_roles')->insert(['user_id' => $deanCaId, 'role_id' => $roleMap['Supervisor']]);
+        $db->table('plantillas')->insert([
+            'user_id'     => $deanCaId,
+            'position_id' => $posMap['Dean'],
+            'unit_id'     => $unitMap['College of Agriculture'],
+            'started_at'  => '2020-03-01',
+            'ended_at'    => null,
+        ]);
+        $deanCaFolderId = $createFolderRecord('fld_dean_ca', $deanCaId, $vpaaFolderId, 'DPCR', FolderStatus::EVAL_APPROVED->value, 4.88, null, 'team_ca_chairs');
+        $createRoutingRecord($deanCaFolderId, $vpaaUserId, $vpaaFolderId, EvaluationRoutingStatus::APPROVED->value);
+
+        // Chair BSA
+        $db->table('users')->insert([
+            'email'      => 'chair.ca@test.com',
+            'first_name' => 'Corazon',
+            'last_name'  => 'Villanueva',
+            'password'   => $password,
+            'is_active'  => 1,
+            'doc_type'   => 'DPCR',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $chairCaId = (int)$db->insertID();
+        $db->table('user_roles')->insert(['user_id' => $chairCaId, 'role_id' => $roleMap['Supervisor']]);
+        $db->table('plantillas')->insert([
+            'user_id'     => $chairCaId,
+            'position_id' => $posMap['Department Chair'],
+            'unit_id'     => $unitMap['BS Agriculture'],
+            'started_at'  => '2021-08-01',
+            'ended_at'    => null,
+        ]);
+        $chairCaFolderId = $createFolderRecord('fld_chair_ca', $chairCaId, $deanCaFolderId, 'DPCR', FolderStatus::EVAL_APPROVED->value, 4.75, null, 'team_ca_faculty');
+        $createRoutingRecord($chairCaFolderId, $deanCaId, $deanCaFolderId, EvaluationRoutingStatus::APPROVED->value);
+
+        // Faculty BSA (Ferdinand Aquino - Target Submitted)
+        $db->table('users')->insert([
+            'email'      => 'faculty.ca1@test.com',
+            'first_name' => 'Ferdinand',
+            'last_name'  => 'Aquino',
+            'password'   => $password,
+            'is_active'  => 1,
+            'doc_type'   => 'IPCR',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $facCa1Id = (int)$db->insertID();
+        $db->table('user_roles')->insert(['user_id' => $facCa1Id, 'role_id' => $roleMap['Employee']]);
+        $db->table('plantillas')->insert([
+            'user_id'     => $facCa1Id,
+            'position_id' => $posMap['Professor'],
+            'unit_id'     => $unitMap['BS Agriculture'],
+            'started_at'  => '2018-06-01',
+            'ended_at'    => null,
+        ]);
+        $facCa1FolderId = $createFolderRecord('fld_fac_ca1', $facCa1Id, $chairCaFolderId, 'IPCR', FolderStatus::TARGET_SUBMITTED->value, null);
+        $createRoutingRecord($facCa1FolderId, $chairCaId, $chairCaFolderId, EvaluationRoutingStatus::DRAFT->value);
+
+        // ==========================================
+        // 6. SEED VPAF ADMINISTRATIVE HIERARCHY
+        // ==========================================
+        echo ">>> Seeding Administration & Finance (VPAF) Hierarchy...\n";
+
+        // 6.1 VPAF (Engr. Roberto Mendoza)
+        $db->table('users')->insert([
+            'email'      => 'vpaf@test.com',
+            'first_name' => 'Roberto',
+            'last_name'  => 'Mendoza',
+            'password'   => $password,
+            'is_active'  => 1,
+            'doc_type'   => 'OPCR',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $vpafUserId = (int)$db->insertID();
+
+        $db->table('user_roles')->insert([
+            'user_id' => $vpafUserId,
+            'role_id' => $roleMap['Supervisor'] ?? 2,
+        ]);
+
+        $db->table('plantillas')->insert([
+            'user_id'     => $vpafUserId,
+            'position_id' => $posMap['Vice President for Administration and Finance'] ?? $posMap['Vice President'],
+            'unit_id'     => $unitMap['Office of the Vice President for Administration and Finance'] ?? ($unitMap['Office of the Vice President for Administration and Finance (OVPAF)'] ?? 3),
+            'started_at'  => '2019-01-01',
+            'ended_at'    => null,
+        ]);
+
+        $vpafFolderId = $createFolderRecord('fld_vpaf', $vpafUserId, $rootCycleFolderId, 'OPCR', FolderStatus::EVAL_APPROVED->value, 4.90, null, 'team_vpaf_heads');
+        $createRoutingRecord($vpafFolderId, $adminUserId, $rootCycleFolderId, EvaluationRoutingStatus::APPROVED->value);
+
+        // 6.2 General Services Office (GSO)
+        // Head GSO
+        $db->table('users')->insert([
+            'email'      => 'head.gso@test.com',
+            'first_name' => 'Rodrigo',
+            'last_name'  => 'Estrada',
+            'password'   => $password,
+            'is_active'  => 1,
+            'doc_type'   => 'DPCR',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $headGsoId = (int)$db->insertID();
+        $db->table('user_roles')->insert(['user_id' => $headGsoId, 'role_id' => $roleMap['Supervisor']]);
+        $db->table('plantillas')->insert([
+            'user_id'     => $headGsoId,
+            'position_id' => $posMap['Unit Head'],
+            'unit_id'     => $unitMap['General Services Office'],
+            'started_at'  => '2020-04-01',
+            'ended_at'    => null,
+        ]);
+        $headGsoFolderId = $createFolderRecord('fld_head_gso', $headGsoId, $vpafFolderId, 'DPCR', FolderStatus::EVAL_APPROVED->value, 4.60, null, 'team_gso_staff');
+        $createRoutingRecord($headGsoFolderId, $vpafUserId, $vpafFolderId, EvaluationRoutingStatus::APPROVED->value);
+
+        // Staff GSO 1 (Nestor Pascual - Eval Submitted)
+        $db->table('users')->insert([
+            'email'      => 'staff.gso1@test.com',
+            'first_name' => 'Nestor',
+            'last_name'  => 'Pascual',
+            'password'   => $password,
+            'is_active'  => 1,
+            'doc_type'   => 'IPERF',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $staffGso1Id = (int)$db->insertID();
+        $db->table('user_roles')->insert(['user_id' => $staffGso1Id, 'role_id' => $roleMap['Employee']]);
+        $db->table('plantillas')->insert([
+            'user_id'     => $staffGso1Id,
+            'position_id' => $posMap['Administrative Aide'],
+            'unit_id'     => $unitMap['General Services Office'],
+            'started_at'  => '2022-01-01',
+            'ended_at'    => null,
+        ]);
+        $staffGso1FolderId = $createFolderRecord('fld_staff_gso1', $staffGso1Id, $headGsoFolderId, 'IPERF', FolderStatus::EVAL_SUBMITTED->value, null);
+        $createRoutingRecord($staffGso1FolderId, $headGsoId, $headGsoFolderId, EvaluationRoutingStatus::DRAFT->value);
+
+        // Staff GSO 2 (Leonora Villar - Target Returned with supervisor remark)
+        $db->table('users')->insert([
+            'email'      => 'staff.gso2@test.com',
+            'first_name' => 'Leonora',
+            'last_name'  => 'Villar',
+            'password'   => $password,
+            'is_active'  => 1,
+            'doc_type'   => 'IPERF',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $staffGso2Id = (int)$db->insertID();
+        $db->table('user_roles')->insert(['user_id' => $staffGso2Id, 'role_id' => $roleMap['Employee']]);
+        $db->table('plantillas')->insert([
+            'user_id'     => $staffGso2Id,
+            'position_id' => $posMap['Administrative Assistant'],
+            'unit_id'     => $unitMap['General Services Office'],
+            'started_at'  => '2022-05-01',
+            'ended_at'    => null,
+        ]);
+        $gsoRemark = '[Unit Head Rodrigo Estrada]: Please clarify preventive maintenance schedule targets for university campus facilities.';
+        $staffGso2FolderId = $createFolderRecord('fld_staff_gso2', $staffGso2Id, $headGsoFolderId, 'IPERF', FolderStatus::DRAFT_TARGET->value, null, $gsoRemark);
+        $createRoutingRecord($staffGso2FolderId, $headGsoId, $headGsoFolderId, EvaluationRoutingStatus::RETURNED->value);
+
+        // Test Alias iperf@test.com (Danilo Ocampo)
+        $db->table('users')->insert([
+            'email'      => 'iperf@test.com',
+            'first_name' => 'Danilo',
+            'last_name'  => 'Ocampo',
+            'password'   => $password,
+            'is_active'  => 1,
+            'doc_type'   => 'IPERF',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $iperfId = (int)$db->insertID();
+        $db->table('user_roles')->insert(['user_id' => $iperfId, 'role_id' => $roleMap['Employee']]);
+        $db->table('plantillas')->insert([
+            'user_id'     => $iperfId,
+            'position_id' => $posMap['Administrative Aide'],
+            'unit_id'     => $unitMap['General Services Office'],
+            'started_at'  => '2022-01-01',
+            'ended_at'    => null,
+        ]);
+        $iperfFolderId = $createFolderRecord('fld_iperf', $iperfId, $headGsoFolderId, 'IPERF', FolderStatus::DRAFT_TARGET->value, null);
+        $createRoutingRecord($iperfFolderId, $headGsoId, $headGsoFolderId, EvaluationRoutingStatus::DRAFT->value);
+
+        // 6.3 Human Resource Management Office (HRMO)
+        // Head HRMO
+        $db->table('users')->insert([
+            'email'      => 'head.hrmo@test.com',
+            'first_name' => 'Maria Clara',
+            'last_name'  => 'Cruz',
+            'password'   => $password,
+            'is_active'  => 1,
+            'doc_type'   => 'DPCR',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $headHrmoId = (int)$db->insertID();
+        $db->table('user_roles')->insert(['user_id' => $headHrmoId, 'role_id' => $roleMap['Supervisor']]);
+        $db->table('plantillas')->insert([
+            'user_id'     => $headHrmoId,
+            'position_id' => $posMap['HR Management Officer'] ?? $posMap['Unit Head'],
+            'unit_id'     => $unitMap['Human Resource Management Office'],
+            'started_at'  => '2019-11-01',
+            'ended_at'    => null,
+        ]);
+        $headHrmoFolderId = $createFolderRecord('fld_head_hrmo', $headHrmoId, $vpafFolderId, 'DPCR', FolderStatus::EVAL_APPROVED->value, 4.82, null, 'team_hrmo_staff');
+        $createRoutingRecord($headHrmoFolderId, $vpafUserId, $vpafFolderId, EvaluationRoutingStatus::APPROVED->value);
+
+        // Staff HRMO
+        $db->table('users')->insert([
+            'email'      => 'staff.hrmo1@test.com',
+            'first_name' => 'Danilo',
+            'last_name'  => 'Santos',
+            'password'   => $password,
+            'is_active'  => 1,
+            'doc_type'   => 'IPERF',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $staffHrmoId = (int)$db->insertID();
+        $db->table('user_roles')->insert(['user_id' => $staffHrmoId, 'role_id' => $roleMap['Employee']]);
+        $db->table('plantillas')->insert([
+            'user_id'     => $staffHrmoId,
+            'position_id' => $posMap['Administrative Assistant'],
+            'unit_id'     => $unitMap['Human Resource Management Office'],
+            'started_at'  => '2021-09-01',
+            'ended_at'    => null,
+        ]);
+        $staffHrmoFolderId = $createFolderRecord('fld_staff_hrmo1', $staffHrmoId, $headHrmoFolderId, 'IPERF', FolderStatus::DRAFT_TARGET->value, null);
+        $createRoutingRecord($staffHrmoFolderId, $headHrmoId, $headHrmoFolderId, EvaluationRoutingStatus::DRAFT->value);
+
+        // 6.4 Accounting Office
+        // Head Accounting
+        $db->table('users')->insert([
+            'email'      => 'head.acc@test.com',
+            'first_name' => 'Carmen',
+            'last_name'  => 'Perez',
+            'password'   => $password,
+            'is_active'  => 1,
+            'doc_type'   => 'DPCR',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $headAccId = (int)$db->insertID();
+        $db->table('user_roles')->insert(['user_id' => $headAccId, 'role_id' => $roleMap['Supervisor']]);
+        $db->table('plantillas')->insert([
+            'user_id'     => $headAccId,
+            'position_id' => $posMap['Chief Accountant'] ?? $posMap['Unit Head'],
+            'unit_id'     => $unitMap['Accounting Office'],
+            'started_at'  => '2018-07-01',
+            'ended_at'    => null,
+        ]);
+        $headAccFolderId = $createFolderRecord('fld_head_acc', $headAccId, $vpafFolderId, 'DPCR', FolderStatus::EVAL_APPROVED->value, 4.88, null, 'team_acc_staff');
+        $createRoutingRecord($headAccFolderId, $vpafUserId, $vpafFolderId, EvaluationRoutingStatus::APPROVED->value);
+
+        // Staff Accounting
+        $db->table('users')->insert([
+            'email'      => 'staff.acc1@test.com',
+            'first_name' => 'Mark Joseph',
+            'last_name'  => 'Bautista',
+            'password'   => $password,
+            'is_active'  => 1,
+            'doc_type'   => 'IPERF',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $staffAccId = (int)$db->insertID();
+        $db->table('user_roles')->insert(['user_id' => $staffAccId, 'role_id' => $roleMap['Employee']]);
+        $db->table('plantillas')->insert([
+            'user_id'     => $staffAccId,
+            'position_id' => $posMap['Bookkeeper'] ?? $posMap['Administrative Aide'],
+            'unit_id'     => $unitMap['Accounting Office'],
+            'started_at'  => '2023-11-01',
+            'ended_at'    => null,
+        ]);
+        $staffAccFolderId = $createFolderRecord('fld_staff_acc1', $staffAccId, $headAccFolderId, 'IPERF', FolderStatus::DRAFT_TARGET->value, null);
+        $createRoutingRecord($staffAccFolderId, $headAccId, $headAccFolderId, EvaluationRoutingStatus::DRAFT->value);
+
+        // ==========================================
+        // 7. SEED ROUTING PRESETS (TEAMS FOR CASCADING)
+        // ==========================================
+        echo ">>> Seeding Routing Presets (Cascading Teams)...\n";
+
+        $presetsToSeed = [
             [
-                'college_name' => 'College of Information Sciences',
-                'dept_name'    => 'Bachelor of Science in Information Technology (BSIT)',
-                'users' => [
-                    [
-                        'email'      => 'dean.cis@test.com',
-                        'first_name' => 'Alexander',
-                        'last_name'  => 'Mercado',
-                        'role'       => 'Supervisor',
-                        'position'   => 'Dean',
-                        'doc_type'   => 'DPCR',
-                        'tier'       => 'dean',
-                        'unit_level' => 'college',
-                        'rating'     => 4.95,
-                        'status'     => FolderStatus::EVAL_APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'chair.cis@test.com',
-                        'first_name' => 'Clarissa',
-                        'last_name'  => 'Diaz',
-                        'role'       => 'Supervisor',
-                        'position'   => 'Department Chair',
-                        'doc_type'   => 'DPCR',
-                        'tier'       => 'chair',
-                        'unit_level' => 'department',
-                        'rating'     => 4.83,
-                        'status'     => FolderStatus::EVAL_APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'faculty.cis1@test.com',
-                        'first_name' => 'Kenji',
-                        'last_name'  => 'Tanaka',
-                        'role'       => 'Employee',
-                        'position'   => 'Assistant Professor',
-                        'doc_type'   => 'IPCR',
-                        'tier'       => 'faculty',
-                        'unit_level' => 'department',
-                        'rating'     => 4.90,
-                        'status'     => FolderStatus::EVAL_APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'faculty.cis2@test.com',
-                        'first_name' => 'Stephanie',
-                        'last_name'  => 'Reyes',
-                        'role'       => 'Employee',
-                        'position'   => 'Instructor II',
-                        'doc_type'   => 'IPCR',
-                        'tier'       => 'faculty',
-                        'unit_level' => 'department',
-                        'rating'     => null,
-                        'status'     => FolderStatus::DRAFT_EVALUATION->value,
-                        'remark'     => 'Targets approved; currently self-rating accomplishments.'
-                    ],
-                ]
+                'id'          => 'team_exec_council',
+                'owner_id'    => $adminUserId,
+                'name'        => 'Executive Leadership',
+                'description' => 'Vice Presidents (VPAA & VPAF) reporting to the University President',
+                'members'     => [$vpaaUserId, $vpafUserId],
             ],
-
-            // --- College of Nursing (Used in End-to-End Automated Test Cycle) ---
             [
-                'college_name' => 'College of Nursing',
-                'dept_name'    => 'Bachelor of Science in Nursing (BSN)',
-                'users' => [
-                    [
-                        'email'      => 'dean@test.com',
-                        'first_name' => 'Roberto',
-                        'last_name'  => 'Reyes',
-                        'role'       => 'Supervisor',
-                        'position'   => 'Dean',
-                        'doc_type'   => 'DPCR',
-                        'tier'       => 'dean',
-                        'unit_level' => 'college',
-                        'rating'     => 4.85,
-                        'status'     => FolderStatus::TARGET_APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'chair@test.com',
-                        'first_name' => 'Miguel',
-                        'last_name'  => 'Cruz',
-                        'role'       => 'Supervisor',
-                        'position'   => 'Department Chair',
-                        'doc_type'   => 'DPCR',
-                        'tier'       => 'chair',
-                        'unit_level' => 'department',
-                        'rating'     => 4.75,
-                        'status'     => FolderStatus::TARGET_APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'faculty@test.com',
-                        'first_name' => 'Carlos',
-                        'last_name'  => 'Lim',
-                        'role'       => 'Employee',
-                        'position'   => 'Assistant Professor',
-                        'doc_type'   => 'IPCR',
-                        'tier'       => 'faculty',
-                        'unit_level' => 'department',
-                        'rating'     => 4.80,
-                        'status'     => FolderStatus::TARGET_APPROVED->value,
-                        'remark'     => null
-                    ],
-                ]
+                'id'          => 'team_vpaa_deans',
+                'owner_id'    => $vpaaUserId,
+                'name'        => 'Academic Deans Council',
+                'description' => 'Deans of Academic Colleges reporting to the VPAA',
+                'members'     => [$deanCisId, $deanCnId, $deanCaId],
             ],
-
-            // --- College of Agriculture ---
             [
-                'college_name' => 'College of Agriculture',
-                'dept_name'    => 'Bachelor of Science in Agriculture',
-                'users' => [
-                    [
-                        'email'      => 'dean.agri@test.com',
-                        'first_name' => 'Julian',
-                        'last_name'  => 'Ramos',
-                        'role'       => 'Supervisor',
-                        'position'   => 'Dean',
-                        'doc_type'   => 'DPCR',
-                        'tier'       => 'dean',
-                        'unit_level' => 'college',
-                        'rating'     => 4.88,
-                        'status'     => FolderStatus::EVAL_APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'chair.agri@test.com',
-                        'first_name' => 'Lorna',
-                        'last_name'  => 'Mendoza',
-                        'role'       => 'Supervisor',
-                        'position'   => 'Department Chair',
-                        'doc_type'   => 'DPCR',
-                        'tier'       => 'chair',
-                        'unit_level' => 'department',
-                        'rating'     => 4.75,
-                        'status'     => FolderStatus::EVAL_APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'faculty.agri1@test.com',
-                        'first_name' => 'Edgar',
-                        'last_name'  => 'Santos',
-                        'role'       => 'Employee',
-                        'position'   => 'Assistant Professor',
-                        'doc_type'   => 'IPCR',
-                        'tier'       => 'faculty',
-                        'unit_level' => 'department',
-                        'rating'     => 4.82,
-                        'status'     => FolderStatus::EVAL_APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'faculty.agri2@test.com',
-                        'first_name' => 'Maricel',
-                        'last_name'  => 'Flores',
-                        'role'       => 'Employee',
-                        'position'   => 'Instructor II',
-                        'doc_type'   => 'IPCR',
-                        'tier'       => 'faculty',
-                        'unit_level' => 'department',
-                        'rating'     => null,
-                        'status'     => FolderStatus::TARGET_SUBMITTED->value,
-                        'remark'     => 'Targets submitted; pending immediate supervisor approval.'
-                    ],
-                ]
+                'id'          => 'team_cis_chairs',
+                'owner_id'    => $deanCisId,
+                'name'        => 'CIS Department Chairs',
+                'description' => 'Academic Department Chairs under College of Information Sciences',
+                'members'     => [$chairCisId],
             ],
-
-            // --- College of Teacher Education ---
             [
-                'college_name' => 'College of Teacher Education',
-                'dept_name'    => 'Bachelor of Secondary Education',
-                'users' => [
-                    [
-                        'email'      => 'dean.cte@test.com',
-                        'first_name' => 'Victoria',
-                        'last_name'  => 'Salazar',
-                        'role'       => 'Supervisor',
-                        'position'   => 'Dean',
-                        'doc_type'   => 'DPCR',
-                        'tier'       => 'dean',
-                        'unit_level' => 'college',
-                        'rating'     => 4.92,
-                        'status'     => FolderStatus::EVAL_APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'chair.cte@test.com',
-                        'first_name' => 'Arthur',
-                        'last_name'  => 'Perez',
-                        'role'       => 'Supervisor',
-                        'position'   => 'Department Chair',
-                        'doc_type'   => 'DPCR',
-                        'tier'       => 'chair',
-                        'unit_level' => 'department',
-                        'rating'     => 4.79,
-                        'status'     => FolderStatus::EVAL_APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'faculty.cte1@test.com',
-                        'first_name' => 'Rowena',
-                        'last_name'  => 'Gomez',
-                        'role'       => 'Employee',
-                        'position'   => 'Associate Professor',
-                        'doc_type'   => 'IPCR',
-                        'tier'       => 'faculty',
-                        'unit_level' => 'department',
-                        'rating'     => 4.86,
-                        'status'     => FolderStatus::EVAL_APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'faculty.cte2@test.com',
-                        'first_name' => 'Danilo',
-                        'last_name'  => 'Castillo',
-                        'role'       => 'Employee',
-                        'position'   => 'Instructor I',
-                        'doc_type'   => 'IPCR',
-                        'tier'       => 'faculty',
-                        'unit_level' => 'department',
-                        'rating'     => null,
-                        'status'     => FolderStatus::TARGET_RETURNED->value,
-                        'remark'     => '[Chair Arthur Perez]: Module production target needs to be at least 3 instructional modules per academic guidelines.'
-                    ],
-                ]
+                'id'          => 'team_cis_faculty',
+                'owner_id'    => $chairCisId,
+                'name'        => 'CIS Faculty Members',
+                'description' => 'Teaching faculty under the Department of Information Technology',
+                'members'     => [$facCis1Id, $facCis2Id],
             ],
-
-            // --- College of Natural Sciences ---
             [
-                'college_name' => 'College of Natural Sciences',
-                'dept_name'    => 'Bachelor of Science in Biology',
-                'users' => [
-                    [
-                        'email'      => 'dean.cns@test.com',
-                        'first_name' => 'Gabriel',
-                        'last_name'  => 'Morales',
-                        'role'       => 'Supervisor',
-                        'position'   => 'Dean',
-                        'doc_type'   => 'DPCR',
-                        'tier'       => 'dean',
-                        'unit_level' => 'college',
-                        'rating'     => 4.80,
-                        'status'     => FolderStatus::EVAL_APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'chair.cns@test.com',
-                        'first_name' => 'Corazon',
-                        'last_name'  => 'Villanueva',
-                        'role'       => 'Supervisor',
-                        'position'   => 'Department Chair',
-                        'doc_type'   => 'DPCR',
-                        'tier'       => 'chair',
-                        'unit_level' => 'department',
-                        'rating'     => 4.65,
-                        'status'     => FolderStatus::EVAL_APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'faculty.cns1@test.com',
-                        'first_name' => 'Ferdinand',
-                        'last_name'  => 'Aquino',
-                        'role'       => 'Employee',
-                        'position'   => 'Professor',
-                        'doc_type'   => 'IPCR',
-                        'tier'       => 'faculty',
-                        'unit_level' => 'department',
-                        'rating'     => 4.70,
-                        'status'     => FolderStatus::EVAL_APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'faculty.cns2@test.com',
-                        'first_name' => 'Lilibeth',
-                        'last_name'  => 'Torres',
-                        'role'       => 'Employee',
-                        'position'   => 'Instructor I',
-                        'doc_type'   => 'IPCR',
-                        'tier'       => 'faculty',
-                        'unit_level' => 'department',
-                        'rating'     => null,
-                        'status'     => FolderStatus::TARGET_RETURNED->value,
-                        'remark'     => '[Chair Corazon Villanueva]: Please revise research commitments and specify target submission dates for indexed journal publication.'
-                    ],
-                ]
+                'id'          => 'team_cn_chairs',
+                'owner_id'    => $deanCnId,
+                'name'        => 'Nursing Department Chairs',
+                'description' => 'Department Chairs under College of Nursing',
+                'members'     => [$chairCnId],
             ],
-
-            // --- General Services Office (Non-Teaching Admin Unit) ---
             [
-                'college_name' => 'General Services Office',
-                'dept_name'    => 'General Services Office',
-                'users' => [
-                    [
-                        'email'      => 'head.gso@test.com',
-                        'first_name' => 'Rodrigo',
-                        'last_name'  => 'Estrada',
-                        'role'       => 'Supervisor',
-                        'position'   => 'Unit Head',
-                        'doc_type'   => 'DPCR',
-                        'tier'       => 'chair',
-                        'unit_level' => 'college',
-                        'rating'     => 4.60,
-                        'status'     => FolderStatus::EVAL_APPROVED->value,
-                        'remark'     => null
-                    ],
-                    [
-                        'email'      => 'staff.gso1@test.com',
-                        'first_name' => 'Nestor',
-                        'last_name'  => 'Pascual',
-                        'role'       => 'Employee',
-                        'position'   => 'Administrative Aide',
-                        'doc_type'   => 'IPERF',
-                        'tier'       => 'faculty',
-                        'unit_level' => 'college',
-                        'rating'     => null,
-                        'status'     => FolderStatus::EVAL_SUBMITTED->value,
-                        'remark'     => 'Accomplishments and MOVs submitted for head rating.'
-                    ],
-                    [
-                        'email'      => 'staff.gso2@test.com',
-                        'first_name' => 'Leonora',
-                        'last_name'  => 'Villar',
-                        'role'       => 'Employee',
-                        'position'   => 'Administrative Assistant',
-                        'doc_type'   => 'IPERF',
-                        'tier'       => 'faculty',
-                        'unit_level' => 'college',
-                        'rating'     => null,
-                        'status'     => FolderStatus::TARGET_RETURNED->value,
-                        'remark'     => '[Unit Head Rodrigo Estrada]: Please clarify preventive maintenance schedule targets for university campus facilities.'
-                    ],
-                ]
+                'id'          => 'team_cn_faculty',
+                'owner_id'    => $chairCnId,
+                'name'        => 'Nursing Faculty Members',
+                'description' => 'Teaching faculty under the College of Nursing',
+                'members'     => [$facCn1Id, $facCn2Id],
+            ],
+            [
+                'id'          => 'team_ca_chairs',
+                'owner_id'    => $deanCaId,
+                'name'        => 'Agriculture Department Chairs',
+                'description' => 'Department Chairs under College of Agriculture',
+                'members'     => [$chairCaId],
+            ],
+            [
+                'id'          => 'team_ca_faculty',
+                'owner_id'    => $chairCaId,
+                'name'        => 'Agriculture Faculty Members',
+                'description' => 'Teaching faculty under the College of Agriculture',
+                'members'     => [$facCa1Id],
+            ],
+            [
+                'id'          => 'team_vpaf_heads',
+                'owner_id'    => $vpafUserId,
+                'name'        => 'Administrative Unit Heads',
+                'description' => 'Divisional Unit Heads reporting to the VPAF',
+                'members'     => [$headGsoId, $headHrmoId, $headAccId],
+            ],
+            [
+                'id'          => 'team_gso_staff',
+                'owner_id'    => $headGsoId,
+                'name'        => 'GSO Staff Members',
+                'description' => 'General Services personnel and administrative aides',
+                'members'     => [$staffGso1Id, $staffGso2Id, $iperfId],
+            ],
+            [
+                'id'          => 'team_hrmo_staff',
+                'owner_id'    => $headHrmoId,
+                'name'        => 'HRMO Staff Members',
+                'description' => 'Human Resources personnel',
+                'members'     => [$staffHrmoId],
+            ],
+            [
+                'id'          => 'team_acc_staff',
+                'owner_id'    => $headAccId,
+                'name'        => 'Accounting Staff Members',
+                'description' => 'Accounting Office personnel and bookkeepers',
+                'members'     => [$staffAccId],
             ],
         ];
 
-        // Find active cycle folder (root folder) to attach folders if available
-        $activeCycle = $db->table('document_folders')
-            ->where('parent_folder_id IS NULL')
-            ->where('deleted_at IS NULL')
-            ->orderBy('created_at', 'DESC')
-            ->limit(1)
-            ->get()->getRowArray();
-
-        // Find VPAA folder in that cycle (if available)
-        $vpaaFolder = null;
-        if ($activeCycle) {
-            $vpaaUser = $db->table('users')->where('email', 'vpaa@test.com')->get()->getRowArray();
-            if ($vpaaUser) {
-                $vpaaFolder = $db->table('document_folders')
-                    ->where('parent_folder_id', $activeCycle['id'])
-                    ->where('user_id', $vpaaUser['id'])
-                    ->where('deleted_at IS NULL')
-                    ->get()->getRowArray();
-
-                if ($vpaaFolder && !empty($adminUserId)) {
-                    $existingVpRouting = $db->table('evaluation_routings')
-                        ->where('folder_id', $vpaaFolder['id'])
-                        ->where('evaluator_id', $adminUserId)
-                        ->get()->getRowArray();
-                    if (!$existingVpRouting) {
-                        $db->table('evaluation_routings')->insert([
-                            'folder_id'           => $vpaaFolder['id'],
-                            'evaluator_id'        => $adminUserId,
-                            'evaluator_folder_id' => $activeCycle['id'],
-                            'status'              => $vpaaFolder['status'] ?? 'Draft',
-                            'created_at'          => $now,
-                            'updated_at'          => $now
-                        ]);
-                    }
-                }
+        foreach ($presetsToSeed as $pst) {
+            $db->table('routing_presets')->insert([
+                'id'          => $pst['id'],
+                'owner_id'    => $pst['owner_id'],
+                'name'        => $pst['name'],
+                'description' => $pst['description'],
+                'created_at'  => $now,
+                'updated_at'  => $now,
+            ]);
+            foreach ($pst['members'] as $mUid) {
+                $db->table('routing_preset_members')->insert([
+                    'preset_id'  => $pst['id'],
+                    'user_id'    => $mUid,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
             }
         }
 
-        $createdUserCount = 0;
-        $createdDocCount = 0;
-
-        foreach ($rosterGroups as $group) {
-            $collegeUnitId = $unitIdMap[$group['college_name']] ?? $ovpaaId;
-            $deptUnitId    = $unitIdMap[$group['dept_name']] ?? $collegeUnitId;
-
-            $deanFolderId  = null;
-            $chairFolderId = null;
-            $deanUserId    = null;
-            $chairUserId   = null;
-
-            foreach ($group['users'] as $u) {
-                // A. Ensure User exists
-                $existingUser = $db->table('users')->where('email', $u['email'])->get()->getRowArray();
-                if ($existingUser) {
-                    $userId = (int)$existingUser['id'];
-                    $db->table('users')->where('id', $userId)->update([
-                        'password'   => $password,
-                        'is_active'  => 1,
-                        'first_name' => $u['first_name'],
-                        'last_name'  => $u['last_name'],
-                        'doc_type'   => $u['doc_type'],
-                    ]);
-                } else {
-                    $db->table('users')->insert([
-                        'email'      => $u['email'],
-                        'first_name' => $u['first_name'],
-                        'last_name'  => $u['last_name'],
-                        'password'   => $password,
-                        'is_active'  => 1,
-                        'doc_type'   => $u['doc_type'],
-                    ]);
-                    $userId = (int)$db->insertID();
-                    $createdUserCount++;
-                }
-
-                // B. Assign Role
-                $roleId = $roleMap[$u['role']] ?? 4;
-                $existingUserRole = $db->table('user_roles')->where('user_id', $userId)->get()->getRowArray();
-                if ($existingUserRole) {
-                    $db->table('user_roles')->where('user_id', $userId)->update(['role_id' => $roleId]);
-                } else {
-                    $db->table('user_roles')->insert([
-                        'user_id' => $userId,
-                        'role_id' => $roleId
-                    ]);
-                }
-
-                // C. Assign Plantilla with authentic Unit level
-                // Deans belong to the College unit; Chairs and Faculty belong to their constituent Department unit!
-                $userUnitId = ($u['unit_level'] === 'college') ? $collegeUnitId : $deptUnitId;
-
-                $posId = $posMap[$u['position']] ?? 4;
-                $existingPlantilla = $db->table('plantillas')
-                    ->where('user_id', $userId)
-                    ->where('ended_at IS NULL')
-                    ->get()->getRowArray();
-                if ($existingPlantilla) {
-                    $db->table('plantillas')->where('id', $existingPlantilla['id'])->update([
-                        'position_id' => $posId,
-                        'unit_id'     => $userUnitId,
-                    ]);
-                } else {
-                    $db->table('plantillas')->insert([
-                        'user_id'     => $userId,
-                        'position_id' => $posId,
-                        'unit_id'     => $userUnitId,
-                        'started_at'  => '2023-01-01',
-                        'ended_at'    => null,
-                    ]);
-                }
-
-                // Track hierarchy for folders
-                if ($u['tier'] === 'dean') {
-                    $deanUserId = $userId;
-                } elseif ($u['tier'] === 'chair') {
-                    $chairUserId = $userId;
-                }
-
-                // D. Hook into Active Evaluation Cycle if present
-                if ($activeCycle) {
-                    $parentFolderId = null;
-                    if ($u['tier'] === 'dean') {
-                        $parentFolderId = $vpaaFolder ? $vpaaFolder['id'] : $activeCycle['id'];
-                    } elseif ($u['tier'] === 'chair') {
-                        $parentFolderId = $deanFolderId ?? ($vpaaFolder ? $vpaaFolder['id'] : $activeCycle['id']);
-                    } else {
-                        $parentFolderId = $chairFolderId ?? $deanFolderId ?? ($vpaaFolder ? $vpaaFolder['id'] : $activeCycle['id']);
-                    }
-
-                    $existingFolder = $db->table('document_folders')
-                        ->where('user_id', $userId)
-                        ->where('title', $activeCycle['title'])
-                        ->where('deleted_at IS NULL')
-                        ->get()->getRowArray();
-
-                    $isTargetPhase = in_array($u['status'], [
-                        FolderStatus::DRAFT_TARGET->value,
-                        FolderStatus::TARGET_SUBMITTED->value,
-                        FolderStatus::TARGET_RETURNED->value
-                    ]);
-
-                    if (!$existingFolder) {
-                        $folderId = generate_short_id();
-                        $folderData = [
-                            'id'                  => $folderId,
-                            'title'               => $activeCycle['title'],
-                            'user_id'             => $userId,
-                            'parent_folder_id'    => $parentFolderId,
-                            'cycle_folder_id'     => $activeCycle['cycle_folder_id'] ?? $activeCycle['id'],
-                            'final_rating'        => $u['rating'],
-                            'status'              => $u['status'],
-                            'target_submitted_at' => $now,
-                            'target_approved_at'  => $isTargetPhase ? null : $now,
-                            'submitted_at'        => in_array($u['status'], [FolderStatus::EVAL_SUBMITTED->value, FolderStatus::EVAL_APPROVED->value]) ? $now : null,
-                            'rated_at'            => $u['rating'] ? $now : null,
-                            'created_at'          => $now,
-                            'updated_at'          => $now
-                        ];
-
-                        $db->table('document_folders')->insert($folderData);
-
-                        if ($u['tier'] === 'faculty' && $chairUserId) {
-                            $db->table('evaluation_routings')->insert([
-                                'folder_id'           => $folderId,
-                                'evaluator_id'        => $chairUserId,
-                                'status'              => $u['status'],
-                                'evaluator_folder_id' => $chairFolderId,
-                                'created_at'          => $now,
-                                'updated_at'          => $now
-                            ]);
-                        }
-                    } else {
-                        $folderId = $existingFolder['id'];
-                        $db->table('document_folders')->where('id', $folderId)->update([
-                            'status'              => $u['status'],
-                            'final_rating'        => $u['rating'],
-                            'target_submitted_at' => $now,
-                            'target_approved_at'  => $isTargetPhase ? null : ($existingFolder['target_approved_at'] ?: $now),
-                            'submitted_at'        => in_array($u['status'], [FolderStatus::EVAL_SUBMITTED->value, FolderStatus::EVAL_APPROVED->value]) ? $now : null,
-                            'rated_at'            => $u['rating'] ? $now : null,
-                            'updated_at'          => $now
-                        ]);
-                    }
-
-                    if ($u['tier'] === 'dean') {
-                        $deanFolderId = $folderId;
-                    } elseif ($u['tier'] === 'chair') {
-                        $chairFolderId = $folderId;
-                    }
-
-                    // E. Form Document in Folder
-                    $existingDoc = $db->table('documents')->where('document_folder_id', $folderId)->get()->getRowArray();
-                    if (!$existingDoc) {
-                        $tpl = $templatesByTitle[$u['doc_type']] ?? null;
-                        $tabsData = $tpl ? json_decode($tpl['tabs'] ?? '[]', true) : [];
-
-                        if (!empty($u['remark']) && !empty($tabsData[0]['formData']['categories']['core'][0])) {
-                            $tabsData[0]['formData']['categories']['core'][0]['remarks'] = $u['remark'];
-                        }
-
-                        $docId = generate_short_id();
-                        $db->table('documents')->insert([
-                            'id'                 => $docId,
-                            'document_folder_id' => $folderId,
-                            'title'              => "{$u['doc_type']} — {$u['first_name']} {$u['last_name']}",
-                            'tabs'               => json_encode($tabsData),
-                            'created_at'         => $now,
-                            'updated_at'         => $now
-                        ]);
-                        $createdDocCount++;
-                    }
-                }
-            }
-        }
-
-        // Clean up old CAS if present and transfer any unlinked rows
-        $cas = $db->table('units')->where('name', 'College of Arts and Sciences')->get()->getRowArray();
-        if ($cas) {
-            $cahId = $unitIdMap['College of Arts and Humanities'] ?? null;
-            if ($cahId) {
-                // Point any sub-units of CAS to CAH
-                $db->table('units')->where('parent_id', $cas['id'])->update(['parent_id' => $cahId]);
-                $db->table('units')->where('id', $cas['id'])->delete();
-            }
-        }
-
-        echo ">>> [SPMS] Seeder complete!\n";
-        echo "    - 15 BSU Colleges & Constituent Departments Seeded\n";
-        echo "    - 4-Tier Rosters Initialized\n";
-        echo "    - Default Password: 123\n";
+        echo ">>> [SPMS DepartmentSeeder] Successfully seeded 25 users across VPAA & VPAF hierarchies!\n";
+        echo "    - All accounts initialized with default password: 123\n";
+        echo "    - Pre-seeded 12 routing presets/teams for instant cascading.\n";
+        echo "    - Rating cycle, cycle deadlines, folders, and routings attached.\n";
     }
 }

@@ -4,7 +4,7 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreateUnitsTable extends Migration
+class CreateTwgUnitAssignmentsTable extends Migration
 {
     public function up()
     {
@@ -15,17 +15,15 @@ class CreateUnitsTable extends Migration
                 'unsigned'       => true,
                 'auto_increment' => true,
             ],
-            'name' => [
-                'type'       => 'VARCHAR',
-                'constraint' => '255',
-                'null'       => false,
-            ],
-            'parent_id' => [
+            'user_id' => [
                 'type'       => 'INT',
                 'constraint' => 11,
                 'unsigned'   => true,
-                'null'       => true,  // NULL = top-level (VP offices)
-                'default'    => null,
+            ],
+            'unit_id' => [
+                'type'       => 'INT',
+                'constraint' => 11,
+                'unsigned'   => true,
             ],
             'created_at' => [
                 'type' => 'DATETIME',
@@ -35,20 +33,17 @@ class CreateUnitsTable extends Migration
                 'type' => 'DATETIME',
                 'null' => true,
             ],
-            'deleted_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
-            ],
         ]);
 
-        $this->forge->addKey('id', true);
-        $this->forge->addForeignKey('parent_id', 'units', 'id', 'SET NULL', 'CASCADE');
-
-        $this->forge->createTable('units');
+        $this->forge->addPrimaryKey('id');
+        $this->forge->addKey(['user_id', 'unit_id']);
+        $this->forge->addForeignKey('user_id', 'users', 'id', 'CASCADE', 'CASCADE');
+        $this->forge->addForeignKey('unit_id', 'units', 'id', 'CASCADE', 'CASCADE');
+        $this->forge->createTable('twg_unit_assignments', true);
     }
 
     public function down()
     {
-        $this->forge->dropTable('units');
+        $this->forge->dropTable('twg_unit_assignments', true);
     }
 }

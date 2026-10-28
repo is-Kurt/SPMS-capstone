@@ -4,7 +4,7 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreateRolesTable extends Migration
+class CreateUnitsTable extends Migration
 {
     public function up()
     {
@@ -17,9 +17,13 @@ class CreateRolesTable extends Migration
             ],
             'name' => [
                 'type'       => 'VARCHAR',
-                'constraint' => '50',
-                'null'       => false,
-                'unique'     => true,  // e.g. 'Admin', 'HR', 'Employee'
+                'constraint' => '255',
+            ],
+            'parent_id' => [
+                'type'       => 'INT',
+                'constraint' => 11,
+                'unsigned'   => true,
+                'null'       => true,
             ],
             'created_at' => [
                 'type' => 'DATETIME',
@@ -29,19 +33,14 @@ class CreateRolesTable extends Migration
                 'type' => 'DATETIME',
                 'null' => true,
             ],
-            'deleted_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
-            ],
         ]);
-
-        $this->forge->addKey('id', true);
-
-        $this->forge->createTable('roles');
+        $this->forge->addPrimaryKey('id');
+        $this->forge->addForeignKey('parent_id', 'units', 'id', 'SET NULL', 'CASCADE');
+        $this->forge->createTable('units', true);
     }
 
     public function down()
     {
-        $this->forge->dropTable('roles');
+        $this->forge->dropTable('units', true);
     }
 }

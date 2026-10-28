@@ -4,7 +4,7 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreateDocumentAttachmentsTable extends Migration
+class CreateEvaluationRoutingsTable extends Migration
 {
     public function up()
     {
@@ -15,42 +15,36 @@ class CreateDocumentAttachmentsTable extends Migration
                 'unsigned'       => true,
                 'auto_increment' => true,
             ],
-            'document_id' => [
+            'folder_id' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 11,
                 'null'       => false,
             ],
-            'row_id' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 100,
-                'null'       => false,
-            ],
-            'file_name' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 255,
-                'null'       => false,
-            ],
-            'file_path' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 255,
-                'null'       => false,
-            ],
-            'file_type' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 100,
-                'null'       => false,
-            ],
-            'file_size' => [
+            'evaluator_id' => [
                 'type'       => 'INT',
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => false,
             ],
-            'uploaded_by' => [
-                'type'       => 'INT',
+            'evaluator_folder_id' => [
+                'type'       => 'VARCHAR',
                 'constraint' => 11,
-                'unsigned'   => true,
+                'null'       => true,
+            ],
+            'role' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 50,
                 'null'       => false,
+                'default'    => 'supervisor',
+            ],
+            'status' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 30,
+                'default'    => 'pending',
+            ],
+            'remarks' => [
+                'type' => 'TEXT',
+                'null' => true,
             ],
             'created_at' => [
                 'type' => 'DATETIME',
@@ -67,15 +61,12 @@ class CreateDocumentAttachmentsTable extends Migration
         ]);
 
         $this->forge->addPrimaryKey('id');
-        $this->forge->addKey('document_id');
-        $this->forge->addKey('row_id');
-        $this->forge->addKey('uploaded_by');
-
-        $this->forge->createTable('document_attachments', true);
+        $this->forge->addKey(['folder_id', 'evaluator_id']);
+        $this->forge->createTable('evaluation_routings', true);
     }
 
     public function down()
     {
-        $this->forge->dropTable('document_attachments', true);
+        $this->forge->dropTable('evaluation_routings', true);
     }
 }

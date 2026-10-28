@@ -4,7 +4,7 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreateEvaluationRoutingsTable extends Migration
+class CreateRatingCyclesTable extends Migration
 {
     public function up()
     {
@@ -15,24 +15,30 @@ class CreateEvaluationRoutingsTable extends Migration
                 'unsigned'       => true,
                 'auto_increment' => true,
             ],
-            'folder_id' => [
+            'title' => [
                 'type'       => 'VARCHAR',
-                'constraint' => 11,
+                'constraint' => '150',
                 'null'       => false,
             ],
-            'evaluator_id' => [
-                'type'           => 'INT',
-                'constraint'     => 11,
-                'unsigned'       => true,
+            'rating_period' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '100',
+                'null'       => true,
+            ],
+            'approving_authority_name' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '150',
+                'null'       => true,
+            ],
+            'approving_authority_position' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '150',
+                'null'       => true,
             ],
             'status' => [
                 'type'       => 'VARCHAR',
-                'constraint' => 50,
-            ],
-            'evaluator_folder_id' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 11,
-                'null'       => false,
+                'constraint' => '20',
+                'default'    => 'active',
             ],
             'created_at' => [
                 'type' => 'DATETIME',
@@ -47,17 +53,12 @@ class CreateEvaluationRoutingsTable extends Migration
                 'null' => true,
             ],
         ]);
-
-        $this->forge->addKey('id', true);
-
-        $this->forge->addForeignKey('evaluator_id', 'users', 'id', 'CASCADE',  'CASCADE');
-        $this->forge->addForeignKey('folder_id', 'document_folders', 'id', 'CASCADE', 'CASCADE');
-
-        $this->forge->createTable('evaluation_routings');
+        $this->forge->addPrimaryKey('id');
+        $this->forge->createTable('rating_cycles', true);
     }
 
     public function down()
     {
-        $this->forge->dropTable('evaluation_routings');
+        $this->forge->dropTable('rating_cycles', true);
     }
 }

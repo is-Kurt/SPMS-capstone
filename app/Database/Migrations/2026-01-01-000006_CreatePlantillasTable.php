@@ -4,7 +4,7 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreatePlantillaTable extends Migration
+class CreatePlantillasTable extends Migration
 {
     public function up()
     {
@@ -19,19 +19,22 @@ class CreatePlantillaTable extends Migration
                 'type'       => 'INT',
                 'constraint' => 11,
                 'unsigned'   => true,
-                'null'       => false,
             ],
             'position_id' => [
                 'type'       => 'INT',
                 'constraint' => 11,
                 'unsigned'   => true,
-                'null'       => true,  // NULL = position was deleted; the assignment itself lives on
             ],
             'unit_id' => [
                 'type'       => 'INT',
                 'constraint' => 11,
                 'unsigned'   => true,
-                'null'       => true,  // NULL = unit was deleted; the assignment itself lives on
+            ],
+            'employment_status' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '50',
+                'default'    => 'Permanent',
+                'null'       => true,
             ],
             'started_at' => [
                 'type' => 'DATE',
@@ -39,7 +42,7 @@ class CreatePlantillaTable extends Migration
             ],
             'ended_at' => [
                 'type' => 'DATE',
-                'null' => true,  // NULL = currently active
+                'null' => true,
             ],
             'created_at' => [
                 'type' => 'DATETIME',
@@ -49,25 +52,16 @@ class CreatePlantillaTable extends Migration
                 'type' => 'DATETIME',
                 'null' => true,
             ],
-            'deleted_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
-            ],
         ]);
-
-        $this->forge->addKey('id', true);
-        // addForeignKey($field, $table, $column, $onUpdate, $onDelete) - onDelete is SET
-        // NULL here so deleting a position/unit that's in use un-assigns it (the plantilla
-        // row survives with a null position_id/unit_id) instead of being blocked or cascaded.
-        $this->forge->addForeignKey('user_id',     'users',     'id', 'CASCADE', 'CASCADE');
-        $this->forge->addForeignKey('position_id', 'positions', 'id', 'CASCADE', 'SET NULL');
-        $this->forge->addForeignKey('unit_id',     'units',     'id', 'CASCADE', 'SET NULL');
-
-        $this->forge->createTable('plantillas');
+        $this->forge->addPrimaryKey('id');
+        $this->forge->addForeignKey('user_id', 'users', 'id', 'CASCADE', 'CASCADE');
+        $this->forge->addForeignKey('position_id', 'positions', 'id', 'CASCADE', 'CASCADE');
+        $this->forge->addForeignKey('unit_id', 'units', 'id', 'CASCADE', 'CASCADE');
+        $this->forge->createTable('plantillas', true);
     }
 
     public function down()
     {
-        $this->forge->dropTable('plantillas');
+        $this->forge->dropTable('plantillas', true);
     }
 }

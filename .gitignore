@@ -157,4 +157,9 @@ docs/*local*
 docs/*security*
 docs/SECURITY_AND_SYSTEM_GUIDE.md
 
+# Runtime Uploads & Local Scratch Scripts
+public/uploads/*
+scratch/*
+
+
 
