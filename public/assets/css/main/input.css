@@ -137,16 +137,15 @@ a {
 textarea {
     scrollbar-width: thin; /* Firefox */
     scrollbar-color: #94a3b8 rgba(0, 0, 0, 0.04);
-    scrollbar-gutter: stable;
-}
+    }
 .custom-scrollbar::-webkit-scrollbar,
 textarea::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
 }
 .custom-scrollbar::-webkit-scrollbar-track,
 textarea::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.04);
+    background: transparent;
     border-radius: 9999px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb,
@@ -171,7 +170,7 @@ html.dark textarea {
 html.dark .custom-scrollbar::-webkit-scrollbar-track,
 .dark textarea::-webkit-scrollbar-track,
 html.dark textarea::-webkit-scrollbar-track {
-    background: rgba(24, 24, 27, 0.7) !important;
+    background: transparent !important;
 }
 .dark .custom-scrollbar::-webkit-scrollbar-thumb,
 html.dark .custom-scrollbar::-webkit-scrollbar-thumb,

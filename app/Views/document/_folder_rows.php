@@ -1,6 +1,7 @@
 <?php   
-    $isArchivedRoute = (service('uri')->getSegment(2) === 'archived');
-    $firstSegment = service('uri')->getSegment(1);
+    $totalSegments = service('uri')->getTotalSegments();
+    $isArchivedRoute = ($totalSegments >= 2 && service('uri')->getSegment(2) === 'archived');
+    $firstSegment = ($totalSegments >= 1) ? service('uri')->getSegment(1) : '';
     $currentBaseUrl = ($firstSegment === 'ratings') ? 'ratings' : 
                       (($firstSegment === 'dashboard') ? 'dashboard' : 
                       ($isArchivedRoute ? 'folders/archived' : 'folders'));
@@ -12,14 +13,16 @@
         <?php if ($isFoldersRoute && session()->get('role') === 'Admin'): ?>
             <div class="grid grid-cols-2 p-1 bg-surface-border/40 dark:bg-zinc-800/60 rounded-xl border border-surface-border/80 shadow-xs mb-1.5">
                 <a href="<?= site_url('folders') ?>" 
-                   class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs transition-all cursor-pointer <?= !$isArchivedRoute ? 'bg-accent text-zinc-950 shadow-xs font-black' : 'font-bold text-text-muted hover:text-text hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50' ?>">
+                   class="folder-tab-toggle inline-flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs transition-colors cursor-pointer <?= !$isArchivedRoute ? 'bg-accent text-zinc-950 shadow-xs font-black' : 'font-bold text-text-muted hover:text-text hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50' ?>"
+                   data-type="active">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 <?= !$isArchivedRoute ? 'text-zinc-950' : 'text-zinc-400 dark:text-zinc-500' ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                     </svg>
                     <span>Active</span>
                 </a>
                 <a href="<?= site_url('folders/archived') ?>" 
-                   class="inline-flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs transition-all cursor-pointer <?= $isArchivedRoute ? 'bg-accent text-zinc-950 shadow-xs font-black' : 'font-bold text-text-muted hover:text-text hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50' ?>">
+                   class="folder-tab-toggle inline-flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs transition-colors cursor-pointer <?= $isArchivedRoute ? 'bg-accent text-zinc-950 shadow-xs font-black' : 'font-bold text-text-muted hover:text-text hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50' ?>"
+                   data-type="archived">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 <?= $isArchivedRoute ? 'text-zinc-950' : 'text-zinc-400 dark:text-zinc-500' ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                     </svg>
@@ -36,11 +39,12 @@
                     <?php $isActive = ($selectedFolderId == $folder['id']); ?>
                     
                     <a href="<?= site_url($currentBaseUrl . '/' . $folder['id']) ?>"
-                       class="sidebar-folder-item relative px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2.5 group
+                       class="sidebar-folder-item relative px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center gap-2.5 group
                         <?= $isActive ?
                            'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700/60 shadow-xs' : 
                            'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/40' ?>"
                        data-is-active="<?= $isActive ? '1' : '0' ?>"
+                       data-folder-id="<?= $folder['id'] ?>"
                        data-index="<?= $index ?>">
                         
                         <?php if ($isActive): ?>
@@ -141,5 +145,200 @@
         }
 
         renderSidebarPage(currentPage);
+    })();
+
+    // --- Seamless Folder Workspace Switcher ---
+    (function() {
+        let isSwitchingFolder = false;
+
+        function executeScripts(container) {
+            if (!container) return;
+            const scripts = container.querySelectorAll('script');
+            scripts.forEach(oldScript => {
+                const newScript = document.createElement('script');
+                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                oldScript.parentNode.replaceChild(newScript, oldScript);
+            });
+        }
+
+        async function loadFolderWorkspace(url, updateHistory = true) {
+            const container = document.getElementById('main-content-container');
+            if (!container || isSwitchingFolder) return;
+            
+            isSwitchingFolder = true;
+
+            try {
+                const res = await fetch(url, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-SPMS-Scope': 'workspace',
+                        'Accept': 'text/html'
+                    }
+                });
+
+                if (!res.ok) {
+                    window.location.href = url;
+                    return;
+                }
+
+                const html = await res.text();
+                const newCsrf = res.headers.get('x-csrf-token') || res.headers.get('X-CSRF-TOKEN');
+                if (newCsrf) {
+                    document.querySelector('meta[name="csrf-token-hash"]')?.setAttribute('content', newCsrf);
+                    document.querySelectorAll('input[name="csrf_test_name"]').forEach(i => i.value = newCsrf);
+                }
+                container.innerHTML = html;
+                executeScripts(container);
+
+                if (updateHistory) {
+                    history.pushState({ spmsFolderUrl: url, scope: 'workspace' }, '', url);
+                }
+
+                // Close mobile sidebar if open
+                if (typeof toggleAppSidebar === 'function' && window.isAppSidebarOpen) {
+                    toggleAppSidebar();
+                }
+            } catch (err) {
+                console.error('Seamless switch failed, falling back to full navigation:', err);
+                window.location.href = url;
+            } finally {
+                isSwitchingFolder = false;
+            }
+        }
+
+        async function loadFolderTab(url, updateHistory = true) {
+            if (isSwitchingFolder) return;
+            isSwitchingFolder = true;
+
+            try {
+                const res = await fetch(url, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-SPMS-Scope': 'tab',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!res.ok) {
+                    window.location.href = url;
+                    return;
+                }
+
+                const data = await res.json();
+                const newCsrf = res.headers.get('x-csrf-token') || res.headers.get('X-CSRF-TOKEN');
+                if (newCsrf) {
+                    document.querySelector('meta[name="csrf-token-hash"]')?.setAttribute('content', newCsrf);
+                    document.querySelectorAll('input[name="csrf_test_name"]').forEach(i => i.value = newCsrf);
+                }
+                const sidebarContainer = document.getElementById('sidebar-content-container');
+                const mainContainer = document.getElementById('main-content-container');
+
+                if (sidebarContainer && data.sidebar) {
+                    sidebarContainer.innerHTML = data.sidebar;
+                    executeScripts(sidebarContainer);
+                }
+                if (mainContainer && data.main) {
+                    mainContainer.innerHTML = data.main;
+                    executeScripts(mainContainer);
+                }
+
+                const finalUrl = data.url || url;
+                if (updateHistory) {
+                    history.pushState({ spmsFolderUrl: finalUrl, scope: 'tab' }, '', finalUrl);
+                }
+
+                // Close mobile sidebar if open
+                if (typeof toggleAppSidebar === 'function' && window.isAppSidebarOpen) {
+                    toggleAppSidebar();
+                }
+            } catch (err) {
+                console.error('Seamless tab switch failed, falling back to full navigation:', err);
+                window.location.href = url;
+            } finally {
+                isSwitchingFolder = false;
+            }
+        }
+
+        function updateActiveSidebarItem(targetItem) {
+            const items = document.querySelectorAll('.sidebar-folder-item');
+            items.forEach(el => {
+                el.setAttribute('data-is-active', '0');
+                el.className = 'sidebar-folder-item relative px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center gap-2.5 group text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800/40';
+                const amber = el.querySelector('span.bg-amber-500');
+                if (amber) amber.remove();
+                const icon = el.querySelector('svg');
+                if (icon) {
+                    icon.className = 'w-4 h-4 flex-shrink-0 text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-white';
+                }
+            });
+
+            if (targetItem) {
+                targetItem.setAttribute('data-is-active', '1');
+                targetItem.className = 'sidebar-folder-item relative px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center gap-2.5 group bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-700/60 shadow-xs';
+                
+                const amberPill = document.createElement('span');
+                amberPill.className = 'absolute left-0 inset-y-2.5 w-1 bg-amber-500 rounded-r-full';
+                targetItem.prepend(amberPill);
+
+                const icon = targetItem.querySelector('svg');
+                if (icon) {
+                    icon.className = 'w-4 h-4 flex-shrink-0 text-zinc-900 dark:text-white';
+                }
+            }
+        }
+
+        // Bind folder clicks
+        document.querySelectorAll('.sidebar-folder-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                e.preventDefault();
+
+                const url = this.getAttribute('href');
+                if (!url) return;
+
+                updateActiveSidebarItem(this);
+                loadFolderWorkspace(url, true);
+            });
+        });
+
+        // Bind Active / Archived tab clicks
+        document.querySelectorAll('.folder-tab-toggle').forEach(tabBtn => {
+            tabBtn.addEventListener('click', function(e) {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                e.preventDefault();
+
+                const url = this.getAttribute('href');
+                if (!url) return;
+
+                loadFolderTab(url, true);
+            });
+        });
+
+        // Handle browser Back / Forward buttons seamlessly
+        window.addEventListener('popstate', function(e) {
+            const url = window.location.href;
+            const isArchivedUrl = url.includes('/folders/archived');
+            const currentIsArchived = document.querySelector('.folder-tab-toggle[data-type="archived"]')?.classList.contains('bg-accent');
+            
+            if (isArchivedUrl !== Boolean(currentIsArchived)) {
+                loadFolderTab(url, false);
+            } else {
+                const matchingItem = Array.from(document.querySelectorAll('.sidebar-folder-item')).find(el => el.getAttribute('href') === url);
+                if (matchingItem) {
+                    updateActiveSidebarItem(matchingItem);
+                }
+                loadFolderWorkspace(url, false);
+            }
+        });
+
+        window.refreshFolderWorkspace = function(folderId) {
+            const currentUrl = window.location.href;
+            loadFolderWorkspace(currentUrl, false);
+        };
+
+        window.loadFolderTab = function(url, updateHistory = true) {
+            return loadFolderTab(url, updateHistory);
+        };
     })();
 </script>

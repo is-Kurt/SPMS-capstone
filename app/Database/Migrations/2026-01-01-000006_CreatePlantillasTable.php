@@ -52,6 +52,10 @@ class CreatePlantillasTable extends Migration
                 'type' => 'DATETIME',
                 'null' => true,
             ],
+            'deleted_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
         ]);
         $this->forge->addPrimaryKey('id');
         $this->forge->addForeignKey('user_id', 'users', 'id', 'CASCADE', 'CASCADE');

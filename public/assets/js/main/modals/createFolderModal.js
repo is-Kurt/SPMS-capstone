@@ -403,12 +403,14 @@ if (formCreateFolder) {
         apiPost('/folder', formData, {
             onSuccess: (response) => {
                 isCreatingFolder = false;
+                submitBtn.innerText = 'Create Folder';
                 folderModal.close();
 
-                if (response.id) {
-                    window.location.href = `/folders/${response.id}`;
+                const targetUrl = response.id ? `/folders/${response.id}` : '/folders';
+                if (typeof window.loadFolderTab === 'function') {
+                    window.loadFolderTab(targetUrl, true);
                 } else {
-                    window.location.reload();
+                    window.location.href = targetUrl;
                 }
             },
             onError: (errorMsg) => {

@@ -262,6 +262,22 @@ class Document extends BaseController
         $ownerPosition = $ownerPlantilla['position'] ?? ($ownerRoleName ?: 'Faculty');
         $ownerDept = $ownerPlantilla['department'] ?? '';
 
+        $allOwnerPlantillas = $userModel->getAllActivePlantillaDetails((int)$docOwnerId);
+        $ownerRoles = [];
+        if (!empty($allOwnerPlantillas)) {
+            foreach ($allOwnerPlantillas as $pRow) {
+                $ownerRoles[] = [
+                    'position' => $pRow['position'] ?? '',
+                    'dept'     => $pRow['department'] ?? ''
+                ];
+            }
+        } else {
+            $ownerRoles[] = [
+                'position' => $ownerPosition,
+                'dept'     => $ownerDept
+            ];
+        }
+
         $folderModel = new \App\Models\DocumentFolderModel();
         $currentFolderRec = $folderModel->find($docInfo['document_folder_id']);
 
@@ -299,28 +315,13 @@ class Document extends BaseController
         }
         $data['rootFolderId'] = $rootFolderId;
 
-        // Resolve Approving Authority (from cycle configuration or system admin fallback)
+        // Resolve Approving Authority (from cycle configuration or default President fallback)
         $cycleApprovingName = !empty($currentFolderRec['approving_authority_name']) 
             ? $currentFolderRec['approving_authority_name'] 
-            : (!empty($rootCycle['approving_authority_name']) ? $rootCycle['approving_authority_name'] : '');
+            : (!empty($rootCycle['approving_authority_name']) ? $rootCycle['approving_authority_name'] : 'President');
         $cycleApprovingPos  = !empty($currentFolderRec['approving_authority_position']) 
             ? $currentFolderRec['approving_authority_position'] 
-            : (!empty($rootCycle['approving_authority_position']) ? $rootCycle['approving_authority_position'] : '');
-
-        if (empty($cycleApprovingName)) {
-            $adminUser = $userModel->select('users.*, pos.title as pos_title')
-                ->join('user_roles ur', 'ur.user_id = users.id')
-                ->join('roles r', 'r.id = ur.role_id')
-                ->join('plantillas p', 'p.user_id = users.id AND p.ended_at IS NULL', 'left')
-                ->join('positions pos', 'pos.id = p.position_id', 'left')
-                ->where('r.name', 'Admin')
-                ->where('users.is_active', 1)
-                ->first();
-            if ($adminUser) {
-                $cycleApprovingName = trim(($adminUser['first_name'] ?? '') . ' ' . ($adminUser['last_name'] ?? ''));
-                $cycleApprovingPos  = $adminUser['pos_title'] ?? 'University President';
-            }
-        }
+            : (!empty($rootCycle['approving_authority_position']) ? $rootCycle['approving_authority_position'] : 'President');
 
         // Resolve default supervisors / approving authorities for this document
         $docTitleUpper = strtoupper($docInfo['title'] ?? '');
@@ -336,7 +337,7 @@ class Document extends BaseController
             if (!empty($cycleApprovingName)) {
                 $supervisors[] = [
                     'name'     => $cycleApprovingName,
-                    'position' => $cycleApprovingPos ?: 'University President',
+                    'position' => $cycleApprovingPos ?: 'President',
                     'date'     => $cascadeDate,
                     'evalDate' => $cascadeDate
                 ];
@@ -405,7 +406,7 @@ class Document extends BaseController
                     'id'        => null,
                     'folder_id' => null,
                     'name'      => $cycleApprovingName,
-                    'position'  => $cycleApprovingPos ?: 'University President',
+                    'position'  => $cycleApprovingPos ?: 'President',
                     'date'      => $cascadeDate,
                     'evalDate'  => $cascadeDate
                 ];
@@ -527,6 +528,7 @@ class Document extends BaseController
             'name'        => $ownerName,
             'position'    => $ownerPosition,
             'dept'        => $ownerDept,
+            'roles'       => $ownerRoles,
             'period'      => $docPeriod,
             'cascadeDate' => $cascadeDate
         ];
@@ -864,10 +866,27 @@ class Document extends BaseController
         $ownerRolePivot = (new \App\Models\UserRoleModel())->where('user_id', $docOwnerId)->first();
         $ownerRoleName = $ownerRolePivot ? ((new \App\Models\RoleModel())->find($ownerRolePivot['role_id'])['name'] ?? '') : '';
 
+        $allOwnerPlantillas = $userModel->getAllActivePlantillaDetails((int)$docOwnerId);
+        $ownerRoles = [];
+        if (!empty($allOwnerPlantillas)) {
+            foreach ($allOwnerPlantillas as $pRow) {
+                $ownerRoles[] = [
+                    'position' => $pRow['position'] ?? '',
+                    'dept'     => $pRow['department'] ?? ''
+                ];
+            }
+        } else {
+            $ownerRoles[] = [
+                'position' => $ownerPlantilla['position'] ?? ($ownerRoleName ?: 'Faculty'),
+                'dept'     => $ownerPlantilla['department'] ?? ''
+            ];
+        }
+
         $ownerInfo = [
             'name'     => trim(($ownerUser['first_name'] ?? '') . ' ' . ($ownerUser['last_name'] ?? '')),
             'position' => $ownerPlantilla['position'] ?? ($ownerRoleName ?: 'Faculty'),
             'dept'     => $ownerPlantilla['department'] ?? '',
+            'roles'    => $ownerRoles,
             'period'   => $formData['ratee']['period'] ?? '',
         ];
 
@@ -931,10 +950,27 @@ class Document extends BaseController
         $ownerRolePivot = (new \App\Models\UserRoleModel())->where('user_id', $docOwnerId)->first();
         $ownerRoleName = $ownerRolePivot ? ((new \App\Models\RoleModel())->find($ownerRolePivot['role_id'])['name'] ?? '') : '';
 
+        $allOwnerPlantillas = $userModel->getAllActivePlantillaDetails((int)$docOwnerId);
+        $ownerRoles = [];
+        if (!empty($allOwnerPlantillas)) {
+            foreach ($allOwnerPlantillas as $pRow) {
+                $ownerRoles[] = [
+                    'position' => $pRow['position'] ?? '',
+                    'dept'     => $pRow['department'] ?? ''
+                ];
+            }
+        } else {
+            $ownerRoles[] = [
+                'position' => $ownerPlantilla['position'] ?? ($ownerRoleName ?: 'Staff'),
+                'dept'     => $ownerPlantilla['department'] ?? ''
+            ];
+        }
+
         $ownerInfo = [
             'name'     => trim(($ownerUser['first_name'] ?? '') . ' ' . ($ownerUser['last_name'] ?? '')),
             'position' => $ownerPlantilla['position'] ?? ($ownerRoleName ?: 'Staff'),
             'dept'     => $ownerPlantilla['department'] ?? '',
+            'roles'    => $ownerRoles,
             'period'   => $formData['ratee']['period'] ?? '',
         ];
 

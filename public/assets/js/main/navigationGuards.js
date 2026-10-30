@@ -123,7 +123,10 @@
             if (targetUrl.pathname === window.location.pathname && targetUrl.search === window.location.search) return;
 
             // 1. Immediate Visual Response on Clicked Link (0ms)
-            link.classList.add('opacity-80', 'scale-[0.98]');
+            const isFolderItemOrTab = link.classList.contains('sidebar-folder-item') || link.classList.contains('folder-tab-toggle');
+            if (!isFolderItemOrTab) {
+                link.classList.add('opacity-80', 'scale-[0.98]');
+            }
 
             // Special handling for Header Navigation Pills: instant sliding indicator
             if (link.classList.contains('header-nav-link')) {
@@ -150,10 +153,12 @@
             }
 
             // 2. Immediate Subtle Transition on Main Content (0ms)
-            const contentContainers = document.querySelectorAll('.spms-content-slide');
-            contentContainers.forEach(container => {
-                container.classList.add('spms-nav-transitioning');
-            });
+            if (!isFolderItemOrTab) {
+                const contentContainers = document.querySelectorAll('.spms-content-slide');
+                contentContainers.forEach(container => {
+                    container.classList.add('spms-nav-transitioning');
+                });
+            }
 
             // 3. Safety fallback to reset transition state if navigation is aborted or takes too long
             setTimeout(() => {

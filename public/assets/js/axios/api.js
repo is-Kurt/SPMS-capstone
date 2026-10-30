@@ -13,11 +13,11 @@ async function apiPost(url, data, { onSuccess, onError, onDefault, config = {} }
         const tokenHash = document.querySelector('meta[name="csrf-token-hash"]')?.getAttribute('content') || '';
 
         if (data instanceof FormData) {
-            if (tokenName && tokenHash && !data.has(tokenName)) {
-                data.append(tokenName, tokenHash);
+            if (tokenName && tokenHash) {
+                data.set(tokenName, tokenHash);
             }
         } else if (data && typeof data === 'object' && !(data instanceof Blob)) {
-            if (tokenName && tokenHash && !data[tokenName]) {
+            if (tokenName && tokenHash) {
                 data[tokenName] = tokenHash;
             }
         }

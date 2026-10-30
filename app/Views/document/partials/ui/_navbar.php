@@ -320,7 +320,7 @@
                                         class="bg-warning-500 hover:bg-warning-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg transition-all active:scale-[0.98] cursor-pointer">
                                     Unapprove
                                 </button>
-                            <?php elseif ($canonStatus === FolderStatus::TARGET_SUBMITTED): ?>
+                            <?php elseif ($canonStatus === FolderStatus::TARGET_SUBMITTED || $canonStatus === FolderStatus::TARGET_UNAPPROVED): ?>
                                 <?php if (!empty($allSupervisorsApproved)): ?>
                                     <div class="flex items-center gap-1.5 sm:gap-2">
                                         <button id="btn-return-target" type="button" 
@@ -355,7 +355,7 @@
                                         class="bg-warning-500 hover:bg-warning-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg shadow-warning-500/20 transition-all active:scale-[0.98] cursor-pointer">
                                     Unapprove
                                 </button>
-                            <?php elseif ($canonStatus === FolderStatus::EVAL_SUBMITTED): ?>
+                            <?php elseif ($canonStatus === FolderStatus::EVAL_SUBMITTED || $canonStatus === FolderStatus::EVAL_UNRATED): ?>
                                 <?php if (!empty($allSupervisorsApproved)): ?>
                                     <div class="flex items-center gap-1.5 sm:gap-2">
                                         <button id="btn-return" type="button" 
@@ -387,7 +387,7 @@
                     <?php else: ?>
                         <!-- Supervisor / Admin Reviewer Actions -->
                         <?php if ($canonStatus->isTargetPhase()): ?>
-                            <?php if ($canonStatus === FolderStatus::TARGET_SUBMITTED || $canonStatus === FolderStatus::TARGET_APPROVED): ?>
+                            <?php if (in_array($canonStatus, [FolderStatus::TARGET_SUBMITTED, FolderStatus::TARGET_APPROVED, FolderStatus::TARGET_UNAPPROVED], true)): ?>
                                 <?php 
                                     $isCurrentSupervisorApproved = (!empty($currentEvaluatorRoute) && in_array($currentEvaluatorRoute['status'], ['target_approved', 'approved']));
                                     $isTwgVerifiedTarget = ($canonStatus === FolderStatus::TARGET_APPROVED && in_array($doc['target_approver_role'] ?? '', ['TWG', 'PMT'], true));
@@ -422,7 +422,7 @@
 
                         <?php else: ?>
                             <!-- Evaluation Phase Supervisor Actions -->
-                            <?php if ($canonStatus === FolderStatus::EVAL_SUBMITTED || $canonStatus === FolderStatus::EVAL_APPROVED): ?>
+                            <?php if (in_array($canonStatus, [FolderStatus::EVAL_SUBMITTED, FolderStatus::EVAL_APPROVED, FolderStatus::EVAL_UNRATED], true)): ?>
                                 <?php 
                                     $isCurrentEvalApproved = (isset($routingStatus) && in_array($routingStatus, ['approved', 'eval_approved'])) || ($canonStatus === FolderStatus::EVAL_APPROVED && session()->get('role') === 'Admin');
                                     $folderRecForTwg = !empty($doc['document_folder_id']) ? (new \App\Models\DocumentFolderModel())->find($doc['document_folder_id']) : null;

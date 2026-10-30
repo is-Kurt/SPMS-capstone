@@ -9,6 +9,7 @@ use App\Models\UserModel;
 use App\Models\RoleModel;
 use App\Models\PositionModel;
 use App\Models\UnitModel;
+use App\Models\EmploymentStatusModel;
 use App\Models\InvitationModel;
 
 /**
@@ -35,12 +36,14 @@ class AccountManagement extends BaseController
         $roleModel          = new RoleModel();
         $positionModel      = new PositionModel();
         $unitModel          = new UnitModel();
+        $employmentStatusModel = new EmploymentStatusModel();
         $invitationModel    = new InvitationModel();
         $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
 
         $roles                 = $roleModel->where('name !=', 'Admin')->orderBy('name', 'ASC')->findAll();
         $positions             = $positionModel->orderBy('title', 'ASC')->findAll();
         $units                 = $unitModel->orderBy('name', 'ASC')->findAll();
+        $employmentStatuses    = $employmentStatusModel->orderBy('name', 'ASC')->findAll();
         $invitations           = $invitationModel->getAllWithRoleNames();
         $twgUsers              = $twgAssignmentModel->getTwgUsers();
         $twgAssignmentsGrouped = $twgAssignmentModel->getAllAssignmentsGrouped();
@@ -51,6 +54,7 @@ class AccountManagement extends BaseController
             'roles'                 => $roles,
             'positions'             => $positions,
             'units'                 => $units,
+            'employmentStatuses'    => $employmentStatuses,
             'invitations'           => $invitations,
             'activeTab'             => $activeTab,
             'twgUsers'              => $twgUsers,
@@ -505,6 +509,46 @@ class AccountManagement extends BaseController
             return $this->respond(['status' => 'success']);
         } catch (\Exception $e) {
             return $this->respondError('Could not delete this department / unit.');
+        }
+    }
+
+    /** POST /account/employment-status/add */
+    public function addEmploymentStatus() {
+        $name = trim($this->request->getPost('name') ?? '');
+        if (empty($name)) return $this->respondError('Employment status name is required.');
+
+        $model = new EmploymentStatusModel();
+        $existing = $model->where('LOWER(name)', strtolower($name))->first();
+        if ($existing) {
+            return $this->respondError("An employment status named '{$name}' already exists.");
+        }
+
+        $id = $model->insert([
+            'name'       => $name,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        audit_log('EMPLOYMENT_STATUS_CREATED', 'ACCOUNT', 'employment_status', (int) $id, "Created employment status: {$name}");
+
+        return $this->respond(['status' => 'success', 'item' => ['id' => $id, 'name' => $name]]);
+    }
+
+    /** POST /account/employment-status/delete */
+    public function deleteEmploymentStatus() {
+        try {
+            $id = $this->request->getPost('id');
+            $model = new EmploymentStatusModel();
+            $status = $model->find($id);
+            $name = $status['name'] ?? "ID #{$id}";
+
+            $model->delete($id);
+
+            audit_log('EMPLOYMENT_STATUS_DELETED', 'ACCOUNT', 'employment_status', (int) $id, "Deleted employment status: {$name}");
+
+            return $this->respond(['status' => 'success']);
+        } catch (\Exception $e) {
+            return $this->respondError('Could not delete this employment status.');
         }
     }
 }

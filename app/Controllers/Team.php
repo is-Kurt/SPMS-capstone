@@ -10,6 +10,7 @@ use App\Models\PositionModel;
 use App\Models\RoutingPresetModel;
 use App\Models\RoutingPresetMemberModel;
 use App\Models\DocumentFolderModel;
+use App\Models\EmploymentStatusModel;
 
 /**
  * "My Teams": lets Admins/Supervisors build reusable distribution lists
@@ -150,8 +151,9 @@ class Team extends BaseController
             'mainData'       => [
                 'users'           => $users,
                 'units'           => $units,
-                'positions'       => $positions,
-                'presets'         => $presets,
+                'positions'          => $positions,
+                'employmentStatuses' => (new EmploymentStatusModel())->orderBy('name', 'ASC')->findAll(),
+                'presets'            => $presets,
                 'activeTeam'      => $activeTeam,
                 'activeMemberIds' => $activeMemberIds,
                 'hasLowerLevels'  => $hasLowerLevels,

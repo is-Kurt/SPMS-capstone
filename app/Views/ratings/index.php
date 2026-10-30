@@ -1,6 +1,6 @@
 <?php 
     $sysRole = $sysRole ?? session()->get('role');
-    $firstPeriodKey = 'target';
+    $firstPeriodKey = !empty($activePeriodKey) && isset($periods[$activePeriodKey]) ? $activePeriodKey : 'target';
     $firstTabKey = array_key_first($periods[$firstPeriodKey]['tabs']);
 ?>
 <style>
@@ -75,6 +75,31 @@
                         <input type="checkbox" name="filter_type[]" value="0" class="checkbox ratings-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
                         <span>Non-Teaching</span>
                     </label>
+                </div>
+            </div>
+
+            <!-- Employment Status Filter -->
+            <div class="shrink-0 pb-4 border-b border-surface-border/50">
+                <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group cursor-pointer" onclick="
+                    this.nextElementSibling.classList.toggle('hidden');
+                    this.querySelector('svg').classList.toggle('-rotate-180');
+                ">
+                    <span>Employment Status</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                <div class="space-y-1">
+                    <?php if (!empty($employmentStatuses)): ?>
+                        <?php foreach ($employmentStatuses as $es): 
+                            $stName = is_array($es) ? ($es['name'] ?? '') : (string)$es;
+                        ?>
+                            <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
+                                <input type="checkbox" name="filter_emp_status[]" value="<?= strtolower(esc($stName)) ?>" class="checkbox ratings-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
+                                <span><?= esc($stName) ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <span class="text-xs text-text-muted italic">No employment statuses found.</span>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -397,6 +422,7 @@
                                             data-position="<?= esc($row['position_id'] ?? '') ?>" 
                                             data-pos="<?= esc($row['position'] ?? '') ?>"
                                             data-teaching="<?= esc($row['is_teaching'] ?? 0) ?>"
+                                            data-emp-status="<?= strtolower(esc($row['employment_status'] ?? 'permanent')) ?>"
                                             data-status="<?= strtolower(esc($row['folder_status'])) ?>"
                                             data-cascaded="<?= !empty($row['is_cascaded_by_me']) ? '1' : '0' ?>"> 
                                             
@@ -407,8 +433,9 @@
                                                             <?= esc($row['username']) ?>
                                                         </span>
                                                         <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                                                            <span class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest <?= ($row['is_teaching'] == 1) ? 'bg-highlight-100 text-highlight-700 dark:bg-highlight-500/20 dark:text-highlight-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400' ?>">
-                                                                <?= ($row['is_teaching'] == 1) ? 'Teaching' : 'Non-Teaching' ?>
+                                                            <?php $staffType = \App\Enums\StaffType::fromBoolean($row['is_teaching'] ?? 0); ?>
+                                                            <span class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest <?= $staffType->badgeClass() ?>">
+                                                                <?= $staffType->label() ?>
                                                             </span>
                                                             <?php if ($sysRole === 'Admin'): ?>
                                                                 <?php if (!empty($row['is_cascaded_by_me'])): ?>
@@ -438,6 +465,8 @@
                                                                 \App\Enums\FolderStatus::EVAL_SUBMITTED->value  => 'bg-info-100 text-info-700 border-info-200 dark:bg-info-500/20 dark:text-info-400',
                                                                 \App\Enums\FolderStatus::TARGET_MISSED->value   => 'bg-danger-100 text-danger-700 border-danger-200 dark:bg-danger-500/20 dark:text-danger-400',
                                                                 \App\Enums\FolderStatus::UNEVALUATED->value     => 'bg-danger-100 text-danger-700 border-danger-200 dark:bg-danger-500/20 dark:text-danger-400',
+                                                                \App\Enums\FolderStatus::TARGET_UNAPPROVED->value=> 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400',
+                                                                \App\Enums\FolderStatus::EVAL_UNRATED->value     => 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400',
                                                                 \App\Enums\FolderStatus::DRAFT_TARGET->value    => 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400',
                                                                 \App\Enums\FolderStatus::DRAFT_EVALUATION->value=> 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400',
                                                             ];
@@ -642,16 +671,30 @@
             return;
         }
 
+        const tokenName = document.querySelector('meta[name="csrf-token-name"]')?.getAttribute('content') || 'csrf_test_name';
+        const tokenHash = document.querySelector('meta[name="csrf-token-hash"]')?.getAttribute('content') || '';
+
         const formData = new FormData();
         formData.append('folder_id', folderId);
         formData.append('score', score);
+        if (tokenName && tokenHash) {
+            formData.append(tokenName, tokenHash);
+        }
 
         try {
             const response = await fetch('<?= site_url('folder/update_score') ?>', {
                 method: 'POST',
                 body: formData,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': tokenHash
+                }
             });
+            const newCsrf = response.headers.get('x-csrf-token') || response.headers.get('X-CSRF-TOKEN');
+            if (newCsrf) {
+                document.querySelector('meta[name="csrf-token-hash"]')?.setAttribute('content', newCsrf);
+                document.querySelectorAll(`input[name="${tokenName}"]`).forEach(inp => inp.value = newCsrf);
+            }
             const data = await response.json();
             
             if (data.status === 'success') {
@@ -799,6 +842,15 @@
         const periodInput = document.getElementById('period-input');
         if (periodInput) periodInput.value = periodKey;
 
+        // Keep URL in sync without full reload
+        try {
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('period', periodKey);
+            window.history.replaceState({}, '', currentUrl.toString());
+        } catch (e) {
+            // Graceful fallback for non-browser or older environments
+        }
+
         // Update scope counts for this period
         if (window.ADMIN_PERIOD_COUNTS && window.ADMIN_PERIOD_COUNTS[periodKey]) {
             const counts = window.ADMIN_PERIOD_COUNTS[periodKey];
@@ -820,6 +872,18 @@
             }
         }
     }
+
+    // Keep period switch responsive to browser navigation (back/forward)
+    window.addEventListener('popstate', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const p = urlParams.get('period');
+        if (p && (p === 'target' || p === 'evaluation')) {
+            const currentPeriod = document.getElementById('period-input')?.value;
+            if (currentPeriod !== p) {
+                switchPeriod(p);
+            }
+        }
+    });
 
     function switchTab(tabId, btnElement) {
         document.querySelectorAll('.tab-content').forEach(el => {
@@ -1233,6 +1297,7 @@
         const searchTerm   = searchInput ? searchInput.value.toLowerCase() : '';
         const checkedTypes = getCheckedValues('filter_type[]');
         const checkedPos   = getCheckedValues('filter_pos[]');
+        const checkedEmp   = getCheckedValues('filter_emp_status[]');
 
         const activeUnitId = getActiveDynamicUnitId();
         let allowedUnitIds = null;
@@ -1244,6 +1309,7 @@
         let activeCount = 0;
         if (searchTerm) activeCount++;
         if (checkedTypes.length > 0) activeCount += checkedTypes.length;
+        if (checkedEmp.length > 0) activeCount += checkedEmp.length;
         if (activeUnitId) activeCount++;
         if (checkedPos.length > 0) activeCount += checkedPos.length;
 
@@ -1268,11 +1334,13 @@
                 const deptName   = (card.getAttribute('data-department') || '').toLowerCase();
                 const pos        = (card.getAttribute('data-pos') || '').toLowerCase();
                 const type       = card.getAttribute('data-teaching') || '0';
+                const emp        = (card.getAttribute('data-emp-status') || '').toLowerCase();
                 const isCascaded = (card.getAttribute('data-cascaded') === '1');
 
                 const matchesSearch = !searchTerm || name.includes(searchTerm);
                 const matchesPos    = checkedPos.length === 0 || checkedPos.some(p => pos.includes(p));
                 const matchesType   = checkedTypes.length === 0 || checkedTypes.includes(type);
+                const matchesEmp    = checkedEmp.length === 0 || checkedEmp.includes(emp);
 
                 const isAdmin = <?= ($sysRole === 'Admin') ? 'true' : 'false' ?>;
                 const adminScope = window.CURRENT_ADMIN_SCOPE || 'cascaded';
@@ -1291,7 +1359,7 @@
                     }
                 }
                 
-                if (matchesSearch && matchesUnit && matchesPos && matchesType && matchesScope) {
+                if (matchesSearch && matchesUnit && matchesPos && matchesType && matchesEmp && matchesScope) {
                     card.style.display = ''; 
                     visibleCards++;
                 } else {

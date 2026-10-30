@@ -9,6 +9,8 @@ use App\Models\UserModel;
 use App\Models\PlantillaModel;
 use App\Models\EvaluationRoutingModel;
 use App\Enums\FolderStatus;
+use App\Enums\StaffType;
+use App\Models\EmploymentStatusModel;
 
 /**
  * Executive Analytics Dashboard: Provides university-wide and department-level
@@ -151,7 +153,7 @@ class Dashboard extends BaseController
 
             if ($f['target_state'] === 'approved') {
                 $targetApprovedCount++;
-            } elseif ($f['target_state'] === 'submitted') {
+            } elseif ($f['target_state'] === 'submitted' || $f['target_state'] === 'unapproved') {
                 $targetPendingCount++;
             } elseif ($f['target_state'] === 'returned') {
                 $targetReturnedCount++;
@@ -163,7 +165,7 @@ class Dashboard extends BaseController
                 $evalCompletedCount++;
             } elseif ($f['eval_state'] === 'evaluating') {
                 $evalActionCount++;
-            } elseif ($f['eval_state'] === 'submitted') {
+            } elseif ($f['eval_state'] === 'submitted' || $f['eval_state'] === 'unrated') {
                 $evalSubmittedCount++;
             } elseif ($f['eval_state'] === 'returned') {
                 $evalReturnedCount++;
@@ -369,8 +371,29 @@ class Dashboard extends BaseController
         });
         $topPerformers = array_values($ratedPersonnel);
 
+        // Mutually-exclusive lifecycle counts
+        $stageCounts = [
+            'all'          => count($cycleFolders),
+            'target_phase' => 0,
+            'eval_phase'   => 0,
+            'completed'    => 0,
+        ];
+        $filterPositions = [];
+        foreach ($cycleFolders as $cf) {
+            $stage = $cf['lifecycle_stage'] ?? 'target_phase';
+            if (isset($stageCounts[$stage])) {
+                $stageCounts[$stage]++;
+            }
+            if (!empty($cf['position'])) {
+                $filterPositions[$cf['position']] = $cf['position'];
+            }
+        }
+        ksort($filterPositions);
+        $employmentStatuses = (new EmploymentStatusModel())->orderBy('name', 'ASC')->findAll();
+
         return view('components/app_shell', [
             'context'          => 'dashboard',
+            'maxWidthClass'    => 'max-w-[125rem] 2xl:max-w-[140rem]',
             'sidebarFolders'   => $rootFolders,
             'selectedFolderId' => $activeCycle['id'] ?? null,
             'sidebarTitle'     => 'Evaluation Folders',
@@ -384,6 +407,7 @@ class Dashboard extends BaseController
                 'allUnits'             => $allUnits,
                 'totalPersonnel'       => $totalPersonnel,
                 'totalRated'           => $totalRated,
+                'totalMovCount'        => $totalMovCount,
                 'overallAverage'       => $overallAverage,
                 'adjectivalLabel'      => $adjectivalLabel,
                 'adjectivalBadgeClass' => $adjectivalBadgeClass,
@@ -393,6 +417,9 @@ class Dashboard extends BaseController
                 'deptLeaderboard'      => $deptLeaderboard,
                 'topPerformers'        => $topPerformers,
                 'empStatusCounts'      => $empStatusCounts,
+                'stageCounts'          => $stageCounts,
+                'filterPositions'      => array_values($filterPositions),
+                'employmentStatuses'   => $employmentStatuses,
                 'isChairScope'          => $isChairScope,
                 'isPresidentScope'      => $isPresidentScope,
                 'supervisorCollegeName' => $supervisorCollegeName,
@@ -400,13 +427,15 @@ class Dashboard extends BaseController
                 'cycleFolders'          => $cycleFolders,
                 'pipeline'             => [
                     'target' => [
-                        'approved' => $targetApprovedCount,
-                        'pending'  => $targetPendingCount,
-                        'draft'    => $targetDraftCount,
-                        'returned' => $targetReturnedCount
+                        'approved'  => $targetApprovedCount,
+                        'pending'   => $targetPendingCount,
+                        'submitted' => $targetPendingCount,
+                        'draft'     => $targetDraftCount,
+                        'returned'  => $targetReturnedCount
                     ],
                     'evaluation' => [
                         'completed' => $evalCompletedCount,
+                        'approved'  => $evalCompletedCount,
                         'action'    => $evalActionCount,
                         'submitted' => $evalSubmittedCount,
                         'draft'     => $evalDraftCount,
@@ -665,6 +694,10 @@ class Dashboard extends BaseController
                 $f['target_state'] = 'submitted';
                 $f['target_label'] = 'Submitted (Pending Review)';
                 $f['target_badge'] = 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-info-500/10 dark:text-blue-400 dark:border-info-500/20';
+            } elseif ($cStatus === FolderStatus::TARGET_UNAPPROVED) {
+                $f['target_state'] = 'unapproved';
+                $f['target_label'] = 'Submitted (Unapproved)';
+                $f['target_badge'] = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20';
             } elseif ($cStatus === FolderStatus::TARGET_MISSED) {
                 $f['target_state'] = 'missed';
                 $f['target_label'] = 'Missed Deadline';
@@ -680,14 +713,18 @@ class Dashboard extends BaseController
                 $f['eval_state'] = 'approved';
                 $f['eval_label'] = 'Completed & Approved';
                 $f['eval_badge'] = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-[#102a1e] dark:text-emerald-400 dark:border-[#1b4330]';
-            } elseif ($cStatus === FolderStatus::UNEVALUATED) {
-                $f['eval_state'] = 'missed';
-                $f['eval_label'] = 'Missed Deadline';
-                $f['eval_badge'] = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-danger-500/10 dark:text-rose-400 dark:border-danger-500/20';
             } elseif ($cStatus === FolderStatus::EVAL_SUBMITTED) {
                 $f['eval_state'] = 'submitted';
                 $f['eval_label'] = 'Submitted (Pending Review)';
                 $f['eval_badge'] = 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-info-500/10 dark:text-blue-400 dark:border-info-500/20';
+            } elseif ($cStatus === FolderStatus::EVAL_UNRATED) {
+                $f['eval_state'] = 'unrated';
+                $f['eval_label'] = 'Submitted (Unrated)';
+                $f['eval_badge'] = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20';
+            } elseif ($cStatus === FolderStatus::UNEVALUATED) {
+                $f['eval_state'] = 'missed';
+                $f['eval_label'] = 'Missed Deadline';
+                $f['eval_badge'] = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-danger-500/10 dark:text-rose-400 dark:border-danger-500/20';
             } elseif ($cStatus === FolderStatus::DRAFT_EVALUATION) {
                 $f['eval_state'] = 'draft';
                 $f['eval_label'] = 'Not Submitted (Draft)';
@@ -698,10 +735,22 @@ class Dashboard extends BaseController
                 $f['eval_badge'] = 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-zinc-800/50 dark:text-zinc-400 dark:border-zinc-700';
             }
 
+            // Mutually-exclusive lifecycle stage (Alternative Fix)
+            if ($cStatus === FolderStatus::EVAL_APPROVED) {
+                $f['lifecycle_stage'] = 'completed';
+            } elseif ($cStatus->isEvaluationPhase() || $cStatus === FolderStatus::TARGET_APPROVED) {
+                $f['lifecycle_stage'] = 'eval_phase';
+            } else {
+                $f['lifecycle_stage'] = 'target_phase';
+            }
+
+            // Staff type enum
+            $f['staff_type'] = StaffType::fromBoolean($f['is_teaching'] ?? 0);
+
             // High-level filter tag for Dean's quick buttons:
             if ($f['target_state'] === 'draft' || ($f['target_state'] === 'approved' && $f['eval_state'] === 'draft')) {
                 $f['submission_filter'] = 'missing';
-            } elseif ($f['target_state'] === 'submitted' || $f['eval_state'] === 'submitted' || $f['eval_state'] === 'evaluating') {
+            } elseif (in_array($f['target_state'], ['submitted', 'unapproved'], true) || in_array($f['eval_state'], ['submitted', 'unrated', 'evaluating'], true)) {
                 $f['submission_filter'] = 'review';
             } elseif ($f['target_state'] === 'returned' || $f['eval_state'] === 'returned') {
                 $f['submission_filter'] = 'revision';

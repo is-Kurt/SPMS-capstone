@@ -12,7 +12,6 @@
             'containerClass'   => 'mb-3'
         ]) ?>
 
-        <?php if ($sysRole === 'Admin'): ?>
         <!-- MOBILE VIEW SWITCHER (Analytics vs Masterlist) - Full Width Grid on Mobile directly under Folder Card -->
         <div class="lg:hidden mb-3.5">
             <div id="dash-view-switcher-mobile" class="relative grid grid-cols-2 p-1 rounded-xl border shadow-2xs w-full spms-tab-container dark:bg-zinc-950 dark:border-zinc-800">
@@ -34,7 +33,6 @@
                 </button>
             </div>
         </div>
-        <?php endif; ?>
 
         <!-- MOBILE ANALYTICS HEADER (Shown only when Overview Analytics is active on mobile) -->
         <div id="analytics-mobile-header" class="lg:hidden space-y-2.5 mb-1">
@@ -216,7 +214,6 @@
                 </div>
 
                 <div class="flex items-center gap-2.5 shrink-0">
-                    <?php if ($sysRole === 'Admin'): ?>
                     <!-- Desktop View Switcher -->
                     <div id="dash-view-switcher" class="relative inline-flex p-1 rounded-xl border shadow-2xs spms-tab-container dark:bg-zinc-950 dark:border-zinc-800">
                         <!-- Sliding Indicator Pill -->
@@ -236,137 +233,17 @@
                             </span>
                         </button>
                     </div>
-
-                    <!-- Desktop College Filter -->
-                    <?php if (!empty($allUnits)): ?>
-                    <div class="flex items-center gap-2">
-                        <div class="relative" id="college-dropdown-container">
-                            <button type="button" 
-                                    id="college-dropdown-btn"
-                                    onclick="toggleCollegeDropdown('desktop')"
-                                    class="flex items-center justify-between gap-3 text-xs font-semibold px-3.5 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-zinc-400/40 dark:focus:ring-zinc-600/40 cursor-pointer shadow-2xs spms-select-dark w-56 sm:w-64 transition-all active:scale-[0.98]">
-                                <span id="college-dropdown-label" class="truncate text-left">
-                                    <?= esc($selectedUnitDisplayName) ?>
-                                </span>
-                                <svg id="college-dropdown-chevron" xmlns="http://www.w3.org/2000/svg" 
-                                     class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 shrink-0 transition-transform duration-200" 
-                                     fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
-
-                            <!-- Custom Slide-Down Menu -->
-                            <div id="college-dropdown-menu"
-                                 class="hidden absolute left-0 mt-1.5 w-80 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl z-[120] overflow-hidden"
-                                 style="transform-origin: top left;">
-                                
-                                <!-- Search Filter Input -->
-                                <div class="p-2 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-950/60">
-                                    <div class="relative">
-                                        <svg class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                        </svg>
-                                        <input type="text" 
-                                               id="college-dropdown-search" 
-                                               oninput="filterCollegeDropdownOptions(this.value, 'desktop')"
-                                               placeholder="Filter departments & units..." 
-                                               class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500" />
-                                    </div>
-                                </div>
-
-                                <!-- Scrollable Options List -->
-                                <div id="college-dropdown-list" class="max-h-64 overflow-y-auto p-1.5 space-y-0.5 text-xs">
-                                    <!-- Reset / All Option -->
-                                    <button type="button" 
-                                            onclick="selectCollegeOption('', 'All Departments & Units')"
-                                            class="college-opt-item-desktop w-full flex items-center justify-between px-3 py-2 rounded-lg font-bold transition-colors <?= empty($selectedUnitId) ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800' ?>">
-                                        <span class="truncate">All Departments &amp; Units</span>
-                                        <?php if (empty($selectedUnitId)): ?>
-                                            <svg class="w-3.5 h-3.5 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                        <?php endif; ?>
-                                    </button>
-
-                                    <?php if (!empty($colleges)): ?>
-                                        <div class="college-opt-group-desktop pt-1.5 pb-0.5 px-2 text-[10px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-                                            Colleges
-                                        </div>
-                                        <?php foreach ($colleges as $c): 
-                                            $isSelected = (!empty($selectedUnitId) && (int)$selectedUnitId === (int)$c['id']);
-                                        ?>
-                                            <button type="button"
-                                                    onclick="selectCollegeOption('<?= $c['id'] ?>', '<?= esc(addslashes($c['name'])) ?>')"
-                                                    data-opt-name="<?= esc(strtolower($c['name'])) ?>"
-                                                    class="college-opt-item-desktop w-full flex items-center justify-between px-3 py-1.5 rounded-lg font-medium transition-colors <?= $isSelected ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold' : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800' ?>">
-                                                <span class="truncate text-left"><?= esc($c['name']) ?></span>
-                                                <?php if ($isSelected): ?>
-                                                    <svg class="w-3.5 h-3.5 text-amber-500 shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                                <?php endif; ?>
-                                            </button>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-
-                                    <?php if (!empty($adminOffices)): ?>
-                                        <div class="college-opt-group-desktop pt-2 pb-0.5 px-2 text-[10px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-                                            Administrative Departments &amp; Units
-                                        </div>
-                                        <?php foreach ($adminOffices as $ao): 
-                                            $isSelected = (!empty($selectedUnitId) && (int)$selectedUnitId === (int)$ao['id']);
-                                        ?>
-                                            <button type="button"
-                                                    onclick="selectCollegeOption('<?= $ao['id'] ?>', '<?= esc(addslashes($ao['name'])) ?>')"
-                                                    data-opt-name="<?= esc(strtolower($ao['name'])) ?>"
-                                                    class="college-opt-item-desktop w-full flex items-center justify-between px-3 py-1.5 rounded-lg font-medium transition-colors <?= $isSelected ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold' : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800' ?>">
-                                                <span class="truncate text-left"><?= esc($ao['name']) ?></span>
-                                                <?php if ($isSelected): ?>
-                                                    <svg class="w-3.5 h-3.5 text-amber-500 shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                                <?php endif; ?>
-                                            </button>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-
-                                    <?php if (!empty($subDepts)): ?>
-                                        <div class="college-opt-group-desktop pt-2 pb-0.5 px-2 text-[10px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-                                            Degree Programs / Sub-Departments
-                                        </div>
-                                        <?php foreach ($subDepts as $sd): 
-                                            $isSelected = (!empty($selectedUnitId) && (int)$selectedUnitId === (int)$sd['id']);
-                                        ?>
-                                            <button type="button"
-                                                    onclick="selectCollegeOption('<?= $sd['id'] ?>', '<?= esc(addslashes($sd['name'])) ?>')"
-                                                    data-opt-name="<?= esc(strtolower($sd['name'])) ?>"
-                                                    class="college-opt-item-desktop w-full flex items-center justify-between px-3 py-1.5 rounded-lg font-medium transition-colors <?= $isSelected ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold' : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800' ?>">
-                                                <span class="truncate text-left"><?= esc($sd['name']) ?></span>
-                                                <?php if ($isSelected): ?>
-                                                    <svg class="w-3.5 h-3.5 text-amber-500 shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                                <?php endif; ?>
-                                            </button>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
-
-                        <?php if (!empty($selectedUnitId)): ?>
-                            <button onclick="applyCollegeFilter('')"
-                                    class="inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-xs font-bold text-amber-700 dark:text-amber-400 bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/10 dark:hover:bg-amber-500/20 border border-amber-200 dark:border-amber-500/30 transition-colors shadow-2xs shrink-0"
-                                    title="Reset filter">
-                                <span>&times;</span>
-                            </button>
-                        <?php endif; ?>
-                    </div>
-                    <?php endif; ?>
-                    <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
 
-<?php if ($sysRole === 'Supervisor'): ?>
-    <!-- SUPERVISOR (DEAN) VIEW: COLLEGE SUBMISSION COMPLIANCE MONITOR -->
-    <div class="p-6 lg:p-8 overflow-y-auto custom-scrollbar flex-1 space-y-6">
+    <!-- 1. OVERVIEW ANALYTICS VIEW -->
+    <div id="dashboard-view-analytics" class="p-3.5 sm:p-5 lg:p-6 xl:p-8 overflow-y-auto custom-scrollbar flex-1 space-y-3.5 sm:space-y-5">
+        <?php if ($sysRole === 'Supervisor'): ?>
 
-        <!-- 1. TOP SUMMARY CARDS: WHO SUBMITTED VS WHO HAS NOT -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- 1. TOP SUMMARY CARDS: UNIT HEALTH & QUALITY (OPTION A: 1, 2, 4) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             
             <!-- Card 1: Total College Headcount -->
             <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
@@ -389,84 +266,50 @@
                 </div>
             </div>
 
-            <!-- Card 2: Targets Submitted & Approved -->
+            <!-- Card 2: Average Performance Rating -->
             <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Target Commitments</span>
-                        <div class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-2xs">
+                        <span class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Average Rating</span>
+                        <div class="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-2xs">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                             </svg>
                         </div>
                     </div>
                     <div class="flex items-baseline gap-2 mb-2">
-                        <span class="text-3xl font-black text-zinc-900 dark:text-white"><?= $pipeline['target']['approved'] ?></span>
-                        <span class="text-xs font-bold text-zinc-500 dark:text-zinc-400">/ <?= $totalPersonnel ?> Approved (<?= $targetComplianceRate ?>%)</span>
+                        <span class="text-3xl font-black text-zinc-900 dark:text-white"><?= $overallAverage > 0 ? number_format($overallAverage, 2) : '——' ?></span>
+                        <span class="text-xs font-bold text-zinc-500 dark:text-zinc-400">/ 5.00</span>
                     </div>
                 </div>
-                <div class="pt-3 border-t border-zinc-100 dark:border-zinc-800">
-                    <div class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
-                        <div class="bg-emerald-500 h-1.5 rounded-full transition-all" style="width: <?= min(100, $targetComplianceRate) ?>%;"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Card 3: Missing Target Submissions (Draft) -->
-            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border <?= ($pipeline['target']['draft'] > 0) ? 'border-rose-300 dark:border-rose-900/60 bg-rose-50/20 dark:bg-zinc-900' : 'border-zinc-200 dark:border-zinc-800' ?> shadow-xs flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">Missing Targets</span>
-                        <div class="w-9 h-9 rounded-xl bg-rose-50 dark:bg-danger-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shadow-2xs">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="flex items-baseline gap-2 mb-2">
-                        <span class="text-3xl font-black text-rose-600 dark:text-rose-400"><?= $pipeline['target']['draft'] ?></span>
-                        <span class="text-xs font-bold text-rose-500 dark:text-rose-400">Still in Draft</span>
-                    </div>
-                </div>
-                <div class="pt-3 border-t border-zinc-100 dark:border-zinc-800 text-xs font-semibold truncate">
-                    <?php if ($pipeline['target']['draft'] > 0): ?>
-                        <span class="inline-flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
-                            <svg class="w-3.5 h-3.5 inline-block shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                            </svg>
-                            <span>Faculty still need to submit targets</span>
-                        </span>
-                    <?php else: ?>
-                        <span class="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                            <svg class="w-3.5 h-3.5 inline-block shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                            </svg>
-                            <span>All targets submitted</span>
-                        </span>
-                    <?php endif; ?>
+                <div class="pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border <?= $adjectivalBadgeClass ?>">
+                        <?= !empty($adjectivalLabel) && $overallAverage > 0 ? esc($adjectivalLabel) : 'NOT YET RATED' ?>
+                    </span>
+                    <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                        <?= number_format($totalRated) ?> of <?= number_format($totalPersonnel) ?> Rated
+                    </span>
                 </div>
             </div>
 
-            <!-- Card 4: Accomplishments Finalized -->
+            <!-- Card 3: Evidence & MOVs Attached -->
             <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Final Evaluations</span>
-                        <div class="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-2xs">
+                        <span class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Evidence / MOVs Attached</span>
+                        <div class="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shadow-2xs">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                             </svg>
                         </div>
                     </div>
                     <div class="flex items-baseline gap-2 mb-2">
-                        <span class="text-3xl font-black text-zinc-900 dark:text-white"><?= $pipeline['evaluation']['completed'] ?></span>
-                        <span class="text-xs font-bold text-zinc-500 dark:text-zinc-400">/ <?= $totalPersonnel ?> Finalized (<?= $evalCompletionRate ?>%)</span>
+                        <span class="text-3xl font-black text-zinc-900 dark:text-white"><?= number_format($totalMovCount) ?></span>
+                        <span class="text-xs font-bold text-zinc-500 dark:text-zinc-400">Files Attached</span>
                     </div>
                 </div>
-                <div class="pt-3 border-t border-zinc-100 dark:border-zinc-800">
-                    <div class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
-                        <div class="bg-indigo-600 h-1.5 rounded-full transition-all" style="width: <?= min(100, $evalCompletionRate) ?>%;"></div>
-                    </div>
+                <div class="pt-3 border-t border-zinc-100 dark:border-zinc-800 text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                    <span>Stage 2 Monitoring &amp; Coaching Evidence</span>
                 </div>
             </div>
 
@@ -558,34 +401,33 @@
                             <p class="text-[11px] text-zinc-500 dark:text-zinc-400">Highest rated faculty &amp; staff in this unit</p>
                         </div>
                     </div>
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800">
-                        <?= count($topPerformers) ?> Ranked
-                    </span>
+                    <div class="flex items-center gap-2">
+                        <!-- Sort Filter (Top to Least / Least to Top) -->
+                        <div class="relative">
+                            <select id="supervisor-top-performers-sort" onchange="sortTopPerformers(this.value, 'supervisor-performers-grid')"
+                                    class="appearance-none bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg pl-2.5 pr-7 py-1 text-[11px] font-bold text-zinc-700 dark:text-zinc-200 outline-none cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors shadow-2xs">
+                                <option value="desc">Highest to Lowest</option>
+                                <option value="asc">Lowest to Highest</option>
+                            </select>
+                            <svg class="w-3 h-3 text-zinc-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 text-zinc-600 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700">
+                            <?= count($topPerformers) ?> Ranked
+                        </span>
+                    </div>
                 </div>
 
                 <?php if (!empty($topPerformers)): ?>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[320px] overflow-y-auto custom-scrollbar pr-1">
-                        <?php 
-                        $topList = array_slice($topPerformers, 0, 6);
-                        foreach ($topList as $idx => $tp): 
-                            $rank = $idx + 1;
-                            $rankBadge = 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700';
-                            $rankEmoji = "#{$rank}";
-                            if ($rank === 1) {
-                                $rankBadge = 'bg-amber-400 text-zinc-950 font-black shadow-xs border-amber-300';
-                                $rankEmoji = '1 🥇';
-                            } elseif ($rank === 2) {
-                                $rankBadge = 'bg-slate-300 text-zinc-900 font-black shadow-xs border-slate-400';
-                                $rankEmoji = '2 🥈';
-                            } elseif ($rank === 3) {
-                                $rankBadge = 'bg-amber-700 text-amber-50 font-black shadow-xs border-amber-800';
-                                $rankEmoji = '3 🥉';
-                            }
-                        ?>
-                            <div class="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800 flex items-center justify-between gap-3 transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40">
+                    <div id="supervisor-performers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[320px] overflow-y-auto custom-scrollbar pr-1">
+                        <?php foreach ($topPerformers as $idx => $tp): ?>
+                            <div class="performer-card p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800 flex items-center justify-between gap-3 transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40"
+                                 data-rating="<?= (float)($tp['rating_num'] ?? 0) ?>"
+                                 data-initial-index="<?= $idx ?>">
                                 <div class="flex items-center gap-2.5 min-w-0">
-                                    <span class="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] border <?= $rankBadge ?> shrink-0">
-                                        <?= $rankEmoji ?>
+                                    <span class="performer-rank-badge w-7 h-7 rounded-lg bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs shrink-0">
+                                        <?= $idx + 1 ?>
                                     </span>
                                     <div class="min-w-0">
                                         <div class="font-bold text-xs text-zinc-900 dark:text-white truncate">
@@ -626,170 +468,7 @@
             </div>
         </div>
 
-        <!-- 3. "WHO HAS SUBMITTED & WHO HAS NOT" COMPLIANCE ROSTER TABLE -->
-        <div class="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
-            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
-                <div>
-                    <h2 class="text-base font-bold text-zinc-900 dark:text-white"><?= !empty($isChairScope) ? 'Department Personnel Submission Roster' : 'College Personnel Submission Roster' ?></h2>
-                    <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        Track who has submitted their targets/accomplishments and who is still missing or in draft.
-                    </p>
-                </div>
-
-                <!-- Search & Department Filter Controls -->
-                <div class="flex items-center gap-2.5 flex-wrap">
-                    <a href="<?= site_url('dashboard/export-masterlist/' . ($activeCycle['id'] ?? '')) ?>"
-                       class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white bg-[#114232] hover:bg-[#16533f] text-white border border-[#1b5e47] transition-all shadow-xs cursor-pointer"
-                       title="Download CSC SLIR Excel Sheet for this unit">
-                        <svg class="w-3.5 h-3.5 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                        <span>Export Master List (.xlsx)</span>
-                    </a>
-
-                    <?php if (!empty($collegeDepartments) && count($collegeDepartments) > 1 && empty($isChairScope)): ?>
-                        <select id="roster-dept-filter" onchange="filterRoster()"
-                                class="text-xs font-semibold px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-400/40 dark:focus:ring-zinc-600/40 cursor-pointer">
-                            <option value="">All Sub-Departments</option>
-                            <?php foreach ($collegeDepartments as $cd): ?>
-                                <option value="<?= esc($cd) ?>"><?= esc($cd) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    <?php endif; ?>
-
-                    <div class="relative w-64 max-w-full">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </div>
-                        <input type="text" id="roster-search" onkeyup="filterRoster()"
-                               placeholder="Search faculty name or position..."
-                               class="w-full text-xs font-medium py-2 pl-9 pr-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/40 dark:focus:ring-zinc-600/40 transition-all shadow-2xs" />
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quick Filter Pill Tabs -->
-            <div class="flex items-center gap-2 pb-4 overflow-x-auto custom-scrollbar border-b border-zinc-100 dark:border-zinc-800">
-                <button type="button" onclick="setRosterFilter('all', this)"
-                        class="roster-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border border-zinc-900 dark:border-white shadow-2xs">
-                    All Personnel (<?= count($cycleFolders) ?>)
-                </button>
-                <button type="button" onclick="setRosterFilter('missing', this)"
-                        class="roster-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700">
-                    <svg class="w-3.5 h-3.5 text-rose-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    <span>Missing Submissions (Draft) (<?= $pipeline['target']['draft'] + ($pipeline['evaluation']['draft'] ?? $pipeline['evaluation']['pending']) ?>)</span>
-                </button>
-                <button type="button" onclick="setRosterFilter('review', this)"
-                        class="roster-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700">
-                    <svg class="w-3.5 h-3.5 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>Submitted (In Review) (<?= $pipeline['target']['pending'] + $pipeline['evaluation']['action'] + $pipeline['evaluation']['submitted'] ?>)</span>
-                </button>
-                <button type="button" onclick="setRosterFilter('revision', this)"
-                        class="roster-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700">
-                    <svg class="w-3.5 h-3.5 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    <span>Needs Revision (<?= $pipeline['target']['returned'] + ($pipeline['evaluation']['returned'] ?? 0) ?>)</span>
-                </button>
-                <button type="button" onclick="setRosterFilter('completed', this)"
-                        class="roster-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700">
-                    <svg class="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>Completed / Approved (<?= $pipeline['evaluation']['completed'] ?>)</span>
-                </button>
-            </div>
-
-            <!-- Table -->
-            <div class="overflow-x-auto mt-4 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                <table class="w-full text-left border-collapse" id="roster-table">
-                    <thead>
-                        <tr class="bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 text-xs font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-wider">
-                            <th class="py-3 px-4">Faculty / Personnel</th>
-                            <th class="py-3 px-4">Department / Unit</th>
-                            <th class="py-3 px-4 text-center">Phase 1: Targets</th>
-                            <th class="py-3 px-4 text-center">Phase 2: Accomplishments</th>
-                            <th class="py-3 px-4 text-right">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-zinc-100 dark:divide-[#1a2b22] text-xs font-semibold">
-                        <?php if (empty($cycleFolders)): ?>
-                            <tr>
-                                <td colspan="5" class="py-10 px-4 text-center text-zinc-400 dark:text-zinc-500 italic">
-                                    No personnel records found for this evaluation cycle.
-                                </td>
-                            </tr>
-                        <?php else: ?>
-                            <?php foreach ($cycleFolders as $rf): ?>
-                                <tr class="roster-row hover:bg-zinc-50/80 dark:hover:bg-white/5 transition-colors"
-                                    data-filter="<?= esc($rf['submission_filter'] ?? 'all') ?>"
-                                    data-target-state="<?= esc($rf['target_state'] ?? 'draft') ?>"
-                                    data-eval-state="<?= esc($rf['eval_state'] ?? 'draft') ?>"
-                                    data-name="<?= strtolower(esc($rf['full_name'] . ' ' . $rf['email'] . ' ' . $rf['position'])) ?>"
-                                    data-dept="<?= esc($rf['department']) ?>">
-                                    <td class="py-3 px-4 whitespace-nowrap">
-                                        <div class="font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                                            <span><?= esc($rf['full_name']) ?></span>
-                                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider <?= ($rf['is_teaching'] == 1) ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400' ?>">
-                                                <?= ($rf['is_teaching'] == 1) ? 'Teaching' : 'Non-Teaching' ?>
-                                            </span>
-                                        </div>
-                                        <div class="text-[11px] text-zinc-400 dark:text-zinc-500 font-normal"><?= esc($rf['position']) ?> &bull; <?= esc($rf['email']) ?></div>
-                                    </td>
-                                    <td class="py-3 px-4 text-zinc-600 dark:text-zinc-300">
-                                        <?= esc($rf['department']) ?>
-                                    </td>
-                                    <td class="py-3 px-4 text-center whitespace-nowrap">
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold uppercase border <?= $rf['target_badge'] ?> shadow-2xs">
-                                            <?= esc($rf['target_label']) ?>
-                                        </span>
-                                    </td>
-                                    <td class="py-3 px-4 text-center whitespace-nowrap">
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold uppercase border <?= $rf['eval_badge'] ?> shadow-2xs">
-                                            <?= esc($rf['eval_label']) ?>
-                                        </span>
-                                    </td>
-                                    <td class="py-3 px-4 text-right whitespace-nowrap">
-                                        <?php if (!empty($rf['folder_id']) && !in_array($rf['folder_status'] ?? '', [\App\Enums\FolderStatus::DRAFT_TARGET->value, 'unstarted'])): ?>
-                                            <a href="<?= site_url('ratings/show/' . $rf['folder_id']) ?>"
-                                               class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:hover:bg-white/5 transition-colors shadow-2xs">
-                                                Inspect
-                                            </a>
-                                        <?php elseif (($rf['folder_status'] ?? '') === \App\Enums\FolderStatus::DRAFT_TARGET->value): ?>
-                                            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700/40">
-                                                Drafting
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="text-xs text-zinc-400 dark:text-zinc-500 italic">No Folder</span>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                        <tr id="roster-empty-message" class="hidden">
-                            <td colspan="5" class="py-10 px-4 text-center text-zinc-400 dark:text-zinc-500 italic">
-                                No employees found matching the selected filter.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-    </div>
-<?php else: ?>
-    <!-- MAIN SCROLLABLE CONTENT (ADMIN EXECUTIVE ANALYTICS & MASTERLIST) -->
-    <div class="p-3.5 sm:p-5 lg:p-6 xl:p-8 overflow-y-auto custom-scrollbar flex-1 space-y-3.5 sm:space-y-5">
-
-        <!-- 1. EXECUTIVE ANALYTICS VIEW -->
-        <div id="dashboard-view-analytics" class="space-y-5">
-
+        <?php else: ?>
         <!-- 1. TOP KPI SUMMARY METRIC CARDS (2x2 Grid on Mobile, 4-Cols on Desktop) -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
             
@@ -1114,36 +793,34 @@
                             <p class="text-[10px] sm:text-xs text-zinc-500 dark:text-zinc-400">Dean &amp; Institutional Honor Roster (Ratings ≥ 4.50)</p>
                         </div>
                     </div>
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800">
-                        <svg class="w-3 h-3 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                        <span><?= count($topPerformers) ?> Ranked</span>
-                    </span>
+                    <div class="flex items-center gap-2">
+                        <!-- Sort Filter (Top to Least / Least to Top) -->
+                        <div class="relative">
+                            <select id="admin-top-performers-sort" onchange="sortTopPerformers(this.value, 'admin-performers-grid')"
+                                    class="appearance-none bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg pl-2.5 pr-7 py-1 text-[11px] font-bold text-zinc-700 dark:text-zinc-200 outline-none cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors shadow-2xs">
+                                <option value="desc">Highest to Lowest</option>
+                                <option value="asc">Lowest to Highest</option>
+                            </select>
+                            <svg class="w-3 h-3 text-zinc-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 text-zinc-600 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700">
+                            <?= count($topPerformers) ?> Ranked
+                        </span>
+                    </div>
                 </div>
 
                 <?php if (!empty($topPerformers)): ?>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[380px] overflow-y-auto custom-scrollbar pr-1">
-                        <?php 
-                        $topList = array_slice($topPerformers, 0, 9);
-                        foreach ($topList as $idx => $tp): 
-                            $rank = $idx + 1;
-                            $rankBadge = 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700';
-                            $rankEmoji = "#{$rank}";
-                            if ($rank === 1) {
-                                $rankBadge = 'bg-amber-400 text-zinc-950 font-black shadow-xs border-amber-300';
-                                $rankEmoji = '1 🥇';
-                            } elseif ($rank === 2) {
-                                $rankBadge = 'bg-slate-300 text-zinc-900 font-black shadow-xs border-slate-400';
-                                $rankEmoji = '2 🥈';
-                            } elseif ($rank === 3) {
-                                $rankBadge = 'bg-amber-700 text-amber-50 font-black shadow-xs border-amber-800';
-                                $rankEmoji = '3 🥉';
-                            }
-                        ?>
-                            <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800 flex items-center justify-between gap-3 transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40">
+                    <div id="admin-performers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[380px] overflow-y-auto custom-scrollbar pr-1">
+                        <?php foreach ($topPerformers as $idx => $tp): ?>
+                            <div class="performer-card p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800 flex items-center justify-between gap-3 transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40"
+                                 data-rating="<?= (float)($tp['rating_num'] ?? 0) ?>"
+                                 data-initial-index="<?= $idx ?>">
                                 <div class="flex items-center gap-3 min-w-0">
                                     <!-- Rank Badge -->
-                                    <span class="w-8 h-8 rounded-lg flex items-center justify-center text-xs border <?= $rankBadge ?> shrink-0">
-                                        <?= $rankEmoji ?>
+                                    <span class="performer-rank-badge w-8 h-8 rounded-lg bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs shrink-0">
+                                        <?= $idx + 1 ?>
                                     </span>
 
                                     <!-- User Details -->
@@ -1357,232 +1034,63 @@
             </div>
         </div>
 
-        </div>
-        <!-- /END OF #dashboard-view-analytics -->
+        <?php endif; ?>
+    </div>
+    <!-- /END OF #dashboard-view-analytics -->
 
-        <!-- 2. RATINGS MASTERLIST VIEW (CSC SLIR - SUMMARY LIST OF INDIVIDUAL RATINGS) -->
-        <div id="dashboard-view-masterlist" class="hidden space-y-3 sm:space-y-5">
-            
-            <!-- ======================================================== -->
-            <!-- A. MOBILE MASTER LIST VIEW (block md:hidden)             -->
-            <!-- ======================================================== -->
-            <div class="block md:hidden space-y-2.5">
-                
-                <!-- 1. EYEBROW & TITLE ROW -->
-                <div class="space-y-1.5">
-                    <div class="flex items-center gap-2">
-                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-zinc-800 dark:text-emerald-400 dark:border-zinc-700">
-                            CSC MC NO. 6, S. 2012
+    <!-- 2. RATINGS MASTERLIST / SUBMISSION ROSTER VIEW -->
+    <div id="dashboard-view-masterlist" class="hidden flex-1 min-h-0 flex flex-col lg:flex-row bg-surface overflow-hidden relative">
+        <!-- MOBILE FILTER OVERLAY -->
+        <div id="masterlist-filter-overlay" onclick="toggleMasterlistFilterSidebar()" class="fixed inset-0 bg-black/50 z-[125] hidden opacity-0 transition-opacity duration-300 lg:hidden"></div>
+
+        <!-- MAIN RESULTS (Left Column on Desktop) -->
+                <div class="flex-1 flex flex-col h-full min-w-0 bg-surface relative">
+
+                    <!-- Mobile Filter Toggle Bar (Visible only on < lg) -->
+                    <div class="lg:hidden p-4 bg-surface border-b border-surface-border shrink-0 flex items-center justify-between">
+                        <span class="text-xs font-bold text-text">
+                            Master List 
+                            <span class="text-text-muted font-normal">(<span id="masterlist-mobile-records-count"><?= count($cycleFolders) ?></span> ratees)</span>
                         </span>
-                        <span class="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
-                            <?= esc($selectedUnitName ?? 'University-Wide Roster') ?>
-                        </span>
-                    </div>
-
-                    <div class="flex items-center justify-between gap-3">
-                        <h2 class="text-xl font-black text-zinc-900 dark:text-white tracking-tight">
-                            Master List
-                        </h2>
-                        <a href="<?= site_url('dashboard/export-masterlist/' . ($activeCycle['id'] ?? '') . (!empty($selectedUnitId) ? '?unit_id=' . $selectedUnitId : '')) ?>"
-                           class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 transition-all shadow-xs cursor-pointer"
-                           title="Export official CSC Excel workbook">
-                            <svg class="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                            </svg>
-                            <span>Export (.xlsx)</span>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- 3. SEARCH INPUT (Mobile) -->
-                <div class="relative w-full">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400 dark:text-[#4e6b5c]">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
-                    </div>
-                    <input type="text" id="masterlist-search-mobile" onkeyup="filterMasterlistMobile()"
-                           placeholder="Search name, dept, or position..."
-                           style="padding-left: 36px !important;"
-                           class="w-full text-xs font-medium py-2 pr-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-[#4e6b5c] focus:outline-none focus:ring-1 focus:ring-zinc-400/40 dark:focus:ring-zinc-600/40 shadow-2xs" />
-                </div>
-
-                <!-- 4. STATUS FILTER PILLS (Mobile - Fits 100% of Screen Width) -->
-                <div class="spms-mobile-pills-grid grid grid-cols-4 gap-1.5 w-full py-0.5">
-                    <button type="button" onclick="setMasterlistPill('all', this)"
-                            data-pill="all"
-                            title="All Personnel (<?= count($cycleFolders) ?>)"
-                            class="masterlist-tab-btn active flex items-center justify-center py-1.5 px-0.5 rounded-full text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer">
-                        <span class="truncate">All (<?= count($cycleFolders) ?>)</span>
-                    </button>
-                    <button type="button" onclick="setMasterlistPill('permanent', this)"
-                            data-pill="permanent"
-                            title="Permanent (<?= $empStatusCounts['permanent'] ?? 0 ?>)"
-                            class="masterlist-tab-btn flex items-center justify-center gap-1 py-1.5 px-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold transition-all cursor-pointer">
-                        <span class="spms-pill-dot spms-pill-dot-perm"></span>
-                        <span class="truncate">Perm (<?= $empStatusCounts['permanent'] ?? 0 ?>)</span>
-                    </button>
-                    <button type="button" onclick="setMasterlistPill('temporary', this)"
-                            data-pill="temporary"
-                            title="Temporary (<?= $empStatusCounts['temporary'] ?? 0 ?>)"
-                            class="masterlist-tab-btn flex items-center justify-center gap-1 py-1.5 px-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold transition-all cursor-pointer">
-                        <span class="spms-pill-dot spms-pill-dot-temp"></span>
-                        <span class="truncate">Temp (<?= $empStatusCounts['temporary'] ?? 0 ?>)</span>
-                    </button>
-                    <button type="button" onclick="setMasterlistPill('casual_contr', this)"
-                            data-pill="casual_contr"
-                            title="Casual &amp; Contractual (<?= ($empStatusCounts['casual'] ?? 0) + ($empStatusCounts['contractual'] ?? 0) ?>)"
-                            class="masterlist-tab-btn flex items-center justify-center gap-1 py-1.5 px-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold transition-all cursor-pointer">
-                        <span class="spms-pill-dot spms-pill-dot-casual"></span>
-                        <span class="truncate">Casual (<?= ($empStatusCounts['casual'] ?? 0) + ($empStatusCounts['contractual'] ?? 0) ?>)</span>
-                    </button>
-                </div>
-
-                <!-- 5. SECTION SUBHEADER -->
-                <div class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 pt-0.5">
-                    PERSONNEL RECORDS (<span id="masterlist-mobile-records-count"><?= count($cycleFolders) ?></span>)
-                </div>
-
-                <!-- 6. PERSONNEL CARDS LIST (Mobile) -->
-                <div class="space-y-2" id="masterlist-mobile-cards-list">
-                    <?php if (empty($cycleFolders)): ?>
-                        <div class="py-10 text-center text-zinc-400 dark:text-zinc-500 italic text-xs">
-                            No personnel records discovered for this evaluation period.
-                        </div>
-                    <?php else: ?>
-                        <?php foreach ($cycleFolders as $idx => $f): ?>
-                            <?php
-                            $st = strtolower($f['employment_status'] ?? 'permanent');
-                            $badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-zinc-800 dark:text-emerald-400 dark:border-zinc-700';
-                            if ($st === 'temporary') {
-                                $badgeClass = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-[#241a08] dark:text-[#f59e0b] dark:border-[#47340f]';
-                            } elseif ($st === 'casual' || $st === 'contractual') {
-                                $badgeClass = 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-[#082230] dark:text-sky-400 dark:border-[#0f435c]';
-                            }
-                            ?>
-                            <div class="masterlist-row-card py-2.5 px-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-1.5 transition-all"
-                                 data-name="<?= esc(strtolower($f['ratee_name'] ?? $f['full_name'] ?? '')) ?>"
-                                 data-email="<?= esc(strtolower($f['ratee_email'] ?? $f['email'] ?? '')) ?>"
-                                 data-dept="<?= esc(strtolower($f['department'] ?? '')) ?>"
-                                 data-pos="<?= esc(strtolower($f['position'] ?? '')) ?>"
-                                 data-emp-status="<?= esc(strtolower($f['employment_status'] ?? 'permanent')) ?>"
-                                 data-rating="<?= esc($f['rating_num'] ?? '') ?>"
-                                 data-adjectival="<?= esc(strtolower($f['adjectival_display'] ?? $f['adjectival_label'] ?? '')) ?>">
-                                
-                                <!-- Top Row: Avatar + Name + Email | Status Badge -->
-                                <div class="flex items-center justify-between gap-2">
-                                    <div class="flex items-center gap-2.5 min-w-0">
-                                        <div class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs text-zinc-700 dark:text-zinc-200 shrink-0">
-                                            <?= esc(strtoupper(substr($f['ratee_name'] ?? $f['full_name'] ?? 'U', 0, 1))) ?>
-                                        </div>
-                                        <div class="min-w-0">
-                                            <div class="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white truncate">
-                                                <?= esc($f['ratee_name'] ?? $f['full_name'] ?? 'Personnel') ?>
-                                            </div>
-                                            <div class="text-[10px] text-zinc-500 dark:text-zinc-400 truncate">
-                                                <?= esc($f['ratee_email'] ?? $f['email'] ?? '') ?>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider shrink-0 border <?= $badgeClass ?>">
-                                        <?= esc(strtoupper($f['employment_status'] ?? 'Permanent')) ?>
-                                    </span>
-                                </div>
-
-                                <!-- Middle Row: Department (left) | Position (right) -->
-                                <div class="flex items-center justify-between text-[11px] pt-1.5 border-t border-zinc-100 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400">
-                                    <div class="truncate min-w-0 flex-1 pr-2 text-[11px] font-medium">
-                                        <?= esc($f['department'] ?? '—') ?>
-                                    </div>
-                                    <div class="font-bold text-[11px] text-zinc-900 dark:text-white shrink-0 text-right">
-                                        <?= esc($f['position'] ?? '—') ?>
-                                    </div>
-                                </div>
-
-                                <!-- Bottom Row: Grade (Numerical Rating) & Evaluation (Adjectival Rating) -->
-                                <div class="flex items-center justify-between text-[11px] pt-1.5 border-t border-zinc-100 dark:border-zinc-800/60">
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Grade:</span>
-                                        <?php if ($f['rating_num'] !== null): ?>
-                                            <span class="font-black text-xs text-zinc-900 dark:text-white tabular-nums">
-                                                <?= number_format($f['rating_num'], 2) ?>
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="text-xs text-zinc-400 dark:text-zinc-500 italic">—</span>
-                                        <?php endif; ?>
-                                    </div>
-                                    <div>
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border <?= $f['adjectival_badge'] ?? 'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-800/60 dark:text-zinc-400 dark:border-zinc-700/60' ?>">
-                                            <?= esc($f['adjectival_display'] ?? $f['adjectival_label'] ?? 'Not Yet Rated') ?>
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-
-                    <!-- Empty State (Mobile) -->
-                    <div id="masterlist-mobile-empty" class="hidden py-10 text-center">
-                        <div class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500">
-                            <svg class="w-8 h-8 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                            </svg>
-                            <p class="text-xs font-semibold">No personnel records found matching your filter criteria.</p>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="toggleMasterlistFilterSidebar()" class="flex items-center gap-1.5 text-xs font-bold text-accent bg-accent/10 px-3 py-1.5 rounded-lg active:scale-95 transition-transform cursor-pointer">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+                                <span>Filters</span>
+                                <span id="mobile-masterlist-filter-badge" class="hidden px-1.5 py-0.2 rounded-full text-[9px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">0</span>
+                            </button>
+                            <a href="<?= site_url('dashboard/export-masterlist/' . ($activeCycle['id'] ?? '') . (!empty($selectedUnitId) ? '?unit_id=' . $selectedUnitId : '')) ?>"
+                               class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 transition-all shadow-xs cursor-pointer"
+                               title="Export Excel workbook">
+                                <svg class="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                </svg>
+                                <span>Export</span>
+                            </a>
                         </div>
                     </div>
-                </div>
 
-                <!-- 7. COMPACT CHEVRON PAGINATION BAR (Mobile) -->
-                <div class="rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3.5 py-2 flex items-center justify-between shadow-xs">
-                    <button type="button" id="masterlist-mobile-prev-btn" onclick="goToMasterlistPage(masterlistCurrentPage - 1)"
-                            class="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white p-1.5 rounded-lg transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                        </svg>
-                    </button>
-                    <div class="text-xs text-zinc-500 dark:text-zinc-400 select-none">
-                        Showing <span id="masterlist-mobile-range" class="font-bold text-zinc-900 dark:text-white">1 – 6</span> of <span id="masterlist-mobile-total" class="font-bold text-zinc-900 dark:text-white"><?= count($cycleFolders) ?></span> records
-                    </div>
-                    <button type="button" id="masterlist-mobile-next-btn" onclick="goToMasterlistPage(masterlistCurrentPage + 1)"
-                            class="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white p-1.5 rounded-lg transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-
-            <!-- ======================================================== -->
-            <!-- B. DESKTOP MASTER LIST VIEW (hidden md:block)            -->
-            <!-- ======================================================== -->
-            <div class="hidden md:block">
-                <!-- UNIFIED MASTERLIST CARD CONTAINER (Header, Search & Filters, Table, Pagination) -->
-                <div id="masterlist-container" class="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs overflow-hidden">
-                    
-                    <!-- 1. MASTERLIST HEADER ROW -->
-                    <div class="p-4 sm:p-5 lg:p-6 border-b border-zinc-100 dark:border-zinc-800">
-                        <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-                            <div class="space-y-1">
-                                <div class="flex items-center gap-2">
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30">
-                                        CSC MC No. 6, s. 2012 Prescribed
+                    <!-- Header & Lifecycle Tabs (Desktop & Tablet) -->
+                    <div class="p-4 sm:p-5 border-b border-surface-border bg-surface shrink-0 flex flex-col gap-3.5">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                        CSC MC NO. 6, S. 2012 PRESCRIBED
                                     </span>
-                                    <span class="text-xs font-semibold text-zinc-400">|</span>
-                                    <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-                                        <?= esc($selectedUnitName ?? 'University-Wide Roster') ?>
+                                    <span class="text-xs font-semibold text-text-muted truncate">
+                                        <?= esc($selectedUnitName ?? ($supervisorCollegeName ?? (!empty($isChairScope) ? 'Department Roster' : 'University-Wide Roster'))) ?>
                                     </span>
                                 </div>
-                                <h2 class="text-xl lg:text-2xl font-black text-zinc-900 dark:text-white tracking-tight">
+                                <h2 class="text-xl lg:text-2xl font-black text-text tracking-tight truncate">
                                     Master List
                                 </h2>
                             </div>
 
-                            <div class="flex items-center gap-3 shrink-0">
+                            <div class="hidden sm:flex items-center gap-2 shrink-0">
                                 <a href="<?= site_url('dashboard/export-masterlist/' . ($activeCycle['id'] ?? '') . (!empty($selectedUnitId) ? '?unit_id=' . $selectedUnitId : '')) ?>"
-                                   class="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs font-black text-white bg-[#114232] hover:bg-[#16533f] text-white border border-[#1b5e47] transition-all shadow-md hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
-                                   title="Generate and download official CSC landscape Excel workbook">
-                                    <svg class="w-4 h-4 text-emerald-200 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                   class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-[#114232] hover:bg-[#16533f] border border-[#1b5e47] transition-all shadow-xs cursor-pointer"
+                                   title="Export official CSC Excel workbook">
+                                    <svg class="w-3.5 h-3.5 text-emerald-200 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                     </svg>
                                     <span>Export Master List (.xlsx)</span>
@@ -1590,147 +1098,217 @@
                             </div>
                         </div>
 
-                        <!-- 2. SEARCH & FILTER TOOLBAR (Unified into Header) -->
-                        <div class="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 space-y-3">
-                            <div class="relative w-full">
-                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                    </svg>
-                                </div>
-                                <input type="text" id="masterlist-search" onkeyup="filterMasterlist()"
-                                       placeholder="Search personnel name, email, department / unit, or position..."
-                                       class="w-full text-xs font-medium py-2.5 pl-10 pr-4 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/40 dark:focus:ring-zinc-600/40 shadow-2xs" />
-                            </div>
-
-                            <!-- Status Filter Pill Buttons (Desktop) -->
-                            <div class="flex items-center gap-2 pb-0.5 overflow-x-auto custom-scrollbar">
-                                <button type="button" onclick="setMasterlistPill('all', this)"
-                                        data-pill="all"
-                                        class="masterlist-tab-btn active inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                                    All Personnel (<?= count($cycleFolders) ?>)
-                                </button>
-                                <button type="button" onclick="setMasterlistPill('permanent', this)"
-                                        data-pill="permanent"
-                                        class="masterlist-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                                    <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
-                                    <span>Permanent (<?= $empStatusCounts['permanent'] ?? 0 ?>)</span>
-                                </button>
-                                <button type="button" onclick="setMasterlistPill('temporary', this)"
-                                        data-pill="temporary"
-                                        class="masterlist-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                                    <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
-                                    <span>Temporary (<?= $empStatusCounts['temporary'] ?? 0 ?>)</span>
-                                </button>
-                                <button type="button" onclick="setMasterlistPill('casual_contr', this)"
-                                        data-pill="casual_contr"
-                                        class="masterlist-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                                    <span class="w-2 h-2 rounded-full bg-sky-500 shrink-0"></span>
-                                    <span>Casual &amp; Contr. (<?= ($empStatusCounts['casual'] ?? 0) + ($empStatusCounts['contractual'] ?? 0) ?>)</span>
-                                </button>
-                            </div>
+                        <!-- Lifecycle Tabs -->
+                        <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar pt-0.5" id="masterlist-lifecycle-pills">
+                            <button type="button" onclick="setMasterlistLifecyclePill('all', this)"
+                                    data-lifecycle="all"
+                                    class="masterlist-tab-btn masterlist-lifecycle-btn active inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0">
+                                <span>All Personnel (<?= $stageCounts['all'] ?? count($cycleFolders) ?>)</span>
+                            </button>
+                            <button type="button" onclick="setMasterlistLifecyclePill('target_phase', this)"
+                                    data-lifecycle="target_phase"
+                                    class="masterlist-tab-btn masterlist-lifecycle-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0">
+                                <span class="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>
+                                <span>Target Phase in Progress (<?= $stageCounts['target_phase'] ?? 0 ?>)</span>
+                            </button>
+                            <button type="button" onclick="setMasterlistLifecyclePill('eval_phase', this)"
+                                    data-lifecycle="eval_phase"
+                                    class="masterlist-tab-btn masterlist-lifecycle-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0">
+                                <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                                <span>Evaluation Phase in Progress (<?= $stageCounts['eval_phase'] ?? 0 ?>)</span>
+                            </button>
+                            <button type="button" onclick="setMasterlistLifecyclePill('completed', this)"
+                                    data-lifecycle="completed"
+                                    class="masterlist-tab-btn masterlist-lifecycle-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                                <span>Cycle Completed / Finalized (<?= $stageCounts['completed'] ?? 0 ?>)</span>
+                            </button>
                         </div>
                     </div>
 
-                    <!-- 3. MASTERLIST TABLE -->
-                    <div class="overflow-x-auto custom-scrollbar">
-                        <table class="w-full text-left border-collapse" id="masterlist-table">
-                            <thead>
-                                <tr class="bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 text-[11px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-wider">
-                                    <th class="py-3 px-3 w-10 text-center">#</th>
-                                    <th class="py-3 px-3">Personnel / Ratee</th>
-                                    <th class="py-3 px-3">Department / Unit</th>
-                                    <th class="py-3 px-3">Position</th>
-                                    <th class="py-3 px-3 text-center whitespace-nowrap">Employment Status</th>
-                                    <th class="py-3 px-3 text-center whitespace-nowrap">Numerical Rating</th>
-                                    <th class="py-3 px-3 text-center whitespace-nowrap">Adjectival Rating</th>
+                    <!-- MOBILE CARDS LIST (< md) -->
+                    <div class="block md:hidden p-3.5 space-y-2.5 overflow-y-auto max-h-[600px] custom-scrollbar" id="masterlist-mobile-cards-list">
+                        <?php if (empty($cycleFolders)): ?>
+                            <div class="py-10 text-center text-text-muted italic text-xs">
+                                No personnel records discovered for this evaluation period.
+                            </div>
+                        <?php else: ?>
+                            <?php foreach ($cycleFolders as $idx => $f): ?>
+                                <?php $sType = $f['staff_type'] ?? \App\Enums\StaffType::fromBoolean($f['is_teaching'] ?? 0); ?>
+                                <div class="masterlist-row-card p-3 rounded-xl bg-surface border border-surface-border shadow-xs space-y-2 transition-all"
+                                     data-name="<?= esc(strtolower($f['ratee_name'] ?? $f['full_name'] ?? '')) ?>"
+                                     data-email="<?= esc(strtolower($f['ratee_email'] ?? $f['email'] ?? '')) ?>"
+                                     data-dept="<?= esc(strtolower($f['department'] ?? '')) ?>"
+                                     data-unit-id="<?= esc($f['unit_id'] ?? '') ?>"
+                                     data-pos="<?= esc(strtolower($f['position'] ?? '')) ?>"
+                                     data-staff-type="<?= $sType->value ?>"
+                                     data-emp-status="<?= esc(strtolower($f['employment_status'] ?? 'permanent')) ?>"
+                                     data-lifecycle-stage="<?= esc($f['lifecycle_stage'] ?? 'target_phase') ?>"
+                                     data-rating="<?= esc($f['rating_num'] ?? '') ?>"
+                                     data-adjectival="<?= esc(strtolower($f['adjectival_display'] ?? $f['adjectival_label'] ?? '')) ?>">
+                                    
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="min-w-0">
+                                            <div class="flex items-center gap-2">
+                                                <span class="font-bold text-xs text-text truncate">
+                                                    <?= esc($f['ratee_name'] ?? $f['full_name'] ?? 'Personnel') ?>
+                                                </span>
+                                                <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[8.5px] font-black uppercase tracking-wider shrink-0 <?= $sType->badgeClass() ?>">
+                                                    <?= $sType->label() ?>
+                                                </span>
+                                            </div>
+                                            <div class="text-[10px] font-medium text-text-muted truncate mt-0.5">
+                                                <?= esc($f['position'] ?? '—') ?>
+                                            </div>
+                                            <div class="text-[10px] text-text-muted/80 truncate">
+                                                <?= esc($f['department'] ?? '—') ?> • <?= esc($f['ratee_email'] ?? $f['email'] ?? '') ?>
+                                            </div>
+                                        </div>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                                            <?= esc($f['employment_status'] ?? 'Permanent') ?>
+                                        </span>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-surface-border/50">
+                                        <div>
+                                            <span class="text-text-muted text-[10px] block">P1 (Targets):</span>
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold border <?= $f['target_badge'] ?? 'bg-zinc-100 text-zinc-600 border-zinc-200' ?>">
+                                                <?= esc($f['target_label'] ?? 'Draft') ?>
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span class="text-text-muted text-[10px] block">P2 (Accomplishments):</span>
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold border <?= $f['eval_badge'] ?? 'bg-zinc-100 text-zinc-600 border-zinc-200' ?>">
+                                                <?= esc($f['eval_label'] ?? 'Pending') ?>
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="pt-1.5 border-t border-surface-border/50 flex items-center justify-between text-[11px]">
+                                        <span class="text-text-muted">Final Rating:</span>
+                                        <?php if ($f['rating_num'] !== null && (float)$f['rating_num'] > 0): ?>
+                                            <span class="font-black text-text"><?= number_format($f['rating_num'], 2) ?> (<?= esc($f['adjectival_display'] ?? $f['adjectival_label'] ?? '—') ?>)</span>
+                                        <?php else: ?>
+                                            <span class="text-text-muted italic">—</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+
+                        <div id="masterlist-mobile-empty" class="hidden py-8 text-center text-xs text-text-muted">
+                            No personnel records found matching filters.
+                        </div>
+                    </div>
+
+                    <!-- DESKTOP TABLE VIEW (hidden md:block) -->
+                    <div class="hidden md:block flex-1 overflow-auto custom-scrollbar min-h-0">
+                        <table class="w-full text-left border-collapse table-auto" id="masterlist-table">
+                            <thead class="bg-surface dark:bg-zinc-800/40 border-b border-surface-border text-[10px] font-black uppercase tracking-widest text-text-muted sticky top-0 z-10">
+                                <tr>
+                                    <th class="py-2.5 px-4 w-12 text-center">#</th>
+                                    <th class="py-2.5 px-4 min-w-[220px]">Personnel / Ratee</th>
+                                    <th class="py-2.5 px-4 text-center whitespace-nowrap min-w-[130px]">Employment Status</th>
+                                    <th class="py-2.5 px-4 text-center whitespace-nowrap min-w-[140px]">Phase 1: Targets</th>
+                                    <th class="py-2.5 px-4 text-center whitespace-nowrap min-w-[140px]">Phase 2: Accomplishments</th>
+                                    <th class="py-2.5 px-4 text-center whitespace-nowrap min-w-[120px]">Final Rating</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-zinc-100 dark:divide-[#1a2b22] text-xs">
+                            <tbody class="divide-y divide-surface-border text-xs" id="masterlist-table-body">
                                 <?php if (empty($cycleFolders)): ?>
                                     <tr>
-                                        <td colspan="7" class="py-12 px-4 text-center text-zinc-400 dark:text-zinc-500 italic">
+                                        <td colspan="6" class="py-12 px-4 text-center text-text-muted italic">
                                             No personnel records discovered for this evaluation period.
                                         </td>
                                     </tr>
                                 <?php else: ?>
                                     <?php foreach ($cycleFolders as $idx => $f): ?>
-                                        <tr class="masterlist-row hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
+                                        <?php $sType = $f['staff_type'] ?? \App\Enums\StaffType::fromBoolean($f['is_teaching'] ?? 0); ?>
+                                        <tr class="masterlist-row hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors group"
                                             data-name="<?= esc(strtolower($f['ratee_name'] ?? $f['full_name'] ?? '')) ?>"
                                             data-email="<?= esc(strtolower($f['ratee_email'] ?? $f['email'] ?? '')) ?>"
                                             data-dept="<?= esc(strtolower($f['department'] ?? '')) ?>"
+                                            data-unit-id="<?= esc($f['unit_id'] ?? '') ?>"
                                             data-pos="<?= esc(strtolower($f['position'] ?? '')) ?>"
+                                            data-staff-type="<?= $sType->value ?>"
                                             data-emp-status="<?= esc(strtolower($f['employment_status'] ?? 'permanent')) ?>"
+                                            data-lifecycle-stage="<?= esc($f['lifecycle_stage'] ?? 'target_phase') ?>"
                                             data-rating="<?= esc($f['rating_num'] ?? '') ?>"
                                             data-adjectival="<?= esc(strtolower($f['adjectival_display'] ?? $f['adjectival_label'] ?? '')) ?>">
                                             
                                             <!-- Index -->
-                                            <td class="py-3 px-3 text-center font-bold text-zinc-400 dark:text-zinc-500 w-10">
+                                            <td class="py-3 px-4 text-center font-bold text-text-muted w-12 masterlist-row-idx">
                                                 <?= $idx + 1 ?>
                                             </td>
 
-                                            <!-- Personnel Name & Email -->
-                                            <td class="py-3 px-3">
-                                                <div class="flex items-center gap-2.5 min-w-0">
-                                                    <div class="w-7 h-7 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-black text-[11px] text-zinc-700 dark:text-zinc-200 shrink-0">
+                                            <!-- Personnel / Ratee: Avatar + Name + StaffType badge, Position, Department • Email beneath -->
+                                            <td class="py-3 px-4">
+                                                <div class="flex items-center gap-3 min-w-0">
+                                                    <div class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-surface-border flex items-center justify-center font-bold text-xs text-text shrink-0">
                                                         <?= esc(strtoupper(substr($f['ratee_name'] ?? $f['full_name'] ?? 'U', 0, 1))) ?>
                                                     </div>
-                                                    <div class="min-w-0 max-w-[130px] sm:max-w-[170px] xl:max-w-none">
-                                                        <div class="font-bold text-zinc-900 dark:text-white truncate">
-                                                            <?= esc($f['ratee_name'] ?? $f['full_name'] ?? 'Personnel') ?>
+                                                    <div class="min-w-0 flex flex-col">
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="font-bold text-text truncate">
+                                                                <?= esc($f['ratee_name'] ?? $f['full_name'] ?? 'Personnel') ?>
+                                                            </span>
+                                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider shrink-0 <?= $sType->badgeClass() ?>">
+                                                                <?= $sType->label() ?>
+                                                            </span>
                                                         </div>
-                                                        <div class="text-[11px] text-zinc-400 truncate">
-                                                            <?= esc($f['ratee_email'] ?? $f['email'] ?? '') ?>
+                                                        <div class="text-[11px] font-medium text-text-muted truncate mt-0.5" title="<?= esc($f['position'] ?? '—') ?>">
+                                                            <?= esc($f['position'] ?? '—') ?>
+                                                        </div>
+                                                        <div class="text-[10px] text-text-muted/80 truncate" title="<?= esc($f['department'] ?? '—') ?> • <?= esc($f['ratee_email'] ?? $f['email'] ?? '') ?>">
+                                                            <?= esc($f['department'] ?? '—') ?> • <?= esc($f['ratee_email'] ?? $f['email'] ?? '') ?>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </td>
 
-                                            <!-- College / Department -->
-                                            <td class="py-3 px-3 text-zinc-700 dark:text-zinc-300 font-medium">
-                                                <span class="truncate block max-w-[130px] sm:max-w-[160px] xl:max-w-[220px]" title="<?= esc($f['department'] ?? '—') ?>">
-                                                    <?= esc($f['department'] ?? '—') ?>
-                                                </span>
-                                            </td>
-
-                                            <!-- Plantilla Position -->
-                                            <td class="py-3 px-3 text-zinc-500 dark:text-zinc-400 font-medium">
-                                                <span class="truncate block max-w-[110px] sm:max-w-[140px] xl:max-w-[180px]" title="<?= esc($f['position'] ?? '—') ?>">
-                                                    <?= esc($f['position'] ?? '—') ?>
-                                                </span>
-                                            </td>
-
                                             <!-- Employment Status -->
-                                            <td class="py-3 px-3 text-center whitespace-nowrap">
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border <?= $f['emp_status_badge'] ?? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-[#102a1e] dark:text-emerald-400 dark:border-[#1b4330]' ?>">
+                                            <td class="py-3 px-4 text-center whitespace-nowrap">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                                     <?= esc($f['employment_status'] ?? 'Permanent') ?>
                                                 </span>
                                             </td>
 
-                                            <!-- Numerical Rating (Grade) -->
-                                            <td class="py-3 px-3 text-center whitespace-nowrap">
-                                                <?php if ($f['rating_num'] !== null): ?>
-                                                    <span class="font-black text-xs text-zinc-900 dark:text-white tabular-nums tracking-tight">
-                                                        <?= number_format($f['rating_num'], 2) ?>
-                                                    </span>
-                                                <?php else: ?>
-                                                    <span class="text-zinc-400 dark:text-zinc-500 text-xs font-normal italic">—</span>
-                                                <?php endif; ?>
+                                            <!-- Phase 1: Targets -->
+                                            <td class="py-3 px-4 text-center whitespace-nowrap">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border <?= $f['target_badge'] ?? 'bg-zinc-100 text-zinc-600 border-zinc-200' ?>">
+                                                    <?= esc($f['target_label'] ?? 'Draft') ?>
+                                                </span>
                                             </td>
 
-                                            <!-- Adjectival Rating (Evaluation) -->
-                                            <td class="py-3 px-3 text-center whitespace-nowrap">
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border <?= $f['adjectival_badge'] ?? 'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-800/60 dark:text-zinc-400 dark:border-zinc-700/60' ?>">
-                                                    <?= esc($f['adjectival_display'] ?? $f['adjectival_label'] ?? 'Not Yet Rated') ?>
+                                            <!-- Phase 2: Accomplishments -->
+                                            <td class="py-3 px-4 text-center whitespace-nowrap">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border <?= $f['eval_badge'] ?? 'bg-zinc-100 text-zinc-600 border-zinc-200' ?>">
+                                                    <?= esc($f['eval_label'] ?? 'Pending Target Phase') ?>
                                                 </span>
+                                            </td>
+
+                                            <!-- Final Rating -->
+                                            <td class="py-3 px-4 text-center whitespace-nowrap">
+                                                <?php if ($f['rating_num'] !== null && (float)$f['rating_num'] > 0): ?>
+                                                    <div class="flex items-center justify-center gap-1.5">
+                                                        <span class="font-black text-xs text-text tabular-nums tracking-tight">
+                                                            <?= number_format($f['rating_num'], 2) ?>
+                                                        </span>
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border <?= $f['adjectival_badge'] ?? 'bg-emerald-50 text-emerald-700 border-emerald-200' ?>">
+                                                            <?= esc($f['adjectival_display'] ?? $f['adjectival_label'] ?? '—') ?>
+                                                        </span>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <span class="text-text-muted text-xs font-normal italic">—</span>
+                                                <?php endif; ?>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
 
                                 <tr id="masterlist-empty-row" class="hidden">
-                                    <td colspan="7" class="py-12 px-4 text-center">
-                                        <div class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500">
+                                    <td colspan="6" class="py-12 px-4 text-center">
+                                        <div class="flex flex-col items-center justify-center text-text-muted">
                                             <svg class="w-8 h-8 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                             </svg>
@@ -1742,17 +1320,17 @@
                         </table>
                     </div>
 
-                    <!-- Masterlist Responsive Pagination Footer (Desktop) -->
-                    <div class="px-4 sm:px-6 py-3.5 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                    <!-- Pagination Footer (Desktop) -->
+                    <div class="px-5 py-3 border-t border-surface-border bg-surface flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
                         <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-                            <span class="text-zinc-500 dark:text-zinc-400">
-                                Showing <span id="masterlist-visible-range" class="font-bold text-zinc-800 dark:text-white">0</span> of <span id="masterlist-visible-total" class="font-bold text-zinc-800 dark:text-white"><?= count($cycleFolders) ?></span> personnel
+                            <span class="text-text-muted">
+                                Showing <span id="masterlist-visible-range" class="font-bold text-text">0</span> of <span id="masterlist-visible-total" class="font-bold text-text"><?= count($cycleFolders) ?></span> personnel
                             </span>
                             
-                            <div class="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400">
+                            <div class="flex items-center gap-1.5 text-text-muted">
                                 <span class="hidden sm:inline text-[11px] font-medium">Rows:</span>
                                 <select id="masterlist-per-page" onchange="changeMasterlistPerPage(this.value)"
-                                        class="text-[11px] font-bold px-2 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-zinc-500 cursor-pointer shadow-2xs">
+                                        class="text-[11px] font-bold px-2 py-1 rounded-lg bg-surface border border-surface-border text-text focus:outline-none cursor-pointer shadow-xs">
                                     <option value="25">25 / page</option>
                                     <option value="50" selected>50 / page</option>
                                     <option value="100">100 / page</option>
@@ -1767,13 +1345,154 @@
                     </div>
                 </div>
 
+        <!-- SIDEBAR FILTERS (Right Column on Desktop) -->
+        <div id="masterlist-filter-sidebar" class="
+            fixed inset-y-0 right-0 z-[130] lg:z-0 w-80 transform translate-x-full transition-transform duration-300 flex flex-col h-full bg-surface border-l border-surface-border shadow-2xl
+            lg:static lg:w-64 xl:w-72 lg:translate-x-0 lg:transition-none lg:shadow-none lg:border-l lg:border-r-0 border-surface-border lg:flex lg:flex-col shrink-0
+        ">
+            <!-- Header -->
+            <div class="px-5 py-3.5 border-b border-surface-border flex justify-between items-center shrink-0 bg-surface">
+                <div class="flex items-center gap-2">
+                    <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest">Filters</h2>
+                    <span id="active-masterlist-filter-badge" class="hidden px-1.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">0</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button type="button" id="reset-masterlist-filters-btn" onclick="clearAllMasterlistFilters()" class="text-[10px] font-bold text-text-muted hover:text-text transition-colors cursor-pointer hidden">
+                        Reset all
+                    </button>
+                    <button type="button" onclick="toggleMasterlistFilterSidebar()" class="lg:hidden text-text-muted hover:text-text p-1 cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
             </div>
+            
+            <!-- Scrollable Filters List -->
+            <div class="p-4 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-3.5 bg-surface">
+                        <!-- Search -->
+                        <div class="shrink-0 pb-3 border-b border-surface-border/50">
+                            <div class="relative">
+                                <input type="text" id="masterlist-search-sidebar" oninput="if (document.getElementById('masterlist-search-mobile')) document.getElementById('masterlist-search-mobile').value = this.value; filterMasterlist(true);" placeholder="Search employee name..." class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-xl pl-8 pr-3 py-2 text-xs focus:border-accent outline-none transition-all text-text font-bold shadow-xs">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-text-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+                        </div>
 
-        </div>
-        <!-- /END OF #dashboard-view-masterlist -->
+                        <!-- Staff Type Filter -->
+                        <div class="shrink-0 pb-3 border-b border-surface-border/50">
+                            <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-2.5 group cursor-pointer" onclick="
+                                this.nextElementSibling.classList.toggle('hidden');
+                                this.querySelector('svg').classList.toggle('-rotate-180');
+                            ">
+                                <span>Staff Type</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                            </button>
+                            <div class="space-y-1">
+                                <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
+                                    <input type="checkbox" name="masterlist_filter_type[]" value="teaching" onchange="filterMasterlist(true)" class="checkbox masterlist-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
+                                    <span>Teaching</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
+                                    <input type="checkbox" name="masterlist_filter_type[]" value="non_teaching" onchange="filterMasterlist(true)" class="checkbox masterlist-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
+                                    <span>Non-Teaching</span>
+                                </label>
+                            </div>
+                        </div>
 
-    </div>
-<?php endif; ?>
+                        <!-- Employment Status Filter (dynamic from DB) -->
+                        <div class="shrink-0 pb-3 border-b border-surface-border/50">
+                            <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-2.5 group cursor-pointer" onclick="
+                                this.nextElementSibling.classList.toggle('hidden');
+                                this.querySelector('svg').classList.toggle('-rotate-180');
+                            ">
+                                <span>Employment Status</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                            </button>
+                            <div class="space-y-1">
+                                <?php if (!empty($employmentStatuses)): ?>
+                                    <?php foreach ($employmentStatuses as $es): 
+                                        $stName = is_array($es) ? ($es['name'] ?? '') : (string)$es;
+                                    ?>
+                                        <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
+                                            <input type="checkbox" name="masterlist_filter_emp[]" value="<?= strtolower(esc($stName)) ?>" onchange="filterMasterlist(true)" class="checkbox masterlist-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
+                                            <span><?= esc($stName) ?></span>
+                                        </label>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <span class="text-xs text-text-muted italic">No employment statuses found.</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <!-- Department / Unit Filter -->
+                        <div class="shrink-0 pb-3 border-b border-surface-border/50">
+                            <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-2.5 group cursor-pointer" onclick="
+                                this.nextElementSibling.classList.toggle('hidden');
+                                this.querySelector('svg').classList.toggle('-rotate-180');
+                            ">
+                                <span>Department / Unit</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                            </button>
+                            <div class="relative w-full">
+                                <select id="masterlist-filter-dept" onchange="filterMasterlist(true)"
+                                    class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
+                                    <option value=""><?= !empty($collegeDepartments) ? 'All Sub-Departments' : 'All Departments & Units' ?></option>
+                                    <?php if (!empty($collegeDepartments)): ?>
+                                        <?php foreach ($collegeDepartments as $cd): ?>
+                                            <option value="<?= esc(strtolower($cd)) ?>"><?= esc($cd) ?></option>
+                                        <?php endforeach; ?>
+                                    <?php elseif (!empty($allUnits)): ?>
+                                        <?php foreach ($allUnits as $u): ?>
+                                            <option value="<?= esc(strtolower($u['name'])) ?>" data-unit-id="<?= esc($u['id']) ?>"><?= esc($u['name']) ?></option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 flex items-center text-text-muted" style="right: 10px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Positions Filter with mini-search -->
+                        <div class="shrink-0 pb-2">
+                            <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-2.5 group cursor-pointer" onclick="
+                                this.nextElementSibling.classList.toggle('hidden');
+                                this.querySelector('svg').classList.toggle('-rotate-180');
+                            ">
+                                <span>Positions</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                            </button>
+                            <div class="flex flex-col">
+                                <div class="relative mb-2.5 shrink-0">
+                                    <input type="text" id="mini-search-positions" oninput="filterMasterlistPositions(this.value)" placeholder="Find position..." class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-lg pl-7 pr-2 py-1.5 text-[10px] focus:border-accent outline-none text-text">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 absolute left-2.5 top-2 text-text-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                </div>
+                                <div class="space-y-1 pr-1 max-h-48 overflow-y-auto custom-scrollbar" id="positions-checkbox-list">
+                                    <?php if (!empty($filterPositions)): ?>
+                                        <?php foreach ($filterPositions as $pos): ?>
+                                            <label class="position-filter-label flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors" data-title="<?= strtolower(esc($pos)) ?>">
+                                                <input type="checkbox" name="masterlist_filter_pos[]" value="<?= esc($pos) ?>" onchange="filterMasterlist(true)" class="checkbox masterlist-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
+                                                <span class="truncate" title="<?= esc($pos) ?>"><?= esc($pos) ?></span>
+                                            </label>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <span class="text-xs text-text-muted italic">No positions found.</span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Clear Filters Button -->
+                    <div class="p-3.5 border-t border-surface-border shrink-0 bg-surface">
+                        <button type="button" id="clear-masterlist-filters" onclick="clearAllMasterlistFilters()" class="w-full py-1.5 text-xs font-bold text-text-muted hover:text-text border border-surface-border rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
+                            Clear All Filters
+                        </button>
+                    </div>
+                </div>
+    </div><!-- /END OF #dashboard-view-masterlist -->
 </div>
 
 <script>
@@ -1794,8 +1513,6 @@ function updateDashboardPill(view, animate = true) {
 
     pairs.forEach(({ container, indicator, target }) => {
         if (!container || !indicator || !target) return;
-        if (container.offsetWidth === 0 || container.offsetHeight === 0) return;
-
         const left = target.offsetLeft;
         const top = target.offsetTop;
         const width = target.offsetWidth;
@@ -1804,7 +1521,7 @@ function updateDashboardPill(view, animate = true) {
         if (width === 0 || height === 0) return;
 
         if (animate) {
-            indicator.style.transition = 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), width 0.24s cubic-bezier(0.16, 1, 0.3, 1), height 0.18s ease, opacity 0.15s ease';
+            indicator.style.transition = 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), width 0.22s cubic-bezier(0.16, 1, 0.3, 1), height 0.18s ease, opacity 0.15s ease';
         } else {
             indicator.style.transition = 'none';
         }
@@ -1832,7 +1549,24 @@ function switchDashboardView(view, animate = true) {
 
     if (!analyticsView || !masterlistView) return;
 
+    // 1. Instantly animate the indicator pill
+    updateDashboardPill(view, animate);
+
+    // 2. Toggle views & button classes
     if (view === 'masterlist') {
+        btnsAnalytics.forEach(b => {
+            if (b) {
+                b.classList.remove('spms-tab-active');
+                b.classList.add('spms-tab-inactive');
+            }
+        });
+        btnsMasterlist.forEach(b => {
+            if (b) {
+                b.classList.remove('spms-tab-inactive');
+                b.classList.add('spms-tab-active');
+            }
+        });
+
         analyticsView.classList.add('hidden');
         masterlistView.classList.remove('hidden');
         if (animate) {
@@ -1842,21 +1576,22 @@ function switchDashboardView(view, animate = true) {
         }
         if (mobileAnalyticsHeader) mobileAnalyticsHeader.classList.add('hidden');
 
-        btnsAnalytics.forEach(b => {
+        localStorage.setItem('spms_dash_view', 'masterlist');
+        filterMasterlist(false);
+    } else {
+        btnsMasterlist.forEach(b => {
             if (b) {
                 b.classList.remove('spms-tab-active');
                 b.classList.add('spms-tab-inactive');
             }
         });
-        btnsMasterlist.forEach(b => {
+        btnsAnalytics.forEach(b => {
             if (b) {
                 b.classList.remove('spms-tab-inactive');
                 b.classList.add('spms-tab-active');
             }
         });
-        localStorage.setItem('spms_dash_view', 'masterlist');
-        filterMasterlist(false);
-    } else {
+
         masterlistView.classList.add('hidden');
         analyticsView.classList.remove('hidden');
         if (animate) {
@@ -1866,29 +1601,65 @@ function switchDashboardView(view, animate = true) {
         }
         if (mobileAnalyticsHeader) mobileAnalyticsHeader.classList.remove('hidden');
 
-        btnsMasterlist.forEach(b => {
-            if (b) {
-                b.classList.remove('spms-tab-active');
-                b.classList.add('spms-tab-inactive');
-            }
-        });
-        btnsAnalytics.forEach(b => {
-            if (b) {
-                b.classList.remove('spms-tab-inactive');
-                b.classList.add('spms-tab-active');
-            }
-        });
         localStorage.setItem('spms_dash_view', 'analytics');
     }
 
-    updateDashboardPill(view, animate);
+    // 3. Re-align pill once the DOM layout settles
+    requestAnimationFrame(() => updateDashboardPill(view, animate));
 }
 
-// Immediate alignment on script load
-requestAnimationFrame(() => {
+// Immediate alignment on script load and resize
+function initDashboardView() {
     const initialView = localStorage.getItem('spms_dash_view') || 'analytics';
-    updateDashboardPill(initialView, false);
+    switchDashboardView(initialView, false);
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDashboardView);
+} else {
+    initDashboardView();
+}
+
+window.addEventListener('resize', () => {
+    const currentView = localStorage.getItem('spms_dash_view') || 'analytics';
+    updateDashboardPill(currentView, false);
 });
+
+window.addEventListener('load', () => {
+    const currentView = localStorage.getItem('spms_dash_view') || 'analytics';
+    updateDashboardPill(currentView, false);
+});
+
+// --- TOP PERFORMING PERSONNEL SORTING (TOP TO LEAST / LEAST TO TOP) ---
+function sortTopPerformers(order, gridId) {
+    const grid = document.getElementById(gridId);
+    if (!grid) return;
+    const cards = Array.from(grid.querySelectorAll('.performer-card'));
+    if (cards.length === 0) return;
+
+    cards.sort((a, b) => {
+        const ratingA = parseFloat(a.getAttribute('data-rating')) || 0;
+        const ratingB = parseFloat(b.getAttribute('data-rating')) || 0;
+        const idxA = parseInt(a.getAttribute('data-initial-index')) || 0;
+        const idxB = parseInt(b.getAttribute('data-initial-index')) || 0;
+
+        if (order === 'asc') {
+            if (ratingA === ratingB) return idxB - idxA;
+            return ratingA - ratingB;
+        } else {
+            if (ratingA === ratingB) return idxA - idxB;
+            return ratingB - ratingA;
+        }
+    });
+
+    cards.forEach((card, index) => {
+        const badge = card.querySelector('.performer-rank-badge');
+        if (badge) {
+            badge.textContent = index + 1;
+        }
+        grid.appendChild(card);
+    });
+}
 
 // --- STAGE ACCORDION TOGGLE (MOBILE) ---
 function toggleStageAccordion(stageNum) {
@@ -1906,14 +1677,14 @@ function toggleStageAccordion(stageNum) {
 }
 
 // --- MASTERLIST FILTERING & RESPONSIVE PAGINATION ---
-let currentMasterlistPill = 'all';
+let currentMasterlistLifecycle = 'all';
 let masterlistCurrentPage = 1;
 let masterlistPerPage = (typeof window !== 'undefined' && window.innerWidth < 768) ? 6 : 50;
 
-function setMasterlistPill(pillType, btn) {
-    currentMasterlistPill = pillType;
-    document.querySelectorAll('.masterlist-tab-btn').forEach(b => {
-        if (b.getAttribute('data-pill') === pillType) {
+function setMasterlistLifecyclePill(stage, btn) {
+    currentMasterlistLifecycle = stage;
+    document.querySelectorAll('.masterlist-lifecycle-btn').forEach(b => {
+        if (b.getAttribute('data-lifecycle') === stage) {
             b.classList.add('active');
         } else {
             b.classList.remove('active');
@@ -1922,12 +1693,69 @@ function setMasterlistPill(pillType, btn) {
     filterMasterlist(true);
 }
 
+// Backward compatibility alias for any existing caller
+function setMasterlistPill(stage, btn) {
+    setMasterlistLifecyclePill(stage, btn);
+}
+
+// --- MASTERLIST SIDEBAR TOGGLE & POSITION FILTER ---
+function toggleMasterlistFilterSidebar() {
+    const sidebar = document.getElementById('masterlist-filter-sidebar');
+    const overlay = document.getElementById('masterlist-filter-overlay');
+    
+    if (sidebar && overlay) {
+        if (window.innerWidth < 1024) {
+            const isClosed = sidebar.classList.contains('translate-x-full') || sidebar.classList.contains('-translate-x-full');
+            if (isClosed) {
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+                sidebar.classList.remove('translate-x-full');
+                sidebar.classList.remove('-translate-x-full');
+            } else {
+                overlay.classList.add('opacity-0');
+                sidebar.classList.add('translate-x-full');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
+        }
+    }
+}
+
+function filterMasterlistPositions(query) {
+    const q = (query || '').toLowerCase().trim();
+    document.querySelectorAll('#positions-checkbox-list .position-filter-label').forEach(label => {
+        const title = (label.getAttribute('data-title') || '').toLowerCase();
+        label.style.display = (!q || title.includes(q)) ? '' : 'none';
+    });
+}
+
 function filterMasterlistMobile() {
     const mobileInput = document.getElementById('masterlist-search-mobile');
-    const deskInput   = document.getElementById('masterlist-search');
-    if (mobileInput && deskInput) {
-        deskInput.value = mobileInput.value;
+    const sideInput   = document.getElementById('masterlist-search-sidebar');
+    if (mobileInput && sideInput) {
+        sideInput.value = mobileInput.value;
     }
+    filterMasterlist(true);
+}
+
+function clearAllMasterlistFilters() {
+    const s1 = document.getElementById('masterlist-search-sidebar');
+    if (s1) s1.value = '';
+    const s2 = document.getElementById('masterlist-search-mobile');
+    if (s2) s2.value = '';
+
+    document.querySelectorAll('input[name="masterlist_filter_type[]"]').forEach(cb => cb.checked = false);
+    document.querySelectorAll('input[name="masterlist_filter_emp[]"]').forEach(cb => cb.checked = false);
+    document.querySelectorAll('input[name="masterlist_filter_pos[]"]').forEach(cb => cb.checked = false);
+
+    const d = document.getElementById('masterlist-filter-dept');
+    if (d) d.value = '';
+
+    const miniPos = document.getElementById('mini-search-positions');
+    if (miniPos) {
+        miniPos.value = '';
+        filterMasterlistPositions('');
+    }
+
     filterMasterlist(true);
 }
 
@@ -1936,14 +1764,47 @@ function filterMasterlist(resetPage = true) {
         masterlistCurrentPage = 1;
     }
 
-    const searchInputDesk   = document.getElementById('masterlist-search');
+    const searchInputDesk   = document.getElementById('masterlist-search-sidebar');
     const searchInputMobile = document.getElementById('masterlist-search-mobile');
-    const statusFilter      = document.getElementById('masterlist-status-filter');
+    const deptFilter        = document.getElementById('masterlist-filter-dept');
 
-    const query = ((searchInputMobile && searchInputMobile.value.trim() !== '') 
-                    ? searchInputMobile.value 
-                    : (searchInputDesk ? searchInputDesk.value : '')).toLowerCase().trim();
-    const empStatus = statusFilter ? statusFilter.value.trim().toLowerCase() : '';
+    const checkedTypes = Array.from(document.querySelectorAll('input[name="masterlist_filter_type[]"]:checked')).map(cb => cb.value.toLowerCase());
+    const checkedEmp   = Array.from(document.querySelectorAll('input[name="masterlist_filter_emp[]"]:checked')).map(cb => cb.value.toLowerCase());
+    const checkedPos   = Array.from(document.querySelectorAll('input[name="masterlist_filter_pos[]"]:checked')).map(cb => cb.value.toLowerCase());
+
+    const query = ((searchInputDesk && searchInputDesk.value.trim() !== '') 
+                    ? searchInputDesk.value 
+                    : (searchInputMobile ? searchInputMobile.value : '')).toLowerCase().trim();
+    
+    const selectedDept = deptFilter ? deptFilter.value.trim().toLowerCase() : '';
+
+    // Active filters count badge calculation
+    let activeFilterCount = 0;
+    if (query) activeFilterCount++;
+    if (selectedDept) activeFilterCount++;
+    if (checkedTypes.length > 0) activeFilterCount += checkedTypes.length;
+    if (checkedEmp.length > 0) activeFilterCount += checkedEmp.length;
+    if (checkedPos.length > 0) activeFilterCount += checkedPos.length;
+
+    const countBadge = document.getElementById('active-masterlist-filter-badge');
+    if (countBadge) {
+        countBadge.textContent = activeFilterCount;
+        countBadge.classList.toggle('hidden', activeFilterCount === 0);
+    }
+    const mobileBadge1 = document.getElementById('mobile-masterlist-filter-badge');
+    if (mobileBadge1) {
+        mobileBadge1.textContent = activeFilterCount;
+        mobileBadge1.classList.toggle('hidden', activeFilterCount === 0);
+    }
+    const mobileBadge2 = document.getElementById('mobile-masterlist-filter-badge-desk');
+    if (mobileBadge2) {
+        mobileBadge2.textContent = activeFilterCount;
+        mobileBadge2.classList.toggle('hidden', activeFilterCount === 0);
+    }
+    const resetBtn = document.getElementById('reset-masterlist-filters-btn');
+    if (resetBtn) {
+        resetBtn.classList.toggle('hidden', activeFilterCount === 0);
+    }
 
     const desktopRows = document.querySelectorAll('.masterlist-row');
     const mobileCards = document.querySelectorAll('.masterlist-row-card');
@@ -1953,34 +1814,33 @@ function filterMasterlist(resetPage = true) {
         const name         = row.getAttribute('data-name') || '';
         const email        = row.getAttribute('data-email') || '';
         const dept         = row.getAttribute('data-dept') || '';
+        const unitId       = row.getAttribute('data-unit-id') || '';
         const pos          = row.getAttribute('data-pos') || '';
+        const staffType    = (row.getAttribute('data-staff-type') || '').toLowerCase();
         const rowEmpStatus = (row.getAttribute('data-emp-status') || '').toLowerCase();
+        const stage        = row.getAttribute('data-lifecycle-stage') || 'target_phase';
         const rating       = row.getAttribute('data-rating') || '';
         const adjectival   = (row.getAttribute('data-adjectival') || '').toLowerCase();
 
-        // Pill filter
-        let matchesPill = false;
-        if (currentMasterlistPill === 'all') {
-            matchesPill = true;
-        } else if (currentMasterlistPill === 'permanent') {
-            matchesPill = rowEmpStatus === 'permanent';
-        } else if (currentMasterlistPill === 'temporary') {
-            matchesPill = rowEmpStatus === 'temporary';
-        } else if (currentMasterlistPill === 'casual') {
-            matchesPill = rowEmpStatus === 'casual';
-        } else if (currentMasterlistPill === 'contractual') {
-            matchesPill = rowEmpStatus === 'contractual';
-        } else if (currentMasterlistPill === 'casual_contr') {
-            matchesPill = (rowEmpStatus === 'casual' || rowEmpStatus === 'contractual');
-        }
-
-        // Search match
+        // 1. Search Query
         const matchesSearch = !query || name.includes(query) || email.includes(query) || dept.includes(query) || pos.includes(query) || rating.includes(query) || adjectival.includes(query);
 
-        // Employment status dropdown match
-        const matchesStatus = !empStatus || rowEmpStatus === empStatus;
+        // 2. Department / Sub-Department
+        const matchesDept = !selectedDept || dept.includes(selectedDept) || unitId === selectedDept;
 
-        if (matchesPill && matchesSearch && matchesStatus) {
+        // 3. Staff Type (teaching / non_teaching)
+        const matchesType = checkedTypes.length === 0 || checkedTypes.includes(staffType);
+
+        // 4. Employment Status (permanent, temporary, casual, etc.)
+        const matchesEmp = checkedEmp.length === 0 || checkedEmp.includes(rowEmpStatus);
+
+        // 5. Job Position
+        const matchesPos = checkedPos.length === 0 || checkedPos.some(p => pos.includes(p));
+
+        // 6. Mutually-Exclusive Lifecycle Pill
+        const matchesLifecycle = (currentMasterlistLifecycle === 'all') || (stage === currentMasterlistLifecycle);
+
+        if (matchesSearch && matchesDept && matchesType && matchesEmp && matchesPos && matchesLifecycle) {
             matchingIndexes.push(idx);
         }
     });
@@ -1998,9 +1858,18 @@ function filterMasterlist(resetPage = true) {
 
     const visibleIndexSet = new Set(matchingIndexes.slice(startIndex, endIndex));
 
-    // Show/hide desktop rows
+    // Show/hide desktop rows and update index numbers
+    let displayRank = startIndex + 1;
     desktopRows.forEach((row, idx) => {
-        row.style.display = visibleIndexSet.has(idx) ? '' : 'none';
+        if (visibleIndexSet.has(idx)) {
+            row.style.display = '';
+            const idxCell = row.querySelector('.masterlist-row-idx');
+            if (idxCell) {
+                idxCell.textContent = displayRank++;
+            }
+        } else {
+            row.style.display = 'none';
+        }
     });
 
     // Show/hide mobile cards
@@ -2008,223 +1877,53 @@ function filterMasterlist(resetPage = true) {
         card.style.display = visibleIndexSet.has(idx) ? '' : 'none';
     });
 
-    // Empty state rows
-    const desktopEmpty = document.getElementById('masterlist-empty-row');
-    const mobileEmpty = document.getElementById('masterlist-mobile-empty');
-    if (desktopEmpty) desktopEmpty.classList.toggle('hidden', totalMatching > 0);
-    if (mobileEmpty) mobileEmpty.classList.toggle('hidden', totalMatching > 0);
-
-    // Range & Total counters (Desktop)
-    const rangeElem = document.getElementById('masterlist-visible-range');
-    const totalElem = document.getElementById('masterlist-visible-total');
-    if (rangeElem) {
-        rangeElem.textContent = (totalMatching === 0) ? '0' : `${startIndex + 1}–${endIndex}`;
+    // Update empty states
+    const desktopEmptyRow = document.getElementById('masterlist-empty-row');
+    if (desktopEmptyRow) {
+        desktopEmptyRow.classList.toggle('hidden', totalMatching > 0);
     }
-    if (totalElem) {
-        totalElem.textContent = totalMatching;
+    const mobileEmptyState = document.getElementById('masterlist-mobile-empty');
+    if (mobileEmptyState) {
+        mobileEmptyState.classList.toggle('hidden', totalMatching > 0);
+    }
+    const mobileCountLabel = document.getElementById('masterlist-mobile-records-count');
+    if (mobileCountLabel) {
+        mobileCountLabel.textContent = totalMatching;
     }
 
-    // Range & Total counters (Mobile)
-    const mobileRangeElem    = document.getElementById('masterlist-mobile-range');
-    const mobileTotalElem    = document.getElementById('masterlist-mobile-total');
-    const mobileRecordsBadge = document.getElementById('masterlist-mobile-records-count');
-    if (mobileRangeElem) {
-        mobileRangeElem.textContent = (totalMatching === 0) ? '0' : `${startIndex + 1} – ${endIndex}`;
+    // Update visible counts
+    const rangeEl = document.getElementById('masterlist-visible-range');
+    const totalEl = document.getElementById('masterlist-visible-total');
+    if (rangeEl) {
+        rangeEl.textContent = totalMatching === 0 ? '0' : `${startIndex + 1}–${endIndex}`;
     }
-    if (mobileTotalElem) {
-        mobileTotalElem.textContent = totalMatching;
-    }
-    if (mobileRecordsBadge) {
-        mobileRecordsBadge.textContent = totalMatching;
+    if (totalEl) {
+        totalEl.textContent = totalMatching;
     }
 
-    // Mobile prev/next buttons
-    const prevBtn = document.getElementById('masterlist-mobile-prev-btn');
-    const nextBtn = document.getElementById('masterlist-mobile-next-btn');
-    if (prevBtn) {
-        prevBtn.disabled = masterlistCurrentPage <= 1;
+    const mobileRangeEl = document.getElementById('masterlist-mobile-range');
+    const mobileTotalEl = document.getElementById('masterlist-mobile-total');
+    if (mobileRangeEl) {
+        mobileRangeEl.textContent = totalMatching === 0 ? '0' : `${startIndex + 1}–${endIndex}`;
     }
-    if (nextBtn) {
-        nextBtn.disabled = masterlistCurrentPage >= totalPages;
+    if (mobileTotalEl) {
+        mobileTotalEl.textContent = totalMatching;
     }
 
-    // Render pagination buttons (Desktop)
-    renderMasterlistPagination(totalPages, masterlistCurrentPage, totalMatching);
+    renderMasterlistPagination(totalPages);
 }
 
-function renderMasterlistPagination(totalPages, currentPage, totalMatching) {
-    const container = document.getElementById('masterlist-pagination-controls');
-    if (!container) return;
-
-    if (totalPages <= 1) {
-        container.innerHTML = '';
-        return;
-    }
-
-    let html = '';
-
-    // Prev Button
-    const prevDisabled = currentPage <= 1;
-    html += `<button type="button" onclick="goToMasterlistPage(${currentPage - 1})" ${prevDisabled ? 'disabled' : ''} 
-                class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer spms-page-btn ${prevDisabled ? 'opacity-40 cursor-not-allowed' : ''}">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-                <span class="hidden sm:inline">Prev</span>
-            </button>`;
-
-    // Mobile indicator: "Page X of Y"
-    html += `<span class="sm:hidden px-2 text-xs font-bold text-zinc-600 dark:text-zinc-400">
-                ${currentPage} / ${totalPages}
-            </span>`;
-
-    // Numbered page pills for tablet/desktop
-    let pages = [];
-    if (totalPages <= 7) {
-        for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-        pages.push(1);
-        if (currentPage > 3) pages.push('...');
-        
-        let start = Math.max(2, currentPage - 1);
-        let end = Math.min(totalPages - 1, currentPage + 1);
-        for (let i = start; i <= end; i++) {
-            if (!pages.includes(i)) pages.push(i);
-        }
-
-        if (currentPage < totalPages - 2) pages.push('...');
-        if (!pages.includes(totalPages)) pages.push(totalPages);
-    }
-
-    pages.forEach(p => {
-        if (p === '...') {
-            html += `<span class="hidden sm:inline-flex px-1.5 py-1 text-xs text-zinc-400 dark:text-zinc-600 font-bold">...</span>`;
-        } else {
-            const isActive = p === currentPage;
-            html += `<button type="button" onclick="goToMasterlistPage(${p})" 
-                        class="hidden sm:inline-flex w-7 h-7 items-center justify-center rounded-lg text-xs font-bold transition-all cursor-pointer ${isActive ? 'spms-page-btn-active shadow-2xs' : 'spms-page-btn'}">
-                        ${p}
-                    </button>`;
-        }
-    });
-
-    // Next Button
-    const nextDisabled = currentPage >= totalPages;
-    html += `<button type="button" onclick="goToMasterlistPage(${currentPage + 1})" ${nextDisabled ? 'disabled' : ''} 
-                class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer spms-page-btn ${nextDisabled ? 'opacity-40 cursor-not-allowed' : ''}">
-                <span class="hidden sm:inline">Next</span>
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-            </button>`;
-
-    container.innerHTML = html;
-}
-
-function goToMasterlistPage(page) {
-    masterlistCurrentPage = page;
-    filterMasterlist(false);
-
-    const isMobile = window.innerWidth < 768;
-    const targetElem = isMobile 
-        ? document.getElementById('masterlist-mobile-cards-list') 
-        : document.getElementById('masterlist-container');
-    if (targetElem) {
-        targetElem.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-}
-
-function changeMasterlistPerPage(val) {
-    masterlistPerPage = val;
-    masterlistCurrentPage = 1;
-    filterMasterlist(false);
-}
-
-// Restore saved view & initialize responsive masterlist pagination on page load
-document.addEventListener('DOMContentLoaded', function() {
-    const savedView = localStorage.getItem('spms_dash_view') || 'analytics';
-    if (savedView === 'masterlist') {
-        switchDashboardView('masterlist', false);
-    } else {
-        updateDashboardPill('analytics', false);
-    }
-
-    const isMobile = window.innerWidth < 768;
-    masterlistPerPage = isMobile ? 6 : 50;
-    const perPageSelect = document.getElementById('masterlist-per-page');
-    if (perPageSelect && !isMobile) {
-        perPageSelect.value = "50";
-    }
-    filterMasterlist(true);
-});
-
-window.addEventListener('load', function() {
-    const currentView = localStorage.getItem('spms_dash_view') || 'analytics';
-    updateDashboardPill(currentView, false);
-});
-
-window.addEventListener('resize', function() {
-    const currentView = localStorage.getItem('spms_dash_view') || 'analytics';
-    updateDashboardPill(currentView, false);
-}, { passive: true });
-
-// --- ROSTER / DEAN FILTERING ---
-let currentRosterFilter = 'all';
-
-function setRosterFilter(filterType, btn) {
-    currentRosterFilter = filterType;
-    document.querySelectorAll('.roster-tab-btn').forEach(b => {
-        b.className = 'roster-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700';
-    });
-    if (btn) {
-        btn.className = 'roster-tab-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border border-zinc-900 dark:border-white shadow-2xs';
-    }
-    filterRoster();
+function setRosterFilter(filter, btn) {
+    if (filter === 'all') setMasterlistLifecyclePill('all', btn);
+    else if (filter === 'missing') setMasterlistLifecyclePill('target_phase', btn);
+    else if (filter === 'review') setMasterlistLifecyclePill('eval_phase', btn);
+    else if (filter === 'completed') setMasterlistLifecyclePill('completed', btn);
+    else filterMasterlist(true);
 }
 
 function filterRoster() {
-    const searchInput = document.getElementById('roster-search');
-    const deptSelect  = document.getElementById('roster-dept-filter');
-    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
-    const dept  = deptSelect ? deptSelect.value.trim() : '';
-
-    const rows = document.querySelectorAll('.roster-row');
-    let visibleCount = 0;
-
-    rows.forEach(row => {
-        const rowFilter = row.getAttribute('data-filter') || '';
-        const rowTarget = row.getAttribute('data-target-state') || '';
-        const rowEval   = row.getAttribute('data-eval-state') || '';
-        const rowName   = row.getAttribute('data-name') || '';
-        const rowDept   = row.getAttribute('data-dept') || '';
-
-        let matchesTab = false;
-        if (currentRosterFilter === 'all') {
-            matchesTab = true;
-        } else if (currentRosterFilter === 'missing') {
-            matchesTab = (rowTarget === 'draft' || rowEval === 'draft' || rowFilter === 'missing');
-        } else if (currentRosterFilter === 'review') {
-            matchesTab = (rowTarget === 'submitted' || rowEval === 'submitted' || rowEval === 'evaluating' || rowFilter === 'review');
-        } else if (currentRosterFilter === 'revision') {
-            matchesTab = (rowTarget === 'returned' || rowEval === 'returned' || rowFilter === 'revision');
-        } else if (currentRosterFilter === 'completed') {
-            matchesTab = (rowEval === 'approved' || rowFilter === 'completed');
-        }
-
-        const matchesSearch = !query || rowName.includes(query);
-        const matchesDept   = !dept || rowDept === dept;
-
-        if (matchesTab && matchesSearch && matchesDept) {
-            row.style.display = '';
-            visibleCount++;
-        } else {
-            row.style.display = 'none';
-        }
-    });
-
-    const emptyMsg = document.getElementById('roster-empty-message');
-    if (emptyMsg) {
-        emptyMsg.classList.toggle('hidden', visibleCount > 0);
-    }
+    filterMasterlist(true);
 }
-
-
 
 function applyCollegeFilter(unitId) {
     const url = new URL(window.location.href);

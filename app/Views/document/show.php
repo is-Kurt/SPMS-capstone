@@ -69,25 +69,25 @@
     $viewData = get_defined_vars();
 ?>
 
-<?= view('document/partials/_styles', $viewData) ?>
+<?= view('document/partials/assets/_styles', $viewData) ?>
 
 <div class="h-full flex flex-col bg-zinc-200 dark:bg-bg">
     <?= view('components/govph_masthead') ?>
     
-    <?= view('document/partials/_navbar', $viewData) ?>
+    <?= view('document/partials/ui/_navbar', $viewData) ?>
 
     <!-- Main Workspace Split Container: Form (Left ~3/4) & Rubric (Right ~1/4) -->
     <div class="flex-1 min-h-0 w-full relative flex flex-row overflow-hidden" id="workspace-split-container">
-        <div class="flex-1 min-h-0 h-full relative bg-zinc-200 dark:bg-zinc-950 overflow-x-auto transition-all duration-300 ease-out" id="editor-container">
-            <?= view('document/partials/_basis_workspace', $viewData) ?>
+        <div class="flex-1 min-h-0 h-full relative bg-zinc-200 dark:bg-zinc-950 overflow-auto transition-all duration-300 ease-out custom-scrollbar" id="editor-container">
+            <?= view('document/partials/workspaces/_basis_workspace', $viewData) ?>
 
             <!-- SPMS Structured Form Builder Container -->
-            <div id="spms-form-workspace" class="hidden w-full h-full overflow-y-auto p-2 sm:p-6 lg:p-8 flex flex-col items-center custom-scrollbar print:p-0 print:bg-white print:overflow-visible">
-                <div class="w-full max-w-[1440px] flex flex-col items-center gap-4 print:w-full print:block">
+            <div id="spms-form-workspace" class="hidden w-fit min-w-full min-h-full p-2 sm:p-6 lg:p-8 flex flex-col items-center print:p-0 print:bg-white print:overflow-visible">
+                <div class="w-full max-w-[1560px] flex flex-col items-center gap-4 print:w-full print:block">
                     <article id="printable-form" class="spms-sheet-container block space-y-5">
                         
-                        <?= view('document/partials/_letterhead', $viewData) ?>
-                        <?= view('document/partials/_title', $viewData) ?>
+                        <?= view('document/partials/layout/_letterhead', $viewData) ?>
+                        <?= view('document/partials/layout/_title', $viewData) ?>
 
                         <!-- Metadata Matrix Table -->
                         <?php if ($isDocIperf): ?>
@@ -98,10 +98,6 @@
 
                         <!-- Main Table of Deliverables & Ratings -->
                         <div class="spms-table-responsive-wrapper">
-                            <div class="lg:hidden flex items-center justify-between text-[11px] text-zinc-500 bg-zinc-200 dark:bg-zinc-800/40 px-3 py-1.5 rounded border border-zinc-200 dark:border-zinc-700 mb-2 print-hide">
-                                <span class="flex items-center gap-1 font-medium">↔ Swipe matrix horizontally to view ratings</span>
-                                <span class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider"><?= ($isDocDpcr || $isDocOpcr) ? '9 Columns' : '7 Columns' ?></span>
-                            </div>
                             <table class="spms-table">
                                 <!-- Document Form Headers by Doc Type -->
                                 <?php if ($isDocDpcr): ?>
@@ -128,7 +124,7 @@
                             <?= view('document/partials/forms/_summary_table', $viewData) ?>
                         <?php endif; ?>
 
-                        <?= view('document/partials/_remarks_box', $viewData) ?>
+                        <?= view('document/partials/layout/_remarks_box', $viewData) ?>
 
                         <!-- Signatories -->
                         <?php if ($isDocIperf): ?>
@@ -142,15 +138,15 @@
             </div>
 
             <!-- SPMS Digital Rubrics Matrix Workspace -->
-            <?= view('document/partials/_rubrics_workspace', $viewData) ?>
+            <?= view('document/partials/workspaces/_rubrics_workspace', $viewData) ?>
 
         </div>
     </div>
 </div>
 
-<?= view('document/partials/_scripts', $viewData) ?>
-<?= view('document/partials/_comments_drawer', $viewData) ?>
-<?= view('document/partials/_unsaved_modal', $viewData) ?>
+<?= view('document/partials/assets/_scripts', $viewData) ?>
+<?= view('document/partials/ui/_comments_drawer', $viewData) ?>
+<?= view('document/partials/ui/_unsaved_modal', $viewData) ?>
 
 <?= view('document/_mov_modal', [
     'isOwner'           => $isOwner ?? false,

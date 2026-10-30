@@ -198,6 +198,7 @@
     const invPaginator = new ClientPaginator({ containerId: 'invitations-pagination', pageSize: 10 });
     const posPaginator = new ClientPaginator({ containerId: 'positions-pagination', pageSize: 10 });
     const uniPaginator = new ClientPaginator({ containerId: 'units-pagination', pageSize: 15 });
+    const esPaginator  = new ClientPaginator({ containerId: 'employment-statuses-pagination', pageSize: 10 });
     window.dirPaginator = dirPaginator;
     window.invPaginator = invPaginator;
 
@@ -265,7 +266,7 @@
     }
 
     async function handleAccountsAjaxSuccess(action, form, data) {
-        if (['add-position', 'delete-position', 'add-unit', 'delete-unit', 'add-role', 'delete-role'].includes(action)) {
+        if (['add-position', 'delete-position', 'add-unit', 'delete-unit', 'add-role', 'delete-role', 'add-employment-status', 'delete-employment-status'].includes(action)) {
             window.systemDataChanged = true;
         }
         switch (action) {
@@ -315,6 +316,12 @@
             case 'delete-position': {
                 form.closest('li').remove();
                 if (typeof filterPositions === 'function') filterPositions();
+                break;
+            }
+
+            case 'delete-employment-status': {
+                form.closest('li').remove();
+                if (typeof filterEmploymentStatuses === 'function') filterEmploymentStatuses();
                 break;
             }
 
@@ -406,6 +413,37 @@
                 document.getElementById('positions-list').appendChild(li);
                 form.reset();
                 if (typeof filterPositions === 'function') filterPositions();
+                break;
+            }
+
+            case 'add-employment-status': {
+                const li = document.createElement('li');
+                li.className = 'employment-status-item block lg:table-row bg-surface hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors group';
+                li.dataset.name = data.item.name.toLowerCase();
+                li.innerHTML = `
+                    <div class="flex flex-col justify-center lg:table-cell px-6 py-4 align-middle h-[72px]">
+                        <div class="flex justify-between items-center w-full">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-text">${escapeHtml(data.item.name)}</span>
+                                <span class="text-[9px] font-black tracking-widest uppercase text-emerald-500">Employment Status</span>
+                            </div>
+                            <form action="${form.getAttribute('action').replace('/add', '/delete')}" method="post" data-ajax="delete-employment-status" data-confirm="Delete this employment status? Plantilla assignments with this status will remain intact." data-confirm-title="Delete Employment Status">
+                                <input type="hidden" name="id" value="${data.item.id}">
+                                <button type="submit" class="text-danger-400 hover:text-danger-600 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-2 -mr-2 bg-danger-50 hover:bg-danger-100 dark:bg-danger-500/10 dark:hover:bg-danger-500/20 lg:bg-transparent rounded-lg cursor-pointer" title="Delete Employment Status">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('employment-statuses-list').appendChild(li);
+                form.reset();
+                const modal = document.getElementById('modal-create-employment-status');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+                if (typeof filterEmploymentStatuses === 'function') filterEmploymentStatuses();
                 break;
             }
 
@@ -1258,6 +1296,28 @@
     }
     window.filterPositions = filterPositions;
 
+    // --- SYSTEM DATA: EMPLOYMENT STATUSES PAGINATION & SEARCH ---
+    function filterEmploymentStatuses() {
+        const input = document.getElementById('filter-employment-statuses');
+        const query = (input ? input.value : '').trim().toLowerCase();
+        const list = document.getElementById('employment-statuses-list');
+        if (!list) return;
+
+        const allRows = Array.from(list.querySelectorAll('li.employment-status-item'));
+        esPaginator.init(allRows);
+
+        const matchedRows = allRows.filter(row => {
+            const name = (row.dataset.name || row.textContent || '').trim().toLowerCase();
+            return !query || name.includes(query);
+        });
+
+        esPaginator.updateItems(matchedRows);
+
+        const emptyState = document.getElementById('employment-statuses-empty-state');
+        if (emptyState) emptyState.style.display = matchedRows.length === 0 ? '' : 'none';
+    }
+    window.filterEmploymentStatuses = filterEmploymentStatuses;
+
     // --- SYSTEM DATA: DEPARTMENTS & UNITS TREE VIEW ---
     function toggleUnitTree(btn, parentId) {
         if (!btn) return;
@@ -1573,8 +1633,12 @@
         const sysPosInput = document.getElementById('filter-positions');
         if (sysPosInput) sysPosInput.addEventListener('input', filterPositions);
 
+        const sysEsInput = document.getElementById('filter-employment-statuses');
+        if (sysEsInput) sysEsInput.addEventListener('input', filterEmploymentStatuses);
+
         filterUnits();
         filterPositions();
+        filterEmploymentStatuses();
 
         // --- 4. Modals & System Mobile Sidebar ---
         document.querySelectorAll('.btn-open-modal').forEach(btn => {

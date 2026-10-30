@@ -31,42 +31,53 @@ if (btnConfirmDelete) {
     btnConfirmDelete.addEventListener('click', () => {
         if (!deleteTargetId || !deleteTargetUrl || isDeleting) return;
 
+        // Capture targets locally BEFORE modal close resets the outer state
+        const targetUrl = deleteTargetUrl;
+        const targetId = deleteTargetId;
+
         const formData = new FormData();
         formData.append('_method', 'DELETE');
-        formData.append('doc_id', deleteTargetId);
+        formData.append('doc_id', targetId);
         
         isDeleting = true;
-        apiPost(deleteTargetUrl, formData, {
+        apiPost(targetUrl, formData, {
             onSuccess: () => {
-                // 1. SMART REDIRECT: Check if the item we just deleted is in the current URL
-                if (window.location.href.includes(deleteTargetId)) {
-                    if (window.location.href.includes('folders/archived')) {
-                        window.location.href = '/folders/archived';
+                isDeleting = false;
+                deleteModal.close();
+
+                // 1. SMART REDIRECT FOR FOLDERS: Seamlessly refresh the workspace and sidebar
+                if (targetUrl && targetUrl.includes('folder')) {
+                    const isArchived = window.location.href.includes('folders/archived') || window.location.href.includes('/archived');
+                    const redirectUrl = isArchived ? '/folders/archived' : '/folders';
+                    if (typeof window.loadFolderTab === 'function') {
+                        window.loadFolderTab(redirectUrl, true);
                         return;
                     }
-                    // If we deleted a folder, redirect back to the main /folders page
-                    if (deleteTargetUrl.includes('folder')) {
-                        window.location.href = deleteTargetUrl + 's'; // converts '/folder' to '/folders'
-                    } else {
-                        // Fallback for documents or anything else
-                        window.location.href = '/folders'; 
-                    }
-                    return; // Stop execution here so it doesn't try to reload the dead page
+                    window.location.href = redirectUrl;
+                    return;
                 }
 
-                // 2. STANDARD BEHAVIOR: If we are not on the deleted item's specific page, remove row or reload
-                const row = document.querySelector(`[data-doc-id="${deleteTargetId}"]`);
+                // 2. SMART REDIRECT FOR DOCUMENTS: Check if the item we just deleted is in current URL
+                if (targetId && window.location.href.includes(targetId)) {
+                    window.location.href = '/folders'; 
+                    return;
+                }
+
+                // 3. STANDARD BEHAVIOR: Remove row if present in document table
+                const row = document.querySelector(`[data-doc-id="${targetId}"]`);
                 if (row) {
                     row.remove();
                     document.dispatchEvent(new CustomEvent('item-deleted'));
                 } else {
                     window.location.reload(); 
                 }
-                
-                isDeleting = false;
-                deleteModal.close();
             },
-            onError: () => { isDeleting = false; }
+            onError: (errorMsg) => {
+                isDeleting = false;
+                if (typeof window.showToast === 'function') {
+                    window.showToast(errorMsg || 'Failed to delete item.', 'danger');
+                }
+            }
         });
     });
 }

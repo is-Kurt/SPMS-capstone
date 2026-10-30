@@ -219,10 +219,10 @@
                                     <?php 
                                         $oldStatuses = old('employment_statuses');
                                         $selectedStatus = is_array($oldStatuses) ? ($oldStatuses[$i] ?? 'Permanent') : 'Permanent';
-                                        $statuses = ['Permanent', 'Temporary', 'Casual', 'Contractual', 'Coterminous'];
+                                        $statusOptions = !empty($employmentStatuses) ? (is_array(reset($employmentStatuses)) ? array_column($employmentStatuses, 'name') : $employmentStatuses) : ['Permanent', 'Temporary', 'Casual', 'Contractual', 'Coterminous'];
                                     ?>
-                                    <?php foreach ($statuses as $st): ?>
-                                        <option value="<?= $st ?>" <?= ($st === $selectedStatus) ? 'selected' : '' ?>><?= $st ?></option>
+                                    <?php foreach ($statusOptions as $st): ?>
+                                        <option value="<?= esc($st) ?>" <?= ($st === $selectedStatus) ? 'selected' : '' ?>><?= esc($st) ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>

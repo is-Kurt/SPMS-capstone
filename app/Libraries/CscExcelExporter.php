@@ -210,7 +210,32 @@ class CscExcelExporter
         $rateeDept = $formData['ratee']['dept'] ?? ($ownerInfo['dept'] ?? '—');
         $rateePeriod = $formData['ratee']['period'] ?? ($ownerInfo['period'] ?? '—');
 
-        $commitmentText = "I, " . ($rateeName ?: '[Name]') . ", " . ($rateePos ?: '[Position]') . " of the " . ($rateeDept ?: '[College / Unit]') . ", commit to deliver and agree to be rated on the attainment of targets for " . ($rateePeriod ?: '[Rating Period]') . " in accordance with the indicated measures.";
+        $roles = $formData['ratee']['roles'] ?? ($ownerInfo['roles'] ?? []);
+        if (empty($roles)) {
+            $roles = [[
+                'position' => $rateePos,
+                'dept'     => $rateeDept
+            ]];
+        }
+
+        $roleParts = [];
+        foreach ($roles as $r) {
+            $p = !empty($r['position']) ? $r['position'] : ($rateePos ?: '[Position]');
+            $d = !empty($r['dept']) ? $r['dept'] : ($rateeDept ?: '[College / Unit]');
+            $roleParts[] = "{$p} of the {$d}";
+        }
+
+        $rolesCount = count($roleParts);
+        if ($rolesCount === 1) {
+            $rolesFormatted = $roleParts[0];
+        } elseif ($rolesCount === 2) {
+            $rolesFormatted = $roleParts[0] . ', and ' . $roleParts[1];
+        } else {
+            $lastRole = array_pop($roleParts);
+            $rolesFormatted = implode(', ', $roleParts) . ', and ' . $lastRole;
+        }
+
+        $commitmentText = "I, " . ($rateeName ?: '[Name]') . ", " . $rolesFormatted . ", commit to deliver and agree to be rated on the attainment of targets for " . ($rateePeriod ?: '[Rating Period]') . " in accordance with the indicated measures.";
 
         $sheet->mergeCells("A6:{$lastCol}7");
         $sheet->setCellValue('A6', $commitmentText);

@@ -973,14 +973,16 @@
 
     // Enum values exported for JS use
     window.FolderStatus = <?= json_encode([
-        'DRAFT_TARGET'     => \App\Enums\FolderStatus::DRAFT_TARGET->value,
-        'TARGET_SUBMITTED' => \App\Enums\FolderStatus::TARGET_SUBMITTED->value,
-        'TARGET_APPROVED'  => \App\Enums\FolderStatus::TARGET_APPROVED->value,
-        'TARGET_MISSED'    => \App\Enums\FolderStatus::TARGET_MISSED->value,
-        'DRAFT_EVALUATION' => \App\Enums\FolderStatus::DRAFT_EVALUATION->value,
-        'EVAL_SUBMITTED'   => \App\Enums\FolderStatus::EVAL_SUBMITTED->value,
-        'EVAL_APPROVED'    => \App\Enums\FolderStatus::EVAL_APPROVED->value,
-        'UNEVALUATED'      => \App\Enums\FolderStatus::UNEVALUATED->value,
+        'DRAFT_TARGET'      => \App\Enums\FolderStatus::DRAFT_TARGET->value,
+        'TARGET_SUBMITTED'  => \App\Enums\FolderStatus::TARGET_SUBMITTED->value,
+        'TARGET_APPROVED'   => \App\Enums\FolderStatus::TARGET_APPROVED->value,
+        'TARGET_MISSED'     => \App\Enums\FolderStatus::TARGET_MISSED->value,
+        'TARGET_UNAPPROVED' => \App\Enums\FolderStatus::TARGET_UNAPPROVED->value,
+        'DRAFT_EVALUATION'  => \App\Enums\FolderStatus::DRAFT_EVALUATION->value,
+        'EVAL_SUBMITTED'    => \App\Enums\FolderStatus::EVAL_SUBMITTED->value,
+        'EVAL_APPROVED'     => \App\Enums\FolderStatus::EVAL_APPROVED->value,
+        'UNEVALUATED'       => \App\Enums\FolderStatus::UNEVALUATED->value,
+        'EVAL_UNRATED'      => \App\Enums\FolderStatus::EVAL_UNRATED->value,
     ]) ?>;
 
 
@@ -1612,9 +1614,50 @@
         }
 
         setVal('ratee-name', (data.ratee?.name && data.ratee.name.trim() !== '') ? data.ratee.name : defaultRateeName);
-        setVal('ratee-position', (data.ratee?.position && data.ratee.position.trim() !== '') ? data.ratee.position : defaultRateePos);
-        setVal('ratee-dept', (data.ratee?.dept && data.ratee.dept.trim() !== '') ? data.ratee.dept : defaultRateeDept);
+
+        let savedRoles = (data.ratee?.roles && Array.isArray(data.ratee.roles) && data.ratee.roles.length > 0)
+            ? data.ratee.roles
+            : (ownerAccountInfo.roles && Array.isArray(ownerAccountInfo.roles) && ownerAccountInfo.roles.length > 0 ? JSON.parse(JSON.stringify(ownerAccountInfo.roles)) : []);
+
+        if (savedRoles.length > 0 && data.ratee?.position && (!data.ratee.roles || data.ratee.roles.length === 0)) {
+            savedRoles[0].position = data.ratee.position;
+            if (data.ratee.dept) savedRoles[0].dept = data.ratee.dept;
+        }
+
+        const rolesContainer = document.getElementById('ratee-roles-container');
+        if (rolesContainer && savedRoles.length > 0) {
+            const canEdit = typeof canEditTargets !== 'undefined' ? canEditTargets : !document.getElementById('ratee-name')?.disabled;
+            const totalR = savedRoles.length;
+            let html = '';
+            savedRoles.forEach((r, idx) => {
+                if (idx > 0) {
+                    if (totalR === 2) {
+                        html += ', and ';
+                    } else {
+                        html += (idx === totalR - 1) ? ', and ' : ', ';
+                    }
+                }
+                const posId = idx === 0 ? 'ratee-position' : 'ratee-position-' + idx;
+                const deptId = idx === 0 ? 'ratee-dept' : 'ratee-dept-' + idx;
+                const rPos = (r && r.position !== undefined && r.position !== null) ? r.position : (idx === 0 ? defaultRateePos : '');
+                const rDept = (r && r.dept !== undefined && r.dept !== null) ? r.dept : (idx === 0 ? defaultRateeDept : '');
+                const posLen = (rPos || '').length;
+                const deptLen = (rDept || '').length;
+                const posW = Math.max(180, (posLen + 3) * 8);
+                const deptW = Math.max(170, (deptLen + 3) * 8);
+                html += `<input type="text" id="${posId}" data-role-idx="${idx}" value="${escapeHtml(rPos)}" size="${Math.max(20, posLen + 2)}" placeholder="Position and Official Designation" class="spms-meta-input field-ratee-position" style="text-align: center; min-width: 180px; width: ${posW}px; padding: 2px 6px;" ${canEdit ? '' : 'disabled'}> of the ` +
+                        `<input type="text" id="${deptId}" data-role-idx="${idx}" value="${escapeHtml(rDept)}" size="${Math.max(20, deptLen + 2)}" placeholder="Office Name" class="spms-meta-input field-ratee-dept" style="text-align: center; min-width: 170px; width: ${deptW}px; padding: 2px 6px;" ${canEdit ? '' : 'disabled'}>`;
+            });
+            rolesContainer.innerHTML = html;
+        } else {
+            setVal('ratee-position', (data.ratee?.position && data.ratee.position.trim() !== '') ? data.ratee.position : defaultRateePos);
+            setVal('ratee-dept', (data.ratee?.dept && data.ratee.dept.trim() !== '') ? data.ratee.dept : defaultRateeDept);
+        }
+
         setVal('ratee-period', savedPeriod || defaultPeriod);
+        if (typeof autoResizeAllPreambleInputs === 'function') {
+            autoResizeAllPreambleInputs();
+        }
 
         // Auto-sync masthead college / department subtitle
         const lhDept = document.getElementById('spms-letterhead-dept');
@@ -2162,13 +2205,51 @@
         rows.forEach(tr => autoExpandRow(tr, true));
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', autoExpandAllRowTextareas);
-    } else {
-        autoExpandAllRowTextareas();
+    function autoResizePreambleInput(el) {
+        if (!el) return;
+        const text = (el.value !== undefined && el.value !== null && el.value !== '') ? el.value : (el.placeholder || '');
+        if (!autoResizePreambleInput._canvas) {
+            autoResizePreambleInput._canvas = document.createElement('canvas');
+        }
+        const ctx = autoResizePreambleInput._canvas.getContext('2d');
+        const comp = window.getComputedStyle(el);
+        const font = `${comp.fontWeight || 'normal'} ${comp.fontSize || '11px'} ${comp.fontFamily || 'inherit'}`;
+        ctx.font = font;
+        const textW = ctx.measureText(text).width;
+        const minW = parseInt(el.dataset.minWidth || el.style.minWidth || '120', 10) || 120;
+        const targetW = Math.max(minW, Math.ceil(textW + 28));
+        el.style.width = targetW + 'px';
+        el.size = Math.max(15, text.length + 3);
     }
 
-    window.addEventListener('resize', autoExpandAllRowTextareas);
+    function autoResizeAllPreambleInputs() {
+        const inputs = document.querySelectorAll(
+            '#ratee-preamble-container input, #basis-roles-container input, #basis-val-ratee-name, #basis-val-ratee-pos, #basis-val-ratee-dept, #basis-val-ratee-period, .field-ratee-position, .field-ratee-dept'
+        );
+        inputs.forEach(input => {
+            autoResizePreambleInput(input);
+            if (!input._hasAutoResizeListener) {
+                input._hasAutoResizeListener = true;
+                input.addEventListener('input', () => autoResizePreambleInput(input));
+                input.addEventListener('change', () => autoResizePreambleInput(input));
+            }
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            autoExpandAllRowTextareas();
+            autoResizeAllPreambleInputs();
+        });
+    } else {
+        autoExpandAllRowTextareas();
+        autoResizeAllPreambleInputs();
+    }
+
+    window.addEventListener('resize', () => {
+        autoExpandAllRowTextareas();
+        autoResizeAllPreambleInputs();
+    });
 
     function addTableRow(category, rowData = null, referenceRow = null, insertPosition = 'append') {
         if (!canEditTargets && !rowData) return;
@@ -2230,6 +2311,7 @@
 
         const mfoDisabled = !canEditTargets;
         const evalDisabled = !canEditEvaluation;
+        const remarksDisabled = !canEditTargets && !canEditEvaluation;
         const canEditTwg = window.canEditTwg;
         const isTwgUser = window.isTwgUser;
 
@@ -2302,6 +2384,11 @@
                     <div class="field-row-avg-wrapper" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: var(--spms-row-min-height, 68px);">
                         <span class="field-row-avg" style="font-weight: 900; color: #0f172a; font-size: 11px;">—</span>
                     </div>
+                </td>
+
+                <!-- 8. Remarks -->
+                <td class="spms-cell-input spms-cell-remarks" data-field-name="remarks" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
+                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Remarks..." ${remarksDisabled ? 'disabled title="Locked"' : ''}>${escapeHtml(data.remarks || '')}</textarea>
                 </td>
             `;
         } else if (window.isCurrentDocDpcr) {
@@ -2377,6 +2464,11 @@
                         <span class="field-row-avg" style="font-weight: 900; color: #0f172a; font-size: 11px;">—</span>
                     </div>
                 </td>
+
+                <!-- Remarks -->
+                <td class="spms-cell-input spms-cell-remarks" data-field-name="remarks" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
+                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Remarks..." ${remarksDisabled ? 'disabled title="Locked"' : ''}>${escapeHtml(data.remarks || '')}</textarea>
+                </td>
             `;
         } else if (window.isCurrentDocOpcr) {
             tr.innerHTML = `
@@ -2451,6 +2543,11 @@
                         <span class="field-row-avg" style="font-weight: 900; color: #0f172a; font-size: 11px;">—</span>
                     </div>
                 </td>
+
+                <!-- Remarks -->
+                <td class="spms-cell-input spms-cell-remarks" data-field-name="remarks" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
+                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Remarks..." ${remarksDisabled ? 'disabled title="Locked"' : ''}>${escapeHtml(data.remarks || '')}</textarea>
+                </td>
             `;
         } else {
             tr.innerHTML = `
@@ -2509,6 +2606,11 @@
                     <div class="field-row-avg-wrapper" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; min-height: var(--spms-row-min-height, 68px);">
                         <span class="field-row-avg" style="font-weight: 900; color: #0f172a; font-size: 11px;">—</span>
                     </div>
+                </td>
+
+                <!-- Remarks -->
+                <td class="spms-cell-input spms-cell-remarks" data-field-name="remarks" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
+                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Remarks..." ${remarksDisabled ? 'disabled title="Locked"' : ''}>${escapeHtml(data.remarks || '')}</textarea>
                 </td>
             `;
         }
@@ -3094,6 +3196,18 @@
             extractedSupp = mergeWithOriginal(extractedSupp, existingCats.support || []);
         }
 
+        const rolePositions = document.querySelectorAll('.field-ratee-position');
+        const roleDepts = document.querySelectorAll('.field-ratee-dept');
+        const collectedRoles = [];
+        if (rolePositions.length > 0) {
+            rolePositions.forEach((posInp, idx) => {
+                collectedRoles.push({
+                    position: posInp.value.trim(),
+                    dept: roleDepts[idx] ? roleDepts[idx].value.trim() : ''
+                });
+            });
+        }
+
         const formData = {
             revisionHistory: activeTab.formData?.revisionHistory || [],
             title: document.getElementById('spms-doc-title')?.innerText || document.getElementById('doc-title')?.value || defaultTitle,
@@ -3108,7 +3222,8 @@
                 name: getVal('ratee-name'),
                 position: getVal('ratee-position'),
                 dept: getVal('ratee-dept'),
-                period: getVal('ratee-period')
+                period: getVal('ratee-period'),
+                roles: collectedRoles.length > 0 ? collectedRoles : undefined
             },
             approver: approversList[0] || {
                 name: getVal('approver-name'),
@@ -3890,9 +4005,39 @@
 
         // In the cascaded basis, if original owner kept fields empty, do not fallback-fill; keep them empty!
         setVal('basis-val-ratee-name', data.ratee?.name || '');
-        setVal('basis-val-ratee-pos', data.ratee?.position || '');
-        setVal('basis-val-ratee-dept', data.ratee?.dept || '');
         setVal('basis-val-ratee-period', data.ratee?.period || '');
+
+        const basisRolesContainer = document.getElementById('basis-roles-container');
+        const basisRoles = (data.ratee?.roles && Array.isArray(data.ratee.roles) && data.ratee.roles.length > 0)
+            ? data.ratee.roles
+            : ((data.ratee?.position || data.ratee?.dept) ? [{ position: data.ratee?.position || '', dept: data.ratee?.dept || '' }] : []);
+
+        if (basisRolesContainer && basisRoles.length > 0) {
+            const totalR = basisRoles.length;
+            let html = '';
+            basisRoles.forEach((r, idx) => {
+                if (idx > 0) {
+                    if (totalR === 2) {
+                        html += ', and ';
+                    } else {
+                        html += (idx === totalR - 1) ? ', and ' : ', ';
+                    }
+                }
+                const posId = idx === 0 ? 'basis-val-ratee-pos' : 'basis-val-ratee-pos-' + idx;
+                const deptId = idx === 0 ? 'basis-val-ratee-dept' : 'basis-val-ratee-dept-' + idx;
+                const posW = Math.max(200, ((r.position || '').length + 3) * 8);
+                const deptW = Math.max(170, ((r.dept || '').length + 3) * 8);
+                html += `<input type="text" id="${posId}" readonly value="${escapeHtml(r.position || '')}" size="${Math.max(20, (r.position || '').length + 2)}" style="color: #000000; border: none; border-bottom: 1px solid #94a3b8; text-align: center; min-width: 200px; width: ${posW}px; outline: none; padding: 2px 4px; background: transparent; font-family: inherit; font-size: 11px;"> of the ` +
+                        `<input type="text" id="${deptId}" readonly value="${escapeHtml(r.dept || '')}" size="${Math.max(20, (r.dept || '').length + 2)}" style="color: #000000; border: none; border-bottom: 1px solid #94a3b8; text-align: center; min-width: 170px; width: ${deptW}px; outline: none; padding: 2px 4px; background: transparent; font-family: inherit; font-size: 11px;">`;
+            });
+            basisRolesContainer.innerHTML = html;
+        } else {
+            setVal('basis-val-ratee-pos', data.ratee?.position || '');
+            setVal('basis-val-ratee-dept', data.ratee?.dept || '');
+        }
+        if (typeof autoResizeAllPreambleInputs === 'function') {
+            autoResizeAllPreambleInputs();
+        }
 
         const approversContainer = document.getElementById('basis-approvers-container');
         if (data.approvers && data.approvers.length > 0 && approversContainer) {

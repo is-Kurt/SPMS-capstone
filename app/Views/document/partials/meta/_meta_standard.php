@@ -1,8 +1,39 @@
-                <div style="margin-bottom: 18px; font-size: 11px; line-height: 1.8; text-align: justify; color: #0f172a;">
-                    I, <input type="text" id="ratee-name" value="<?= esc($ownerInfo['name'] ?? '') ?>" placeholder="FULL NAME HERE" class="spms-meta-input" style="font-weight: bold; text-align: center; min-width: 170px; padding: 2px 6px;" <?= $canEditTargets ? '' : 'disabled' ?>>, 
-                    <input type="text" id="ratee-position" value="<?= esc($ownerInfo['position'] ?? '') ?>" placeholder="Position and Official Designation" class="spms-meta-input" style="text-align: center; min-width: 200px; padding: 2px 6px;" <?= $canEditTargets ? '' : 'disabled' ?>> of the 
-                    <input type="text" id="ratee-dept" value="<?= esc($ownerInfo['dept'] ?? '') ?>" placeholder="Office Name" class="spms-meta-input" style="text-align: center; min-width: 170px; padding: 2px 6px;" <?= $canEditTargets ? '' : 'disabled' ?>>, commit to deliver and agree to be rated on the attainment of the following targets in accordance with the indicated measure for the period 
-                    <input type="text" id="ratee-period" value="<?= esc($ownerInfo['period'] ?? '') ?>" placeholder="January - June or July - December and Year; e.g., July - December 2024" class="spms-meta-input" style="font-weight: bold; text-align: center; min-width: 320px; padding: 2px 6px;" <?= $canEditTargets ? '' : 'disabled' ?>>.
+                <?php 
+                    $ownerRoles = $ownerInfo['roles'] ?? [];
+                    if (empty($ownerRoles)) {
+                        $ownerRoles = [[
+                            'position' => $ownerInfo['position'] ?? '',
+                            'dept'     => $ownerInfo['dept'] ?? ''
+                        ]];
+                    }
+                    $totalRoles = count($ownerRoles);
+                    $rateeNameStr = $ownerInfo['name'] ?? '';
+                    $rateeNameWidth = max(170, (mb_strlen($rateeNameStr) + 3) * 8);
+                    $rateePeriodStr = $ownerInfo['period'] ?? '';
+                    $rateePeriodWidth = max(320, (mb_strlen($rateePeriodStr) + 3) * 8);
+                ?>
+                <div style="margin-bottom: 18px; font-size: 11px; line-height: 1.8; text-align: justify; color: #0f172a;" id="ratee-preamble-container">
+                    I, <input type="text" id="ratee-name" value="<?= esc($rateeNameStr) ?>" size="<?= max(20, mb_strlen($rateeNameStr) + 2) ?>" placeholder="FULL NAME HERE" class="spms-meta-input" style="font-weight: bold; text-align: center; min-width: 170px; width: <?= $rateeNameWidth ?>px; padding: 2px 6px;" <?= $canEditTargets ? '' : 'disabled' ?>>, 
+                    <span id="ratee-roles-container">
+                    <?php foreach ($ownerRoles as $idx => $r): ?>
+                        <?php 
+                            $posStr = $r['position'] ?? '';
+                            $posWidth = max(180, (mb_strlen($posStr) + 3) * 8);
+                            $deptStr = $r['dept'] ?? '';
+                            $deptWidth = max(170, (mb_strlen($deptStr) + 3) * 8);
+                        ?>
+                        <?php if ($idx > 0): ?>
+                            <?php if ($totalRoles === 2): ?>
+                                , and 
+                            <?php else: ?>
+                                <?= ($idx === $totalRoles - 1) ? ', and ' : ', ' ?>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                        <input type="text" id="<?= $idx === 0 ? 'ratee-position' : 'ratee-position-' . $idx ?>" data-role-idx="<?= $idx ?>" value="<?= esc($posStr) ?>" size="<?= max(20, mb_strlen($posStr) + 2) ?>" placeholder="Position and Official Designation" class="spms-meta-input field-ratee-position" style="text-align: center; min-width: 180px; width: <?= $posWidth ?>px; padding: 2px 6px;" <?= $canEditTargets ? '' : 'disabled' ?>> of the 
+                        <input type="text" id="<?= $idx === 0 ? 'ratee-dept' : 'ratee-dept-' . $idx ?>" data-role-idx="<?= $idx ?>" value="<?= esc($deptStr) ?>" size="<?= max(20, mb_strlen($deptStr) + 2) ?>" placeholder="Office Name" class="spms-meta-input field-ratee-dept" style="text-align: center; min-width: 170px; width: <?= $deptWidth ?>px; padding: 2px 6px;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                    <?php endforeach; ?>
+                    </span>, commit to deliver and agree to be rated on the attainment of the following targets in accordance with the indicated measure for the period 
+                    <input type="text" id="ratee-period" value="<?= esc($rateePeriodStr) ?>" size="<?= max(35, mb_strlen($rateePeriodStr) + 2) ?>" placeholder="January - June or July - December and Year; e.g., July - December 2024" class="spms-meta-input" style="font-weight: bold; text-align: center; min-width: 320px; width: <?= $rateePeriodWidth ?>px; padding: 2px 6px;" <?= $canEditTargets ? '' : 'disabled' ?>>.
                 </div>
 
                 <!-- Approver, Ratee, and Rating Scale Matrix -->

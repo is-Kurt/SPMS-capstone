@@ -42,8 +42,6 @@ class CsrfHeaderFilter implements FilterInterface
      */
     public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)
     {
-        if (strpos($response->getHeaderLine('Content-Type'), 'application/json') !== false) {
-            $response->setHeader('x-csrf-token', csrf_hash());
-        }
+        $response->setHeader('x-csrf-token', csrf_hash());
     }
 }

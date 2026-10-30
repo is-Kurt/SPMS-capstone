@@ -119,6 +119,7 @@ class UserModel extends Model
                       GROUP_CONCAT(DISTINCT pos.id) as position_id, 
                       GROUP_CONCAT(DISTINCT pos.title) as position, 
                       MAX(pos.is_teaching) as is_teaching, 
+                      COALESCE(MAX(p.employment_status), 'Permanent') as employment_status,
                       GROUP_CONCAT(DISTINCT un.id) as unit_id, 
                       GROUP_CONCAT(DISTINCT un.name) as department")
             ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
@@ -167,6 +168,21 @@ class UserModel extends Model
             ->where('p.user_id', $userId)
             ->where('p.ended_at IS NULL')
             ->get()->getRowArray();
+    }
+
+    /**
+     * Fetches all active positions and departments for users holding multiple concurrent plantillas/roles.
+     */
+    public function getAllActivePlantillaDetails(int $userId): array
+    {
+        return $this->db->table('plantillas p')
+            ->select('pos.title as position, pos.is_teaching, un.id as unit_id, un.name as department')
+            ->join('positions pos', 'pos.id = p.position_id')
+            ->join('units un', 'un.id = p.unit_id')
+            ->where('p.user_id', $userId)
+            ->where('p.ended_at IS NULL')
+            ->orderBy('p.id', 'ASC')
+            ->get()->getResultArray();
     }
 
     /**

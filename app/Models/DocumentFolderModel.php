@@ -90,6 +90,7 @@ class  DocumentFolderModel extends Model
                       REPLACE(GROUP_CONCAT(DISTINCT un.name), ',', ', ') as department,
                       GROUP_CONCAT(DISTINCT un.id) as unit_id,
                       MAX(pos.is_teaching) as is_teaching,
+                      COALESCE(MAX(p.employment_status), 'Permanent') as employment_status,
                       df.final_rating, df.status as folder_status,
                       df.current_version, df.target_submitted_at, df.submitted_at,
                       df.target_approved_at, df.target_approver_role,
@@ -344,7 +345,7 @@ class  DocumentFolderModel extends Model
                 ->update(['target_period_open_sent_at' => $now]);
         }
 
-        // 0.25 Process Expired Targets -> TARGET_MISSED (Missed Deadline for Phase 1)
+        // 0.25 Process Expired Targets -> TARGET_MISSED (Missed Deadline for Phase 1 by Ratee)
         $unapprovedFolders = $db->table($this->table . ' df')
             ->select('df.id, df.user_id, u.email, u.first_name')
             ->join('users u', 'u.id = df.user_id')
@@ -373,6 +374,23 @@ class  DocumentFolderModel extends Model
             $db->table($this->table)
                 ->whereIn('id', $missedFolderIds)
                 ->update(['status' => \App\Enums\FolderStatus::TARGET_MISSED->value]);
+        }
+
+        // 0.30 Process Expired Submitted Targets -> TARGET_UNAPPROVED (Submitted on time, but unapproved by authorities)
+        $expiredSubmittedTargets = $db->table($this->table . ' df')
+            ->select('df.id')
+            ->join('users u', 'u.id = df.user_id')
+            ->join('cycle_deadlines cd', 'cd.cycle_folder_id = COALESCE(df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = LOWER(COALESCE(u.doc_type, "ipcr"))', 'left')
+            ->where('df.deleted_at IS NULL')
+            ->where('df.status', \App\Enums\FolderStatus::TARGET_SUBMITTED->value)
+            ->where('df.target_submitted_at IS NOT NULL')
+            ->where('cd.target_end <', $now)
+            ->get()->getResultArray();
+
+        if (!empty($expiredSubmittedTargets)) {
+            $db->table($this->table)
+                ->whereIn('id', array_column($expiredSubmittedTargets, 'id'))
+                ->update(['status' => \App\Enums\FolderStatus::TARGET_UNAPPROVED->value]);
         }
 
         // 1. Process TARGET_APPROVED -> DRAFT_EVALUATION (Eval Window Open)
@@ -430,7 +448,9 @@ class  DocumentFolderModel extends Model
                 \App\Enums\FolderStatus::EVAL_APPROVED->value,
                 \App\Enums\FolderStatus::EVAL_SUBMITTED->value,
                 \App\Enums\FolderStatus::UNEVALUATED->value,
+                \App\Enums\FolderStatus::EVAL_UNRATED->value,
                 \App\Enums\FolderStatus::TARGET_MISSED->value,
+                \App\Enums\FolderStatus::TARGET_UNAPPROVED->value,
                 \App\Enums\FolderStatus::DRAFT_TARGET->value,
                 \App\Enums\FolderStatus::TARGET_SUBMITTED->value,
             ])
@@ -454,6 +474,51 @@ class  DocumentFolderModel extends Model
             $db->table($this->table)
                 ->whereIn('id', $expiringFolderIds)
                 ->update(['status' => \App\Enums\FolderStatus::UNEVALUATED->value]);
+        }
+
+        // 2b. Expired Submitted Evaluation Folders -> EVAL_UNRATED (Submitted on time, but unrated by authorities)
+        $expiredSubmittedEvals = $db->table($this->table . ' df')
+            ->select('df.id')
+            ->join('users u', 'u.id = df.user_id')
+            ->join('cycle_deadlines cd', 'cd.cycle_folder_id = COALESCE(df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = LOWER(COALESCE(u.doc_type, "ipcr"))', 'left')
+            ->where('df.deleted_at IS NULL')
+            ->where('df.status', \App\Enums\FolderStatus::EVAL_SUBMITTED->value)
+            ->where('df.submitted_at IS NOT NULL')
+            ->where('cd.eval_end <', $now)
+            ->get()->getResultArray();
+
+        if (!empty($expiredSubmittedEvals)) {
+            $db->table($this->table)
+                ->whereIn('id', array_column($expiredSubmittedEvals, 'id'))
+                ->update(['status' => \App\Enums\FolderStatus::EVAL_UNRATED->value]);
+        }
+
+        // 2c. Self-heal any folders previously misclassified as 'unevaluated' that actually had a submission
+        $misclassifiedEvals = $db->table($this->table)
+            ->select('id')
+            ->where('deleted_at IS NULL')
+            ->where('status', \App\Enums\FolderStatus::UNEVALUATED->value)
+            ->where('submitted_at IS NOT NULL')
+            ->get()->getResultArray();
+
+        if (!empty($misclassifiedEvals)) {
+            $db->table($this->table)
+                ->whereIn('id', array_column($misclassifiedEvals, 'id'))
+                ->update(['status' => \App\Enums\FolderStatus::EVAL_UNRATED->value]);
+        }
+
+        // Self-heal any folders previously misclassified as 'target_missed' that actually had target submission
+        $misclassifiedTargets = $db->table($this->table)
+            ->select('id')
+            ->where('deleted_at IS NULL')
+            ->where('status', \App\Enums\FolderStatus::TARGET_MISSED->value)
+            ->where('target_submitted_at IS NOT NULL')
+            ->get()->getResultArray();
+
+        if (!empty($misclassifiedTargets)) {
+            $db->table($this->table)
+                ->whereIn('id', array_column($misclassifiedTargets, 'id'))
+                ->update(['status' => \App\Enums\FolderStatus::TARGET_UNAPPROVED->value]);
         }
     }
 

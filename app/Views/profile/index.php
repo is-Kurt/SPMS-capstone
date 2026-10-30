@@ -194,10 +194,10 @@
                                 <select name="employment_statuses[]" required data-custom-select class="w-full bg-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border-2 border-dashed border-surface-border hover:border-accent hover:text-accent rounded-xl px-4 py-3 text-sm focus:outline-none text-text cursor-pointer font-bold transition-all">
                                     <?php 
                                         $curStatus = $plantilla['employment_status'] ?? 'Permanent';
-                                        $statuses = ['Permanent', 'Temporary', 'Casual', 'Contractual', 'Coterminous'];
+                                        $statusOptions = !empty($employmentStatuses) ? (is_array(reset($employmentStatuses)) ? array_column($employmentStatuses, 'name') : $employmentStatuses) : ['Permanent', 'Temporary', 'Casual', 'Contractual', 'Coterminous'];
                                     ?>
-                                    <?php foreach ($statuses as $st): ?>
-                                        <option value="<?= $st ?>" <?= (strcasecmp($curStatus, $st) === 0) ? 'selected' : '' ?>><?= $st ?></option>
+                                    <?php foreach ($statusOptions as $st): ?>
+                                        <option value="<?= esc($st) ?>" <?= (strcasecmp($curStatus, $st) === 0) ? 'selected' : '' ?>><?= esc($st) ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>

@@ -40,8 +40,10 @@
                 <!-- PREAMBLE (Filled Version of Template) -->
                 <div style="margin-bottom: 18px; font-size: 11px; line-height: 1.6; text-align: justify; color: #000000;">
                     I, <input type="text" id="basis-val-ratee-name" readonly value="" style="font-weight: bold; color: #000000; border: none; border-bottom: 1px solid #94a3b8; text-align: center; min-width: 170px; outline: none; padding: 2px 4px; background: transparent; font-family: inherit; font-size: 11px;">, 
-                    <input type="text" id="basis-val-ratee-pos" readonly value="" style="color: #000000; border: none; border-bottom: 1px solid #94a3b8; text-align: center; min-width: 200px; outline: none; padding: 2px 4px; background: transparent; font-family: inherit; font-size: 11px;"> of the 
-                    <input type="text" id="basis-val-ratee-dept" readonly value="" style="color: #000000; border: none; border-bottom: 1px solid #94a3b8; text-align: center; min-width: 170px; outline: none; padding: 2px 4px; background: transparent; font-family: inherit; font-size: 11px;">, commit to deliver and agree to be rated on the attainment of the following targets in accordance with the indicated measure for the period 
+                    <span id="basis-roles-container">
+                        <input type="text" id="basis-val-ratee-pos" readonly value="" style="color: #000000; border: none; border-bottom: 1px solid #94a3b8; text-align: center; min-width: 200px; outline: none; padding: 2px 4px; background: transparent; font-family: inherit; font-size: 11px;"> of the 
+                        <input type="text" id="basis-val-ratee-dept" readonly value="" style="color: #000000; border: none; border-bottom: 1px solid #94a3b8; text-align: center; min-width: 170px; outline: none; padding: 2px 4px; background: transparent; font-family: inherit; font-size: 11px;">
+                    </span>, commit to deliver and agree to be rated on the attainment of the following targets in accordance with the indicated measure for the period 
                     <input type="text" id="basis-val-ratee-period" readonly value="" style="font-weight: bold; color: #000000; border: none; border-bottom: 1px solid #94a3b8; text-align: center; min-width: 320px; outline: none; padding: 2px 4px; background: transparent; font-family: inherit; font-size: 11px;">.
                 </div>
 

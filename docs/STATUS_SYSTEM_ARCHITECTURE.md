@@ -23,23 +23,25 @@ The 3-layer architecture resolves this by strictly decoupling:
 
 Layer 1 operates at the **Folder Level** and is persisted in `document_folders.status`. It is backed by the PHP enum [`App\Enums\FolderStatus`](file:///home/ubuntu/server/html/SPMS-capstone/app/Enums/FolderStatus.php).
 
-### Canonical Status Roster (8 States)
+### Canonical Status Roster (10 States)
 
-| Phase | Canonical Status Key | UI Badge Text | Badge Styling | Description |
+| Phase | Canonical Status Key | UI Badge Text | Badge Styling | Description & CSC Audit Finding |
 |---|---|---|---|---|
 | **Phase 1: Targets** | `draft_target` | `DRAFT TARGET` | Neutral Slate | Ratee is drafting performance commitments (or revising after return). |
-| **Phase 1: Targets** | `target_submitted` | `TARGET SUBMITTED` | Amber Pulsing / Sky | Ratee submitted targets. Stays in this state until all supervising authorities and the TWG complete their reviews. |
-| **Phase 1: Targets** | `target_approved` | `TARGET APPROVED` | Emerald / Success | Final approval granted by the TWG (or supervising authority if no TWG assigned). Targets are locked for the semester. |
-| **Phase 1: Targets** | `target_missed` | `MISSED DEADLINE` | Rose / Danger | Employee failed to submit target commitments before the target window deadline closed. |
-| **Phase 2: Evaluation** | `draft_evaluation` | `DRAFT EVALUATION` | Neutral Slate | Evaluation window is open. Ratee is drafting self-ratings, actual accomplishments, and MOVs (or revising after return). |
-| **Phase 2: Evaluation** | `eval_submitted` | `EVALUATION SUBMITTED` | Amber Pulsing / Sky | Ratee locked self-ratings and submitted accomplishments for evaluation review. |
+| **Phase 1: Targets** | `target_submitted` | `TARGET SUBMITTED` | Sky / Pulsing Amber | Ratee submitted targets on time. Awaiting review by supervising authorities and TWG. |
+| **Phase 1: Targets** | `target_approved` | `TARGET APPROVED` | Emerald / Success | Final approval granted by the TWG. Targets locked for the semester. |
+| **Phase 1: Targets** | `target_missed` | `MISSED DEADLINE` | Rose / Danger | **Ratee at fault**: Employee failed to submit target commitments before target deadline expired. |
+| **Phase 1: Targets** | `target_unapproved` | `SUBMITTED • UNAPPROVED` | Amber / Warning | **Authorities at fault**: Employee submitted targets on time, but supervisors or TWG failed to approve before window closed. |
+| **Phase 2: Evaluation** | `draft_evaluation` | `DRAFT EVALUATION` | Neutral Slate | Evaluation window open. Ratee is drafting self-ratings and uploading MOVs. |
+| **Phase 2: Evaluation** | `eval_submitted` | `EVALUATION SUBMITTED` | Sky / Pulsing Amber | Ratee locked self-ratings and submitted accomplishments for evaluation review. |
 | **Phase 2: Evaluation** | `eval_approved` | `EVALUATION APPROVED` | Emerald / Success | Final numerical rating is calibrated and formally approved by all authorities. Cycle completed. |
-| **Phase 2: Evaluation** | `unevaluated` | `MISSED DEADLINE` | Rose / Danger | Employee failed to submit accomplishments before the evaluation window deadline closed. |
+| **Phase 2: Evaluation** | `unevaluated` | `MISSED DEADLINE` | Rose / Danger | **Ratee at fault**: Employee failed to submit accomplishments before the evaluation deadline expired. |
+| **Phase 2: Evaluation** | `eval_unrated` | `SUBMITTED • UNRATED` | Amber / Warning | **Authorities at fault**: Employee submitted accomplishments on time, but authorities failed to finalize ratings before window closed. |
 
 > [!NOTE]
 > **Separation of Concerns: Layer 1 Generalism vs Layer 2 Specificity**
 > 
-> Layer 1 is intentionally high-level and general (`TARGET SUBMITTED`). It does not leak reviewer counts or intermediate sub-states (such as "Partially Approved" or "Supervisors Approved") into the master lifecycle badge.
+> Layer 1 is intentionally high-level and general (`TARGET SUBMITTED`, `SUBMITTED • UNRATED`). It does not leak reviewer counts into the master lifecycle badge.
 > 
 > All granular progress—who has approved, who has not, and whether TWG verification is awaiting supervisor sign-off—is handled strictly within **Layer 2** via the Supervising Authorities & TWG Card Hub.
 
@@ -50,8 +52,7 @@ The Cycle Progress Tracker on the folder dashboard is directly computed via `Fol
 ```
 [ Step 1: Target Setting ] ──▶ [ Step 2: Target Approved ] ──▶ [ Step 3: Evaluation Phase ] ──▶ [ Step 4: Final Rating ]
   • draft_target                  • target_approved              • draft_evaluation               • eval_approved
-  • target_submitted                                             • eval_submitted
-  • target_returned                                              • eval_returned
+  • target_submitted              • target_unapproved            • eval_submitted                 • eval_unrated
   • target_missed                                                • unevaluated
 ```
 
@@ -150,6 +151,7 @@ stateDiagram-v2
     
     TARGET_SUBMITTED --> DRAFT_TARGET : Ratee clicks [Unsubmit]
     TARGET_SUBMITTED --> TARGET_RETURNED : Supervisor or TWG clicks [Return]
+    TARGET_SUBMITTED --> TARGET_UNAPPROVED : Target Deadline Expired (Submitted, Unapproved)
     
     %% Sequential Target Approval Pipeline
     state TARGET_SUBMITTED {
@@ -159,6 +161,7 @@ stateDiagram-v2
     }
     
     TARGET_SUBMITTED --> TARGET_APPROVED : TWG clicks [Approve] (or Supervisor if no TWG)
+    TARGET_UNAPPROVED --> TARGET_APPROVED : Late Approval by TWG/Supervisor
     
     TARGET_RETURNED --> TARGET_SUBMITTED : Ratee adjusts & clicks [Submit]
     TARGET_RETURNED --> TARGET_MISSED : Deadline Expired (Unsubmitted Draft)
@@ -175,35 +178,48 @@ stateDiagram-v2
     EVAL_SUBMITTED --> DRAFT_EVALUATION : Ratee clicks [Unsubmit]
     EVAL_SUBMITTED --> EVAL_RETURNED : Evaluator or TWG clicks [Return]
     EVAL_SUBMITTED --> EVAL_APPROVED : Evaluators & TWG click [Approve]
+    EVAL_SUBMITTED --> EVAL_UNRATED : Eval Deadline Expired (Submitted, Unrated)
     
     EVAL_RETURNED --> EVAL_SUBMITTED : Ratee adjusts & clicks [Submit]
     EVAL_RETURNED --> UNEVALUATED : Deadline Expired (Unsubmitted Draft)
     
     EVAL_APPROVED --> EVAL_SUBMITTED : Evaluator/TWG clicks [Unapprove]
+    EVAL_UNRATED --> EVAL_APPROVED : Late Calibration & Approval by Authorities
+    
     EVAL_APPROVED --> [*] : Cycle Closed & Archived
-    TARGET_MISSED --> [*] : Cycle Closed
-    UNEVALUATED --> [*] : Cycle Closed
+    TARGET_MISSED --> [*] : Cycle Closed (Employee Non-compliant)
+    UNEVALUATED --> [*] : Cycle Closed (Employee Non-compliant)
+    TARGET_UNAPPROVED --> [*] : Cycle Closed (Authorities Incomplete)
+    EVAL_UNRATED --> [*] : Cycle Closed (Authorities Incomplete)
 ```
 
 ---
 
-## 6. Deadline Immunity & Safety Architecture
+## 6. Deadline Audit Architecture & Accountability Separation
 
 > [!TIP]
-> **Safety Rule: Ratees Who Submit On Time Never Incur Missed Deadlines**
+> **Accountability Principle: Separation of Ratee Submissions from Evaluator Delays**
 > 
-> A critical safeguard built into the SPMS background worker ([`NightlyWorker.php`](file:///home/ubuntu/server/html/SPMS-capstone/app/Commands/NightlyWorker.php#L34)) and model guards ([`DocumentFolderModel.php`](file:///home/ubuntu/server/html/SPMS-capstone/app/Models/DocumentFolderModel.php#L310)) is:
+> When a deadline passes, the system strictly separates **Ratee Non-compliance** from **Evaluator Delinquency**:
 > 
 > ```sql
-> -- Only unsubmitted draft folders are transitioned to missed:
+> -- 1. Unsubmitted Drafts -> Blamed on Employee:
 > UPDATE document_folders 
-> SET status = 'target_missed' 
-> WHERE status = 'draft_target' 
->   AND target_date_end < NOW();
+> SET status = 'unevaluated' 
+> WHERE status = 'draft_evaluation' 
+>   AND submitted_at IS NULL
+>   AND eval_date_end < NOW();
+> 
+> -- 2. Submitted on Time, but Unrated -> Blamed on Reviewers:
+> UPDATE document_folders 
+> SET status = 'eval_unrated' 
+> WHERE status = 'eval_submitted' 
+>   AND submitted_at IS NOT NULL
+>   AND eval_date_end < NOW();
 > ```
 > 
-> - **Submitted Folders are Immune**: If a ratee submitted on time (`target_submitted` or `eval_submitted`), the folder is **never** flagged as missed, even if the deadline passes while supervisors or TWG reviewers are still conducting reviews.
-> - **Reviewers Retain Authority**: Supervisors and TWG members can continue to review, verify, approve, or return submitted documents after the ratee deadline has elapsed without locking out the employee or corrupting evaluation consensus.
+> - **Employee Protection**: Ratees who submitted commitments or accomplishments on time are **never** branded with `MISSED DEADLINE`. Their folders receive `SUBMITTED • UNAPPROVED` or `SUBMITTED • UNRATED`.
+> - **Authority Status Audit Preservation**: Reviewer cards in the Folder Hub never revert to "Awaiting Submission" when an employee submitted. They preserve their exact state (`Approved`, `Pending Review`, `Pending Verification`), providing complete evidence for HR and PMT audits regarding who completed reviews and who caused delays.
 
 ---
 

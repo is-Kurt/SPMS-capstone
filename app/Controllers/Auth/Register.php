@@ -11,6 +11,7 @@ use App\Models\PositionModel;
 use App\Models\InvitationModel;
 use App\Models\PlantillaModel;
 use App\Models\RoleModel;
+use App\Models\EmploymentStatusModel;
 
 /**
  * Handles the invite-only signup flow: a user can only reach signup via a valid,
@@ -53,14 +54,16 @@ class Register extends BaseController
 
         $units = $unitModel->orderBy('name', 'ASC')->findAll();
         $positions = $positionModel->orderBy('title', 'ASC')->findAll();
+        $employmentStatuses = (new EmploymentStatusModel())->orderBy('name', 'ASC')->findAll();
 
         return view('auth/signup', [
-            'invitation'    => $invitation,
-            'units'         => $units,
-            'positions'     => $positions,
-            'isAdminInvite' => $isAdminInvite,
-            'isTwgInvite'   => $isTwgInvite,
-            'isPmtInvite'   => $isPmtInvite
+            'invitation'         => $invitation,
+            'units'              => $units,
+            'positions'          => $positions,
+            'employmentStatuses' => $employmentStatuses,
+            'isAdminInvite'      => $isAdminInvite,
+            'isTwgInvite'        => $isTwgInvite,
+            'isPmtInvite'        => $isPmtInvite
         ]);
     }
 

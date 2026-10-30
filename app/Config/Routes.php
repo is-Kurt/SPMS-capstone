@@ -49,6 +49,10 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->post('account/unit/update', 'AccountManagement::updateUnit', ['filter' => 'role:Admin']);
     $routes->post('account/unit/delete', 'AccountManagement::deleteUnit', ['filter' => 'role:Admin']);
 
+    // Employment Status Routes
+    $routes->post('account/employment-status/add', 'AccountManagement::addEmploymentStatus', ['filter' => 'role:Admin']);
+    $routes->post('account/employment-status/delete', 'AccountManagement::deleteEmploymentStatus', ['filter' => 'role:Admin']);
+
     // Template Management (Disabled / Standardized statutory forms)
     $routes->addRedirect('templates', 'dashboard');
     $routes->addRedirect('templates/(:any)', 'dashboard');

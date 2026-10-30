@@ -465,7 +465,19 @@ if (formEditFolder) {
             onSuccess: () => {
                 isSavingFolder = false;
                 folderModal.close();
-                window.location.reload();
+
+                const folderId = idInput?.value;
+                const newTitle = titleInput?.value;
+                if (folderId && newTitle) {
+                    const activeItem = document.querySelector(`.sidebar-folder-item[data-folder-id="${folderId}"] span.truncate`);
+                    if (activeItem) activeItem.textContent = newTitle;
+                }
+
+                if (typeof window.refreshFolderWorkspace === 'function') {
+                    window.refreshFolderWorkspace(folderId);
+                } else {
+                    window.location.reload();
+                }
             },
             onError: (errorMsg) => {
                 isSavingFolder = false;

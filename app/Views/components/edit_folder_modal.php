@@ -121,12 +121,12 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-[9px] font-bold uppercase tracking-wider text-text-muted mb-1">Official Name</label>
-                                <input type="text" name="approving_authority_name" id="edit-folder-approving-name" placeholder="e.g., Dr. Felipe Salaing Comila"
+                                <input type="text" name="approving_authority_name" id="edit-folder-approving-name"
                                        class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-xl px-3.5 py-2 text-xs font-semibold focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none text-text transition-all shadow-2xs placeholder:text-text-muted/60" />
                             </div>
                             <div>
                                 <label class="block text-[9px] font-bold uppercase tracking-wider text-text-muted mb-1">Position / Official Designation</label>
-                                <input type="text" name="approving_authority_position" id="edit-folder-approving-position" placeholder="e.g., University President / SUC President IV"
+                                <input type="text" name="approving_authority_position" id="edit-folder-approving-position"
                                        class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-xl px-3.5 py-2 text-xs font-semibold focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none text-text transition-all shadow-2xs placeholder:text-text-muted/60" />
                             </div>
                         </div>

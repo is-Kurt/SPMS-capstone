@@ -8,6 +8,7 @@ use App\Models\DocumentFolderModel;
 use App\Models\EvaluationRoutingModel;
 use App\Models\DocumentModel;
 use App\Models\UnitModel;
+use App\Models\EmploymentStatusModel;
 
 /**
  * The "Ratings" dashboard: lets evaluators (Admins, Supervisors, HR) see every
@@ -214,7 +215,7 @@ class Rating extends BaseController
                 if ($cStatus === \App\Enums\FolderStatus::TARGET_APPROVED) {
                     $f['queue_bucket'] = 'completed';
                     $periods['target']['tabs']['target_completed']['folders'][] = $f;
-                } elseif ($cStatus === \App\Enums\FolderStatus::TARGET_SUBMITTED) {
+                } elseif (in_array($cStatus, [\App\Enums\FolderStatus::TARGET_SUBMITTED, \App\Enums\FolderStatus::TARGET_UNAPPROVED], true)) {
                     if ($isTwgOrPmt) {
                         if ($allSupsApproved) {
                             $f['queue_bucket'] = 'for_review';
@@ -245,7 +246,7 @@ class Rating extends BaseController
                 if (in_array($cStatus, [\App\Enums\FolderStatus::EVAL_APPROVED, \App\Enums\FolderStatus::UNEVALUATED], true)) {
                     $f['queue_bucket'] = 'completed';
                     $periods['evaluation']['tabs']['eval_completed']['folders'][] = $f;
-                } elseif ($cStatus === \App\Enums\FolderStatus::EVAL_SUBMITTED) {
+                } elseif (in_array($cStatus, [\App\Enums\FolderStatus::EVAL_SUBMITTED, \App\Enums\FolderStatus::EVAL_UNRATED], true)) {
                     if ($isTwgOrPmt) {
                         if ($allSupsApproved) {
                             $f['queue_bucket'] = 'for_review';
@@ -317,6 +318,32 @@ class Rating extends BaseController
         $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
         $assignedUnits = ($sysRole === 'TWG') ? $twgAssignmentModel->getAssignmentsByUser($userId) : [];
 
+        // Determine active period: phase-aware defaulting with query param override (?period=target|evaluation)
+        $now = date('Y-m-d H:i:s');
+        $folderDates = $activeFolder ? $folderModel->getFolderDates($activeFolder) : null;
+        $targetEndDate = $folderDates['target_date_end'] ?? null;
+        $evalStartDate = $folderDates['eval_date_start'] ?? null;
+
+        $cFolderStatus = !empty($activeFolder['status']) ? \App\Enums\FolderStatus::canonical($activeFolder['status']) : null;
+
+        $isEvalPhase = false;
+        if (!empty($evalStartDate) && $now >= $evalStartDate) {
+            $isEvalPhase = true;
+        } elseif (!empty($targetEndDate) && $now > $targetEndDate) {
+            $isEvalPhase = true;
+        } elseif ($cFolderStatus && $cFolderStatus->isEvaluationPhase()) {
+            $isEvalPhase = true;
+        } elseif ($evalOverallCount > 0 && $targetOverallCount === 0) {
+            $isEvalPhase = true;
+        }
+
+        $requestedPeriod = strtolower(trim((string)$this->request->getGet('period')));
+        if (in_array($requestedPeriod, ['target', 'evaluation'], true)) {
+            $activePeriodKey = $requestedPeriod;
+        } else {
+            $activePeriodKey = $isEvalPhase ? 'evaluation' : 'target';
+        }
+
         return view('components/app_shell', [
             'sidebarFolders'   => $folders,
             'selectedFolderId' => $folderId, 
@@ -324,9 +351,11 @@ class Rating extends BaseController
             'mainData'         => [
                 'activeFolder'            => $activeFolder ?? null,
                 'periods'                 => $periods,
+                'activePeriodKey'         => $activePeriodKey,
                 'sysRole'                 => $sysRole,
                 'filterUnits'             => $filterUnits,
                 'filterPositions'         => $filterPositions,
+                'employmentStatuses'      => (new EmploymentStatusModel())->orderBy('name', 'ASC')->findAll(),
                 'allUnits'                => $allUnits,
                 'assignedUnits'           => $assignedUnits,
                 'myUnitIds'               => $myUnitIds,

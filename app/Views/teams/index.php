@@ -90,7 +90,7 @@
                         <div class="flex-1 overflow-visible lg:overflow-y-auto p-2 space-y-1 custom-scrollbar" id="directory-list">
                             <?php foreach($users as $user): ?>
                                 <div class="user-card flex items-center justify-between p-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800/50 cursor-pointer transition-all border border-transparent hover:border-surface-border min-w-0"
-                                     data-id="<?= $user['user_id'] ?>" data-name="<?= strtolower(esc($user['first_name'] . ' ' . $user['last_name'])) ?>" data-email="<?= strtolower(esc($user['email'])) ?>" data-unit="<?= $user['unit_id'] ?>" data-position="<?= $user['position_id'] ?>" data-teaching="<?= $user['is_teaching'] ?>" onclick="moveToSelected(this)">
+                                     data-id="<?= $user['user_id'] ?>" data-name="<?= strtolower(esc($user['first_name'] . ' ' . $user['last_name'])) ?>" data-email="<?= strtolower(esc($user['email'])) ?>" data-unit="<?= $user['unit_id'] ?>" data-position="<?= $user['position_id'] ?>" data-teaching="<?= $user['is_teaching'] ?>" data-emp-status="<?= strtolower(esc($user['employment_status'] ?? 'permanent')) ?>" onclick="moveToSelected(this)">
                                     <div class="flex items-center gap-3 min-w-0 flex-1">
                                         <div class="size-9 rounded-full bg-accent/10 text-accent flex items-center justify-center font-black text-sm shrink-0">
                                             <?= substr($user['first_name'], 0, 1) . substr($user['last_name'], 0, 1) ?>
@@ -195,6 +195,31 @@
                                 <input type="checkbox" name="filter_staff_type[]" value="non-teaching" class="checkbox team-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
                                 <span>Non-Teaching</span>
                             </label>
+                        </div>
+                    </div>
+
+                    <!-- Employment Status Filter -->
+                    <div class="shrink-0 pb-4 border-b border-surface-border/50">
+                        <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group cursor-pointer" onclick="
+                            this.nextElementSibling.classList.toggle('hidden');
+                            this.querySelector('svg').classList.toggle('-rotate-180');
+                        ">
+                            <span>Employment Status</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        <div class="space-y-1">
+                            <?php if (!empty($employmentStatuses)): ?>
+                                <?php foreach ($employmentStatuses as $es): 
+                                    $stName = is_array($es) ? ($es['name'] ?? '') : (string)$es;
+                                ?>
+                                    <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
+                                        <input type="checkbox" name="filter_emp_status[]" value="<?= strtolower(esc($stName)) ?>" class="checkbox team-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
+                                        <span><?= esc($stName) ?></span>
+                                    </label>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <span class="text-xs text-text-muted italic">No employment statuses found.</span>
+                            <?php endif; ?>
                         </div>
                     </div>
 
@@ -732,6 +757,7 @@
         
         const checkedStaffTypes = getCheckedValues('filter_staff_type[]');
         const checkedPositions = getCheckedValues('filter_pos[]');
+        const checkedEmpStatuses = getCheckedValues('filter_emp_status[]');
 
         const activeUnitId = getActiveDynamicUnitId();
         let allowedUnitIds = null;
@@ -743,6 +769,7 @@
         let activeCount = 0;
         if (searchTerm) activeCount++;
         if (checkedStaffTypes.length > 0) activeCount += checkedStaffTypes.length;
+        if (checkedEmpStatuses.length > 0) activeCount += checkedEmpStatuses.length;
         if (activeUnitId) activeCount++;
         if (checkedPositions.length > 0) activeCount += checkedPositions.length;
 
@@ -767,9 +794,11 @@
             const matchPosition = checkedPositions.length === 0 || (posData && posData.split(',').some(p => checkedPositions.includes(p)));
             const isTeachingUser = card.getAttribute('data-teaching') === "1";
             const matchStaffType = checkedStaffTypes.length === 0 || checkedStaffTypes.includes(isTeachingUser ? 'teaching' : 'non-teaching');
+            const empStatus = (card.getAttribute('data-emp-status') || '').toLowerCase();
+            const matchEmp = checkedEmpStatuses.length === 0 || checkedEmpStatuses.includes(empStatus);
             const isAlreadySelected = card.classList.contains('is-selected');
 
-            if (matchSearch && matchUnit && matchPosition && matchStaffType && !isAlreadySelected) {
+            if (matchSearch && matchUnit && matchPosition && matchStaffType && matchEmp && !isAlreadySelected) {
                 card.style.display = 'flex';
                 visibleCount++;
             } else {
@@ -791,8 +820,10 @@
             const matchPosition = checkedPositions.length === 0 || (posData && posData.split(',').some(p => checkedPositions.includes(p)));
             const isTeachingUser = card.getAttribute('data-teaching') === "1";
             const matchStaffType = checkedStaffTypes.length === 0 || checkedStaffTypes.includes(isTeachingUser ? 'teaching' : 'non-teaching');
+            const empStatus = (card.getAttribute('data-emp-status') || '').toLowerCase();
+            const matchEmp = checkedEmpStatuses.length === 0 || checkedEmpStatuses.includes(empStatus);
 
-            if (matchSearch && matchUnit && matchPosition && matchStaffType) {
+            if (matchSearch && matchUnit && matchPosition && matchStaffType && matchEmp) {
                 card.style.display = 'flex';
                 selVisibleCount++;
             } else {

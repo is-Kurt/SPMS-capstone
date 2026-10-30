@@ -8,6 +8,7 @@ use App\Models\UserModel;
 use App\Models\UnitModel;
 use App\Models\PositionModel;
 use App\Models\PlantillaModel;
+use App\Models\EmploymentStatusModel;
 
 /**
  * The logged-in user's own "My Profile" page: editing name/email/plantilla
@@ -36,13 +37,14 @@ class Profile extends BaseController
         $isPmt = $userModel->hasRole($userId, 'PMT');
 
         $data = [
-            'user'             => $userModel->find($userId),
-            'units'            => $unitModel->orderBy('name', 'ASC')->findAll(),
-            'positions'        => $positionModel->orderBy('title', 'ASC')->findAll(),
-            'currentPlantilla' => $currentPlantilla,
-            'isAdmin'          => $isAdmin,
-            'isTwg'            => $isTwg,
-            'isPmt'            => $isPmt
+            'user'               => $userModel->find($userId),
+            'units'              => $unitModel->orderBy('name', 'ASC')->findAll(),
+            'positions'          => $positionModel->orderBy('title', 'ASC')->findAll(),
+            'employmentStatuses' => (new EmploymentStatusModel())->orderBy('name', 'ASC')->findAll(),
+            'currentPlantilla'   => $currentPlantilla,
+            'isAdmin'            => $isAdmin,
+            'isTwg'              => $isTwg,
+            'isPmt'              => $isPmt
         ];
 
         return view('profile/index', $data);

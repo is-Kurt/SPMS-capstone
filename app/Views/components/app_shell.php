@@ -21,7 +21,12 @@
     <?= view('components/create_team_modal') ?>
 <?php endif; ?>
 
-<div class="p-2 sm:p-4 lg:p-5 xl:p-8 max-w-[100rem] mx-auto flex flex-col lg:flex-row gap-4 lg:gap-5 xl:gap-8 lg:min-h-[calc(100vh-6rem)] lg:pb-4">
+<?php
+$shellMaxWidth = $maxWidthClass ?? (($context === 'dashboard') ? 'max-w-[125rem] 2xl:max-w-[140rem]' : 'max-w-[100rem]');
+$shellPadding  = ($context === 'dashboard') ? 'p-2 sm:p-4 lg:p-5 xl:px-6 xl:py-6' : 'p-2 sm:p-4 lg:p-5 xl:p-8';
+$shellGap      = ($context === 'dashboard') ? 'gap-4 lg:gap-5 xl:gap-6' : 'gap-4 lg:gap-5 xl:gap-8';
+?>
+<div class="<?= $shellPadding ?> <?= $shellMaxWidth ?> w-full mx-auto flex flex-col lg:flex-row <?= $shellGap ?> lg:min-h-[calc(100vh-6rem)] lg:pb-4">
     
     <!-- LEFT SIDEBAR -->
     <div id="app-sidebar" class="fixed inset-y-0 left-0 z-[120] w-72 bg-white dark:bg-zinc-900 lg:w-60 lg:static lg:flex flex-shrink-0 flex-col h-full overflow-hidden transition-transform duration-300 transform -translate-x-full lg:translate-x-0 border-r border-zinc-200 dark:border-zinc-800 lg:border-none dark:lg:border-none shadow-2xl lg:shadow-none lg:!bg-transparent dark:lg:!bg-transparent lg:!border-none dark:lg:!border-none lg:!shadow-none">
@@ -63,7 +68,7 @@
             </div>
             
         </div>
-        <div class="overflow-y-auto custom-scrollbar flex-1 px-3 pb-6 lg:p-0 lg:pr-2">
+        <div id="sidebar-content-container" class="overflow-y-auto custom-scrollbar flex-1 px-3 pb-6 lg:p-0 lg:pr-2">
             <!-- Sidebar content -->
             <?= view($sidebarView ?? 'document/_folder_rows', $sidebarData ?? [
                 'folders' => $sidebarFolders ?? [], 
@@ -76,7 +81,7 @@
     <div id="app-sidebar-overlay" onclick="toggleAppSidebar()" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-[115] hidden lg:hidden opacity-0 transition-opacity duration-300"></div>
 
     <!-- Main Content -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-visible relative spms-content-slide lg:min-h-[650px]">
+    <div id="main-content-container" class="flex-1 flex flex-col min-w-0 overflow-visible relative lg:min-h-[650px]">
         <?= view($mainView, array_merge([
             'sidebarFolders'   => $sidebarFolders ?? [],
             'selectedFolderId' => $selectedFolderId ?? null,
@@ -118,7 +123,7 @@
 
 <!-- Only load the JS relevant to the current context -->
 <?php if ($context === 'folders'): ?>
-    <script type="module" src="<?= base_url('assets/js/main/modals/deleteModal.js') ?>"></script>
+    <script type="module" src="<?= base_url('assets/js/main/modals/deleteModal.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/main/modals/deleteModal.js') ?: time() ?>"></script>
     <script type="module" src="<?= base_url('assets/js/main/modals/createFileModal.js') ?>"></script>
     <script type="module" src="<?= base_url('assets/js/main/modals/createFolderModal.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/main/modals/createFolderModal.js') ?: time() ?>"></script>
     <script type="module" src="<?= base_url('assets/js/main/modals/editFolderModal.js') ?>?v=<?= @filemtime(FCPATH . 'assets/js/main/modals/editFolderModal.js') ?: time() ?>"></script>

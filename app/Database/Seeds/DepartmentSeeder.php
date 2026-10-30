@@ -42,8 +42,8 @@ class DepartmentSeeder extends Seeder
         echo ">>> Seeding Rating Cycle...\n";
         $cycleTitle    = '2nd Semester AY 2025–2026';
         $ratingPeriod  = 'October 01, 2026 - March 31, 2027';
-        $authName      = 'Dr. Maria Santos';
-        $authPosition  = 'University President';
+        $authName      = 'President';
+        $authPosition  = 'President';
 
         $db->table('rating_cycles')->insert([
             'title'                        => $cycleTitle,
@@ -117,11 +117,11 @@ class DepartmentSeeder extends Seeder
         $apexUsers = [
             'admin' => [
                 'email'      => 'admin@test.com',
-                'first_name' => 'Maria',
-                'last_name'  => 'Santos',
+                'first_name' => 'Admin',
+                'last_name'  => 'Admin',
                 'role'       => 'Admin',
-                'position'   => 'University President',
-                'unit'       => 'Office of the President',
+                'position'   => null,
+                'unit'       => null,
                 'doc_type'   => null,
             ],
             'twg' => [
@@ -164,13 +164,15 @@ class DepartmentSeeder extends Seeder
                 'role_id' => $roleMap[$u['role']] ?? 1,
             ]);
 
-            $db->table('plantillas')->insert([
-                'user_id'     => $uid,
-                'position_id' => $posMap[$u['position']] ?? 1,
-                'unit_id'     => $unitMap[$u['unit']] ?? 1,
-                'started_at'  => '2020-01-01',
-                'ended_at'    => null,
-            ]);
+            if (!empty($u['position']) && !empty($u['unit'])) {
+                $db->table('plantillas')->insert([
+                    'user_id'     => $uid,
+                    'position_id' => $posMap[$u['position']] ?? 1,
+                    'unit_id'     => $unitMap[$u['unit']] ?? 1,
+                    'started_at'  => '2020-01-01',
+                    'ended_at'    => null,
+                ]);
+            }
         }
 
         $adminUserId = $userIdMap['admin'];
@@ -184,7 +186,7 @@ class DepartmentSeeder extends Seeder
             'parent_folder_id'             => null,
             'title'                        => $cycleTitle,
             'status'                       => FolderStatus::TARGET_APPROVED->value,
-            'routing_preset_id'            => 'team_exec_council',
+            'routing_preset_id'            => null,
             'rating_period'                => $ratingPeriod,
             'approving_authority_name'     => $authName,
             'approving_authority_position' => $authPosition,
@@ -764,13 +766,6 @@ class DepartmentSeeder extends Seeder
         echo ">>> Seeding Routing Presets (Cascading Teams)...\n";
 
         $presetsToSeed = [
-            [
-                'id'          => 'team_exec_council',
-                'owner_id'    => $adminUserId,
-                'name'        => 'Executive Leadership',
-                'description' => 'Vice Presidents (VPAA & VPAF) reporting to the University President',
-                'members'     => [$vpaaUserId, $vpafUserId],
-            ],
             [
                 'id'          => 'team_vpaa_deans',
                 'owner_id'    => $vpaaUserId,

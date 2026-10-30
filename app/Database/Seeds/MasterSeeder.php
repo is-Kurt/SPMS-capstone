@@ -31,6 +31,7 @@ class MasterSeeder extends Seeder
             'document_folders',
             'rating_cycles',
             'plantillas',
+            'employment_statuses',
             'user_roles',
             'positions',
             'units',
@@ -90,6 +91,20 @@ class MasterSeeder extends Seeder
             ['title' => 'Security Officer',                             'is_teaching' => 0],
         ];
         $db->table('positions')->insertBatch($positions);
+
+        // ==========================================
+        // 2b. SEED EMPLOYMENT STATUSES
+        // ==========================================
+        echo ">>> Seeding Employment Statuses...\n";
+        $now = date('Y-m-d H:i:s');
+        $employmentStatuses = [
+            ['name' => 'Permanent',   'created_at' => $now, 'updated_at' => $now],
+            ['name' => 'Temporary',   'created_at' => $now, 'updated_at' => $now],
+            ['name' => 'Casual',      'created_at' => $now, 'updated_at' => $now],
+            ['name' => 'Contractual', 'created_at' => $now, 'updated_at' => $now],
+            ['name' => 'Coterminous', 'created_at' => $now, 'updated_at' => $now],
+        ];
+        $db->table('employment_statuses')->insertBatch($employmentStatuses);
 
         // ==========================================
         // 3. SEED UNITS (Org Hierarchy)

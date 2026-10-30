@@ -1,5 +1,5 @@
                 <!-- REMARKS BOX (ROW 29 IN EXCEL SPREADSHEET) -->
-                <div style="border: 1px solid #000; <?= $isDocIperf ? '' : 'border-top: none;' ?> padding: 8px 10px; box-sizing: border-box;">
+                <div style="border: 1px solid #000; padding: 8px 10px; box-sizing: border-box;">
                     <div style="font-weight: bold; font-size: 11px; color: #000000; margin-bottom: 4px;">
                         Remarks/Suggestions/Recommendations on Ratee's Performance:
                     </div>

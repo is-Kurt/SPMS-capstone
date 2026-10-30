@@ -1,7 +1,8 @@
 <style>
     .spms-sheet-container {
         width: 100%;
-        max-width: <?= $isDocDpcr ? '1460px' : ($isDocOpcr ? '1420px' : '1360px') ?>;
+        min-width: fit-content;
+        max-width: <?= $isDocDpcr ? '1600px' : ($isDocOpcr ? '1550px' : '1440px') ?>;
         background: #ffffff;
         color: #0f172a;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
@@ -69,8 +70,7 @@
     }
     .spms-table-responsive-wrapper {
         width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        overflow: visible;
         margin-bottom: 0.5rem;
         position: relative;
     }
@@ -737,6 +737,10 @@
         }
         .spms-meta-input {
             border-bottom: 1px solid #000000 !important;
+        }
+        #ratee-preamble-container input,
+        #basis-roles-container input {
+            max-width: 100% !important;
         }
         .spms-textarea::placeholder, .spms-score-input::placeholder, input::placeholder {
             color: transparent !important;
