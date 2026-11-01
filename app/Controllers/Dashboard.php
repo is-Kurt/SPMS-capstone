@@ -157,6 +157,7 @@ class Dashboard extends BaseController
                 $targetPendingCount++;
             } elseif ($f['target_state'] === 'returned') {
                 $targetReturnedCount++;
+                $targetDraftCount++;
             } else {
                 $targetDraftCount++;
             }
@@ -165,10 +166,12 @@ class Dashboard extends BaseController
                 $evalCompletedCount++;
             } elseif ($f['eval_state'] === 'evaluating') {
                 $evalActionCount++;
+                $evalSubmittedCount++;
             } elseif ($f['eval_state'] === 'submitted' || $f['eval_state'] === 'unrated') {
                 $evalSubmittedCount++;
             } elseif ($f['eval_state'] === 'returned') {
                 $evalReturnedCount++;
+                $evalDraftCount++;
             } else {
                 $evalDraftCount++;
             }

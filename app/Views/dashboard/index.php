@@ -330,7 +330,7 @@
                     </div>
 
                 </div>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                <div class="grid grid-cols-3 gap-2.5 text-center">
                     <div class="p-3 rounded-xl bg-emerald-50 text-emerald-800 dark:bg-[#102a1e] dark:border-[#1b4330] dark:text-emerald-400 border border-emerald-200">
                         <span class="block text-xl font-black"><?= $pipeline['target']['approved'] ?></span>
                         <span class="text-[11px] font-bold mt-0.5 block">Approved</span>
@@ -342,10 +342,6 @@
                     <div class="p-3 rounded-xl bg-rose-50 text-rose-800 dark:bg-danger-500/10 dark:border-danger-500/20 dark:text-rose-400 border border-rose-200">
                         <span class="block text-xl font-black"><?= $pipeline['target']['draft'] ?></span>
                         <span class="text-[11px] font-bold mt-0.5 block">Draft (Missing)</span>
-                    </div>
-                    <div class="p-3 rounded-xl bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:border-amber-800/80 dark:text-amber-400 border border-amber-200">
-                        <span class="block text-xl font-black"><?= $pipeline['target']['returned'] ?></span>
-                        <span class="text-[11px] font-bold mt-0.5 block">Revision</span>
                     </div>
                 </div>
             </div>
@@ -362,18 +358,14 @@
                     </div>
 
                 </div>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                <div class="grid grid-cols-3 gap-2.5 text-center">
                     <div class="p-3 rounded-xl bg-emerald-50 text-emerald-800 dark:bg-[#102a1e] dark:border-[#1b4330] dark:text-emerald-400 border border-emerald-200">
                         <span class="block text-xl font-black"><?= $pipeline['evaluation']['completed'] ?></span>
                         <span class="text-[11px] font-bold mt-0.5 block">Approved</span>
                     </div>
-                    <div class="p-3 rounded-xl bg-indigo-50 text-indigo-800 dark:bg-highlight-500/20 dark:border-highlight-500/20 dark:text-highlight-400 border border-indigo-200">
-                        <span class="block text-xl font-black"><?= $pipeline['evaluation']['action'] ?></span>
-                        <span class="text-[11px] font-bold mt-0.5 block">Evaluating</span>
-                    </div>
                     <div class="p-3 rounded-xl bg-blue-50 text-blue-800 dark:bg-info-500/10 dark:border-info-500/20 dark:text-blue-400 border border-blue-200">
                         <span class="block text-xl font-black"><?= $pipeline['evaluation']['submitted'] ?></span>
-                        <span class="text-[11px] font-bold mt-0.5 block">Submitted</span>
+                        <span class="text-[11px] font-bold mt-0.5 block">In Review</span>
                     </div>
                     <div class="p-3 rounded-xl bg-rose-50 text-rose-800 dark:bg-danger-500/10 dark:border-danger-500/20 dark:text-rose-400 border border-rose-200">
                         <span class="block text-xl font-black"><?= $pipeline['evaluation']['pending'] ?></span>
@@ -613,7 +605,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                <div class="grid grid-cols-3 gap-2.5 text-center">
                     <div class="p-3 rounded-xl bg-emerald-50 text-emerald-800 dark:bg-[#102a1e] dark:border-[#1b4330] dark:text-emerald-400 border border-emerald-200">
                         <span class="block text-xl font-black"><?= $pipeline['target']['approved'] ?></span>
                         <span class="text-[11px] font-bold mt-0.5 block">Approved</span>
@@ -625,10 +617,6 @@
                     <div class="p-3 rounded-xl bg-rose-50 text-rose-800 dark:bg-danger-500/10 dark:border-danger-500/20 dark:text-rose-400 border border-rose-200">
                         <span class="block text-xl font-black"><?= $pipeline['target']['draft'] ?></span>
                         <span class="text-[11px] font-bold mt-0.5 block">Draft (Missing)</span>
-                    </div>
-                    <div class="p-3 rounded-xl bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:border-amber-800/80 dark:text-amber-400 border border-amber-200">
-                        <span class="block text-xl font-black"><?= $pipeline['target']['returned'] ?></span>
-                        <span class="text-[11px] font-bold mt-0.5 block">Revision</span>
                     </div>
                 </div>
             </div>
@@ -644,18 +632,14 @@
                         </div>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                <div class="grid grid-cols-3 gap-2.5 text-center">
                     <div class="p-3 rounded-xl bg-emerald-50 text-emerald-800 dark:bg-[#102a1e] dark:border-[#1b4330] dark:text-emerald-400 border border-emerald-200">
                         <span class="block text-xl font-black"><?= $pipeline['evaluation']['completed'] ?></span>
                         <span class="text-[11px] font-bold mt-0.5 block">Approved</span>
                     </div>
-                    <div class="p-3 rounded-xl bg-indigo-50 text-indigo-800 dark:bg-highlight-500/20 dark:border-highlight-500/20 dark:text-highlight-400 border border-indigo-200">
-                        <span class="block text-xl font-black"><?= $pipeline['evaluation']['action'] ?></span>
-                        <span class="text-[11px] font-bold mt-0.5 block">Evaluating</span>
-                    </div>
                     <div class="p-3 rounded-xl bg-blue-50 text-blue-800 dark:bg-info-500/10 dark:border-info-500/20 dark:text-blue-400 border border-blue-200">
                         <span class="block text-xl font-black"><?= $pipeline['evaluation']['submitted'] ?></span>
-                        <span class="text-[11px] font-bold mt-0.5 block">Submitted</span>
+                        <span class="text-[11px] font-bold mt-0.5 block">In Review</span>
                     </div>
                     <div class="p-3 rounded-xl bg-rose-50 text-rose-800 dark:bg-danger-500/10 dark:border-danger-500/20 dark:text-rose-400 border border-rose-200">
                         <span class="block text-xl font-black"><?= $pipeline['evaluation']['pending'] ?></span>
