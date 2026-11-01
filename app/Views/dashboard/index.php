@@ -1,3 +1,8 @@
+<?php
+    $phaseSchedule = $phaseSchedule ?? [];
+    $p1 = $phaseSchedule['phase1'] ?? ['is_ongoing' => false, 'timeframe' => 'Schedule Not Set', 'label' => 'Upcoming', 'status' => 'upcoming'];
+    $p2 = $phaseSchedule['phase2'] ?? ['is_ongoing' => false, 'timeframe' => 'Schedule Not Set', 'label' => 'Upcoming', 'status' => 'upcoming'];
+?>
 <div class="flex flex-col flex-1 min-w-0 min-h-0 relative bg-surface lg:rounded-xl border border-surface-border shadow-xs overflow-visible lg:overflow-hidden">
     
     <!-- Dashboard Header -->
@@ -647,6 +652,10 @@
         </div>
 
         <!-- 2. PHASE SUBMISSION BREAKDOWN (TARGETS VS ACCOMPLISHMENTS) -->
+        <?php
+            $p1 = $phaseSchedule['phase1'] ?? ['is_ongoing' => false, 'timeframe' => 'Schedule Not Set', 'label' => 'Upcoming', 'status' => 'upcoming'];
+            $p2 = $phaseSchedule['phase2'] ?? ['is_ongoing' => false, 'timeframe' => 'Schedule Not Set', 'label' => 'Upcoming', 'status' => 'upcoming'];
+        ?>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             
             <!-- Phase 1 Card -->
