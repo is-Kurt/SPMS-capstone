@@ -1421,13 +1421,13 @@
             lg:static lg:w-64 xl:w-72 lg:translate-x-0 lg:transition-none lg:shadow-none lg:border-l lg:border-r-0 border-surface-border lg:flex lg:flex-col shrink-0
         ">
             <!-- Header -->
-            <div class="px-5 py-3.5 border-b border-surface-border flex justify-between items-center shrink-0 bg-surface">
+            <div style="height: 54px; min-height: 54px; max-height: 54px;" class="h-[54px] min-h-[54px] max-h-[54px] px-5 border-b border-surface-border flex justify-between items-center shrink-0 bg-surface box-border">
                 <div class="flex items-center gap-2">
-                    <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest">Filters</h2>
-                    <span id="active-masterlist-filter-badge" class="hidden px-1.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">0</span>
+                    <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest leading-none">Filters</h2>
+                    <span id="active-masterlist-filter-badge" class="hidden inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">0</span>
                 </div>
                 <div class="flex items-center gap-3">
-                    <button type="button" id="reset-masterlist-filters-btn" onclick="clearAllMasterlistFilters()" class="text-[10px] font-bold text-text-muted hover:text-text transition-colors cursor-pointer hidden">
+                    <button type="button" id="reset-masterlist-filters-btn" onclick="clearAllMasterlistFilters()" class="text-[10px] font-bold text-text-muted hover:text-text transition-colors cursor-pointer leading-none hidden">
                         Reset all
                     </button>
                     <button type="button" onclick="toggleMasterlistFilterSidebar()" class="lg:hidden text-text-muted hover:text-text p-1 cursor-pointer">

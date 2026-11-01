@@ -140,6 +140,8 @@ writable/database/*
 
 # Local Agent Configurations & Rules
 .agents/
+.agent
+AGENTS.md
 
 # Local SPMS Automated Test Runner
 app/Commands/SpmsTestCycle.php

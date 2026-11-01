@@ -5,13 +5,13 @@
 
     <!-- SIDEBAR FILTERS (Left) -->
     <div id="directory-sidebar" class="fixed inset-y-0 left-0 z-[120] w-72 bg-surface lg:bg-zinc-50 lg:dark:bg-zinc-800/30 border-r border-surface-border shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 transition-transform duration-300 lg:static shrink-0 flex flex-col h-full">
-        <div class="px-5 py-3 border-b border-surface-border flex justify-between items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800">
+        <div style="height: 54px; min-height: 54px; max-height: 54px;" class="h-[54px] min-h-[54px] max-h-[54px] px-5 border-b border-surface-border flex justify-between items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800 box-border">
             <div class="flex items-center gap-2">
-                <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest">Filters</h2>
-                <span id="active-filter-count-badge" class="hidden px-1.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">0</span>
+                <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest leading-none">Filters</h2>
+                <span id="active-filter-count-badge" class="hidden inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">0</span>
             </div>
             <div class="flex items-center gap-3">
-                <button type="button" id="reset-all-filters-btn" onclick="clearAllDirectoryFilters()" class="text-[10px] font-bold text-text-muted hover:text-text transition-colors cursor-pointer hidden">
+                <button type="button" id="reset-all-filters-btn" onclick="clearAllDirectoryFilters()" class="text-[10px] font-bold text-text-muted hover:text-text transition-colors cursor-pointer leading-none hidden">
                     Reset all
                 </button>
                 <button type="button" id="close-mobile-filters" class="lg:hidden text-text-muted hover:text-text p-1 cursor-pointer">

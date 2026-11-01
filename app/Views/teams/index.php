@@ -149,13 +149,13 @@
                 fixed inset-y-0 left-0 z-[130] lg:z-0 w-80 transform -translate-x-full transition-transform duration-300 flex flex-col h-full bg-surface border-r border-surface-border shadow-2xl
                 lg:static lg:w-72 lg:translate-x-0 lg:transition-none lg:shadow-none lg:border border-surface-border lg:rounded-2xl lg:overflow-hidden lg:h-full lg:flex lg:flex-col lg:bg-zinc-50 lg:dark:bg-zinc-800/30 shrink-0
             ">
-                <div class="px-6 py-4 border-b border-surface-border flex justify-between items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800 lg:rounded-t-2xl">
+                <div style="height: 54px; min-height: 54px; max-height: 54px;" class="h-[54px] min-h-[54px] max-h-[54px] px-6 border-b border-surface-border flex justify-between items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800 lg:rounded-t-2xl box-border">
                     <div class="flex items-center gap-2">
-                        <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest">Filters</h2>
-                        <span id="active-teams-filter-badge" class="hidden px-1.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">0</span>
+                        <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest leading-none">Filters</h2>
+                        <span id="active-teams-filter-badge" class="hidden inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[9px] font-black leading-none bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">0</span>
                     </div>
                     <div class="flex items-center gap-3">
-                        <button type="button" id="reset-teams-filters-btn" onclick="clearAllTeamsFilters()" class="text-[10px] font-bold text-text-muted hover:text-text transition-colors cursor-pointer hidden">
+                        <button type="button" id="reset-teams-filters-btn" onclick="clearAllTeamsFilters()" class="text-[10px] font-bold text-text-muted hover:text-text transition-colors cursor-pointer leading-none hidden">
                             Reset all
                         </button>
                         <button type="button" onclick="toggleTeamsFilterSidebar()" class="text-text-muted hover:text-text p-1 cursor-pointer lg:hidden">
