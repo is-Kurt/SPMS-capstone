@@ -1076,7 +1076,7 @@
                                         <?= $avgRating > 0 ? number_format($avgRating, 2) : '——' ?>
                                     </td>
                                     <td class="py-3 px-3.5 text-right whitespace-nowrap">
-                                        <button type="button" onclick="event.stopPropagation(); filterMasterlistByUnit('<?= esc(addslashes($uName)) ?>', '<?= esc($uId) ?>')"
+                                        <button type="button" onclick="event.stopPropagation(); filterMasterlistByUnit('<?= esc($uId) ?>', '<?= esc(addslashes($uName)) ?>')"
                                                 class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold text-amber-500 hover:text-amber-400 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/10 transition-all cursor-pointer shadow-2xs group"
                                                 title="Filter Master List by <?= esc($uName) ?>">
                                             <span>View in Master List</span>
@@ -1553,6 +1553,7 @@ window.SPMS_MASTERLIST_UNITS = <?= json_encode(array_map(fn($u) => [
 let currentMasterlistLifecycle = 'all';
 let masterlistCurrentPage = 1;
 let masterlistPerPage = (typeof window !== 'undefined' && window.innerWidth < 768) ? 6 : 50;
+window._activeMasterlistUnitFilterId = null;
 
 function escapeHtml(str) {
     if (str === null || str === undefined) return '';
@@ -1749,6 +1750,9 @@ function onDynamicUnitLevelChange(level, selectedUnitId, triggerFilter = true) {
         }
     }
 
+    // Keep active unit filter ID in sync with current dropdown hierarchy
+    window._activeMasterlistUnitFilterId = getActiveDynamicUnitId();
+
     if (triggerFilter) {
         filterMasterlist(true);
     }
@@ -1763,20 +1767,28 @@ function initDynamicUnitFilters() {
 
 function getActiveDynamicUnitId() {
     const container = document.getElementById('dynamic-unit-filter-container');
-    if (!container) return null;
+    if (!container) return window._activeMasterlistUnitFilterId || null;
     const selects = Array.from(container.querySelectorAll('select'));
     for (let i = selects.length - 1; i >= 0; i--) {
         const val = (selects[i].value || '').trim();
         if (val) return val;
     }
-    return null;
+    return window._activeMasterlistUnitFilterId || null;
 }
 
 function setDynamicUnitFilterTo(targetUnitId, targetUnitName) {
     const rootContainer = document.getElementById('dynamic-unit-filter-container');
     if (!rootContainer) return;
 
+    // Detect if arguments were passed in reverse order (e.g. name, id)
+    if (targetUnitId && isNaN(targetUnitId) && targetUnitName && !isNaN(targetUnitName)) {
+        const temp = targetUnitId;
+        targetUnitId = targetUnitName;
+        targetUnitName = temp;
+    }
+
     if (!targetUnitId && !targetUnitName) {
+        window._activeMasterlistUnitFilterId = null;
         initDynamicUnitFilters();
         return;
     }
@@ -1795,9 +1807,13 @@ function setDynamicUnitFilterTo(targetUnitId, targetUnitName) {
     }
 
     if (!targetUnit) {
+        window._activeMasterlistUnitFilterId = null;
         initDynamicUnitFilters();
         return;
     }
+
+    // Explicitly record the chosen unit ID
+    window._activeMasterlistUnitFilterId = String(targetUnit.id);
 
     // Build path from root down to targetUnit (e.g. [OVPAA (2), College of Nursing (12), BS Nursing (13)])
     const path = [];
@@ -1824,6 +1840,9 @@ function setDynamicUnitFilterTo(targetUnitId, targetUnitName) {
         // Spawn next level without triggering filterMasterlist until full path is populated
         onDynamicUnitLevelChange(level, String(u.id), false);
     }
+
+    // Re-affirm active filter ID after cascading
+    window._activeMasterlistUnitFilterId = String(targetUnit.id);
 }
 window.setDynamicUnitFilterTo = setDynamicUnitFilterTo;
 
@@ -2179,6 +2198,8 @@ function clearAllMasterlistFilters() {
         filterMasterlistPositions('');
     }
 
+    window._activeMasterlistUnitFilterId = null;
+
     if (typeof initDynamicUnitFilters === 'function') {
         initDynamicUnitFilters();
     }
@@ -2264,7 +2285,7 @@ function filterMasterlist(resetPage = true) {
         if (activeUnitId && allowedUnitIds) {
             const isIdMatch   = (unitId !== '' && allowedUnitIds.has(String(unitId)))
                              || ancestorIds.some(aId => allowedUnitIds.has(String(aId)) || aId === String(activeUnitId));
-            const isNameMatch = activeUnitName && (dept.includes(activeUnitName) || deptChain.includes(activeUnitName));
+            const isNameMatch = (!unitId && activeUnitName) && (dept === activeUnitName || deptChain.includes(activeUnitName));
             matchesDept = isIdMatch || isNameMatch;
         }
 
@@ -2513,9 +2534,19 @@ function toggleStageAccordion(stageNum) {
 }
 
 // --- Masterlist Quick Shortcut from Compliance Matrix & Rows ---
-function filterMasterlistByUnit(deptName, unitId, isDirectStaff = false) {
-    if (typeof switchDashboardView === 'function') {
-        switchDashboardView('masterlist');
+function filterMasterlistByUnit(arg1, arg2, isDirectStaff = false) {
+    let deptName = '';
+    let unitId = '';
+
+    if (arg1 && (!isNaN(arg1) || typeof arg1 === 'number')) {
+        unitId = String(arg1);
+        deptName = arg2 ? String(arg2) : '';
+    } else if (arg2 && (!isNaN(arg2) || typeof arg2 === 'number')) {
+        deptName = arg1 ? String(arg1) : '';
+        unitId = String(arg2);
+    } else {
+        deptName = arg1 ? String(arg1) : '';
+        unitId = arg2 ? String(arg2) : '';
     }
 
     // 1. Reset free-text search fields so unit filtering is prominent
@@ -2538,24 +2569,53 @@ function filterMasterlistByUnit(deptName, unitId, isDirectStaff = false) {
         }
     }
 
-    // 4. Reset lifecycle filter pill to 'all'
-    if (typeof setMasterlistLifecyclePill === 'function') {
-        const allBtn = document.querySelector('.masterlist-lifecycle-btn[data-stage="all"]');
-        setMasterlistLifecyclePill('all', allBtn, false);
-    }
+    // 4. Reset lifecycle filter pill to 'all' without triggering premature filtering
+    currentMasterlistLifecycle = 'all';
+    document.querySelectorAll('.masterlist-lifecycle-btn').forEach(b => {
+        if (b.getAttribute('data-lifecycle') === 'all') {
+            b.classList.add('active');
+        } else {
+            b.classList.remove('active');
+        }
+    });
 
-    // 5. Select the specific unit in the dynamic cascading unit filter
+    // 5. Select the specific unit in the dynamic cascading unit filter FIRST
     if (typeof setDynamicUnitFilterTo === 'function') {
         setDynamicUnitFilterTo(unitId, deptName);
     }
 
-    // 6. Execute filtering and update views
+    // 6. Switch to Master List View without animation jump
+    if (typeof switchDashboardView === 'function') {
+        switchDashboardView('masterlist', false);
+    }
+
+    // 7. Execute filtering and update views with resetPage = true
     filterMasterlist(true);
 
-    const mlView = document.getElementById('dashboard-view-masterlist');
-    if (mlView) {
-        mlView.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    // 8. Accurately position user at top of Master List without awkward scroll jumps
+    const resetScrollPosition = () => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        const dtScroll = document.querySelector('#masterlist-table')?.parentElement || document.querySelector('#dashboard-view-masterlist .overflow-auto');
+        if (dtScroll) {
+            dtScroll.scrollTop = 0;
+            dtScroll.scrollLeft = 0;
+        }
+        const mbScroll = document.getElementById('masterlist-mobile-cards-list');
+        if (mbScroll) mbScroll.scrollTop = 0;
+        const sbFilter = document.getElementById('masterlist-filter-sidebar');
+        if (sbFilter) {
+            const sc = sbFilter.querySelector('.overflow-y-auto') || sbFilter;
+            sc.scrollTop = 0;
+        }
+        const mlView = document.getElementById('dashboard-view-masterlist');
+        if (mlView) mlView.scrollTop = 0;
+    };
+
+    resetScrollPosition();
+    requestAnimationFrame(resetScrollPosition);
+    setTimeout(resetScrollPosition, 50);
 }
 window.filterMasterlistByUnit = filterMasterlistByUnit;
 
@@ -2602,7 +2662,6 @@ function collapseComplianceDescendants(unitId) {
 function filterOfficeLeaderboard(query) {
     const q = (query || '').toLowerCase().trim();
     const rows = document.querySelectorAll('.compliance-unit-row');
-    const directRows = document.querySelectorAll('.compliance-direct-staff-row');
     const emptyRow = document.getElementById('compliance-empty-row');
 
     if (!q) {
@@ -2613,7 +2672,6 @@ function filterOfficeLeaderboard(query) {
             const ch = r.querySelector('.compliance-chevron');
             if (ch) ch.style.transform = 'rotate(0deg)';
         });
-        directRows.forEach(r => r.style.display = 'none');
         if (emptyRow) emptyRow.classList.add('hidden');
         return;
     }
@@ -2634,26 +2692,6 @@ function filterOfficeLeaderboard(query) {
                     if (ch) ch.style.transform = 'rotate(90deg)';
                 }
             });
-        } else {
-            r.style.display = 'none';
-        }
-    });
-
-    directRows.forEach(r => {
-        const name = (r.getAttribute('data-name') || '').toLowerCase();
-        if (name.includes(q)) {
-            r.style.display = '';
-            matchCount++;
-            const pScope = r.getAttribute('data-parent-scope');
-            if (pScope) {
-                const anc = document.querySelector(`.compliance-unit-row[data-unit-id="${pScope}"]`);
-                if (anc) {
-                    anc.style.display = '';
-                    anc.setAttribute('data-expanded', 'true');
-                    const ch = anc.querySelector('.compliance-chevron');
-                    if (ch) ch.style.transform = 'rotate(90deg)';
-                }
-            }
         } else {
             r.style.display = 'none';
         }

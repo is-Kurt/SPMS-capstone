@@ -822,7 +822,7 @@ class Dashboard extends BaseController
             ]
         ];
 
-        if ($this->request->isAJAX()) {
+        if (method_exists($this->request, 'isAJAX') && $this->request->isAJAX()) {
             return view('dashboard/index', $mainData);
         }
 
