@@ -1004,10 +1004,6 @@
                                     style="<?= $level === 0 ? '' : 'display: none;' ?>">
                                     <td class="py-3 px-3.5 whitespace-nowrap" style="padding-left: <?= ($level > 0 ? ($level * 1.75 + 0.875) : 0.875) ?>rem;">
                                         <div class="flex items-center gap-2">
-                                            <?php if ($level > 0): ?>
-                                                <span class="text-zinc-400 dark:text-zinc-500 select-none mr-0.5 font-mono text-sm leading-none">↳</span>
-                                            <?php endif; ?>
-
                                             <?php if ($hasKids): ?>
                                                 <button type="button" 
                                                         onclick="event.stopPropagation(); toggleUnitHierarchy('<?= esc($uId) ?>', event)"
@@ -1105,7 +1101,6 @@
                                         style="display: none;">
                                         <td class="py-3 px-3.5 whitespace-nowrap" style="padding-left: <?= (($level + 1) * 1.75 + 0.875) ?>rem;">
                                             <div class="flex items-center gap-2">
-                                                <span class="text-zinc-400 dark:text-zinc-500 select-none mr-0.5 font-mono text-sm leading-none">↳</span>
                                                 <span class="w-6 shrink-0"></span>
                                                 <span class="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
                                                 <span class="font-medium text-zinc-700 dark:text-zinc-300 truncate block max-w-[280px]">
@@ -1568,22 +1563,14 @@
                             <div class="relative w-full">
                                 <select id="masterlist-filter-dept" onchange="filterMasterlist(true)"
                                     class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
-                                    <option value="" data-name="">All Departments &amp; Units</option>
-                                    <?php if (!empty($hierarchicalUnits)): ?>
-                                        <?php foreach ($hierarchicalUnits as $hu): ?>
-                                            <option value="<?= $hu['id'] ?>" 
-                                                    data-unit-id="<?= $hu['id'] ?>"
-                                                    data-name="<?= esc(strtolower($hu['name'])) ?>">
-                                                <?= str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', $hu['level']) ?><?= ($hu['level'] > 0 ? '↳ ' : '') ?><?= esc($hu['name']) ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    <?php elseif (!empty($collegeDepartments)): ?>
+                                    <option value=""><?= !empty($collegeDepartments) ? 'All Sub-Departments' : 'All Departments & Units' ?></option>
+                                    <?php if (!empty($collegeDepartments)): ?>
                                         <?php foreach ($collegeDepartments as $cd): ?>
-                                            <option value="<?= esc(strtolower($cd)) ?>" data-name="<?= esc(strtolower($cd)) ?>"><?= esc($cd) ?></option>
+                                            <option value="<?= esc(strtolower($cd)) ?>"><?= esc($cd) ?></option>
                                         <?php endforeach; ?>
                                     <?php elseif (!empty($allUnits)): ?>
                                         <?php foreach ($allUnits as $u): ?>
-                                            <option value="<?= esc($u['id']) ?>" data-unit-id="<?= esc($u['id']) ?>" data-name="<?= esc(strtolower($u['name'])) ?>"><?= esc($u['name']) ?></option>
+                                            <option value="<?= esc(strtolower($u['name'])) ?>" data-unit-id="<?= esc($u['id']) ?>"><?= esc($u['name']) ?></option>
                                         <?php endforeach; ?>
                                     <?php endif; ?>
                                 </select>
@@ -1998,7 +1985,8 @@ function filterMasterlist(resetPage = true) {
     
     const selectedDeptVal  = deptFilter ? deptFilter.value.trim().toLowerCase() : '';
     const selectedDeptOpt  = (deptFilter && deptFilter.selectedIndex >= 0) ? deptFilter.options[deptFilter.selectedIndex] : null;
-    const selectedDeptName = selectedDeptOpt ? (selectedDeptOpt.getAttribute('data-name') || '').toLowerCase().trim() : '';
+    const selectedDeptId   = selectedDeptOpt ? (selectedDeptOpt.getAttribute('data-unit-id') || '').trim() : '';
+    const selectedDeptName = selectedDeptOpt ? (selectedDeptOpt.text || selectedDeptVal).toLowerCase().trim() : '';
 
     // Active filters count badge calculation
     let activeFilterCount = 0;
@@ -2052,7 +2040,9 @@ function filterMasterlist(resetPage = true) {
         // 2. Department / Sub-Department (Hierarchical Tree Match)
         let matchesDept = true;
         if (selectedDeptVal !== '') {
-            const isIdMatch   = (unitId !== '' && unitId === selectedDeptVal) || ancestorIds.includes(selectedDeptVal);
+            const isIdMatch   = (selectedDeptId !== '' && (unitId === selectedDeptId || ancestorIds.includes(selectedDeptId)))
+                             || (unitId !== '' && unitId === selectedDeptVal)
+                             || ancestorIds.includes(selectedDeptVal);
             const isNameMatch = dept.includes(selectedDeptVal) || (selectedDeptName && dept.includes(selectedDeptName)) || deptChain.includes(selectedDeptVal) || (selectedDeptName && deptChain.includes(selectedDeptName));
             matchesDept = isIdMatch || isNameMatch;
         }
