@@ -7,14 +7,17 @@
             if (empty($homeUrl)) {
                 $isReviewingRatee = (!empty($rateeNav) || (!empty($doc) && !empty($doc['owner_id']) && (int)$doc['owner_id'] !== (int)session()->get('user_id')));
                 $fromQuery = $_GET['from'] ?? '';
-                if ($fromQuery === 'ratings' || $isReviewingRatee || in_array($sysRole, ['TWG', 'PMT'], true)) {
+                if ($fromQuery === 'dashboard') {
+                    $homeUrl = site_url('dashboard');
+                } elseif ($fromQuery === 'ratings' || $isReviewingRatee || in_array($sysRole, ['TWG', 'PMT'], true)) {
                     $homeUrl = site_url('ratings');
                 } else {
                     $homeUrl = site_url('folders');
                 }
             }
-            $isFromRatings = str_contains($homeUrl, 'ratings');
-            $homeTitle = $isFromRatings ? 'Back to Submissions (Ratings)' : 'Back to Workspace (Folders)';
+            $isFromDashboard = str_contains($homeUrl, 'dashboard');
+            $isFromRatings   = str_contains($homeUrl, 'ratings');
+            $homeTitle = $isFromDashboard ? 'Back to Dashboard' : ($isFromRatings ? 'Back to Submissions (Ratings)' : 'Back to Workspace (Folders)');
         ?>
         <div class="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-1">
             <!-- Brand mark -->

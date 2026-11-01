@@ -529,10 +529,12 @@
                                     (($sVal >= 2.50) ? 'satisfactory' :
                                     (($sVal >= 1.50) ? 'unsatisfactory' : 'poor')));
                         ?>
-                            <div class="performer-card p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800 flex items-center justify-between gap-3 transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40"
+                            <div class="performer-card p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800 flex items-center justify-between gap-3 transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40 cursor-pointer"
                                  data-rating="<?= $sVal ?>"
                                  data-adjectival-tier="<?= $tKey ?>"
-                                 data-initial-index="<?= $idx ?>">
+                                 data-initial-index="<?= $idx ?>"
+                                 onclick="openMasterlistDocument('<?= !empty($tp['folder_id']) ? site_url('document/' . $tp['folder_id'] . '?from=dashboard') : '' ?>', event)"
+                                 title="Click to view evaluation document">
                                 <div class="flex items-center gap-2.5 min-w-0">
                                     <span class="performer-rank-badge w-7 h-7 rounded-lg bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs shrink-0">
                                         <?= $idx + 1 ?>
@@ -855,10 +857,12 @@
                                     (($sVal >= 2.50) ? 'satisfactory' :
                                     (($sVal >= 1.50) ? 'unsatisfactory' : 'poor')));
                         ?>
-                            <div class="performer-card p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800 flex items-center justify-between gap-3 transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40"
+                            <div class="performer-card p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800 flex items-center justify-between gap-3 transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40 cursor-pointer"
                                  data-rating="<?= $sVal ?>"
                                  data-adjectival-tier="<?= $tKey ?>"
-                                 data-initial-index="<?= $idx ?>">
+                                 data-initial-index="<?= $idx ?>"
+                                 onclick="openMasterlistDocument('<?= !empty($tp['folder_id']) ? site_url('document/' . $tp['folder_id'] . '?from=dashboard') : '' ?>', event)"
+                                 title="Click to view evaluation document">
                                 <div class="flex items-center gap-3 min-w-0">
                                     <!-- Rank Badge -->
                                     <span class="performer-rank-badge w-8 h-8 rounded-lg bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs shrink-0">
@@ -914,7 +918,7 @@
 
         <!-- 4. DEPARTMENT & UNIT COMPLIANCE MATRIX -->
         <div class="p-4 sm:p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-4">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-100 dark:border-zinc-800">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-zinc-100 dark:border-zinc-800">
                 <div>
                     <h3 class="text-sm sm:text-base font-bold text-zinc-900 dark:text-white">Department &amp; Unit Compliance</h3>
                     <p class="text-[10px] sm:text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
@@ -922,14 +926,45 @@
                     </p>
                 </div>
 
-                <!-- Search Bar for Departments & Units -->
-                <div class="relative w-full sm:w-64">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <!-- Hierarchical Dropdown & View Masterlist Shortcut -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <div class="relative w-full sm:w-80">
+                        <select id="compliance-hierarchy-select" onchange="onHierarchyDropdownChange(this)"
+                                class="w-full appearance-none text-xs font-semibold py-2 pl-3 pr-8 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-400/40 shadow-2xs cursor-pointer [color-scheme:light] dark:[color-scheme:dark]">
+                            <option value="all" data-name="">All Departments &amp; Units (<?= $evalCompletionRate ?>% Compliant)</option>
+                            <?php if (!empty($hierarchicalUnits)): ?>
+                                <?php foreach ($hierarchicalUnits as $hu): ?>
+                                    <?php
+                                        $indent = str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', $hu['level']);
+                                        $prefix = ($hu['level'] > 0) ? '↳ ' : '';
+                                    ?>
+                                    <option value="<?= $hu['id'] ?>" 
+                                            data-name="<?= esc(strtolower($hu['name'])) ?>"
+                                            data-level="<?= $hu['level'] ?>"
+                                            data-descendant-ids="<?= implode(',', $hu['descendant_ids']) ?>"
+                                            data-ancestor-ids="<?= implode(',', $hu['ancestor_ids']) ?>">
+                                        <?= $indent ?><?= $prefix ?><?= esc($hu['name']) ?> (<?= $hu['ratio'] ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php elseif (!empty($deptLeaderboard)): ?>
+                                <?php foreach ($deptLeaderboard as $dept): ?>
+                                    <option value="<?= esc(strtolower($dept['name'])) ?>" data-name="<?= esc(strtolower($dept['name'])) ?>">
+                                        <?= esc($dept['name']) ?> (<?= $dept['eval_completed'] ?>/<?= $dept['headcount'] ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-zinc-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </div>
                     </div>
-                    <input type="text" id="office-table-search" onkeyup="filterOfficeLeaderboard()"
-                           placeholder="Search department or unit..."
-                           class="w-full text-xs font-medium py-2 pl-9 pr-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/40 shadow-2xs" />
+
+                    <button type="button" id="btn-compliance-view-masterlist" onclick="viewSelectedUnitInMasterlist()"
+                            class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-amber-500 hover:text-amber-400 dark:text-amber-400 dark:hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/30 transition-all cursor-pointer whitespace-nowrap shadow-2xs group"
+                            title="Filter and inspect personnel for selected unit in Master List">
+                        <span>View in Master List</span>
+                        <svg class="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </button>
                 </div>
             </div>
 
@@ -949,82 +984,110 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-zinc-100 dark:divide-[#1a2b22] text-xs">
-                        <?php if (empty($deptLeaderboard)): ?>
+                        <?php 
+                        $unitsToRender = !empty($hierarchicalUnits) ? $hierarchicalUnits : (!empty($deptLeaderboard) ? $deptLeaderboard : []);
+                        ?>
+                        <?php if (empty($unitsToRender)): ?>
                             <tr>
                                 <td colspan="8" class="py-8 px-4 text-center text-zinc-400 italic">
                                     No department / unit records available for this cycle.
                                 </td>
                             </tr>
                         <?php else: ?>
-                            <?php foreach ($deptLeaderboard as $dept): ?>
-                                <tr class="office-row hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors" data-name="<?= strtolower(esc($dept['name'])) ?>">
-                                    <td class="py-3 px-3.5 font-bold text-zinc-900 dark:text-white whitespace-nowrap">
-                                        <span class="truncate block max-w-[220px]" title="<?= esc($dept['name']) ?>">
-                                            <?= esc($dept['name']) ?>
-                                        </span>
+                            <?php foreach ($unitsToRender as $hu): ?>
+                                <?php
+                                    $isTree = isset($hu['level']);
+                                    $level = $hu['level'] ?? 0;
+                                    $uId = $hu['id'] ?? '';
+                                    $uName = $hu['name'] ?? '';
+                                    $headcount = $hu['headcount'] ?? 0;
+                                    $directHeadcount = $hu['direct_headcount'] ?? $headcount;
+                                    $targetApproved = $hu['target_approved'] ?? 0;
+                                    $evalCompleted = $hu['eval_completed'] ?? 0;
+                                    $tPct = $headcount > 0 ? round(($targetApproved / $headcount) * 100) : 0;
+                                    $ePct = $headcount > 0 ? round(($evalCompleted / $headcount) * 100) : 0;
+                                    $avgRating = $hu['average_rating'] ?? 0;
+                                    $badgeClass = $hu['badge_class'] ?? 'bg-blue-50 text-blue-700 border-blue-200';
+                                    $statusBadge = $hu['status_badge'] ?? 'In Progress';
+                                    $descendantIds = !empty($hu['descendant_ids']) ? implode(',', $hu['descendant_ids']) : (string)$uId;
+                                    $ancestorIds = !empty($hu['ancestor_ids']) ? implode(',', $hu['ancestor_ids']) : '';
+                                ?>
+                                <tr class="compliance-unit-row office-row hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
+                                    data-unit-id="<?= esc($uId) ?>"
+                                    data-name="<?= esc(strtolower($uName)) ?>"
+                                    data-level="<?= $level ?>"
+                                    data-descendant-ids="<?= esc($descendantIds) ?>"
+                                    data-ancestor-ids="<?= esc($ancestorIds) ?>">
+                                    <td class="py-3 px-3.5 whitespace-nowrap">
+                                        <div class="flex items-center gap-2 <?= $level === 0 ? '' : ($level === 1 ? 'pl-5' : 'pl-10') ?>">
+                                            <?php if ($level === 0): ?>
+                                                <span class="w-2 h-2 rounded-full bg-indigo-500 shrink-0"></span>
+                                                <span class="font-bold text-zinc-900 dark:text-white truncate block max-w-[280px]" title="<?= esc($uName) ?>">
+                                                    <?= esc($uName) ?>
+                                                </span>
+                                                <span class="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 shrink-0">Executive</span>
+                                            <?php elseif ($level === 1): ?>
+                                                <span class="text-zinc-400 text-xs font-bold select-none shrink-0">↳</span>
+                                                <span class="font-semibold text-zinc-800 dark:text-zinc-200 truncate block max-w-[260px]" title="<?= esc($uName) ?>">
+                                                    <?= esc($uName) ?>
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="text-zinc-400 text-xs font-bold select-none shrink-0">↳ ↳</span>
+                                                <span class="font-medium text-zinc-700 dark:text-zinc-300 truncate block max-w-[240px]" title="<?= esc($uName) ?>">
+                                                    <?= esc($uName) ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
-                                    <td class="py-3 px-3 text-center font-semibold text-zinc-700 dark:text-zinc-300">
-                                        <?= $dept['headcount'] ?>
+                                    <td class="py-3 px-3 text-center font-bold text-zinc-900 dark:text-white">
+                                        <?= $headcount ?>
+                                        <?php if ($directHeadcount > 0 && $directHeadcount !== $headcount): ?>
+                                            <span class="text-[10px] font-normal text-zinc-400" title="Direct: <?= $directHeadcount ?>, Total branch: <?= $headcount ?>">(<?= $directHeadcount ?>)</span>
+                                        <?php endif; ?>
                                     </td>
                                     <td class="py-3 px-3 text-center whitespace-nowrap">
-                                        <?php 
-                                        $tPct = $dept['headcount'] > 0 ? round(($dept['target_approved'] / $dept['headcount']) * 100) : 0;
-                                        ?>
                                         <div class="flex items-center justify-center gap-2">
                                             <div class="w-16 bg-zinc-200 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
                                                 <div class="bg-emerald-500 h-1.5 rounded-full" style="width: <?= min(100, $tPct) ?>%;"></div>
                                             </div>
-                                            <span class="font-bold text-[11px] text-zinc-900 dark:text-white"><?= $dept['target_approved'] ?>/<?= $dept['headcount'] ?></span>
+                                            <span class="font-bold text-[11px] text-zinc-900 dark:text-white"><?= $targetApproved ?>/<?= $headcount ?></span>
                                         </div>
                                     </td>
                                     <td class="py-3 px-3 text-center whitespace-nowrap">
-                                        <?php if ($dept['revisions_needed'] > 0): ?>
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800">
-                                                <?= $dept['revisions_needed'] ?> notes
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="text-zinc-400 dark:text-zinc-500 text-[11px]">—</span>
-                                        <?php endif; ?>
+                                        <span class="text-zinc-400 dark:text-zinc-500 text-[11px]">—</span>
                                     </td>
                                     <td class="py-3 px-3 text-center whitespace-nowrap">
                                         <div class="flex items-center justify-center gap-2">
                                             <div class="w-16 bg-zinc-200 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
-                                                <div class="bg-indigo-600 h-1.5 rounded-full" style="width: <?= min(100, $dept['compliance_pct']) ?>%;"></div>
+                                                <div class="bg-indigo-600 h-1.5 rounded-full" style="width: <?= min(100, $ePct) ?>%;"></div>
                                             </div>
-                                            <span class="font-bold text-[11px] text-zinc-900 dark:text-white"><?= $dept['eval_completed'] ?>/<?= $dept['headcount'] ?></span>
+                                            <span class="font-bold text-[11px] text-zinc-900 dark:text-white"><?= $evalCompleted ?>/<?= $headcount ?></span>
                                         </div>
                                     </td>
                                     <td class="py-3 px-3 text-center whitespace-nowrap font-black text-zinc-900 dark:text-white">
-                                        <?= $dept['average_rating'] > 0 ? number_format($dept['average_rating'], 2) : '——' ?>
+                                        <?= $avgRating > 0 ? number_format($avgRating, 2) : '——' ?>
                                     </td>
                                     <td class="py-3 px-3 text-center whitespace-nowrap">
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border <?= $dept['badge_class'] ?>">
-                                            <?= esc($dept['status_badge']) ?>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border <?= $badgeClass ?>">
+                                            <?= esc($statusBadge) ?>
                                         </span>
                                     </td>
                                     <td class="py-3 px-3.5 text-right whitespace-nowrap">
-                                        <?php
-                                        $matchedUnitId = '';
-                                        foreach ($allUnits as $u) {
-                                            if (trim(strtolower($u['name'])) === trim(strtolower($dept['name']))) {
-                                                $matchedUnitId = $u['id'];
-                                                break;
-                                            }
-                                        }
-                                        ?>
-                                        <?php if (!empty($matchedUnitId)): ?>
-                                            <button type="button" onclick="selectCollegeOption('<?= $matchedUnitId ?>', '<?= esc(addslashes($dept['name'])) ?>')"
-                                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all shadow-2xs cursor-pointer">
-                                                <span>View Department / Unit</span>
-                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                                            </button>
-                                        <?php else: ?>
-                                            <span class="text-[11px] text-zinc-400 italic">—</span>
-                                        <?php endif; ?>
+                                        <button type="button" onclick="filterMasterlistByUnit('<?= esc(addslashes($uName)) ?>', '<?= esc($uId) ?>')"
+                                                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold text-amber-500 hover:text-amber-400 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/10 transition-all cursor-pointer shadow-2xs group"
+                                                title="Filter Master List by <?= esc($uName) ?>">
+                                            <span>View in Master List</span>
+                                            <span class="transition-transform group-hover:translate-x-0.5">&rarr;</span>
+                                        </button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
+                        <tr id="compliance-empty-row" class="hidden">
+                            <td colspan="8" class="py-8 px-4 text-center text-zinc-400 italic">
+                                No departments or units match the selected hierarchy filter.
+                            </td>
+                        </tr>
                         <tr id="office-empty-row" class="hidden">
                             <td colspan="8" class="py-8 px-4 text-center text-zinc-400 italic">
                                 No departments &amp; units matching search query.
@@ -1136,17 +1199,21 @@
                         <?php else: ?>
                             <?php foreach ($cycleFolders as $idx => $f): ?>
                                 <?php $sType = $f['staff_type'] ?? \App\Enums\StaffType::fromBoolean($f['is_teaching'] ?? 0); ?>
-                                <div class="masterlist-row-card p-3 rounded-xl bg-surface border border-surface-border shadow-xs space-y-2 transition-all"
+                                <div class="masterlist-row-card p-3 rounded-xl bg-surface border border-surface-border shadow-xs space-y-2 transition-all cursor-pointer hover:border-zinc-400 dark:hover:border-zinc-600"
                                      data-name="<?= esc(strtolower($f['ratee_name'] ?? $f['full_name'] ?? '')) ?>"
                                      data-email="<?= esc(strtolower($f['ratee_email'] ?? $f['email'] ?? '')) ?>"
                                      data-dept="<?= esc(strtolower($f['department'] ?? '')) ?>"
                                      data-unit-id="<?= esc($f['unit_id'] ?? '') ?>"
+                                     data-ancestor-unit-ids="<?= esc(implode(',', $f['ancestor_unit_ids'] ?? [])) ?>"
+                                     data-dept-chain="<?= esc(strtolower(($f['department'] ?? '') . ' ' . implode(' ', $f['ancestor_unit_names'] ?? []))) ?>"
                                      data-pos="<?= esc(strtolower($f['position'] ?? '')) ?>"
                                      data-staff-type="<?= $sType->value ?>"
                                      data-emp-status="<?= esc(strtolower($f['employment_status'] ?? 'permanent')) ?>"
                                      data-lifecycle-stage="<?= esc($f['lifecycle_stage'] ?? 'target_phase') ?>"
                                      data-rating="<?= esc($f['rating_num'] ?? '') ?>"
-                                     data-adjectival="<?= esc(strtolower($f['adjectival_display'] ?? $f['adjectival_label'] ?? '')) ?>">
+                                     data-adjectival="<?= esc(strtolower($f['adjectival_display'] ?? $f['adjectival_label'] ?? '')) ?>"
+                                     onclick="openMasterlistDocument('<?= !empty($f['folder_id']) ? site_url('document/' . $f['folder_id'] . '?from=dashboard') : '' ?>', event)"
+                                     title="Click to view evaluation document">
                                     
                                     <div class="flex items-start justify-between gap-2">
                                         <div class="min-w-0">
@@ -1225,17 +1292,21 @@
                                 <?php else: ?>
                                     <?php foreach ($cycleFolders as $idx => $f): ?>
                                         <?php $sType = $f['staff_type'] ?? \App\Enums\StaffType::fromBoolean($f['is_teaching'] ?? 0); ?>
-                                        <tr class="masterlist-row hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors group"
+                                        <tr class="masterlist-row cursor-pointer hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 transition-colors group"
                                             data-name="<?= esc(strtolower($f['ratee_name'] ?? $f['full_name'] ?? '')) ?>"
                                             data-email="<?= esc(strtolower($f['ratee_email'] ?? $f['email'] ?? '')) ?>"
                                             data-dept="<?= esc(strtolower($f['department'] ?? '')) ?>"
                                             data-unit-id="<?= esc($f['unit_id'] ?? '') ?>"
+                                            data-ancestor-unit-ids="<?= esc(implode(',', $f['ancestor_unit_ids'] ?? [])) ?>"
+                                            data-dept-chain="<?= esc(strtolower(($f['department'] ?? '') . ' ' . implode(' ', $f['ancestor_unit_names'] ?? []))) ?>"
                                             data-pos="<?= esc(strtolower($f['position'] ?? '')) ?>"
                                             data-staff-type="<?= $sType->value ?>"
                                             data-emp-status="<?= esc(strtolower($f['employment_status'] ?? 'permanent')) ?>"
                                             data-lifecycle-stage="<?= esc($f['lifecycle_stage'] ?? 'target_phase') ?>"
                                             data-rating="<?= esc($f['rating_num'] ?? '') ?>"
-                                            data-adjectival="<?= esc(strtolower($f['adjectival_display'] ?? $f['adjectival_label'] ?? '')) ?>">
+                                            data-adjectival="<?= esc(strtolower($f['adjectival_display'] ?? $f['adjectival_label'] ?? '')) ?>"
+                                            onclick="openMasterlistDocument('<?= !empty($f['folder_id']) ? site_url('document/' . $f['folder_id'] . '?from=dashboard') : '' ?>', event)"
+                                            title="Click to view evaluation document">
                                             
                                             <!-- Index -->
                                             <td class="py-3 px-4 text-center font-bold text-text-muted w-12 masterlist-row-idx">
@@ -1441,6 +1512,14 @@
                                     <?php if (!empty($collegeDepartments)): ?>
                                         <?php foreach ($collegeDepartments as $cd): ?>
                                             <option value="<?= esc(strtolower($cd)) ?>"><?= esc($cd) ?></option>
+                                        <?php endforeach; ?>
+                                    <?php elseif (!empty($hierarchicalUnits)): ?>
+                                        <?php foreach ($hierarchicalUnits as $hu): ?>
+                                            <option value="<?= $hu['id'] ?>" 
+                                                    data-unit-id="<?= $hu['id'] ?>"
+                                                    data-name="<?= esc(strtolower($hu['name'])) ?>">
+                                                <?= str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', $hu['level']) ?><?= ($hu['level'] > 0 ? '↳ ' : '') ?><?= esc($hu['name']) ?>
+                                            </option>
                                         <?php endforeach; ?>
                                     <?php elseif (!empty($allUnits)): ?>
                                         <?php foreach ($allUnits as $u): ?>
@@ -1857,12 +1936,14 @@ function filterMasterlist(resetPage = true) {
                     ? searchInputDesk.value 
                     : (searchInputMobile ? searchInputMobile.value : '')).toLowerCase().trim();
     
-    const selectedDept = deptFilter ? deptFilter.value.trim().toLowerCase() : '';
+    const selectedDeptVal  = deptFilter ? deptFilter.value.trim().toLowerCase() : '';
+    const selectedDeptOpt  = (deptFilter && deptFilter.selectedIndex >= 0) ? deptFilter.options[deptFilter.selectedIndex] : null;
+    const selectedDeptName = selectedDeptOpt ? (selectedDeptOpt.getAttribute('data-name') || '').toLowerCase().trim() : '';
 
     // Active filters count badge calculation
     let activeFilterCount = 0;
     if (query) activeFilterCount++;
-    if (selectedDept) activeFilterCount++;
+    if (selectedDeptVal) activeFilterCount++;
     if (checkedTypes.length > 0) activeFilterCount += checkedTypes.length;
     if (checkedEmp.length > 0) activeFilterCount += checkedEmp.length;
     if (checkedPos.length > 0) activeFilterCount += checkedPos.length;
@@ -1894,8 +1975,10 @@ function filterMasterlist(resetPage = true) {
     desktopRows.forEach((row, idx) => {
         const name         = row.getAttribute('data-name') || '';
         const email        = row.getAttribute('data-email') || '';
-        const dept         = row.getAttribute('data-dept') || '';
-        const unitId       = row.getAttribute('data-unit-id') || '';
+        const dept         = (row.getAttribute('data-dept') || '').toLowerCase();
+        const unitId       = (row.getAttribute('data-unit-id') || '').trim();
+        const ancestorIds  = (row.getAttribute('data-ancestor-unit-ids') || '').split(',').map(s => s.trim()).filter(Boolean);
+        const deptChain    = (row.getAttribute('data-dept-chain') || '').toLowerCase();
         const pos          = row.getAttribute('data-pos') || '';
         const staffType    = (row.getAttribute('data-staff-type') || '').toLowerCase();
         const rowEmpStatus = (row.getAttribute('data-emp-status') || '').toLowerCase();
@@ -1906,8 +1989,13 @@ function filterMasterlist(resetPage = true) {
         // 1. Search Query
         const matchesSearch = !query || name.includes(query) || email.includes(query) || dept.includes(query) || pos.includes(query) || rating.includes(query) || adjectival.includes(query);
 
-        // 2. Department / Sub-Department
-        const matchesDept = !selectedDept || dept.includes(selectedDept) || unitId === selectedDept;
+        // 2. Department / Sub-Department (Hierarchical Tree Match)
+        let matchesDept = true;
+        if (selectedDeptVal !== '') {
+            const isIdMatch   = (unitId !== '' && unitId === selectedDeptVal) || ancestorIds.includes(selectedDeptVal);
+            const isNameMatch = dept.includes(selectedDeptVal) || (selectedDeptName && dept.includes(selectedDeptName)) || deptChain.includes(selectedDeptVal) || (selectedDeptName && deptChain.includes(selectedDeptName));
+            matchesDept = isIdMatch || isNameMatch;
+        }
 
         // 3. Staff Type (teaching / non_teaching)
         const matchesType = checkedTypes.length === 0 || checkedTypes.includes(staffType);
@@ -2152,4 +2240,111 @@ function toggleStageAccordion(stageNum) {
         if (chevron) chevron.classList.remove('rotate-180');
     }
 }
+
+// --- Masterlist Quick Shortcut from Compliance Matrix & Rows ---
+function filterMasterlistByUnit(deptName, unitId) {
+    if (typeof switchDashboardView === 'function') {
+        switchDashboardView('masterlist');
+    }
+
+    const deptSelect = document.getElementById('masterlist-filter-dept');
+    if (deptSelect) {
+        let matchedIndex = -1;
+        for (let i = 0; i < deptSelect.options.length; i++) {
+            const opt = deptSelect.options[i];
+            const optVal = opt.value;
+            const optUnitId = opt.getAttribute('data-unit-id') || optVal;
+            const optName = (opt.getAttribute('data-name') || opt.text || '').toLowerCase().trim();
+
+            if (unitId && String(optUnitId) === String(unitId)) {
+                matchedIndex = i;
+                break;
+            }
+            if (deptName && (optName === deptName.toLowerCase().trim() || optName.includes(deptName.toLowerCase().trim()))) {
+                matchedIndex = i;
+                break;
+            }
+        }
+
+        if (matchedIndex >= 0) {
+            deptSelect.selectedIndex = matchedIndex;
+        } else if (unitId) {
+            deptSelect.value = String(unitId);
+        }
+    }
+
+    // Reset free-text search fields so unit filtering is prominent
+    const searchDesk = document.getElementById('masterlist-search-sidebar');
+    if (searchDesk) searchDesk.value = '';
+    const searchMob = document.getElementById('masterlist-search-mobile');
+    if (searchMob) searchMob.value = '';
+
+    filterMasterlist(true);
+
+    const mlView = document.getElementById('dashboard-view-masterlist');
+    if (mlView) {
+        mlView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+window.filterMasterlistByUnit = filterMasterlistByUnit;
+
+function viewSelectedUnitInMasterlist() {
+    const sel = document.getElementById('compliance-hierarchy-select');
+    if (!sel) return;
+    const opt = sel.options[sel.selectedIndex];
+    if (!opt) return;
+    const unitId = opt.value;
+    const unitName = opt.getAttribute('data-name') || '';
+    if (!unitId || unitId === 'all') {
+        const deptSelect = document.getElementById('masterlist-filter-dept');
+        if (deptSelect) deptSelect.value = '';
+        if (typeof switchDashboardView === 'function') {
+            switchDashboardView('masterlist');
+        }
+        filterMasterlist(true);
+    } else {
+        filterMasterlistByUnit(unitName, unitId);
+    }
+}
+window.viewSelectedUnitInMasterlist = viewSelectedUnitInMasterlist;
+
+function onHierarchyDropdownChange(sel) {
+    const selectedVal = sel.value;
+    const rows = document.querySelectorAll('.compliance-unit-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        if (!selectedVal || selectedVal === 'all') {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            const rId = row.getAttribute('data-unit-id');
+            const rAncestors = (row.getAttribute('data-ancestor-ids') || '').split(',').map(s => s.trim()).filter(Boolean);
+            
+            // Show the selected unit and all its descendant units in the tree
+            if (rId === selectedVal || rAncestors.includes(selectedVal)) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    });
+
+    const emptyRow = document.getElementById('compliance-empty-row');
+    if (emptyRow) {
+        emptyRow.classList.toggle('hidden', visibleCount > 0);
+    }
+}
+window.onHierarchyDropdownChange = onHierarchyDropdownChange;
+
+function openMasterlistDocument(docUrl, event) {
+    if (!docUrl) return;
+    // Don't navigate if user clicked an interactive child element (button, link, input, select, label)
+    if (event && event.target && event.target.closest('button, a, input, select, label')) {
+        return;
+    }
+    window.location.href = docUrl;
+}
+window.openMasterlistDocument = openMasterlistDocument;
 </script>

@@ -599,12 +599,25 @@ class Document extends BaseController
         $isDocOwner = ((int)$docOwnerId === (int)$userId);
         $entrySource = null;
 
-        if ($fromParam === 'ratings') {
+        if ($fromParam === 'dashboard') {
+            $entrySource = 'dashboard';
+            session()->set('doc_entry_source_' . $docId, 'dashboard');
+            if (!empty($referer) && str_contains($referer, '/dashboard')) {
+                session()->set('doc_dashboard_referer', $referer);
+            }
+        } elseif ($fromParam === 'ratings') {
             $entrySource = 'ratings';
             session()->set('doc_entry_source_' . $docId, 'ratings');
+            if (!empty($referer) && str_contains($referer, '/ratings')) {
+                session()->set('doc_ratings_referer', $referer);
+            }
         } elseif ($fromParam === 'folders') {
             $entrySource = 'folders';
             session()->set('doc_entry_source_' . $docId, 'folders');
+        } elseif (!empty($referer) && str_contains($referer, '/dashboard')) {
+            $entrySource = 'dashboard';
+            session()->set('doc_entry_source_' . $docId, 'dashboard');
+            session()->set('doc_dashboard_referer', $referer);
         } elseif (!empty($referer) && str_contains($referer, '/ratings')) {
             $entrySource = 'ratings';
             session()->set('doc_entry_source_' . $docId, 'ratings');
@@ -620,7 +633,10 @@ class Document extends BaseController
             }
         }
 
-        if ($entrySource === 'ratings') {
+        if ($entrySource === 'dashboard') {
+            $dashReferer = session()->get('doc_dashboard_referer');
+            $homeUrl = (!empty($dashReferer) && str_contains($dashReferer, '/dashboard')) ? $dashReferer : site_url('dashboard');
+        } elseif ($entrySource === 'ratings') {
             $ratingsReferer = session()->get('doc_ratings_referer');
             $homeUrl = (!empty($ratingsReferer) && str_contains($ratingsReferer, '/ratings')) ? $ratingsReferer : site_url('ratings');
         } else {

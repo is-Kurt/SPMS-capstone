@@ -383,7 +383,7 @@ class Dashboard extends BaseController
         $targetComplianceRate = $totalPersonnel > 0 ? round(($targetApprovedCount / $totalPersonnel) * 100, 1) : 0;
         $evalCompletionRate   = $totalPersonnel > 0 ? round(($evalCompletedCount / $totalPersonnel) * 100, 1) : 0;
 
-        // 5. College & Department Leaderboard
+        // 5. College & Department Leaderboard and Hierarchical Unit Structure
         $deptLeaderboard = [];
         foreach ($cycleFolders as $f) {
             $dept = $f['department'];
@@ -447,6 +447,205 @@ class Dashboard extends BaseController
             }
             return $b['compliance_pct'] <=> $a['compliance_pct'];
         });
+
+        // 5.1 Build database-driven hierarchical organizational units & recursive compliance ratios
+        $allUnitsList = $db->table('units')
+            ->select('id, name, parent_id')
+            ->orderBy('id', 'ASC')
+            ->get()->getResultArray();
+
+        $unitsById = [];
+        $childrenByParent = [];
+        foreach ($allUnitsList as $u) {
+            $uId = (int)$u['id'];
+            $pId = !empty($u['parent_id']) ? (int)$u['parent_id'] : 0;
+            $unitsById[$uId] = [
+                'id'        => $uId,
+                'name'      => $u['name'],
+                'parent_id' => $pId,
+            ];
+            $childrenByParent[$pId][] = $uId;
+        }
+
+        // Descendant IDs helper (returns self and all subtree unit IDs)
+        $getDescendantIds = function (int $uId) use (&$childrenByParent, &$getDescendantIds): array {
+            $res = [$uId];
+            if (!empty($childrenByParent[$uId])) {
+                foreach ($childrenByParent[$uId] as $cId) {
+                    $res = array_merge($res, $getDescendantIds($cId));
+                }
+            }
+            return array_unique($res);
+        };
+
+        // Ancestor IDs helper (returns parent, grandparent, etc. up to root)
+        $getAncestorIds = function (int $uId) use (&$unitsById): array {
+            $ancestors = [];
+            $curr = $unitsById[$uId] ?? null;
+            while ($curr && !empty($curr['parent_id']) && isset($unitsById[$curr['parent_id']])) {
+                $ancestors[] = (int)$curr['parent_id'];
+                $curr = $unitsById[$curr['parent_id']];
+            }
+            return $ancestors;
+        };
+
+        // Enrich cycle folders with unit ancestors for hierarchical masterlist filtering
+        $foldersByUnit = [];
+        foreach ($cycleFolders as &$cf) {
+            $uId = !empty($cf['unit_id']) ? (int)$cf['unit_id'] : 0;
+            $ancIds = $uId > 0 ? $getAncestorIds($uId) : [];
+            $ancNames = [];
+            foreach ($ancIds as $aId) {
+                if (isset($unitsById[$aId])) {
+                    $ancNames[] = $unitsById[$aId]['name'];
+                }
+            }
+            $cf['ancestor_unit_ids']   = $ancIds;
+            $cf['ancestor_unit_names'] = $ancNames;
+            $foldersByUnit[$uId][] = $cf;
+        }
+        unset($cf);
+
+        // Preorder DFS traversal to construct hierarchical units tree with accurate recursive metrics
+        $hierarchicalUnits = [];
+        $traverseTree = function (int $parentId, int $level) use (
+            &$traverseTree, &$childrenByParent, &$unitsById, &$hierarchicalUnits,
+            &$foldersByUnit, &$getDescendantIds, &$getAncestorIds
+        ) {
+            if (empty($childrenByParent[$parentId])) {
+                return;
+            }
+
+            $childIds = $childrenByParent[$parentId];
+            usort($childIds, function ($a, $b) use (&$unitsById) {
+                return strcmp($unitsById[$a]['name'] ?? '', $unitsById[$b]['name'] ?? '');
+            });
+
+            foreach ($childIds as $cId) {
+                $unit = $unitsById[$cId];
+                $subtreeIds = $getDescendantIds($cId);
+                $ancestorIds = $getAncestorIds($cId);
+
+                $subtreeFolders = [];
+                foreach ($subtreeIds as $subId) {
+                    if (!empty($foldersByUnit[$subId])) {
+                        foreach ($foldersByUnit[$subId] as $sf) {
+                            $subtreeFolders[] = $sf;
+                        }
+                    }
+                }
+
+                $directFolders   = $foldersByUnit[$cId] ?? [];
+                $headcount       = count($subtreeFolders);
+                $directHeadcount = count($directFolders);
+
+                // Only include units that have personnel either directly or in their descendants
+                if ($headcount === 0) {
+                    continue;
+                }
+
+                $targetApproved = 0;
+                $evalCompleted  = 0;
+                $ratings        = [];
+
+                foreach ($subtreeFolders as $sf) {
+                    $cStatus = FolderStatus::canonical($sf['folder_status'] ?? '');
+                    if ($cStatus->isEvaluationPhase() || $cStatus === FolderStatus::TARGET_APPROVED) {
+                        $targetApproved++;
+                    }
+                    if ($cStatus === FolderStatus::EVAL_APPROVED) {
+                        $evalCompleted++;
+                    }
+                    if ($sf['rating_num'] !== null && (float)$sf['rating_num'] > 0) {
+                        $ratings[] = (float)$sf['rating_num'];
+                    }
+                }
+
+                $compliancePct = $headcount > 0 ? round(($evalCompleted / $headcount) * 100) : 0;
+                $averageRating = !empty($ratings) ? round(array_sum($ratings) / count($ratings), 2) : 0;
+
+                if ($compliancePct >= 100) {
+                    $statusBadge = '100% Compliant';
+                    $badgeClass  = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-[#102a1e] dark:text-emerald-400 dark:border-[#1b4330]';
+                } elseif ($compliancePct >= 50) {
+                    $statusBadge = 'On Track';
+                    $badgeClass  = 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-info-500/10 dark:text-blue-400 dark:border-info-500/20';
+                } else {
+                    $statusBadge = 'Action Needed';
+                    $badgeClass  = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-danger-500/10 dark:text-rose-400 dark:border-danger-500/20';
+                }
+
+                $hierarchicalUnits[] = [
+                    'id'               => $cId,
+                    'name'             => $unit['name'],
+                    'parent_id'        => $unit['parent_id'],
+                    'level'            => $level,
+                    'ancestor_ids'     => $ancestorIds,
+                    'descendant_ids'   => $subtreeIds,
+                    'headcount'        => $headcount,
+                    'direct_headcount' => $directHeadcount,
+                    'target_approved'  => $targetApproved,
+                    'revisions_needed' => 0,
+                    'eval_completed'   => $evalCompleted,
+                    'compliance_pct'   => $compliancePct,
+                    'average_rating'   => $averageRating,
+                    'status_badge'     => $statusBadge,
+                    'badge_class'      => $badgeClass,
+                    'ratio'            => $evalCompleted . '/' . $headcount,
+                    'target_ratio'     => $targetApproved . '/' . $headcount,
+                ];
+
+                // Recurse down children
+                $traverseTree($cId, $level + 1);
+            }
+        };
+
+        $traverseTree(0, 0);
+
+        // Safety pass: Catch any unit with personnel not under tree root 0
+        $visitedIds = array_column($hierarchicalUnits, 'id');
+        foreach ($foldersByUnit as $uId => $uFolders) {
+            if ($uId > 0 && !in_array($uId, $visitedIds, true)) {
+                $uName = $unitsById[$uId]['name'] ?? ($uFolders[0]['department'] ?? 'Unit #' . $uId);
+                $headcount = count($uFolders);
+                $targetApproved = 0;
+                $evalCompleted  = 0;
+                $ratings        = [];
+                foreach ($uFolders as $sf) {
+                    $cStatus = FolderStatus::canonical($sf['folder_status'] ?? '');
+                    if ($cStatus->isEvaluationPhase() || $cStatus === FolderStatus::TARGET_APPROVED) {
+                        $targetApproved++;
+                    }
+                    if ($cStatus === FolderStatus::EVAL_APPROVED) {
+                        $evalCompleted++;
+                    }
+                    if ($sf['rating_num'] !== null && (float)$sf['rating_num'] > 0) {
+                        $ratings[] = (float)$sf['rating_num'];
+                    }
+                }
+                $compliancePct = $headcount > 0 ? round(($evalCompleted / $headcount) * 100) : 0;
+                $averageRating = !empty($ratings) ? round(array_sum($ratings) / count($ratings), 2) : 0;
+                $hierarchicalUnits[] = [
+                    'id'               => $uId,
+                    'name'             => $uName,
+                    'parent_id'        => 0,
+                    'level'            => 0,
+                    'ancestor_ids'     => [],
+                    'descendant_ids'   => [$uId],
+                    'headcount'        => $headcount,
+                    'direct_headcount' => $headcount,
+                    'target_approved'  => $targetApproved,
+                    'revisions_needed' => 0,
+                    'eval_completed'   => $evalCompleted,
+                    'compliance_pct'   => $compliancePct,
+                    'average_rating'   => $averageRating,
+                    'status_badge'     => ($compliancePct >= 100) ? '100% Compliant' : (($compliancePct >= 50) ? 'On Track' : 'Action Needed'),
+                    'badge_class'      => ($compliancePct >= 100) ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-[#102a1e] dark:text-emerald-400 dark:border-[#1b4330]' : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-danger-500/10 dark:text-rose-400 dark:border-danger-500/20',
+                    'ratio'            => $evalCompleted . '/' . $headcount,
+                    'target_ratio'     => $targetApproved . '/' . $headcount,
+                ];
+            }
+        }
 
         // Total MOV Attachments in this cycle (Stage 2: Performance Monitoring & Coaching evidence)
         $totalMovCount = 0;
@@ -529,6 +728,7 @@ class Dashboard extends BaseController
             'evalCompletionRate'   => $evalCompletionRate,
             'cscDistribution'      => $cscDistribution,
             'deptLeaderboard'      => $deptLeaderboard,
+            'hierarchicalUnits'    => $hierarchicalUnits,
             'topPerformers'        => $topPerformers,
             'empStatusCounts'      => $empStatusCounts,
             'stageCounts'          => $stageCounts,
