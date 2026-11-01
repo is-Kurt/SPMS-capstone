@@ -316,19 +316,43 @@
         </div>
 
         <!-- 2. PHASE SUBMISSION BREAKDOWN (TARGETS VS ACCOMPLISHMENTS) -->
+        <?php
+            $p1 = $phaseSchedule['phase1'] ?? ['is_ongoing' => false, 'timeframe' => 'Schedule Not Set', 'label' => 'Upcoming', 'status' => 'upcoming'];
+            $p2 = $phaseSchedule['phase2'] ?? ['is_ongoing' => false, 'timeframe' => 'Schedule Not Set', 'label' => 'Upcoming', 'status' => 'upcoming'];
+        ?>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             
             <!-- Phase 1 Card -->
-            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
+            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 <?= !empty($p1['is_ongoing']) ? 'border-indigo-500/80 dark:border-indigo-500 ring-2 ring-indigo-500/20 shadow-md' : 'border-zinc-200 dark:border-zinc-800 shadow-xs' ?>">
                 <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-4">
-                    <div class="flex items-center gap-2.5">
-                        <span class="w-6 h-6 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 flex items-center justify-center text-xs font-black">1</span>
-                        <div>
-                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Target Commitment Phase</h3>
-                            <span class="text-xs text-zinc-400">Submission & Approval status</span>
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="w-6 h-6 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 flex items-center justify-center text-xs font-black shrink-0">1</span>
+                        <div class="min-w-0">
+                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white truncate">Target Commitment Phase</h3>
+                            <div class="flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                                <svg class="w-3.5 h-3.5 shrink-0 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span class="truncate"><?= esc($p1['timeframe']) ?></span>
+                            </div>
                         </div>
                     </div>
-
+                    <div class="shrink-0 ml-2">
+                        <?php if (!empty($p1['is_ongoing'])): ?>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shadow-2xs">
+                                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                                Ongoing
+                            </span>
+                        <?php elseif ($p1['status'] === 'closed'): ?>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200/80 dark:border-zinc-700/80">
+                                Closed
+                            </span>
+                        <?php else: ?>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-400 dark:bg-zinc-800/80 dark:text-zinc-500 border border-zinc-200/60 dark:border-zinc-700/60">
+                                <?= esc($p1['label']) ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 <div class="grid grid-cols-3 gap-2.5 text-center">
                     <div class="p-3 rounded-xl bg-emerald-50 text-emerald-800 dark:bg-[#102a1e] dark:border-[#1b4330] dark:text-emerald-400 border border-emerald-200">
@@ -347,16 +371,45 @@
             </div>
 
             <!-- Phase 2 Card -->
-            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
+            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 <?= !empty($p2['is_ongoing']) ? ($p2['status'] === 'calibration' ? 'border-purple-500/80 dark:border-purple-500 ring-2 ring-purple-500/20 shadow-md' : 'border-emerald-500/80 dark:border-emerald-500 ring-2 ring-emerald-500/20 shadow-md') : 'border-zinc-200 dark:border-zinc-800 shadow-xs' ?>">
                 <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-4">
-                    <div class="flex items-center gap-2.5">
-                        <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-xs font-black">2</span>
-                        <div>
-                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Accomplishment Report Phase</h3>
-                            <span class="text-xs text-zinc-400">Evaluation & Grading status</span>
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-xs font-black shrink-0">2</span>
+                        <div class="min-w-0">
+                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white truncate">Accomplishment Report Phase</h3>
+                            <div class="flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                                <svg class="w-3.5 h-3.5 shrink-0 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span class="truncate"><?= esc($p2['timeframe']) ?></span>
+                            </div>
                         </div>
                     </div>
-
+                    <div class="shrink-0 ml-2">
+                        <?php if ($p2['status'] === 'ongoing'): ?>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-[#102a1e] dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-2xs">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                Ongoing
+                            </span>
+                        <?php elseif ($p2['status'] === 'calibration'): ?>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800 shadow-2xs">
+                                <span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>
+                                Calibration
+                            </span>
+                        <?php elseif ($p2['status'] === 'monitoring'): ?>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                                Monitoring
+                            </span>
+                        <?php elseif ($p2['status'] === 'closed'): ?>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200/80 dark:border-zinc-700/80">
+                                Closed
+                            </span>
+                        <?php else: ?>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-400 dark:bg-zinc-800/80 dark:text-zinc-500 border border-zinc-200/60 dark:border-zinc-700/60">
+                                <?= esc($p2['label']) ?>
+                            </span>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 <div class="grid grid-cols-3 gap-2.5 text-center">
                     <div class="p-3 rounded-xl bg-emerald-50 text-emerald-800 dark:bg-[#102a1e] dark:border-[#1b4330] dark:text-emerald-400 border border-emerald-200">
@@ -595,14 +648,35 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             
             <!-- Phase 1 Card -->
-            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
+            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 <?= !empty($p1['is_ongoing']) ? 'border-indigo-500/80 dark:border-indigo-500 ring-2 ring-indigo-500/20 shadow-md' : 'border-zinc-200 dark:border-zinc-800 shadow-xs' ?>">
                 <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-4">
-                    <div class="flex items-center gap-2.5">
-                        <span class="w-6 h-6 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 flex items-center justify-center text-xs font-black">1</span>
-                        <div>
-                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Target Commitment Phase</h3>
-                            <span class="text-xs text-zinc-400">Submission & Approval status</span>
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="w-6 h-6 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 flex items-center justify-center text-xs font-black shrink-0">1</span>
+                        <div class="min-w-0">
+                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white truncate">Target Commitment Phase</h3>
+                            <div class="flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                                <svg class="w-3.5 h-3.5 shrink-0 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span class="truncate"><?= esc($p1['timeframe']) ?></span>
+                            </div>
                         </div>
+                    </div>
+                    <div class="shrink-0 ml-2">
+                        <?php if (!empty($p1['is_ongoing'])): ?>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shadow-2xs">
+                                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                                Ongoing
+                            </span>
+                        <?php elseif ($p1['status'] === 'closed'): ?>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200/80 dark:border-zinc-700/80">
+                                Closed
+                            </span>
+                        <?php else: ?>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-400 dark:bg-zinc-800/80 dark:text-zinc-500 border border-zinc-200/60 dark:border-zinc-700/60">
+                                <?= esc($p1['label']) ?>
+                            </span>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <div class="grid grid-cols-3 gap-2.5 text-center">
@@ -622,14 +696,44 @@
             </div>
 
             <!-- Phase 2 Card -->
-            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
+            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 <?= !empty($p2['is_ongoing']) ? ($p2['status'] === 'calibration' ? 'border-purple-500/80 dark:border-purple-500 ring-2 ring-purple-500/20 shadow-md' : 'border-emerald-500/80 dark:border-emerald-500 ring-2 ring-emerald-500/20 shadow-md') : 'border-zinc-200 dark:border-zinc-800 shadow-xs' ?>">
                 <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-4">
-                    <div class="flex items-center gap-2.5">
-                        <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-xs font-black">2</span>
-                        <div>
-                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Accomplishment Report Phase</h3>
-                            <span class="text-xs text-zinc-400">Evaluation & Grading status</span>
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-xs font-black shrink-0">2</span>
+                        <div class="min-w-0">
+                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white truncate">Accomplishment Report Phase</h3>
+                            <div class="flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                                <svg class="w-3.5 h-3.5 shrink-0 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span class="truncate"><?= esc($p2['timeframe']) ?></span>
+                            </div>
                         </div>
+                    </div>
+                    <div class="shrink-0 ml-2">
+                        <?php if ($p2['status'] === 'ongoing'): ?>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-[#102a1e] dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-2xs">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                Ongoing
+                            </span>
+                        <?php elseif ($p2['status'] === 'calibration'): ?>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800 shadow-2xs">
+                                <span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>
+                                Calibration
+                            </span>
+                        <?php elseif ($p2['status'] === 'monitoring'): ?>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                                Monitoring
+                            </span>
+                        <?php elseif ($p2['status'] === 'closed'): ?>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200/80 dark:border-zinc-700/80">
+                                Closed
+                            </span>
+                        <?php else: ?>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-400 dark:bg-zinc-800/80 dark:text-zinc-500 border border-zinc-200/60 dark:border-zinc-700/60">
+                                <?= esc($p2['label']) ?>
+                            </span>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <div class="grid grid-cols-3 gap-2.5 text-center">

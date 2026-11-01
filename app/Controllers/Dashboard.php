@@ -66,6 +66,123 @@ class Dashboard extends BaseController
             $activeCycle = $rootFolders[0];
         }
 
+        // 1.1 Load deadlines & schedule for active cycle
+        $phaseSchedule = [
+            'phase1' => [
+                'timeframe'  => 'Schedule Not Set',
+                'status'     => 'upcoming',
+                'is_ongoing' => false,
+                'label'      => 'Upcoming',
+            ],
+            'phase2' => [
+                'timeframe'  => 'Schedule Not Set',
+                'status'     => 'upcoming',
+                'is_ongoing' => false,
+                'label'      => 'Upcoming',
+            ],
+        ];
+
+        if ($activeCycle && !empty($activeCycle['id'])) {
+            $deadlineModel = new \App\Models\CycleDeadlineModel();
+            $cycleDates = $deadlineModel->getCycleDatesFlat((string)$activeCycle['id']);
+            $activeCycle = array_merge($activeCycle, $cycleDates);
+
+            $tStartDate = $activeCycle['ipcr_target_start'] ?? $activeCycle['opcr_target_start'] ?? $activeCycle['dpcr_target_start'] ?? $activeCycle['iperf_target_start'] ?? null;
+            $tEndDate   = $activeCycle['ipcr_target_end']   ?? $activeCycle['opcr_target_end']   ?? $activeCycle['dpcr_target_end']   ?? $activeCycle['iperf_target_end']   ?? null;
+            $eStartDate = $activeCycle['ipcr_eval_start']   ?? $activeCycle['opcr_eval_start']   ?? $activeCycle['dpcr_eval_start']   ?? $activeCycle['iperf_eval_start']   ?? null;
+            $eEndDate   = $activeCycle['ipcr_eval_end']     ?? $activeCycle['opcr_eval_end']     ?? $activeCycle['dpcr_eval_end']     ?? $activeCycle['iperf_eval_end']     ?? null;
+
+            $formatTimeframe = static function (?string $start, ?string $end): string {
+                if (empty($start) && empty($end)) {
+                    return 'Schedule Not Set';
+                }
+                if (!empty($start) && !empty($end)) {
+                    $tsStart = strtotime($start);
+                    $tsEnd   = strtotime($end);
+                    if ($tsStart && $tsEnd) {
+                        if (date('Y-m', $tsStart) === date('Y-m', $tsEnd)) {
+                            return date('M d', $tsStart) . ' – ' . date('d, Y', $tsEnd);
+                        }
+                        if (date('Y', $tsStart) === date('Y', $tsEnd)) {
+                            return date('M d', $tsStart) . ' – ' . date('M d, Y', $tsEnd);
+                        }
+                        return date('M d, Y', $tsStart) . ' – ' . date('M d, Y', $tsEnd);
+                    }
+                }
+                if (!empty($end)) {
+                    return 'Until ' . date('M d, Y', strtotime($end));
+                }
+                return 'From ' . date('M d, Y', strtotime($start));
+            };
+
+            $nowStr = date('Y-m-d H:i:s');
+            $isArchived = !empty($activeCycle['deleted_at']) || ($activeCycle['status'] ?? '') === 'archived';
+
+            // Phase 1 (Target Commitment Phase) Status
+            $p1Timeframe = $formatTimeframe($tStartDate, $tEndDate);
+            $p1Status    = 'upcoming';
+            $p1IsOngoing = false;
+            $p1Label     = 'Upcoming';
+
+            if ($isArchived) {
+                $p1Status = 'closed';
+                $p1Label  = 'Closed';
+            } elseif (!empty($tEndDate) && $nowStr > $tEndDate) {
+                $p1Status = 'closed';
+                $p1Label  = 'Closed';
+            } elseif (!empty($tStartDate) && $nowStr >= $tStartDate) {
+                $p1Status    = 'ongoing';
+                $p1IsOngoing = true;
+                $p1Label     = 'Ongoing';
+            } elseif (empty($tStartDate) && !empty($tEndDate) && $nowStr <= $tEndDate) {
+                $p1Status    = 'ongoing';
+                $p1IsOngoing = true;
+                $p1Label     = 'Ongoing';
+            }
+
+            // Phase 2 (Accomplishment Report Phase) Status
+            $p2Timeframe = $formatTimeframe($eStartDate, $eEndDate);
+            $p2Status    = 'upcoming';
+            $p2IsOngoing = false;
+            $p2Label     = 'Upcoming';
+
+            if ($isArchived) {
+                $p2Status = 'closed';
+                $p2Label  = 'Closed';
+            } elseif (!empty($eEndDate) && $nowStr > $eEndDate) {
+                $p2Status    = 'calibration';
+                $p2IsOngoing = true; // Actively calibrating final ratings
+                $p2Label     = 'Calibration';
+            } elseif (!empty($eStartDate) && $nowStr >= $eStartDate) {
+                $p2Status    = 'ongoing';
+                $p2IsOngoing = true;
+                $p2Label     = 'Ongoing';
+            } elseif (!empty($tEndDate) && $nowStr > $tEndDate) {
+                $p2Status    = 'monitoring';
+                $p2IsOngoing = false;
+                $p2Label     = 'Monitoring';
+            }
+
+            $phaseSchedule = [
+                'phase1' => [
+                    'timeframe'  => $p1Timeframe,
+                    'status'     => $p1Status,
+                    'is_ongoing' => $p1IsOngoing,
+                    'label'      => $p1Label,
+                    'start'      => $tStartDate,
+                    'end'        => $tEndDate,
+                ],
+                'phase2' => [
+                    'timeframe'  => $p2Timeframe,
+                    'status'     => $p2Status,
+                    'is_ongoing' => $p2IsOngoing,
+                    'label'      => $p2Label,
+                    'start'      => $eStartDate,
+                    'end'        => $eEndDate,
+                ],
+            ];
+        }
+
         // College / Department Filtering for Oversight Roles
         $selectedUnitId = $this->request->getGet('unit_id');
         $selectedUnitId = (!empty($selectedUnitId) && is_numeric($selectedUnitId)) ? (int)$selectedUnitId : null;
@@ -398,6 +515,7 @@ class Dashboard extends BaseController
             'sysRole'              => $sysRole,
             'rootFolders'          => $rootFolders,
             'activeCycle'          => $activeCycle,
+            'phaseSchedule'        => $phaseSchedule,
             'selectedUnitId'       => $selectedUnitId,
             'selectedUnitName'     => $selectedUnitName,
             'allUnits'             => $allUnits,
