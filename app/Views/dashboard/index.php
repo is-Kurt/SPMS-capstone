@@ -1084,63 +1084,6 @@
                                         </button>
                                     </td>
                                 </tr>
-
-                                <?php if ($directHeadcount > 0 && $directHeadcount !== $headcount): ?>
-                                    <?php
-                                        $dirTApp = $hu['direct_target_approved'] ?? 0;
-                                        $dirEComp = $hu['direct_eval_completed'] ?? 0;
-                                        $dirAvgR = $hu['direct_average_rating'] ?? 0;
-                                        $dtPct = $directHeadcount > 0 ? round(($dirTApp / $directHeadcount) * 100) : 0;
-                                        $dePct = $directHeadcount > 0 ? round(($dirEComp / $directHeadcount) * 100) : 0;
-                                    ?>
-                                    <tr class="compliance-direct-staff-row hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
-                                        data-parent-scope="<?= esc($uId) ?>"
-                                        data-is-direct-staff="1"
-                                        data-unit-id="<?= esc($uId) ?>"
-                                        data-name="<?= esc(strtolower($uName)) ?> direct"
-                                        style="display: none;">
-                                        <td class="py-3 px-3.5 whitespace-nowrap" style="padding-left: <?= (($level + 1) * 1.75 + 0.875) ?>rem;">
-                                            <div class="flex items-center gap-2">
-                                                <span class="w-6 shrink-0"></span>
-                                                <span class="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
-                                                <span class="font-medium text-zinc-700 dark:text-zinc-300 truncate block max-w-[280px]">
-                                                    <?= esc($uName) ?> (Direct Staff)
-                                                </span>
-                                                <span class="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0"><?= $level === 0 ? 'Executive Office' : "Dean's Office" ?></span>
-                                            </div>
-                                        </td>
-                                        <td class="py-3 px-3 text-center font-bold text-zinc-900 dark:text-white">
-                                            <?= $directHeadcount ?>
-                                        </td>
-                                        <td class="py-3 px-3 text-center whitespace-nowrap">
-                                            <div class="flex items-center justify-center gap-2">
-                                                <div class="w-16 bg-zinc-200 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
-                                                    <div class="bg-emerald-500 h-1.5 rounded-full" style="width: <?= min(100, $dtPct) ?>%;"></div>
-                                                </div>
-                                                <span class="font-bold text-[11px] text-zinc-900 dark:text-white"><?= $dirTApp ?>/<?= $directHeadcount ?></span>
-                                            </div>
-                                        </td>
-                                        <td class="py-3 px-3 text-center whitespace-nowrap">
-                                            <div class="flex items-center justify-center gap-2">
-                                                <div class="w-16 bg-zinc-200 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
-                                                    <div class="bg-indigo-600 dark:bg-indigo-500 h-1.5 rounded-full" style="width: <?= min(100, $dePct) ?>%;"></div>
-                                                </div>
-                                                <span class="font-bold text-[11px] text-zinc-900 dark:text-white"><?= $dirEComp ?>/<?= $directHeadcount ?></span>
-                                            </div>
-                                        </td>
-                                        <td class="py-3 px-3 text-center whitespace-nowrap font-black text-zinc-900 dark:text-white">
-                                            <?= $dirAvgR > 0 ? number_format($dirAvgR, 2) : '——' ?>
-                                        </td>
-                                        <td class="py-3 px-3.5 text-right whitespace-nowrap">
-                                            <button type="button" onclick="event.stopPropagation(); filterMasterlistByUnit('<?= esc(addslashes($uName)) ?>', '<?= esc($uId) ?>')"
-                                                    class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold text-amber-500 hover:text-amber-400 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/10 transition-all cursor-pointer shadow-2xs group"
-                                                    title="Filter Master List by <?= esc($uName) ?>">
-                                                <span>View in Master List</span>
-                                                <span class="transition-transform group-hover:translate-x-0.5">&rarr;</span>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                <?php endif; ?>
                             <?php endforeach; ?>
                         <?php endif; ?>
                         <tr id="compliance-empty-row" class="hidden">
@@ -1607,6 +1550,10 @@ window.SPMS_MASTERLIST_UNITS = <?= json_encode(array_map(fn($u) => [
     'parent_id' => !empty($u['parent_id']) ? (int)$u['parent_id'] : 0
 ], $allUnitsList ?? $allUnits ?? [])) ?>;
 
+let currentMasterlistLifecycle = 'all';
+let masterlistCurrentPage = 1;
+let masterlistPerPage = (typeof window !== 'undefined' && window.innerWidth < 768) ? 6 : 50;
+
 function escapeHtml(str) {
     if (str === null || str === undefined) return '';
     return String(str)
@@ -1635,8 +1582,12 @@ function initMasterlistUnitTree() {
         }
     });
 }
+initMasterlistUnitTree();
 
 function getDescendantUnitIds(rootId) {
+    if (Object.keys(masterlistUnitChildren).length === 0) {
+        initMasterlistUnitTree();
+    }
     const rId = String(rootId);
     const result = new Set([rId]);
     const stack = [rId];
@@ -1663,14 +1614,14 @@ function getMasterlistLevelTitle(level, parentUnit) {
     if (level === 1) {
         return 'DEPARTMENT / UNIT';
     }
-    return parentUnit ? escapeHtml(parentUnit.name) : 'SUB-UNIT';
+    return 'SUB-UNIT';
 }
 
 function getMasterlistDefaultOptionLabel(level, parentUnit) {
     if (level === 1) {
         return 'All Departments &amp; Units';
     }
-    return parentUnit ? `All in ${escapeHtml(parentUnit.name)}` : 'All Sub-Units';
+    return 'All Sub-Units';
 }
 
 function renderDynamicUnitLevel(level, parentUnitId, targetContainer) {
@@ -2155,9 +2106,6 @@ function toggleStageAccordion(stageNum) {
 }
 
 // --- MASTERLIST FILTERING & RESPONSIVE PAGINATION ---
-let currentMasterlistLifecycle = 'all';
-let masterlistCurrentPage = 1;
-let masterlistPerPage = (typeof window !== 'undefined' && window.innerWidth < 768) ? 6 : 50;
 
 function setMasterlistLifecyclePill(stage, btn) {
     currentMasterlistLifecycle = stage;
@@ -2634,10 +2582,6 @@ function toggleUnitHierarchy(unitId, event) {
         document.querySelectorAll(`.compliance-unit-row[data-parent-id="${unitId}"]`).forEach(r => {
             r.style.display = '';
         });
-        const dirRow = document.querySelector(`.compliance-direct-staff-row[data-parent-scope="${unitId}"]`);
-        if (dirRow) {
-            dirRow.style.display = '';
-        }
     }
 }
 window.toggleUnitHierarchy = toggleUnitHierarchy;
@@ -2653,10 +2597,6 @@ function collapseComplianceDescendants(unitId) {
             collapseComplianceDescendants(childId);
         }
     });
-    const dirRow = document.querySelector(`.compliance-direct-staff-row[data-parent-scope="${unitId}"]`);
-    if (dirRow) {
-        dirRow.style.display = 'none';
-    }
 }
 
 function filterOfficeLeaderboard(query) {
