@@ -328,10 +328,10 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             
             <!-- Phase 1 Card -->
-            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 <?= !empty($p1['is_ongoing']) ? 'border-indigo-500/80 dark:border-indigo-500 ring-2 ring-indigo-500/20 shadow-md' : 'border-zinc-200 dark:border-zinc-800 shadow-xs' ?>">
+            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 <?= !empty($p1['is_ongoing']) ? 'border-emerald-500/80 dark:border-emerald-500 ring-2 ring-emerald-500/20 shadow-md' : 'border-zinc-200 dark:border-zinc-800 shadow-xs' ?>">
                 <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-4">
                     <div class="flex items-center gap-2.5 min-w-0">
-                        <span class="w-6 h-6 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 flex items-center justify-center text-xs font-black shrink-0">1</span>
+                        <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-xs font-black shrink-0">1</span>
                         <div class="min-w-0">
                             <h3 class="text-sm font-bold text-zinc-900 dark:text-white truncate">Target Commitment Phase</h3>
                             <div class="flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
@@ -344,8 +344,8 @@
                     </div>
                     <div class="shrink-0 ml-2">
                         <?php if (!empty($p1['is_ongoing'])): ?>
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shadow-2xs">
-                                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-[#102a1e] dark:text-emerald-400 border border-emerald-200 dark:border-[#1b4330] shadow-2xs">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                 Ongoing
                             </span>
                         <?php elseif ($p1['status'] === 'closed'): ?>
@@ -392,7 +392,7 @@
                     </div>
                     <div class="shrink-0 ml-2">
                         <?php if ($p2['status'] === 'ongoing'): ?>
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-[#102a1e] dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-2xs">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-[#102a1e] dark:text-emerald-400 border border-emerald-200 dark:border-[#1b4330] shadow-2xs">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                 Ongoing
                             </span>
@@ -659,10 +659,10 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             
             <!-- Phase 1 Card -->
-            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 <?= !empty($p1['is_ongoing']) ? 'border-indigo-500/80 dark:border-indigo-500 ring-2 ring-indigo-500/20 shadow-md' : 'border-zinc-200 dark:border-zinc-800 shadow-xs' ?>">
+            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 <?= !empty($p1['is_ongoing']) ? 'border-emerald-500/80 dark:border-emerald-500 ring-2 ring-emerald-500/20 shadow-md' : 'border-zinc-200 dark:border-zinc-800 shadow-xs' ?>">
                 <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-4">
                     <div class="flex items-center gap-2.5 min-w-0">
-                        <span class="w-6 h-6 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 flex items-center justify-center text-xs font-black shrink-0">1</span>
+                        <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-xs font-black shrink-0">1</span>
                         <div class="min-w-0">
                             <h3 class="text-sm font-bold text-zinc-900 dark:text-white truncate">Target Commitment Phase</h3>
                             <div class="flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
@@ -675,8 +675,8 @@
                     </div>
                     <div class="shrink-0 ml-2">
                         <?php if (!empty($p1['is_ongoing'])): ?>
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shadow-2xs">
-                                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-[#102a1e] dark:text-emerald-400 border border-emerald-200 dark:border-[#1b4330] shadow-2xs">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                 Ongoing
                             </span>
                         <?php elseif ($p1['status'] === 'closed'): ?>
@@ -723,7 +723,7 @@
                     </div>
                     <div class="shrink-0 ml-2">
                         <?php if ($p2['status'] === 'ongoing'): ?>
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-[#102a1e] dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-2xs">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-[#102a1e] dark:text-emerald-400 border border-emerald-200 dark:border-[#1b4330] shadow-2xs">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                 Ongoing
                             </span>
