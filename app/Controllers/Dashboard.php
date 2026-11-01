@@ -745,6 +745,8 @@ class Dashboard extends BaseController
             'selectedUnitId'       => $selectedUnitId,
             'selectedUnitName'     => $selectedUnitName,
             'allUnits'             => $allUnits,
+            'allUnitsList'         => $allUnitsList,
+            'scopedUnitIds'        => $scopedUnitIds,
             'totalPersonnel'       => $totalPersonnel,
             'totalRated'           => $totalRated,
             'totalMovCount'        => $totalMovCount,

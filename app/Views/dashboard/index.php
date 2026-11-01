@@ -1551,35 +1551,9 @@
                             </div>
                         </div>
 
-                        <!-- Department / Unit Filter -->
-                        <div class="shrink-0 pb-3 border-b border-surface-border/50">
-                            <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-2.5 group cursor-pointer" onclick="
-                                this.nextElementSibling.classList.toggle('hidden');
-                                this.querySelector('svg').classList.toggle('-rotate-180');
-                            ">
-                                <span>Department / Unit</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                            </button>
-                            <div class="relative w-full">
-                                <select id="masterlist-filter-dept" onchange="filterMasterlist(true)"
-                                    class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
-                                    <option value=""><?= !empty($collegeDepartments) ? 'All Sub-Departments' : 'All Departments & Units' ?></option>
-                                    <?php if (!empty($collegeDepartments)): ?>
-                                        <?php foreach ($collegeDepartments as $cd): ?>
-                                            <option value="<?= esc(strtolower($cd)) ?>"><?= esc($cd) ?></option>
-                                        <?php endforeach; ?>
-                                    <?php elseif (!empty($allUnits)): ?>
-                                        <?php foreach ($allUnits as $u): ?>
-                                            <option value="<?= esc(strtolower($u['name'])) ?>" data-unit-id="<?= esc($u['id']) ?>"><?= esc($u['name']) ?></option>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </select>
-                                <div class="pointer-events-none absolute inset-y-0 flex items-center text-text-muted" style="right: 10px;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </div>
-                            </div>
+                        <!-- Dynamic Cascading Unit / Department Filter (Supervisor Style) -->
+                        <div id="dynamic-unit-filter-container" class="shrink-0 pb-4 border-b border-surface-border/50 space-y-3">
+                            <!-- Populated dynamically by JavaScript -->
                         </div>
 
                         <!-- Positions Filter with mini-search -->
@@ -1623,6 +1597,285 @@
 </div>
 
 <script>
+// --- GLOBAL CONFIG & UNIT HIERARCHY FOR MASTERLIST DYNAMIC FILTERING ---
+window.SPMS_USER_ROLE = '<?= esc($sysRole ?? 'Admin') ?>';
+window.SPMS_SCOPED_UNIT_IDS = <?= json_encode(array_values(array_map('intval', $scopedUnitIds ?? []))) ?>;
+window.SPMS_SUPERVISOR_COLLEGE = '<?= esc($supervisorCollegeName ?? '') ?>';
+window.SPMS_MASTERLIST_UNITS = <?= json_encode(array_map(fn($u) => [
+    'id' => (int)$u['id'],
+    'name' => $u['name'],
+    'parent_id' => !empty($u['parent_id']) ? (int)$u['parent_id'] : 0
+], $allUnitsList ?? $allUnits ?? [])) ?>;
+
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+const masterlistUnitParents = {};
+const masterlistUnitChildren = {};
+
+function initMasterlistUnitTree() {
+    const units = window.SPMS_MASTERLIST_UNITS || [];
+    Object.keys(masterlistUnitParents).forEach(k => delete masterlistUnitParents[k]);
+    Object.keys(masterlistUnitChildren).forEach(k => delete masterlistUnitChildren[k]);
+
+    units.forEach(u => {
+        const uId = String(u.id);
+        const pId = u.parent_id ? String(u.parent_id) : null;
+        masterlistUnitParents[uId] = pId;
+        if (pId) {
+            if (!masterlistUnitChildren[pId]) masterlistUnitChildren[pId] = [];
+            masterlistUnitChildren[pId].push(uId);
+        }
+    });
+}
+
+function getDescendantUnitIds(rootId) {
+    const rId = String(rootId);
+    const result = new Set([rId]);
+    const stack = [rId];
+    while (stack.length) {
+        const current = stack.pop();
+        (masterlistUnitChildren[current] || []).forEach(childId => {
+            if (!result.has(childId)) {
+                result.add(childId);
+                stack.push(childId);
+            }
+        });
+    }
+    return result;
+}
+
+const DYNAMIC_UNIT_THEME = {
+    labelColor: 'text-text-muted',
+    focusRing: 'focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20',
+    activeBorder: 'border-amber-500 dark:border-amber-400',
+    connector: 'border-zinc-300 dark:border-zinc-700'
+};
+
+function getMasterlistLevelTitle(level, parentUnit) {
+    if (level === 1) {
+        return 'DEPARTMENT / UNIT';
+    }
+    return parentUnit ? escapeHtml(parentUnit.name) : 'SUB-UNIT';
+}
+
+function getMasterlistDefaultOptionLabel(level, parentUnit) {
+    if (level === 1) {
+        return 'All Departments &amp; Units';
+    }
+    return parentUnit ? `All in ${escapeHtml(parentUnit.name)}` : 'All Sub-Units';
+}
+
+function renderDynamicUnitLevel(level, parentUnitId, targetContainer) {
+    if (!targetContainer) return;
+    const wasCollapsed = level === 1 && Boolean(targetContainer.querySelector(':scope > .dynamic-unit-level > .js-unit-level-body.hidden'));
+    targetContainer.innerHTML = '';
+
+    const units = window.SPMS_MASTERLIST_UNITS || [];
+    const unitsById = {};
+    units.forEach(u => { unitsById[String(u.id)] = u; });
+
+    let availableUnits = [];
+    let parentUnit = null;
+
+    if (level === 1) {
+        if (window.SPMS_USER_ROLE === 'Admin' || window.SPMS_USER_ROLE === 'PMT' || window.SPMS_USER_ROLE === 'President' || (window.SPMS_SCOPED_UNIT_IDS || []).length === 0) {
+            availableUnits = units.filter(u => !u.parent_id || !unitsById[String(u.parent_id)]);
+        } else {
+            const scopedIds = new Set((window.SPMS_SCOPED_UNIT_IDS || []).map(String));
+            availableUnits = units.filter(u => scopedIds.has(String(u.id)) && (!u.parent_id || !scopedIds.has(String(u.parent_id))));
+            if (availableUnits.length === 0) {
+                availableUnits = units.filter(u => scopedIds.has(String(u.id)));
+            }
+        }
+    } else {
+        const numParentId = parseInt(parentUnitId, 10);
+        parentUnit = unitsById[String(numParentId)] || null;
+        availableUnits = units.filter(u => {
+            const pId = parseInt(u.parent_id, 10);
+            const uId = parseInt(u.id, 10);
+            if (pId !== numParentId) return false;
+            // CRITICAL: Strictly exclude parent itself from child options so OVPAA or parent never repeats!
+            if (uId === numParentId) return false;
+            if (parentUnit && u.name.trim().toLowerCase() === parentUnit.name.trim().toLowerCase()) return false;
+            return true;
+        });
+    }
+
+    if (availableUnits.length === 0) {
+        targetContainer.classList.add('hidden');
+        return;
+    }
+
+    targetContainer.classList.remove('hidden');
+
+    const theme = DYNAMIC_UNIT_THEME;
+    const title = getMasterlistLevelTitle(level, parentUnit);
+    const defaultLabel = getMasterlistDefaultOptionLabel(level, parentUnit);
+
+    let optionsHtml = `<option value="">${defaultLabel}</option>`;
+    availableUnits.forEach(u => {
+        optionsHtml += `<option value="${u.id}">${escapeHtml(u.name)}</option>`;
+    });
+
+    const levelWrapper = document.createElement('div');
+    levelWrapper.className = 'dynamic-unit-level';
+    levelWrapper.dataset.level = level;
+
+    const headerSpacing = level === 1 ? 'mb-2.5 tracking-widest' : 'mb-1.5 tracking-wider';
+    const headerHtml = `
+        <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase ${headerSpacing} ${theme.labelColor} hover:text-text focus:outline-none group cursor-pointer" onclick="
+            this.nextElementSibling.classList.toggle('hidden');
+            this.querySelector('svg').classList.toggle('-rotate-180');
+        ">
+            <span class="truncate pr-2 text-left" title="${title}">${title}</span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${wasCollapsed ? '-rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+        </button>`;
+
+    levelWrapper.innerHTML = `
+        ${headerHtml}
+        <div class="js-unit-level-body ${wasCollapsed ? 'hidden' : ''}">
+            <div class="relative w-full">
+                <select id="masterlist-filter-unit-level-${level}"
+                    class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border ${theme.focusRing} rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
+                    ${optionsHtml}
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 flex items-center text-text-muted" style="right: 10px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+            <div id="masterlist-dynamic-unit-children-${level}" class="relative pl-3.5 ml-2.5 border-l-2 border-dashed ${theme.connector} space-y-3 pt-2 hidden"></div>
+        </div>
+    `;
+
+    targetContainer.appendChild(levelWrapper);
+
+    const selectEl = levelWrapper.querySelector(`#masterlist-filter-unit-level-${level}`);
+    selectEl.addEventListener('change', (e) => {
+        onDynamicUnitLevelChange(level, e.target.value, true);
+    });
+}
+
+function onDynamicUnitLevelChange(level, selectedUnitId, triggerFilter = true) {
+    const selectEl = document.getElementById(`masterlist-filter-unit-level-${level}`);
+    const childrenContainer = document.getElementById(`masterlist-dynamic-unit-children-${level}`);
+    const theme = DYNAMIC_UNIT_THEME;
+
+    if (selectEl) {
+        const activeClasses = theme.activeBorder.split(' ');
+        if (selectedUnitId) {
+            selectEl.classList.add(...activeClasses);
+        } else {
+            selectEl.classList.remove(...activeClasses);
+        }
+    }
+
+    if (childrenContainer) {
+        childrenContainer.innerHTML = '';
+        childrenContainer.classList.add('hidden');
+
+        if (selectedUnitId) {
+            const numId = parseInt(selectedUnitId, 10);
+            const units = window.SPMS_MASTERLIST_UNITS || [];
+            const childUnits = units.filter(u => {
+                const pId = parseInt(u.parent_id, 10);
+                const uId = parseInt(u.id, 10);
+                return pId === numId && uId !== numId;
+            });
+
+            if (childUnits.length > 0) {
+                renderDynamicUnitLevel(level + 1, selectedUnitId, childrenContainer);
+            }
+        }
+    }
+
+    if (triggerFilter) {
+        filterMasterlist(true);
+    }
+}
+window.onDynamicUnitLevelChange = onDynamicUnitLevelChange;
+
+function initDynamicUnitFilters() {
+    const rootContainer = document.getElementById('dynamic-unit-filter-container');
+    if (!rootContainer) return;
+    renderDynamicUnitLevel(1, null, rootContainer);
+}
+
+function getActiveDynamicUnitId() {
+    const container = document.getElementById('dynamic-unit-filter-container');
+    if (!container) return null;
+    const selects = Array.from(container.querySelectorAll('select'));
+    for (let i = selects.length - 1; i >= 0; i--) {
+        const val = (selects[i].value || '').trim();
+        if (val) return val;
+    }
+    return null;
+}
+
+function setDynamicUnitFilterTo(targetUnitId, targetUnitName) {
+    const rootContainer = document.getElementById('dynamic-unit-filter-container');
+    if (!rootContainer) return;
+
+    if (!targetUnitId && !targetUnitName) {
+        initDynamicUnitFilters();
+        return;
+    }
+
+    const units = window.SPMS_MASTERLIST_UNITS || [];
+    const unitsById = {};
+    units.forEach(u => { unitsById[String(u.id)] = u; });
+
+    let targetUnit = null;
+    if (targetUnitId && unitsById[String(targetUnitId)]) {
+        targetUnit = unitsById[String(targetUnitId)];
+    } else if (targetUnitName) {
+        const cleanName = String(targetUnitName).toLowerCase().replace(/\s*\(direct staff\)\s*$/i, '').trim();
+        targetUnit = units.find(u => u.name.toLowerCase().trim() === cleanName)
+                  || units.find(u => u.name.toLowerCase().includes(cleanName));
+    }
+
+    if (!targetUnit) {
+        initDynamicUnitFilters();
+        return;
+    }
+
+    // Build path from root down to targetUnit (e.g. [OVPAA (2), College of Nursing (12), BS Nursing (13)])
+    const path = [];
+    let curr = targetUnit;
+    const visited = new Set();
+    while (curr && !visited.has(String(curr.id))) {
+        visited.add(String(curr.id));
+        path.unshift(curr);
+        const pId = curr.parent_id ? String(curr.parent_id) : null;
+        curr = (pId && unitsById[pId]) ? unitsById[pId] : null;
+    }
+
+    // 1. Initialize level 1
+    initDynamicUnitFilters();
+
+    // 2. Cascade down each level in the path
+    for (let i = 0; i < path.length; i++) {
+        const level = i + 1;
+        const u = path[i];
+        const selectEl = document.getElementById(`masterlist-filter-unit-level-${level}`);
+        if (!selectEl) break;
+
+        selectEl.value = String(u.id);
+        // Spawn next level without triggering filterMasterlist until full path is populated
+        onDynamicUnitLevelChange(level, String(u.id), false);
+    }
+}
+window.setDynamicUnitFilterTo = setDynamicUnitFilterTo;
+
 // --- DASHBOARD VIEW SWITCHER (Analytics vs Masterlist) ---
 function updateDashboardPill(view, animate = true) {
     const pairs = [
@@ -1774,10 +2027,28 @@ window.initDashboardView = initDashboardView;
 window.updateDashboardPill = updateDashboardPill;
 window.switchDashboardView = switchDashboardView;
 
+function initDashboardMasterlistFilters() {
+    if (typeof initMasterlistUnitTree === 'function') {
+        initMasterlistUnitTree();
+    }
+    const initialSelectedUnitId = <?= !empty($selectedUnitId) ? (int)$selectedUnitId : 'null' ?>;
+    if (initialSelectedUnitId && typeof setDynamicUnitFilterTo === 'function') {
+        setDynamicUnitFilterTo(initialSelectedUnitId);
+    } else if (typeof initDynamicUnitFilters === 'function') {
+        initDynamicUnitFilters();
+    }
+}
+
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initDashboardView);
+    document.addEventListener('DOMContentLoaded', () => {
+        initDashboardMasterlistFilters();
+        initDashboardView();
+        filterMasterlist(true);
+    });
 } else {
+    initDashboardMasterlistFilters();
     initDashboardView();
+    filterMasterlist(true);
 }
 
 window.addEventListener('resize', () => {
@@ -1954,13 +2225,14 @@ function clearAllMasterlistFilters() {
     document.querySelectorAll('input[name="masterlist_filter_emp[]"]').forEach(cb => cb.checked = false);
     document.querySelectorAll('input[name="masterlist_filter_pos[]"]').forEach(cb => cb.checked = false);
 
-    const d = document.getElementById('masterlist-filter-dept');
-    if (d) d.value = '';
-
     const miniPos = document.getElementById('mini-search-positions');
     if (miniPos) {
         miniPos.value = '';
         filterMasterlistPositions('');
+    }
+
+    if (typeof initDynamicUnitFilters === 'function') {
+        initDynamicUnitFilters();
     }
 
     filterMasterlist(true);
@@ -1973,7 +2245,14 @@ function filterMasterlist(resetPage = true) {
 
     const searchInputDesk   = document.getElementById('masterlist-search-sidebar');
     const searchInputMobile = document.getElementById('masterlist-search-mobile');
-    const deptFilter        = document.getElementById('masterlist-filter-dept');
+
+    const activeUnitId = (typeof getActiveDynamicUnitId === 'function') ? getActiveDynamicUnitId() : null;
+    const units = window.SPMS_MASTERLIST_UNITS || [];
+    const unitsById = {};
+    units.forEach(u => { unitsById[String(u.id)] = u; });
+    const activeUnit = activeUnitId ? unitsById[String(activeUnitId)] : null;
+    const activeUnitName = activeUnit ? activeUnit.name.toLowerCase().trim() : '';
+    const allowedUnitIds = (activeUnitId && typeof getDescendantUnitIds === 'function') ? getDescendantUnitIds(String(activeUnitId)) : null;
 
     const checkedTypes = Array.from(document.querySelectorAll('input[name="masterlist_filter_type[]"]:checked')).map(cb => cb.value.toLowerCase());
     const checkedEmp   = Array.from(document.querySelectorAll('input[name="masterlist_filter_emp[]"]:checked')).map(cb => cb.value.toLowerCase());
@@ -1982,16 +2261,11 @@ function filterMasterlist(resetPage = true) {
     const query = ((searchInputDesk && searchInputDesk.value.trim() !== '') 
                     ? searchInputDesk.value 
                     : (searchInputMobile ? searchInputMobile.value : '')).toLowerCase().trim();
-    
-    const selectedDeptVal  = deptFilter ? deptFilter.value.trim().toLowerCase() : '';
-    const selectedDeptOpt  = (deptFilter && deptFilter.selectedIndex >= 0) ? deptFilter.options[deptFilter.selectedIndex] : null;
-    const selectedDeptId   = selectedDeptOpt ? (selectedDeptOpt.getAttribute('data-unit-id') || '').trim() : '';
-    const selectedDeptName = selectedDeptOpt ? (selectedDeptOpt.text || selectedDeptVal).toLowerCase().trim() : '';
 
     // Active filters count badge calculation
     let activeFilterCount = 0;
     if (query) activeFilterCount++;
-    if (selectedDeptVal) activeFilterCount++;
+    if (activeUnitId) activeFilterCount++;
     if (checkedTypes.length > 0) activeFilterCount += checkedTypes.length;
     if (checkedEmp.length > 0) activeFilterCount += checkedEmp.length;
     if (checkedPos.length > 0) activeFilterCount += checkedPos.length;
@@ -2037,13 +2311,12 @@ function filterMasterlist(resetPage = true) {
         // 1. Search Query
         const matchesSearch = !query || name.includes(query) || email.includes(query) || dept.includes(query) || pos.includes(query) || rating.includes(query) || adjectival.includes(query);
 
-        // 2. Department / Sub-Department (Hierarchical Tree Match)
+        // 2. Department / Unit (Dynamic Cascading Hierarchical Tree Match)
         let matchesDept = true;
-        if (selectedDeptVal !== '') {
-            const isIdMatch   = (selectedDeptId !== '' && (unitId === selectedDeptId || ancestorIds.includes(selectedDeptId)))
-                             || (unitId !== '' && unitId === selectedDeptVal)
-                             || ancestorIds.includes(selectedDeptVal);
-            const isNameMatch = dept.includes(selectedDeptVal) || (selectedDeptName && dept.includes(selectedDeptName)) || deptChain.includes(selectedDeptVal) || (selectedDeptName && deptChain.includes(selectedDeptName));
+        if (activeUnitId && allowedUnitIds) {
+            const isIdMatch   = (unitId !== '' && allowedUnitIds.has(String(unitId)))
+                             || ancestorIds.some(aId => allowedUnitIds.has(String(aId)) || aId === String(activeUnitId));
+            const isNameMatch = activeUnitName && (dept.includes(activeUnitName) || deptChain.includes(activeUnitName));
             matchesDept = isIdMatch || isNameMatch;
         }
 
@@ -2292,7 +2565,7 @@ function toggleStageAccordion(stageNum) {
 }
 
 // --- Masterlist Quick Shortcut from Compliance Matrix & Rows ---
-function filterMasterlistByUnit(deptName, unitId) {
+function filterMasterlistByUnit(deptName, unitId, isDirectStaff = false) {
     if (typeof switchDashboardView === 'function') {
         switchDashboardView('masterlist');
     }
@@ -2323,36 +2596,12 @@ function filterMasterlistByUnit(deptName, unitId) {
         setMasterlistLifecyclePill('all', allBtn, false);
     }
 
-    // 5. Select the specific unit in the department filter dropdown
-    const deptSelect = document.getElementById('masterlist-filter-dept');
-    if (deptSelect) {
-        let matchedIndex = -1;
-        const targetId = unitId ? String(unitId).trim() : '';
-        const targetName = deptName ? deptName.toLowerCase().trim() : '';
-
-        for (let i = 0; i < deptSelect.options.length; i++) {
-            const opt = deptSelect.options[i];
-            const optVal = (opt.value || '').trim();
-            const optUnitId = (opt.getAttribute('data-unit-id') || optVal).trim();
-            const optName = (opt.getAttribute('data-name') || opt.text || '').toLowerCase().trim();
-
-            if (targetId !== '' && (optUnitId === targetId || optVal === targetId)) {
-                matchedIndex = i;
-                break;
-            }
-            if (targetName !== '' && (optName === targetName || optName.includes(targetName))) {
-                matchedIndex = i;
-                break;
-            }
-        }
-
-        if (matchedIndex >= 0) {
-            deptSelect.selectedIndex = matchedIndex;
-        } else if (targetId !== '') {
-            deptSelect.value = targetId;
-        }
+    // 5. Select the specific unit in the dynamic cascading unit filter
+    if (typeof setDynamicUnitFilterTo === 'function') {
+        setDynamicUnitFilterTo(unitId, deptName);
     }
 
+    // 6. Execute filtering and update views
     filterMasterlist(true);
 
     const mlView = document.getElementById('dashboard-view-masterlist');
