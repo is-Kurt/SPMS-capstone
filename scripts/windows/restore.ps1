@@ -30,7 +30,6 @@ function Get-DbPath($BaseDir) {
     }
 
     $candidates = @(
-        (Join-Path $BaseDir "writable\spms_db"),
         (Join-Path $BaseDir "writable\database\spms_db.sqlite3"),
         (Join-Path $BaseDir "writable\spms_db.sqlite3"),
         (Join-Path $BaseDir "writable\database.sqlite")
@@ -40,7 +39,7 @@ function Get-DbPath($BaseDir) {
             return $cand
         }
     }
-    return (Join-Path $BaseDir "writable\spms_db")
+    return (Join-Path $BaseDir "writable\database\spms_db.sqlite3")
 }
 
 function Invoke-SQLiteSnapshot($Src, $Dst) {
@@ -158,4 +157,6 @@ try {
 finally {
     Remove-Item -Recurse -Force $R -ErrorAction SilentlyContinue
 }
+
+
 

@@ -28,8 +28,7 @@ find_db_path() {
         fi
     fi
 
-    local candidates=(
-        "$dir/writable/spms_db"
+        local candidates=(
         "$dir/writable/database/spms_db.sqlite3"
         "$dir/writable/spms_db.sqlite3"
         "$dir/writable/database.sqlite"
@@ -100,4 +99,6 @@ find "$DEST_DIR" -maxdepth 1 -name "spms-*.tar.gz" -type f -mtime +30 -delete 2>
 
 echo -e "\n\033[32m[OK] Backup completed successfully!\033[0m"
 ls -lh "$FINAL_ARCHIVE"
+
+
 

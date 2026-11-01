@@ -27,8 +27,7 @@ find_db_path() {
         fi
     fi
 
-    local candidates=(
-        "$dir/writable/spms_db"
+        local candidates=(
         "$dir/writable/database/spms_db.sqlite3"
         "$dir/writable/spms_db.sqlite3"
         "$dir/writable/database.sqlite"
@@ -124,4 +123,6 @@ if [[ -f "$R/public-uploads.tar.gz" ]]; then
 fi
 
 echo -e "\n\033[32m[OK] Recovery completed successfully!\033[0m"
+
+
 

@@ -32,7 +32,6 @@ function Get-DbPath($BaseDir) {
     }
 
     $candidates = @(
-        (Join-Path $BaseDir "writable\spms_db"),
         (Join-Path $BaseDir "writable\database\spms_db.sqlite3"),
         (Join-Path $BaseDir "writable\spms_db.sqlite3"),
         (Join-Path $BaseDir "writable\database.sqlite")
@@ -42,7 +41,7 @@ function Get-DbPath($BaseDir) {
             return $cand
         }
     }
-    return (Join-Path $BaseDir "writable\spms_db")
+    return (Join-Path $BaseDir "writable\database\spms_db.sqlite3")
 }
 
 function Invoke-SQLiteSnapshot($Src, $Dst) {
@@ -119,4 +118,6 @@ Get-ChildItem (Join-Path $DestDir "spms-*.tar.gz") -ErrorAction SilentlyContinue
 
 Write-Host "`n[OK] Backup completed successfully!" -ForegroundColor Green
 Get-ChildItem $FinalArchive | Select-Object Name, Length, LastWriteTime
+
+
 
