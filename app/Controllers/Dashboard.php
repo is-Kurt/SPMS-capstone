@@ -561,6 +561,23 @@ class Dashboard extends BaseController
                     }
                 }
 
+                $directTargetApproved = 0;
+                $directEvalCompleted  = 0;
+                $directRatings        = [];
+                foreach ($directFolders as $df) {
+                    $cStatus = FolderStatus::canonical($df['folder_status'] ?? '');
+                    if ($cStatus->isEvaluationPhase() || $cStatus === FolderStatus::TARGET_APPROVED) {
+                        $directTargetApproved++;
+                    }
+                    if ($cStatus === FolderStatus::EVAL_APPROVED) {
+                        $directEvalCompleted++;
+                    }
+                    if ($df['rating_num'] !== null && (float)$df['rating_num'] > 0) {
+                        $directRatings[] = (float)$df['rating_num'];
+                    }
+                }
+                $directAverageRating = !empty($directRatings) ? round(array_sum($directRatings) / count($directRatings), 2) : 0;
+
                 $compliancePct = $headcount > 0 ? round(($evalCompleted / $headcount) * 100) : 0;
                 $averageRating = !empty($ratings) ? round(array_sum($ratings) / count($ratings), 2) : 0;
 
@@ -576,23 +593,28 @@ class Dashboard extends BaseController
                 }
 
                 $hierarchicalUnits[] = [
-                    'id'               => $cId,
-                    'name'             => $unit['name'],
-                    'parent_id'        => $unit['parent_id'],
-                    'level'            => $level,
-                    'ancestor_ids'     => $ancestorIds,
-                    'descendant_ids'   => $subtreeIds,
-                    'headcount'        => $headcount,
-                    'direct_headcount' => $directHeadcount,
-                    'target_approved'  => $targetApproved,
-                    'revisions_needed' => 0,
-                    'eval_completed'   => $evalCompleted,
-                    'compliance_pct'   => $compliancePct,
-                    'average_rating'   => $averageRating,
-                    'status_badge'     => $statusBadge,
-                    'badge_class'      => $badgeClass,
-                    'ratio'            => $evalCompleted . '/' . $headcount,
-                    'target_ratio'     => $targetApproved . '/' . $headcount,
+                    'id'                     => $cId,
+                    'name'                   => $unit['name'],
+                    'parent_id'              => $unit['parent_id'],
+                    'level'                  => $level,
+                    'ancestor_ids'           => $ancestorIds,
+                    'descendant_ids'         => $subtreeIds,
+                    'headcount'              => $headcount,
+                    'direct_headcount'       => $directHeadcount,
+                    'target_approved'        => $targetApproved,
+                    'revisions_needed'       => 0,
+                    'eval_completed'         => $evalCompleted,
+                    'compliance_pct'         => $compliancePct,
+                    'average_rating'         => $averageRating,
+                    'status_badge'           => $statusBadge,
+                    'badge_class'            => $badgeClass,
+                    'ratio'                  => $evalCompleted . '/' . $headcount,
+                    'target_ratio'           => $targetApproved . '/' . $headcount,
+                    'direct_target_approved' => $directTargetApproved,
+                    'direct_eval_completed'  => $directEvalCompleted,
+                    'direct_average_rating'  => $directAverageRating,
+                    'children_ids'           => $childrenByParent[$cId] ?? [],
+                    'has_children'           => !empty($childrenByParent[$cId]),
                 ];
 
                 // Recurse down children
@@ -626,23 +648,28 @@ class Dashboard extends BaseController
                 $compliancePct = $headcount > 0 ? round(($evalCompleted / $headcount) * 100) : 0;
                 $averageRating = !empty($ratings) ? round(array_sum($ratings) / count($ratings), 2) : 0;
                 $hierarchicalUnits[] = [
-                    'id'               => $uId,
-                    'name'             => $uName,
-                    'parent_id'        => 0,
-                    'level'            => 0,
-                    'ancestor_ids'     => [],
-                    'descendant_ids'   => [$uId],
-                    'headcount'        => $headcount,
-                    'direct_headcount' => $headcount,
-                    'target_approved'  => $targetApproved,
-                    'revisions_needed' => 0,
-                    'eval_completed'   => $evalCompleted,
-                    'compliance_pct'   => $compliancePct,
-                    'average_rating'   => $averageRating,
-                    'status_badge'     => ($compliancePct >= 100) ? '100% Compliant' : (($compliancePct >= 50) ? 'On Track' : 'Action Needed'),
-                    'badge_class'      => ($compliancePct >= 100) ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-[#102a1e] dark:text-emerald-400 dark:border-[#1b4330]' : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-danger-500/10 dark:text-rose-400 dark:border-danger-500/20',
-                    'ratio'            => $evalCompleted . '/' . $headcount,
-                    'target_ratio'     => $targetApproved . '/' . $headcount,
+                    'id'                     => $uId,
+                    'name'                   => $uName,
+                    'parent_id'              => 0,
+                    'level'                  => 0,
+                    'ancestor_ids'           => [],
+                    'descendant_ids'         => [$uId],
+                    'headcount'              => $headcount,
+                    'direct_headcount'       => $headcount,
+                    'target_approved'        => $targetApproved,
+                    'revisions_needed'       => 0,
+                    'eval_completed'         => $evalCompleted,
+                    'compliance_pct'         => $compliancePct,
+                    'average_rating'         => $averageRating,
+                    'status_badge'           => ($compliancePct >= 100) ? '100% Compliant' : (($compliancePct >= 50) ? 'On Track' : 'Action Needed'),
+                    'badge_class'            => ($compliancePct >= 100) ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-[#102a1e] dark:text-emerald-400 dark:border-[#1b4330]' : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-danger-500/10 dark:text-rose-400 dark:border-danger-500/20',
+                    'ratio'                  => $evalCompleted . '/' . $headcount,
+                    'target_ratio'           => $targetApproved . '/' . $headcount,
+                    'direct_target_approved' => $targetApproved,
+                    'direct_eval_completed'  => $evalCompleted,
+                    'direct_average_rating'  => $averageRating,
+                    'children_ids'           => [],
+                    'has_children'           => false,
                 ];
             }
         }

@@ -1,7 +1,9 @@
 <?php
+    $sysRole = session()->get('role') ?? ($userRole ?? 'Admin');
     $phaseSchedule = $phaseSchedule ?? [];
     $p1 = $phaseSchedule['phase1'] ?? ['is_ongoing' => false, 'timeframe' => 'Schedule Not Set', 'label' => 'Upcoming', 'status' => 'upcoming'];
     $p2 = $phaseSchedule['phase2'] ?? ['is_ongoing' => false, 'timeframe' => 'Schedule Not Set', 'label' => 'Upcoming', 'status' => 'upcoming'];
+    $totalPersonnel = $totalPersonnel ?? count($cycleFolders ?? []);
 ?>
 <div class="flex flex-col flex-1 min-w-0 min-h-0 relative bg-surface lg:rounded-xl border border-surface-border shadow-xs overflow-visible lg:overflow-hidden">
     
@@ -938,26 +940,31 @@
                 <!-- Hierarchical Dropdown & View Masterlist Shortcut -->
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                     <div class="relative w-full sm:w-80">
-                        <select id="compliance-hierarchy-select" onchange="onHierarchyDropdownChange(this)"
-                                class="w-full appearance-none text-xs font-semibold py-2 pl-3 pr-8 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-zinc-400/40 shadow-2xs cursor-pointer [color-scheme:light] dark:[color-scheme:dark]">
-                            <option value="all" data-name="">All Departments &amp; Units (<?= $evalCompletionRate ?>% Compliant)</option>
+                        <select id="compliance-hierarchy-select" onchange="onComplianceScopeChange(this.value)"
+                                class="w-full appearance-none text-xs font-semibold py-2 pl-3 pr-8 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 shadow-2xs cursor-pointer [color-scheme:light] dark:[color-scheme:dark]">
+                            <option value="root" data-name="" data-display-name="All Institutional Sectors" data-level="-1" data-has-children="1">All Institutional Sectors (Root Level)</option>
                             <?php if (!empty($hierarchicalUnits)): ?>
                                 <?php foreach ($hierarchicalUnits as $hu): ?>
                                     <?php
                                         $indent = str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', $hu['level']);
                                         $prefix = ($hu['level'] > 0) ? '↳ ' : '';
+                                        $hasKids = !empty($hu['has_children']);
+                                        $targetRatio = $hu['target_ratio'] ?? ($hu['target_approved'] . '/' . $hu['headcount']);
                                     ?>
                                     <option value="<?= $hu['id'] ?>" 
                                             data-name="<?= esc(strtolower($hu['name'])) ?>"
+                                            data-display-name="<?= esc($hu['name']) ?>"
                                             data-level="<?= $hu['level'] ?>"
-                                            data-descendant-ids="<?= implode(',', $hu['descendant_ids']) ?>"
-                                            data-ancestor-ids="<?= implode(',', $hu['ancestor_ids']) ?>">
-                                        <?= $indent ?><?= $prefix ?><?= esc($hu['name']) ?> (<?= $hu['ratio'] ?>)
+                                            data-parent-id="<?= $hu['parent_id'] ?? 0 ?>"
+                                            data-has-children="<?= $hasKids ? '1' : '0' ?>"
+                                            data-descendant-ids="<?= implode(',', $hu['descendant_ids'] ?? []) ?>"
+                                            data-ancestor-ids="<?= implode(',', $hu['ancestor_ids'] ?? []) ?>">
+                                        <?= $indent ?><?= $prefix ?><?= esc($hu['name']) ?> (<?= $targetRatio ?>)
                                     </option>
                                 <?php endforeach; ?>
                             <?php elseif (!empty($deptLeaderboard)): ?>
                                 <?php foreach ($deptLeaderboard as $dept): ?>
-                                    <option value="<?= esc(strtolower($dept['name'])) ?>" data-name="<?= esc(strtolower($dept['name'])) ?>">
+                                    <option value="<?= esc(strtolower($dept['name'])) ?>" data-name="<?= esc(strtolower($dept['name'])) ?>" data-display-name="<?= esc($dept['name']) ?>">
                                         <?= esc($dept['name']) ?> (<?= $dept['eval_completed'] ?>/<?= $dept['headcount'] ?>)
                                     </option>
                                 <?php endforeach; ?>
@@ -971,24 +978,39 @@
                     <button type="button" id="btn-compliance-view-masterlist" onclick="viewSelectedUnitInMasterlist()"
                             class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-amber-500 hover:text-amber-400 dark:text-amber-400 dark:hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/30 transition-all cursor-pointer whitespace-nowrap shadow-2xs group"
                             title="Filter and inspect personnel for selected unit in Master List">
-                        <span>View in Master List</span>
-                        <svg class="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                        <span id="compliance-view-ml-text">View All in Master List</span>
+                        <span class="transition-transform group-hover:translate-x-0.5">&rarr;</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Per-Office Table -->
+            <!-- Breadcrumb Navigation Bar -->
+            <div id="compliance-breadcrumb-bar" class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-zinc-50/80 dark:bg-zinc-950/60 border border-zinc-200/70 dark:border-zinc-800/70 text-xs">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                    <div id="compliance-breadcrumb-trail" class="flex items-center gap-1.5 font-medium text-zinc-600 dark:text-zinc-400 truncate">
+                        <span class="font-bold text-zinc-900 dark:text-white">All Institutional Sectors</span>
+                        <span class="text-zinc-400 text-[11px]">(3 Executive Sectors)</span>
+                    </div>
+                </div>
+                <div id="compliance-back-btn-container" class="hidden">
+                    <button type="button" onclick="navigateComplianceUp()" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white bg-zinc-200/70 dark:bg-zinc-800/80 hover:bg-zinc-300 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                        <span id="compliance-back-btn-label">Back to Sectors</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Department & Unit Table -->
             <div class="overflow-x-auto custom-scrollbar rounded-xl border border-zinc-200 dark:border-zinc-800">
                 <table class="w-full text-left border-collapse" id="office-leaderboard-table">
                     <thead>
                         <tr class="bg-zinc-50 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 text-[10px] sm:text-[11px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-wider">
                             <th class="py-3 px-3.5">Department / Unit</th>
                             <th class="py-3 px-3 text-center">Headcount</th>
-                            <th class="py-3 px-3 text-center">Target Calibration</th>
-                            <th class="py-3 px-3 text-center">Revisions</th>
-                            <th class="py-3 px-3 text-center">Final Evaluations</th>
+                            <th class="py-3 px-3 text-center">Phase 1: Targets</th>
+                            <th class="py-3 px-3 text-center">Phase 2: Accomplishments</th>
                             <th class="py-3 px-3 text-center">Average Rating</th>
-                            <th class="py-3 px-3 text-center">Status</th>
                             <th class="py-3 px-3.5 text-right">Action</th>
                         </tr>
                     </thead>
@@ -998,7 +1020,7 @@
                         ?>
                         <?php if (empty($unitsToRender)): ?>
                             <tr>
-                                <td colspan="8" class="py-8 px-4 text-center text-zinc-400 italic">
+                                <td colspan="6" class="py-8 px-4 text-center text-zinc-400 italic">
                                     No department / unit records available for this cycle.
                                 </td>
                             </tr>
@@ -1009,6 +1031,7 @@
                                     $level = $hu['level'] ?? 0;
                                     $uId = $hu['id'] ?? '';
                                     $uName = $hu['name'] ?? '';
+                                    $parentId = $hu['parent_id'] ?? 0;
                                     $headcount = $hu['headcount'] ?? 0;
                                     $directHeadcount = $hu['direct_headcount'] ?? $headcount;
                                     $targetApproved = $hu['target_approved'] ?? 0;
@@ -1016,42 +1039,61 @@
                                     $tPct = $headcount > 0 ? round(($targetApproved / $headcount) * 100) : 0;
                                     $ePct = $headcount > 0 ? round(($evalCompleted / $headcount) * 100) : 0;
                                     $avgRating = $hu['average_rating'] ?? 0;
-                                    $badgeClass = $hu['badge_class'] ?? 'bg-blue-50 text-blue-700 border-blue-200';
-                                    $statusBadge = $hu['status_badge'] ?? 'In Progress';
                                     $descendantIds = !empty($hu['descendant_ids']) ? implode(',', $hu['descendant_ids']) : (string)$uId;
                                     $ancestorIds = !empty($hu['ancestor_ids']) ? implode(',', $hu['ancestor_ids']) : '';
+                                    $hasKids = !empty($hu['has_children']);
                                 ?>
-                                <tr class="compliance-unit-row office-row hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
+                                <tr class="compliance-unit-row hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
                                     data-unit-id="<?= esc($uId) ?>"
                                     data-name="<?= esc(strtolower($uName)) ?>"
+                                    data-parent-id="<?= esc($parentId) ?>"
                                     data-level="<?= $level ?>"
+                                    data-has-children="<?= $hasKids ? '1' : '0' ?>"
                                     data-descendant-ids="<?= esc($descendantIds) ?>"
-                                    data-ancestor-ids="<?= esc($ancestorIds) ?>">
+                                    data-ancestor-ids="<?= esc($ancestorIds) ?>"
+                                    style="<?= $level === 0 ? '' : 'display: none;' ?>">
                                     <td class="py-3 px-3.5 whitespace-nowrap">
-                                        <div class="flex items-center gap-2 <?= $level === 0 ? '' : ($level === 1 ? 'pl-5' : 'pl-10') ?>">
+                                        <div class="flex items-center gap-2">
                                             <?php if ($level === 0): ?>
-                                                <span class="w-2 h-2 rounded-full bg-indigo-500 shrink-0"></span>
+                                                <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
                                                 <span class="font-bold text-zinc-900 dark:text-white truncate block max-w-[280px]" title="<?= esc($uName) ?>">
                                                     <?= esc($uName) ?>
                                                 </span>
-                                                <span class="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 shrink-0">Executive</span>
+                                                <span class="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 shrink-0">Executive Sector</span>
+                                            <?php elseif ($hasKids): ?>
+                                                <span class="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>
+                                                <span class="font-bold text-zinc-900 dark:text-white truncate block max-w-[260px]" title="<?= esc($uName) ?>">
+                                                    <?= esc($uName) ?>
+                                                </span>
+                                                <span class="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">Academic College</span>
                                             <?php elseif ($level === 1): ?>
-                                                <span class="text-zinc-400 text-xs font-bold select-none shrink-0">↳</span>
+                                                <span class="w-2 h-2 rounded-full bg-zinc-400 shrink-0"></span>
                                                 <span class="font-semibold text-zinc-800 dark:text-zinc-200 truncate block max-w-[260px]" title="<?= esc($uName) ?>">
                                                     <?= esc($uName) ?>
                                                 </span>
+                                                <span class="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-zinc-500/10 text-zinc-500 dark:text-zinc-400 border border-zinc-500/20 shrink-0">Office</span>
                                             <?php else: ?>
-                                                <span class="text-zinc-400 text-xs font-bold select-none shrink-0">↳ ↳</span>
+                                                <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
                                                 <span class="font-medium text-zinc-700 dark:text-zinc-300 truncate block max-w-[240px]" title="<?= esc($uName) ?>">
                                                     <?= esc($uName) ?>
                                                 </span>
+                                                <span class="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">Program</span>
+                                            <?php endif; ?>
+
+                                            <?php if ($hasKids): ?>
+                                                <button type="button" onclick="setComplianceScope('<?= $uId ?>')"
+                                                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition-colors cursor-pointer"
+                                                        title="Show child units for <?= esc($uName) ?>">
+                                                    <span>View Sub-Units</span>
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                                </button>
                                             <?php endif; ?>
                                         </div>
                                     </td>
                                     <td class="py-3 px-3 text-center font-bold text-zinc-900 dark:text-white">
                                         <?= $headcount ?>
                                         <?php if ($directHeadcount > 0 && $directHeadcount !== $headcount): ?>
-                                            <span class="text-[10px] font-normal text-zinc-400" title="Direct: <?= $directHeadcount ?>, Total branch: <?= $headcount ?>">(<?= $directHeadcount ?>)</span>
+                                            <span class="text-[10px] font-normal text-zinc-400 block" title="Direct personnel: <?= $directHeadcount ?>, Branch total: <?= $headcount ?>">(<?= $directHeadcount ?> direct)</span>
                                         <?php endif; ?>
                                     </td>
                                     <td class="py-3 px-3 text-center whitespace-nowrap">
@@ -1063,23 +1105,15 @@
                                         </div>
                                     </td>
                                     <td class="py-3 px-3 text-center whitespace-nowrap">
-                                        <span class="text-zinc-400 dark:text-zinc-500 text-[11px]">—</span>
-                                    </td>
-                                    <td class="py-3 px-3 text-center whitespace-nowrap">
                                         <div class="flex items-center justify-center gap-2">
                                             <div class="w-16 bg-zinc-200 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
-                                                <div class="bg-indigo-600 h-1.5 rounded-full" style="width: <?= min(100, $ePct) ?>%;"></div>
+                                                <div class="bg-indigo-600 dark:bg-indigo-500 h-1.5 rounded-full" style="width: <?= min(100, $ePct) ?>%;"></div>
                                             </div>
                                             <span class="font-bold text-[11px] text-zinc-900 dark:text-white"><?= $evalCompleted ?>/<?= $headcount ?></span>
                                         </div>
                                     </td>
                                     <td class="py-3 px-3 text-center whitespace-nowrap font-black text-zinc-900 dark:text-white">
                                         <?= $avgRating > 0 ? number_format($avgRating, 2) : '——' ?>
-                                    </td>
-                                    <td class="py-3 px-3 text-center whitespace-nowrap">
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border <?= $badgeClass ?>">
-                                            <?= esc($statusBadge) ?>
-                                        </span>
                                     </td>
                                     <td class="py-3 px-3.5 text-right whitespace-nowrap">
                                         <button type="button" onclick="filterMasterlistByUnit('<?= esc(addslashes($uName)) ?>', '<?= esc($uId) ?>')"
@@ -1090,16 +1124,67 @@
                                         </button>
                                     </td>
                                 </tr>
+
+                                <?php if ($directHeadcount > 0 && $directHeadcount !== $headcount): ?>
+                                    <?php
+                                        $dirTApp = $hu['direct_target_approved'] ?? 0;
+                                        $dirEComp = $hu['direct_eval_completed'] ?? 0;
+                                        $dirAvgR = $hu['direct_average_rating'] ?? 0;
+                                        $dtPct = $directHeadcount > 0 ? round(($dirTApp / $directHeadcount) * 100) : 0;
+                                        $dePct = $directHeadcount > 0 ? round(($dirEComp / $directHeadcount) * 100) : 0;
+                                    ?>
+                                    <tr class="compliance-direct-staff-row hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
+                                        data-parent-scope="<?= esc($uId) ?>"
+                                        data-is-direct-staff="1"
+                                        data-unit-id="<?= esc($uId) ?>"
+                                        data-name="<?= esc(strtolower($uName)) ?>"
+                                        style="display: none;">
+                                        <td class="py-3 px-3.5 whitespace-nowrap">
+                                            <div class="flex items-center gap-2">
+                                                <span class="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
+                                                <span class="font-semibold text-zinc-800 dark:text-zinc-200 truncate block max-w-[280px]">
+                                                    <?= esc($uName) ?> (Direct Personnel)
+                                                </span>
+                                                <span class="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">Direct Staff</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-3 text-center font-bold text-zinc-900 dark:text-white">
+                                            <?= $directHeadcount ?>
+                                        </td>
+                                        <td class="py-3 px-3 text-center whitespace-nowrap">
+                                            <div class="flex items-center justify-center gap-2">
+                                                <div class="w-16 bg-zinc-200 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                                                    <div class="bg-emerald-500 h-1.5 rounded-full" style="width: <?= min(100, $dtPct) ?>%;"></div>
+                                                </div>
+                                                <span class="font-bold text-[11px] text-zinc-900 dark:text-white"><?= $dirTApp ?>/<?= $directHeadcount ?></span>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-3 text-center whitespace-nowrap">
+                                            <div class="flex items-center justify-center gap-2">
+                                                <div class="w-16 bg-zinc-200 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                                                    <div class="bg-indigo-600 dark:bg-indigo-500 h-1.5 rounded-full" style="width: <?= min(100, $dePct) ?>%;"></div>
+                                                </div>
+                                                <span class="font-bold text-[11px] text-zinc-900 dark:text-white"><?= $dirEComp ?>/<?= $directHeadcount ?></span>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-3 text-center whitespace-nowrap font-black text-zinc-900 dark:text-white">
+                                            <?= $dirAvgR > 0 ? number_format($dirAvgR, 2) : '——' ?>
+                                        </td>
+                                        <td class="py-3 px-3.5 text-right whitespace-nowrap">
+                                            <button type="button" onclick="filterMasterlistByUnit('<?= esc(addslashes($uName)) ?>', '<?= esc($uId) ?>')"
+                                                    class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold text-amber-500 hover:text-amber-400 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/10 transition-all cursor-pointer shadow-2xs group"
+                                                    title="Filter Master List by <?= esc($uName) ?>">
+                                                <span>View in Master List</span>
+                                                <span class="transition-transform group-hover:translate-x-0.5">&rarr;</span>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                         <?php endif; ?>
                         <tr id="compliance-empty-row" class="hidden">
-                            <td colspan="8" class="py-8 px-4 text-center text-zinc-400 italic">
+                            <td colspan="6" class="py-8 px-4 text-center text-zinc-400 italic">
                                 No departments or units match the selected hierarchy filter.
-                            </td>
-                        </tr>
-                        <tr id="office-empty-row" class="hidden">
-                            <td colspan="8" class="py-8 px-4 text-center text-zinc-400 italic">
-                                No departments &amp; units matching search query.
                             </td>
                         </tr>
                     </tbody>
@@ -1517,12 +1602,8 @@
                             <div class="relative w-full">
                                 <select id="masterlist-filter-dept" onchange="filterMasterlist(true)"
                                     class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
-                                    <option value=""><?= !empty($collegeDepartments) ? 'All Sub-Departments' : 'All Departments & Units' ?></option>
-                                    <?php if (!empty($collegeDepartments)): ?>
-                                        <?php foreach ($collegeDepartments as $cd): ?>
-                                            <option value="<?= esc(strtolower($cd)) ?>"><?= esc($cd) ?></option>
-                                        <?php endforeach; ?>
-                                    <?php elseif (!empty($hierarchicalUnits)): ?>
+                                    <option value="" data-name="">All Departments &amp; Units</option>
+                                    <?php if (!empty($hierarchicalUnits)): ?>
                                         <?php foreach ($hierarchicalUnits as $hu): ?>
                                             <option value="<?= $hu['id'] ?>" 
                                                     data-unit-id="<?= $hu['id'] ?>"
@@ -1530,9 +1611,13 @@
                                                 <?= str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', $hu['level']) ?><?= ($hu['level'] > 0 ? '↳ ' : '') ?><?= esc($hu['name']) ?>
                                             </option>
                                         <?php endforeach; ?>
+                                    <?php elseif (!empty($collegeDepartments)): ?>
+                                        <?php foreach ($collegeDepartments as $cd): ?>
+                                            <option value="<?= esc(strtolower($cd)) ?>" data-name="<?= esc(strtolower($cd)) ?>"><?= esc($cd) ?></option>
+                                        <?php endforeach; ?>
                                     <?php elseif (!empty($allUnits)): ?>
                                         <?php foreach ($allUnits as $u): ?>
-                                            <option value="<?= esc(strtolower($u['name'])) ?>" data-unit-id="<?= esc($u['id']) ?>"><?= esc($u['name']) ?></option>
+                                            <option value="<?= esc($u['id']) ?>" data-unit-id="<?= esc($u['id']) ?>" data-name="<?= esc(strtolower($u['name'])) ?>"><?= esc($u['name']) ?></option>
                                         <?php endforeach; ?>
                                     <?php endif; ?>
                                 </select>
@@ -2256,20 +2341,50 @@ function filterMasterlistByUnit(deptName, unitId) {
         switchDashboardView('masterlist');
     }
 
+    // 1. Reset free-text search fields so unit filtering is prominent
+    const searchDesk = document.getElementById('masterlist-search-sidebar');
+    if (searchDesk) searchDesk.value = '';
+    const searchMob = document.getElementById('masterlist-search-mobile');
+    if (searchMob) searchMob.value = '';
+
+    // 2. Uncheck all checkboxes so staff isn't accidentally excluded by type or status
+    document.querySelectorAll('input[name="masterlist_filter_type[]"]').forEach(cb => cb.checked = false);
+    document.querySelectorAll('input[name="masterlist_filter_emp[]"]').forEach(cb => cb.checked = false);
+    document.querySelectorAll('input[name="masterlist_filter_pos[]"]').forEach(cb => cb.checked = false);
+
+    // 3. Reset position search
+    const miniPos = document.getElementById('mini-search-positions');
+    if (miniPos) {
+        miniPos.value = '';
+        if (typeof filterMasterlistPositions === 'function') {
+            filterMasterlistPositions('');
+        }
+    }
+
+    // 4. Reset lifecycle filter pill to 'all'
+    if (typeof setMasterlistLifecyclePill === 'function') {
+        const allBtn = document.querySelector('.masterlist-lifecycle-btn[data-stage="all"]');
+        setMasterlistLifecyclePill('all', allBtn, false);
+    }
+
+    // 5. Select the specific unit in the department filter dropdown
     const deptSelect = document.getElementById('masterlist-filter-dept');
     if (deptSelect) {
         let matchedIndex = -1;
+        const targetId = unitId ? String(unitId).trim() : '';
+        const targetName = deptName ? deptName.toLowerCase().trim() : '';
+
         for (let i = 0; i < deptSelect.options.length; i++) {
             const opt = deptSelect.options[i];
-            const optVal = opt.value;
-            const optUnitId = opt.getAttribute('data-unit-id') || optVal;
+            const optVal = (opt.value || '').trim();
+            const optUnitId = (opt.getAttribute('data-unit-id') || optVal).trim();
             const optName = (opt.getAttribute('data-name') || opt.text || '').toLowerCase().trim();
 
-            if (unitId && String(optUnitId) === String(unitId)) {
+            if (targetId !== '' && (optUnitId === targetId || optVal === targetId)) {
                 matchedIndex = i;
                 break;
             }
-            if (deptName && (optName === deptName.toLowerCase().trim() || optName.includes(deptName.toLowerCase().trim()))) {
+            if (targetName !== '' && (optName === targetName || optName.includes(targetName))) {
                 matchedIndex = i;
                 break;
             }
@@ -2277,16 +2392,10 @@ function filterMasterlistByUnit(deptName, unitId) {
 
         if (matchedIndex >= 0) {
             deptSelect.selectedIndex = matchedIndex;
-        } else if (unitId) {
-            deptSelect.value = String(unitId);
+        } else if (targetId !== '') {
+            deptSelect.value = targetId;
         }
     }
-
-    // Reset free-text search fields so unit filtering is prominent
-    const searchDesk = document.getElementById('masterlist-search-sidebar');
-    if (searchDesk) searchDesk.value = '';
-    const searchMob = document.getElementById('masterlist-search-mobile');
-    if (searchMob) searchMob.value = '';
 
     filterMasterlist(true);
 
@@ -2303,49 +2412,154 @@ function viewSelectedUnitInMasterlist() {
     const opt = sel.options[sel.selectedIndex];
     if (!opt) return;
     const unitId = opt.value;
-    const unitName = opt.getAttribute('data-name') || '';
-    if (!unitId || unitId === 'all') {
-        const deptSelect = document.getElementById('masterlist-filter-dept');
-        if (deptSelect) deptSelect.value = '';
+    const unitName = opt.getAttribute('data-display-name') || opt.getAttribute('data-name') || '';
+
+    if (!unitId || unitId === 'root' || unitId === 'all') {
+        if (typeof clearAllMasterlistFilters === 'function') {
+            clearAllMasterlistFilters();
+        }
         if (typeof switchDashboardView === 'function') {
             switchDashboardView('masterlist');
         }
         filterMasterlist(true);
+        const mlView = document.getElementById('dashboard-view-masterlist');
+        if (mlView) {
+            mlView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     } else {
         filterMasterlistByUnit(unitName, unitId);
     }
 }
 window.viewSelectedUnitInMasterlist = viewSelectedUnitInMasterlist;
 
-function onHierarchyDropdownChange(sel) {
-    const selectedVal = sel.value;
-    const rows = document.querySelectorAll('.compliance-unit-row');
+// --- Hierarchical Scope Controller (Shows ONLY child nodes for the selected level) ---
+function onComplianceScopeChange(scopeId) {
+    const sel = document.getElementById('compliance-hierarchy-select');
+    if (sel && sel.value !== scopeId) {
+        sel.value = scopeId;
+    }
+
+    const selectedOpt = sel ? sel.options[sel.selectedIndex] : null;
+    const isRoot = (!scopeId || scopeId === 'root' || scopeId === 'all');
+    const selectedName = selectedOpt ? (selectedOpt.getAttribute('data-display-name') || selectedOpt.text.replace(/^[↳\s]+/, '') || '').trim() : '';
+    const parentId = selectedOpt ? (selectedOpt.getAttribute('data-parent-id') || '0') : '0';
+    const hasChildren = selectedOpt ? (selectedOpt.getAttribute('data-has-children') === '1') : false;
+
+    // 1. Update Top Masterlist Shortcut Button Text
+    const btnText = document.getElementById('compliance-view-ml-text');
+    if (btnText) {
+        btnText.textContent = isRoot ? 'View All in Master List' : 'View in Master List';
+    }
+
+    // 2. Filter Table Rows: Display ONLY the immediate child nodes of active scope
+    const normalRows = document.querySelectorAll('.compliance-unit-row');
+    const directRows = document.querySelectorAll('.compliance-direct-staff-row');
     let visibleCount = 0;
 
-    rows.forEach(row => {
-        if (!selectedVal || selectedVal === 'all') {
-            row.style.display = '';
-            visibleCount++;
-        } else {
-            const rId = row.getAttribute('data-unit-id');
-            const rAncestors = (row.getAttribute('data-ancestor-ids') || '').split(',').map(s => s.trim()).filter(Boolean);
-            
-            // Show the selected unit and all its descendant units in the tree
-            if (rId === selectedVal || rAncestors.includes(selectedVal)) {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
-        }
-    });
+    if (isRoot) {
+        // Root scope: Show ONLY root-level executive sectors
+        normalRows.forEach(row => {
+            const pId = row.getAttribute('data-parent-id');
+            const lvl = row.getAttribute('data-level');
+            const isTop = (pId === '0' || lvl === '0');
+            row.style.display = isTop ? '' : 'none';
+            if (isTop) visibleCount++;
+        });
+        directRows.forEach(row => row.style.display = 'none');
+    } else if (hasChildren) {
+        // Parent scope with child nodes: Show ONLY its direct children + direct personnel row
+        normalRows.forEach(row => {
+            const pId = row.getAttribute('data-parent-id');
+            const isChild = (pId === String(scopeId));
+            row.style.display = isChild ? '' : 'none';
+            if (isChild) visibleCount++;
+        });
+        directRows.forEach(row => {
+            const pScope = row.getAttribute('data-parent-scope');
+            const isDirect = (pScope === String(scopeId));
+            row.style.display = isDirect ? '' : 'none';
+            if (isDirect) visibleCount++;
+        });
+    } else {
+        // Terminal leaf scope: Show this specific row
+        normalRows.forEach(row => {
+            const uId = row.getAttribute('data-unit-id');
+            const isSelf = (uId === String(scopeId));
+            row.style.display = isSelf ? '' : 'none';
+            if (isSelf) visibleCount++;
+        });
+        directRows.forEach(row => row.style.display = 'none');
+    }
 
+    // 3. Update Empty State Row
     const emptyRow = document.getElementById('compliance-empty-row');
     if (emptyRow) {
         emptyRow.classList.toggle('hidden', visibleCount > 0);
     }
+
+    // 4. Update Breadcrumb Bar & Back Navigation
+    updateComplianceBreadcrumb(scopeId, isRoot, selectedName, parentId);
 }
-window.onHierarchyDropdownChange = onHierarchyDropdownChange;
+window.onComplianceScopeChange = onComplianceScopeChange;
+window.setComplianceScope = function(scopeId) {
+    onComplianceScopeChange(scopeId);
+};
+
+function updateComplianceBreadcrumb(scopeId, isRoot, selectedName, parentId) {
+    const trail = document.getElementById('compliance-breadcrumb-trail');
+    const backBtnContainer = document.getElementById('compliance-back-btn-container');
+    const backBtnLabel = document.getElementById('compliance-back-btn-label');
+
+    if (isRoot) {
+        if (trail) {
+            trail.innerHTML = `
+                <span class="font-bold text-zinc-900 dark:text-white">All Institutional Sectors</span>
+                <span class="text-zinc-400 text-[11px]">(3 Executive Sectors)</span>
+            `;
+        }
+        if (backBtnContainer) backBtnContainer.classList.add('hidden');
+    } else {
+        let breadcrumbHtml = `<button type="button" onclick="setComplianceScope('root')" class="hover:underline text-zinc-500 dark:text-zinc-400 font-semibold cursor-pointer">Institutional Sectors</button>`;
+        
+        let backTarget = 'root';
+        let backLabel = 'Back to Sectors';
+
+        if (parentId && parentId !== '0') {
+            const parentOpt = document.querySelector(`#compliance-hierarchy-select option[value="${parentId}"]`);
+            const parentName = parentOpt ? (parentOpt.getAttribute('data-display-name') || parentOpt.text.replace(/^[↳\s]+/, '')) : 'Parent Sector';
+            breadcrumbHtml += ` <span class="text-zinc-400 select-none">&rsaquo;</span> <button type="button" onclick="setComplianceScope('${parentId}')" class="hover:underline text-zinc-500 dark:text-zinc-400 font-semibold cursor-pointer">${parentName}</button>`;
+            backTarget = parentId;
+            backLabel = `Back to ${parentName}`;
+        }
+
+        breadcrumbHtml += ` <span class="text-zinc-400 select-none">&rsaquo;</span> <span class="font-bold text-zinc-900 dark:text-white">${selectedName}</span>`;
+
+        if (trail) trail.innerHTML = breadcrumbHtml;
+        if (backBtnContainer) {
+            backBtnContainer.classList.remove('hidden');
+            if (backBtnLabel) backBtnLabel.textContent = backLabel;
+            const backBtn = backBtnContainer.querySelector('button');
+            if (backBtn) {
+                backBtn.onclick = function() {
+                    setComplianceScope(backTarget);
+                };
+            }
+        }
+    }
+}
+
+window.navigateComplianceUp = function() {
+    const sel = document.getElementById('compliance-hierarchy-select');
+    if (!sel) return;
+    const opt = sel.options[sel.selectedIndex];
+    const parentId = opt ? (opt.getAttribute('data-parent-id') || '0') : '0';
+    setComplianceScope(parentId && parentId !== '0' ? parentId : 'root');
+};
+
+// Backwards compatibility alias
+window.onHierarchyDropdownChange = function(sel) {
+    if (sel) onComplianceScopeChange(sel.value);
+};
 
 function openMasterlistDocument(docUrl, event) {
     if (!docUrl) return;
