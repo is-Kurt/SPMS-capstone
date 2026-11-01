@@ -97,7 +97,7 @@
     <link rel="preload" href="<?= base_url('assets/fonts/Roboto/Roboto-VariableFont_wdth,wght.ttf') ?>" as="font" type="font/ttf" crossorigin>
     <link rel="stylesheet" href="<?= base_url('assets/css/main/style.css?v=' . filemtime(FCPATH . 'assets/css/main/style.css')) ?>">
 
-    <script src="<?= base_url('assets/vendor/axios/dist/axios.min.js') ?>"></script>
+    <script src="<?= base_url('assets/packages/axios/dist/axios.min.js') ?>"></script>
 
     <meta name="csrf-token-name" content="<?= csrf_token() ?>">
     <meta name="csrf-token-hash" content="<?= csrf_hash() ?>">
@@ -239,7 +239,7 @@
     <script type="module" src="<?= base_url('assets/js/main/modals/confirmModal.js') ?>"></script>
     <script src="<?= base_url('assets/js/main/passwordToggle.js') ?>"></script>
     <script src="<?= base_url('assets/js/main/navigationGuards.js') ?>"></script>
-    <script src="<?= base_url('assets/vendor/fingerprintjs/fp.min.js') ?>"></script>
+    <script src="<?= base_url('assets/packages/fingerprintjs/fp.min.js') ?>"></script>
     <script>
         // Ensure browser device fingerprint is set in cookie for institutional audit tracking (unaffected by CGNAT/proxies)
         if (typeof FingerprintJS !== 'undefined') {

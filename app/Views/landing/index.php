@@ -898,7 +898,7 @@
         });
     </script>
 
-    <script src="<?= base_url('assets/vendor/fingerprintjs/fp.min.js') ?>"></script>
+    <script src="<?= base_url('assets/packages/fingerprintjs/fp.min.js') ?>"></script>
     <script>
         if (window.FingerprintJS) {
             FingerprintJS.load()

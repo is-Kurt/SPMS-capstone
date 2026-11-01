@@ -257,7 +257,7 @@
 </div>
 
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-<script src="<?= base_url('assets/vendor/fingerprintjs/fp.min.js') ?>"></script>
+<script src="<?= base_url('assets/packages/fingerprintjs/fp.min.js') ?>"></script>
 <script>
     // Submit loading feedback with animated spinner & transition overlay
     document.addEventListener('DOMContentLoaded', function () {

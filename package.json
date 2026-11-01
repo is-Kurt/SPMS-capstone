@@ -1,7 +1,7 @@
 {
   "scripts": {
     "dev": "npx @tailwindcss/cli -i ./public/assets/css/main/input.css -o ./public/assets/css/main/style.css --watch",
-    "postinstall": "mkdir -p public/assets/vendor/axios/dist && cp -r node_modules/axios/dist/* public/assets/vendor/axios/dist/"
+    "postinstall": "node -e \"const fs=require('fs'); fs.mkdirSync('public/assets/packages/axios/dist', {recursive:true}); fs.cpSync('node_modules/axios/dist', 'public/assets/packages/axios/dist', {recursive:true});\""
   },
   "dependencies": {
     "@tailwindcss/cli": "^4.1.18",
