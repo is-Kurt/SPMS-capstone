@@ -3,16 +3,16 @@
     $isArchivedRoute = ($totalSegments >= 2 && service('uri')->getSegment(2) === 'archived');
     $firstSegment = ($totalSegments >= 1) ? service('uri')->getSegment(1) : '';
     $currentBaseUrl = ($firstSegment === 'ratings') ? 'ratings' : 
-                      (($firstSegment === 'dashboard') ? 'dashboard' : 
+                      (($firstSegment === 'dashboard') ? ($isArchivedRoute ? 'dashboard/archived' : 'dashboard') : 
                       ($isArchivedRoute ? 'folders/archived' : 'folders'));
     $isFoldersRoute = ($firstSegment === 'folders');
 ?>
 
 <nav id="sidebar-nav" class="flex flex-col gap-2 h-full justify-between">
     <div class="flex flex-col gap-2">
-        <?php if ($isFoldersRoute && session()->get('role') === 'Admin'): ?>
+        <?php if (($isFoldersRoute || $firstSegment === 'dashboard') && session()->get('role') === 'Admin'): ?>
             <div class="grid grid-cols-2 p-1 bg-surface-border/40 dark:bg-zinc-800/60 rounded-xl border border-surface-border/80 shadow-xs mb-1.5">
-                <a href="<?= site_url('folders') ?>" 
+                <a href="<?= site_url($firstSegment === 'dashboard' ? 'dashboard' : 'folders') ?>" 
                    class="folder-tab-toggle inline-flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs transition-colors cursor-pointer <?= !$isArchivedRoute ? 'bg-accent text-zinc-950 shadow-xs font-black' : 'font-bold text-text-muted hover:text-text hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50' ?>"
                    data-type="active">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 <?= !$isArchivedRoute ? 'text-zinc-950' : 'text-zinc-400 dark:text-zinc-500' ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -20,7 +20,7 @@
                     </svg>
                     <span>Active</span>
                 </a>
-                <a href="<?= site_url('folders/archived') ?>" 
+                <a href="<?= site_url($firstSegment === 'dashboard' ? 'dashboard/archived' : 'folders/archived') ?>" 
                    class="folder-tab-toggle inline-flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs transition-colors cursor-pointer <?= $isArchivedRoute ? 'bg-accent text-zinc-950 shadow-xs font-black' : 'font-bold text-text-muted hover:text-text hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50' ?>"
                    data-type="archived">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 <?= $isArchivedRoute ? 'text-zinc-950' : 'text-zinc-400 dark:text-zinc-500' ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -347,7 +347,7 @@
         // Handle browser Back / Forward buttons seamlessly
         window.addEventListener('popstate', function(e) {
             const url = window.location.href;
-            const isArchivedUrl = url.includes('/folders/archived');
+            const isArchivedUrl = url.includes('/folders/archived') || url.includes('/dashboard/archived');
             const currentIsArchived = document.querySelector('.folder-tab-toggle[data-type="archived"]')?.classList.contains('bg-accent');
             
             if (isArchivedUrl !== Boolean(currentIsArchived)) {

@@ -27,30 +27,38 @@ class Dashboard extends BaseController
     }
 
     /**
+     * GET /dashboard/archived or /dashboard/archived/{cycleId}
+     * Displays archived evaluation cycles and analytics for Admin.
+     */
+    public function archived(?string $cycleId = null)
+    {
+        if (session()->get('role') !== 'Admin') {
+            return redirect()->to(site_url('dashboard'));
+        }
+
+        return $this->index($cycleId, true);
+    }
+
+    /**
      * GET /dashboard or GET /dashboard/{cycleId}
      * Computes performance metrics, CSC distribution charts, and college leaderboards.
      */
-    public function index(?string $cycleId = null)
+    public function index(?string $cycleId = null, bool $isArchivedView = false)
     {
         $db = $this->db ?? \Config\Database::connect();
         $userId  = session()->get('user_id');
         $sysRole = session()->get('role');
 
+        if ($isArchivedView && $sysRole !== 'Admin') {
+            return redirect()->to(site_url('dashboard'));
+        }
+
         $folderModel = new DocumentFolderModel();
         $unitModel   = new UnitModel();
         $userModel   = new UserModel();
 
-        // 1. Identify all top-level evaluation cycles (root folders)
-        $rootFolders = $folderModel->where('parent_folder_id IS NULL')
-            ->where('deleted_at IS NULL')
-            ->orderBy('created_at', 'DESC')
-            ->findAll();
-
-        if (empty($rootFolders)) {
-            $rootFolders = $folderModel->where('deleted_at IS NULL')
-                ->orderBy('created_at', 'DESC')
-                ->findAll();
-        }
+        // 1. Identify all accessible top-level evaluation cycles (root folders)
+        $rootFolders = $this->getAccessibleRootFolders($folderModel, (int)$userId, (string)$sysRole, $isArchivedView);
 
         $activeCycle = null;
         if ($cycleId) {
@@ -64,6 +72,15 @@ class Dashboard extends BaseController
 
         if (!$activeCycle && !empty($rootFolders)) {
             $activeCycle = $rootFolders[0];
+            if ($cycleId) {
+                $base = $isArchivedView ? 'dashboard/archived/' : 'dashboard/';
+                return redirect()->to(site_url($base . $activeCycle['id']));
+            }
+        }
+
+        if ($cycleId && empty($rootFolders)) {
+            $base = $isArchivedView ? 'dashboard/archived' : 'dashboard';
+            return redirect()->to(site_url($base));
         }
 
         // 1.1 Load deadlines & schedule for active cycle
@@ -241,7 +258,8 @@ class Dashboard extends BaseController
 
         $targetFolderIds = [];
         if ($activeCycle) {
-            $descendantIds = $folderModel->getAllDescendantFolderIds($activeCycle['id']);
+            $isCycleArchived = !empty($activeCycle['deleted_at']) || ($activeCycle['status'] ?? '') === 'archived';
+            $descendantIds = $folderModel->getAllDescendantFolderIds($activeCycle['id'], $isCycleArchived);
             $targetFolderIds = !empty($descendantIds) ? $descendantIds : [];
         }
 
@@ -739,6 +757,7 @@ class Dashboard extends BaseController
 
         $mainData = [
             'sysRole'              => $sysRole,
+            'isArchivedView'       => $isArchivedView,
             'rootFolders'          => $rootFolders,
             'activeCycle'          => $activeCycle,
             'phaseSchedule'        => $phaseSchedule,
@@ -823,6 +842,18 @@ class Dashboard extends BaseController
         ];
 
         if (method_exists($this->request, 'isAJAX') && $this->request->isAJAX()) {
+            if ($this->request->getHeaderLine('X-SPMS-Scope') === 'tab') {
+                return $this->response->setJSON([
+                    'sidebar'          => view('document/_folder_rows', [
+                        'folders'          => $rootFolders,
+                        'selectedFolderId' => $activeCycle['id'] ?? null,
+                    ]),
+                    'main'             => view('dashboard/index', $mainData),
+                    'selectedFolderId' => $activeCycle['id'] ?? null,
+                    'url'              => site_url(($isArchivedView ? 'dashboard/archived/' : 'dashboard/') . ($activeCycle['id'] ?? ''))
+                ]);
+            }
+
             return view('dashboard/index', $mainData);
         }
 
@@ -831,7 +862,7 @@ class Dashboard extends BaseController
             'maxWidthClass'    => 'max-w-[125rem] 2xl:max-w-[140rem]',
             'sidebarFolders'   => $rootFolders,
             'selectedFolderId' => $activeCycle['id'] ?? null,
-            'sidebarTitle'     => 'Evaluation Folders',
+            'sidebarTitle'     => $isArchivedView ? 'Archived Folders' : 'Evaluation Folders',
             'mainView'         => 'dashboard/index',
             'mainData'         => $mainData
         ]);
@@ -853,13 +884,32 @@ class Dashboard extends BaseController
 
         $activeCycle = null;
         if ($cycleId) {
-            $activeCycle = $folderModel->find($cycleId);
+            $foundCycle = $folderModel->find($cycleId);
+            if ($foundCycle) {
+                if (!empty($foundCycle['deleted_at'])) {
+                    if ($sysRole === 'Admin') {
+                        $activeCycle = $foundCycle;
+                    }
+                } else {
+                    $rootFolders = $this->getAccessibleRootFolders($folderModel, (int)$userId, (string)$sysRole, false);
+                    foreach ($rootFolders as $rf) {
+                        if ((string)$rf['id'] === (string)$cycleId) {
+                            $activeCycle = $rf;
+                            break;
+                        }
+                    }
+                }
+            }
         }
         if (!$activeCycle) {
-            $activeCycle = $folderModel->where('parent_folder_id IS NULL')
-                ->where('deleted_at IS NULL')
-                ->orderBy('created_at', 'DESC')
-                ->first();
+            $rootFolders = $this->getAccessibleRootFolders($folderModel, (int)$userId, (string)$sysRole, false);
+            if (!empty($rootFolders)) {
+                $activeCycle = $rootFolders[0];
+            }
+        }
+
+        if (!$activeCycle) {
+            return redirect()->to(site_url('dashboard'))->with('error', 'No evaluation cycle available.');
         }
 
         $selectedUnitId = $this->request->getGet('unit_id');
@@ -903,10 +953,97 @@ class Dashboard extends BaseController
     }
 
     /**
+     * Resolves accessible evaluation cycle root folders for the current user session.
+     * Admin, PMT, and University President have institutional oversight across all root cycles.
+     * Supervisors only see evaluation cycles that have been cascaded to them (matching Folders tab).
+     */
+    private function getAccessibleRootFolders(DocumentFolderModel $folderModel, int $userId, string $sysRole, bool $isArchived = false): array
+    {
+        if ($isArchived) {
+            if ($sysRole !== 'Admin') {
+                return [];
+            }
+            return $folderModel->groupStart()
+                ->where('parent_folder_id IS NULL')
+                ->orWhere('parent_folder_id', '')
+                ->groupEnd()
+                ->where('deleted_at IS NOT NULL')
+                ->orderBy('deleted_at', 'DESC')
+                ->findAll();
+        }
+
+        $userModel = new UserModel();
+        $userRow = $userModel->find($userId);
+        $userEmail = strtolower($userRow['email'] ?? '');
+
+        $isPresidentSession = false;
+        try {
+            if (session_status() === PHP_SESSION_ACTIVE || !headers_sent()) {
+                $isPresidentSession = (bool)session()->get('is_president');
+            }
+        } catch (\Throwable $e) {
+            $isPresidentSession = false;
+        }
+
+        $ownPlantilla = $userModel->getActivePlantillaDetails($userId);
+        $posTitle = strtolower($ownPlantilla['position'] ?? '');
+        $isPresident = $isPresidentSession 
+                    || (str_contains($posTitle, 'president') && !str_contains($posTitle, 'vice')) 
+                    || str_contains($userEmail, 'president');
+
+        if (in_array($sysRole, ['Admin', 'PMT']) || $isPresident) {
+            return $folderModel->groupStart()
+                ->where('parent_folder_id IS NULL')
+                ->orWhere('parent_folder_id', '')
+                ->groupEnd()
+                ->where('deleted_at IS NULL')
+                ->orderBy('created_at', 'DESC')
+                ->findAll();
+        }
+
+        // For Supervisors: Only cycles where this user owns an active folder (i.e. cascaded to them)
+        $myFolders = $folderModel->where('user_id', $userId)
+            ->where('deleted_at IS NULL')
+            ->findAll();
+
+        if (empty($myFolders)) {
+            return [];
+        }
+
+        $cascadedCycleIds = [];
+        foreach ($myFolders as $mf) {
+            $cId = !empty($mf['cycle_folder_id'])
+                ? (string)$mf['cycle_folder_id']
+                : ((empty($mf['parent_folder_id'])) ? (string)$mf['id'] : (string)$folderModel->getRootCycleFolderId($mf['id']));
+            if ($cId !== '') {
+                $cascadedCycleIds[] = $cId;
+            }
+        }
+        $cascadedCycleIds = array_values(array_unique(array_filter($cascadedCycleIds)));
+
+        if (empty($cascadedCycleIds)) {
+            return [];
+        }
+
+        return $folderModel->groupStart()
+            ->where('parent_folder_id IS NULL')
+            ->orWhere('parent_folder_id', '')
+            ->groupEnd()
+            ->whereIn('id', $cascadedCycleIds)
+            ->where('deleted_at IS NULL')
+            ->orderBy('created_at', 'DESC')
+            ->findAll();
+    }
+
+    /**
      * Gathers all personnel records and folder states for the specified cycle and scope.
      */
     private function gatherCycleFolders($activeCycle, ?int $selectedUnitId, string $sysRole, int $userId, array $allUnits = [], ?array $scopedUnitIds = null, ?string $supervisorCollegeName = null): array
     {
+        if (!$activeCycle || empty($activeCycle['id'])) {
+            return [];
+        }
+
         $db = $this->db ?? \Config\Database::connect();
         $folderModel = new DocumentFolderModel();
         $unitModel   = new UnitModel();
@@ -914,7 +1051,8 @@ class Dashboard extends BaseController
         $cycleFolders = [];
 
         if ($activeCycle) {
-            $descendantIds = $folderModel->getAllDescendantFolderIds($activeCycle['id']);
+            $isCycleArchived = !empty($activeCycle['deleted_at']) || ($activeCycle['status'] ?? '') === 'archived';
+            $descendantIds = $folderModel->getAllDescendantFolderIds($activeCycle['id'], $isCycleArchived);
             $targetFolderIds = !empty($descendantIds) ? $descendantIds : [];
 
             if (!empty($targetFolderIds)) {
@@ -928,8 +1066,11 @@ class Dashboard extends BaseController
                     ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
                     ->join('positions pos', 'pos.id = p.position_id', 'left')
                     ->join('units un', 'un.id = p.unit_id', 'left')
-                    ->whereIn('df.id', $targetFolderIds)
-                    ->where('df.deleted_at IS NULL');
+                    ->whereIn('df.id', $targetFolderIds);
+
+                if (!$isCycleArchived) {
+                    $builder->where('df.deleted_at IS NULL');
+                }
 
                 if ($selectedUnitId) {
                     $filteredUnitIds = $unitModel->getDescendantIds([$selectedUnitId]);
@@ -967,7 +1108,7 @@ class Dashboard extends BaseController
             }
         }
 
-        if (!empty($unstartedScopedUnitIds)) {
+        if (!$isCycleArchived && !empty($unstartedScopedUnitIds)) {
             $existingUserIds = array_column($cycleFolders, 'user_id');
             $activeEmployees = $db->table('users u')
                 ->select("u.id as user_id, u.first_name, u.last_name, u.email,

@@ -11,6 +11,8 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     // Executive Analytics Dashboard (Admin, Supervisor, PMT)
     $routes->get('dashboard/export-masterlist', 'Dashboard::exportMasterlist', ['filter' => 'role:Admin,Supervisor,PMT']);
     $routes->get('dashboard/export-masterlist/(:segment)', 'Dashboard::exportMasterlist/$1', ['filter' => 'role:Admin,Supervisor,PMT']);
+    $routes->get('dashboard/archived', 'Dashboard::archived', ['filter' => 'role:Admin']);
+    $routes->get('dashboard/archived/(:segment)', 'Dashboard::archived/$1', ['filter' => 'role:Admin']);
     $routes->get('dashboard', 'Dashboard::index', ['filter' => 'role:Admin,Supervisor,PMT']);
     $routes->get('dashboard/(:segment)', 'Dashboard::index/$1', ['filter' => 'role:Admin,Supervisor,PMT']);
 

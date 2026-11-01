@@ -210,16 +210,17 @@ class  DocumentFolderModel extends Model
     /**
      * Recursively traverses and collects all descendant folder IDs under a given root folder.
      */
-    public function getAllDescendantFolderIds(string|int $rootFolderId): array
+    public function getAllDescendantFolderIds(string|int $rootFolderId, bool $withDeleted = false): array
     {
         $descendantIds = [];
         $frontier = [$rootFolderId];
 
         while (!empty($frontier)) {
-            $children = $this->select('id')
-                ->whereIn('parent_folder_id', $frontier)
-                ->where('deleted_at IS NULL')
-                ->findAll();
+            $builder = $this->select('id')->whereIn('parent_folder_id', $frontier);
+            if (!$withDeleted) {
+                $builder->where('deleted_at IS NULL');
+            }
+            $children = $builder->findAll();
 
             if (empty($children)) {
                 break;

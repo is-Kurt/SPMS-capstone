@@ -15,7 +15,7 @@
             'activeCycle'      => $activeCycle ?? null,
             'folders'          => $rootFolders ?? ($sidebarFolders ?? []),
             'selectedFolderId' => $activeCycle['id'] ?? null,
-            'baseUrl'          => 'dashboard',
+            'baseUrl'          => !empty($isArchivedView) ? 'dashboard/archived' : 'dashboard',
             'containerClass'   => 'mb-3'
         ]) ?>
 
@@ -49,9 +49,16 @@
                 </span>
             </div>
             <div class="flex items-center justify-between gap-2">
-                <h1 class="text-xl font-black tracking-tight text-zinc-900 dark:text-white truncate">
-                    <?= ($sysRole === 'Supervisor' && empty($isPresidentScope)) ? (!empty($isChairScope) ? 'Department Overview' : 'College Overview') : 'Executive Overview' ?>
-                </h1>
+                <div class="flex items-center gap-2 min-w-0">
+                    <h1 class="text-xl font-black tracking-tight text-zinc-900 dark:text-white truncate">
+                        <?= ($sysRole === 'Supervisor' && empty($isPresidentScope)) ? (!empty($isChairScope) ? 'Department Overview' : 'College Overview') : 'Executive Overview' ?>
+                    </h1>
+                    <?php if (!empty($isArchivedView)): ?>
+                        <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 shrink-0">
+                            Archived
+                        </span>
+                    <?php endif; ?>
+                </div>
             </div>
             <?php
             $colleges = [];
@@ -206,9 +213,16 @@
             <!-- Main Title & Desktop Toolbar -->
             <div class="flex items-center justify-between gap-4">
                 <div class="min-w-0">
-                    <h1 class="text-2xl lg:text-3xl font-black tracking-tight text-zinc-900 dark:text-white truncate">
-                        <?= ($sysRole === 'Supervisor' && empty($isPresidentScope)) ? (!empty($isChairScope) ? 'Department Overview' : 'College Overview') : 'Executive Overview' ?>
-                    </h1>
+                    <div class="flex items-center gap-2.5">
+                        <h1 class="text-2xl lg:text-3xl font-black tracking-tight text-zinc-900 dark:text-white truncate">
+                            <?= ($sysRole === 'Supervisor' && empty($isPresidentScope)) ? (!empty($isChairScope) ? 'Department Overview' : 'College Overview') : 'Executive Overview' ?>
+                        </h1>
+                        <?php if (!empty($isArchivedView)): ?>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 shrink-0">
+                                Archived Cycle
+                            </span>
+                        <?php endif; ?>
+                    </div>
                     <?php if ($sysRole === 'Supervisor'): ?>
                         <p class="text-xs font-medium text-zinc-500 dark:text-zinc-400 mt-0.5">
                             <?php if (!empty($isPresidentScope)): ?>
@@ -247,6 +261,17 @@
 
     <!-- 1. OVERVIEW ANALYTICS VIEW -->
     <div id="dashboard-view-analytics" class="p-3.5 sm:p-5 lg:p-6 xl:p-8 overflow-y-auto custom-scrollbar flex-1 space-y-3.5 sm:space-y-5">
+        <?php if (empty($activeCycle)): ?>
+            <div class="p-8 text-center rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
+                <svg class="w-12 h-12 text-zinc-300 dark:text-zinc-600 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                </svg>
+                <h3 class="text-sm font-bold text-zinc-900 dark:text-white">No <?= !empty($isArchivedView) ? 'Archived' : 'Active' ?> Evaluation Cycles Found</h3>
+                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                    <?= !empty($isArchivedView) ? 'There are currently no closed or archived evaluation periods to display.' : 'There are no active evaluation periods currently running.' ?>
+                </p>
+            </div>
+        <?php endif; ?>
         <?php if ($sysRole === 'Supervisor'): ?>
 
         <!-- 1. TOP SUMMARY CARDS: UNIT HEALTH & QUALITY (OPTION A: 1, 2, 4) -->
