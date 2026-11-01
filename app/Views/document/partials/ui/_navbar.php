@@ -132,7 +132,9 @@
                                     $verUrl = $isCurrentVer
                                         ? site_url('document/' . ($doc['id'] ?? ''))
                                         : site_url('document/' . ($doc['id'] ?? '') . '?version=' . $verNum);
-                                    if ($isFromRatings) {
+                                    if ($isFromDashboard) {
+                                        $verUrl .= $isCurrentVer ? '?from=dashboard' : '&from=dashboard';
+                                    } elseif ($isFromRatings) {
                                         $verUrl .= $isCurrentVer ? '?from=ratings' : '&from=ratings';
                                     }
                                 ?>

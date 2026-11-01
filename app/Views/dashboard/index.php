@@ -937,67 +937,14 @@
                     </p>
                 </div>
 
-                <!-- Hierarchical Dropdown & View Masterlist Shortcut -->
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                    <div class="relative w-full sm:w-80">
-                        <select id="compliance-hierarchy-select" onchange="onComplianceScopeChange(this.value)"
-                                class="w-full appearance-none text-xs font-semibold py-2 pl-3 pr-8 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 shadow-2xs cursor-pointer [color-scheme:light] dark:[color-scheme:dark]">
-                            <option value="root" data-name="" data-display-name="All Institutional Sectors" data-level="-1" data-has-children="1">All Institutional Sectors (Root Level)</option>
-                            <?php if (!empty($hierarchicalUnits)): ?>
-                                <?php foreach ($hierarchicalUnits as $hu): ?>
-                                    <?php
-                                        $indent = str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', $hu['level']);
-                                        $prefix = ($hu['level'] > 0) ? '↳ ' : '';
-                                        $hasKids = !empty($hu['has_children']);
-                                        $targetRatio = $hu['target_ratio'] ?? ($hu['target_approved'] . '/' . $hu['headcount']);
-                                    ?>
-                                    <option value="<?= $hu['id'] ?>" 
-                                            data-name="<?= esc(strtolower($hu['name'])) ?>"
-                                            data-display-name="<?= esc($hu['name']) ?>"
-                                            data-level="<?= $hu['level'] ?>"
-                                            data-parent-id="<?= $hu['parent_id'] ?? 0 ?>"
-                                            data-has-children="<?= $hasKids ? '1' : '0' ?>"
-                                            data-descendant-ids="<?= implode(',', $hu['descendant_ids'] ?? []) ?>"
-                                            data-ancestor-ids="<?= implode(',', $hu['ancestor_ids'] ?? []) ?>">
-                                        <?= $indent ?><?= $prefix ?><?= esc($hu['name']) ?> (<?= $targetRatio ?>)
-                                    </option>
-                                <?php endforeach; ?>
-                            <?php elseif (!empty($deptLeaderboard)): ?>
-                                <?php foreach ($deptLeaderboard as $dept): ?>
-                                    <option value="<?= esc(strtolower($dept['name'])) ?>" data-name="<?= esc(strtolower($dept['name'])) ?>" data-display-name="<?= esc($dept['name']) ?>">
-                                        <?= esc($dept['name']) ?> (<?= $dept['eval_completed'] ?>/<?= $dept['headcount'] ?>)
-                                    </option>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-zinc-400">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                        </div>
+                <!-- Search Bar for Departments & Units -->
+                <div class="relative w-full sm:w-64">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </div>
-
-                    <button type="button" id="btn-compliance-view-masterlist" onclick="viewSelectedUnitInMasterlist()"
-                            class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-amber-500 hover:text-amber-400 dark:text-amber-400 dark:hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/30 transition-all cursor-pointer whitespace-nowrap shadow-2xs group"
-                            title="Filter and inspect personnel for selected unit in Master List">
-                        <span id="compliance-view-ml-text">View All in Master List</span>
-                        <span class="transition-transform group-hover:translate-x-0.5">&rarr;</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Breadcrumb Navigation Bar -->
-            <div id="compliance-breadcrumb-bar" class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-zinc-50/80 dark:bg-zinc-950/60 border border-zinc-200/70 dark:border-zinc-800/70 text-xs">
-                <div class="flex items-center gap-2 min-w-0">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
-                    <div id="compliance-breadcrumb-trail" class="flex items-center gap-1.5 font-medium text-zinc-600 dark:text-zinc-400 truncate">
-                        <span class="font-bold text-zinc-900 dark:text-white">All Institutional Sectors</span>
-                        <span class="text-zinc-400 text-[11px]">(3 Executive Sectors)</span>
-                    </div>
-                </div>
-                <div id="compliance-back-btn-container" class="hidden">
-                    <button type="button" onclick="navigateComplianceUp()" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white bg-zinc-200/70 dark:bg-zinc-800/80 hover:bg-zinc-300 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-700 transition-colors cursor-pointer">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-                        <span id="compliance-back-btn-label">Back to Sectors</span>
-                    </button>
+                    <input type="text" id="office-table-search" oninput="filterOfficeLeaderboard(this.value)"
+                           placeholder="Search department or unit..."
+                           class="w-full text-xs font-medium py-2 pl-9 pr-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 shadow-2xs" />
                 </div>
             </div>
 
@@ -1042,8 +989,9 @@
                                     $descendantIds = !empty($hu['descendant_ids']) ? implode(',', $hu['descendant_ids']) : (string)$uId;
                                     $ancestorIds = !empty($hu['ancestor_ids']) ? implode(',', $hu['ancestor_ids']) : '';
                                     $hasKids = !empty($hu['has_children']);
+                                    $kidsCount = count($hu['children_ids'] ?? []);
                                 ?>
-                                <tr class="compliance-unit-row hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
+                                <tr class="compliance-unit-row hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors <?= $hasKids ? 'cursor-pointer' : '' ?>"
                                     data-unit-id="<?= esc($uId) ?>"
                                     data-name="<?= esc(strtolower($uName)) ?>"
                                     data-parent-id="<?= esc($parentId) ?>"
@@ -1051,9 +999,28 @@
                                     data-has-children="<?= $hasKids ? '1' : '0' ?>"
                                     data-descendant-ids="<?= esc($descendantIds) ?>"
                                     data-ancestor-ids="<?= esc($ancestorIds) ?>"
+                                    data-expanded="false"
+                                    <?= $hasKids ? 'onclick="toggleUnitHierarchy(\'' . esc($uId) . '\', event)"' : '' ?>
                                     style="<?= $level === 0 ? '' : 'display: none;' ?>">
-                                    <td class="py-3 px-3.5 whitespace-nowrap">
+                                    <td class="py-3 px-3.5 whitespace-nowrap" style="padding-left: <?= ($level > 0 ? ($level * 1.75 + 0.875) : 0.875) ?>rem;">
                                         <div class="flex items-center gap-2">
+                                            <?php if ($level > 0): ?>
+                                                <span class="text-zinc-400 dark:text-zinc-500 select-none mr-0.5 font-mono text-sm leading-none">↳</span>
+                                            <?php endif; ?>
+
+                                            <?php if ($hasKids): ?>
+                                                <button type="button" 
+                                                        onclick="event.stopPropagation(); toggleUnitHierarchy('<?= esc($uId) ?>', event)"
+                                                        class="compliance-dropdown-btn inline-flex items-center justify-center w-6 h-6 rounded-md text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 transition-all cursor-pointer shrink-0"
+                                                        title="Click to toggle <?= $kidsCount ?> sub-units">
+                                                    <svg class="w-3.5 h-3.5 transition-transform duration-200 compliance-chevron text-zinc-500 dark:text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
+                                                    </svg>
+                                                </button>
+                                            <?php else: ?>
+                                                <span class="w-6 shrink-0"></span>
+                                            <?php endif; ?>
+
                                             <?php if ($level === 0): ?>
                                                 <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
                                                 <span class="font-bold text-zinc-900 dark:text-white truncate block max-w-[280px]" title="<?= esc($uName) ?>">
@@ -1065,7 +1032,7 @@
                                                 <span class="font-bold text-zinc-900 dark:text-white truncate block max-w-[260px]" title="<?= esc($uName) ?>">
                                                     <?= esc($uName) ?>
                                                 </span>
-                                                <span class="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">Academic College</span>
+                                                <span class="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">College</span>
                                             <?php elseif ($level === 1): ?>
                                                 <span class="w-2 h-2 rounded-full bg-zinc-400 shrink-0"></span>
                                                 <span class="font-semibold text-zinc-800 dark:text-zinc-200 truncate block max-w-[260px]" title="<?= esc($uName) ?>">
@@ -1081,12 +1048,9 @@
                                             <?php endif; ?>
 
                                             <?php if ($hasKids): ?>
-                                                <button type="button" onclick="setComplianceScope('<?= $uId ?>')"
-                                                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition-colors cursor-pointer"
-                                                        title="Show child units for <?= esc($uName) ?>">
-                                                    <span>View Sub-Units</span>
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                                                </button>
+                                                <span class="inline-flex items-center text-[10px] font-bold text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800/80 px-1.5 py-0.5 rounded shrink-0">
+                                                    <?= $kidsCount ?> <?= $kidsCount === 1 ? 'sub-unit' : 'sub-units' ?>
+                                                </span>
                                             <?php endif; ?>
                                         </div>
                                     </td>
@@ -1116,7 +1080,7 @@
                                         <?= $avgRating > 0 ? number_format($avgRating, 2) : '——' ?>
                                     </td>
                                     <td class="py-3 px-3.5 text-right whitespace-nowrap">
-                                        <button type="button" onclick="filterMasterlistByUnit('<?= esc(addslashes($uName)) ?>', '<?= esc($uId) ?>')"
+                                        <button type="button" onclick="event.stopPropagation(); filterMasterlistByUnit('<?= esc(addslashes($uName)) ?>', '<?= esc($uId) ?>')"
                                                 class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold text-amber-500 hover:text-amber-400 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/10 transition-all cursor-pointer shadow-2xs group"
                                                 title="Filter Master List by <?= esc($uName) ?>">
                                             <span>View in Master List</span>
@@ -1137,15 +1101,17 @@
                                         data-parent-scope="<?= esc($uId) ?>"
                                         data-is-direct-staff="1"
                                         data-unit-id="<?= esc($uId) ?>"
-                                        data-name="<?= esc(strtolower($uName)) ?>"
+                                        data-name="<?= esc(strtolower($uName)) ?> direct"
                                         style="display: none;">
-                                        <td class="py-3 px-3.5 whitespace-nowrap">
+                                        <td class="py-3 px-3.5 whitespace-nowrap" style="padding-left: <?= (($level + 1) * 1.75 + 0.875) ?>rem;">
                                             <div class="flex items-center gap-2">
+                                                <span class="text-zinc-400 dark:text-zinc-500 select-none mr-0.5 font-mono text-sm leading-none">↳</span>
+                                                <span class="w-6 shrink-0"></span>
                                                 <span class="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
-                                                <span class="font-semibold text-zinc-800 dark:text-zinc-200 truncate block max-w-[280px]">
-                                                    <?= esc($uName) ?> (Direct Personnel)
+                                                <span class="font-medium text-zinc-700 dark:text-zinc-300 truncate block max-w-[280px]">
+                                                    <?= esc($uName) ?> (Direct Staff)
                                                 </span>
-                                                <span class="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">Direct Staff</span>
+                                                <span class="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0"><?= $level === 0 ? 'Executive Office' : "Dean's Office" ?></span>
                                             </div>
                                         </td>
                                         <td class="py-3 px-3 text-center font-bold text-zinc-900 dark:text-white">
@@ -1171,7 +1137,7 @@
                                             <?= $dirAvgR > 0 ? number_format($dirAvgR, 2) : '——' ?>
                                         </td>
                                         <td class="py-3 px-3.5 text-right whitespace-nowrap">
-                                            <button type="button" onclick="filterMasterlistByUnit('<?= esc(addslashes($uName)) ?>', '<?= esc($uId) ?>')"
+                                            <button type="button" onclick="event.stopPropagation(); filterMasterlistByUnit('<?= esc(addslashes($uName)) ?>', '<?= esc($uId) ?>')"
                                                     class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold text-amber-500 hover:text-amber-400 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/10 transition-all cursor-pointer shadow-2xs group"
                                                     title="Filter Master List by <?= esc($uName) ?>">
                                                 <span>View in Master List</span>
@@ -2406,160 +2372,119 @@ function filterMasterlistByUnit(deptName, unitId) {
 }
 window.filterMasterlistByUnit = filterMasterlistByUnit;
 
-function viewSelectedUnitInMasterlist() {
-    const sel = document.getElementById('compliance-hierarchy-select');
-    if (!sel) return;
-    const opt = sel.options[sel.selectedIndex];
-    if (!opt) return;
-    const unitId = opt.value;
-    const unitName = opt.getAttribute('data-display-name') || opt.getAttribute('data-name') || '';
+// --- Department & Unit Compliance Dropdown / Expandable Tree ---
+function toggleUnitHierarchy(unitId, event) {
+    if (event && event.target && event.target.closest('button.group, a, input, select')) {
+        return; // Avoid triggering when clicking the View in Master List button
+    }
+    const parentRow = document.querySelector(`.compliance-unit-row[data-unit-id="${unitId}"]`);
+    if (!parentRow) return;
 
-    if (!unitId || unitId === 'root' || unitId === 'all') {
-        if (typeof clearAllMasterlistFilters === 'function') {
-            clearAllMasterlistFilters();
-        }
-        if (typeof switchDashboardView === 'function') {
-            switchDashboardView('masterlist');
-        }
-        filterMasterlist(true);
-        const mlView = document.getElementById('dashboard-view-masterlist');
-        if (mlView) {
-            mlView.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
+    const isExpanded = parentRow.getAttribute('data-expanded') === 'true';
+    const newExpanded = !isExpanded;
+    parentRow.setAttribute('data-expanded', newExpanded ? 'true' : 'false');
+
+    const chevron = parentRow.querySelector('.compliance-chevron');
+    if (chevron) {
+        chevron.style.transform = newExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
+    }
+
+    if (!newExpanded) {
+        collapseComplianceDescendants(unitId);
     } else {
-        filterMasterlistByUnit(unitName, unitId);
+        document.querySelectorAll(`.compliance-unit-row[data-parent-id="${unitId}"]`).forEach(r => {
+            r.style.display = '';
+        });
+        const dirRow = document.querySelector(`.compliance-direct-staff-row[data-parent-scope="${unitId}"]`);
+        if (dirRow) {
+            dirRow.style.display = '';
+        }
     }
 }
-window.viewSelectedUnitInMasterlist = viewSelectedUnitInMasterlist;
+window.toggleUnitHierarchy = toggleUnitHierarchy;
 
-// --- Hierarchical Scope Controller (Shows ONLY child nodes for the selected level) ---
-function onComplianceScopeChange(scopeId) {
-    const sel = document.getElementById('compliance-hierarchy-select');
-    if (sel && sel.value !== scopeId) {
-        sel.value = scopeId;
+function collapseComplianceDescendants(unitId) {
+    document.querySelectorAll(`.compliance-unit-row[data-parent-id="${unitId}"]`).forEach(r => {
+        r.style.display = 'none';
+        r.setAttribute('data-expanded', 'false');
+        const ch = r.querySelector('.compliance-chevron');
+        if (ch) ch.style.transform = 'rotate(0deg)';
+        const childId = r.getAttribute('data-unit-id');
+        if (childId) {
+            collapseComplianceDescendants(childId);
+        }
+    });
+    const dirRow = document.querySelector(`.compliance-direct-staff-row[data-parent-scope="${unitId}"]`);
+    if (dirRow) {
+        dirRow.style.display = 'none';
     }
+}
 
-    const selectedOpt = sel ? sel.options[sel.selectedIndex] : null;
-    const isRoot = (!scopeId || scopeId === 'root' || scopeId === 'all');
-    const selectedName = selectedOpt ? (selectedOpt.getAttribute('data-display-name') || selectedOpt.text.replace(/^[↳\s]+/, '') || '').trim() : '';
-    const parentId = selectedOpt ? (selectedOpt.getAttribute('data-parent-id') || '0') : '0';
-    const hasChildren = selectedOpt ? (selectedOpt.getAttribute('data-has-children') === '1') : false;
-
-    // 1. Update Top Masterlist Shortcut Button Text
-    const btnText = document.getElementById('compliance-view-ml-text');
-    if (btnText) {
-        btnText.textContent = isRoot ? 'View All in Master List' : 'View in Master List';
-    }
-
-    // 2. Filter Table Rows: Display ONLY the immediate child nodes of active scope
-    const normalRows = document.querySelectorAll('.compliance-unit-row');
+function filterOfficeLeaderboard(query) {
+    const q = (query || '').toLowerCase().trim();
+    const rows = document.querySelectorAll('.compliance-unit-row');
     const directRows = document.querySelectorAll('.compliance-direct-staff-row');
-    let visibleCount = 0;
-
-    if (isRoot) {
-        // Root scope: Show ONLY root-level executive sectors
-        normalRows.forEach(row => {
-            const pId = row.getAttribute('data-parent-id');
-            const lvl = row.getAttribute('data-level');
-            const isTop = (pId === '0' || lvl === '0');
-            row.style.display = isTop ? '' : 'none';
-            if (isTop) visibleCount++;
-        });
-        directRows.forEach(row => row.style.display = 'none');
-    } else if (hasChildren) {
-        // Parent scope with child nodes: Show ONLY its direct children + direct personnel row
-        normalRows.forEach(row => {
-            const pId = row.getAttribute('data-parent-id');
-            const isChild = (pId === String(scopeId));
-            row.style.display = isChild ? '' : 'none';
-            if (isChild) visibleCount++;
-        });
-        directRows.forEach(row => {
-            const pScope = row.getAttribute('data-parent-scope');
-            const isDirect = (pScope === String(scopeId));
-            row.style.display = isDirect ? '' : 'none';
-            if (isDirect) visibleCount++;
-        });
-    } else {
-        // Terminal leaf scope: Show this specific row
-        normalRows.forEach(row => {
-            const uId = row.getAttribute('data-unit-id');
-            const isSelf = (uId === String(scopeId));
-            row.style.display = isSelf ? '' : 'none';
-            if (isSelf) visibleCount++;
-        });
-        directRows.forEach(row => row.style.display = 'none');
-    }
-
-    // 3. Update Empty State Row
     const emptyRow = document.getElementById('compliance-empty-row');
-    if (emptyRow) {
-        emptyRow.classList.toggle('hidden', visibleCount > 0);
+
+    if (!q) {
+        rows.forEach(r => {
+            const isTop = (r.getAttribute('data-level') === '0');
+            r.style.display = isTop ? '' : 'none';
+            r.setAttribute('data-expanded', 'false');
+            const ch = r.querySelector('.compliance-chevron');
+            if (ch) ch.style.transform = 'rotate(0deg)';
+        });
+        directRows.forEach(r => r.style.display = 'none');
+        if (emptyRow) emptyRow.classList.add('hidden');
+        return;
     }
 
-    // 4. Update Breadcrumb Bar & Back Navigation
-    updateComplianceBreadcrumb(scopeId, isRoot, selectedName, parentId);
-}
-window.onComplianceScopeChange = onComplianceScopeChange;
-window.setComplianceScope = function(scopeId) {
-    onComplianceScopeChange(scopeId);
-};
-
-function updateComplianceBreadcrumb(scopeId, isRoot, selectedName, parentId) {
-    const trail = document.getElementById('compliance-breadcrumb-trail');
-    const backBtnContainer = document.getElementById('compliance-back-btn-container');
-    const backBtnLabel = document.getElementById('compliance-back-btn-label');
-
-    if (isRoot) {
-        if (trail) {
-            trail.innerHTML = `
-                <span class="font-bold text-zinc-900 dark:text-white">All Institutional Sectors</span>
-                <span class="text-zinc-400 text-[11px]">(3 Executive Sectors)</span>
-            `;
+    let matchCount = 0;
+    rows.forEach(r => {
+        const name = (r.getAttribute('data-name') || '').toLowerCase();
+        if (name.includes(q)) {
+            r.style.display = '';
+            matchCount++;
+            const ancestors = (r.getAttribute('data-ancestor-ids') || '').split(',').map(s => s.trim()).filter(Boolean);
+            ancestors.forEach(aId => {
+                const anc = document.querySelector(`.compliance-unit-row[data-unit-id="${aId}"]`);
+                if (anc) {
+                    anc.style.display = '';
+                    anc.setAttribute('data-expanded', 'true');
+                    const ch = anc.querySelector('.compliance-chevron');
+                    if (ch) ch.style.transform = 'rotate(90deg)';
+                }
+            });
+        } else {
+            r.style.display = 'none';
         }
-        if (backBtnContainer) backBtnContainer.classList.add('hidden');
-    } else {
-        let breadcrumbHtml = `<button type="button" onclick="setComplianceScope('root')" class="hover:underline text-zinc-500 dark:text-zinc-400 font-semibold cursor-pointer">Institutional Sectors</button>`;
-        
-        let backTarget = 'root';
-        let backLabel = 'Back to Sectors';
+    });
 
-        if (parentId && parentId !== '0') {
-            const parentOpt = document.querySelector(`#compliance-hierarchy-select option[value="${parentId}"]`);
-            const parentName = parentOpt ? (parentOpt.getAttribute('data-display-name') || parentOpt.text.replace(/^[↳\s]+/, '')) : 'Parent Sector';
-            breadcrumbHtml += ` <span class="text-zinc-400 select-none">&rsaquo;</span> <button type="button" onclick="setComplianceScope('${parentId}')" class="hover:underline text-zinc-500 dark:text-zinc-400 font-semibold cursor-pointer">${parentName}</button>`;
-            backTarget = parentId;
-            backLabel = `Back to ${parentName}`;
-        }
-
-        breadcrumbHtml += ` <span class="text-zinc-400 select-none">&rsaquo;</span> <span class="font-bold text-zinc-900 dark:text-white">${selectedName}</span>`;
-
-        if (trail) trail.innerHTML = breadcrumbHtml;
-        if (backBtnContainer) {
-            backBtnContainer.classList.remove('hidden');
-            if (backBtnLabel) backBtnLabel.textContent = backLabel;
-            const backBtn = backBtnContainer.querySelector('button');
-            if (backBtn) {
-                backBtn.onclick = function() {
-                    setComplianceScope(backTarget);
-                };
+    directRows.forEach(r => {
+        const name = (r.getAttribute('data-name') || '').toLowerCase();
+        if (name.includes(q)) {
+            r.style.display = '';
+            matchCount++;
+            const pScope = r.getAttribute('data-parent-scope');
+            if (pScope) {
+                const anc = document.querySelector(`.compliance-unit-row[data-unit-id="${pScope}"]`);
+                if (anc) {
+                    anc.style.display = '';
+                    anc.setAttribute('data-expanded', 'true');
+                    const ch = anc.querySelector('.compliance-chevron');
+                    if (ch) ch.style.transform = 'rotate(90deg)';
+                }
             }
+        } else {
+            r.style.display = 'none';
         }
+    });
+
+    if (emptyRow) {
+        emptyRow.classList.toggle('hidden', matchCount > 0);
     }
 }
-
-window.navigateComplianceUp = function() {
-    const sel = document.getElementById('compliance-hierarchy-select');
-    if (!sel) return;
-    const opt = sel.options[sel.selectedIndex];
-    const parentId = opt ? (opt.getAttribute('data-parent-id') || '0') : '0';
-    setComplianceScope(parentId && parentId !== '0' ? parentId : 'root');
-};
-
-// Backwards compatibility alias
-window.onHierarchyDropdownChange = function(sel) {
-    if (sel) onComplianceScopeChange(sel.value);
-};
+window.filterOfficeLeaderboard = filterOfficeLeaderboard;
 
 function openMasterlistDocument(docUrl, event) {
     if (!docUrl) return;
