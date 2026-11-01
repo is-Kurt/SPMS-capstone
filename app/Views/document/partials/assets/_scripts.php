@@ -38,16 +38,22 @@
     const defaultSupervisors = <?= json_encode($supervisors ?? []) ?>;
     const defaultCascadeDate = <?= json_encode($cascadeDate ?? date('Y-m-d')) ?>;
     const cascadedTargets = <?= json_encode($cascadedTargets ?? null) ?>;
+    const systemDefaultWeights = <?= json_encode($systemDefaultWeights ?? []) ?>;
 
     const canEditTargets = <?= json_encode($canEditTargets) ?>;
     const canEditApprover = <?= json_encode($canEditApprover) ?>;
     const canEditEvaluation = <?= json_encode($canEditEvaluation) ?>;
+    const canEditAccomplishments = <?= json_encode($canEditAccomplishments ?? false) ?>;
+    const canEditRemarks = <?= json_encode($canEditRemarks) ?>;
     const isTargetPhase = <?= json_encode($isTargetPhase) ?>;
     const isEvaluationPhase = <?= json_encode($isEvaluationPhase) ?>;
 
     window.canEditTargets = canEditTargets;
     window.canEditApprover = canEditApprover;
     window.canEditEvaluation = canEditEvaluation;
+    window.canEditAccomplishments = canEditAccomplishments;
+    window.canEditRemarks = canEditRemarks;
+    window.systemDefaultWeights = systemDefaultWeights;
 
     window.digitalRubricsData = (tabs[0]?.formData?.rubrics && !Array.isArray(tabs[0]?.formData?.rubrics)) ? tabs[0].formData.rubrics : {};
     
@@ -112,8 +118,6 @@
         <?php if (!empty($allBasisGuides) && !$isGuide): ?>
             <?php foreach ($allBasisGuides as $gIdx => $g): ?>
                 <?php 
-                    $isBasisOpcr = !empty($isParentDocOpcr) || str_contains(strtoupper($g['title'] ?? ''), 'OPCR') || (strtoupper($g['doc_type'] ?? '') === 'OPCR');
-                    $basisBadgeLabel = $g['is_approved'] ? ($isBasisOpcr ? 'Institutional' : 'Approved') : 'Pending';
                     $tabKey = 'basis-tab-' . $gIdx;
                     $supShortName = esc($g['superior_name'] ?? '');
                     $guideTitle = esc($g['title'] ?? 'Basis');
@@ -131,30 +135,20 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     <span><?= $tabLabel ?></span>
-                    <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold ${isBasisActive_<?= $gIdx ?> ? 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-300 dark:border-sky-700' : '<?= $g['is_approved'] ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400' ?>'}">
-                        <?= esc($basisBadgeLabel) ?>
-                    </span>
                 `;
                 tabBar.appendChild(basisBtn_<?= $gIdx ?>);
             <?php endforeach; ?>
         <?php elseif (!empty($basisDoc) && !$isGuide): ?>
-            <?php 
-                $isBasisOpcr = !empty($isParentDocOpcr) || str_contains(strtoupper($basisDoc['title'] ?? ''), 'OPCR') || (strtoupper($basisDoc['doc_type'] ?? '') === 'OPCR');
-                $basisBadgeLabel = $isParentTargetApproved ? ($isBasisOpcr ? 'Institutional' : 'Approved') : 'Pending';
-            ?>
             const isBasisActive = (activeTabId === 'basis-tab' || activeTabId === 'basis-tab-0');
             const basisBtn = document.createElement('div');
             basisBtn.className = `group flex items-center gap-1.5 pb-2 border-b-2 transition-colors select-none cursor-pointer ${isBasisActive ? 'border-sky-600 text-sky-800 dark:border-sky-400 dark:text-sky-300 font-extrabold' : 'border-transparent text-zinc-500 hover:text-zinc-800 dark:text-text-muted dark:hover:text-text'}`;
             basisBtn.onclick = () => switchEditorTab('basis-tab-0');
-            basisBtn.title = 'View Superior Basis Document';
+            basisBtn.title = 'View Superior Basis Document: <?= esc($basisDoc['title']) ?>';
             basisBtn.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 ${isBasisActive ? 'text-sky-500' : 'text-sky-500/70'} shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <span>Basis: <?= esc($basisDoc['title']) ?></span>
-                <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold ${isBasisActive ? 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-300 dark:border-sky-700' : '<?= $isParentTargetApproved ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400' ?>'}">
-                    <?= esc($basisBadgeLabel) ?>
-                </span>
             `;
             tabBar.appendChild(basisBtn);
         <?php endif; ?>
@@ -1057,7 +1051,49 @@
             if (basisWorkspace) {
                 basisWorkspace.classList.remove('hidden');
                 const gIdx = parseInt(activeTabId.replace('basis-tab-', '').replace('basis-tab', '')) || 0;
-                renderBasisStaticSheet(gIdx);
+                window.currentBasisGuideIdx = gIdx;
+                const mode = (window.basisViewMode && window.basisViewMode[gIdx]) || 'form';
+
+                const basisFormSheet = document.getElementById('basis-printable-sheet');
+                const basisRubricsSheet = document.getElementById('basis-rubrics-sheet');
+
+                if (mode === 'rubrics') {
+                    if (basisFormSheet) {
+                        basisFormSheet.classList.add('hidden');
+                        basisFormSheet.style.setProperty('display', 'none', 'important');
+                    }
+                    if (basisRubricsSheet) {
+                        basisRubricsSheet.classList.remove('hidden');
+                        basisRubricsSheet.style.removeProperty('display');
+                        renderBasisRubricsSheet(gIdx);
+                    }
+                } else {
+                    if (basisRubricsSheet) {
+                        basisRubricsSheet.classList.add('hidden');
+                        basisRubricsSheet.style.setProperty('display', 'none', 'important');
+                    }
+                    if (basisFormSheet) {
+                        basisFormSheet.classList.remove('hidden');
+                        basisFormSheet.style.removeProperty('display');
+                        renderBasisStaticSheet(gIdx);
+                    }
+                }
+
+                // Sync switch buttons state
+                document.querySelectorAll('.basis-switch-form').forEach(btn => {
+                    if (mode === 'form') {
+                        btn.classList.add('is-active');
+                    } else {
+                        btn.classList.remove('is-active');
+                    }
+                });
+                document.querySelectorAll('.basis-switch-rubrics').forEach(btn => {
+                    if (mode === 'rubrics') {
+                        btn.classList.add('is-active');
+                    } else {
+                        btn.classList.remove('is-active');
+                    }
+                });
             }
             if (typeof window.updateDynamicDocActionButton === 'function') window.updateDynamicDocActionButton();
             return;
@@ -1292,105 +1328,24 @@
         const label = document.getElementById('dynamic-doc-action-label');
         const icon = document.getElementById('dynamic-doc-action-icon');
 
-        const isBasisTab = (typeof activeTabId === 'string' && activeTabId.startsWith('basis-tab'));
-
-        if (isBasisTab) {
-            btn.className = "inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-extrabold text-white bg-sky-600 hover:bg-sky-700 border border-sky-500 shadow-md shadow-sky-600/20 transition-all active:scale-[0.98] cursor-pointer print-hide";
-            btn.title = "Copy all targets, success indicators, and rubrics from this superior basis into your target form";
-            if (label) label.innerText = "Append to My Form";
-            if (icon) {
-                icon.outerHTML = `<svg id="dynamic-doc-action-icon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>`;
-            }
-        } else {
-            btn.className = "inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-bold border transition-all shadow-sm active:scale-[0.98] cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 border-slate-300 dark:border-zinc-700 print-hide";
-            btn.title = "Reset document deliverables and custom rubrics back to blank template";
-            if (label) label.innerText = "Reset Doc";
-            if (icon) {
-                icon.outerHTML = `<svg id="dynamic-doc-action-icon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>`;
-            }
+        btn.className = "inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-bold border transition-all shadow-sm active:scale-[0.98] cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 border-slate-300 dark:border-zinc-700 print-hide";
+        const hasCascaded = Boolean(cascadedTargets && cascadedTargets.hasTargets);
+        btn.title = hasCascaded 
+            ? "Reset document deliverables and rubrics back to initially cascaded targets from supervisor" 
+            : "Reset document deliverables and custom rubrics back to blank template";
+        if (label) label.innerText = "Reset Doc";
+        if (icon) {
+            icon.outerHTML = `<svg id="dynamic-doc-action-icon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>`;
         }
     };
 
     window.handleDynamicDocAction = async function() {
-        const isBasisTab = (typeof activeTabId === 'string' && activeTabId.startsWith('basis-tab'));
-        if (isBasisTab) {
-            const gIdx = parseInt(activeTabId.replace('basis-tab-', '').replace('basis-tab', '')) || 0;
-            window.appendBasisGuideToForm(gIdx);
-        } else {
-            await window.resetDocumentForm();
-        }
+        await window.resetDocumentForm();
     };
 
+    // Deprecated: Append to form removed as Reset Doc already restores initial cascade
     window.appendBasisGuideToForm = function(guideIdx = 0) {
-        const guide = (typeof allBasisGuides !== 'undefined' && allBasisGuides && allBasisGuides[guideIdx]) 
-            ? allBasisGuides[guideIdx] 
-            : ((typeof allBasisGuides !== 'undefined' && allBasisGuides && allBasisGuides[0]) ? allBasisGuides[0] : null);
-
-        if (!guide || !guide.formData) {
-            if (typeof window.showToast === 'function') {
-                window.showToast('No structured targets or rubrics available in this basis document.', 'info');
-            }
-            return;
-        }
-
-        const cats = guide.formData.categories || {};
-        let addedCount = 0;
-        ['core', 'strategic', 'support'].forEach(cat => {
-            if (window.isCurrentDocIperf && cat !== 'core') return;
-            if (Array.isArray(cats[cat])) {
-                cats[cat].forEach(row => {
-                    const rowMfo = (row.mfo || '').trim().toLowerCase();
-                    const rowInd = (row.indicators || '').trim().toLowerCase();
-                    if (!rowMfo && !rowInd) return;
-
-                    // Deduplicate against rows currently present in table tbody
-                    const tbody = document.getElementById('tbody-' + cat);
-                    let alreadyPresent = false;
-                    if (tbody) {
-                        const trList = tbody.querySelectorAll('.table-row-' + cat);
-                        trList.forEach(tr => {
-                            const curMfo = (tr.querySelector('.field-mfo')?.value || '').trim().toLowerCase();
-                            const curInd = (tr.querySelector('.field-indicators')?.value || '').trim().toLowerCase();
-                            if (curMfo === rowMfo && curInd === rowInd) {
-                                alreadyPresent = true;
-                            }
-                        });
-                    }
-
-                    if (!alreadyPresent) {
-                        const clone = Object.assign({}, row, {
-                            row_id: 'row_' + cat + '_basis_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6)
-                        });
-                        addTableRow(cat, clone);
-                        if (guide.formData.rubrics && guide.formData.rubrics[row.row_id]) {
-                            if (!window.digitalRubricsData) window.digitalRubricsData = {};
-                            window.digitalRubricsData[clone.row_id] = JSON.parse(JSON.stringify(guide.formData.rubrics[row.row_id]));
-                        }
-                        addedCount++;
-                    }
-                });
-            }
-        });
-
-        if (addedCount > 0) {
-            if (tabs[0]?.formData) tabs[0].formData.rubrics = window.digitalRubricsData;
-            if (typeof window.syncSpmsActiveTab === 'function') window.syncSpmsActiveTab();
-            if (typeof AppState !== 'undefined') AppState.setDirty(true);
-            if (typeof window.renderDigitalRubricsMatrix === 'function') window.renderDigitalRubricsMatrix();
-
-            // Switch back to user's form tab
-            if (tabs && tabs[0]) {
-                switchEditorTab(tabs[0].id);
-            }
-
-            if (typeof window.showToast === 'function') {
-                window.showToast(`Successfully appended ${addedCount} target(s) and rubrics from ${guide.title} (${guide.superior_name}).`, 'success');
-            }
-        } else {
-            if (typeof window.showToast === 'function') {
-                window.showToast('All targets and rubrics from this superior basis are already present in your form.', 'info');
-            }
-        }
+        window.resetDocumentForm();
     };
 
     window.resetDocumentForm = async function() {
@@ -1401,48 +1356,95 @@
             return;
         }
 
+        const hasCascaded = Boolean(cascadedTargets && cascadedTargets.hasTargets);
+        const confirmMsg = hasCascaded 
+            ? 'Are you sure you want to reset this document? All deliverables and rubrics will be restored to their original cascaded targets from your supervisor(s).'
+            : 'Are you sure you want to reset this document? All current deliverables and rubrics will be cleared back to a clean template.';
+        const confirmTitle = hasCascaded ? 'Reset to Cascaded Targets' : 'Reset Document';
+        const confirmBtnText = hasCascaded ? 'Reset to Cascaded' : 'Reset Document';
+
         const confirmed = (typeof window.appConfirm === 'function') 
-            ? await window.appConfirm('Are you sure you want to reset this document? All current deliverables and rubrics will be cleared back to a clean template.', {
-                title: 'Reset Document',
-                confirmText: 'Reset Document',
+            ? await window.appConfirm(confirmMsg, {
+                title: confirmTitle,
+                confirmText: confirmBtnText,
                 isDanger: true
             })
-            : confirm('Are you sure you want to reset this document? All current deliverables and rubrics will be cleared back to a clean template.');
+            : confirm(confirmMsg);
 
         if (!confirmed) return;
 
-        ['core', 'strategic', 'support'].forEach(cat => {
-            const tbody = document.getElementById('tbody-' + cat);
-            if (tbody) {
-                tbody.innerHTML = '';
-                addTableRow(cat, {
-                    mfo: '',
-                    indicators: '',
-                    budget: '',
-                    accountable: '',
-                    actual: '',
-                    q: '',
-                    t: '',
-                    e: '',
-                    remarks: '',
-                    row_id: 'row_' + cat + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6)
-                });
+        // If currently viewing another tab (like a basis tab or rubrics tab), switch back to user's main target form tab
+        if (tabs && tabs[0] && activeTabId !== tabs[0].id) {
+            if (typeof switchEditorTab === 'function') {
+                switchEditorTab(tabs[0].id);
             }
-        });
-
-        window.digitalRubricsData = {};
-        if (tabs[0]?.formData) {
-            tabs[0].formData.rubrics = {};
-            tabs[0].formData.categories = { core: [], strategic: [], support: [] };
         }
 
-        if (typeof window.syncSpmsActiveTab === 'function') window.syncSpmsActiveTab();
-        if (typeof AppState !== 'undefined') AppState.setDirty(true);
-        if (typeof window.renderDigitalRubricsMatrix === 'function') window.renderDigitalRubricsMatrix();
-        if (typeof window.recalcAllCategoriesGrandTotal === 'function') window.recalcAllCategoriesGrandTotal();
+        if (hasCascaded) {
+            // Restore initial cascaded targets from supervisor(s)
+            const restoredCats = JSON.parse(JSON.stringify(cascadedTargets.categories || {}));
+            window.digitalRubricsData = JSON.parse(JSON.stringify(cascadedTargets.rubrics || {}));
+            if (cascadedTargets.currency) window.currentDocCurrency = cascadedTargets.currency;
 
-        if (typeof window.showToast === 'function') {
-            window.showToast('Document targets and rubrics reset to clean template.', 'info');
+            // Strip any blank placeholder template rows from restored categories
+            ['core', 'strategic', 'support'].forEach(cat => {
+                if (Array.isArray(restoredCats[cat]) && restoredCats[cat].length > 1) {
+                    const hasNonEmpty = restoredCats[cat].some(r => r && ((r.mfo && r.mfo.trim() !== '') || (r.indicators && r.indicators.trim() !== '')));
+                    if (hasNonEmpty) {
+                        restoredCats[cat] = restoredCats[cat].filter(r => r && (
+                            (r.mfo && r.mfo.trim() !== '') || 
+                            (r.indicators && r.indicators.trim() !== '') || 
+                            (r.accomplishments && r.accomplishments.trim() !== '')
+                        ));
+                    }
+                }
+            });
+
+            if (tabs[0]?.formData) {
+                tabs[0].formData.categories = restoredCats;
+                tabs[0].formData.rubrics = window.digitalRubricsData;
+                if (cascadedTargets.currency) tabs[0].formData.currency = cascadedTargets.currency;
+            }
+
+            window._userExplicitlyDeletedRow = false;
+
+            // Re-render entire form using canonical populateSpmsForm
+            if (tabs[0]?.formData) {
+                populateSpmsForm(tabs[0].formData);
+            }
+
+            if (typeof window.syncSpmsActiveTab === 'function') window.syncSpmsActiveTab();
+            if (typeof AppState !== 'undefined') AppState.setDirty(true);
+            if (typeof window.renderDigitalRubricsMatrix === 'function') window.renderDigitalRubricsMatrix();
+            if (typeof window.recalcAllCategoriesGrandTotal === 'function') window.recalcAllCategoriesGrandTotal();
+            if (typeof autoExpandAllRowTextareas === 'function') autoExpandAllRowTextareas();
+
+            if (typeof window.showToast === 'function') {
+                window.showToast('Document deliverables and rubrics restored to initially cascaded targets.', 'success');
+            }
+        } else {
+            // No cascaded targets (e.g. Apex OPCR) -> reset back to blank template
+            window.digitalRubricsData = {};
+            if (tabs[0]?.formData) {
+                tabs[0].formData.rubrics = {};
+                tabs[0].formData.categories = JSON.parse(JSON.stringify(DEFAULT_BLUEPRINT));
+            }
+
+            window._userExplicitlyDeletedRow = false;
+
+            if (tabs[0]?.formData) {
+                populateSpmsForm(tabs[0].formData);
+            }
+
+            if (typeof window.syncSpmsActiveTab === 'function') window.syncSpmsActiveTab();
+            if (typeof AppState !== 'undefined') AppState.setDirty(true);
+            if (typeof window.renderDigitalRubricsMatrix === 'function') window.renderDigitalRubricsMatrix();
+            if (typeof window.recalcAllCategoriesGrandTotal === 'function') window.recalcAllCategoriesGrandTotal();
+            if (typeof autoExpandAllRowTextareas === 'function') autoExpandAllRowTextareas();
+
+            if (typeof window.showToast === 'function') {
+                window.showToast('Document targets and rubrics reset to clean template.', 'info');
+            }
         }
     };
 
@@ -1526,6 +1528,22 @@
             }
         }
 
+        // Apply institutional default function weights if unweighted
+        const activeDocType = isOpcr ? 'OPCR' : (isDpcr ? 'DPCR' : (isIperf ? 'IPERF' : 'IPCR'));
+        const sysDef = (window.systemDefaultWeights && window.systemDefaultWeights[activeDocType]) ? window.systemDefaultWeights[activeDocType] : null;
+
+        if (!isIperf && (coreW == null || stratW == null || suppW == null)) {
+            if (sysDef && sysDef.core_fraction != null) {
+                coreW = sysDef.core_fraction;
+                stratW = sysDef.strategic_fraction;
+                suppW = sysDef.support_fraction;
+                if (!data.weights) data.weights = {};
+                data.weights.core = coreW;
+                data.weights.strategic = stratW;
+                data.weights.support = suppW;
+            }
+        }
+
         CATEGORY_WEIGHTS.core = coreW || 0;
         CATEGORY_WEIGHTS.strategic = stratW || 0;
         CATEGORY_WEIGHTS.support = suppW || 0;
@@ -1549,20 +1567,30 @@
             return `${escapeHtml(titlePrefix)} (<input type="number" min="1" max="100" required data-cat-weight="${cat}" value="${pct}" placeholder="—" title="Required: Enter percentage weight" oninput="window.updateWeights()" class="spms-meta-input spms-cat-weight-input print-borderless" style="width:36px; text-align:center; font-weight:900; font-size:inherit; color:inherit; background:transparent; border:none; border-bottom:2px dashed #f59e0b; outline:none; padding:0 2px; -moz-appearance:textfield; appearance:textfield;">%) <span style="color:#ef4444; font-weight:bold;" title="Required">*</span>`;
         }
 
+        function renderCategoryHeader(cat, titlePrefix, currentWeight) {
+            const weightHtml = makeEditableWeight(cat, titlePrefix, currentWeight);
+            const hint = '<span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic; text-transform: none;">(depending on position/designation)</span>';
+            return `
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                        ${weightHtml}
+                        ${hint}
+                    </div>
+                </div>
+            `;
+        }
+
         const elCore = document.getElementById('label-cat-core');
         if (elCore) {
-            const hint = ' <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>';
-            elCore.innerHTML = makeEditableWeight('core', 'CORE FUNCTIONS', coreW) + hint;
+            elCore.innerHTML = renderCategoryHeader('core', 'CORE FUNCTIONS', coreW);
         }
         const elStrat = document.getElementById('label-cat-strategic');
         if (elStrat) {
-            const hint = ' <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>';
-            elStrat.innerHTML = makeEditableWeight('strategic', 'STRATEGIC FUNCTIONS', stratW) + hint;
+            elStrat.innerHTML = renderCategoryHeader('strategic', 'STRATEGIC FUNCTIONS', stratW);
         }
         const elSupp = document.getElementById('label-cat-support');
         if (elSupp) {
-            const hint = ' <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic;">(depending on position/designation)</span>';
-            elSupp.innerHTML = makeEditableWeight('support', 'SUPPORT FUNCTIONS', suppW) + hint;
+            elSupp.innerHTML = renderCategoryHeader('support', 'SUPPORT FUNCTIONS', suppW);
         }
 
         const elRoleRatee = document.getElementById('sig-role-ratee');
@@ -1775,8 +1803,8 @@
             });
         }
 
-        // Clear existing rows
-        document.querySelectorAll('.table-row-core, .table-row-strategic, .table-row-support').forEach(tr => tr.remove());
+        // Clear existing rows and placeholders
+        document.querySelectorAll('.table-row-core, .table-row-strategic, .table-row-support, .spms-empty-category-row').forEach(tr => tr.remove());
 
         // Populate category rows
         const hasRealCustomTargets = Boolean(data && data.categories && typeof data.categories === 'object' && (
@@ -1838,19 +1866,37 @@
             cats = DEFAULT_BLUEPRINT;
         }
 
+        // Strip any abandoned/empty placeholder rows (e.g. row_core_1 from initial template) if real targets exist
+        ['core', 'strategic', 'support'].forEach(cat => {
+            if (Array.isArray(cats[cat]) && cats[cat].length > 1) {
+                const hasNonEmpty = cats[cat].some(r => r && ((r.mfo && r.mfo.trim() !== '') || (r.indicators && r.indicators.trim() !== '')));
+                if (hasNonEmpty) {
+                    cats[cat] = cats[cat].filter(r => r && (
+                        (r.mfo && r.mfo.trim() !== '') || 
+                        (r.indicators && r.indicators.trim() !== '') || 
+                        (r.accomplishments && r.accomplishments.trim() !== '')
+                    ));
+                }
+            }
+        });
+        if (tabs[0]?.formData) {
+            tabs[0].formData.categories = cats;
+        }
+
+        const hasCustomCategories = Boolean(data && data.categories && typeof data.categories === 'object');
         const coreRows = Array.isArray(cats.core) 
-            ? (cats.core.length > 0 ? cats.core : (DEFAULT_BLUEPRINT.core || []))
+            ? (hasCustomCategories ? cats.core : (cats.core.length > 0 ? cats.core : (DEFAULT_BLUEPRINT.core || [])))
             : (DEFAULT_BLUEPRINT.core || []);
         coreRows.forEach(row => addTableRow('core', row));
 
         if (!isIperf) {
             const stratRows = Array.isArray(cats.strategic)
-                ? (cats.strategic.length > 0 ? cats.strategic : (DEFAULT_BLUEPRINT.strategic || []))
+                ? (hasCustomCategories ? cats.strategic : (cats.strategic.length > 0 ? cats.strategic : (DEFAULT_BLUEPRINT.strategic || [])))
                 : (DEFAULT_BLUEPRINT.strategic || []);
             stratRows.forEach(row => addTableRow('strategic', row));
 
             const suppRows = Array.isArray(cats.support)
-                ? (cats.support.length > 0 ? cats.support : (DEFAULT_BLUEPRINT.support || []))
+                ? (hasCustomCategories ? cats.support : (cats.support.length > 0 ? cats.support : (DEFAULT_BLUEPRINT.support || [])))
                 : (DEFAULT_BLUEPRINT.support || []);
             suppRows.forEach(row => addTableRow('support', row));
         }
@@ -1863,6 +1909,11 @@
         document.querySelectorAll('.btn-add-dashed, .btn-add-row, [id^="tfoot-add-"]').forEach(el => {
             el.remove();
         });
+
+        // Ensure empty category placeholders appear if a category has no deliverables
+        if (typeof checkEmptyCategoryPlaceholders === 'function') {
+            checkEmptyCategoryPlaceholders();
+        }
 
         // Update header ratee inputs based on phase permissions and attach live styling listeners
         ['ratee-name', 'ratee-position', 'ratee-dept', 'ratee-period', 'ratee-sign-name', 'ratee-sign-date', 'approver-name', 'approver-pos', 'approver-date', 'sig-ratee-name', 'sig-ratee-pos', 'sig-ratee-date', 'sig-dean-name', 'sig-dean-pos', 'sig-dean-date', 'sig-targets-prepared-date', 'sig-targets-approved-date', 'sig-eval-rated-date', 'sig-eval-conforme-date'].forEach(id => {
@@ -2041,6 +2092,58 @@
         return '';
     }
 
+    function renderAccomplishmentsCellHtml(data, accomDisabled, showMovToolbar, hasFiles, fileCount, rowId, canEditAccomplishments, rowFiles) {
+        let movBadgeHtml = '';
+        if (showMovToolbar) {
+            if (hasFiles) {
+                const fileNames = (rowFiles || []).map(f => f.file_name || f.title || 'Evidence').join('\n• ');
+                const tooltip = `${fileCount} Means of Verification (MOV) attached:\n• ${fileNames}\n(Click to view or manage)`;
+                movBadgeHtml = `
+                    <div class="mov-badge-container print-hide" style="position: absolute; bottom: 5px; right: 6px; z-index: 10; pointer-events: auto;">
+                        <button type="button" onclick="event.stopPropagation(); openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
+                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold text-[10px] tracking-wide transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25 active:scale-95" 
+                                title="${escapeHtml(tooltip)}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                            <span class="mov-btn-text">MOV (${fileCount})</span>
+                        </button>
+                    </div>
+                `;
+            } else if (canEditAccomplishments) {
+                movBadgeHtml = `
+                    <div class="mov-badge-container print-hide" style="position: absolute; bottom: 5px; right: 6px; z-index: 10; pointer-events: auto;">
+                        <button type="button" onclick="event.stopPropagation(); openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
+                                class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-semibold text-[10px] transition-all border shadow-xs cursor-pointer bg-zinc-100/90 hover:bg-zinc-200 dark:bg-zinc-800/90 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700 active:scale-95 opacity-85 hover:opacity-100" 
+                                title="Attach Means of Verification (MOV) evidence proof for this accomplishment">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                            <span class="mov-btn-text">Attach MOV</span>
+                        </button>
+                    </div>
+                `;
+            } else {
+                movBadgeHtml = `
+                    <div class="mov-badge-container print-hide" style="position: absolute; bottom: 5px; right: 6px; z-index: 10; pointer-events: none;">
+                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9.5px] font-medium text-zinc-400 dark:text-zinc-500 bg-zinc-100/60 dark:bg-zinc-800/40 border border-zinc-200/60 dark:border-zinc-800/60" title="No Means of Verification attached for this deliverable">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-zinc-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                            <span>No MOV</span>
+                        </span>
+                    </div>
+                `;
+            }
+        }
+        return `
+            <td class="spms-cell-input spms-cell-accomplishments" data-field-name="accomplishments" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
+                <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishments..." ${accomDisabled ? 'disabled title="Locked during Target Phase (Unlocked once Targets are Approved)"' : ''} style="padding-bottom: 24px !important;">${escapeHtml(data.accomplishments || '')}</textarea>
+                ${movBadgeHtml}
+            </td>
+        `;
+    }
+
     function renderScoreCellTdHtml(fieldKey, data, evalDisabled, canEditTargets, canEditEvaluation) {
         const attr = getScoreAttribution(fieldKey, data);
         const isX = attr.val === 'X' || attr.val === 'N/A';
@@ -2165,8 +2268,8 @@
             ta.style.minHeight = targetHStr;
         });
 
-        // Accomplishments column container
-        tr.querySelectorAll('.spms-cell-accomplishments > div').forEach(div => {
+        // Accomplishments column container (exclude floating MOV badge)
+        tr.querySelectorAll('.spms-cell-accomplishments > div:not(.mov-badge-container)').forEach(div => {
             div.style.minHeight = targetHStr;
             div.style.height = targetHStr;
         });
@@ -2256,6 +2359,11 @@
         const tbody = document.getElementById(`tbody-${category}`);
         if (!tbody && !referenceRow) return;
 
+        // Clean up empty category placeholder if exists in this category
+        if (tbody) {
+            tbody.querySelectorAll('.spms-empty-category-row').forEach(el => el.remove());
+        }
+
         const data = rowData || (window.isCurrentDocIperf ? {
             row_id: 'row_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7),
             mfo: "",
@@ -2311,7 +2419,10 @@
 
         const mfoDisabled = !canEditTargets;
         const evalDisabled = !canEditEvaluation;
-        const remarksDisabled = !canEditTargets && !canEditEvaluation;
+        const remarksDisabled = !canEditRemarks;
+        const canEditAccomplishments = Boolean(window.canEditAccomplishments);
+        const accomDisabled = !canEditAccomplishments;
+        const showMovToolbar = Boolean(isEvaluationPhase || canEditAccomplishments || hasFiles);
         const canEditTwg = window.canEditTwg;
         const isTwgUser = window.isTwgUser;
 
@@ -2335,40 +2446,8 @@
                     <textarea class="spms-textarea field-indicators" rows="3" placeholder="Enter expected outputs based on contract or duties..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.indicators)}</textarea>
                 </td>
 
-                <!-- 3. Actual Accomplishments (Evaluation Phase) -->
-                <td class="spms-cell-input spms-cell-accomplishments" data-field-name="accomplishments" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
-                    <div style="display: flex; flex-direction: column; width: 100%; height: 100%;">
-                        <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishments..." ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : ''} style="flex: 1 1 auto;">${escapeHtml(data.accomplishments)}</textarea>
-                        
-                        <!-- MOV Evidence Toolbar (Only visible during Evaluation Phase) -->
-                        ${isEvaluationPhase ? `
-                        <div class="mov-toolbar flex items-center justify-between text-[10px] print-hide" style="padding: 3px 6px; background: #f8fafc; border-top: 1px dashed #cbd5e1; flex-shrink: 0;">
-                            ${hasFiles ? `
-                            <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                                    class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25" 
-                                    title="View Means of Verification (MOV) evidence proof for this accomplishment">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                </svg>
-                                <span class="mov-btn-text">MOV (${fileCount})</span>
-                            </button>
-                            ` : (canEditEvaluation ? `
-                            <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                                    class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
-                                    title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                </svg>
-                                <span class="mov-btn-text">Attach MOV</span>
-                            </button>
-                            ` : `
-                            <span class="text-[9px] text-zinc-400 italic">No MOV</span>
-                            `)}
-                            <span class="text-[9px] text-zinc-400 font-medium italic">Evidence</span>
-                        </div>
-                        ` : ''}
-                    </div>
-                </td>
+                <!-- 3. Actual Accomplishments (Evaluation Phase / Target Approved) -->
+                ${renderAccomplishmentsCellHtml(data, accomDisabled, showMovToolbar, hasFiles, fileCount, rowId, canEditAccomplishments, rowFiles)}
 
                 <!-- 4. Rating Q (Evaluation Phase) -->
                 ${renderScoreCellTdHtml('q', data, evalDisabled, canEditTargets, canEditEvaluation)}
@@ -2388,7 +2467,7 @@
 
                 <!-- 8. Remarks -->
                 <td class="spms-cell-input spms-cell-remarks" data-field-name="remarks" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
-                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Remarks..." ${remarksDisabled ? 'disabled title="Locked"' : ''}>${escapeHtml(data.remarks || '')}</textarea>
+                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Remarks..." ${remarksDisabled ? 'disabled title="Locked (Remarks are entered by Supervisors and Reviewers)"' : ''}>${escapeHtml(data.remarks || '')}</textarea>
                 </td>
             `;
         } else if (window.isCurrentDocDpcr) {
@@ -2418,40 +2497,8 @@
                     <textarea class="spms-textarea field-accountable" rows="3" placeholder="Individuals / offices accountable..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.accountable || '')}</textarea>
                 </td>
 
-                <!-- 5. Actual Accomplishments (Evaluation Phase) -->
-                <td class="spms-cell-input spms-cell-accomplishments" data-field-name="accomplishments" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
-                    <div style="display: flex; flex-direction: column; width: 100%; height: 100%;">
-                        <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishments..." ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : ''} style="flex: 1 1 auto;">${escapeHtml(data.accomplishments)}</textarea>
-                        
-                        <!-- MOV Evidence Toolbar (Only visible during Evaluation Phase) -->
-                        ${isEvaluationPhase ? `
-                        <div class="mov-toolbar flex items-center justify-between text-[10px] print-hide" style="padding: 3px 6px; background: #f8fafc; border-top: 1px dashed #cbd5e1; flex-shrink: 0;">
-                            ${hasFiles ? `
-                            <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                                    class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25" 
-                                    title="View Means of Verification (MOV) evidence proof for this accomplishment">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                </svg>
-                                <span class="mov-btn-text">MOV (${fileCount})</span>
-                            </button>
-                            ` : (canEditEvaluation ? `
-                            <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                                    class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
-                                    title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                </svg>
-                                <span class="mov-btn-text">Attach MOV</span>
-                            </button>
-                            ` : `
-                            <span class="text-[9px] text-zinc-400 italic">No MOV</span>
-                            `)}
-                            <span class="text-[9px] text-zinc-400 font-medium italic">Evidence</span>
-                        </div>
-                        ` : ''}
-                    </div>
-                </td>
+                <!-- 5. Actual Accomplishments (Evaluation Phase / Target Approved) -->
+                ${renderAccomplishmentsCellHtml(data, accomDisabled, showMovToolbar, hasFiles, fileCount, rowId, canEditAccomplishments, rowFiles)}
 
                 <!-- Rating Q, T, E Inputs (Evaluation Phase) -->
                 ${renderScoreCellTdHtml('q', data, evalDisabled, canEditTargets, canEditEvaluation)}
@@ -2467,7 +2514,7 @@
 
                 <!-- Remarks -->
                 <td class="spms-cell-input spms-cell-remarks" data-field-name="remarks" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
-                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Remarks..." ${remarksDisabled ? 'disabled title="Locked"' : ''}>${escapeHtml(data.remarks || '')}</textarea>
+                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Remarks..." ${remarksDisabled ? 'disabled title="Locked (Remarks are entered by Supervisors and Reviewers)"' : ''}>${escapeHtml(data.remarks || '')}</textarea>
                 </td>
             `;
         } else if (window.isCurrentDocOpcr) {
@@ -2497,40 +2544,8 @@
                     <textarea class="spms-textarea field-accountable" rows="3" placeholder="Divisions accountable..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.accountable || '')}</textarea>
                 </td>
 
-                <!-- 5. Actual Accomplishment (Evaluation Phase) -->
-                <td class="spms-cell-input spms-cell-accomplishments" data-field-name="accomplishments" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
-                    <div style="display: flex; flex-direction: column; width: 100%; height: 100%;">
-                        <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishment..." ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : ''} style="flex: 1 1 auto;">${escapeHtml(data.accomplishments)}</textarea>
-                        
-                        <!-- MOV Evidence Toolbar (Only visible during Evaluation Phase) -->
-                        ${isEvaluationPhase ? `
-                        <div class="mov-toolbar flex items-center justify-between text-[10px] print-hide" style="padding: 3px 6px; background: #f8fafc; border-top: 1px dashed #cbd5e1; flex-shrink: 0;">
-                            ${hasFiles ? `
-                            <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                                    class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25" 
-                                    title="View Means of Verification (MOV) evidence proof for this accomplishment">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                </svg>
-                                <span class="mov-btn-text">MOV (${fileCount})</span>
-                            </button>
-                            ` : (canEditEvaluation ? `
-                            <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                                    class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
-                                    title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                </svg>
-                                <span class="mov-btn-text">Attach MOV</span>
-                            </button>
-                            ` : `
-                            <span class="text-[9px] text-zinc-400 italic">No MOV</span>
-                            `)}
-                            <span class="text-[9px] text-zinc-400 font-medium italic">Evidence</span>
-                        </div>
-                        ` : ''}
-                    </div>
-                </td>
+                <!-- 5. Actual Accomplishment (Evaluation Phase / Target Approved) -->
+                ${renderAccomplishmentsCellHtml(data, accomDisabled, showMovToolbar, hasFiles, fileCount, rowId, canEditAccomplishments, rowFiles)}
 
                 <!-- Rating Q, T, E Inputs (Evaluation Phase) -->
                 ${renderScoreCellTdHtml('q', data, evalDisabled, canEditTargets, canEditEvaluation)}
@@ -2546,7 +2561,7 @@
 
                 <!-- Remarks -->
                 <td class="spms-cell-input spms-cell-remarks" data-field-name="remarks" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
-                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Remarks..." ${remarksDisabled ? 'disabled title="Locked"' : ''}>${escapeHtml(data.remarks || '')}</textarea>
+                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Remarks..." ${remarksDisabled ? 'disabled title="Locked (Remarks are entered by Supervisors and Reviewers)"' : ''}>${escapeHtml(data.remarks || '')}</textarea>
                 </td>
             `;
         } else {
@@ -2561,40 +2576,8 @@
                     <textarea class="spms-textarea field-indicators" rows="3" placeholder="Enter success indicators (targets + measures)..." ${mfoDisabled ? 'disabled title="Locked (Only modifiable during Target Phase)"' : ''}>${escapeHtml(data.indicators)}</textarea>
                 </td>
 
-                <!-- Actual Accomplishments (Unlocked during evaluation phase) -->
-                <td class="spms-cell-input spms-cell-accomplishments" data-field-name="accomplishments" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
-                    <div style="display: flex; flex-direction: column; width: 100%; height: 100%;">
-                        <textarea class="spms-textarea field-accomplishments" rows="3" placeholder="Enter actual accomplishments..." ${evalDisabled ? 'disabled title="Locked during Target Phase (Unlocked during Evaluation Phase)"' : ''} style="flex: 1 1 auto;">${escapeHtml(data.accomplishments)}</textarea>
-                        
-                        <!-- MOV Evidence Toolbar (Only visible during Evaluation Phase) -->
-                        ${isEvaluationPhase ? `
-                        <div class="mov-toolbar flex items-center justify-between text-[10px] print-hide" style="padding: 3px 6px; background: #f8fafc; border-top: 1px dashed #cbd5e1; flex-shrink: 0;">
-                            ${hasFiles ? `
-                            <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                                    class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25" 
-                                    title="View Means of Verification (MOV) evidence proof for this accomplishment">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                </svg>
-                                <span class="mov-btn-text">MOV (${fileCount})</span>
-                            </button>
-                            ` : (canEditEvaluation ? `
-                            <button type="button" onclick="openMovModal('${rowId}', this)" id="btn-mov-${rowId}" 
-                                    class="btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700" 
-                                    title="Upload Means of Verification (MOV) evidence proof for this accomplishment">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                </svg>
-                                <span class="mov-btn-text">Attach MOV</span>
-                            </button>
-                            ` : `
-                            <span class="text-[9px] text-zinc-400 italic">No MOV</span>
-                            `)}
-                            <span class="text-[9px] text-zinc-400 font-medium italic">Evidence</span>
-                        </div>
-                        ` : ''}
-                    </div>
-                </td>
+                <!-- Actual Accomplishments (Evaluation Phase / Target Approved) -->
+                ${renderAccomplishmentsCellHtml(data, accomDisabled, showMovToolbar, hasFiles, fileCount, rowId, canEditAccomplishments, rowFiles)}
 
                 <!-- Rating Q, T, E Inputs (Unlocked during evaluation phase) -->
                 ${renderScoreCellTdHtml('q', data, evalDisabled, canEditTargets, canEditEvaluation)}
@@ -2610,7 +2593,7 @@
 
                 <!-- Remarks -->
                 <td class="spms-cell-input spms-cell-remarks" data-field-name="remarks" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
-                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Remarks..." ${remarksDisabled ? 'disabled title="Locked"' : ''}>${escapeHtml(data.remarks || '')}</textarea>
+                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Remarks..." ${remarksDisabled ? 'disabled title="Locked (Remarks are entered by Supervisors and Reviewers)"' : ''}>${escapeHtml(data.remarks || '')}</textarea>
                 </td>
             `;
         }
@@ -2688,6 +2671,15 @@
         }
 
         recalculateForm();
+        if (!rowData) {
+            const firstInput = tr.querySelector('.field-mfo');
+            if (firstInput) {
+                setTimeout(() => firstInput.focus(), 50);
+            }
+        }
+        if (typeof checkEmptyCategoryPlaceholders === 'function') {
+            checkEmptyCategoryPlaceholders();
+        }
     }
 
     function deleteTableRow(target) {
@@ -2701,7 +2693,83 @@
         if (typeof AppState !== 'undefined' && typeof AppState.setDirty === 'function') {
             AppState.setDirty(true);
         }
+        if (typeof checkEmptyCategoryPlaceholders === 'function') {
+            checkEmptyCategoryPlaceholders();
+        }
     }
+
+    function checkEmptyCategoryPlaceholders() {
+        const cats = window.isCurrentDocIperf ? ['core'] : ['core', 'strategic', 'support'];
+        const isDpcrOrOpcr = (typeof window.isCurrentDocDpcr !== 'undefined' && window.isCurrentDocDpcr) || 
+                             (typeof window.isCurrentDocOpcr !== 'undefined' && window.isCurrentDocOpcr);
+        const colspan = isDpcrOrOpcr ? 10 : 8;
+
+        cats.forEach(cat => {
+            const tbody = document.getElementById(`tbody-${cat}`);
+            if (!tbody) return;
+
+            const rowCount = tbody.querySelectorAll(`.table-row-${cat}`).length;
+            const existingPlaceholder = tbody.querySelector('.spms-empty-category-row');
+
+            if (rowCount === 0) {
+                if (!existingPlaceholder) {
+                    const tr = document.createElement('tr');
+                    tr.className = 'spms-empty-category-row print-hide';
+                    tr.dataset.category = cat;
+                    const catTitle = window.isCurrentDocIperf 
+                        ? 'Deliverables' 
+                        : (cat === 'core' ? 'Core Functions' : (cat === 'strategic' ? 'Strategic Functions' : 'Support Functions'));
+                    tr.innerHTML = `
+                        <td colspan="${colspan}">
+                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+                                <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: #64748b; font-weight: 500;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px; color: #94a3b8;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                    </svg>
+                                    <span>No deliverables in ${escapeHtml(catTitle)} yet.</span>
+                                </div>
+                                ${canEditTargets ? `
+                                    <button type="button" 
+                                            onclick="window.addCategoryRow('${cat}')" 
+                                            class="spms-btn-add-empty-row print-hide"
+                                            title="Add deliverable row to ${escapeHtml(catTitle)}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                                        </svg>
+                                        <span>Add Deliverable Row</span>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            } else {
+                if (existingPlaceholder) {
+                    existingPlaceholder.remove();
+                }
+            }
+        });
+    }
+    window.checkEmptyCategoryPlaceholders = checkEmptyCategoryPlaceholders;
+
+    window.addCategoryRow = function(category) {
+        if (!canEditTargets) {
+            if (typeof window.showToast === 'function') {
+                window.showToast('Deliverables can only be added during Target Setting phase.', 'warning');
+            }
+            return;
+        }
+        const tbody = document.getElementById(`tbody-${category}`);
+        if (tbody) {
+            tbody.querySelectorAll('.spms-empty-category-row').forEach(el => el.remove());
+        }
+        addTableRow(category);
+        if (typeof window.syncSpmsActiveTab === 'function') window.syncSpmsActiveTab();
+        if (typeof AppState !== 'undefined' && typeof AppState.setDirty === 'function') AppState.setDirty(true);
+        if (typeof checkEmptyCategoryPlaceholders === 'function') checkEmptyCategoryPlaceholders();
+        if (typeof recalculateForm === 'function') recalculateForm();
+    };
 
     function clearScore(input) {
         input.value = '';
@@ -4027,8 +4095,8 @@
                 const deptId = idx === 0 ? 'basis-val-ratee-dept' : 'basis-val-ratee-dept-' + idx;
                 const posW = Math.max(200, ((r.position || '').length + 3) * 8);
                 const deptW = Math.max(170, ((r.dept || '').length + 3) * 8);
-                html += `<input type="text" id="${posId}" readonly value="${escapeHtml(r.position || '')}" size="${Math.max(20, (r.position || '').length + 2)}" style="color: #000000; border: none; border-bottom: 1px solid #94a3b8; text-align: center; min-width: 200px; width: ${posW}px; outline: none; padding: 2px 4px; background: transparent; font-family: inherit; font-size: 11px;"> of the ` +
-                        `<input type="text" id="${deptId}" readonly value="${escapeHtml(r.dept || '')}" size="${Math.max(20, (r.dept || '').length + 2)}" style="color: #000000; border: none; border-bottom: 1px solid #94a3b8; text-align: center; min-width: 170px; width: ${deptW}px; outline: none; padding: 2px 4px; background: transparent; font-family: inherit; font-size: 11px;">`;
+                html += `<input type="text" id="${posId}" readonly value="${escapeHtml(r.position || '')}" size="${Math.max(20, (r.position || '').length + 2)}" class="spms-meta-input" style="text-align: center; min-width: 200px; width: ${posW}px; padding: 2px 4px; font-size: 11px;"> of the ` +
+                        `<input type="text" id="${deptId}" readonly value="${escapeHtml(r.dept || '')}" size="${Math.max(20, (r.dept || '').length + 2)}" class="spms-meta-input" style="text-align: center; min-width: 170px; width: ${deptW}px; padding: 2px 4px; font-size: 11px;">`;
             });
             basisRolesContainer.innerHTML = html;
         } else {
@@ -4045,21 +4113,21 @@
                 <div class="approver-item" style="${idx > 0 ? 'border-top: 1px dashed #cbd5e1; margin-top: 6px; padding-top: 6px;' : ''} position: relative;">
                     <table style="width: 100%; border-collapse: collapse; border: none; font-size: 11px;">
                         <tr>
-                            <td style="width: 65px; border: none; padding: 3px 0; font-weight: bold; color: #000000;">Name:</td>
+                            <td style="width: 65px; border: none; padding: 3px 0; font-weight: bold;">Name:</td>
                             <td style="border: none; padding: 3px 0;">
-                                <input type="text" readonly value="${a.name ? escapeHtml(a.name) : ''}" style="font-weight: bold; color: #000000; border: none; border-bottom: 1px solid #94a3b8; outline: none; font-size: 11px; width: 60%; background: transparent; font-family: inherit;">
+                                <input type="text" readonly value="${a.name ? escapeHtml(a.name) : ''}" class="spms-meta-input" style="font-weight: bold; font-size: 11px; width: 60%; padding: 2px 4px;">
                             </td>
                         </tr>
                         <tr>
-                            <td style="width: 65px; border: none; padding: 3px 0; font-weight: bold; color: #000000;">Position:</td>
+                            <td style="width: 65px; border: none; padding: 3px 0; font-weight: bold;">Position:</td>
                             <td style="border: none; padding: 3px 0;">
-                                <input type="text" readonly value="${a.position ? escapeHtml(a.position) : ''}" style="color: #000000; border: none; border-bottom: 1px solid #94a3b8; outline: none; font-size: 11px; width: 80%; background: transparent; font-family: inherit;">
+                                <input type="text" readonly value="${a.position ? escapeHtml(a.position) : ''}" class="spms-meta-input" style="font-size: 11px; width: 80%; padding: 2px 4px;">
                             </td>
                         </tr>
                         <tr>
-                            <td style="width: 65px; border: none; padding: 3px 0; font-weight: bold; color: #000000;">Date:</td>
+                            <td style="width: 65px; border: none; padding: 3px 0; font-weight: bold;">Date:</td>
                             <td style="border: none; padding: 3px 0;">
-                                <input type="text" readonly value="${a.date ? escapeHtml(a.date) : ''}" style="color: #000000; border: none; border-bottom: 1px solid #94a3b8; outline: none; font-size: 11px; width: 130px; background: transparent; font-family: inherit;">
+                                <input type="text" readonly value="${a.date ? escapeHtml(a.date) : ''}" class="spms-meta-input" style="font-size: 11px; width: 130px; padding: 2px 4px;">
                             </td>
                         </tr>
                     </table>
@@ -4088,19 +4156,19 @@
         if (colgroupEl && theadEl) {
             if (isOpcr) {
                 colgroupEl.innerHTML = `
-                    <col style="width: 15%;">
                     <col style="width: 17%;">
+                    <col style="width: 21%;">
+                    <col style="width: 10%;">
                     <col style="width: 11%;">
+                    <col style="width: 15%;">
+                    <col style="width: 3%;">
+                    <col style="width: 3%;">
+                    <col style="width: 3%;">
+                    <col style="width: 4%;">
                     <col style="width: 13%;">
-                    <col style="width: 18%;">
-                    <col style="width: 3.5%;">
-                    <col style="width: 3.5%;">
-                    <col style="width: 3.5%;">
-                    <col style="width: 4.5%;">
-                    <col style="width: 11%;">
                 `;
                 theadEl.innerHTML = `
-                    <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
+                    <tr class="basis-thead-tr" style="text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
                         <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">PROJECT / PROGRAM / ACTIVITIES</th>
                         <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">SUCCESS INDICATORS<br><span style="font-weight: normal; font-size: 9px;">(TARGETS + MEASURES)</span></th>
                         <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ALLOTTED BUDGET</th>
@@ -4109,7 +4177,7 @@
                         <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
                         <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
                     </tr>
-                    <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                    <tr class="basis-thead-tr" style="text-align: center; font-weight: bold; font-size: 10px;">
                         <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
                         <th style="border: 1px solid #000; padding: 4px 2px;">T</th>
                         <th style="border: 1px solid #000; padding: 4px 2px;">E</th>
@@ -4118,19 +4186,19 @@
                 `;
             } else if (isDpcr) {
                 colgroupEl.innerHTML = `
-                    <col style="width: 15%;">
                     <col style="width: 17%;">
+                    <col style="width: 21%;">
+                    <col style="width: 10%;">
                     <col style="width: 11%;">
+                    <col style="width: 15%;">
+                    <col style="width: 3%;">
+                    <col style="width: 3%;">
+                    <col style="width: 3%;">
+                    <col style="width: 4%;">
                     <col style="width: 13%;">
-                    <col style="width: 18%;">
-                    <col style="width: 3.5%;">
-                    <col style="width: 3.5%;">
-                    <col style="width: 3.5%;">
-                    <col style="width: 4.5%;">
-                    <col style="width: 11%;">
                 `;
                 theadEl.innerHTML = `
-                    <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
+                    <tr class="basis-thead-tr" style="text-align: center; font-weight: bold; border-bottom: 1px solid #000; font-size: 10px;">
                         <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">PROGRAMS, PROJECTS, ACTIVITIES</th>
                         <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">SUCCESS INDICATORS<br><span style="font-weight: normal; font-size: 9px;">(TARGETS + MEASURES)</span></th>
                         <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">ALLOTTED BUDGET</th>
@@ -4139,7 +4207,7 @@
                         <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
                         <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
                     </tr>
-                    <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                    <tr class="basis-thead-tr" style="text-align: center; font-weight: bold; font-size: 10px;">
                         <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
                         <th style="border: 1px solid #000; padding: 4px 2px;">T</th>
                         <th style="border: 1px solid #000; padding: 4px 2px;">E</th>
@@ -4148,24 +4216,24 @@
                 `;
             } else {
                 colgroupEl.innerHTML = `
-                    <col style="width: 25%;">
-                    <col style="width: 25%;">
                     <col style="width: 24%;">
-                    <col style="width: 4%;">
-                    <col style="width: 4%;">
-                    <col style="width: 4%;">
-                    <col style="width: 5%;">
-                    <col style="width: 9%;">
+                    <col style="width: 25%;">
+                    <col style="width: 23%;">
+                    <col style="width: 3.5%;">
+                    <col style="width: 3.5%;">
+                    <col style="width: 3.5%;">
+                    <col style="width: 4.5%;">
+                    <col style="width: 13%;">
                 `;
                 theadEl.innerHTML = `
-                    <tr style="background: #f1f5f9; text-align: center; font-weight: bold; border-bottom: 1px solid #000;">
+                    <tr class="basis-thead-tr" style="text-align: center; font-weight: bold; border-bottom: 1px solid #000;">
                         <th rowspan="2" style="padding: 8px; border: 1px solid #000;">ACADEMIC FUNCTION /<br>MAJOR FINAL OUTPUT</th>
                         <th rowspan="2" style="padding: 8px; border: 1px solid #000;">SUCCESS INDICATORS<br><span style="font-size: 9px; font-weight: normal;">(Targets + Measures)</span></th>
                         <th rowspan="2" style="padding: 8px; border: 1px solid #000;">ACTUAL ACCOMPLISHMENTS</th>
                         <th colspan="4" style="padding: 4px; border: 1px solid #000;">RATING</th>
                         <th rowspan="2" style="padding: 8px; border: 1px solid #000;">REMARKS</th>
                     </tr>
-                    <tr style="background: #f1f5f9; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                    <tr class="basis-thead-tr" style="text-align: center; font-weight: bold; font-size: 10px;">
                         <th style="padding: 4px; border: 1px solid #000;">Q</th>
                         <th style="padding: 4px; border: 1px solid #000;">T</th>
                         <th style="padding: 4px; border: 1px solid #000;">E</th>
@@ -4190,9 +4258,9 @@
 
             // Header row
             const trHeader = document.createElement('tr');
-            trHeader.style.cssText = 'background: #f8fafc; border-top: 2px solid #000; border-bottom: 1px solid #000;';
+            trHeader.className = 'spms-category-header';
             trHeader.innerHTML = `
-                <td colspan="${colCount}" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #0f172a;">
+                <td colspan="${colCount}">
                     ${catLabels[cat]}
                 </td>
             `;
@@ -4220,19 +4288,19 @@
                             ? `${escapeHtml(r.budget_currency || '₱')} ${formatBudgetFull(budgetRaw)}`
                             : '—';
                         tr.innerHTML = `
-                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; color: #0f172a; line-height: 1.5;">
+                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; line-height: 1.5;">
                                 ${escapeHtml(r.mfo)}
                             </td>
-                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; color: #0f172a; font-weight: 600; line-height: 1.5;">
+                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; font-weight: 600; line-height: 1.5;">
                                 ${escapeHtml(r.indicators)}
                             </td>
-                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; text-align: right; color: #0f172a; font-weight: 600; line-height: 1.5;">
+                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; text-align: right; font-weight: 600; line-height: 1.5;">
                                 ${budgetFormatted}
                             </td>
-                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; color: #334155; line-height: 1.5;">
+                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; line-height: 1.5;">
                                 ${escapeHtml(r.accountable || '')}
                             </td>
-                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; color: #334155; line-height: 1.5;">
+                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; line-height: 1.5;">
                                 ${escapeHtml(r.accomplishments)}
                             </td>
                             <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: bold; font-size: 11px;">
@@ -4244,22 +4312,22 @@
                             <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: bold; font-size: 11px;">
                                 ${r.e || '—'}
                             </td>
-                            <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: 900; color: #0369a1; background: #f0f9ff; font-size: 11px;">
+                            <td class="basis-ave-col" style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-size: 11px;">
                                 ${r.ave || '—'}
                             </td>
-                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 10px; color: #475569;">
+                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 10px; opacity: 0.85;">
                                 ${escapeHtml(r.remarks)}
                             </td>
                         `;
                     } else {
                         tr.innerHTML = `
-                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; color: #0f172a; line-height: 1.5;">
+                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; line-height: 1.5;">
                                 ${escapeHtml(r.mfo)}
                             </td>
-                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; color: #0f172a; font-weight: 600; line-height: 1.5;">
+                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; font-weight: 600; line-height: 1.5;">
                                 ${escapeHtml(r.indicators)}
                             </td>
-                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; color: #334155; line-height: 1.5;">
+                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; white-space: pre-wrap; line-height: 1.5;">
                                 ${escapeHtml(r.accomplishments)}
                             </td>
                             <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: bold; font-size: 11px;">
@@ -4271,10 +4339,10 @@
                             <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: bold; font-size: 11px;">
                                 ${r.e || '—'}
                             </td>
-                            <td style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: 900; color: #0369a1; background: #f0f9ff; font-size: 11px;">
+                            <td class="basis-ave-col" style="padding: 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-size: 11px;">
                                 ${r.ave || '—'}
                             </td>
-                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 10px; color: #475569;">
+                            <td style="padding: 8px; vertical-align: top; border: 1px solid #000; font-size: 10px; opacity: 0.85;">
                                 ${escapeHtml(r.remarks)}
                             </td>
                         `;
@@ -4284,6 +4352,198 @@
             }
         });
     }
+
+    window.basisViewMode = window.basisViewMode || {};
+    window.currentBasisGuideIdx = 0;
+
+    window.switchBasisView = function(guideIdx, mode, event) {
+        if (event) {
+            event.stopPropagation();
+        }
+        const gIdx = parseInt(guideIdx, 10) || 0;
+        const cleanMode = (mode === 'rubrics') ? 'rubrics' : 'form';
+        window.basisViewMode[gIdx] = cleanMode;
+        window.currentBasisGuideIdx = gIdx;
+
+        const targetTabId = 'basis-tab-' + gIdx;
+        if (activeTabId !== targetTabId && activeTabId !== 'basis-tab') {
+            switchEditorTab(targetTabId);
+        } else {
+            initActiveTabView();
+        }
+    };
+
+    function renderBasisRubricsSheet(guideIdx = 0) {
+        const sheet = document.getElementById('basis-rubrics-sheet');
+        if (!sheet) return;
+
+        const guide = (typeof allBasisGuides !== 'undefined' && allBasisGuides && allBasisGuides[guideIdx]) 
+            ? allBasisGuides[guideIdx] 
+            : ((typeof allBasisGuides !== 'undefined' && allBasisGuides && allBasisGuides[0]) ? allBasisGuides[0] : null);
+
+        if (!guide) return;
+
+        const data = (guide && guide.formData) ? guide.formData : (basisFormData || {});
+        const titleText = (data.title || guide.title || 'Basis Document').toUpperCase();
+        const supName = guide.superior_name || 'Supervisor';
+        const supRole = guide.superior_role || 'Superior Authority';
+
+        const rubTitle = document.getElementById('basis-rubrics-sheet-title');
+        if (rubTitle) rubTitle.innerText = `${titleText} — RUBRICS MATRIX`;
+        const rubSup = document.getElementById('basis-rubrics-superior-name');
+        if (rubSup) rubSup.innerText = `${supName} (${supRole}) — SUCCESS STANDARDS MATRIX`;
+
+        const rubricsHeaderDocTitleEl = document.getElementById('basis-rubrics-header-doc-title');
+        if (rubricsHeaderDocTitleEl) {
+            rubricsHeaderDocTitleEl.innerText = `${guide.title} — ${guide.superior_name} (${guide.superior_role})`;
+        }
+        const rubricsOpenLinkEl = document.getElementById('basis-rubrics-open-link');
+        if (rubricsOpenLinkEl && guide.id) {
+            rubricsOpenLinkEl.href = '<?= site_url('document/') ?>' + guide.id;
+        }
+
+        const tbody = document.getElementById('basis-rubrics-tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        const categories = data.categories || {};
+        const rubricsData = data.rubrics || {};
+        const isIperf = (guide.doc_type || '').toUpperCase() === 'IPERF';
+        const catKeys = isIperf ? ['core'] : ['core', 'strategic', 'support'];
+        const catTitles = {
+            core: isIperf ? 'Committed Outputs' : 'Core Functions',
+            strategic: 'Strategic Functions',
+            support: 'Support Functions'
+        };
+
+        let totalDeliverables = 0;
+
+        catKeys.forEach(cat => {
+            const rows = categories[cat] || [];
+            const validRows = rows.filter(r => r && (
+                (r.mfo && String(r.mfo).trim() !== '') || 
+                (r.indicators && String(r.indicators).trim() !== '') || 
+                (r.office_ppa && String(r.office_ppa).trim() !== '') ||
+                (r.expected_outputs && String(r.expected_outputs).trim() !== '')
+            ));
+
+            // Category Header Row
+            const trCat = document.createElement('tr');
+            trCat.className = 'spms-category-header';
+            trCat.innerHTML = `
+                <td colspan="5">
+                    ${catTitles[cat]} (${validRows.length} ${validRows.length === 1 ? 'output' : 'outputs'})
+                </td>
+            `;
+            tbody.appendChild(trCat);
+
+            if (validRows.length === 0) {
+                const trEmpty = document.createElement('tr');
+                trEmpty.style.cssText = 'border-bottom: 1px solid #000;';
+                trEmpty.innerHTML = `
+                    <td colspan="5" style="padding: 12px; text-align: center; color: #94a3b8; font-style: italic; font-size: 11px;">
+                        No deliverables entered for ${catTitles[cat]}.
+                    </td>
+                `;
+                tbody.appendChild(trEmpty);
+                return;
+            }
+
+            validRows.forEach((row, dIdx) => {
+                totalDeliverables++;
+                const rowId = row.row_id;
+                const rData = (rubricsData && rubricsData[rowId]) ? rubricsData[rowId] : null;
+
+                const mfoText = row.mfo || row.office_ppa || row.paps || '';
+                const indText = row.indicators || row.success_indicators || row.expected_outputs || '';
+                let displayTitle = '';
+                if (mfoText && indText) {
+                    displayTitle = `${mfoText}\n\nTargets & Measures:\n${indText}`;
+                } else {
+                    displayTitle = mfoText || indText || `Deliverable #${dIdx + 1}`;
+                }
+
+                const scoreLabels = {
+                    5: '5 • Outstanding',
+                    4: '4 • Very Satisfactory',
+                    3: '3 • Satisfactory',
+                    2: '2 • Unsatisfactory',
+                    1: '1 • Poor'
+                };
+
+                [5, 4, 3, 2, 1].forEach((score, sIdx) => {
+                    const tr = document.createElement('tr');
+                    tr.style.cssText = sIdx === 4 ? 'border-bottom: 1px solid #000;' : 'border-bottom: 1px solid #cbd5e1;';
+
+                    let qVal = '';
+                    let tVal = '';
+                    let eVal = '';
+
+                    if (rData && rData[score]) {
+                        qVal = rData[score].q || '';
+                        tVal = rData[score].t || '';
+                        eVal = rData[score].e || '';
+                    } else if (score === 5 && row.std_5) {
+                        qVal = row.std_5;
+                    } else if (score === 4 && row.std_4) {
+                        qVal = row.std_4;
+                    } else if (score === 3 && row.std_3) {
+                        qVal = row.std_3;
+                    } else if (score === 2 && row.std_2) {
+                        qVal = row.std_2;
+                    } else if (score === 1 && row.std_1) {
+                        qVal = row.std_1;
+                    }
+
+                    if (qVal === 'N/A' || qVal === 'X') qVal = '';
+                    if (tVal === 'N/A' || tVal === 'X') tVal = '';
+                    if (eVal === 'N/A' || eVal === 'X') eVal = '';
+
+                    let delivColHtml = '';
+                    if (sIdx === 0) {
+                        delivColHtml = `
+                            <td rowspan="5" class="basis-deliv-cell" style="padding: 10px; vertical-align: top; border: 1px solid #000; width: 32%; font-size: 11px; line-height: 1.5;">
+                                <div style="font-weight: 800; font-size: 9px; text-transform: uppercase; color: #0284c7; margin-bottom: 4px;">
+                                    Output #${dIdx + 1}
+                                </div>
+                                <div style="font-weight: 700; white-space: pre-wrap; word-break: break-word;">
+                                    ${escapeHtml(displayTitle)}
+                                </div>
+                            </td>
+                        `;
+                    }
+
+                    tr.innerHTML = `
+                        ${delivColHtml}
+                        <td class="rubric-score-cell score-${score}" style="padding: 6px 4px; text-align: center; vertical-align: middle; border: 1px solid #000; font-weight: 800; font-size: 10.5px; width: 11%;">
+                            ${scoreLabels[score]}
+                        </td>
+                        <td style="padding: 6px 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; width: 19%; white-space: pre-wrap; line-height: 1.4;">
+                            ${qVal ? escapeHtml(qVal) : '<span style="font-style: italic; opacity: 0.5;">—</span>'}
+                        </td>
+                        <td style="padding: 6px 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; width: 19%; white-space: pre-wrap; line-height: 1.4;">
+                            ${tVal ? escapeHtml(tVal) : '<span style="font-style: italic; opacity: 0.5;">—</span>'}
+                        </td>
+                        <td style="padding: 6px 8px; vertical-align: top; border: 1px solid #000; font-size: 11px; width: 19%; white-space: pre-wrap; line-height: 1.4;">
+                            ${eVal ? escapeHtml(eVal) : '<span style="font-style: italic; opacity: 0.5;">—</span>'}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            });
+        });
+
+        if (totalDeliverables === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="padding: 30px; text-align: center; color: #94a3b8; font-style: italic; font-size: 12px;">
+                        No deliverables found in supervisor's document.
+                    </td>
+                </tr>
+            `;
+        }
+    }
+    window.renderBasisRubricsSheet = renderBasisRubricsSheet;
 
     // Launch active view on page load
     document.addEventListener('DOMContentLoaded', () => {
@@ -4550,7 +4810,7 @@
         const target = window.activeContextTarget;
         const isRubric = Boolean(target && (target.td?.closest('#digital-rubrics-table') || (target.fieldName && target.fieldName.startsWith('rubric_'))));
         // Determine if target cell / document is currently editable
-        const isEditable = target && target.input && !target.input.disabled && !target.input.readOnly && (window.canEditTargets || (isRubric && window.canEditTargets) || window.canEditEvaluation);
+        const isEditable = Boolean(target && target.input && !target.input.disabled && !target.input.readOnly && (window.canEditTargets || (isRubric && window.canEditTargets) || window.canEditAccomplishments || window.canEditEvaluation));
 
         // Edit mutating actions (Cut, Paste, Clear Cell) - only show when cell is editable
         const editActions = menu.querySelectorAll('[data-action="cut"], [data-action="paste"], [data-action="clear"]');
@@ -4559,11 +4819,33 @@
         });
 
         // Row structural actions (Insert Above, Insert Below, Delete Row) - only during target drafting on printable form rows, never on rubrics matrix
-        const canModifyRows = isEditable && window.canEditTargets && !isRubric;
+        // Note: Row operations must remain functional when clicking any cell in a deliverable row, including disabled cells
+        const isFormRow = Boolean(target && (target.rowId || (target.tr && (target.tr.dataset.rowId || target.tr.dataset.deliverableId))) && !isRubric);
+        const canModifyRows = Boolean(window.canEditTargets && isFormRow);
         const targetActions = menu.querySelectorAll('[data-action="insert-above"], [data-action="insert-below"], [data-action="delete-row"]');
         targetActions.forEach(el => {
             el.style.display = canModifyRows ? 'flex' : 'none';
         });
+
+        // MOV action - available for printable form rows once targets are approved or during evaluation
+        const movAction = menu.querySelector('[data-action="mov"]');
+        if (movAction) {
+            const rowId = target ? (target.rowId || (target.tr && (target.tr.dataset.rowId || target.tr.dataset.deliverableId))) : null;
+            const rowFiles = (rowId && window.documentAttachments && window.documentAttachments[rowId]) || [];
+            const count = rowFiles.length;
+            const canShowMov = isFormRow && (window.isEvaluationPhase || window.canEditAccomplishments || count > 0);
+
+            movAction.style.display = canShowMov ? 'flex' : 'none';
+            const movBadge = document.getElementById('spms-ctx-mov-badge');
+            const movLabel = document.getElementById('spms-ctx-mov-label');
+            if (movBadge) {
+                movBadge.innerText = count > 0 ? `${count} file${count === 1 ? '' : 's'}` : '';
+                movBadge.className = count > 0 ? 'text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded' : 'text-[10px] text-zinc-400';
+            }
+            if (movLabel) {
+                movLabel.innerText = count > 0 ? `Means of Verification (${count})` : (window.canEditAccomplishments ? 'Attach MOV Evidence' : 'Means of Verification');
+            }
+        }
 
         // Context Menu Dividers
         const div1 = document.getElementById('spms-ctx-div-1');
@@ -4586,7 +4868,7 @@
         }
 
         const menuWidth = 190;
-        const menuHeight = isEditable ? 260 : 80;
+        const menuHeight = canModifyRows ? (isEditable ? 270 : 180) : (isEditable ? 180 : 80);
         let left = x;
         let top = y;
 
@@ -4799,6 +5081,10 @@
 
                 if (action === 'comment') {
                     openCommentOverlay(rowId, fieldName, td);
+                } else if (action === 'mov') {
+                    if (rowId) {
+                        openMovModal(rowId);
+                    }
                 } else if (action === 'cut') {
                     if (input && !input.disabled) {
                         input.focus();

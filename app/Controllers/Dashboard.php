@@ -125,7 +125,7 @@ class Dashboard extends BaseController
         $targetFolderIds = [];
         if ($activeCycle) {
             $descendantIds = $folderModel->getAllDescendantFolderIds($activeCycle['id']);
-            $targetFolderIds = !empty($descendantIds) ? $descendantIds : [$activeCycle['id']];
+            $targetFolderIds = !empty($descendantIds) ? $descendantIds : [];
         }
 
         $cycleFolders = $this->gatherCycleFolders($activeCycle, $selectedUnitId, $sysRole, $userId, $allUnits, $scopedUnitIds, $supervisorCollegeName);
@@ -391,6 +391,91 @@ class Dashboard extends BaseController
         ksort($filterPositions);
         $employmentStatuses = (new EmploymentStatusModel())->orderBy('name', 'ASC')->findAll();
 
+        $mainData = [
+            'sysRole'              => $sysRole,
+            'rootFolders'          => $rootFolders,
+            'activeCycle'          => $activeCycle,
+            'selectedUnitId'       => $selectedUnitId,
+            'selectedUnitName'     => $selectedUnitName,
+            'allUnits'             => $allUnits,
+            'totalPersonnel'       => $totalPersonnel,
+            'totalRated'           => $totalRated,
+            'totalMovCount'        => $totalMovCount,
+            'overallAverage'       => $overallAverage,
+            'adjectivalLabel'      => $adjectivalLabel,
+            'adjectivalBadgeClass' => $adjectivalBadgeClass,
+            'targetComplianceRate' => $targetComplianceRate,
+            'evalCompletionRate'   => $evalCompletionRate,
+            'cscDistribution'      => $cscDistribution,
+            'deptLeaderboard'      => $deptLeaderboard,
+            'topPerformers'        => $topPerformers,
+            'empStatusCounts'      => $empStatusCounts,
+            'stageCounts'          => $stageCounts,
+            'filterPositions'      => array_values($filterPositions),
+            'employmentStatuses'   => $employmentStatuses,
+            'isChairScope'          => $isChairScope,
+            'isPresidentScope'      => $isPresidentScope,
+            'supervisorCollegeName' => $supervisorCollegeName,
+            'collegeDepartments'    => $collegeDepartments,
+            'cycleFolders'          => $cycleFolders,
+            'pipeline'             => [
+                'target' => [
+                    'approved'  => $targetApprovedCount,
+                    'pending'   => $targetPendingCount,
+                    'submitted' => $targetPendingCount,
+                    'draft'     => $targetDraftCount,
+                    'returned'  => $targetReturnedCount
+                ],
+                'evaluation' => [
+                    'completed' => $evalCompletedCount,
+                    'approved'  => $evalCompletedCount,
+                    'action'    => $evalActionCount,
+                    'submitted' => $evalSubmittedCount,
+                    'draft'     => $evalDraftCount,
+                    'returned'  => $evalReturnedCount,
+                    'pending'   => $evalDraftCount
+                ],
+                // Civil Service Commission (CSC MC No. 6, s. 2012) 4-Stage SPMS Lifecycle
+                'stage1' => [
+                    'name'     => 'Performance Planning & Commitment',
+                    'sub'      => 'Target Setting Phase',
+                    'approved' => $targetApprovedCount,
+                    'pending'  => $targetPendingCount,
+                    'draft'    => $targetDraftCount,
+                    'returned' => $targetReturnedCount,
+                ],
+                'stage2' => [
+                    'name'             => 'Performance Monitoring & Coaching',
+                    'sub'              => 'Execution & Evidence Phase',
+                    'active_execution' => $targetApprovedCount,
+                    'mov_count'        => $totalMovCount,
+                    'coaching_notes'   => $targetReturnedCount + $evalReturnedCount,
+                    'execution_rate'   => $totalPersonnel > 0 ? round(($targetApprovedCount / $totalPersonnel) * 100) : 0,
+                ],
+                'stage3' => [
+                    'name'       => 'Performance Review & Evaluation',
+                    'sub'        => 'Accomplishment Phase',
+                    'completed'  => $evalCompletedCount,
+                    'evaluating' => $evalActionCount,
+                    'submitted'  => $evalSubmittedCount,
+                    'draft'      => $evalDraftCount,
+                    'returned'   => $evalReturnedCount,
+                ],
+                'stage4' => [
+                    'name'         => 'Performance Rewarding & Development',
+                    'sub'          => 'Incentives & Finalization Phase',
+                    'pbb_eligible' => $pbbEligibleCount,
+                    'certified'    => $evalCompletedCount,
+                    'export_ready' => $evalCompletedCount,
+                    'dev_needed'   => $devNeededCount,
+                ]
+            ]
+        ];
+
+        if ($this->request->isAJAX()) {
+            return view('dashboard/index', $mainData);
+        }
+
         return view('components/app_shell', [
             'context'          => 'dashboard',
             'maxWidthClass'    => 'max-w-[125rem] 2xl:max-w-[140rem]',
@@ -398,86 +483,7 @@ class Dashboard extends BaseController
             'selectedFolderId' => $activeCycle['id'] ?? null,
             'sidebarTitle'     => 'Evaluation Folders',
             'mainView'         => 'dashboard/index',
-            'mainData'         => [
-                'sysRole'              => $sysRole,
-                'rootFolders'          => $rootFolders,
-                'activeCycle'          => $activeCycle,
-                'selectedUnitId'       => $selectedUnitId,
-                'selectedUnitName'     => $selectedUnitName,
-                'allUnits'             => $allUnits,
-                'totalPersonnel'       => $totalPersonnel,
-                'totalRated'           => $totalRated,
-                'totalMovCount'        => $totalMovCount,
-                'overallAverage'       => $overallAverage,
-                'adjectivalLabel'      => $adjectivalLabel,
-                'adjectivalBadgeClass' => $adjectivalBadgeClass,
-                'targetComplianceRate' => $targetComplianceRate,
-                'evalCompletionRate'   => $evalCompletionRate,
-                'cscDistribution'      => $cscDistribution,
-                'deptLeaderboard'      => $deptLeaderboard,
-                'topPerformers'        => $topPerformers,
-                'empStatusCounts'      => $empStatusCounts,
-                'stageCounts'          => $stageCounts,
-                'filterPositions'      => array_values($filterPositions),
-                'employmentStatuses'   => $employmentStatuses,
-                'isChairScope'          => $isChairScope,
-                'isPresidentScope'      => $isPresidentScope,
-                'supervisorCollegeName' => $supervisorCollegeName,
-                'collegeDepartments'    => $collegeDepartments,
-                'cycleFolders'          => $cycleFolders,
-                'pipeline'             => [
-                    'target' => [
-                        'approved'  => $targetApprovedCount,
-                        'pending'   => $targetPendingCount,
-                        'submitted' => $targetPendingCount,
-                        'draft'     => $targetDraftCount,
-                        'returned'  => $targetReturnedCount
-                    ],
-                    'evaluation' => [
-                        'completed' => $evalCompletedCount,
-                        'approved'  => $evalCompletedCount,
-                        'action'    => $evalActionCount,
-                        'submitted' => $evalSubmittedCount,
-                        'draft'     => $evalDraftCount,
-                        'returned'  => $evalReturnedCount,
-                        'pending'   => $evalDraftCount
-                    ],
-                    // Civil Service Commission (CSC MC No. 6, s. 2012) 4-Stage SPMS Lifecycle
-                    'stage1' => [
-                        'name'     => 'Performance Planning & Commitment',
-                        'sub'      => 'Target Setting Phase',
-                        'approved' => $targetApprovedCount,
-                        'pending'  => $targetPendingCount,
-                        'draft'    => $targetDraftCount,
-                        'returned' => $targetReturnedCount,
-                    ],
-                    'stage2' => [
-                        'name'             => 'Performance Monitoring & Coaching',
-                        'sub'              => 'Execution & Evidence Phase',
-                        'active_execution' => $targetApprovedCount,
-                        'mov_count'        => $totalMovCount,
-                        'coaching_notes'   => $targetReturnedCount + $evalReturnedCount,
-                        'execution_rate'   => $totalPersonnel > 0 ? round(($targetApprovedCount / $totalPersonnel) * 100) : 0,
-                    ],
-                    'stage3' => [
-                        'name'       => 'Performance Review & Evaluation',
-                        'sub'        => 'Accomplishment Phase',
-                        'completed'  => $evalCompletedCount,
-                        'evaluating' => $evalActionCount,
-                        'submitted'  => $evalSubmittedCount,
-                        'draft'      => $evalDraftCount,
-                        'returned'   => $evalReturnedCount,
-                    ],
-                    'stage4' => [
-                        'name'         => 'Performance Rewarding & Development',
-                        'sub'          => 'Incentives & Finalization Phase',
-                        'pbb_eligible' => $pbbEligibleCount,
-                        'certified'    => $evalCompletedCount,
-                        'export_ready' => $evalCompletedCount,
-                        'dev_needed'   => $devNeededCount,
-                    ]
-                ]
-            ]
+            'mainData'         => $mainData
         ]);
     }
 
@@ -559,40 +565,42 @@ class Dashboard extends BaseController
 
         if ($activeCycle) {
             $descendantIds = $folderModel->getAllDescendantFolderIds($activeCycle['id']);
-            $targetFolderIds = !empty($descendantIds) ? $descendantIds : [$activeCycle['id']];
+            $targetFolderIds = !empty($descendantIds) ? $descendantIds : [];
 
-            $builder = $db->table('document_folders df')
-                ->select("df.id as folder_id, df.user_id, df.title as folder_title, df.final_rating, df.status as folder_status, df.updated_at, df.created_at,
-                          u.first_name, u.last_name, u.email, u.doc_type,
-                          p.employment_status,
-                          pos.title as position, pos.is_teaching,
-                          un.id as unit_id, un.name as department")
-                ->join('users u', 'u.id = df.user_id')
-                ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
-                ->join('positions pos', 'pos.id = p.position_id', 'left')
-                ->join('units un', 'un.id = p.unit_id', 'left')
-                ->whereIn('df.id', $targetFolderIds)
-                ->where('df.deleted_at IS NULL');
+            if (!empty($targetFolderIds)) {
+                $builder = $db->table('document_folders df')
+                    ->select("df.id as folder_id, df.user_id, df.title as folder_title, df.final_rating, df.status as folder_status, df.updated_at, df.created_at,
+                              u.first_name, u.last_name, u.email, u.doc_type,
+                              p.employment_status,
+                              pos.title as position, pos.is_teaching,
+                              un.id as unit_id, un.name as department")
+                    ->join('users u', 'u.id = df.user_id')
+                    ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
+                    ->join('positions pos', 'pos.id = p.position_id', 'left')
+                    ->join('units un', 'un.id = p.unit_id', 'left')
+                    ->whereIn('df.id', $targetFolderIds)
+                    ->where('df.deleted_at IS NULL');
 
-            if ($selectedUnitId) {
-                $filteredUnitIds = $unitModel->getDescendantIds([$selectedUnitId]);
-                $filteredUnitIds[] = $selectedUnitId;
-                $builder->whereIn('un.id', array_unique($filteredUnitIds));
-            }
-
-            if ($sysRole === 'Supervisor') {
-                if (!empty($scopedUnitIds)) {
-                    $builder->whereIn('un.id', $scopedUnitIds);
-                } else {
-                    $builder->join('evaluation_routings er_sc', 'er_sc.folder_id = df.id')
-                            ->where('er_sc.evaluator_id', $userId);
+                if ($selectedUnitId) {
+                    $filteredUnitIds = $unitModel->getDescendantIds([$selectedUnitId]);
+                    $filteredUnitIds[] = $selectedUnitId;
+                    $builder->whereIn('un.id', array_unique($filteredUnitIds));
                 }
-            } elseif (!in_array($sysRole, ['Admin', 'HR', 'TWG', 'PMT'])) {
-                $builder->where('df.user_id', $userId);
-            }
 
-            $builder->groupBy('df.id');
-            $cycleFolders = $builder->get()->getResultArray();
+                if ($sysRole === 'Supervisor') {
+                    if (!empty($scopedUnitIds)) {
+                        $builder->whereIn('un.id', $scopedUnitIds);
+                    } else {
+                        $builder->join('evaluation_routings er_sc', 'er_sc.folder_id = df.id')
+                                ->where('er_sc.evaluator_id', $userId);
+                    }
+                } elseif (!in_array($sysRole, ['Admin', 'HR', 'TWG', 'PMT'])) {
+                    $builder->where('df.user_id', $userId);
+                }
+
+                $builder->groupBy('df.id');
+                $cycleFolders = $builder->get()->getResultArray();
+            }
         }
 
         // Discover active employees who haven't created a folder yet
@@ -621,10 +629,12 @@ class Dashboard extends BaseController
                 ->join('units un', 'un.id = p.unit_id', 'left')
                 ->whereIn('un.id', $unstartedScopedUnitIds)
                 ->where('u.is_active', 1)
+                ->groupBy('u.id')
                 ->get()->getResultArray();
 
             foreach ($activeEmployees as $ce) {
                 if (!in_array($ce['user_id'], $existingUserIds)) {
+                    $existingUserIds[] = $ce['user_id'];
                     $cycleFolders[] = [
                         'folder_id'         => null,
                         'user_id'           => $ce['user_id'],
@@ -711,7 +721,7 @@ class Dashboard extends BaseController
             // Evaluation stage tracking & tagging
             if ($cStatus === FolderStatus::EVAL_APPROVED) {
                 $f['eval_state'] = 'approved';
-                $f['eval_label'] = 'Completed & Approved';
+                $f['eval_label'] = 'Approved';
                 $f['eval_badge'] = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-[#102a1e] dark:text-emerald-400 dark:border-[#1b4330]';
             } elseif ($cStatus === FolderStatus::EVAL_SUBMITTED) {
                 $f['eval_state'] = 'submitted';

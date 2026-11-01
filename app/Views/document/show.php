@@ -24,9 +24,12 @@
     $isDocIperf = (!$isDocDpcr && !$isDocOpcr) && ($ownerDocType === 'iperf' || $tabFormDocType === 'iperf' || stripos($docTitleUpper, 'iperf') !== false || (empty($doc['doc_type']) && empty($tabFormDocType) && isset($ownerInfo['is_teaching']) && (int)$ownerInfo['is_teaching'] === 0));
     $activeDocType = $isDocDpcr ? 'dpcr' : ($isDocOpcr ? 'opcr' : ($isDocIperf ? 'iperf' : 'ipcr'));
     $targetEndCol = $activeDocType . '_target_end';
+    $evalEndCol = $activeDocType . '_eval_end';
     $now = date('Y-m-d H:i:s');
-    $tEnd = $doc[$targetEndCol] ?? null;
+    $tEnd = $doc[$targetEndCol] ?? $doc['target_end'] ?? null;
+    $eEnd = $doc[$evalEndCol] ?? $doc['eval_end'] ?? null;
     $isPastTargetDate = (!empty($tEnd) && $now > $tEnd);
+    $isPastEvalDate = (!empty($eEnd) && $now > $eEnd);
 
     $cTopStatus = FolderStatus::canonical($status ?? '');
     $isEvaluationPhase = $cTopStatus->isEvaluationPhase() || $isPastTargetDate;
@@ -51,17 +54,45 @@
         (!$isOwner && (!empty($isCascadedByMe) || isset($routingStatus)) && in_array($cTopStatus, [FolderStatus::EVAL_SUBMITTED], true))
     ) && !$isGuide);
 
+    // Option B: Allow progressive drafting of accomplishments and attaching MOVs once targets are approved
+    $canEditAccomplishments = empty($isCycleArchived) && empty($isHistoricalVersion) && !$isGuide && (
+        $canEditEvaluation || 
+        ($isOwner && $cTopStatus === FolderStatus::TARGET_APPROVED)
+    );
+
+    // Reviewer Remarks Permissions: Open for Supervisors, TWG/PMT, and Admins when user submits in both phases
+    $isReviewer = (!$isOwner && (!empty($isCascadedByMe) || isset($routingStatus) || $isTwg || $isAdmin) && !$isGuide && empty($isCycleArchived) && empty($isHistoricalVersion));
+
+    $isTargetSubmitted = in_array($cTopStatus, [
+        FolderStatus::TARGET_SUBMITTED,
+        FolderStatus::TARGET_UNAPPROVED,
+        FolderStatus::TARGET_APPROVED,
+    ], true);
+
+    $isEvalSubmitted = in_array($cTopStatus, [
+        FolderStatus::EVAL_SUBMITTED,
+        FolderStatus::EVAL_UNRATED,
+        FolderStatus::EVAL_APPROVED,
+    ], true);
+
+    // Reviewer Remarks Permissions: Open for Supervisors, TWG/PMT, and Admins when user submits in both phases (locked for ratee)
+    $canReviewerEditRemarks = $isReviewer && ($isTargetSubmitted || $isEvalSubmitted);
+    $canEditRemarks = $canReviewerEditRemarks;
+
     $editableStatuses = [
         FolderStatus::DRAFT_TARGET->value,
         FolderStatus::DRAFT_EVALUATION->value,
     ];
-    $isEditable = ($canEditTargets || $canEditEvaluation || $canEditTwg);
+    $isEditable = ($canEditTargets || $canEditEvaluation || $canEditAccomplishments || $canEditTwg || $canReviewerEditRemarks);
 
     if (!empty($isCycleArchived) || !empty($isHistoricalVersion)) {
         $canEditTargets = false;
         $canEditEvaluation = false;
+        $canEditAccomplishments = false;
         $canEditApprover = false;
         $canEditTwg = false;
+        $canReviewerEditRemarks = false;
+        $canEditRemarks = false;
         $isEditable = false;
     }
 
@@ -149,12 +180,13 @@
 <?= view('document/partials/ui/_unsaved_modal', $viewData) ?>
 
 <?= view('document/_mov_modal', [
-    'isOwner'           => $isOwner ?? false,
-    'isCycleArchived'   => $isCycleArchived ?? false,
-    'attachmentsByRow'  => $attachmentsByRow ?? [],
-    'doc'               => $doc ?? [],
-    'isEvaluationPhase' => $isEvaluationPhase ?? false,
-    'canEditEvaluation' => $canEditEvaluation ?? false,
+    'isOwner'                => $isOwner ?? false,
+    'isCycleArchived'        => $isCycleArchived ?? false,
+    'attachmentsByRow'       => $attachmentsByRow ?? [],
+    'doc'                    => $doc ?? [],
+    'isEvaluationPhase'      => $isEvaluationPhase ?? false,
+    'canEditEvaluation'      => $canEditEvaluation ?? false,
+    'canEditAccomplishments' => $canEditAccomplishments ?? false,
 ]) ?>
 
 <?= $this->endSection() ?>

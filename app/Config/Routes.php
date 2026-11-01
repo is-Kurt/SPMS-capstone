@@ -53,6 +53,9 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->post('account/employment-status/add', 'AccountManagement::addEmploymentStatus', ['filter' => 'role:Admin']);
     $routes->post('account/employment-status/delete', 'AccountManagement::deleteEmploymentStatus', ['filter' => 'role:Admin']);
 
+    // Default Function Weights
+    $routes->post('account/update-default-weights', 'AccountManagement::updateDefaultWeights', ['filter' => 'role:Admin']);
+
     // Template Management (Disabled / Standardized statutory forms)
     $routes->addRedirect('templates', 'dashboard');
     $routes->addRedirect('templates/(:any)', 'dashboard');

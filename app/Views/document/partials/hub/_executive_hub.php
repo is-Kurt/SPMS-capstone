@@ -75,6 +75,9 @@
 
                             // Stepper active index (1: Target Setting [dates/draft], 2: Target Approved [status], 3: Evaluation [dates/eval], 4: Final Rating [status])
                             $currentStepIndex = $cFolderStatus->stepperIndex($rawEStart, $rawTEnd, $isSubmitted);
+                            $isTargetApprovedStep = ($cFolderStatus === \App\Enums\FolderStatus::TARGET_APPROVED
+                                || $cFolderStatus->isEvaluationPhase()
+                                || $currentStepIndex > 2);
 
                             $tStartDate = !empty($rawTStart) ? strtotime($rawTStart) : null;
                             $tEndDate   = !empty($rawTEnd)   ? strtotime($rawTEnd)   : null;
@@ -179,12 +182,12 @@
                                     
                                     <!-- Step 1: Target Setting -->
                                     <div style="display: flex; align-items: center; flex-shrink: 0;">
-                                        <?php if ($currentStepIndex === 1): ?>
+                                        <?php if ($currentStepIndex === 1 && !$isTargetApprovedStep): ?>
                                             <div class="spms-hub-circle-active">
                                                 <div class="spms-hub-circle-active-dot"></div>
                                             </div>
                                             <span class="spms-hub-step-text-active">Target Setting</span>
-                                        <?php elseif ($currentStepIndex > 1): ?>
+                                        <?php elseif ($currentStepIndex > 1 || $isTargetApprovedStep): ?>
                                             <div class="spms-hub-circle-completed">
                                                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                             </div>
@@ -196,12 +199,12 @@
                                     </div>
 
                                     <!-- Arrow 1 -> 2 -->
-                                    <?php if ($currentStepIndex === 1): ?>
+                                    <?php if ($currentStepIndex === 1 && !$isTargetApprovedStep): ?>
                                         <svg class="spms-hub-stepper-arrow" viewBox="0 0 60 12" fill="none">
                                             <line x1="0" y1="6" x2="48" y2="6" stroke="#f59e0b" stroke-width="2" stroke-dasharray="3 3" />
                                             <polygon points="46,2 56,6 46,10" fill="#f59e0b" />
                                         </svg>
-                                    <?php elseif ($currentStepIndex > 1): ?>
+                                    <?php elseif ($currentStepIndex > 1 || $isTargetApprovedStep): ?>
                                         <svg class="spms-hub-stepper-arrow" viewBox="0 0 60 12" fill="none">
                                             <line x1="0" y1="6" x2="48" y2="6" stroke="#10b981" stroke-width="2" />
                                             <polygon points="46,2 56,6 46,10" fill="#10b981" />
@@ -215,14 +218,14 @@
 
                                     <!-- Step 2: Target Approved -->
                                     <div style="display: flex; align-items: center; flex-shrink: 0;">
-                                        <?php if ($currentStepIndex === 2): ?>
-                                            <div class="spms-hub-circle-active">
-                                                <div class="spms-hub-circle-active-dot"></div>
-                                            </div>
-                                            <span class="spms-hub-step-text-active">Target Approved</span>
-                                        <?php elseif ($currentStepIndex > 2): ?>
+                                        <?php if ($isTargetApprovedStep): ?>
                                             <div class="spms-hub-circle-completed">
                                                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                            </div>
+                                            <span class="spms-hub-step-text-active">Target Approved</span>
+                                        <?php elseif ($currentStepIndex === 2): ?>
+                                            <div class="spms-hub-circle-active">
+                                                <div class="spms-hub-circle-active-dot"></div>
                                             </div>
                                             <span class="spms-hub-step-text-active">Target Approved</span>
                                         <?php else: ?>
@@ -232,15 +235,20 @@
                                     </div>
 
                                     <!-- Arrow 2 -> 3 -->
-                                    <?php if ($currentStepIndex === 2): ?>
-                                        <svg class="spms-hub-stepper-arrow" viewBox="0 0 60 12" fill="none">
-                                            <line x1="0" y1="6" x2="48" y2="6" stroke="#f59e0b" stroke-width="2" stroke-dasharray="3 3" />
-                                            <polygon points="46,2 56,6 46,10" fill="#f59e0b" />
-                                        </svg>
-                                    <?php elseif ($currentStepIndex > 2): ?>
+                                    <?php if ($currentStepIndex > 2): ?>
                                         <svg class="spms-hub-stepper-arrow" viewBox="0 0 60 12" fill="none">
                                             <line x1="0" y1="6" x2="48" y2="6" stroke="#10b981" stroke-width="2" />
                                             <polygon points="46,2 56,6 46,10" fill="#10b981" />
+                                        </svg>
+                                    <?php elseif ($isTargetApprovedStep): ?>
+                                        <svg class="spms-hub-stepper-arrow" viewBox="0 0 60 12" fill="none">
+                                            <line x1="0" y1="6" x2="48" y2="6" stroke="#10b981" stroke-width="2" stroke-dasharray="3 3" />
+                                            <polygon points="46,2 56,6 46,10" fill="#10b981" />
+                                        </svg>
+                                    <?php elseif ($currentStepIndex === 2): ?>
+                                        <svg class="spms-hub-stepper-arrow text-zinc-300 dark:text-[#145235]" viewBox="0 0 60 12" fill="none">
+                                            <line x1="0" y1="6" x2="48" y2="6" stroke="currentColor" stroke-width="1.5" />
+                                            <polygon points="46,2 56,6 46,10" fill="currentColor" />
                                         </svg>
                                     <?php else: ?>
                                         <svg class="spms-hub-stepper-arrow text-zinc-300 dark:text-[#145235]" viewBox="0 0 60 12" fill="none">

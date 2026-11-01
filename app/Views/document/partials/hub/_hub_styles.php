@@ -408,6 +408,14 @@
                             .spms-hub-stat-grid.spms-hub-stat-grid-2 {
                                 grid-template-columns: repeat(2, minmax(0, 1fr));
                             }
+                            .spms-hub-stat-grid.spms-hub-stat-grid-4 {
+                                grid-template-columns: repeat(2, minmax(0, 1fr));
+                            }
+                        }
+                        @media (min-width: 1024px) {
+                            .spms-hub-stat-grid.spms-hub-stat-grid-4 {
+                                grid-template-columns: repeat(4, minmax(0, 1fr));
+                            }
                         }
                         @media (min-width: 768px) {
                             .spms-hub-stat-grid {

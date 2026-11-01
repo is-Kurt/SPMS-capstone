@@ -19,7 +19,7 @@
                                 <th colspan="4" style="border: 1px solid #000; padding: 4px;">RATING</th>
                                 <th rowspan="2" style="border: 1px solid #000; padding: 6px 4px;">REMARKS</th>
                             </tr>
-                            <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; border-bottom: 2px solid #000; font-size: 10px;">
+                            <tr style="background-color: #f1f5f9; color: #0f172a; text-align: center; font-weight: bold; font-size: 10px;">
                                 <th style="border: 1px solid #000; padding: 4px 2px;">Q</th>
                                 <th style="border: 1px solid #000; padding: 4px 2px;">T</th>
                                 <th style="border: 1px solid #000; padding: 4px 2px;">E</th>

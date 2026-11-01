@@ -4,7 +4,7 @@
 
                         <!-- OVERALL AVERAGE RATING -->
                         <tfoot>
-                            <tr style="background-color: #f8fafc; font-weight: bold; border-top: 2px solid #000; border-bottom: 2px solid #000;">
+                            <tr style="background-color: #f8fafc; font-weight: bold;">
                                 <td colspan="3" style="padding: 8px 12px; font-weight: 900; font-size: 11px; text-transform: uppercase; color: #000000; border: 1px solid #000; text-align: left;">
                                     OVERALL AVERAGE RATING
                                 </td>

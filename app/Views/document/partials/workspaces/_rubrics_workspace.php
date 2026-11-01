@@ -1,6 +1,6 @@
         <!-- SPMS DIGITAL RUBRICS MATRIX WORKSPACE -->
-        <div id="spms-rubrics-workspace" class="hidden w-full h-full overflow-y-auto p-2 sm:p-6 lg:p-8 flex flex-col items-center custom-scrollbar print:p-0 print:bg-white print:overflow-visible">
-            <div class="w-full max-w-[1280px] flex flex-col gap-6 print:w-full print:block">
+        <div id="spms-rubrics-workspace" class="hidden w-fit min-w-full min-h-full p-2 sm:p-6 lg:p-8 flex flex-col items-center print:p-0 print:bg-white print:overflow-visible">
+            <div class="w-full max-w-[1560px] flex flex-col gap-6 print:w-full print:block">
                 
                 <!-- Interactive Digital Rubrics Matrix Section -->
                 <div class="space-y-5">

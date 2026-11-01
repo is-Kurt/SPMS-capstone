@@ -665,8 +665,60 @@ class Folder extends BaseController
             }
         }
 
+        $cycleStats = null;
+        if ($role === 'Admin' && !empty($activeFolder['id'])) {
+            $cId = $activeFolder['id'];
+            $childFolders = $folderModel->groupStart()
+                ->where('cycle_folder_id', $cId)
+                ->orWhere('parent_folder_id', $cId)
+            ->groupEnd()
+            ->where('id !=', $cId)
+            ->where('deleted_at IS NULL')
+            ->findAll();
+
+            $totalUnits = count($childFolders);
+            $targetApproved = 0;
+            $targetSubmitted = 0;
+            $targetDraft = 0;
+            $evalApproved = 0;
+            $evalSubmitted = 0;
+            $evalDraft = 0;
+
+            foreach ($childFolders as $cf) {
+                $cSt = FolderStatus::canonical($cf['status'] ?? '');
+                if ($cSt === FolderStatus::TARGET_APPROVED || $cSt->isEvaluationPhase()) {
+                    $targetApproved++;
+                } elseif ($cSt === FolderStatus::TARGET_SUBMITTED) {
+                    $targetSubmitted++;
+                } else {
+                    $targetDraft++;
+                }
+
+                if ($cSt === FolderStatus::EVAL_APPROVED) {
+                    $evalApproved++;
+                } elseif ($cSt === FolderStatus::EVAL_SUBMITTED) {
+                    $evalSubmitted++;
+                } else {
+                    $evalDraft++;
+                }
+            }
+
+            $cycleStats = [
+                'total'            => $totalUnits,
+                'target_approved'  => $targetApproved,
+                'target_submitted' => $targetSubmitted,
+                'target_draft'     => $targetDraft,
+                'target_pct'       => $totalUnits > 0 ? round(($targetApproved / $totalUnits) * 100) : 0,
+                'eval_approved'    => $evalApproved,
+                'eval_submitted'   => $evalSubmitted,
+                'eval_draft'       => $evalDraft,
+                'eval_pct'         => $totalUnits > 0 ? round(($evalApproved / $totalUnits) * 100) : 0,
+            ];
+        }
+
         $mainData = [
             'activeFolder'            => $activeFolder,
+            'cycleStats'              => $cycleStats,
             'parentFolder'            => $parentFolder,
             'isParentTargetApproved'  => $isParentTargetApproved,
             'basisDoc'                => $basisDoc,
@@ -1748,6 +1800,14 @@ class Folder extends BaseController
                         $existingCats[$destCat] = [];
                     }
 
+                    // Remove empty placeholder template rows (e.g. from get_default_form_template) so cascaded targets start at row 1
+                    $existingCats[$destCat] = array_values(array_filter($existingCats[$destCat], function($exRow) {
+                        $exMfo = trim((string)($exRow['mfo'] ?? ($exRow['office_ppa'] ?? ($exRow['paps'] ?? ($exRow['mfo_title'] ?? '')))));
+                        $exInd = trim((string)($exRow['indicators'] ?? ($exRow['success_indicators'] ?? ($exRow['expected_outputs'] ?? ($exRow['success_indicator'] ?? '')))));
+                        $exAcc = trim((string)($exRow['accomplishments'] ?? ''));
+                        return ($exMfo !== '' || $exInd !== '' || $exAcc !== '');
+                    }));
+
                     // Check if already exists in subordinate's document
                     $alreadyExists = false;
                     foreach ($existingCats[$destCat] as $exRow) {
@@ -2089,8 +2149,60 @@ class Folder extends BaseController
             }
         }
 
+        $cycleStats = null;
+        if ($role === 'Admin' && !empty($activeFolder['id'])) {
+            $cId = $activeFolder['id'];
+            $childFolders = $folderModel->groupStart()
+                ->where('cycle_folder_id', $cId)
+                ->orWhere('parent_folder_id', $cId)
+            ->groupEnd()
+            ->where('id !=', $cId)
+            ->where('deleted_at IS NULL')
+            ->findAll();
+
+            $totalUnits = count($childFolders);
+            $targetApproved = 0;
+            $targetSubmitted = 0;
+            $targetDraft = 0;
+            $evalApproved = 0;
+            $evalSubmitted = 0;
+            $evalDraft = 0;
+
+            foreach ($childFolders as $cf) {
+                $cSt = FolderStatus::canonical($cf['status'] ?? '');
+                if ($cSt === FolderStatus::TARGET_APPROVED || $cSt->isEvaluationPhase()) {
+                    $targetApproved++;
+                } elseif ($cSt === FolderStatus::TARGET_SUBMITTED) {
+                    $targetSubmitted++;
+                } else {
+                    $targetDraft++;
+                }
+
+                if ($cSt === FolderStatus::EVAL_APPROVED) {
+                    $evalApproved++;
+                } elseif ($cSt === FolderStatus::EVAL_SUBMITTED) {
+                    $evalSubmitted++;
+                } else {
+                    $evalDraft++;
+                }
+            }
+
+            $cycleStats = [
+                'total'            => $totalUnits,
+                'target_approved'  => $targetApproved,
+                'target_submitted' => $targetSubmitted,
+                'target_draft'     => $targetDraft,
+                'target_pct'       => $totalUnits > 0 ? round(($targetApproved / $totalUnits) * 100) : 0,
+                'eval_approved'    => $evalApproved,
+                'eval_submitted'   => $evalSubmitted,
+                'eval_draft'       => $evalDraft,
+                'eval_pct'         => $totalUnits > 0 ? round(($evalApproved / $totalUnits) * 100) : 0,
+            ];
+        }
+
         $mainData = [
             'activeFolder'            => $activeFolder,
+            'cycleStats'              => $cycleStats,
             'ownerDocType'            => $ownerDocType,
             'myDocs'                  => $myDocs,
             'groupedGuides'           => [],

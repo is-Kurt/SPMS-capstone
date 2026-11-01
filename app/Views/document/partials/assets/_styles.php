@@ -1,8 +1,7 @@
 <style>
     .spms-sheet-container {
         width: 100%;
-        min-width: fit-content;
-        max-width: <?= $isDocDpcr ? '1600px' : ($isDocOpcr ? '1550px' : '1440px') ?>;
+        max-width: 1560px;
         background: #ffffff;
         color: #0f172a;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
@@ -10,10 +9,13 @@
         padding: 16px 12px;
         box-sizing: border-box;
         font-family: inherit;
-        display: block !important;
+        display: block;
         height: auto !important;
         min-height: fit-content !important;
         border-radius: 8px;
+    }
+    .spms-sheet-container.hidden {
+        display: none !important;
     }
     @media (min-width: 640px) {
         .spms-sheet-container {
@@ -102,6 +104,8 @@
     }
     .spms-table th, .spms-table td {
         border: 1px solid #000000;
+        word-break: break-word;
+        overflow-wrap: break-word;
     }
     /* Seamless Full-Bleed Excel/Sheets Table Cells */
     .spms-table td.spms-cell-input {
@@ -136,6 +140,54 @@
     html.dark .spms-table td[id^="label-cat-"],
     html.dark .spms-table tr.spms-category-header td {
         background-color: #27272a !important;
+        color: #38bdf8 !important;
+        border-color: #3f3f46 !important;
+    }
+    /* Superior Basis Table & Rubrics Styling */
+    .basis-thead-tr th {
+        background-color: #f1f5f9;
+        color: #0f172a;
+    }
+    .basis-ave-col {
+        background-color: #f0f9ff;
+        color: #0369a1;
+        font-weight: 900;
+    }
+    .basis-deliv-cell {
+        background-color: #fafafa;
+        color: #0f172a;
+    }
+    .rubric-score-cell.score-5 { background-color: #ecfdf5; color: #065f46; }
+    .rubric-score-cell.score-4 { background-color: #f0f9ff; color: #0369a1; }
+    .rubric-score-cell.score-3 { background-color: #fefce8; color: #854d0e; }
+    .rubric-score-cell.score-2 { background-color: #fff7ed; color: #9a3412; }
+    .rubric-score-cell.score-1 { background-color: #fef2f2; color: #991b1b; }
+    /* Basis View Switch Control */
+    .basis-switch-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.25rem 0.625rem;
+        font-size: 0.75rem;
+        line-height: 1rem;
+        border-radius: 0.375rem;
+        border: 1px solid transparent;
+        transition: all 0.15s ease-in-out;
+        cursor: pointer;
+        user-select: none;
+        color: #52525b; /* zinc-600 */
+        font-weight: 700;
+        background: transparent;
+    }
+    .basis-switch-btn:hover {
+        color: #18181b; /* zinc-900 */
+    }
+    .basis-switch-btn.is-active {
+        background-color: #ffffff;
+        color: #0284c7; /* sky-600 */
+        border-color: #bae6fd; /* sky-200 */
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        font-weight: 800;
     }
     .spms-cat-weight-input:focus {
         background: transparent !important;
@@ -508,6 +560,76 @@
         margin: 0 !important;
         border: none !important;
     }
+    .spms-btn-add-cat-row {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background-color: #059669;
+        color: #ffffff !important;
+        font-size: 10.5px;
+        font-weight: 700;
+        line-height: 1;
+        padding: 4px 8px;
+        border-radius: 4px;
+        border: 1px solid #047857;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+        cursor: pointer;
+        text-transform: none;
+        letter-spacing: normal;
+        transition: background-color 0.15s ease, transform 0.1s ease;
+    }
+    .spms-btn-add-cat-row:hover {
+        background-color: #047857;
+        color: #ffffff !important;
+    }
+    .spms-btn-add-cat-row:active {
+        transform: scale(0.97);
+    }
+    .spms-btn-add-empty-row {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background-color: #059669;
+        color: #ffffff !important;
+        font-size: 11.5px;
+        font-weight: 700;
+        padding: 6px 14px;
+        border-radius: 6px;
+        border: 1px solid #047857;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        text-transform: none;
+        letter-spacing: normal;
+        transition: background-color 0.15s ease, transform 0.1s ease;
+    }
+    .spms-btn-add-empty-row:hover {
+        background-color: #047857;
+        color: #ffffff !important;
+    }
+    .spms-btn-add-empty-row:active {
+        transform: scale(0.97);
+    }
+    .spms-empty-category-row td {
+        background-color: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        padding: 22px 16px;
+        text-align: center;
+    }
+    .basis-view-select {
+        font-family: inherit;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 1.5px 5px;
+        border-radius: 4px;
+        cursor: pointer;
+        line-height: 1.2;
+    }
+    .basis-sheet-view-select {
+        font-family: inherit;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+    }
     .header-budget-currency {
         border: none;
         border-bottom: 1px dashed #10b981;
@@ -575,9 +697,16 @@
         display: inline-block;
     }
     .spms-category-header {
-        background: #e2e8f0;
-        border-top: 2px solid #000000;
-        border-bottom: 1px solid #000000;
+        background: #f1f5f9;
+        font-weight: bold;
+    }
+    .spms-table tr.spms-category-header td {
+        border: 1px solid #000000;
+        padding: 6px 12px;
+        font-weight: 900;
+        font-size: 11px;
+        text-transform: uppercase;
+        color: #0f172a;
     }
 
     /* Responsive Mobile Meta, Summary & Signatories Matrix Layouts */
@@ -745,7 +874,7 @@
         .spms-textarea::placeholder, .spms-score-input::placeholder, input::placeholder {
             color: transparent !important;
         }
-        .btn-add-dashed, .btn-del-row, #tfoot-add-core, #tfoot-add-strategic, #tfoot-add-support {
+        .btn-add-dashed, .btn-del-row, #tfoot-add-core, #tfoot-add-strategic, #tfoot-add-support, .spms-btn-add-cat-row, .spms-btn-add-empty-row, .spms-empty-category-row, .basis-view-select, .basis-sheet-view-select, .basis-view-switch-container, .basis-switch-btn {
             display: none !important;
         }
         .spms-textarea {
@@ -989,6 +1118,57 @@
         html.dark .spms-sheet-container [style*="background: #e2e8f0"],
         html.dark .spms-sheet-container .spms-category-header {
             background: #27272a !important;
+        }
+        html.dark #basis-printable-sheet,
+        html.dark #basis-rubrics-sheet {
+            background-color: #18181b !important;
+            color: #f4f4f5 !important;
+            border-color: #27272a !important;
+        }
+        html.dark #basis-printable-sheet table,
+        html.dark #basis-printable-sheet th,
+        html.dark #basis-printable-sheet td,
+        html.dark #basis-rubrics-sheet table,
+        html.dark #basis-rubrics-sheet th,
+        html.dark #basis-rubrics-sheet td {
+            border-color: #3f3f46 !important;
+        }
+        html.dark .basis-thead-tr th {
+            background-color: #27272a !important;
+            color: #f4f4f5 !important;
+            border-color: #3f3f46 !important;
+        }
+        html.dark #basis-printable-sheet tr.spms-category-header td,
+        html.dark #basis-rubrics-sheet tr.spms-category-header td {
+            background-color: #27272a !important;
+            color: #38bdf8 !important;
+            border-color: #3f3f46 !important;
+        }
+        html.dark .basis-ave-col {
+            background-color: rgba(14, 165, 233, 0.12) !important;
+            color: #38bdf8 !important;
+        }
+        html.dark .basis-deliv-cell {
+            background-color: #1f1f23 !important;
+            color: #f4f4f5 !important;
+        }
+        html.dark .rubric-score-cell.score-5 { background-color: rgba(16, 185, 129, 0.15) !important; color: #34d399 !important; }
+        html.dark .rubric-score-cell.score-4 { background-color: rgba(14, 165, 233, 0.15) !important; color: #38bdf8 !important; }
+        html.dark .rubric-score-cell.score-3 { background-color: rgba(234, 179, 8, 0.15) !important; color: #facc15 !important; }
+        html.dark .rubric-score-cell.score-2 { background-color: rgba(249, 115, 22, 0.15) !important; color: #fb923c !important; }
+        html.dark .rubric-score-cell.score-1 { background-color: rgba(239, 68, 68, 0.15) !important; color: #f87171 !important; }
+        html.dark .basis-switch-btn {
+            color: #a1a1aa !important;
+            background: transparent !important;
+        }
+        html.dark .basis-switch-btn:hover {
+            color: #f4f4f5 !important;
+        }
+        html.dark .basis-switch-btn.is-active {
+            background-color: #18181b !important;
+            color: #38bdf8 !important;
+            border-color: #0284c7 !important;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.4) !important;
         }
         html.dark .spms-sheet-container [style*="background: #ecfdf5"] { background: rgba(16, 185, 129, 0.12) !important; }
         html.dark .spms-sheet-container [style*="background: #f0f9ff"] { background: rgba(14, 165, 233, 0.12) !important; }

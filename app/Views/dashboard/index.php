@@ -328,9 +328,7 @@
                             <span class="text-xs text-zinc-400">Submission & Approval status</span>
                         </div>
                     </div>
-                    <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
-                        <?= $totalPersonnel ?> Total
-                    </span>
+
                 </div>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
                     <div class="p-3 rounded-xl bg-emerald-50 text-emerald-800 dark:bg-[#102a1e] dark:border-[#1b4330] dark:text-emerald-400 border border-emerald-200">
@@ -362,9 +360,7 @@
                             <span class="text-xs text-zinc-400">Evaluation & Grading status</span>
                         </div>
                     </div>
-                    <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
-                        <?= $totalPersonnel ?> Total
-                    </span>
+
                 </div>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
                     <div class="p-3 rounded-xl bg-emerald-50 text-emerald-800 dark:bg-[#102a1e] dark:border-[#1b4330] dark:text-emerald-400 border border-emerald-200">
@@ -401,11 +397,74 @@
                             <p class="text-[11px] text-zinc-500 dark:text-zinc-400">Highest rated faculty &amp; staff in this unit</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <?php
+                        $supervisorPerformerCounts = [
+                            'all'               => count($topPerformers),
+                            'outstanding'       => 0,
+                            'very_satisfactory' => 0,
+                            'satisfactory'      => 0,
+                            'unsatisfactory'    => 0,
+                            'poor'              => 0,
+                        ];
+                        foreach ($topPerformers as $tp) {
+                            $sVal = (float)($tp['rating_num'] ?? 0);
+                            if ($sVal >= 4.50) {
+                                $supervisorPerformerCounts['outstanding']++;
+                            } elseif ($sVal >= 3.50) {
+                                $supervisorPerformerCounts['very_satisfactory']++;
+                            } elseif ($sVal >= 2.50) {
+                                $supervisorPerformerCounts['satisfactory']++;
+                            } elseif ($sVal >= 1.50) {
+                                $supervisorPerformerCounts['unsatisfactory']++;
+                            } elseif ($sVal > 0) {
+                                $supervisorPerformerCounts['poor']++;
+                            }
+                        }
+                    ?>
+                    <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                        <!-- Adjectival Rating Filter Pills -->
+                        <div class="performer-tier-pills-container flex items-center gap-1.5 overflow-x-auto custom-scrollbar py-0.5">
+                            <button type="button" onclick="filterTopPerformersByTier('all', 'supervisor-performers-grid', this)"
+                                    data-tier="all"
+                                    class="performer-tier-pill active inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 bg-zinc-900 text-white dark:bg-zinc-800 dark:text-white border border-zinc-900 dark:border-zinc-600 shadow-2xs">
+                                <span>All (<?= $supervisorPerformerCounts['all'] ?>)</span>
+                            </button>
+                            <button type="button" onclick="filterTopPerformersByTier('outstanding', 'supervisor-performers-grid', this)"
+                                    data-tier="outstanding"
+                                    class="performer-tier-pill inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 hover:text-zinc-900 dark:hover:text-white">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                                <span>Outstanding (<?= $supervisorPerformerCounts['outstanding'] ?>)</span>
+                            </button>
+                            <button type="button" onclick="filterTopPerformersByTier('very_satisfactory', 'supervisor-performers-grid', this)"
+                                    data-tier="very_satisfactory"
+                                    class="performer-tier-pill inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 hover:text-zinc-900 dark:hover:text-white">
+                                <span class="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>
+                                <span>Very Satisfactory (<?= $supervisorPerformerCounts['very_satisfactory'] ?>)</span>
+                            </button>
+                            <button type="button" onclick="filterTopPerformersByTier('satisfactory', 'supervisor-performers-grid', this)"
+                                    data-tier="satisfactory"
+                                    class="performer-tier-pill inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 hover:text-zinc-900 dark:hover:text-white">
+                                <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                                <span>Satisfactory (<?= $supervisorPerformerCounts['satisfactory'] ?>)</span>
+                            </button>
+                            <button type="button" onclick="filterTopPerformersByTier('unsatisfactory', 'supervisor-performers-grid', this)"
+                                    data-tier="unsatisfactory"
+                                    class="performer-tier-pill inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 hover:text-zinc-900 dark:hover:text-white">
+                                <span class="w-2 h-2 rounded-full bg-orange-500 shrink-0"></span>
+                                <span>Unsatisfactory (<?= $supervisorPerformerCounts['unsatisfactory'] ?>)</span>
+                            </button>
+                            <button type="button" onclick="filterTopPerformersByTier('poor', 'supervisor-performers-grid', this)"
+                                    data-tier="poor"
+                                    class="performer-tier-pill inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 hover:text-zinc-900 dark:hover:text-white">
+                                <span class="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
+                                <span>Poor (<?= $supervisorPerformerCounts['poor'] ?>)</span>
+                            </button>
+                        </div>
+
                         <!-- Sort Filter (Top to Least / Least to Top) -->
-                        <div class="relative">
+                        <div class="relative shrink-0">
                             <select id="supervisor-top-performers-sort" onchange="sortTopPerformers(this.value, 'supervisor-performers-grid')"
-                                    class="appearance-none bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg pl-2.5 pr-7 py-1 text-[11px] font-bold text-zinc-700 dark:text-zinc-200 outline-none cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors shadow-2xs">
+                                    class="appearance-none bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg pl-2.5 pr-7 py-1.5 text-xs font-bold text-zinc-700 dark:text-zinc-200 outline-none cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors shadow-2xs">
                                 <option value="desc">Highest to Lowest</option>
                                 <option value="asc">Lowest to Highest</option>
                             </select>
@@ -413,17 +472,21 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                             </svg>
                         </div>
-                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 text-zinc-600 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700">
-                            <?= count($topPerformers) ?> Ranked
-                        </span>
                     </div>
                 </div>
 
                 <?php if (!empty($topPerformers)): ?>
                     <div id="supervisor-performers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[320px] overflow-y-auto custom-scrollbar pr-1">
-                        <?php foreach ($topPerformers as $idx => $tp): ?>
+                        <?php foreach ($topPerformers as $idx => $tp): 
+                            $sVal = (float)($tp['rating_num'] ?? 0);
+                            $tKey = ($sVal >= 4.50) ? 'outstanding' :
+                                    (($sVal >= 3.50) ? 'very_satisfactory' :
+                                    (($sVal >= 2.50) ? 'satisfactory' :
+                                    (($sVal >= 1.50) ? 'unsatisfactory' : 'poor')));
+                        ?>
                             <div class="performer-card p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800 flex items-center justify-between gap-3 transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40"
-                                 data-rating="<?= (float)($tp['rating_num'] ?? 0) ?>"
+                                 data-rating="<?= $sVal ?>"
+                                 data-adjectival-tier="<?= $tKey ?>"
                                  data-initial-index="<?= $idx ?>">
                                 <div class="flex items-center gap-2.5 min-w-0">
                                     <span class="performer-rank-badge w-7 h-7 rounded-lg bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs shrink-0">
@@ -447,14 +510,12 @@
                                             <?= esc($tp['adjectival_label'] ?? 'Outstanding') ?>
                                         </span>
                                     </div>
-                                    <?php if (!empty($tp['folder_id'])): ?>
-                                        <a href="<?= site_url('ratings/show/' . $tp['folder_id']) ?>" class="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                                        </a>
-                                    <?php endif; ?>
                                 </div>
                             </div>
                         <?php endforeach; ?>
+                        <div class="performer-tier-empty col-span-full py-8 text-center text-zinc-400 dark:text-zinc-500 italic text-xs hidden">
+                            No personnel discovered in this rating tier.
+                        </div>
                     </div>
                 <?php else: ?>
                     <div class="py-8 text-center text-zinc-400 dark:text-zinc-500 italic text-xs">
@@ -462,323 +523,149 @@
                     </div>
                 <?php endif; ?>
             </div>
-
-            <div class="pt-3 mt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
-                <span>PBB Eligible: <strong class="text-emerald-600 dark:text-emerald-400"><?= $pipeline['stage4']['pbb_eligible'] ?? 0 ?> personnel</strong></span>
-            </div>
         </div>
 
         <?php else: ?>
-        <!-- 1. TOP KPI SUMMARY METRIC CARDS (2x2 Grid on Mobile, 4-Cols on Desktop) -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <!-- 1. TOP SUMMARY CARDS: INSTITUTIONAL HEALTH & QUALITY -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             
-            <!-- Card 1: Total Ratees -->
-            <div class="p-3.5 sm:p-5 rounded-xl spms-kpi-card shadow-xs flex flex-col justify-between">
+            <!-- Card 1: Total University Headcount -->
+            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
                 <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-[9px] sm:text-[11px] font-bold uppercase tracking-wider spms-kpi-label">Total Ratees</span>
-                        <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 spms-kpi-icon-green">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">University Headcount</span>
+                        <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-info-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-2xs">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
                         </div>
                     </div>
-                    <div class="flex items-baseline gap-1.5 mb-2">
-                        <span class="text-2xl sm:text-3xl font-black tracking-tight spms-kpi-val"><?= number_format($totalPersonnel) ?></span>
-                        <span class="text-[11px] sm:text-xs font-semibold spms-kpi-sub">Personnel</span>
+                    <div class="flex items-baseline gap-2 mb-2">
+                        <span class="text-3xl font-black text-zinc-900 dark:text-white"><?= number_format($totalPersonnel) ?></span>
+                        <span class="text-xs font-bold text-zinc-500 dark:text-zinc-400">Personnel</span>
                     </div>
                 </div>
-                <div class="flex items-center gap-1.5 text-[10px] sm:text-xs font-semibold text-zinc-500 dark:text-zinc-400 mt-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-zinc-400 dark:bg-zinc-500 shrink-0"></span>
-                    <span>100% active roster</span>
+                <div class="pt-3 border-t border-zinc-100 dark:border-zinc-800 text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                    <span>Benguet State University &bull; <?= count($deptLeaderboard) ?> Units</span>
                 </div>
             </div>
 
-            <!-- Card 2: Overall Average Rating -->
-            <div class="p-3.5 sm:p-5 rounded-xl spms-kpi-card shadow-xs flex flex-col justify-between">
+            <!-- Card 2: Average Performance Rating -->
+            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
                 <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-[9px] sm:text-[11px] font-bold uppercase tracking-wider spms-kpi-label">Average Rating</span>
-                        <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 spms-kpi-icon-amber">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Average Rating</span>
+                        <div class="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-2xs">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                             </svg>
                         </div>
                     </div>
-                    <div class="flex items-baseline gap-1.5 mb-2">
-                        <span class="text-2xl sm:text-3xl font-black tracking-tight spms-kpi-val"><?= $overallAverage > 0 ? number_format($overallAverage, 2) : '——' ?></span>
-                        <span class="text-[11px] sm:text-xs font-semibold spms-kpi-sub">/ 5.00</span>
+                    <div class="flex items-baseline gap-2 mb-2">
+                        <span class="text-3xl font-black text-zinc-900 dark:text-white"><?= $overallAverage > 0 ? number_format($overallAverage, 2) : '——' ?></span>
+                        <span class="text-xs font-bold text-zinc-500 dark:text-zinc-400">/ 5.00</span>
                     </div>
                 </div>
-                <div>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-black uppercase tracking-wider spms-badge-amber">
+                <div class="pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border <?= $adjectivalBadgeClass ?>">
                         <?= !empty($adjectivalLabel) && $overallAverage > 0 ? esc($adjectivalLabel) : 'NOT YET RATED' ?>
+                    </span>
+                    <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                        <?= number_format($totalRated) ?> of <?= number_format($totalPersonnel) ?> Rated
                     </span>
                 </div>
             </div>
 
-            <!-- Card 3: Target Compliance -->
-            <div class="p-3.5 sm:p-5 rounded-xl spms-kpi-card shadow-xs flex flex-col justify-between">
+            <!-- Card 3: Evidence & MOVs Attached -->
+            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
                 <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-[9px] sm:text-[11px] font-bold uppercase tracking-wider spms-kpi-label">Target Compliance</span>
-                        <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 spms-kpi-icon-green">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Evidence / MOVs Attached</span>
+                        <div class="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shadow-2xs">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                             </svg>
                         </div>
                     </div>
-                    <div class="flex items-baseline gap-1 mb-2">
-                        <span class="text-2xl sm:text-3xl font-black tracking-tight spms-kpi-val"><?= $targetComplianceRate ?>%</span>
-                        <span class="text-[10px] sm:text-xs font-normal spms-kpi-sub">(<?= number_format($pipeline['stage1']['approved']) ?> of <?= number_format($totalPersonnel) ?>)</span>
+                    <div class="flex items-baseline gap-2 mb-2">
+                        <span class="text-3xl font-black text-zinc-900 dark:text-white"><?= number_format($totalMovCount) ?></span>
+                        <span class="text-xs font-bold text-zinc-500 dark:text-zinc-400">Files Attached</span>
                     </div>
                 </div>
-                <div class="w-full rounded-full h-1 overflow-hidden mt-1 spms-progress-track">
-                    <div class="h-1 rounded-full transition-all duration-500 spms-progress-fill" style="width: <?= min(100, $targetComplianceRate) ?>%;"></div>
-                </div>
-            </div>
-
-            <!-- Card 4: Cycle Completion -->
-            <div class="p-3.5 sm:p-5 rounded-xl spms-kpi-card shadow-xs flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-[9px] sm:text-[11px] font-bold uppercase tracking-wider spms-kpi-label">Cycle Completion</span>
-                        <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 spms-kpi-icon-amber">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="flex items-baseline gap-1 mb-2">
-                        <span class="text-2xl sm:text-3xl font-black tracking-tight spms-kpi-val"><?= $evalCompletionRate ?>%</span>
-                        <span class="text-[10px] sm:text-xs font-normal spms-kpi-sub">(<?= number_format($pipeline['stage3']['completed']) ?> of <?= number_format($totalPersonnel) ?> finalized)</span>
-                    </div>
-                </div>
-                <div class="w-full rounded-full h-1 overflow-hidden mt-1 spms-progress-track">
-                    <div class="h-1 rounded-full transition-all duration-500 spms-progress-fill" style="width: <?= min(100, $evalCompletionRate) ?>%;"></div>
+                <div class="pt-3 border-t border-zinc-100 dark:border-zinc-800 text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                    <span>Stage 2 Monitoring &amp; Coaching Evidence</span>
                 </div>
             </div>
 
         </div>
 
-        <!-- 2. SPMS 4-STAGE LIFECYCLE PIPELINE (CSC MC No. 6, s. 2012) -->
-        <?php
-            // Dynamic Active Stage Resolution
-            $activeStageNum = 1;
-            $activeStageName = 'Planning';
-            if (($pipeline['stage3']['completed'] ?? 0) > 0 && ($totalPersonnel > 0 && $pipeline['stage3']['completed'] >= $totalPersonnel)) {
-                $activeStageNum = 4;
-                $activeStageName = 'Rewarding';
-            } elseif (($pipeline['stage3']['completed'] ?? 0) > 0 || ($pipeline['stage3']['evaluating'] ?? 0) > 0 || ($pipeline['stage3']['submitted'] ?? 0) > 0) {
-                $activeStageNum = 3;
-                $activeStageName = 'Review';
-            } elseif (($pipeline['stage1']['approved'] ?? 0) > 0 && (($pipeline['stage2']['mov_count'] ?? 0) > 0 || ($pipeline['stage2']['coaching_notes'] ?? 0) > 0)) {
-                $activeStageNum = 2;
-                $activeStageName = 'Coaching';
-            }
+        <!-- 2. PHASE SUBMISSION BREAKDOWN (TARGETS VS ACCOMPLISHMENTS) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             
-            $lifecycleStages = [
-                1 => 'Planning',
-                2 => 'Coaching',
-                3 => 'Review',
-                4 => 'Rewarding',
-            ];
-        ?>
-        <div class="p-4 sm:p-6 rounded-2xl shadow-xs spms-lifecycle-container">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                <div>
-                    <h2 class="text-sm sm:text-base font-bold text-zinc-900 dark:text-white tracking-tight">SPMS 4-Stage Performance Lifecycle</h2>
-                    <p class="text-[10px] sm:text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">CSC MC No. 6, S. 2012 • Standard University Strategic Calibration Cycle</p>
+            <!-- Phase 1 Card -->
+            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
+                <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-4">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-6 h-6 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 flex items-center justify-center text-xs font-black">1</span>
+                        <div>
+                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Target Commitment Phase</h3>
+                            <span class="text-xs text-zinc-400">Submission & Approval status</span>
+                        </div>
+                    </div>
                 </div>
-
-
-                
-                <!-- DESKTOP VIEW (sm:flex): Full Stepper Flow (Capsule Pills) -->
-                <div class="hidden sm:flex items-center gap-1.5 sm:gap-2 text-[11px] shrink-0">
-                    <?php foreach ($lifecycleStages as $sNum => $sTitle): ?>
-                        <?php if ($sNum > 1): ?>
-                            <span class="w-2 sm:w-3 h-px <?= $sNum <= $activeStageNum ? 'bg-amber-500/60' : 'bg-zinc-300 dark:bg-zinc-700' ?> shrink-0"></span>
-                        <?php endif; ?>
-
-                        <?php if ($sNum === $activeStageNum): ?>
-                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-bold shrink-0 bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border border-zinc-900 dark:border-white shadow-2xs">
-                                <span class="w-4 h-4 rounded-full bg-amber-500 text-zinc-950 text-[9px] font-black flex items-center justify-center shrink-0"><?= $sNum ?></span>
-                                <span><?= esc($sTitle) ?></span>
-                            </div>
-                        <?php elseif ($sNum < $activeStageNum): ?>
-                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-semibold shrink-0 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                                <span class="w-4 h-4 rounded-full bg-amber-500 text-zinc-950 text-[9px] font-bold flex items-center justify-center shrink-0">✓</span>
-                                <span><?= esc($sTitle) ?></span>
-                            </div>
-                        <?php else: ?>
-                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-semibold shrink-0 bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/80 text-zinc-500 dark:text-zinc-400">
-                                <span class="w-4 h-4 rounded-full border border-zinc-300 dark:border-zinc-600 text-[9px] font-bold flex items-center justify-center shrink-0"><?= $sNum ?></span>
-                                <span><?= esc($sTitle) ?></span>
-                            </div>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                    <div class="p-3 rounded-xl bg-emerald-50 text-emerald-800 dark:bg-[#102a1e] dark:border-[#1b4330] dark:text-emerald-400 border border-emerald-200">
+                        <span class="block text-xl font-black"><?= $pipeline['target']['approved'] ?></span>
+                        <span class="text-[11px] font-bold mt-0.5 block">Approved</span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-blue-50 text-blue-800 dark:bg-info-500/10 dark:border-info-500/20 dark:text-blue-400 border border-blue-200">
+                        <span class="block text-xl font-black"><?= $pipeline['target']['pending'] ?></span>
+                        <span class="text-[11px] font-bold mt-0.5 block">In Review</span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-rose-50 text-rose-800 dark:bg-danger-500/10 dark:border-danger-500/20 dark:text-rose-400 border border-rose-200">
+                        <span class="block text-xl font-black"><?= $pipeline['target']['draft'] ?></span>
+                        <span class="text-[11px] font-bold mt-0.5 block">Draft (Missing)</span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:border-amber-800/80 dark:text-amber-400 border border-amber-200">
+                        <span class="block text-xl font-black"><?= $pipeline['target']['returned'] ?></span>
+                        <span class="text-[11px] font-bold mt-0.5 block">Revision</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- 4 Stage Cards Grid on PC (4 Columns) / Stacked on Mobile -->
-            <div class="spms-lifecycle-grid">
-                
-                <!-- STAGE 1: Target Commitment (Expanded / Current) -->
-                <div class="p-3.5 sm:p-4 rounded-xl spms-stage-box-active flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">STAGE 1</span>
-                            <span class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 font-extrabold">
-                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                CURRENT
-                            </span>
-                        </div>
-                        <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Target Commitment</h3>
-                        <p class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">Target Setting Phase</p>
-
-                        <div class="mt-3">
-                            <div class="flex items-baseline justify-between mb-1.5">
-                                <span class="text-xs font-bold text-zinc-900 dark:text-white">
-                                    <?= $pipeline['stage1']['approved'] ?>
-                                    <span class="text-zinc-400 dark:text-zinc-400 font-normal">/ <?= $totalPersonnel ?> Approved</span>
-                                </span>
-                                <span class="text-xs font-bold text-zinc-900 dark:text-white">
-                                    <?= $totalPersonnel > 0 ? round(($pipeline['stage1']['approved'] / $totalPersonnel) * 100) : 0 ?>%
-                                </span>
-                            </div>
-                            <div class="w-full bg-zinc-200 dark:bg-zinc-800 rounded-full h-1 overflow-hidden">
-                                <div class="bg-amber-500 h-1 rounded-full transition-all duration-500" style="width: <?= $totalPersonnel > 0 ? min(100, round(($pipeline['stage1']['approved'] / $totalPersonnel) * 100)) : 0 ?>%;"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="pt-2.5 border-t border-zinc-200/70 dark:border-zinc-800 space-y-1.5 mt-3 text-xs">
-                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
-                            <span>Approved Targets</span>
-                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage1']['approved'] ?></span>
-                        </div>
-                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
-                            <span>In Review</span>
-                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage1']['pending'] ?></span>
-                        </div>
-                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
-                            <span>Needs Revision</span>
-                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage1']['returned'] ?></span>
-                        </div>
-                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
-                            <span>Draft Mode</span>
-                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage1']['draft'] ?></span>
+            <!-- Phase 2 Card -->
+            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs">
+                <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-4">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-xs font-black">2</span>
+                        <div>
+                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Accomplishment Report Phase</h3>
+                            <span class="text-xs text-zinc-400">Evaluation & Grading status</span>
                         </div>
                     </div>
                 </div>
-
-                <!-- STAGE 2: Monitoring & Coaching -->
-                <div class="p-3.5 sm:p-4 rounded-xl spms-stage-box flex flex-col justify-between transition-all hover:border-zinc-300 dark:hover:border-zinc-600">
-                    <div>
-                        <button type="button" onclick="toggleStageAccordion(2)" class="w-full text-left cursor-pointer lg:cursor-default spms-stage-accordion-btn">
-                            <div class="flex items-center justify-between">
-                                <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">STAGE 2</span>
-                                <svg id="stage-2-chevron" class="w-4 h-4 text-zinc-400 dark:text-zinc-400 transition-transform duration-200 lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white mt-1.5">Monitoring &amp; Coaching</h3>
-                            <p class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">Execution &amp; Evidence</p>
-                        </button>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                    <div class="p-3 rounded-xl bg-emerald-50 text-emerald-800 dark:bg-[#102a1e] dark:border-[#1b4330] dark:text-emerald-400 border border-emerald-200">
+                        <span class="block text-xl font-black"><?= $pipeline['evaluation']['completed'] ?></span>
+                        <span class="text-[11px] font-bold mt-0.5 block">Approved</span>
                     </div>
-                    
-                    <!-- Collapsible details on mobile only -->
-                    <div id="stage-2-content" class="hidden pt-3 border-t border-zinc-200/70 dark:border-zinc-800 space-y-1.5 mt-3 text-xs">
-                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
-                            <span>Active Execution</span>
-                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage2']['active_execution'] ?? $pipeline['stage1']['approved'] ?></span>
-                        </div>
-                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
-                            <span>MOV Attachments</span>
-                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage2']['mov_count'] ?? 0 ?></span>
-                        </div>
-                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
-                            <span>Coaching Feedback</span>
-                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage2']['coaching_notes'] ?? 0 ?></span>
-                        </div>
+                    <div class="p-3 rounded-xl bg-indigo-50 text-indigo-800 dark:bg-highlight-500/20 dark:border-highlight-500/20 dark:text-highlight-400 border border-indigo-200">
+                        <span class="block text-xl font-black"><?= $pipeline['evaluation']['action'] ?></span>
+                        <span class="text-[11px] font-bold mt-0.5 block">Evaluating</span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-blue-50 text-blue-800 dark:bg-info-500/10 dark:border-info-500/20 dark:text-blue-400 border border-blue-200">
+                        <span class="block text-xl font-black"><?= $pipeline['evaluation']['submitted'] ?></span>
+                        <span class="text-[11px] font-bold mt-0.5 block">Submitted</span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-rose-50 text-rose-800 dark:bg-danger-500/10 dark:border-danger-500/20 dark:text-rose-400 border border-rose-200">
+                        <span class="block text-xl font-black"><?= $pipeline['evaluation']['pending'] ?></span>
+                        <span class="text-[11px] font-bold mt-0.5 block">Draft (Missing)</span>
                     </div>
                 </div>
-
-                <!-- STAGE 3: Review & Evaluation (Matches Image 2) -->
-                <div class="p-3.5 sm:p-4 rounded-xl spms-stage-box flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">STAGE 3</span>
-                        </div>
-                        <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Review &amp; Evaluation</h3>
-                        <p class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">Accomplishment Phase</p>
-
-                        <div class="mt-3">
-                            <div class="flex items-baseline justify-between mb-1.5">
-                                <span class="text-xs font-bold text-zinc-900 dark:text-white">
-                                    <?= $pipeline['stage3']['completed'] ?>
-                                    <span class="text-zinc-400 dark:text-zinc-400 font-normal">/ <?= $totalPersonnel ?> Evaluated</span>
-                                </span>
-                                <span class="text-xs font-bold text-zinc-400 dark:text-zinc-400">
-                                    <?= $totalPersonnel > 0 ? round(($pipeline['stage3']['completed'] / $totalPersonnel) * 100) : 0 ?>%
-                                </span>
-                            </div>
-                            <div class="w-full bg-zinc-200 dark:bg-zinc-800 rounded-full h-1 overflow-hidden">
-                                <div class="bg-zinc-700 dark:bg-zinc-500 h-1 rounded-full transition-all duration-500" style="width: <?= $totalPersonnel > 0 ? min(100, round(($pipeline['stage3']['completed'] / $totalPersonnel) * 100)) : 0 ?>%;"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="pt-2.5 border-t border-zinc-200/70 dark:border-zinc-800 space-y-1.5 mt-3 text-xs">
-                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
-                            <span>Approved Ratings</span>
-                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage3']['completed'] ?? 0 ?></span>
-                        </div>
-                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
-                            <span>Under Evaluation</span>
-                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage3']['evaluating'] ?? 0 ?></span>
-                        </div>
-                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
-                            <span>Submitted Awaiting</span>
-                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage3']['submitted'] ?></span>
-                        </div>
-                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
-                            <span>Draft Accomplishment</span>
-                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage3']['draft'] ?></span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- STAGE 4: Rewarding & Dev. -->
-                <div class="p-3.5 sm:p-4 rounded-xl spms-stage-box flex flex-col justify-between transition-all hover:border-zinc-300 dark:hover:border-zinc-600">
-                    <div>
-                        <button type="button" onclick="toggleStageAccordion(4)" class="w-full text-left cursor-pointer lg:cursor-default spms-stage-accordion-btn">
-                            <div class="flex items-center justify-between">
-                                <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">STAGE 4</span>
-                                <svg id="stage-4-chevron" class="w-4 h-4 text-zinc-400 dark:text-zinc-400 transition-transform duration-200 lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white mt-1.5">Rewarding &amp; Dev.</h3>
-                            <p class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">Incentives &amp; HR Phase</p>
-                        </button>
-                    </div>
-                    
-                    <!-- Collapsible details on mobile only -->
-                    <div id="stage-4-content" class="hidden pt-3 border-t border-zinc-200/70 dark:border-zinc-800 space-y-1.5 mt-3 text-xs">
-                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
-                            <span>PBB / Bonus Eligible</span>
-                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage4']['pbb_eligible'] ?? 0 ?></span>
-                        </div>
-                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
-                            <span>Development Needed</span>
-                            <span class="font-bold text-zinc-900 dark:text-white"><?= $pipeline['stage4']['dev_needed'] ?? 0 ?></span>
-                        </div>
-                    </div>
-                </div>
-
             </div>
+
         </div>
+
 
         <!-- 3. TOP PERFORMING PERSONNEL LEADERBOARD -->
         <div class="p-4 sm:p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
@@ -793,11 +680,74 @@
                             <p class="text-[10px] sm:text-xs text-zinc-500 dark:text-zinc-400">Dean &amp; Institutional Honor Roster (Ratings ≥ 4.50)</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <?php
+                        $adminPerformerCounts = [
+                            'all'               => count($topPerformers),
+                            'outstanding'       => 0,
+                            'very_satisfactory' => 0,
+                            'satisfactory'      => 0,
+                            'unsatisfactory'    => 0,
+                            'poor'              => 0,
+                        ];
+                        foreach ($topPerformers as $tp) {
+                            $sVal = (float)($tp['rating_num'] ?? 0);
+                            if ($sVal >= 4.50) {
+                                $adminPerformerCounts['outstanding']++;
+                            } elseif ($sVal >= 3.50) {
+                                $adminPerformerCounts['very_satisfactory']++;
+                            } elseif ($sVal >= 2.50) {
+                                $adminPerformerCounts['satisfactory']++;
+                            } elseif ($sVal >= 1.50) {
+                                $adminPerformerCounts['unsatisfactory']++;
+                            } elseif ($sVal > 0) {
+                                $adminPerformerCounts['poor']++;
+                            }
+                        }
+                    ?>
+                    <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                        <!-- Adjectival Rating Filter Pills -->
+                        <div class="performer-tier-pills-container flex items-center gap-1.5 overflow-x-auto custom-scrollbar py-0.5">
+                            <button type="button" onclick="filterTopPerformersByTier('all', 'admin-performers-grid', this)"
+                                    data-tier="all"
+                                    class="performer-tier-pill active inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 bg-zinc-900 text-white dark:bg-zinc-800 dark:text-white border border-zinc-900 dark:border-zinc-600 shadow-2xs">
+                                <span>All (<?= $adminPerformerCounts['all'] ?>)</span>
+                            </button>
+                            <button type="button" onclick="filterTopPerformersByTier('outstanding', 'admin-performers-grid', this)"
+                                    data-tier="outstanding"
+                                    class="performer-tier-pill inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 hover:text-zinc-900 dark:hover:text-white">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                                <span>Outstanding (<?= $adminPerformerCounts['outstanding'] ?>)</span>
+                            </button>
+                            <button type="button" onclick="filterTopPerformersByTier('very_satisfactory', 'admin-performers-grid', this)"
+                                    data-tier="very_satisfactory"
+                                    class="performer-tier-pill inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 hover:text-zinc-900 dark:hover:text-white">
+                                <span class="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>
+                                <span>Very Satisfactory (<?= $adminPerformerCounts['very_satisfactory'] ?>)</span>
+                            </button>
+                            <button type="button" onclick="filterTopPerformersByTier('satisfactory', 'admin-performers-grid', this)"
+                                    data-tier="satisfactory"
+                                    class="performer-tier-pill inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 hover:text-zinc-900 dark:hover:text-white">
+                                <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                                <span>Satisfactory (<?= $adminPerformerCounts['satisfactory'] ?>)</span>
+                            </button>
+                            <button type="button" onclick="filterTopPerformersByTier('unsatisfactory', 'admin-performers-grid', this)"
+                                    data-tier="unsatisfactory"
+                                    class="performer-tier-pill inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 hover:text-zinc-900 dark:hover:text-white">
+                                <span class="w-2 h-2 rounded-full bg-orange-500 shrink-0"></span>
+                                <span>Unsatisfactory (<?= $adminPerformerCounts['unsatisfactory'] ?>)</span>
+                            </button>
+                            <button type="button" onclick="filterTopPerformersByTier('poor', 'admin-performers-grid', this)"
+                                    data-tier="poor"
+                                    class="performer-tier-pill inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 hover:text-zinc-900 dark:hover:text-white">
+                                <span class="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
+                                <span>Poor (<?= $adminPerformerCounts['poor'] ?>)</span>
+                            </button>
+                        </div>
+
                         <!-- Sort Filter (Top to Least / Least to Top) -->
-                        <div class="relative">
+                        <div class="relative shrink-0">
                             <select id="admin-top-performers-sort" onchange="sortTopPerformers(this.value, 'admin-performers-grid')"
-                                    class="appearance-none bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg pl-2.5 pr-7 py-1 text-[11px] font-bold text-zinc-700 dark:text-zinc-200 outline-none cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors shadow-2xs">
+                                    class="appearance-none bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg pl-2.5 pr-7 py-1.5 text-xs font-bold text-zinc-700 dark:text-zinc-200 outline-none cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors shadow-2xs">
                                 <option value="desc">Highest to Lowest</option>
                                 <option value="asc">Lowest to Highest</option>
                             </select>
@@ -805,17 +755,21 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                             </svg>
                         </div>
-                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 text-zinc-600 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700">
-                            <?= count($topPerformers) ?> Ranked
-                        </span>
                     </div>
                 </div>
 
                 <?php if (!empty($topPerformers)): ?>
                     <div id="admin-performers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[380px] overflow-y-auto custom-scrollbar pr-1">
-                        <?php foreach ($topPerformers as $idx => $tp): ?>
+                        <?php foreach ($topPerformers as $idx => $tp): 
+                            $sVal = (float)($tp['rating_num'] ?? 0);
+                            $tKey = ($sVal >= 4.50) ? 'outstanding' :
+                                    (($sVal >= 3.50) ? 'very_satisfactory' :
+                                    (($sVal >= 2.50) ? 'satisfactory' :
+                                    (($sVal >= 1.50) ? 'unsatisfactory' : 'poor')));
+                        ?>
                             <div class="performer-card p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800 flex items-center justify-between gap-3 transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40"
-                                 data-rating="<?= (float)($tp['rating_num'] ?? 0) ?>"
+                                 data-rating="<?= $sVal ?>"
+                                 data-adjectival-tier="<?= $tKey ?>"
                                  data-initial-index="<?= $idx ?>">
                                 <div class="flex items-center gap-3 min-w-0">
                                     <!-- Rank Badge -->
@@ -849,16 +803,12 @@
                                             <?= esc($tp['adjectival_label'] ?? 'Outstanding') ?>
                                         </span>
                                     </div>
-                                    <?php if (!empty($tp['folder_id'])): ?>
-                                        <a href="<?= site_url('ratings/show/' . $tp['folder_id']) ?>" 
-                                           class="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-white dark:hover:bg-zinc-800 transition-colors shadow-2xs"
-                                           title="Inspect evaluation details">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                                        </a>
-                                    <?php endif; ?>
                                 </div>
                             </div>
                         <?php endforeach; ?>
+                        <div class="performer-tier-empty col-span-full py-8 text-center text-zinc-400 dark:text-zinc-500 italic text-xs hidden">
+                            No personnel discovered in this rating tier.
+                        </div>
                     </div>
                 <?php else: ?>
                     <div class="py-12 px-4 text-center rounded-xl bg-zinc-50/50 dark:bg-zinc-950/40 border border-dashed border-zinc-200 dark:border-zinc-800">
@@ -872,28 +822,15 @@
                     </div>
                 <?php endif; ?>
             </div>
-
-            <!-- Footer Action -->
-            <div class="pt-3 mt-4 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
-                <span>Incentive &amp; PBB Eligible: <strong class="text-emerald-600 dark:text-emerald-400"><?= $pipeline['stage4']['pbb_eligible'] ?? 0 ?> personnel</strong></span>
-                <button type="button" onclick="switchDashboardView('masterlist')" class="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer">
-                    View All in Master List &rarr;
-                </button>
-            </div>
         </div>
 
-        <!-- 4. STAGE 2: MONITORING, COACHING & TARGET CALIBRATION (PER-OFFICE VIEW) -->
+        <!-- 4. DEPARTMENT & UNIT COMPLIANCE MATRIX -->
         <div class="p-4 sm:p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs space-y-4">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-100 dark:border-zinc-800">
                 <div>
-                    <div class="flex items-center gap-2">
-                        <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-                            STAGE 2 MONITORING
-                        </span>
-                        <h3 class="text-base font-bold text-zinc-900 dark:text-white">Target Calibration &amp; Department / Unit Compliance</h3>
-                    </div>
-                    <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        Monitoring and coaching status across all departments &amp; units.
+                    <h3 class="text-sm sm:text-base font-bold text-zinc-900 dark:text-white">Department &amp; Unit Compliance</h3>
+                    <p class="text-[10px] sm:text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        Submission compliance, coaching adjustments, and average ratings across all institutional units.
                     </p>
                 </div>
 
@@ -905,30 +842,6 @@
                     <input type="text" id="office-table-search" onkeyup="filterOfficeLeaderboard()"
                            placeholder="Search department or unit..."
                            class="w-full text-xs font-medium py-2 pl-9 pr-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/40 shadow-2xs" />
-                </div>
-            </div>
-
-            <!-- 4 Mini Metric Cards for Stage 2 Calibration -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
-                <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800">
-                    <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Calibrated Targets</div>
-                    <div class="text-xl font-black text-zinc-900 dark:text-white mt-0.5"><?= $pipeline['stage1']['approved'] ?></div>
-                    <div class="text-[10px] text-zinc-400 mt-0.5">Locked target commitments</div>
-                </div>
-                <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800">
-                    <div class="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Under Coaching / Review</div>
-                    <div class="text-xl font-black text-zinc-900 dark:text-white mt-0.5"><?= $pipeline['stage1']['pending'] ?></div>
-                    <div class="text-[10px] text-zinc-400 mt-0.5">Awaiting supervisor review</div>
-                </div>
-                <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800">
-                    <div class="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Calibration Adjustments</div>
-                    <div class="text-xl font-black text-zinc-900 dark:text-white mt-0.5"><?= $pipeline['stage1']['returned'] ?></div>
-                    <div class="text-[10px] text-zinc-400 mt-0.5">Returned for target alignment</div>
-                </div>
-                <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-100 dark:border-zinc-800">
-                    <div class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Evidence Attachments</div>
-                    <div class="text-xl font-black text-zinc-900 dark:text-white mt-0.5"><?= $pipeline['stage2']['mov_count'] ?? 0 ?></div>
-                    <div class="text-[10px] text-zinc-400 mt-0.5">MOV files &amp; cloud drive links</div>
                 </div>
             </div>
 
@@ -1518,7 +1431,15 @@ function updateDashboardPill(view, animate = true) {
         const width = target.offsetWidth;
         const height = target.offsetHeight;
 
-        if (width === 0 || height === 0) return;
+        if (width === 0 || height === 0) {
+            if (!container._pillRetryCount) container._pillRetryCount = 0;
+            if (container._pillRetryCount < 8) {
+                container._pillRetryCount++;
+                setTimeout(() => updateDashboardPill(view, false), 35 * container._pillRetryCount);
+            }
+            return;
+        }
+        container._pillRetryCount = 0;
 
         if (animate) {
             indicator.style.transition = 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), width 0.22s cubic-bezier(0.16, 1, 0.3, 1), height 0.18s ease, opacity 0.15s ease';
@@ -1612,7 +1533,32 @@ function switchDashboardView(view, animate = true) {
 function initDashboardView() {
     const initialView = localStorage.getItem('spms_dash_view') || 'analytics';
     switchDashboardView(initialView, false);
+
+    // Keep pill positioned on layout/window changes with ResizeObserver
+    if (typeof ResizeObserver !== 'undefined') {
+        ['dash-view-switcher', 'dash-view-switcher-mobile'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el && !el._hasObserver) {
+                el._hasObserver = true;
+                new ResizeObserver(() => {
+                    const cv = localStorage.getItem('spms_dash_view') || 'analytics';
+                    updateDashboardPill(cv, false);
+                }).observe(el);
+            }
+        });
+    }
+
+    // Secondary rAF / micro-timeout safety passes
+    requestAnimationFrame(() => {
+        const cv = localStorage.getItem('spms_dash_view') || 'analytics';
+        updateDashboardPill(cv, false);
+        setTimeout(() => updateDashboardPill(cv, false), 50);
+        setTimeout(() => updateDashboardPill(cv, false), 150);
+    });
 }
+window.initDashboardView = initDashboardView;
+window.updateDashboardPill = updateDashboardPill;
+window.switchDashboardView = switchDashboardView;
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initDashboardView);
@@ -1629,6 +1575,53 @@ window.addEventListener('load', () => {
     const currentView = localStorage.getItem('spms_dash_view') || 'analytics';
     updateDashboardPill(currentView, false);
 });
+
+// --- TOP PERFORMING PERSONNEL TIER FILTER (ALL / O / VS / S / US / P) ---
+function filterTopPerformersByTier(tier, gridId, btn) {
+    const grid = document.getElementById(gridId);
+    if (!grid) return;
+
+    // Update active pill styling
+    const container = btn ? btn.closest('.performer-tier-pills-container') : null;
+    if (container) {
+        container.querySelectorAll('.performer-tier-pill').forEach(b => {
+            b.classList.remove('active', 'bg-zinc-900', 'text-white', 'dark:bg-zinc-800', 'dark:text-white', 'border-zinc-900', 'dark:border-zinc-600', 'font-bold', 'shadow-2xs');
+            b.classList.add('bg-white', 'dark:bg-zinc-900', 'text-zinc-600', 'dark:text-zinc-400', 'border-zinc-200', 'dark:border-zinc-800', 'font-semibold');
+        });
+        if (btn) {
+            btn.classList.remove('bg-white', 'dark:bg-zinc-900', 'text-zinc-600', 'dark:text-zinc-400', 'border-zinc-200', 'dark:border-zinc-800', 'font-semibold');
+            btn.classList.add('active', 'bg-zinc-900', 'text-white', 'dark:bg-zinc-800', 'dark:text-white', 'border-zinc-900', 'dark:border-zinc-600', 'font-bold', 'shadow-2xs');
+        }
+    }
+
+    const cards = grid.querySelectorAll('.performer-card');
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+        const cardTier = card.getAttribute('data-adjectival-tier') || '';
+        const matches = (tier === 'all' || cardTier === tier);
+        if (matches) {
+            card.classList.remove('hidden');
+            card.style.display = '';
+            visibleCount++;
+        } else {
+            card.classList.add('hidden');
+            card.style.display = 'none';
+        }
+    });
+
+    const emptyMsg = grid.querySelector('.performer-tier-empty');
+    if (emptyMsg) {
+        if (visibleCount === 0 && cards.length > 0) {
+            emptyMsg.classList.remove('hidden');
+            emptyMsg.style.display = 'block';
+        } else {
+            emptyMsg.classList.add('hidden');
+            emptyMsg.style.display = 'none';
+        }
+    }
+}
+window.filterTopPerformersByTier = filterTopPerformersByTier;
 
 // --- TOP PERFORMING PERSONNEL SORTING (TOP TO LEAST / LEAST TO TOP) ---
 function sortTopPerformers(order, gridId) {

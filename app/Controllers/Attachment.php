@@ -58,11 +58,12 @@ class Attachment extends BaseController
         $isPastTargetDate = (!empty($tEnd) && $now > $tEnd);
 
         $isEvaluationPhase = $cStatus->isEvaluationPhase() || $isPastTargetDate;
+        $canAttachEvidence = $isEvaluationPhase || ($cStatus === FolderStatus::TARGET_APPROVED) || ($sysRole === 'Admin');
 
-        if (!$isEvaluationPhase && $sysRole !== 'Admin') {
+        if (!$canAttachEvidence) {
             return $this->response->setStatusCode(403)->setJSON([
                 'status'  => 'error',
-                'message' => 'Means of Verification (MOV) evidence can only be attached during the Evaluation Phase.'
+                'message' => 'Means of Verification (MOV) evidence can only be attached once targets are approved or during the Evaluation Phase.'
             ]);
         }
 
@@ -210,11 +211,12 @@ class Attachment extends BaseController
         $isPastTargetDate = (!empty($tEnd) && $now > $tEnd);
 
         $isEvaluationPhase = $cStatus->isEvaluationPhase() || $isPastTargetDate;
+        $canAttachEvidence = $isEvaluationPhase || ($cStatus === FolderStatus::TARGET_APPROVED) || ($sysRole === 'Admin');
 
-        if (!$isEvaluationPhase && $sysRole !== 'Admin') {
+        if (!$canAttachEvidence) {
             return $this->response->setStatusCode(403)->setJSON([
                 'status'  => 'error',
-                'message' => 'Means of Verification (MOV) evidence can only be attached during the Evaluation Phase.'
+                'message' => 'Means of Verification (MOV) evidence can only be attached once targets are approved or during the Evaluation Phase.'
             ]);
         }
 

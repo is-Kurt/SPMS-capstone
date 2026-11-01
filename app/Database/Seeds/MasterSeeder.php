@@ -31,6 +31,7 @@ class MasterSeeder extends Seeder
             'document_folders',
             'rating_cycles',
             'plantillas',
+            'default_function_weights',
             'employment_statuses',
             'user_roles',
             'positions',
@@ -177,6 +178,11 @@ class MasterSeeder extends Seeder
         // 4. CALL DEPARTMENT SEEDER FOR USERS & FOLDERS
         // ==========================================
         $this->call('DepartmentSeeder');
+
+        // ==========================================
+        // 5. SEED DEFAULT FUNCTION WEIGHTS (CSC SPMS)
+        // ==========================================
+        $this->call('DefaultFunctionWeightsSeeder');
 
         echo ">>> [SPMS MasterSeeder] Complete! Fresh SPMS database ready.\n";
     }

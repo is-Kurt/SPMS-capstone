@@ -11,6 +11,7 @@ use App\Models\PositionModel;
 use App\Models\UnitModel;
 use App\Models\EmploymentStatusModel;
 use App\Models\InvitationModel;
+use App\Models\DefaultFunctionWeightModel;
 
 /**
  * Admin-only "Accounts" section: the user directory, email invitations, and the
@@ -20,7 +21,7 @@ class AccountManagement extends BaseController
 {
     /** GET /accounts[/{tab}] - Lists every user plus the reference lists (roles/positions/units) shown on the page. */
     public function index(?string $tab = null) {
-        $validTabs = ['directory', 'create', 'invitations', 'system', 'twg'];
+        $validTabs = ['directory', 'create', 'invitations', 'system', 'twg', 'weights'];
         $activeTab = in_array($tab, $validTabs, true) ? $tab : 'directory';
 
         $userModel = new UserModel();
@@ -33,12 +34,13 @@ class AccountManagement extends BaseController
             if ($u['role_name'])  $u['role_name']  = str_replace(',', ', ', $u['role_name']);
         }
 
-        $roleModel          = new RoleModel();
-        $positionModel      = new PositionModel();
-        $unitModel          = new UnitModel();
+        $roleModel             = new RoleModel();
+        $positionModel         = new PositionModel();
+        $unitModel             = new UnitModel();
         $employmentStatusModel = new EmploymentStatusModel();
-        $invitationModel    = new InvitationModel();
-        $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
+        $invitationModel       = new InvitationModel();
+        $twgAssignmentModel    = new \App\Models\TwgUnitAssignmentModel();
+        $defaultWeightModel    = new DefaultFunctionWeightModel();
 
         $roles                 = $roleModel->where('name !=', 'Admin')->orderBy('name', 'ASC')->findAll();
         $positions             = $positionModel->orderBy('title', 'ASC')->findAll();
@@ -48,6 +50,7 @@ class AccountManagement extends BaseController
         $twgUsers              = $twgAssignmentModel->getTwgUsers();
         $twgAssignmentsGrouped = $twgAssignmentModel->getAllAssignmentsGrouped();
         $twgUnitCoverageMeta   = $twgAssignmentModel->getUnitCoverageMetadata();
+        $defaultWeights        = $defaultWeightModel->getAllWeightsKeyed();
 
         return view('accounts/index', [
             'users'                 => $users,
@@ -60,6 +63,7 @@ class AccountManagement extends BaseController
             'twgUsers'              => $twgUsers,
             'twgAssignmentsGrouped' => $twgAssignmentsGrouped,
             'twgUnitCoverageMeta'   => $twgUnitCoverageMeta,
+            'defaultWeights'        => $defaultWeights,
         ]);
     }
 
@@ -550,5 +554,73 @@ class AccountManagement extends BaseController
         } catch (\Exception $e) {
             return $this->respondError('Could not delete this employment status.');
         }
+    }
+
+    /**
+     * POST /account/update-default-weights
+     * Updates default function percentage weights for OPCR, DPCR, and IPCR.
+     */
+    public function updateDefaultWeights() {
+        return $this->tryOrFail(function() {
+            $weightsData = $this->request->getPost('weights');
+            if (empty($weightsData) || !is_array($weightsData)) {
+                return $this->respondError('Invalid weights data provided.');
+            }
+
+            $model = new DefaultFunctionWeightModel();
+            $allowedTypes = ['OPCR', 'DPCR', 'IPCR'];
+            $updated = [];
+
+            foreach ($weightsData as $docType => $row) {
+                $docType = strtoupper(trim((string)$docType));
+                if (!in_array($docType, $allowedTypes, true)) {
+                    continue;
+                }
+
+                $core = isset($row['core_weight']) ? (float)$row['core_weight'] : 0.0;
+                $strat = isset($row['strategic_weight']) ? (float)$row['strategic_weight'] : 0.0;
+                $supp = isset($row['support_weight']) ? (float)$row['support_weight'] : 0.0;
+                $desc = isset($row['description']) ? trim((string)$row['description']) : null;
+
+                if ($core < 0 || $core > 100 || $strat < 0 || $strat > 100 || $supp < 0 || $supp > 100) {
+                    return $this->respondError("Percentage weights for {$docType} must each be between 0% and 100%.");
+                }
+
+                $total = round($core + $strat + $supp, 2);
+                if (abs($total - 100.0) > 0.01) {
+                    return $this->respondError("The weights for {$docType} must total exactly 100%. Current sum: {$total}%.");
+                }
+
+                $existing = $model->where('doc_type', $docType)->first();
+                $payload = [
+                    'doc_type'         => $docType,
+                    'core_weight'      => $core,
+                    'strategic_weight' => $strat,
+                    'support_weight'   => $supp,
+                    'updated_at'       => date('Y-m-d H:i:s'),
+                ];
+                if ($desc !== null) {
+                    $payload['description'] = $desc;
+                }
+
+                if ($existing) {
+                    $model->update($existing['id'], $payload);
+                    $updated[$docType] = array_merge($existing, $payload);
+                } else {
+                    $payload['created_at'] = date('Y-m-d H:i:s');
+                    $newId = $model->insert($payload);
+                    $payload['id'] = $newId;
+                    $updated[$docType] = $payload;
+                }
+            }
+
+            audit_log('FUNCTION_WEIGHTS_UPDATED', 'ACCOUNT', 'system', 0, "Updated default function percentage weights for OPCR, DPCR, and IPCR");
+
+            return $this->respond([
+                'status'  => 'success',
+                'message' => 'Default percentage weights updated successfully.',
+                'weights' => $model->getAllWeightsKeyed()
+            ]);
+        });
     }
 }

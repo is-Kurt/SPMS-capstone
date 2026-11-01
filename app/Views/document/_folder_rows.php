@@ -188,8 +188,32 @@
                     document.querySelector('meta[name="csrf-token-hash"]')?.setAttribute('content', newCsrf);
                     document.querySelectorAll('input[name="csrf_test_name"]').forEach(i => i.value = newCsrf);
                 }
-                container.innerHTML = html;
+
+                // Robust safeguard: Prevent nested shell / duplicate navbars if response returned full page layout
+                let contentToInsert = html;
+                if (html.includes('id="main-content-container"') || html.includes('<!DOCTYPE') || html.includes('<html')) {
+                    try {
+                        const parsedDoc = new DOMParser().parseFromString(html, 'text/html');
+                        const innerMain = parsedDoc.getElementById('main-content-container');
+                        if (innerMain) {
+                            contentToInsert = innerMain.innerHTML;
+                        } else {
+                            window.location.href = url;
+                            return;
+                        }
+                    } catch (e) {
+                        window.location.href = url;
+                        return;
+                    }
+                }
+
+                container.innerHTML = contentToInsert;
                 executeScripts(container);
+                requestAnimationFrame(() => {
+                    if (typeof window.initDashboardView === 'function') {
+                        window.initDashboardView();
+                    }
+                });
 
                 if (updateHistory) {
                     history.pushState({ spmsFolderUrl: url, scope: 'workspace' }, '', url);
@@ -241,6 +265,11 @@
                 if (mainContainer && data.main) {
                     mainContainer.innerHTML = data.main;
                     executeScripts(mainContainer);
+                    requestAnimationFrame(() => {
+                        if (typeof window.initDashboardView === 'function') {
+                            window.initDashboardView();
+                        }
+                    });
                 }
 
                 const finalUrl = data.url || url;

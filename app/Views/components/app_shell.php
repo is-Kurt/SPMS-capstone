@@ -25,56 +25,143 @@
 $shellMaxWidth = $maxWidthClass ?? (($context === 'dashboard') ? 'max-w-[125rem] 2xl:max-w-[140rem]' : 'max-w-[100rem]');
 $shellPadding  = ($context === 'dashboard') ? 'p-2 sm:p-4 lg:p-5 xl:px-6 xl:py-6' : 'p-2 sm:p-4 lg:p-5 xl:p-8';
 $shellGap      = ($context === 'dashboard') ? 'gap-4 lg:gap-5 xl:gap-6' : 'gap-4 lg:gap-5 xl:gap-8';
+
+$twgAssignedUnits = $assignedUnits ?? ($mainData['assignedUnits'] ?? []);
+$currentSysRole   = $sysRole ?? ($mainData['sysRole'] ?? session()->get('role'));
+$isTwgWithAssignedUnits = ($currentSysRole === 'TWG') && !empty($twgAssignedUnits);
 ?>
+<style>
+@media (min-width: 1024px) {
+    #app-sidebar {
+        height: calc(100vh - 8rem) !important;
+        max-height: calc(100vh - 8rem) !important;
+        margin-bottom: 1.5rem !important;
+    }
+}
+.sidebar-split-box {
+    height: 50% !important;
+    max-height: 50% !important;
+    min-height: 50% !important;
+    flex: 0 0 50% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+</style>
 <div class="<?= $shellPadding ?> <?= $shellMaxWidth ?> w-full mx-auto flex flex-col lg:flex-row <?= $shellGap ?> lg:min-h-[calc(100vh-6rem)] lg:pb-4">
     
     <!-- LEFT SIDEBAR -->
     <div id="app-sidebar" class="fixed inset-y-0 left-0 z-[120] w-72 bg-white dark:bg-zinc-900 lg:w-60 lg:static lg:flex flex-shrink-0 flex-col h-full overflow-hidden transition-transform duration-300 transform -translate-x-full lg:translate-x-0 border-r border-zinc-200 dark:border-zinc-800 lg:border-none dark:lg:border-none shadow-2xl lg:shadow-none lg:!bg-transparent dark:lg:!bg-transparent lg:!border-none dark:lg:!border-none lg:!shadow-none">
-        <div class="flex justify-between items-center px-4 pt-5 pb-3 lg:px-3 lg:pt-0 lg:pb-0 lg:mb-3 shrink-0 border-b border-zinc-200 dark:border-zinc-800 lg:border-none dark:lg:border-none lg:!border-none dark:lg:!border-none">
-            <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-amber-500 lg:hidden shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-                </svg>
-                <p class="text-[11px] font-extrabold uppercase tracking-wider text-text-muted">
-                    <?= esc($sidebarTitle ?? 'Evaluation Folders') ?>
-                </p>
-            </div>
-            
-            <div class="flex items-center gap-1.5">
-                <!-- Dynamic Add Button -->
-                <?php if ($context === 'folders' && session()->get('role') === 'Admin'): ?>
-                    <button id="btn-create-folder-modal" class="w-7 h-7 rounded-lg flex items-center justify-center text-accent hover:text-accent-hover hover:bg-accent/10 transition-colors cursor-pointer" title="New Folder">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+        <?php if ($isTwgWithAssignedUnits): ?>
+            <!-- TOP HALF: EVALUATION FOLDERS (Invisible scrollable div, exactly 50% height) -->
+            <div class="sidebar-split-box pb-2">
+                <div class="flex justify-between items-center px-4 pt-5 pb-3 lg:px-3 lg:pt-0 lg:pb-0 lg:mb-2 shrink-0 border-b border-zinc-200 dark:border-zinc-800 lg:border-none dark:lg:border-none">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <svg class="w-4 h-4 text-amber-500 lg:hidden shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
                         </svg>
-                    </button>
-                <?php elseif ($context === 'teams'): ?>
-                    <button id="btn-create-team-modal" class="w-7 h-7 rounded-lg flex items-center justify-center text-accent hover:text-accent-hover hover:bg-accent/10 transition-colors cursor-pointer" title="New Staff">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                        </svg>
-                    </button>
-                <?php endif; ?>
+                        <p class="text-[11px] font-extrabold uppercase tracking-wider text-text-muted truncate">
+                            <?= esc($sidebarTitle ?? 'Evaluation Folders') ?>
+                        </p>
+                    </div>
+                    
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <!-- Mobile Close Drawer Button (lg:hidden) -->
+                        <button type="button" 
+                                onclick="toggleAppSidebar()" 
+                                class="lg:hidden w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer" 
+                                aria-label="Close sidebar">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
 
-                <!-- Mobile Close Drawer Button (lg:hidden) -->
-                <button type="button" 
-                        onclick="toggleAppSidebar()" 
-                        class="lg:hidden w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer" 
-                        aria-label="Close sidebar">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
+                <div id="sidebar-content-container" class="overflow-y-auto custom-scrollbar flex-1 min-h-0 px-3 pb-2 lg:p-0 lg:pr-2">
+                    <?= view($sidebarView ?? 'document/_folder_rows', $sidebarData ?? [
+                        'folders' => $sidebarFolders ?? [], 
+                        'selectedFolderId' => $selectedFolderId ?? null
+                    ]) ?>
+                </div>
             </div>
-            
-        </div>
-        <div id="sidebar-content-container" class="overflow-y-auto custom-scrollbar flex-1 px-3 pb-6 lg:p-0 lg:pr-2">
-            <!-- Sidebar content -->
-            <?= view($sidebarView ?? 'document/_folder_rows', $sidebarData ?? [
-                'folders' => $sidebarFolders ?? [], 
-                'selectedFolderId' => $selectedFolderId ?? null
-            ]) ?>
-        </div>
+
+            <!-- BOTTOM HALF: ASSIGNED JURISDICTION (Invisible scrollable div, exactly 50% height) -->
+            <div class="sidebar-split-box pt-2">
+                <div class="flex justify-between items-center px-4 pb-2 lg:px-3 lg:pb-2 shrink-0">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-accent shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                        </svg>
+                        <p class="text-[11px] font-extrabold uppercase tracking-wider text-text-muted truncate">
+                            Assigned Jurisdiction
+                        </p>
+                    </div>
+                    <span class="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-accent/15 text-accent border border-accent/25 shrink-0" title="<?= count($twgAssignedUnits) ?> assigned units">
+                        <?= count($twgAssignedUnits) ?>
+                    </span>
+                </div>
+
+                <div id="sidebar-jurisdiction-container" class="overflow-y-auto custom-scrollbar flex-1 min-h-0 px-3 pb-8 lg:p-0 lg:pr-2 lg:pb-6 flex flex-col gap-1.5">
+                    <?php foreach ($twgAssignedUnits as $au): ?>
+                        <div class="sidebar-jurisdiction-item px-3 py-2 rounded-xl text-xs font-bold bg-white dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/60 shadow-2xs flex items-center gap-2 group hover:text-accent hover:border-accent/40 dark:hover:border-accent/40 transition-colors select-none"
+                             title="<?= esc($au['unit_name']) ?>">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-accent/80 shrink-0 group-hover:text-accent transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                            </svg>
+                            <span class="truncate"><?= esc($au['unit_name']) ?></span>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php else: ?>
+            <div class="flex justify-between items-center px-4 pt-5 pb-3 lg:px-3 lg:pt-0 lg:pb-0 lg:mb-3 shrink-0 border-b border-zinc-200 dark:border-zinc-800 lg:border-none dark:lg:border-none lg:!border-none dark:lg:!border-none">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-amber-500 lg:hidden shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                    </svg>
+                    <p class="text-[11px] font-extrabold uppercase tracking-wider text-text-muted">
+                        <?= esc($sidebarTitle ?? 'Evaluation Folders') ?>
+                    </p>
+                </div>
+                
+                <div class="flex items-center gap-1.5">
+                    <!-- Dynamic Add Button -->
+                    <?php if ($context === 'folders' && session()->get('role') === 'Admin'): ?>
+                        <button id="btn-create-folder-modal" class="w-7 h-7 rounded-lg flex items-center justify-center text-accent hover:text-accent-hover hover:bg-accent/10 transition-colors cursor-pointer" title="New Folder">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                            </svg>
+                        </button>
+                    <?php elseif ($context === 'teams'): ?>
+                        <button id="btn-create-team-modal" class="w-7 h-7 rounded-lg flex items-center justify-center text-accent hover:text-accent-hover hover:bg-accent/10 transition-colors cursor-pointer" title="New Staff">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                            </svg>
+                        </button>
+                    <?php endif; ?>
+
+                    <!-- Mobile Close Drawer Button (lg:hidden) -->
+                    <button type="button" 
+                            onclick="toggleAppSidebar()" 
+                            class="lg:hidden w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer" 
+                            aria-label="Close sidebar">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                
+            </div>
+            <div id="sidebar-content-container" class="overflow-y-auto custom-scrollbar flex-1 min-h-0 px-3 pb-6 lg:p-0 lg:pr-2">
+                <!-- Sidebar content -->
+                <?= view($sidebarView ?? 'document/_folder_rows', $sidebarData ?? [
+                    'folders' => $sidebarFolders ?? [], 
+                    'selectedFolderId' => $selectedFolderId ?? null
+                ]) ?>
+            </div>
+        <?php endif; ?>
     </div>
 
     <!-- Mobile App Sidebar Overlay -->

@@ -2422,4 +2422,142 @@
             }
         });
     }
+    // ==========================================
+    // DEFAULT FUNCTION WEIGHTS MANAGEMENT
+    // ==========================================
+    function calculateCardTotal(typeKey) {
+        const key = typeKey.toUpperCase();
+        const lowerKey = typeKey.toLowerCase();
+        const coreEl = document.getElementById(`input-${lowerKey}-core`);
+        const stratEl = document.getElementById(`input-${lowerKey}-strategic`);
+        const suppEl = document.getElementById(`input-${lowerKey}-support`);
+
+        const core = parseFloat(coreEl?.value) || 0;
+        const strat = parseFloat(stratEl?.value) || 0;
+        const supp = parseFloat(suppEl?.value) || 0;
+        const total = Math.round((core + strat + supp) * 100) / 100;
+
+        const badgeEl = document.getElementById(`badge-total-${key}`);
+        const textEl = document.getElementById(`text-total-${key}`);
+        
+        if (textEl) textEl.textContent = total;
+
+        const isExact100 = Math.abs(total - 100) < 0.01;
+
+        if (badgeEl) {
+            if (isExact100) {
+                badgeEl.className = 'px-2.5 py-1 rounded-lg text-xs font-black transition-colors bg-emerald-500/10 text-emerald-600 dark:text-emerald-400';
+                badgeEl.innerHTML = `<span id="text-total-${key}">${total}</span>% ✓`;
+            } else {
+                badgeEl.className = 'px-2.5 py-1 rounded-lg text-xs font-black transition-colors bg-rose-500/10 text-rose-600 dark:text-rose-400';
+                badgeEl.innerHTML = `<span id="text-total-${key}">${total}</span>% (Must be 100%)`;
+            }
+        }
+
+        validateAllWeightsCards();
+        return isExact100;
+    }
+    window.calculateCardTotal = calculateCardTotal;
+
+    function validateAllWeightsCards() {
+        const types = ['OPCR', 'DPCR', 'IPCR'];
+        let allValid = true;
+        let invalidTypes = [];
+
+        types.forEach(t => {
+            const lower = t.toLowerCase();
+            const c = parseFloat(document.getElementById(`input-${lower}-core`)?.value) || 0;
+            const s = parseFloat(document.getElementById(`input-${lower}-strategic`)?.value) || 0;
+            const u = parseFloat(document.getElementById(`input-${lower}-support`)?.value) || 0;
+            const sum = Math.round((c + s + u) * 100) / 100;
+            if (Math.abs(sum - 100) >= 0.01) {
+                allValid = false;
+                invalidTypes.push(t);
+            }
+        });
+
+        const saveBtn = document.getElementById('btn-save-weights');
+        const statusMsg = document.getElementById('weights-status-message');
+
+        if (saveBtn) {
+            saveBtn.disabled = !allValid;
+        }
+
+        if (statusMsg) {
+            if (!allValid) {
+                statusMsg.innerHTML = `<span class="text-rose-500 font-bold">Cannot save: ${invalidTypes.join(', ')} do not total 100%.</span>`;
+            } else {
+                statusMsg.innerHTML = `<span class="text-text-muted">All document types total 100%. Ready to save.</span>`;
+            }
+        }
+
+        return allValid;
+    }
+    window.validateAllWeightsCards = validateAllWeightsCards;
+
+    function resetToCscDefaults() {
+        const defaults = {
+            'opcr': { core: 70, strategic: 20, support: 10 },
+            'dpcr': { core: 70, strategic: 15, support: 15 },
+            'ipcr': { core: 70, strategic: 15, support: 15 }
+        };
+
+        Object.keys(defaults).forEach(key => {
+            const c = document.getElementById(`input-${key}-core`);
+            const s = document.getElementById(`input-${key}-strategic`);
+            const u = document.getElementById(`input-${key}-support`);
+            if (c) c.value = defaults[key].core;
+            if (s) s.value = defaults[key].strategic;
+            if (u) u.value = defaults[key].support;
+            calculateCardTotal(key);
+        });
+
+        if (window.toast) {
+            window.toast('Values reset to CSC standard baseline (70/20/10 for OPCR, 70/15/15 for DPCR & IPCR). Click "Save Default Weights" to apply.', 'info');
+        }
+    }
+    window.resetToCscDefaults = resetToCscDefaults;
+
+    function saveDefaultWeights(event) {
+        if (event) {
+            event.preventDefault();
+        }
+
+        if (!validateAllWeightsCards()) {
+            window.appAlert('Each document type (OPCR, DPCR, IPCR) must total exactly 100% before saving.', {
+                title: 'Invalid Function Weights',
+                variant: 'danger'
+            });
+            return;
+        }
+
+        const form = document.getElementById('form-default-weights');
+        if (!form) return;
+
+        const formData = new FormData(form);
+        const saveBtn = document.getElementById('btn-save-weights');
+
+        apiPost('<?= base_url('account/update-default-weights') ?>', formData, {
+            btn: saveBtn,
+            loadingText: 'Saving Weights...',
+            onSuccess: (data) => {
+                window.appAlert(data.message || 'Default function percentage weights saved successfully!', {
+                    title: 'Weights Saved',
+                    variant: 'success'
+                });
+            },
+            onError: (errMsg) => {
+                window.appAlert(errMsg || 'Failed to update default function weights.', {
+                    title: 'Error Saving Weights',
+                    variant: 'danger'
+                });
+            }
+        });
+    }
+    window.saveDefaultWeights = saveDefaultWeights;
+
+    // Run initial validation on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        ['OPCR', 'DPCR', 'IPCR'].forEach(t => calculateCardTotal(t));
+    });
 </script>

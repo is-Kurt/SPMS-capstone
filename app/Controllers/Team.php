@@ -139,6 +139,23 @@ class Team extends BaseController
             }
         }
 
+        $mainData = [
+            'users'           => $users,
+            'units'           => $units,
+            'positions'          => $positions,
+            'employmentStatuses' => (new EmploymentStatusModel())->orderBy('name', 'ASC')->findAll(),
+            'presets'            => $presets,
+            'activeTeam'      => $activeTeam,
+            'activeMemberIds' => $activeMemberIds,
+            'hasLowerLevels'  => $hasLowerLevels,
+            'supervisorUnit'  => $supervisorUnit,
+            'myUnitIds'       => $myUnitIds ?? [],
+        ];
+
+        if ($this->request->isAJAX()) {
+            return view('teams/index', $mainData);
+        }
+
         return view('components/app_shell', [
             'context'        => 'teams',
             'sidebarTitle'   => 'My Staff',
@@ -148,18 +165,7 @@ class Team extends BaseController
                 'selectedTeamId' => $activeTeam['id'] ?? null
             ],
             'mainView'       => 'teams/index',
-            'mainData'       => [
-                'users'           => $users,
-                'units'           => $units,
-                'positions'          => $positions,
-                'employmentStatuses' => (new EmploymentStatusModel())->orderBy('name', 'ASC')->findAll(),
-                'presets'            => $presets,
-                'activeTeam'      => $activeTeam,
-                'activeMemberIds' => $activeMemberIds,
-                'hasLowerLevels'  => $hasLowerLevels,
-                'supervisorUnit'  => $supervisorUnit,
-                'myUnitIds'       => $myUnitIds ?? [],
-            ]
+            'mainData'       => $mainData
         ]);
     }
 

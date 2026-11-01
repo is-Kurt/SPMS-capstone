@@ -82,12 +82,12 @@
                         </svg>
                     </div>
                     <p class="text-sm font-bold text-text">No evidence documents attached</p>
-                    <p class="text-xs text-text-muted mt-1"><?= empty($isEvaluationPhase) ? 'Means of Verification (MOV) is attached during the Evaluation Phase when reporting accomplishments.' : 'Upload proof files or attach a Google Drive link to support your accomplishment rating.' ?></p>
+                    <p class="text-xs text-text-muted mt-1"><?= (empty($isEvaluationPhase) && empty($canEditAccomplishments)) ? 'Means of Verification (MOV) is attached once targets are approved or during the Evaluation Phase.' : 'Upload proof files or attach a Google Drive link to support your accomplishment rating.' ?></p>
                 </div>
             </div>
 
-            <!-- ATTACH NEW EVIDENCE (Only visible during Evaluation Phase when editable by owner) -->
-            <?php if (!empty($isOwner) && empty($isCycleArchived) && !empty($isEvaluationPhase) && !empty($canEditEvaluation)): ?>
+            <!-- ATTACH NEW EVIDENCE (Visible during Evaluation Phase or once targets are approved) -->
+            <?php if (!empty($isOwner) && empty($isCycleArchived) && (!empty($canEditAccomplishments) || (!empty($isEvaluationPhase) && !empty($canEditEvaluation)))): ?>
             <div id="mov-upload-zone" class="space-y-3 pt-3 border-t border-surface-border">
                 <div class="flex items-center justify-between">
                     <h4 class="text-xs font-black uppercase tracking-wider text-text-muted">
@@ -348,7 +348,7 @@
         let html = '';
         files.forEach(file => {
             const isLink = !!file.is_link || (file.file_type && file.file_type.startsWith('link/')) || (file.link_url && file.link_url.length > 0);
-            const canDelete = <?= (!empty($isOwner) && empty($isCycleArchived) && !empty($isEvaluationPhase) && !empty($canEditEvaluation)) ? 'true' : 'false' ?>;
+            const canDelete = <?= (!empty($isOwner) && empty($isCycleArchived) && (!empty($canEditAccomplishments) || (!empty($isEvaluationPhase) && !empty($canEditEvaluation)))) ? 'true' : 'false' ?>;
 
             if (isLink) {
                 const linkUrl = file.link_url || file.file_path;
@@ -499,13 +499,18 @@
         const iconEl = btn.querySelector('svg');
 
         if (count > 0) {
-            btn.className = 'btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-1 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25';
+            btn.className = 'btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold text-[10px] tracking-wide transition-all border shadow-xs cursor-pointer bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25 active:scale-95';
             if (textEl) textEl.innerText = `MOV (${count})`;
-            if (iconEl) iconEl.className = 'w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400';
+            if (iconEl) iconEl.className = 'w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0';
+
+            const files = (window.documentAttachments && window.documentAttachments[rowId]) || [];
+            const fileNames = files.map(f => f.file_name || f.title || 'Evidence').join('\n• ');
+            btn.title = `${count} Means of Verification (MOV) attached:\n• ${fileNames}\n(Click to view or manage)`;
         } else {
-            btn.className = 'btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-1 rounded-md font-bold transition-all border shadow-xs cursor-pointer bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700';
+            btn.className = 'btn-mov-attachment inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md font-semibold text-[10px] transition-all border shadow-xs cursor-pointer bg-zinc-100/90 hover:bg-zinc-200 dark:bg-zinc-800/90 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700 active:scale-95 opacity-85 hover:opacity-100';
             if (textEl) textEl.innerText = 'Attach MOV';
-            if (iconEl) iconEl.className = 'w-3.5 h-3.5 text-zinc-500';
+            if (iconEl) iconEl.className = 'w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 shrink-0';
+            btn.title = 'Attach Means of Verification (MOV) evidence proof for this accomplishment';
         }
     }
 

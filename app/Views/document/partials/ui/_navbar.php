@@ -4,16 +4,26 @@
         <?php if (!($isEmbed ?? false)): ?>
         <?php 
             $sysRole = session()->get('role');
-            $homeUrl = in_array($sysRole, ['TWG', 'PMT']) ? site_url('ratings') : site_url('folders');
+            if (empty($homeUrl)) {
+                $isReviewingRatee = (!empty($rateeNav) || (!empty($doc) && !empty($doc['owner_id']) && (int)$doc['owner_id'] !== (int)session()->get('user_id')));
+                $fromQuery = $_GET['from'] ?? '';
+                if ($fromQuery === 'ratings' || $isReviewingRatee || in_array($sysRole, ['TWG', 'PMT'], true)) {
+                    $homeUrl = site_url('ratings');
+                } else {
+                    $homeUrl = site_url('folders');
+                }
+            }
+            $isFromRatings = str_contains($homeUrl, 'ratings');
+            $homeTitle = $isFromRatings ? 'Back to Submissions (Ratings)' : 'Back to Workspace (Folders)';
         ?>
         <div class="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-1">
             <!-- Brand mark -->
-            <a href="<?= $homeUrl ?>" 
+            <a href="<?= esc($homeUrl) ?>" 
                onclick="return typeof handleInAppExit === 'function' ? handleInAppExit(event, this.href, false) : true;"
-               class="cursor-pointer shrink-0 block"
-               title="Return to SPMS Home">
+               class="cursor-pointer shrink-0 block group"
+               title="<?= esc($homeTitle) ?>">
                 <div class="flex-shrink-0 flex items-center gap-1 mr-2 sm:mr-4 text-text hover:text-accent transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 sm:h-7 sm:w-7 transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     <span class="hidden sm:block font-black tracking-tighter text-xl uppercase">SPMS</span>
@@ -119,6 +129,9 @@
                                     $verUrl = $isCurrentVer
                                         ? site_url('document/' . ($doc['id'] ?? ''))
                                         : site_url('document/' . ($doc['id'] ?? '') . '?version=' . $verNum);
+                                    if ($isFromRatings) {
+                                        $verUrl .= $isCurrentVer ? '?from=ratings' : '&from=ratings';
+                                    }
                                 ?>
                                 <a href="<?= esc($verUrl) ?>"
                                    class="block px-3.5 py-2.5 hover:bg-surface-border/40 transition-colors <?= $isSelectedVer ? 'bg-surface-border/25' : '' ?>">
@@ -184,7 +197,7 @@
         <?php endif; ?>
         
         <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
-            <?php if ($canEditTargets || $canEditEvaluation): ?>
+            <?php if ($canEditTargets || $canEditEvaluation || !empty($canEditAccomplishments) || !empty($canReviewerEditRemarks)): ?>
             <!-- Save Button with hover (Ctrl + S) -->
             <div class="relative group inline-flex items-center print-hide">
                 <button type="button" onclick="saveDocument(true)" title="Save (Ctrl + S)"
@@ -207,7 +220,7 @@
             <button id="btn-dynamic-doc-action" type="button" 
                     onclick="handleDynamicDocAction()" 
                     class="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-bold border transition-all shadow-sm active:scale-[0.98] cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 border-slate-300 dark:border-zinc-700 print-hide"
-                    title="Reset document targets and rubrics to clean template">
+                    title="<?= (!empty($cascadedTargets['hasTargets'])) ? 'Reset document deliverables and rubrics back to initially cascaded targets from supervisor' : 'Reset document targets and rubrics to clean template' ?>">
                 <svg id="dynamic-doc-action-icon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
@@ -311,15 +324,11 @@
                     <?php endif; ?>
 
                 <?php else: ?>
-                    <!-- REVIEWER ACTIONS (Ultra-minimal: Approve / Return / Unapprove) -->
+                    <!-- REVIEWER ACTIONS (Approve / Return) -->
                     <?php if (in_array(session()->get('role'), ['TWG', 'PMT'])): ?>
                         <?php if ($canonStatus->isTargetPhase()): ?>
                             <?php if ($canonStatus === FolderStatus::TARGET_APPROVED && in_array($doc['target_approver_role'] ?? '', ['TWG', 'PMT'])): ?>
-                                <button id="btn-unapprove-target" type="button" 
-                                        onclick="unapproveFolderTarget()" 
-                                        class="bg-warning-500 hover:bg-warning-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg transition-all active:scale-[0.98] cursor-pointer">
-                                    Unapprove
-                                </button>
+                                <!-- Targets verified by TWG: no buttons/badges -->
                             <?php elseif ($canonStatus === FolderStatus::TARGET_SUBMITTED || $canonStatus === FolderStatus::TARGET_UNAPPROVED): ?>
                                 <?php if (!empty($allSupervisorsApproved)): ?>
                                     <div class="flex items-center gap-1.5 sm:gap-2">
@@ -350,11 +359,7 @@
                         <?php else: ?>
                             <!-- TWG in Evaluation Phase -->
                             <?php if ($canonStatus === FolderStatus::EVAL_APPROVED): ?>
-                                <button id="btn-unapprove-evaluation" type="button" 
-                                        onclick="unapproveFolderEvaluation()" 
-                                        class="bg-warning-500 hover:bg-warning-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg shadow-warning-500/20 transition-all active:scale-[0.98] cursor-pointer">
-                                    Unapprove
-                                </button>
+                                <!-- Evaluation verified by TWG: no buttons/badges -->
                             <?php elseif ($canonStatus === FolderStatus::EVAL_SUBMITTED || $canonStatus === FolderStatus::EVAL_UNRATED): ?>
                                 <?php if (!empty($allSupervisorsApproved)): ?>
                                     <div class="flex items-center gap-1.5 sm:gap-2">
@@ -392,14 +397,8 @@
                                     $isCurrentSupervisorApproved = (!empty($currentEvaluatorRoute) && in_array($currentEvaluatorRoute['status'], ['target_approved', 'approved']));
                                     $isTwgVerifiedTarget = ($canonStatus === FolderStatus::TARGET_APPROVED && in_array($doc['target_approver_role'] ?? '', ['TWG', 'PMT'], true));
                                 ?>
-                                <?php if ($isTwgVerifiedTarget): ?>
-                                    <!-- Locked by TWG/PMT verification: Supervisor cannot unapprove unless TWG unapproves first -->
-                                <?php elseif ($isCurrentSupervisorApproved): ?>
-                                    <button id="btn-unapprove-target" type="button" 
-                                            onclick="unapproveFolderTarget()" 
-                                            class="bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg transition-all">
-                                        Unapprove
-                                    </button>
+                                <?php if ($isTwgVerifiedTarget || $isCurrentSupervisorApproved): ?>
+                                    <!-- Targets approved/verified: no buttons/badges -->
                                 <?php else: ?>
                                     <div class="flex items-center gap-1.5 sm:gap-2">
                                         <button id="btn-return-target" type="button" 
@@ -429,14 +428,8 @@
                                     $hasAssignedTwgEval = $folderRecForTwg ? !empty((new \App\Models\TwgUnitAssignmentModel())->resolveAssignedTwgForFolder($folderRecForTwg)) : false;
                                     $isTwgVerifiedEval = ($canonStatus === FolderStatus::EVAL_APPROVED && $hasAssignedTwgEval);
                                 ?>
-                                <?php if ($isTwgVerifiedEval): ?>
-                                    <!-- Locked by TWG/PMT verification: Supervisor cannot unapprove unless TWG unapproves first -->
-                                <?php elseif ($isCurrentEvalApproved): ?>
-                                    <button id="btn-unapprove-evaluation" type="button" 
-                                            onclick="unapproveFolderEvaluation()" 
-                                            class="bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg transition-all">
-                                        Unapprove
-                                    </button>
+                                <?php if ($isTwgVerifiedEval || $isCurrentEvalApproved): ?>
+                                    <!-- Evaluation approved/verified: no buttons/badges -->
                                 <?php else: ?>
                                     <div class="flex items-center gap-1.5 sm:gap-2">
                                         <button id="btn-return" type="button" 

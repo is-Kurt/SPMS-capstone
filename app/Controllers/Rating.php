@@ -344,29 +344,37 @@ class Rating extends BaseController
             $activePeriodKey = $isEvalPhase ? 'evaluation' : 'target';
         }
 
+        $mainData = [
+            'activeFolder'            => $activeFolder ?? null,
+            'periods'                 => $periods,
+            'activePeriodKey'         => $activePeriodKey,
+            'sysRole'                 => $sysRole,
+            'filterUnits'             => $filterUnits,
+            'filterPositions'         => $filterPositions,
+            'employmentStatuses'      => (new EmploymentStatusModel())->orderBy('name', 'ASC')->findAll(),
+            'allUnits'                => $allUnits,
+            'assignedUnits'           => $assignedUnits,
+            'myUnitIds'               => $myUnitIds,
+            'hasLowerLevels'          => $hasLowerLevels,
+            'adminCascadedTotalCount' => $adminCascadedTotalCount,
+            'overallTotalCount'       => $overallTotalCount,
+            'targetCascadedCount'     => $targetCascadedCount,
+            'targetOverallCount'      => $targetOverallCount,
+            'evalCascadedCount'       => $evalCascadedCount,
+            'evalOverallCount'        => $evalOverallCount
+        ];
+
+        if ($this->request->isAJAX()) {
+            return view('ratings/index', $mainData);
+        }
+
         return view('components/app_shell', [
             'sidebarFolders'   => $folders,
             'selectedFolderId' => $folderId, 
+            'assignedUnits'    => $assignedUnits,
+            'sysRole'          => $sysRole,
             'mainView'         => 'ratings/index',
-            'mainData'         => [
-                'activeFolder'            => $activeFolder ?? null,
-                'periods'                 => $periods,
-                'activePeriodKey'         => $activePeriodKey,
-                'sysRole'                 => $sysRole,
-                'filterUnits'             => $filterUnits,
-                'filterPositions'         => $filterPositions,
-                'employmentStatuses'      => (new EmploymentStatusModel())->orderBy('name', 'ASC')->findAll(),
-                'allUnits'                => $allUnits,
-                'assignedUnits'           => $assignedUnits,
-                'myUnitIds'               => $myUnitIds,
-                'hasLowerLevels'          => $hasLowerLevels,
-                'adminCascadedTotalCount' => $adminCascadedTotalCount,
-                'overallTotalCount'       => $overallTotalCount,
-                'targetCascadedCount'     => $targetCascadedCount,
-                'targetOverallCount'      => $targetOverallCount,
-                'evalCascadedCount'       => $evalCascadedCount,
-                'evalOverallCount'        => $evalOverallCount
-            ]
+            'mainData'         => $mainData
         ]);
     }
 
@@ -498,7 +506,12 @@ class Rating extends BaseController
             $targetDoc = reset($myDocs);
 
             if ($targetDoc && !empty($targetDoc['id'])) {
-                return redirect()->to(site_url('document/' . $targetDoc['id']));
+                $referer = (string) ($this->request->getServer('HTTP_REFERER') ?? '');
+                if (!empty($referer) && str_contains($referer, '/ratings')) {
+                    session()->set('doc_ratings_referer', $referer);
+                }
+                session()->set('doc_entry_source_' . $targetDoc['id'], 'ratings');
+                return redirect()->to(site_url('document/' . $targetDoc['id'] . '?from=ratings'));
             }
         }
 

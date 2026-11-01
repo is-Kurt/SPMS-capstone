@@ -8,6 +8,7 @@ use App\Models\DocumentModel;
 use App\Models\DocumentFolderModel;
 use App\Models\EvaluationRoutingModel;
 use App\Models\TemplateModel;
+use App\Models\DefaultFunctionWeightModel;
 
 /**
  * Handles individual documents (the actual IPCR/DPCR/OPCR pages inside a folder):
@@ -591,6 +592,43 @@ class Document extends BaseController
         $data['isCycleArchived']        = $isCycleArchived;
         $data['isOwner']                = ($docOwnerId == $userId);
         $data['rateeNav']               = $rateeNav;
+
+        // Determine whether user entered from Ratings or Folders
+        $fromParam  = $this->request->getGet('from');
+        $referer    = (string) ($this->request->getServer('HTTP_REFERER') ?? '');
+        $isDocOwner = ((int)$docOwnerId === (int)$userId);
+        $entrySource = null;
+
+        if ($fromParam === 'ratings') {
+            $entrySource = 'ratings';
+            session()->set('doc_entry_source_' . $docId, 'ratings');
+        } elseif ($fromParam === 'folders') {
+            $entrySource = 'folders';
+            session()->set('doc_entry_source_' . $docId, 'folders');
+        } elseif (!empty($referer) && str_contains($referer, '/ratings')) {
+            $entrySource = 'ratings';
+            session()->set('doc_entry_source_' . $docId, 'ratings');
+            session()->set('doc_ratings_referer', $referer);
+        } elseif (!empty($referer) && str_contains($referer, '/folders')) {
+            $entrySource = 'folders';
+            session()->set('doc_entry_source_' . $docId, 'folders');
+        } else {
+            $entrySource = session()->get('doc_entry_source_' . $docId);
+            if (!$entrySource) {
+                // If viewing another user's submission as a reviewer/supervisor/admin or if rateeNav is active, return to ratings
+                $entrySource = (!$isDocOwner || in_array($sysRole, ['TWG', 'PMT'], true) || !empty($rateeNav)) ? 'ratings' : 'folders';
+            }
+        }
+
+        if ($entrySource === 'ratings') {
+            $ratingsReferer = session()->get('doc_ratings_referer');
+            $homeUrl = (!empty($ratingsReferer) && str_contains($ratingsReferer, '/ratings')) ? $ratingsReferer : site_url('ratings');
+        } else {
+            $homeUrl = site_url('folders');
+        }
+
+        $data['entrySource']            = $entrySource;
+        $data['homeUrl']                = $homeUrl;
         $data['routingStatus']          = $routingStatus;
         $data['doc']                    = $docInfo;
         $data['isGuide']                = $isGuide;
@@ -695,6 +733,7 @@ class Document extends BaseController
         }, $allBasisGuides);
         $data['supervisorApprovals']    = $supervisorApprovals;
         $data['currentEvaluatorRoute']  = $currentEvaluatorRoute;
+        $data['systemDefaultWeights']   = (new DefaultFunctionWeightModel())->getAllWeightsKeyed();
 
         return view('document/show', $data);
     }
