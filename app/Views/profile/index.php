@@ -12,11 +12,18 @@
         
         <div class="p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-surface-border bg-zinc-50/50 dark:bg-zinc-800/10 min-w-[250px]">
             <div id="avatar-preview-wrap">
-                <?php if (session('avatar_image')): ?>
-                    <img id="avatar-preview-img" src="<?= base_url('uploads/avatars/' . session('avatar_image')) ?>" alt="Avatar" class="w-32 h-32 rounded-full object-cover shadow-lg border-4 border-white dark:border-zinc-800">
+                <?php if (has_avatar_file(session('avatar_image'))): ?>
+                    <img id="avatar-preview-img" 
+                         src="<?= base_url('uploads/avatars/' . session('avatar_image')) ?>" 
+                         alt="Avatar" 
+                         class="w-32 h-32 rounded-full object-cover shadow-lg border-4 border-white dark:border-zinc-800"
+                         onerror="this.classList.add('hidden'); document.getElementById('avatar-preview-initials')?.classList.remove('hidden');">
+                    <div id="avatar-preview-initials" class="hidden w-32 h-32 rounded-full flex items-center justify-center text-white text-5xl font-black shadow-lg border-4 border-white dark:border-zinc-800" style="background-color: <?= esc(session('avatar_color') ?: '#5b3704') ?>;">
+                        <?= esc(session('avatar_letter') ?: 'A') ?>
+                    </div>
                 <?php else: ?>
-                    <div id="avatar-preview-initials" class="w-32 h-32 rounded-full flex items-center justify-center text-white text-5xl font-black shadow-lg border-4 border-white dark:border-zinc-800" style="background-color: <?= esc(session('avatar_color')) ?>;">
-                        <?= esc(session('avatar_letter')) ?>
+                    <div id="avatar-preview-initials" class="w-32 h-32 rounded-full flex items-center justify-center text-white text-5xl font-black shadow-lg border-4 border-white dark:border-zinc-800" style="background-color: <?= esc(session('avatar_color') ?: '#5b3704') ?>;">
+                        <?= esc(session('avatar_letter') ?: 'A') ?>
                     </div>
                 <?php endif; ?>
             </div>
@@ -57,7 +64,7 @@
                 <div class="flex items-center gap-3 mt-2">
                     <button type="submit" class="bg-accent text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-95 shadow-md shadow-accent/20">Save Initials</button>
                     <button type="submit" name="remove_image" value="1" id="btn-remove-avatar-image"
-                            class="text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10 px-4 py-2.5 rounded-xl text-xs font-bold transition-all <?= session('avatar_image') ? '' : 'hidden' ?>">Remove Image</button>
+                            class="text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10 px-4 py-2.5 rounded-xl text-xs font-bold transition-all <?= has_avatar_file(session('avatar_image')) ? '' : 'hidden' ?>">Remove Image</button>
                 </div>
                 <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="_general"></p>
             <?= form_close() ?>
@@ -351,7 +358,7 @@
         const wrap = document.getElementById('avatar-preview-wrap');
         if (wrap) {
             if (avatar.image) {
-                wrap.innerHTML = `<img id="avatar-preview-img" src="${avatar.image}" alt="Avatar" class="w-32 h-32 rounded-full object-cover shadow-lg border-4 border-white dark:border-zinc-800">`;
+                wrap.innerHTML = `<img id="avatar-preview-img" src="${avatar.image}" alt="Avatar" class="w-32 h-32 rounded-full object-cover shadow-lg border-4 border-white dark:border-zinc-800" onerror="this.onerror=null; this.classList.add('hidden'); document.getElementById('avatar-preview-initials')?.classList.remove('hidden');"><div id="avatar-preview-initials" class="hidden w-32 h-32 rounded-full flex items-center justify-center text-white text-5xl font-black shadow-lg border-4 border-white dark:border-zinc-800" style="background-color: ${avatar.color || '#5b3704'};">${escapeHtml(avatar.letter || 'A')}</div>`;
             } else {
                 wrap.innerHTML = `<div id="avatar-preview-initials" class="w-32 h-32 rounded-full flex items-center justify-center text-white text-5xl font-black shadow-lg border-4 border-white dark:border-zinc-800" style="background-color: ${avatar.color};">${escapeHtml(avatar.letter || '')}</div>`;
             }

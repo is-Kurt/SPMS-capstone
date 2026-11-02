@@ -174,6 +174,9 @@ $routes->post('signup', 'Auth\Register::store');
 
 $routes->get('about', 'Landing::index');
 
+// Fallback for missing or accidentally deleted avatar files
+$routes->get('uploads/avatars/(:any)', 'Profile::avatarFallback/$1');
+
 $routes->group('', ['filter' => 'guest'], function($routes) {
     $routes->get('/', 'Auth\Session::index');
     $routes->get('login', 'Auth\Session::index');

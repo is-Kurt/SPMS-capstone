@@ -169,6 +169,7 @@ function restore_session_from_cookie(): bool {
         // Security: Regenerate session ID when restoring from persistent cookie
         $session->regenerate();
 
+        $rawAvatar = $user['avatar_image'] ?? $user['avatar'] ?? null;
         $session->set([
             'user_id'    => $user['id'],
             'email'      => $user['email'],
@@ -178,7 +179,7 @@ function restore_session_from_cookie(): bool {
             'username'   => $user['first_name'] . ' ' . $user['last_name'],
             'doc_type'   => $user['doc_type'] ?? null,
             'isLoggedIn' => true,
-            'avatar_image'  => $user['avatar_image'] ?? $user['avatar'] ?? null,
+            'avatar_image'  => has_avatar_file($rawAvatar) ? $rawAvatar : null,
             'avatar_color'  => $user['avatar_color'] ?? '#' . substr(md5($user['email']), 0, 6),
             'avatar_letter' => $user['avatar_letter'] ?? strtoupper(substr($user['first_name'], 0, 1)),
         ]);
@@ -186,6 +187,23 @@ function restore_session_from_cookie(): bool {
     }
     
     return false;
+}
+
+/**
+ * Checks whether an avatar image file physically exists on the server disk.
+ * Returns false if the file was deleted or cannot be found, preventing broken images.
+ */
+function has_avatar_file(?string $filename): bool
+{
+    if (empty($filename)) {
+        return false;
+    }
+    $cleanName = basename(trim((string)$filename));
+    if ($cleanName === '' || $cleanName === '.' || $cleanName === '..') {
+        return false;
+    }
+    $path = FCPATH . 'uploads/avatars/' . $cleanName;
+    return is_file($path) && file_exists($path);
 }
 
 /**

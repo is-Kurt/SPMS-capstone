@@ -446,7 +446,23 @@ class Attachment extends BaseController
 
         $filePath = WRITEPATH . $attachment['file_path'];
         if (!file_exists($filePath)) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Attachment file not found on disk.');
+            if ($disposition === 'inline') {
+                $fileName = esc($attachment['file_name'] ?? 'Evidence File');
+                $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 280" width="600" height="280">'
+                     . '<rect width="600" height="280" fill="#18181b" rx="16"/>'
+                     . '<rect x="1" y="1" width="598" height="278" fill="none" stroke="#27272a" stroke-width="2" rx="15"/>'
+                     . '<circle cx="300" cy="80" r="30" fill="#ef4444" fill-opacity="0.15"/>'
+                     . '<text x="300" y="89" font-family="system-ui, sans-serif" font-weight="900" font-size="26" fill="#f43f5e" text-anchor="middle">!</text>'
+                     . '<text x="300" y="145" font-family="system-ui, sans-serif" font-weight="700" font-size="16" fill="#f43f5e" text-anchor="middle">File Unavailable on Server</text>'
+                     . '<text x="300" y="175" font-family="system-ui, sans-serif" font-size="13" fill="#a1a1aa" text-anchor="middle">' . $fileName . '</text>'
+                     . '<text x="300" y="210" font-family="system-ui, sans-serif" font-size="11" fill="#71717a" text-anchor="middle">The physical file is missing from server storage.</text>'
+                     . '</svg>';
+                return $this->response
+                    ->setHeader('Content-Type', 'image/svg+xml; charset=utf-8')
+                    ->setHeader('Cache-Control', 'no-cache')
+                    ->setBody($svg);
+            }
+            return redirect()->back()->with('error', 'The requested evidence file is not available on the server.');
         }
 
         $rawContents = file_get_contents($filePath);

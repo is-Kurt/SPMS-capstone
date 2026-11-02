@@ -26,6 +26,12 @@ class Profile extends BaseController
         $positionModel  = new PositionModel();
         $plantillaModel = new PlantillaModel();
         
+        // Auto-heal missing avatar reference if file was accidentally deleted on server
+        if (session('avatar_image') && !has_avatar_file(session('avatar_image'))) {
+            session()->set('avatar_image', null);
+            $userModel->update($userId, ['avatar_image' => null]);
+        }
+
         $currentPlantilla = $plantillaModel->where('user_id', $userId)->where('ended_at IS NULL')->findAll();
         
         if (empty($currentPlantilla)) {
@@ -201,11 +207,52 @@ class Profile extends BaseController
                 'status'  => 'success',
                 'message' => 'Avatar settings updated!',
                 'avatar'  => [
-                    'image'  => session('avatar_image') ? base_url('uploads/avatars/' . session('avatar_image')) : null,
+                    'image'  => has_avatar_file(session('avatar_image')) ? base_url('uploads/avatars/' . session('avatar_image')) : null,
                     'color'  => session('avatar_color'),
                     'letter' => session('avatar_letter'),
                 ],
             ]);
         });
+    }
+
+    /**
+     * GET /uploads/avatars/{filename}
+     * Dynamic fallback when an avatar file was accidentally removed or missing from server disk.
+     * Serves an SVG with the user's initial and color instead of a broken image (404).
+     */
+    public function avatarFallback(string $filename = '')
+    {
+        $cleanName = basename(trim($filename));
+        $filePath = FCPATH . 'uploads/avatars/' . $cleanName;
+
+        if ($cleanName !== '' && is_file($filePath)) {
+            $mime = mime_content_type($filePath) ?: 'image/webp';
+            return $this->response
+                ->setHeader('Content-Type', $mime)
+                ->setHeader('Cache-Control', 'public, max-age=86400')
+                ->setBody(file_get_contents($filePath));
+        }
+
+        $userModel = new UserModel();
+        $user = $cleanName !== '' ? $userModel->where('avatar_image', $cleanName)->first() : null;
+
+        $color = $user['avatar_color'] ?? session('avatar_color') ?? '#5b3704';
+        $letter = $user['avatar_letter'] ?? session('avatar_letter') ?? '';
+        if (empty($letter)) {
+            $name = $user['first_name'] ?? session('username') ?? 'U';
+            $letter = strtoupper(substr($name, 0, 1)) ?: 'A';
+        }
+
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">'
+             . '<circle cx="64" cy="64" r="64" fill="' . esc($color, 'attr') . '"/>'
+             . '<text x="50%" y="54%" font-family="system-ui, -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif" font-weight="900" font-size="56" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">'
+             . esc($letter)
+             . '</text>'
+             . '</svg>';
+
+        return $this->response
+            ->setHeader('Content-Type', 'image/svg+xml; charset=utf-8')
+            ->setHeader('Cache-Control', 'no-cache, private')
+            ->setBody($svg);
     }
 }

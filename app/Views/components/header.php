@@ -59,6 +59,7 @@
         }
     }
     $avatarLetter = session('avatar_letter') ?? (substr($displayName, 0, 1) ?: 'U');
+    $avatarColor = session('avatar_color') ?: '#f59e0b';
 ?>
 
 <!-- Main institutional navigation bar -->
@@ -162,9 +163,13 @@
                 <div class="relative">
                     <button id="profile-btn-mobile" 
                             class="relative flex items-center gap-1.5 sm:gap-2.5 text-zinc-800 dark:text-white bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 shadow-xs p-1 sm:pl-1.5 sm:pr-3 sm:py-1 cursor-pointer transition-all rounded-xl">
-                        <?php if (session('avatar_image')): ?>
+                        <?php if (has_avatar_file(session('avatar_image'))): ?>
                             <img src="<?= base_url('uploads/avatars/' . session('avatar_image')) ?>" alt="User" 
-                                 class="w-[26px] h-[26px] min-w-[26px] min-h-[26px] max-w-[26px] max-h-[26px] rounded-lg object-cover block" />
+                                 class="w-[26px] h-[26px] min-w-[26px] min-h-[26px] max-w-[26px] max-h-[26px] rounded-lg object-cover block"
+                                 onerror="this.classList.add('hidden'); this.nextElementSibling?.classList.remove('hidden');" />
+                            <div class="hidden flex items-center justify-center font-black text-xs shrink-0 w-[26px] h-[26px] min-w-[26px] min-h-[26px] max-w-[26px] max-h-[26px] rounded-lg bg-amber-400 text-zinc-950">
+                                <?= esc($avatarLetter) ?>
+                            </div>
                         <?php else: ?>
                             <div class="flex items-center justify-center font-black text-xs shrink-0 w-[26px] h-[26px] min-w-[26px] min-h-[26px] max-w-[26px] max-h-[26px] rounded-lg bg-amber-400 text-zinc-950">
                                 <?= esc($avatarLetter) ?>
@@ -401,9 +406,13 @@
                 <div class="flex items-start justify-between relative z-10">
                     <!-- User Avatar -->
                     <a href="<?= site_url('profile') ?>" class="block group">
-                        <?php if (session('avatar_image')): ?>
+                        <?php if (has_avatar_file(session('avatar_image'))): ?>
                             <img src="<?= base_url('uploads/avatars/' . session('avatar_image')) ?>" alt="<?= esc($displayName) ?>" 
-                                 class="w-14 h-14 rounded-full object-cover border-2 border-white/60 shadow-md group-hover:scale-105 transition-transform" />
+                                 class="w-14 h-14 rounded-full object-cover border-2 border-white/60 shadow-md group-hover:scale-105 transition-transform"
+                                 onerror="this.classList.add('hidden'); this.nextElementSibling?.classList.remove('hidden');" />
+                            <div class="hidden w-14 h-14 rounded-full bg-amber-500 text-black font-black text-xl flex items-center justify-center border-2 border-white/60 shadow-md group-hover:scale-105 transition-transform">
+                                <?= esc($avatarLetter) ?>
+                            </div>
                         <?php else: ?>
                             <div class="w-14 h-14 rounded-full bg-amber-500 text-black font-black text-xl flex items-center justify-center border-2 border-white/60 shadow-md group-hover:scale-105 transition-transform">
                                 <?= esc($avatarLetter) ?>
