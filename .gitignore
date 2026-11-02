@@ -84,7 +84,7 @@ phpunit
 #-------------------------
 # Composer
 #-------------------------
-vendor/
+/vendor/
 
 #-------------------------
 # Node / NPM
@@ -156,3 +156,6 @@ docs/*security*
 docs/SECURITY_AND_SYSTEM_GUIDE.md
 
 
+
+public/uploads/*
+scratch/*

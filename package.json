@@ -1,7 +1,7 @@
 {
   "scripts": {
     "dev": "npx @tailwindcss/cli -i ./public/assets/css/main/input.css -o ./public/assets/css/main/style.css --watch",
-    "postinstall": "mkdir -p public/assets/vendor/axios/dist public/assets/vendor/tinymce && cp -r node_modules/axios/dist/* public/assets/vendor/axios/dist/ && cp -r node_modules/tinymce/* public/assets/vendor/tinymce/"
+    "postinstall": "node -e \"const fs=require('fs'); fs.mkdirSync('public/assets/vendor/axios/dist', {recursive:true}); fs.mkdirSync('public/assets/vendor/tinymce', {recursive:true}); if(fs.existsSync('node_modules/axios/dist')) fs.cpSync('node_modules/axios/dist', 'public/assets/vendor/axios/dist', {recursive:true}); if(fs.existsSync('node_modules/tinymce')) fs.cpSync('node_modules/tinymce', 'public/assets/vendor/tinymce', {recursive:true});\""
   },
   "dependencies": {
     "@tailwindcss/cli": "^4.1.18",
