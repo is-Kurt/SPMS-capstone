@@ -288,7 +288,7 @@ class Session extends BaseController
             'doc_type'      => $user['doc_type'] ?? null,
             'isLoggedIn'    => true,
             'device_id'     => $deviceId,
-            'avatar_image'  => has_avatar_file($user['avatar_image'] ?? $user['avatar'] ?? null) ? ($user['avatar_image'] ?? $user['avatar'] ?? null) : null,
+            'avatar_image'  => $user['avatar_image'] ?? $user['avatar'] ?? null,
             'avatar_color'  => $user['avatar_color'] ?? '#' . substr(md5($user['email']), 0, 6),
             'avatar_letter' => $user['avatar_letter'] ?? strtoupper(substr($user['first_name'], 0, 1)),
         ]);

@@ -49,15 +49,6 @@ class AuthFilter implements FilterInterface
                 'error' => 'Your account has been disabled by an administrator.'
             ]);
         }
-
-        // Auto-heal missing avatar reference if file was deleted from server storage
-        $currentAvatar = $session->get('avatar_image');
-        if (!empty($currentAvatar) && !has_avatar_file($currentAvatar)) {
-            $session->set('avatar_image', null);
-            if (!empty($user['avatar_image'])) {
-                $userModel->update($userId, ['avatar_image' => null]);
-            }
-        }
     }
 
     /**

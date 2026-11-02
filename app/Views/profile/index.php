@@ -64,7 +64,7 @@
                 <div class="flex items-center gap-3 mt-2">
                     <button type="submit" class="bg-accent text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-95 shadow-md shadow-accent/20">Save Initials</button>
                     <button type="submit" name="remove_image" value="1" id="btn-remove-avatar-image"
-                            class="text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10 px-4 py-2.5 rounded-xl text-xs font-bold transition-all <?= has_avatar_file(session('avatar_image')) ? '' : 'hidden' ?>">Remove Image</button>
+                            class="text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10 px-4 py-2.5 rounded-xl text-xs font-bold transition-all <?= session('avatar_image') ? '' : 'hidden' ?>">Remove Image</button>
                 </div>
                 <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="_general"></p>
             <?= form_close() ?>

@@ -25,12 +25,6 @@ class Profile extends BaseController
         $unitModel      = new UnitModel();
         $positionModel  = new PositionModel();
         $plantillaModel = new PlantillaModel();
-        
-        // Auto-heal missing avatar reference if file was accidentally deleted on server
-        if (session('avatar_image') && !has_avatar_file(session('avatar_image'))) {
-            session()->set('avatar_image', null);
-            $userModel->update($userId, ['avatar_image' => null]);
-        }
 
         $currentPlantilla = $plantillaModel->where('user_id', $userId)->where('ended_at IS NULL')->findAll();
         

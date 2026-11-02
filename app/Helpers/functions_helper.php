@@ -179,7 +179,7 @@ function restore_session_from_cookie(): bool {
             'username'   => $user['first_name'] . ' ' . $user['last_name'],
             'doc_type'   => $user['doc_type'] ?? null,
             'isLoggedIn' => true,
-            'avatar_image'  => has_avatar_file($rawAvatar) ? $rawAvatar : null,
+            'avatar_image'  => $rawAvatar,
             'avatar_color'  => $user['avatar_color'] ?? '#' . substr(md5($user['email']), 0, 6),
             'avatar_letter' => $user['avatar_letter'] ?? strtoupper(substr($user['first_name'], 0, 1)),
         ]);
@@ -202,7 +202,8 @@ function has_avatar_file(?string $filename): bool
     if ($cleanName === '' || $cleanName === '.' || $cleanName === '..') {
         return false;
     }
-    $path = FCPATH . 'uploads/avatars/' . $cleanName;
+    $basePath = defined('FCPATH') ? FCPATH : (realpath(__DIR__ . '/../../public') . DIRECTORY_SEPARATOR);
+    $path = $basePath . 'uploads/avatars/' . $cleanName;
     return is_file($path) && file_exists($path);
 }
 
