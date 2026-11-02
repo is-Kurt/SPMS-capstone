@@ -1659,9 +1659,11 @@ class Folder extends BaseController
                     if (empty($sCats[$catKey]) || !is_array($sCats[$catKey])) continue;
 
                     foreach ($sCats[$catKey] as $sIdx => $sRow) {
-                        $mfo = trim((string)($sRow['mfo'] ?? ($sRow['office_ppa'] ?? ($sRow['paps'] ?? ($sRow['mfo_title'] ?? '')))));
-                        $ind = trim((string)($sRow['indicators'] ?? ($sRow['success_indicators'] ?? ($sRow['expected_outputs'] ?? ($sRow['success_indicator'] ?? '')))));
-                        if ($mfo === '' && $ind === '') continue;
+                        // Skip completely empty rows (do not cascade if the whole row is empty)
+                        if (is_spms_row_empty($sRow)) continue;
+
+                        $mfo = clean_spms_text($sRow['mfo'] ?? ($sRow['office_ppa'] ?? ($sRow['paps'] ?? ($sRow['mfo_title'] ?? ''))));
+                        $ind = clean_spms_text($sRow['indicators'] ?? ($sRow['success_indicators'] ?? ($sRow['expected_outputs'] ?? ($sRow['success_indicator'] ?? ''))));
 
                         $dKey = md5(strtolower($mfo . '||' . $ind));
                         if (isset($seenKeys[$dKey])) continue;
@@ -1713,6 +1715,60 @@ class Folder extends BaseController
         if (!empty($cascadedCategories['core']) || !empty($cascadedCategories['strategic']) || !empty($cascadedCategories['support'])) {
             if (!isset($initialTabs[0]['formData']) || !is_array($initialTabs[0]['formData'])) {
                 $initialTabs[0]['formData'] = [];
+            }
+            // By default, add 1 empty row for any category where no input was cascaded
+            if (empty($cascadedCategories['core'])) {
+                $cascadedCategories['core'] = [
+                    [
+                        'row_id'          => 'row_core_1',
+                        'mfo'             => '',
+                        'indicators'      => '',
+                        'budget'          => '',
+                        'accountable'     => '',
+                        'accomplishments' => '',
+                        'q'               => '',
+                        't'               => '',
+                        'e'               => '',
+                        'remarks'         => '',
+                        'twg_comment'     => ''
+                    ]
+                ];
+            }
+            if (!$isTargetIperf) {
+                if (empty($cascadedCategories['strategic'])) {
+                    $cascadedCategories['strategic'] = [
+                        [
+                            'row_id'          => 'row_strat_1',
+                            'mfo'             => '',
+                            'indicators'      => '',
+                            'budget'          => '',
+                            'accountable'     => '',
+                            'accomplishments' => '',
+                            'q'               => '',
+                            't'               => '',
+                            'e'               => '',
+                            'remarks'         => '',
+                            'twg_comment'     => ''
+                        ]
+                    ];
+                }
+                if (empty($cascadedCategories['support'])) {
+                    $cascadedCategories['support'] = [
+                        [
+                            'row_id'          => 'row_supp_1',
+                            'mfo'             => '',
+                            'indicators'      => '',
+                            'budget'          => '',
+                            'accountable'     => '',
+                            'accomplishments' => '',
+                            'q'               => '',
+                            't'               => '',
+                            'e'               => '',
+                            'remarks'         => '',
+                            'twg_comment'     => ''
+                        ]
+                    ];
+                }
             }
             $initialTabs[0]['formData']['categories'] = $cascadedCategories;
             $initialTabs[0]['formData']['rubrics']    = $cascadedRubrics;
@@ -1791,9 +1847,11 @@ class Folder extends BaseController
                 if (empty($sCats[$catKey]) || !is_array($sCats[$catKey])) continue;
 
                 foreach ($sCats[$catKey] as $sIdx => $sRow) {
-                    $mfo = trim((string)($sRow['mfo'] ?? ($sRow['office_ppa'] ?? ($sRow['paps'] ?? ($sRow['mfo_title'] ?? '')))));
-                    $ind = trim((string)($sRow['indicators'] ?? ($sRow['success_indicators'] ?? ($sRow['expected_outputs'] ?? ($sRow['success_indicator'] ?? '')))));
-                    if ($mfo === '' && $ind === '') continue;
+                    // Skip completely empty rows (do not cascade if the whole row is empty)
+                    if (is_spms_row_empty($sRow)) continue;
+
+                    $mfo = clean_spms_text($sRow['mfo'] ?? ($sRow['office_ppa'] ?? ($sRow['paps'] ?? ($sRow['mfo_title'] ?? ''))));
+                    $ind = clean_spms_text($sRow['indicators'] ?? ($sRow['success_indicators'] ?? ($sRow['expected_outputs'] ?? ($sRow['success_indicator'] ?? ''))));
 
                     $destCat = $isTargetIperf ? 'core' : $catKey;
                     if (!isset($existingCats[$destCat]) || !is_array($existingCats[$destCat])) {
@@ -1802,17 +1860,14 @@ class Folder extends BaseController
 
                     // Remove empty placeholder template rows (e.g. from get_default_form_template) so cascaded targets start at row 1
                     $existingCats[$destCat] = array_values(array_filter($existingCats[$destCat], function($exRow) {
-                        $exMfo = trim((string)($exRow['mfo'] ?? ($exRow['office_ppa'] ?? ($exRow['paps'] ?? ($exRow['mfo_title'] ?? '')))));
-                        $exInd = trim((string)($exRow['indicators'] ?? ($exRow['success_indicators'] ?? ($exRow['expected_outputs'] ?? ($exRow['success_indicator'] ?? '')))));
-                        $exAcc = trim((string)($exRow['accomplishments'] ?? ''));
-                        return ($exMfo !== '' || $exInd !== '' || $exAcc !== '');
+                        return !is_spms_row_empty($exRow);
                     }));
 
                     // Check if already exists in subordinate's document
                     $alreadyExists = false;
                     foreach ($existingCats[$destCat] as $exRow) {
-                        $exMfo = trim((string)($exRow['mfo'] ?? ($exRow['office_ppa'] ?? ($exRow['paps'] ?? ($exRow['mfo_title'] ?? '')))));
-                        $exInd = trim((string)($exRow['indicators'] ?? ($exRow['success_indicators'] ?? ($exRow['expected_outputs'] ?? ($exRow['success_indicator'] ?? '')))));
+                        $exMfo = clean_spms_text($exRow['mfo'] ?? ($exRow['office_ppa'] ?? ($exRow['paps'] ?? ($exRow['mfo_title'] ?? ''))));
+                        $exInd = clean_spms_text($exRow['indicators'] ?? ($exRow['success_indicators'] ?? ($exRow['expected_outputs'] ?? ($exRow['success_indicator'] ?? ''))));
                         if (strcasecmp($exMfo, $mfo) === 0 && strcasecmp($exInd, $ind) === 0) {
                             $alreadyExists = true;
                             break;

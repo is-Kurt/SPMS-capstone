@@ -992,8 +992,7 @@
     // Default Seed Blueprint (Clean empty rows upon creation)
     const DEFAULT_BLUEPRINT = IS_DOC_DPCR ? {
         core: [
-            { row_id: "row_core_1", mfo: "", indicators: "", budget: "", accountable: "", accomplishments: "", q: "", t: "", e: "", remarks: "", std_5: "", std_4: "", std_3: "", std_2: "", std_1: "" },
-            { row_id: "row_core_2", mfo: "", indicators: "", budget: "", accountable: "", accomplishments: "", q: "", t: "", e: "", remarks: "", std_5: "", std_4: "", std_3: "", std_2: "", std_1: "" }
+            { row_id: "row_core_1", mfo: "", indicators: "", budget: "", accountable: "", accomplishments: "", q: "", t: "", e: "", remarks: "", std_5: "", std_4: "", std_3: "", std_2: "", std_1: "" }
         ],
         strategic: [
             { row_id: "row_strat_1", mfo: "", indicators: "", budget: "", accountable: "", accomplishments: "", q: "", t: "", e: "", remarks: "", std_5: "", std_4: "", std_3: "", std_2: "", std_1: "" }
@@ -1003,8 +1002,7 @@
         ]
     } : (IS_DOC_OPCR ? {
         core: [
-            { row_id: "row_core_1", mfo: "", indicators: "", budget: "", accountable: "", accomplishments: "", q: "", t: "", e: "", remarks: "" },
-            { row_id: "row_core_2", mfo: "", indicators: "", budget: "", accountable: "", accomplishments: "", q: "", t: "", e: "", remarks: "" }
+            { row_id: "row_core_1", mfo: "", indicators: "", budget: "", accountable: "", accomplishments: "", q: "", t: "", e: "", remarks: "" }
         ],
         strategic: [
             { row_id: "row_strat_1", mfo: "", indicators: "", budget: "", accountable: "", accomplishments: "", q: "", t: "", e: "", remarks: "" }
@@ -1029,6 +1027,35 @@
             { row_id: "row_supp_1", mfo: "", indicators: "", accomplishments: "", q: "", t: "", e: "", remarks: "" }
         ]
     }));
+
+    function cleanSpmsText(str) {
+        if (!str || typeof str !== 'string') return '';
+        return str
+            .replace(/&nbsp;/gi, ' ')
+            .replace(/<[^>]*>/g, ' ')
+            .replace(/[\s\u00a0\u200b]+/g, ' ')
+            .trim();
+    }
+
+    function isSpmsRowEmpty(row) {
+        if (!row || typeof row !== 'object') return true;
+        const mfo = cleanSpmsText(row.mfo || row.office_ppa || row.paps || row.mfo_title || '');
+        const ind = cleanSpmsText(row.indicators || row.success_indicators || row.expected_outputs || row.success_indicator || '');
+        const acc = cleanSpmsText(row.accomplishments || '');
+        const std5 = cleanSpmsText(row.std_5 || '');
+        const std4 = cleanSpmsText(row.std_4 || '');
+        const std3 = cleanSpmsText(row.std_3 || '');
+        const std2 = cleanSpmsText(row.std_2 || '');
+        const std1 = cleanSpmsText(row.std_1 || '');
+
+        if (!mfo && !ind && !acc && !std5 && !std4 && !std3 && !std2 && !std1) {
+            return true;
+        }
+        if (!mfo && !ind) {
+            return true;
+        }
+        return false;
+    }
 
     const CATEGORY_WEIGHTS = IS_DOC_IPERF ? {
         core: 1.00,
@@ -1808,15 +1835,15 @@
 
         // Populate category rows
         const hasRealCustomTargets = Boolean(data && data.categories && typeof data.categories === 'object' && (
-            (Array.isArray(data.categories.core) && data.categories.core.some(r => r && ((r.mfo && r.mfo.trim() !== '') || (r.indicators && r.indicators.trim() !== '')))) ||
-            (Array.isArray(data.categories.strategic) && data.categories.strategic.some(r => r && ((r.mfo && r.mfo.trim() !== '') || (r.indicators && r.indicators.trim() !== '')))) ||
-            (Array.isArray(data.categories.support) && data.categories.support.some(r => r && ((r.mfo && r.mfo.trim() !== '') || (r.indicators && r.indicators.trim() !== '')))) ||
+            (Array.isArray(data.categories.core) && data.categories.core.some(r => r && !isSpmsRowEmpty(r))) ||
+            (Array.isArray(data.categories.strategic) && data.categories.strategic.some(r => r && !isSpmsRowEmpty(r))) ||
+            (Array.isArray(data.categories.support) && data.categories.support.some(r => r && !isSpmsRowEmpty(r))) ||
             window._userExplicitlyDeletedRow
         ));
 
-        let cats = data.categories;
+        let cats = data && data.categories ? JSON.parse(JSON.stringify(data.categories)) : null;
         if (!hasRealCustomTargets && cascadedTargets && cascadedTargets.hasTargets) {
-            cats = cascadedTargets.categories;
+            cats = JSON.parse(JSON.stringify(cascadedTargets.categories));
             if (cascadedTargets.rubrics && Object.keys(cascadedTargets.rubrics).length > 0) {
                 window.digitalRubricsData = Object.assign({}, cascadedTargets.rubrics, window.digitalRubricsData || {});
                 if (tabs[0]?.formData) tabs[0].formData.rubrics = window.digitalRubricsData;
@@ -1833,13 +1860,14 @@
                 if (!Array.isArray(cats[cat])) cats[cat] = [];
                 
                 incomingRows.forEach(inRow => {
-                    const inMfo = (inRow.mfo || '').trim().toLowerCase();
-                    const inInd = (inRow.indicators || '').trim().toLowerCase();
+                    if (isSpmsRowEmpty(inRow)) return;
+                    const inMfo = cleanSpmsText(inRow.mfo || '').toLowerCase();
+                    const inInd = cleanSpmsText(inRow.indicators || '').toLowerCase();
                     if (!inMfo && !inInd) return;
 
                     const alreadyExists = cats[cat].some(existingRow => {
-                        const exMfo = (existingRow.mfo || '').trim().toLowerCase();
-                        const exInd = (existingRow.indicators || '').trim().toLowerCase();
+                        const exMfo = cleanSpmsText(existingRow.mfo || '').toLowerCase();
+                        const exInd = cleanSpmsText(existingRow.indicators || '').toLowerCase();
                         return (exMfo === inMfo && exInd === inInd);
                     });
 
@@ -1863,42 +1891,48 @@
                 }
             }
         } else if (!cats) {
-            cats = DEFAULT_BLUEPRINT;
+            cats = JSON.parse(JSON.stringify(DEFAULT_BLUEPRINT));
         }
 
         // Strip any abandoned/empty placeholder rows (e.g. row_core_1 from initial template) if real targets exist
         ['core', 'strategic', 'support'].forEach(cat => {
             if (Array.isArray(cats[cat]) && cats[cat].length > 1) {
-                const hasNonEmpty = cats[cat].some(r => r && ((r.mfo && r.mfo.trim() !== '') || (r.indicators && r.indicators.trim() !== '')));
+                const hasNonEmpty = cats[cat].some(r => r && !isSpmsRowEmpty(r));
                 if (hasNonEmpty) {
-                    cats[cat] = cats[cat].filter(r => r && (
-                        (r.mfo && r.mfo.trim() !== '') || 
-                        (r.indicators && r.indicators.trim() !== '') || 
-                        (r.accomplishments && r.accomplishments.trim() !== '')
-                    ));
+                    cats[cat] = cats[cat].filter(r => r && !isSpmsRowEmpty(r));
                 }
             }
         });
-        if (tabs[0]?.formData) {
-            tabs[0].formData.categories = cats;
-        }
 
-        const hasCustomCategories = Boolean(data && data.categories && typeof data.categories === 'object');
-        const coreRows = Array.isArray(cats.core) 
-            ? (hasCustomCategories ? cats.core : (cats.core.length > 0 ? cats.core : (DEFAULT_BLUEPRINT.core || [])))
-            : (DEFAULT_BLUEPRINT.core || []);
-        coreRows.forEach(row => addTableRow('core', row));
+        // By default, add 1 row if no input was cascaded (or if category is empty)
+        const isCoreEmpty = !Array.isArray(cats.core) || cats.core.length === 0;
+        if (isCoreEmpty && !window._userExplicitlyDeletedRow) {
+            cats.core = JSON.parse(JSON.stringify(DEFAULT_BLUEPRINT.core || []));
+        } else if (!Array.isArray(cats.core)) {
+            cats.core = [];
+        }
+        cats.core.forEach(row => addTableRow('core', row));
 
         if (!isIperf) {
-            const stratRows = Array.isArray(cats.strategic)
-                ? (hasCustomCategories ? cats.strategic : (cats.strategic.length > 0 ? cats.strategic : (DEFAULT_BLUEPRINT.strategic || [])))
-                : (DEFAULT_BLUEPRINT.strategic || []);
-            stratRows.forEach(row => addTableRow('strategic', row));
+            const isStratEmpty = !Array.isArray(cats.strategic) || cats.strategic.length === 0;
+            if (isStratEmpty && !window._userExplicitlyDeletedRow) {
+                cats.strategic = JSON.parse(JSON.stringify(DEFAULT_BLUEPRINT.strategic || []));
+            } else if (!Array.isArray(cats.strategic)) {
+                cats.strategic = [];
+            }
+            cats.strategic.forEach(row => addTableRow('strategic', row));
 
-            const suppRows = Array.isArray(cats.support)
-                ? (hasCustomCategories ? cats.support : (cats.support.length > 0 ? cats.support : (DEFAULT_BLUEPRINT.support || [])))
-                : (DEFAULT_BLUEPRINT.support || []);
-            suppRows.forEach(row => addTableRow('support', row));
+            const isSuppEmpty = !Array.isArray(cats.support) || cats.support.length === 0;
+            if (isSuppEmpty && !window._userExplicitlyDeletedRow) {
+                cats.support = JSON.parse(JSON.stringify(DEFAULT_BLUEPRINT.support || []));
+            } else if (!Array.isArray(cats.support)) {
+                cats.support = [];
+            }
+            cats.support.forEach(row => addTableRow('support', row));
+        }
+
+        if (tabs[0]?.formData) {
+            tabs[0].formData.categories = cats;
         }
 
         if (tabs[0] && (!tabs[0].formData || !tabs[0].formData.categories) && typeof window.syncSpmsActiveTab === 'function') {
@@ -2722,8 +2756,8 @@
                     tr.innerHTML = `
                         <td colspan="${colspan}">
                             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
-                                <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: #64748b; font-weight: 500;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px; color: #94a3b8;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <div class="spms-empty-cat-msg">
+                                    <svg class="spms-empty-cat-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                     </svg>
                                     <span>No deliverables in ${escapeHtml(catTitle)} yet.</span>

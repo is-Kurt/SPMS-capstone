@@ -615,6 +615,38 @@
         padding: 22px 16px;
         text-align: center;
     }
+    .spms-empty-cat-msg {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11.5px;
+        color: #64748b;
+        font-weight: 500;
+    }
+    .spms-empty-cat-icon {
+        width: 16px;
+        height: 16px;
+        color: #94a3b8;
+    }
+    html.dark .spms-empty-category-row td {
+        background-color: #18181b !important;
+        border: 1px dashed #3f3f46 !important;
+    }
+    html.dark .spms-empty-cat-msg {
+        color: #a1a1aa !important;
+    }
+    html.dark .spms-empty-cat-icon {
+        color: #71717a !important;
+    }
+    html.dark .spms-btn-add-empty-row {
+        background-color: #059669 !important;
+        border-color: #047857 !important;
+        color: #ffffff !important;
+    }
+    html.dark .spms-btn-add-empty-row:hover {
+        background-color: #047857 !important;
+        color: #ffffff !important;
+    }
     .basis-view-select {
         font-family: inherit;
         font-size: 10px;
@@ -1118,6 +1150,16 @@
         html.dark .spms-sheet-container [style*="background: #e2e8f0"],
         html.dark .spms-sheet-container .spms-category-header {
             background: #27272a !important;
+        }
+        html.dark .spms-empty-category-row td {
+            background-color: #18181b !important;
+            border: 1px dashed #3f3f46 !important;
+        }
+        html.dark .spms-empty-category-row .spms-empty-cat-msg {
+            color: #a1a1aa !important;
+        }
+        html.dark .spms-empty-category-row .spms-empty-cat-icon {
+            color: #71717a !important;
         }
         html.dark #basis-printable-sheet,
         html.dark #basis-rubrics-sheet {

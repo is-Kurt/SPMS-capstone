@@ -198,6 +198,44 @@ function restore_session_from_cookie(): bool {
  * @return bool True if document was converted/updated, False if no change needed or invalid.
  */
 /**
+ * Cleans text by stripping HTML tags, decoding entities, and trimming all unicode whitespace.
+ */
+function clean_spms_text($val): string
+{
+    if ($val === null) return '';
+    $s = html_entity_decode((string)$val, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $s = strip_tags($s);
+    $s = preg_replace('/[\s\x{00a0}\x{200b}]+/u', ' ', $s);
+    return trim($s);
+}
+
+/**
+ * Checks if a document table row is completely empty (no targets, indicators, or substantive entries).
+ * Completely empty rows must never be cascaded to subordinates.
+ */
+function is_spms_row_empty(?array $row): bool
+{
+    if (empty($row) || !is_array($row)) return true;
+
+    $mfo = clean_spms_text($row['mfo'] ?? ($row['office_ppa'] ?? ($row['paps'] ?? ($row['mfo_title'] ?? ''))));
+    $ind = clean_spms_text($row['indicators'] ?? ($row['success_indicators'] ?? ($row['expected_outputs'] ?? ($row['success_indicator'] ?? ''))));
+    $acc = clean_spms_text($row['accomplishments'] ?? '');
+    $std5 = clean_spms_text($row['std_5'] ?? '');
+    $std4 = clean_spms_text($row['std_4'] ?? '');
+    $std3 = clean_spms_text($row['std_3'] ?? '');
+    $std2 = clean_spms_text($row['std_2'] ?? '');
+    $std1 = clean_spms_text($row['std_1'] ?? '');
+
+    // In SPMS, an active deliverable row must have at least an MFO or an indicator.
+    // If both MFO and Indicators are blank, the row cannot be cascaded as a deliverable.
+    if ($mfo === '' && $ind === '') {
+        return true;
+    }
+
+    return false;
+}
+
+/**
  * Returns the official standard form blueprint / tabs JSON for a given doc_type
  * (OPCR, DPCR, IPCR, IPERF) without requiring a database query.
  */
@@ -214,6 +252,48 @@ function get_default_form_template(string $docType): array
     $title = $officialTitles[$docType] ?? $docType;
     $lower = strtolower($docType);
 
+    $defaultCoreRow = [
+        'row_id'          => 'row_core_1',
+        'mfo'             => '',
+        'indicators'      => '',
+        'budget'          => '',
+        'accountable'     => '',
+        'accomplishments' => '',
+        'q'               => '',
+        't'               => '',
+        'e'               => '',
+        'remarks'         => '',
+        'twg_comment'     => ''
+    ];
+
+    $defaultStratRow = [
+        'row_id'          => 'row_strat_1',
+        'mfo'             => '',
+        'indicators'      => '',
+        'budget'          => '',
+        'accountable'     => '',
+        'accomplishments' => '',
+        'q'               => '',
+        't'               => '',
+        'e'               => '',
+        'remarks'         => '',
+        'twg_comment'     => ''
+    ];
+
+    $defaultSuppRow = [
+        'row_id'          => 'row_supp_1',
+        'mfo'             => '',
+        'indicators'      => '',
+        'budget'          => '',
+        'accountable'     => '',
+        'accomplishments' => '',
+        'q'               => '',
+        't'               => '',
+        'e'               => '',
+        'remarks'         => '',
+        'twg_comment'     => ''
+    ];
+
     return [
         [
             'id'       => 'tab-target',
@@ -222,23 +302,9 @@ function get_default_form_template(string $docType): array
                 'doc_type'   => $lower,
                 'title'      => $title,
                 'categories' => [
-                    'core' => [
-                        [
-                            'row_id'          => 'row_core_1',
-                            'mfo'             => '',
-                            'indicators'      => '',
-                            'budget'          => '',
-                            'accountable'     => '',
-                            'accomplishments' => '',
-                            'q'               => '',
-                            't'               => '',
-                            'e'               => '',
-                            'remarks'         => '',
-                            'twg_comment'     => ''
-                        ]
-                    ],
-                    'strategic' => [],
-                    'support'   => []
+                    'core'      => [$defaultCoreRow],
+                    'strategic' => ($docType === 'IPERF') ? [] : [$defaultStratRow],
+                    'support'   => ($docType === 'IPERF') ? [] : [$defaultSuppRow],
                 ]
             ],
             'content'  => ''
@@ -309,7 +375,7 @@ function convert_document_paper_type(string $docId, string $targetPaperType): bo
                 foreach (['core', 'strategic', 'support'] as $c) {
                     if (!empty($t['formData']['categories'][$c])) {
                         foreach ($t['formData']['categories'][$c] as $r) {
-                            if (!empty($r['mfo']) || !empty($r['indicators']) || !empty($r['accomplishments'])) {
+                            if (!is_spms_row_empty($r)) {
                                 $hasExistingContent = true;
                                 break 3;
                             }

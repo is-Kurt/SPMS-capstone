@@ -457,11 +457,11 @@ class Document extends BaseController
                 if (empty($sCategories[$catKey]) || !is_array($sCategories[$catKey])) continue;
 
                 foreach ($sCategories[$catKey] as $sRowIdx => $sRow) {
-                    $mfo = trim((string)($sRow['mfo'] ?? ($sRow['office_ppa'] ?? ($sRow['paps'] ?? ($sRow['mfo_title'] ?? '')))));
-                    $ind = trim((string)($sRow['indicators'] ?? ($sRow['success_indicators'] ?? ($sRow['expected_outputs'] ?? ($sRow['success_indicator'] ?? '')))));
+                    // Skip completely empty rows (do not cascade if the whole row is empty)
+                    if (is_spms_row_empty($sRow)) continue;
 
-                    // Skip completely empty placeholder rows
-                    if ($mfo === '' && $ind === '') continue;
+                    $mfo = clean_spms_text($sRow['mfo'] ?? ($sRow['office_ppa'] ?? ($sRow['paps'] ?? ($sRow['mfo_title'] ?? ''))));
+                    $ind = clean_spms_text($sRow['indicators'] ?? ($sRow['success_indicators'] ?? ($sRow['expected_outputs'] ?? ($sRow['success_indicator'] ?? ''))));
 
                     // Deduplicate identical cascaded targets across supervisors if any
                     $dedupKey = md5(strtolower($mfo . '||' . $ind));
