@@ -91,6 +91,12 @@ class Dashboard extends BaseController
                 'is_ongoing' => false,
                 'label'      => 'Upcoming',
             ],
+            'phase_mid' => [
+                'timeframe'  => 'Ongoing Execution',
+                'status'     => 'upcoming',
+                'is_ongoing' => false,
+                'label'      => 'Upcoming',
+            ],
             'phase2' => [
                 'timeframe'  => 'Schedule Not Set',
                 'status'     => 'upcoming',
@@ -157,7 +163,32 @@ class Dashboard extends BaseController
                 $p1Label     = 'Ongoing';
             }
 
-            // Phase 2 (Accomplishment Report Phase) Status
+            // Phase 2 (Performance Monitoring & Coaching Phase - Stage 2) Status
+            $pMidTimeframe = ($tEndDate && $eStartDate) ? $formatTimeframe($tEndDate, $eStartDate) : 'Ongoing Execution';
+            $pMidStatus    = 'upcoming';
+            $pMidIsOngoing = false;
+            $pMidLabel     = 'Upcoming';
+
+            if ($isArchived) {
+                $pMidStatus = 'closed';
+                $pMidLabel  = 'Closed';
+            } elseif (!empty($eEndDate) && $nowStr > $eEndDate) {
+                $pMidStatus = 'completed';
+                $pMidLabel  = 'Completed';
+            } elseif (!empty($eStartDate) && $nowStr >= $eStartDate) {
+                $pMidStatus = 'completed';
+                $pMidLabel  = 'Completed';
+            } elseif (!empty($tEndDate) && $nowStr > $tEndDate) {
+                $pMidStatus    = 'ongoing';
+                $pMidIsOngoing = true;
+                $pMidLabel     = 'Active Execution';
+            } elseif (!empty($tStartDate) && $nowStr >= $tStartDate) {
+                $pMidStatus    = 'ongoing';
+                $pMidIsOngoing = true;
+                $pMidLabel     = 'Active Execution';
+            }
+
+            // Phase 3 (Accomplishment Report Phase - Stage 3) Status
             $p2Timeframe = $formatTimeframe($eStartDate, $eEndDate);
             $p2Status    = 'upcoming';
             $p2IsOngoing = false;
@@ -188,6 +219,12 @@ class Dashboard extends BaseController
                     'label'      => $p1Label,
                     'start'      => $tStartDate,
                     'end'        => $tEndDate,
+                ],
+                'phase_mid' => [
+                    'timeframe'  => $pMidTimeframe,
+                    'status'     => $pMidStatus,
+                    'is_ongoing' => $pMidIsOngoing,
+                    'label'      => $pMidLabel,
                 ],
                 'phase2' => [
                     'timeframe'  => $p2Timeframe,
@@ -274,16 +311,24 @@ class Dashboard extends BaseController
         $targetPendingCount    = 0;
         $targetDraftCount      = 0;
         $targetReturnedCount   = 0;
+        $targetUnstartedCount  = 0;
 
         $evalCompletedCount    = 0;
         $evalActionCount       = 0; // to evaluate, evaluated
         $evalSubmittedCount    = 0;
         $evalDraftCount        = 0; // draft, pending target phase
         $evalReturnedCount     = 0; // reevaluate, twg_disapproved
+        $evalUnstartedCount    = 0;
 
         foreach ($cycleFolders as $f) {
             if (!empty($f['department'])) {
                 $collegeDepartments[$f['department']] = $f['department'];
+            }
+
+            $isUnstarted = ($f['folder_status'] ?? '') === 'unstarted' || empty($f['folder_id']);
+            if ($isUnstarted) {
+                $targetUnstartedCount++;
+                $evalUnstartedCount++;
             }
 
             if ($f['target_state'] === 'approved') {
@@ -754,6 +799,7 @@ class Dashboard extends BaseController
         }
         ksort($filterPositions);
         $employmentStatuses = (new EmploymentStatusModel())->orderBy('name', 'ASC')->findAll();
+        $cascadedPersonnelCount = max(0, $totalPersonnel - $targetUnstartedCount);
 
         $mainData = [
             'sysRole'              => $sysRole,
@@ -793,7 +839,15 @@ class Dashboard extends BaseController
                     'pending'   => $targetPendingCount,
                     'submitted' => $targetPendingCount,
                     'draft'     => $targetDraftCount,
+                    'unstarted' => $targetUnstartedCount,
+                    'cascaded'  => $cascadedPersonnelCount,
                     'returned'  => $targetReturnedCount
+                ],
+                'monitoring' => [
+                    'mov_count'     => $totalMovCount,
+                    'active_folders'=> $cascadedPersonnelCount,
+                    'cascaded'      => $cascadedPersonnelCount,
+                    'unstarted'     => $targetUnstartedCount,
                 ],
                 'evaluation' => [
                     'completed' => $evalCompletedCount,
@@ -801,23 +855,29 @@ class Dashboard extends BaseController
                     'action'    => $evalActionCount,
                     'submitted' => $evalSubmittedCount,
                     'draft'     => $evalDraftCount,
+                    'unstarted' => $evalUnstartedCount,
+                    'cascaded'  => $cascadedPersonnelCount,
                     'returned'  => $evalReturnedCount,
                     'pending'   => $evalDraftCount
                 ],
                 // Civil Service Commission (CSC MC No. 6, s. 2012) 4-Stage SPMS Lifecycle
                 'stage1' => [
-                    'name'     => 'Performance Planning & Commitment',
-                    'sub'      => 'Target Setting Phase',
-                    'approved' => $targetApprovedCount,
-                    'pending'  => $targetPendingCount,
-                    'draft'    => $targetDraftCount,
-                    'returned' => $targetReturnedCount,
+                    'name'      => 'Performance Planning & Commitment',
+                    'sub'       => 'Target Setting Phase',
+                    'approved'  => $targetApprovedCount,
+                    'pending'   => $targetPendingCount,
+                    'draft'     => $targetDraftCount,
+                    'unstarted' => $targetUnstartedCount,
+                    'cascaded'  => $cascadedPersonnelCount,
+                    'returned'  => $targetReturnedCount,
                 ],
                 'stage2' => [
                     'name'             => 'Performance Monitoring & Coaching',
                     'sub'              => 'Execution & Evidence Phase',
                     'active_execution' => $targetApprovedCount,
+                    'active_folders'   => $cascadedPersonnelCount,
                     'mov_count'        => $totalMovCount,
+                    'unstarted'        => $targetUnstartedCount,
                     'coaching_notes'   => $targetReturnedCount + $evalReturnedCount,
                     'execution_rate'   => $totalPersonnel > 0 ? round(($targetApprovedCount / $totalPersonnel) * 100) : 0,
                 ],
@@ -828,6 +888,8 @@ class Dashboard extends BaseController
                     'evaluating' => $evalActionCount,
                     'submitted'  => $evalSubmittedCount,
                     'draft'      => $evalDraftCount,
+                    'unstarted'  => $evalUnstartedCount,
+                    'cascaded'   => $cascadedPersonnelCount,
                     'returned'   => $evalReturnedCount,
                 ],
                 'stage4' => [

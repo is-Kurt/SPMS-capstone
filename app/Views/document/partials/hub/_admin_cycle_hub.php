@@ -18,7 +18,7 @@
     $eStartDate = !empty($hubEvalStart)   ? strtotime($hubEvalStart)   : null;
     $eEndDate   = !empty($hubEvalEnd)     ? strtotime($hubEvalEnd)     : null;
 
-    // Dynamic Institutional Cycle Phase Determination
+    // Dynamic Institutional Cycle Phase Determination (CSC SPMS 4-Stage Lifecycle)
     if (!empty($isArchived)) {
         $cyclePhase = 'archived';
         $phaseBadgeLabel = 'ARCHIVED & FROZEN';
@@ -45,17 +45,17 @@
         $bannerIconClass = 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30';
     } elseif (!empty($hubTargetEnd) && $nowStr > $hubTargetEnd) {
         $cyclePhase = 'execution';
-        $phaseBadgeLabel = 'PERFORMANCE PERIOD / MONITORING';
+        $phaseBadgeLabel = 'MONITORING & COACHING ACTIVE';
         $statusPillModifier = 'is-info';
         $adminStepIndex = 2;
-        $bannerTitle = 'Performance Period & Execution Phase';
-        $bannerDesc = 'The target-setting window has concluded and approved commitments are locked. Ratees across departments are executing deliverables and progressively compiling actual accomplishments and Means of Verification (MOVs) prior to the formal evaluation window.';
+        $bannerTitle = 'Performance Monitoring & Coaching Phase';
+        $bannerDesc = 'The target-setting window has concluded and approved commitments are locked. Ratees across departments are executing deliverables, logging actual accomplishments, and progressively compiling Means of Verification (MOVs) with ongoing supervisor coaching ahead of the formal evaluation window.';
         $bannerIconClass = 'bg-sky-500/20 text-sky-700 dark:text-sky-400 border border-sky-500/30';
     } elseif (!empty($hubTargetStart) && $nowStr >= $hubTargetStart) {
         $cyclePhase = 'target';
         $phaseBadgeLabel = 'TARGET PHASE ACTIVE';
         $statusPillModifier = ''; // emerald active
-        $adminStepIndex = 2;
+        $adminStepIndex = 1;
         $bannerTitle = 'Target Formulation Window is Active';
         $bannerDesc = 'Institutional target formulation is currently underway. Vice Presidents, Deans, and Department Heads are formulating and submitting OPCR and DPCR performance commitments. Ensure all executive targets are reviewed and approved so subordinates have approved bases.';
         $bannerIconClass = 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30';
@@ -136,51 +136,25 @@
             <span class="spms-hub-tracker-label" style="margin: 0;">INSTITUTIONAL CYCLE PROGRESS</span>
             <div class="inline-flex items-center gap-2 tabular-nums">
                 <span class="text-[10.5px] sm:text-[11px] font-extrabold uppercase tracking-[0.08em] text-slate-500 dark:text-zinc-400">University Scope</span>
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700">
-                    <span><?= (int)($cycleStats['total'] ?? 0) ?> Cascaded Units</span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700" title="Directly cascaded units vs campus-wide workforce">
+                    <span><?= (int)($cycleStats['total'] ?? 0) ?> Cascaded</span>
+                    <span class="text-slate-400 dark:text-zinc-500">/</span>
+                    <span><?= (int)($cycleStats['total_headcount'] ?? 0) ?> Campus Headcount</span>
                 </span>
             </div>
         </div>
 
         <div class="spms-hub-stepper-row">
-            <!-- Step 1: Cycle Release -->
-            <div style="display: flex; align-items: center; flex-shrink: 0;">
+            <!-- Step 1: Target Setting -->
+            <div style="display: flex; align-items: center; flex-shrink: 0;" title="Stage 1: Performance Planning &amp; Commitment">
                 <?php if ($adminStepIndex === 1): ?>
                     <div class="spms-hub-circle-active">
                         <div class="spms-hub-circle-active-dot"></div>
                     </div>
-                    <span class="spms-hub-step-text-active">Cycle Release</span>
-                <?php else: ?>
-                    <div class="spms-hub-circle-completed">
-                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                    </div>
-                    <span class="spms-hub-step-text-active">Cycle Release</span>
-                <?php endif; ?>
-            </div>
-
-            <!-- Arrow 1 -> 2 -->
-            <?php if ($adminStepIndex === 1): ?>
-                <svg class="spms-hub-stepper-arrow" viewBox="0 0 60 12" fill="none">
-                    <line x1="0" y1="6" x2="48" y2="6" stroke="#f59e0b" stroke-width="2" stroke-dasharray="3 3" />
-                    <polygon points="46,2 56,6 46,10" fill="#f59e0b" />
-                </svg>
-            <?php else: ?>
-                <svg class="spms-hub-stepper-arrow" viewBox="0 0 60 12" fill="none">
-                    <line x1="0" y1="6" x2="48" y2="6" stroke="#10b981" stroke-width="2" />
-                    <polygon points="46,2 56,6 46,10" fill="#10b981" />
-                </svg>
-            <?php endif; ?>
-
-            <!-- Step 2: Target Formulation -->
-            <div style="display: flex; align-items: center; flex-shrink: 0;">
-                <?php if ($adminStepIndex === 2): ?>
-                    <div class="spms-hub-circle-active">
-                        <div class="spms-hub-circle-active-dot"></div>
-                    </div>
                     <span class="spms-hub-step-text-active">Target Setting</span>
-                <?php elseif ($adminStepIndex > 2): ?>
+                <?php elseif ($adminStepIndex > 1): ?>
                     <div class="spms-hub-circle-completed">
-                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                     </div>
                     <span class="spms-hub-step-text-active">Target Setting</span>
                 <?php else: ?>
@@ -189,16 +163,16 @@
                 <?php endif; ?>
             </div>
 
-            <!-- Arrow 2 -> 3 -->
-            <?php if ($adminStepIndex > 2): ?>
+            <!-- Arrow 1 -> 2 -->
+            <?php if ($adminStepIndex >= 2): ?>
                 <svg class="spms-hub-stepper-arrow" viewBox="0 0 60 12" fill="none">
                     <line x1="0" y1="6" x2="48" y2="6" stroke="#10b981" stroke-width="2" />
                     <polygon points="46,2 56,6 46,10" fill="#10b981" />
                 </svg>
-            <?php elseif ($adminStepIndex === 2): ?>
+            <?php elseif ($adminStepIndex === 1): ?>
                 <svg class="spms-hub-stepper-arrow" viewBox="0 0 60 12" fill="none">
-                    <line x1="0" y1="6" x2="48" y2="6" stroke="<?= $cyclePhase === 'execution' ? '#0ea5e9' : '#f59e0b' ?>" stroke-width="2" stroke-dasharray="3 3" />
-                    <polygon points="46,2 56,6 46,10" fill="<?= $cyclePhase === 'execution' ? '#0ea5e9' : '#f59e0b' ?>" />
+                    <line x1="0" y1="6" x2="48" y2="6" stroke="#f59e0b" stroke-width="2" stroke-dasharray="3 3" />
+                    <polygon points="46,2 56,6 46,10" fill="#f59e0b" />
                 </svg>
             <?php else: ?>
                 <svg class="spms-hub-stepper-arrow text-zinc-300 dark:text-[#145235]" viewBox="0 0 60 12" fill="none">
@@ -207,8 +181,44 @@
                 </svg>
             <?php endif; ?>
 
-            <!-- Step 3: Performance Evaluation -->
-            <div style="display: flex; align-items: center; flex-shrink: 0;">
+            <!-- Step 2: Monitoring -->
+            <div style="display: flex; align-items: center; flex-shrink: 0;" title="Stage 2: Performance Monitoring &amp; Coaching">
+                <?php if ($adminStepIndex === 2): ?>
+                    <div class="spms-hub-circle-active">
+                        <div class="spms-hub-circle-active-dot"></div>
+                    </div>
+                    <span class="spms-hub-step-text-active">Monitoring</span>
+                <?php elseif ($adminStepIndex > 2): ?>
+                    <div class="spms-hub-circle-completed">
+                        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <span class="spms-hub-step-text-active">Monitoring</span>
+                <?php else: ?>
+                    <div class="spms-hub-circle-inactive"></div>
+                    <span class="spms-hub-step-text-inactive">Monitoring</span>
+                <?php endif; ?>
+            </div>
+
+            <!-- Arrow 2 -> 3 -->
+            <?php if ($adminStepIndex >= 3): ?>
+                <svg class="spms-hub-stepper-arrow" viewBox="0 0 60 12" fill="none">
+                    <line x1="0" y1="6" x2="48" y2="6" stroke="#10b981" stroke-width="2" />
+                    <polygon points="46,2 56,6 46,10" fill="#10b981" />
+                </svg>
+            <?php elseif ($adminStepIndex === 2): ?>
+                <svg class="spms-hub-stepper-arrow" viewBox="0 0 60 12" fill="none">
+                    <line x1="0" y1="6" x2="48" y2="6" stroke="#f59e0b" stroke-width="2" stroke-dasharray="3 3" />
+                    <polygon points="46,2 56,6 46,10" fill="#f59e0b" />
+                </svg>
+            <?php else: ?>
+                <svg class="spms-hub-stepper-arrow text-zinc-300 dark:text-[#145235]" viewBox="0 0 60 12" fill="none">
+                    <line x1="0" y1="6" x2="48" y2="6" stroke="currentColor" stroke-width="1.5" />
+                    <polygon points="46,2 56,6 46,10" fill="currentColor" />
+                </svg>
+            <?php endif; ?>
+
+            <!-- Step 3: Evaluation -->
+            <div style="display: flex; align-items: center; flex-shrink: 0;" title="Stage 3: Review &amp; Evaluation">
                 <?php if ($adminStepIndex === 3): ?>
                     <div class="spms-hub-circle-active">
                         <div class="spms-hub-circle-active-dot"></div>
@@ -216,7 +226,7 @@
                     <span class="spms-hub-step-text-active">Evaluation</span>
                 <?php elseif ($adminStepIndex > 3): ?>
                     <div class="spms-hub-circle-completed">
-                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                     </div>
                     <span class="spms-hub-step-text-active">Evaluation</span>
                 <?php else: ?>
@@ -226,7 +236,7 @@
             </div>
 
             <!-- Arrow 3 -> 4 -->
-            <?php if ($adminStepIndex > 3): ?>
+            <?php if ($adminStepIndex >= 4): ?>
                 <svg class="spms-hub-stepper-arrow" viewBox="0 0 60 12" fill="none">
                     <line x1="0" y1="6" x2="48" y2="6" stroke="#10b981" stroke-width="2" />
                     <polygon points="46,2 56,6 46,10" fill="#10b981" />
@@ -243,21 +253,21 @@
                 </svg>
             <?php endif; ?>
 
-            <!-- Step 4: Final Ratings & Archival -->
-            <div style="display: flex; align-items: center; flex-shrink: 0;">
+            <!-- Step 4: Calibration / Archival -->
+            <div style="display: flex; align-items: center; flex-shrink: 0;" title="Stage 4: Ratings Calibration &amp; Archival">
                 <?php if ($adminStepIndex === 4 && $isArchived): ?>
                     <div class="spms-hub-circle-completed">
-                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                     </div>
-                    <span class="spms-hub-step-text-active">Final Ratings &amp; Archival</span>
+                    <span class="spms-hub-step-text-active">Archival</span>
                 <?php elseif ($adminStepIndex === 4): ?>
                     <div class="spms-hub-circle-active">
                         <div class="spms-hub-circle-active-dot"></div>
                     </div>
-                    <span class="spms-hub-step-text-active">Final Ratings &amp; Archival</span>
+                    <span class="spms-hub-step-text-active">Calibration</span>
                 <?php else: ?>
                     <div class="spms-hub-circle-inactive"></div>
-                    <span class="spms-hub-step-text-inactive">Final Ratings &amp; Archival</span>
+                    <span class="spms-hub-step-text-inactive">Calibration</span>
                 <?php endif; ?>
             </div>
         </div>
@@ -292,7 +302,7 @@
 
     <!-- 4 STAT TILES (INSTITUTIONAL METRICS) -->
     <div class="spms-hub-stat-grid spms-hub-stat-grid-4">
-        <!-- 1. Target Window -->
+        <!-- 1. Target Setting Window -->
         <div class="spms-hub-stat-tile">
             <div>
                 <div class="spms-hub-tile-label">Target Setting Window</div>
@@ -320,34 +330,34 @@
             </div>
         </div>
 
-        <!-- 3. Cascaded Units Coverage -->
+        <!-- 3. Tier 1: Executive Cascade (Direct Subordinates) -->
         <div class="spms-hub-stat-tile">
             <div>
-                <div class="spms-hub-tile-label">Institutional Units</div>
+                <div class="spms-hub-tile-label">Executive Tier (Cascaded)</div>
                 <div class="spms-hub-tile-value">
-                    <?= (int)($cycleStats['total'] ?? 0) ?> Cascaded Folders
+                    <?= (int)($cycleStats['target_approved'] ?? 0) ?> / <?= (int)($cycleStats['total'] ?? 0) ?> Approved
                 </div>
             </div>
             <div>
                 <div class="spms-hub-window-pill">
                     <span class="w-1.5 h-1.5 rounded-full <?= ($cycleStats['target_pct'] ?? 0) >= 100 ? 'bg-emerald-500' : 'bg-amber-500' ?> inline-block"></span>
-                    <span><?= (int)($cycleStats['target_pct'] ?? 0) ?>% TARGETS APPROVED</span>
+                    <span><?= (int)($cycleStats['target_pct'] ?? 0) ?>% OF CASCADED</span>
                 </div>
             </div>
         </div>
 
-        <!-- 4. Evaluation Compliance -->
+        <!-- 4. Tier 2: Campus-Wide Rollout (Workforce Coverage) -->
         <div class="spms-hub-stat-tile">
             <div>
-                <div class="spms-hub-tile-label">Evaluation Submissions</div>
+                <div class="spms-hub-tile-label">Campus-Wide Rollout</div>
                 <div class="spms-hub-tile-value">
-                    <?= (int)(($cycleStats['eval_submitted'] ?? 0) + ($cycleStats['eval_approved'] ?? 0)) ?> / <?= (int)($cycleStats['total'] ?? 0) ?> Submitted
+                    <?= (int)($cycleStats['total'] ?? 0) ?> of <?= (int)($cycleStats['total_headcount'] ?? 0) ?> Personnel
                 </div>
             </div>
             <div>
                 <div class="spms-hub-window-pill">
-                    <span class="w-1.5 h-1.5 rounded-full <?= ($cycleStats['eval_pct'] ?? 0) >= 100 ? 'bg-emerald-500' : 'bg-sky-500' ?> inline-block"></span>
-                    <span><?= (int)($cycleStats['eval_pct'] ?? 0) ?>% RATINGS COMPLETED</span>
+                    <span class="w-1.5 h-1.5 rounded-full <?= ($cycleStats['coverage_pct'] ?? 0) >= 100 ? 'bg-emerald-500' : 'bg-sky-500' ?> inline-block"></span>
+                    <span><?= (float)($cycleStats['coverage_pct'] ?? 0) ?>% REACHED • <?= (int)($cycleStats['pending_cascade'] ?? 0) ?> PENDING</span>
                 </div>
             </div>
         </div>

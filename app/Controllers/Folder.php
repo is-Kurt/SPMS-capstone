@@ -703,8 +703,24 @@ class Folder extends BaseController
                 }
             }
 
+            $db = \Config\Database::connect();
+            $totalHeadcount = (int)$db->table('users u')
+                ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'inner')
+                ->where('u.is_active', 1)
+                ->where('u.deleted_at IS NULL')
+                ->countAllResults();
+
+            if ($totalHeadcount <= 0) {
+                $totalHeadcount = $totalUnits;
+            }
+            $coveragePct = $totalHeadcount > 0 ? round(($totalUnits / $totalHeadcount) * 100, 1) : 0;
+            $pendingCascade = max(0, $totalHeadcount - $totalUnits);
+
             $cycleStats = [
                 'total'            => $totalUnits,
+                'total_headcount'  => $totalHeadcount,
+                'pending_cascade'  => $pendingCascade,
+                'coverage_pct'     => $coveragePct,
                 'target_approved'  => $targetApproved,
                 'target_submitted' => $targetSubmitted,
                 'target_draft'     => $targetDraft,
@@ -2242,8 +2258,24 @@ class Folder extends BaseController
                 }
             }
 
+            $db = \Config\Database::connect();
+            $totalHeadcount = (int)$db->table('users u')
+                ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'inner')
+                ->where('u.is_active', 1)
+                ->where('u.deleted_at IS NULL')
+                ->countAllResults();
+
+            if ($totalHeadcount <= 0) {
+                $totalHeadcount = $totalUnits;
+            }
+            $coveragePct = $totalHeadcount > 0 ? round(($totalUnits / $totalHeadcount) * 100, 1) : 0;
+            $pendingCascade = max(0, $totalHeadcount - $totalUnits);
+
             $cycleStats = [
                 'total'            => $totalUnits,
+                'total_headcount'  => $totalHeadcount,
+                'pending_cascade'  => $pendingCascade,
+                'coverage_pct'     => $coveragePct,
                 'target_approved'  => $targetApproved,
                 'target_submitted' => $targetSubmitted,
                 'target_draft'     => $targetDraft,

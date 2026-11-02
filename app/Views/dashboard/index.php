@@ -347,14 +347,16 @@
 
         </div>
 
-        <!-- 2. PHASE SUBMISSION BREAKDOWN (TARGETS VS ACCOMPLISHMENTS) -->
+        <!-- 2. CSC SPMS 2-PHASE LIFECYCLE BREAKDOWN -->
         <?php
             $p1 = $phaseSchedule['phase1'] ?? ['is_ongoing' => false, 'timeframe' => 'Schedule Not Set', 'label' => 'Upcoming', 'status' => 'upcoming'];
             $p2 = $phaseSchedule['phase2'] ?? ['is_ongoing' => false, 'timeframe' => 'Schedule Not Set', 'label' => 'Upcoming', 'status' => 'upcoming'];
+            $targetUnstarted = (int)($pipeline['target']['unstarted'] ?? 0);
+            $evalUnstarted = (int)($pipeline['evaluation']['unstarted'] ?? 0);
         ?>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             
-            <!-- Phase 1 Card -->
+            <!-- Phase 1 Card: Target Commitment Phase -->
             <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 <?= !empty($p1['is_ongoing']) ? 'border-emerald-500/80 dark:border-emerald-500 ring-2 ring-emerald-500/20 shadow-md' : 'border-zinc-200 dark:border-zinc-800 shadow-xs' ?>">
                 <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-4">
                     <div class="flex items-center gap-2.5 min-w-0">
@@ -395,14 +397,14 @@
                         <span class="block text-xl font-black"><?= $pipeline['target']['pending'] ?></span>
                         <span class="text-[11px] font-bold mt-0.5 block">In Review</span>
                     </div>
-                    <div class="p-3 rounded-xl bg-rose-50 text-rose-800 dark:bg-danger-500/10 dark:border-danger-500/20 dark:text-rose-400 border border-rose-200">
+                    <div class="p-3 rounded-xl bg-rose-50 text-rose-800 dark:bg-danger-500/10 dark:border-danger-500/20 dark:text-rose-400 border border-rose-200" title="<?= $targetUnstarted > 0 ? "{$targetUnstarted} personnel pending cascade / unstarted" : '' ?>">
                         <span class="block text-xl font-black"><?= $pipeline['target']['draft'] ?></span>
-                        <span class="text-[11px] font-bold mt-0.5 block">Draft (Missing)</span>
+                        <span class="text-[11px] font-bold mt-0.5 block"><?= $targetUnstarted > 0 ? 'Pending Cascade' : 'Draft (Missing)' ?></span>
                     </div>
                 </div>
             </div>
 
-            <!-- Phase 2 Card -->
+            <!-- Phase 2 Card: Accomplishment Report Phase -->
             <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 <?= !empty($p2['is_ongoing']) ? ($p2['status'] === 'calibration' ? 'border-purple-500/80 dark:border-purple-500 ring-2 ring-purple-500/20 shadow-md' : 'border-emerald-500/80 dark:border-emerald-500 ring-2 ring-emerald-500/20 shadow-md') : 'border-zinc-200 dark:border-zinc-800 shadow-xs' ?>">
                 <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-4">
                     <div class="flex items-center gap-2.5 min-w-0">
@@ -452,9 +454,9 @@
                         <span class="block text-xl font-black"><?= $pipeline['evaluation']['submitted'] ?></span>
                         <span class="text-[11px] font-bold mt-0.5 block">In Review</span>
                     </div>
-                    <div class="p-3 rounded-xl bg-rose-50 text-rose-800 dark:bg-danger-500/10 dark:border-danger-500/20 dark:text-rose-400 border border-rose-200">
+                    <div class="p-3 rounded-xl bg-rose-50 text-rose-800 dark:bg-danger-500/10 dark:border-danger-500/20 dark:text-rose-400 border border-rose-200" title="<?= $evalUnstarted > 0 ? "{$evalUnstarted} personnel pending cascade / unstarted" : '' ?>">
                         <span class="block text-xl font-black"><?= $pipeline['evaluation']['pending'] ?></span>
-                        <span class="text-[11px] font-bold mt-0.5 block">Draft (Missing)</span>
+                        <span class="text-[11px] font-bold mt-0.5 block"><?= $evalUnstarted > 0 ? 'Pending Cascade' : 'Draft (Missing)' ?></span>
                     </div>
                 </div>
             </div>
@@ -678,14 +680,16 @@
 
         </div>
 
-        <!-- 2. PHASE SUBMISSION BREAKDOWN (TARGETS VS ACCOMPLISHMENTS) -->
+        <!-- 2. CSC SPMS 2-PHASE LIFECYCLE BREAKDOWN -->
         <?php
             $p1 = $phaseSchedule['phase1'] ?? ['is_ongoing' => false, 'timeframe' => 'Schedule Not Set', 'label' => 'Upcoming', 'status' => 'upcoming'];
             $p2 = $phaseSchedule['phase2'] ?? ['is_ongoing' => false, 'timeframe' => 'Schedule Not Set', 'label' => 'Upcoming', 'status' => 'upcoming'];
+            $targetUnstarted = (int)($pipeline['target']['unstarted'] ?? 0);
+            $evalUnstarted = (int)($pipeline['evaluation']['unstarted'] ?? 0);
         ?>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             
-            <!-- Phase 1 Card -->
+            <!-- Phase 1 Card: Target Commitment Phase -->
             <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 <?= !empty($p1['is_ongoing']) ? 'border-emerald-500/80 dark:border-emerald-500 ring-2 ring-emerald-500/20 shadow-md' : 'border-zinc-200 dark:border-zinc-800 shadow-xs' ?>">
                 <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-4">
                     <div class="flex items-center gap-2.5 min-w-0">
@@ -726,14 +730,14 @@
                         <span class="block text-xl font-black"><?= $pipeline['target']['pending'] ?></span>
                         <span class="text-[11px] font-bold mt-0.5 block">In Review</span>
                     </div>
-                    <div class="p-3 rounded-xl bg-rose-50 text-rose-800 dark:bg-danger-500/10 dark:border-danger-500/20 dark:text-rose-400 border border-rose-200">
+                    <div class="p-3 rounded-xl bg-rose-50 text-rose-800 dark:bg-danger-500/10 dark:border-danger-500/20 dark:text-rose-400 border border-rose-200" title="<?= $targetUnstarted > 0 ? "{$targetUnstarted} personnel pending cascade / unstarted" : '' ?>">
                         <span class="block text-xl font-black"><?= $pipeline['target']['draft'] ?></span>
-                        <span class="text-[11px] font-bold mt-0.5 block">Draft (Missing)</span>
+                        <span class="text-[11px] font-bold mt-0.5 block"><?= $targetUnstarted > 0 ? 'Pending Cascade' : 'Draft (Missing)' ?></span>
                     </div>
                 </div>
             </div>
 
-            <!-- Phase 2 Card -->
+            <!-- Phase 2 Card: Accomplishment Report Phase -->
             <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 <?= !empty($p2['is_ongoing']) ? ($p2['status'] === 'calibration' ? 'border-purple-500/80 dark:border-purple-500 ring-2 ring-purple-500/20 shadow-md' : 'border-emerald-500/80 dark:border-emerald-500 ring-2 ring-emerald-500/20 shadow-md') : 'border-zinc-200 dark:border-zinc-800 shadow-xs' ?>">
                 <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-4">
                     <div class="flex items-center gap-2.5 min-w-0">
@@ -783,9 +787,9 @@
                         <span class="block text-xl font-black"><?= $pipeline['evaluation']['submitted'] ?></span>
                         <span class="text-[11px] font-bold mt-0.5 block">In Review</span>
                     </div>
-                    <div class="p-3 rounded-xl bg-rose-50 text-rose-800 dark:bg-danger-500/10 dark:border-danger-500/20 dark:text-rose-400 border border-rose-200">
+                    <div class="p-3 rounded-xl bg-rose-50 text-rose-800 dark:bg-danger-500/10 dark:border-danger-500/20 dark:text-rose-400 border border-rose-200" title="<?= $evalUnstarted > 0 ? "{$evalUnstarted} personnel pending cascade / unstarted" : '' ?>">
                         <span class="block text-xl font-black"><?= $pipeline['evaluation']['pending'] ?></span>
-                        <span class="text-[11px] font-bold mt-0.5 block">Draft (Missing)</span>
+                        <span class="text-[11px] font-bold mt-0.5 block"><?= $evalUnstarted > 0 ? 'Pending Cascade' : 'Draft (Missing)' ?></span>
                     </div>
                 </div>
             </div>

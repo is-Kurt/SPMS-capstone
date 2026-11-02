@@ -271,45 +271,53 @@
                         .spms-hub-stepper-row {
                             display: flex;
                             align-items: center;
-                            gap: 6px;
-                            overflow-x: auto;
-                            padding-bottom: 8px;
-                            margin-bottom: 18px;
-                            -webkit-overflow-scrolling: touch;
-                            scrollbar-width: thin;
+                            justify-content: space-between;
+                            gap: 4px;
+                            overflow-x: hidden;
+                            padding-bottom: 2px;
+                            margin-bottom: 16px;
+                            width: 100%;
                         }
                         @media (min-width: 640px) {
                             .spms-hub-stepper-row {
-                                gap: 12px;
-                                padding-bottom: 6px;
-                                margin-bottom: 28px;
+                                gap: 6px;
+                                margin-bottom: 22px;
+                            }
+                        }
+                        @media (min-width: 1280px) {
+                            .spms-hub-stepper-row {
+                                gap: 8px;
                             }
                         }
 
                         .spms-hub-stepper-arrow {
-                            width: 28px;
-                            height: 12px;
-                            flex-shrink: 0;
+                            width: 20px;
+                            height: 10px;
+                            flex-shrink: 1;
+                            min-width: 12px;
+                            max-width: 36px;
                             margin: 0 4px;
                         }
                         @media (min-width: 640px) {
                             .spms-hub-stepper-arrow {
-                                width: 36px;
-                                height: 12px;
+                                width: 28px;
+                                height: 10px;
+                                max-width: 48px;
                                 margin: 0 6px;
                             }
                         }
-                        @media (min-width: 1280px) {
+                        @media (min-width: 1024px) {
                             .spms-hub-stepper-arrow {
-                                width: 48px;
-                                height: 12px;
+                                width: 36px;
+                                height: 10px;
+                                max-width: 60px;
                                 margin: 0 8px;
                             }
                         }
 
                         .spms-hub-circle-active {
-                            width: 26px;
-                            height: 26px;
+                            width: 22px;
+                            height: 22px;
                             border-radius: 9999px;
                             background-color: #f59e0b;
                             border: none;
@@ -320,8 +328,8 @@
                         }
 
                         .spms-hub-circle-active-dot {
-                            width: 8px;
-                            height: 8px;
+                            width: 7px;
+                            height: 7px;
                             border-radius: 9999px;
                             background-color: #ffffff;
                         }
@@ -330,8 +338,8 @@
                         }
 
                         .spms-hub-circle-inactive {
-                            width: 26px;
-                            height: 26px;
+                            width: 22px;
+                            height: 22px;
                             border-radius: 9999px;
                             border: 1.5px solid #cbd5e1;
                             background-color: #f8fafc;
@@ -346,8 +354,8 @@
                         }
 
                         .spms-hub-circle-completed {
-                            width: 26px;
-                            height: 26px;
+                            width: 22px;
+                            height: 22px;
                             border-radius: 9999px;
                             background-color: #10b981;
                             border: none;
@@ -370,7 +378,13 @@
                         }
                         @media (min-width: 640px) {
                             .spms-hub-step-text-active {
-                                font-size: 13px;
+                                font-size: 12px;
+                                margin-left: 7px;
+                            }
+                        }
+                        @media (min-width: 1024px) {
+                            .spms-hub-step-text-active {
+                                font-size: 12.5px;
                                 margin-left: 8px;
                             }
                         }
@@ -387,7 +401,13 @@
                         }
                         @media (min-width: 640px) {
                             .spms-hub-step-text-inactive {
-                                font-size: 13px;
+                                font-size: 12px;
+                                margin-left: 7px;
+                            }
+                        }
+                        @media (min-width: 1024px) {
+                            .spms-hub-step-text-inactive {
+                                font-size: 12.5px;
                                 margin-left: 8px;
                             }
                         }
