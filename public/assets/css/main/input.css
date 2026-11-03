@@ -530,6 +530,40 @@ input[type="number"].spms-score-input::-webkit-inner-spin-button {
     box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
 }
 
+/* Stepper Capsule Pills */
+.spms-stepper-pill-active {
+    background-color: #09090b;
+    color: #ffffff;
+    border: 1px solid #09090b;
+}
+.dark .spms-stepper-pill-active {
+    background-color: #ffffff !important;
+    color: #09090b !important;
+    border: 1px solid #ffffff !important;
+}
+
+.spms-stepper-pill-completed {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.dark .spms-stepper-pill-completed {
+    background-color: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.spms-stepper-pill-inactive {
+    background-color: #f4f4f5;
+    color: #71717a;
+    border: 1px solid #e4e4e7;
+}
+.dark .spms-stepper-pill-inactive {
+    background-color: rgba(39, 39, 42, 0.8);
+    color: #a1a1aa;
+    border: 1px solid rgba(63, 63, 70, 0.8);
+}
+
 /* Toolbar Controls */
 .spms-btn-queue {
     background-color: #ffffff;

@@ -797,7 +797,272 @@
         </div>
 
 
-        <!-- 3. TOP PERFORMING PERSONNEL LEADERBOARD -->
+        <!-- 2.5 SPMS 4-STAGE PERFORMANCE LIFECYCLE (CSC MC No. 6, s. 2012) -->
+        <?php
+            // Dynamic Institutional Active Stage Determination (Synchronized with Folder Tracker / _admin_cycle_hub.php)
+            $hubTargetStart = $activeCycle['ipcr_target_start'] ?? $activeCycle['opcr_target_start'] ?? $activeCycle['dpcr_target_start'] ?? $activeCycle['iperf_target_start'] ?? ($phaseSchedule['phase1']['start'] ?? null);
+            $hubTargetEnd   = $activeCycle['ipcr_target_end']   ?? $activeCycle['opcr_target_end']   ?? $activeCycle['dpcr_target_end']   ?? $activeCycle['iperf_target_end']   ?? ($phaseSchedule['phase1']['end'] ?? null);
+            $hubEvalStart   = $activeCycle['ipcr_eval_start']   ?? $activeCycle['opcr_eval_start']   ?? $activeCycle['dpcr_eval_start']   ?? $activeCycle['iperf_eval_start']   ?? ($phaseSchedule['phase2']['start'] ?? null);
+            $hubEvalEnd     = $activeCycle['ipcr_eval_end']     ?? $activeCycle['opcr_eval_end']     ?? $activeCycle['dpcr_eval_end']     ?? $activeCycle['iperf_eval_end']     ?? ($phaseSchedule['phase2']['end'] ?? null);
+
+            $nowStr = date('Y-m-d H:i:s');
+            $isCycleArchived = !empty($isArchivedView) || !empty($activeCycle['is_archived']) || !empty($activeCycle['deleted_at']) || (($activeCycle['status'] ?? '') === 'archived');
+
+            if ($isCycleArchived) {
+                // Stage 4: Calibration & Archival (Frozen)
+                $activeStageNum = 4;
+                $activeStageName = 'Rewarding';
+            } elseif (!empty($hubEvalEnd) && $nowStr > $hubEvalEnd) {
+                // Stage 4: Calibration & Rewarding (Evaluation Window Concluded — PMT Ratings Calibration)
+                $activeStageNum = 4;
+                $activeStageName = 'Rewarding';
+            } elseif (!empty($hubEvalStart) && $nowStr >= $hubEvalStart) {
+                // Stage 3: Review & Evaluation (Accomplishment Phase Active)
+                $activeStageNum = 3;
+                $activeStageName = 'Review';
+            } elseif (!empty($hubTargetEnd) && $nowStr > $hubTargetEnd) {
+                // Stage 2: Performance Monitoring & Coaching (Execution & Evidence compiling)
+                $activeStageNum = 2;
+                $activeStageName = 'Coaching';
+            } elseif (!empty($hubTargetStart) && $nowStr >= $hubTargetStart) {
+                // Stage 1: Performance Planning & Commitment (Target formulation)
+                $activeStageNum = 1;
+                $activeStageName = 'Planning';
+            } else {
+                // Stage 1: Setup / Upcoming Target formulation
+                $activeStageNum = 1;
+                $activeStageName = 'Planning';
+            }
+            
+            $lifecycleStages = [
+                1 => 'Planning',
+                2 => 'Coaching',
+                3 => 'Review',
+                4 => 'Rewarding',
+            ];
+
+            $isStage1Current = ($activeStageNum === 1);
+            $isStage2Current = ($activeStageNum === 2);
+            $isStage3Current = ($activeStageNum === 3);
+            $isStage4Current = ($activeStageNum === 4);
+        ?>
+        <div class="p-4 sm:p-6 rounded-2xl shadow-xs spms-lifecycle-container">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <div>
+                    <h2 class="text-sm sm:text-base font-bold text-zinc-900 dark:text-white tracking-tight">SPMS 4-Stage Performance Lifecycle</h2>
+                    <p class="text-[10px] sm:text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">CSC MC No. 6, S. 2012 • Standard University Strategic Calibration Cycle</p>
+                </div>
+
+                <!-- DESKTOP VIEW (sm:flex): Full Stepper Flow (Capsule Pills) -->
+                <div class="hidden sm:flex items-center gap-1.5 sm:gap-2 text-[11px] shrink-0">
+                    <?php foreach ($lifecycleStages as $sNum => $sTitle): ?>
+                        <?php if ($sNum > 1): ?>
+                            <span class="w-2 sm:w-3 h-px <?= $sNum <= $activeStageNum ? 'bg-amber-500/60' : 'bg-zinc-300 dark:bg-zinc-700' ?> shrink-0"></span>
+                        <?php endif; ?>
+
+                        <?php if ($sNum === $activeStageNum): ?>
+                            <div class="spms-stepper-pill-active inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-bold shrink-0 shadow-2xs">
+                                <span class="w-4 h-4 rounded-full bg-amber-500 text-zinc-950 text-[9px] font-black flex items-center justify-center shrink-0"><?= $sNum ?></span>
+                                <span><?= esc($sTitle) ?></span>
+                            </div>
+                        <?php elseif ($sNum < $activeStageNum): ?>
+                            <div class="spms-stepper-pill-completed inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-semibold shrink-0">
+                                <span class="w-4 h-4 rounded-full bg-amber-500 text-zinc-950 text-[9px] font-bold flex items-center justify-center shrink-0">✓</span>
+                                <span><?= esc($sTitle) ?></span>
+                            </div>
+                        <?php else: ?>
+                            <div class="spms-stepper-pill-inactive inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-semibold shrink-0">
+                                <span class="w-4 h-4 rounded-full border border-zinc-300 dark:border-zinc-600 text-[9px] font-bold flex items-center justify-center shrink-0"><?= $sNum ?></span>
+                                <span><?= esc($sTitle) ?></span>
+                            </div>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
+            <!-- 4 Stage Cards Grid on PC (4 Columns) / Stacked on Mobile -->
+            <div class="spms-lifecycle-grid">
+                
+                <!-- STAGE 1: Target Commitment (Planning) -->
+                <div class="p-3.5 sm:p-4 rounded-xl <?= $isStage1Current ? 'spms-stage-box-active' : 'spms-stage-box' ?> flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">STAGE 1</span>
+                            <?php if ($isStage1Current): ?>
+                                <span class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 font-extrabold">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                    CURRENT
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                        <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Target Commitment</h3>
+                        <p class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">Target Setting Phase</p>
+
+                        <div class="mt-3">
+                            <div class="flex items-baseline justify-between mb-1.5">
+                                <span class="text-xs font-bold text-zinc-900 dark:text-white">
+                                    <?= (int)($pipeline['stage1']['approved'] ?? 0) ?>
+                                    <span class="text-zinc-400 dark:text-zinc-400 font-normal">/ <?= $totalPersonnel ?> Approved</span>
+                                </span>
+                                <span class="text-xs font-bold text-zinc-900 dark:text-white">
+                                    <?= $totalPersonnel > 0 ? round(((int)($pipeline['stage1']['approved'] ?? 0) / $totalPersonnel) * 100) : 0 ?>%
+                                </span>
+                            </div>
+                            <div class="w-full bg-zinc-200 dark:bg-zinc-800 rounded-full h-1 overflow-hidden">
+                                <div class="bg-amber-500 h-1 rounded-full transition-all duration-500" style="width: <?= $totalPersonnel > 0 ? min(100, round(((int)($pipeline['stage1']['approved'] ?? 0) / $totalPersonnel) * 100)) : 0 ?>%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-2.5 border-t border-zinc-200/70 dark:border-zinc-800 space-y-1.5 mt-3 text-xs">
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+                            <span>Approved Targets</span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= (int)($pipeline['stage1']['approved'] ?? 0) ?></span>
+                        </div>
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+                            <span>In Review</span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= (int)($pipeline['stage1']['pending'] ?? 0) ?></span>
+                        </div>
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+                            <span>Needs Revision</span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= (int)($pipeline['stage1']['returned'] ?? 0) ?></span>
+                        </div>
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+                            <span>Draft Mode</span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= (int)($pipeline['stage1']['draft'] ?? 0) ?></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STAGE 2: Monitoring & Coaching -->
+                <div class="p-3.5 sm:p-4 rounded-xl <?= $isStage2Current ? 'spms-stage-box-active' : 'spms-stage-box' ?> flex flex-col justify-between transition-all hover:border-zinc-300 dark:hover:border-zinc-600">
+                    <div>
+                        <button type="button" onclick="toggleStageAccordion(2)" class="w-full text-left cursor-pointer lg:cursor-default spms-stage-accordion-btn">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">STAGE 2</span>
+                                    <?php if ($isStage2Current): ?>
+                                        <span class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 font-extrabold">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                            CURRENT
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
+                                <svg id="stage-2-chevron" class="w-4 h-4 text-zinc-400 dark:text-zinc-400 transition-transform duration-200 lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white mt-1.5">Monitoring &amp; Coaching</h3>
+                            <p class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">Execution &amp; Evidence</p>
+                        </button>
+                    </div>
+                    
+                    <!-- Collapsible details on mobile only -->
+                    <div id="stage-2-content" class="<?= $isStage2Current ? '' : 'hidden' ?> pt-3 border-t border-zinc-200/70 dark:border-zinc-800 space-y-1.5 mt-3 text-xs">
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+                            <span>Active Execution</span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= (int)($pipeline['stage2']['active_execution'] ?? $pipeline['stage1']['approved'] ?? 0) ?></span>
+                        </div>
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+                            <span>MOV Attachments</span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= (int)($pipeline['stage2']['mov_count'] ?? 0) ?></span>
+                        </div>
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+                            <span>Coaching Feedback</span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= (int)($pipeline['stage2']['coaching_notes'] ?? 0) ?></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STAGE 3: Review & Evaluation -->
+                <div class="p-3.5 sm:p-4 rounded-xl <?= $isStage3Current ? 'spms-stage-box-active' : 'spms-stage-box' ?> flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">STAGE 3</span>
+                            <?php if ($isStage3Current): ?>
+                                <span class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 font-extrabold">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                    CURRENT
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                        <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Review &amp; Evaluation</h3>
+                        <p class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">Accomplishment Phase</p>
+
+                        <div class="mt-3">
+                            <div class="flex items-baseline justify-between mb-1.5">
+                                <span class="text-xs font-bold text-zinc-900 dark:text-white">
+                                    <?= (int)($pipeline['stage3']['completed'] ?? 0) ?>
+                                    <span class="text-zinc-400 dark:text-zinc-400 font-normal">/ <?= $totalPersonnel ?> Evaluated</span>
+                                </span>
+                                <span class="text-xs font-bold text-zinc-400 dark:text-zinc-400">
+                                    <?= $totalPersonnel > 0 ? round(((int)($pipeline['stage3']['completed'] ?? 0) / $totalPersonnel) * 100) : 0 ?>%
+                                </span>
+                            </div>
+                            <div class="w-full bg-zinc-200 dark:bg-zinc-800 rounded-full h-1 overflow-hidden">
+                                <div class="bg-zinc-700 dark:bg-zinc-500 h-1 rounded-full transition-all duration-500" style="width: <?= $totalPersonnel > 0 ? min(100, round(((int)($pipeline['stage3']['completed'] ?? 0) / $totalPersonnel) * 100)) : 0 ?>%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-2.5 border-t border-zinc-200/70 dark:border-zinc-800 space-y-1.5 mt-3 text-xs">
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+                            <span>Approved Ratings</span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= (int)($pipeline['stage3']['completed'] ?? 0) ?></span>
+                        </div>
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+                            <span>Under Evaluation</span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= (int)($pipeline['stage3']['evaluating'] ?? 0) ?></span>
+                        </div>
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+                            <span>Submitted Awaiting</span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= (int)($pipeline['stage3']['submitted'] ?? 0) ?></span>
+                        </div>
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+                            <span>Draft Accomplishment</span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= (int)($pipeline['stage3']['draft'] ?? 0) ?></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STAGE 4: Rewarding & Dev. -->
+                <div class="p-3.5 sm:p-4 rounded-xl <?= $isStage4Current ? 'spms-stage-box-active' : 'spms-stage-box' ?> flex flex-col justify-between transition-all hover:border-zinc-300 dark:hover:border-zinc-600">
+                    <div>
+                        <button type="button" onclick="toggleStageAccordion(4)" class="w-full text-left cursor-pointer lg:cursor-default spms-stage-accordion-btn">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">STAGE 4</span>
+                                    <?php if ($isStage4Current): ?>
+                                        <span class="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 font-extrabold">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                            CURRENT
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
+                                <svg id="stage-4-chevron" class="w-4 h-4 text-zinc-400 dark:text-zinc-400 transition-transform duration-200 lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white mt-1.5">Rewarding &amp; Dev.</h3>
+                            <p class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">Incentives &amp; HR Phase</p>
+                        </button>
+                    </div>
+                    
+                    <!-- Collapsible details on mobile only -->
+                    <div id="stage-4-content" class="<?= $isStage4Current ? '' : 'hidden' ?> pt-3 border-t border-zinc-200/70 dark:border-zinc-800 space-y-1.5 mt-3 text-xs">
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+                            <span>PBB / Bonus Eligible</span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= (int)($pipeline['stage4']['pbb_eligible'] ?? 0) ?></span>
+                        </div>
+                        <div class="flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+                            <span>Development Needed</span>
+                            <span class="font-bold text-zinc-900 dark:text-white"><?= (int)($pipeline['stage4']['dev_needed'] ?? 0) ?></span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
         <div class="p-4 sm:p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xs flex flex-col justify-between">
             <div>
                 <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-4">
@@ -2544,22 +2809,6 @@ function filterOfficeLeaderboard() {
     });
     const empty = document.getElementById('office-empty-row');
     if (empty) empty.classList.toggle('hidden', visible > 0);
-}
-
-function toggleStageAccordion(stageNum) {
-    if (window.innerWidth >= 1024) return;
-    const content = document.getElementById(`stage-${stageNum}-content`);
-    const chevron = document.getElementById(`stage-${stageNum}-chevron`);
-    if (!content) return;
-    
-    const isHidden = content.classList.contains('hidden');
-    if (isHidden) {
-        content.classList.remove('hidden');
-        if (chevron) chevron.classList.add('rotate-180');
-    } else {
-        content.classList.add('hidden');
-        if (chevron) chevron.classList.remove('rotate-180');
-    }
 }
 
 // --- Masterlist Quick Shortcut from Compliance Matrix & Rows ---

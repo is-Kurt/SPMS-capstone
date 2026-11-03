@@ -1454,6 +1454,13 @@
       margin-block-end: calc(calc(var(--spacing) * 1) * calc(1 - var(--tw-space-y-reverse)));
     }
   }
+  .space-y-1\.5 {
+    :where(& > :not(:last-child)) {
+      --tw-space-y-reverse: 0;
+      margin-block-start: calc(calc(var(--spacing) * 1.5) * var(--tw-space-y-reverse));
+      margin-block-end: calc(calc(var(--spacing) * 1.5) * calc(1 - var(--tw-space-y-reverse)));
+    }
+  }
   .space-y-2 {
     :where(& > :not(:last-child)) {
       --tw-space-y-reverse: 0;
@@ -2086,6 +2093,12 @@
       border-color: color-mix(in oklab, var(--color-zinc-200) 60%, transparent);
     }
   }
+  .border-zinc-200\/70 {
+    border-color: color-mix(in srgb, oklch(92% 0.004 286.32) 70%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--color-zinc-200) 70%, transparent);
+    }
+  }
   .border-zinc-200\/80 {
     border-color: color-mix(in srgb, oklch(92% 0.004 286.32) 80%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
@@ -2222,6 +2235,12 @@
     background-color: color-mix(in srgb, oklch(76.9% 0.188 70.08) 20%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklab, var(--color-amber-500) 20%, transparent);
+    }
+  }
+  .bg-amber-500\/60 {
+    background-color: color-mix(in srgb, oklch(76.9% 0.188 70.08) 60%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-amber-500) 60%, transparent);
     }
   }
   .bg-amber-500\/70 {
@@ -2773,6 +2792,9 @@
       background-color: color-mix(in oklab, var(--color-zinc-500) 20%, transparent);
     }
   }
+  .bg-zinc-700 {
+    background-color: var(--color-zinc-700);
+  }
   .bg-zinc-800 {
     background-color: var(--color-zinc-800);
   }
@@ -2993,6 +3015,9 @@
   }
   .pt-2 {
     padding-top: calc(var(--spacing) * 2);
+  }
+  .pt-2\.5 {
+    padding-top: calc(var(--spacing) * 2.5);
   }
   .pt-3 {
     padding-top: calc(var(--spacing) * 3);
@@ -3603,6 +3628,12 @@
   .text-zinc-950 {
     color: var(--color-zinc-950);
   }
+  .capitalize {
+    text-transform: capitalize;
+  }
+  .lowercase {
+    text-transform: lowercase;
+  }
   .normal-case {
     text-transform: none;
   }
@@ -3951,6 +3982,10 @@
   .duration-300 {
     --tw-duration: 300ms;
     transition-duration: 300ms;
+  }
+  .duration-500 {
+    --tw-duration: 500ms;
+    transition-duration: 500ms;
   }
   .ease-out {
     --tw-ease: var(--ease-out);
@@ -5365,6 +5400,11 @@
   .sm\:min-h-\[420px\] {
     @media (width >= 40rem) {
       min-height: 420px;
+    }
+  }
+  .sm\:w-3 {
+    @media (width >= 40rem) {
+      width: calc(var(--spacing) * 3);
     }
   }
   .sm\:w-6 {
@@ -6936,6 +6976,11 @@
       }
     }
   }
+  .dark\:border-white {
+    &:where(.dark, .dark *) {
+      border-color: var(--color-white);
+    }
+  }
   .dark\:border-zinc-600 {
     &:where(.dark, .dark *) {
       border-color: var(--color-zinc-600);
@@ -7388,6 +7433,11 @@
       @supports (color: color-mix(in lab, red, red)) {
         background-color: color-mix(in oklab, var(--color-warning-500) 20%, transparent);
       }
+    }
+  }
+  .dark\:bg-white {
+    &:where(.dark, .dark *) {
+      background-color: var(--color-white);
     }
   }
   .dark\:bg-zinc-100 {
@@ -8780,6 +8830,36 @@ input[type="date"], input[type="datetime-local"] {
   background-color: #27272a;
   border: 2px solid #f59e0b;
   box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+}
+.spms-stepper-pill-active {
+  background-color: #09090b;
+  color: #ffffff;
+  border: 1px solid #09090b;
+}
+.dark .spms-stepper-pill-active {
+  background-color: #ffffff !important;
+  color: #09090b !important;
+  border: 1px solid #ffffff !important;
+}
+.spms-stepper-pill-completed {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.dark .spms-stepper-pill-completed {
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+.spms-stepper-pill-inactive {
+  background-color: #f4f4f5;
+  color: #71717a;
+  border: 1px solid #e4e4e7;
+}
+.dark .spms-stepper-pill-inactive {
+  background-color: rgba(39, 39, 42, 0.8);
+  color: #a1a1aa;
+  border: 1px solid rgba(63, 63, 70, 0.8);
 }
 .spms-btn-queue {
   background-color: #ffffff;
