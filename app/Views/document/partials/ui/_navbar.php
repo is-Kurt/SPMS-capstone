@@ -329,11 +329,15 @@
                     <?php endif; ?>
 
                 <?php else: ?>
-                    <!-- REVIEWER ACTIONS (Approve / Return) -->
+                    <!-- REVIEWER ACTIONS (Approve / Return / Unapprove) -->
                     <?php if (in_array(session()->get('role'), ['TWG', 'PMT'])): ?>
                         <?php if ($canonStatus->isTargetPhase()): ?>
                             <?php if ($canonStatus === FolderStatus::TARGET_APPROVED && in_array($doc['target_approver_role'] ?? '', ['TWG', 'PMT'])): ?>
-                                <!-- Targets verified by TWG: no buttons/badges -->
+                                <button id="btn-unapprove-target" type="button" 
+                                        onclick="unapproveFolderTarget()" 
+                                        class="bg-warning-500 hover:bg-warning-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg transition-all active:scale-[0.98] cursor-pointer">
+                                    Unapprove
+                                </button>
                             <?php elseif ($canonStatus === FolderStatus::TARGET_SUBMITTED || $canonStatus === FolderStatus::TARGET_UNAPPROVED): ?>
                                 <?php if (!empty($allSupervisorsApproved)): ?>
                                     <div class="flex items-center gap-1.5 sm:gap-2">
@@ -364,7 +368,11 @@
                         <?php else: ?>
                             <!-- TWG in Evaluation Phase -->
                             <?php if ($canonStatus === FolderStatus::EVAL_APPROVED): ?>
-                                <!-- Evaluation verified by TWG: no buttons/badges -->
+                                <button id="btn-unapprove-evaluation" type="button" 
+                                        onclick="unapproveFolderEvaluation()" 
+                                        class="bg-warning-500 hover:bg-warning-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg shadow-warning-500/20 transition-all active:scale-[0.98] cursor-pointer">
+                                    Unapprove
+                                </button>
                             <?php elseif ($canonStatus === FolderStatus::EVAL_SUBMITTED || $canonStatus === FolderStatus::EVAL_UNRATED): ?>
                                 <?php if (!empty($allSupervisorsApproved)): ?>
                                     <div class="flex items-center gap-1.5 sm:gap-2">
@@ -399,11 +407,18 @@
                         <?php if ($canonStatus->isTargetPhase()): ?>
                             <?php if (in_array($canonStatus, [FolderStatus::TARGET_SUBMITTED, FolderStatus::TARGET_APPROVED, FolderStatus::TARGET_UNAPPROVED], true)): ?>
                                 <?php 
-                                    $isCurrentSupervisorApproved = (!empty($currentEvaluatorRoute) && in_array($currentEvaluatorRoute['status'], ['target_approved', 'approved']));
+                                    $isCurrentSupervisorApproved = (!empty($currentEvaluatorRoute) && in_array($currentEvaluatorRoute['status'], ['target_approved', 'approved']))
+                                        || ($canonStatus === FolderStatus::TARGET_APPROVED && (session()->get('role') === 'Admin' || (int)($doc['target_approved_by'] ?? 0) === (int)session()->get('user_id')));
                                     $isTwgVerifiedTarget = ($canonStatus === FolderStatus::TARGET_APPROVED && in_array($doc['target_approver_role'] ?? '', ['TWG', 'PMT'], true));
                                 ?>
-                                <?php if ($isTwgVerifiedTarget || $isCurrentSupervisorApproved): ?>
-                                    <!-- Targets approved/verified: no buttons/badges -->
+                                <?php if ($isTwgVerifiedTarget): ?>
+                                    <!-- Locked by TWG/PMT verification: Supervisor cannot unapprove unless TWG unapproves first -->
+                                <?php elseif ($isCurrentSupervisorApproved): ?>
+                                    <button id="btn-unapprove-target" type="button" 
+                                            onclick="unapproveFolderTarget()" 
+                                            class="bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg transition-all">
+                                        Unapprove
+                                    </button>
                                 <?php else: ?>
                                     <div class="flex items-center gap-1.5 sm:gap-2">
                                         <button id="btn-return-target" type="button" 
@@ -433,8 +448,14 @@
                                     $hasAssignedTwgEval = $folderRecForTwg ? !empty((new \App\Models\TwgUnitAssignmentModel())->resolveAssignedTwgForFolder($folderRecForTwg)) : false;
                                     $isTwgVerifiedEval = ($canonStatus === FolderStatus::EVAL_APPROVED && $hasAssignedTwgEval);
                                 ?>
-                                <?php if ($isTwgVerifiedEval || $isCurrentEvalApproved): ?>
-                                    <!-- Evaluation approved/verified: no buttons/badges -->
+                                <?php if ($isTwgVerifiedEval): ?>
+                                    <!-- Locked by TWG/PMT verification: Supervisor cannot unapprove unless TWG unapproves first -->
+                                <?php elseif ($isCurrentEvalApproved): ?>
+                                    <button id="btn-unapprove-evaluation" type="button" 
+                                            onclick="unapproveFolderEvaluation()" 
+                                            class="bg-warning-500 hover:bg-warning-600 shadow-warning-500/20 active:scale-[0.98] cursor-pointer text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-lg transition-all">
+                                        Unapprove
+                                    </button>
                                 <?php else: ?>
                                     <div class="flex items-center gap-1.5 sm:gap-2">
                                         <button id="btn-return" type="button" 
