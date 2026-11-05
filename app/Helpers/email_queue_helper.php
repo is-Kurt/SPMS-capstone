@@ -63,6 +63,37 @@ function dispatch_email_now($response, int $limit = 1)
 }
 
 /**
+ * Puts emails that have been stuck at "sending" for $minutes back in the queue. That only
+ * happens when the process sending them died mid-send (e.g. PHP-FPM's 60 s request limit,
+ * a restart): the normal path always ends at "sent" or "failed". After 3 attempts the
+ * email is marked failed instead. Called by the every-minute cron (spms:routine).
+ * An email may very rarely go out twice (if the process died after the mail server
+ * accepted it); that is preferred over never sending it.
+ */
+function release_stuck_emails(int $minutes = 10): int
+{
+    $db      = \Config\Database::connect();
+    $cutoff  = date('Y-m-d H:i:s', strtotime("-{$minutes} minutes"));
+    $stuck   = static fn () => $db->table('email_queue')
+        ->where('status', EmailStatus::SENDING->value)
+        ->groupStart()
+            ->where('updated_at <', $cutoff)
+            ->orGroupStart()->where('updated_at', null)->where('created_at <', $cutoff)->groupEnd()
+        ->groupEnd();
+
+    $stuck()->where('attempts >=', 2)
+            ->set(['status' => EmailStatus::FAILED->value, 'updated_at' => date('Y-m-d H:i:s')])
+            ->set('attempts', 'attempts + 1', false)
+            ->update();
+    $count = $db->affectedRows();
+    $stuck()->set(['status' => EmailStatus::PENDING->value, 'updated_at' => date('Y-m-d H:i:s')])
+            ->set('attempts', 'attempts + 1', false)
+            ->update();
+
+    return $count + $db->affectedRows();
+}
+
+/**
  * Processes pending emails. Pass 0 to process all (for midnight tasks),
  * or a number to process in batches (for UI/AJAX).
  */
@@ -79,19 +110,23 @@ function process_email_queue(int $limit = 5): array
     $emails = $builder->findAll();
 
     if (empty($emails)) {
-        return ['processed' => 0, 'remaining' => 0];
+        return ['processed' => 0, 'sent' => 0, 'failed' => 0, 'remaining' => 0];
     }
 
     $processed = 0;
+    $sent      = 0;
+    $failed    = 0;
 
     foreach ($emails as $job) {
         // Atomically claim this row before sending - if another concurrent call (a
         // second browser tab's poller, an overlapping cron run) already grabbed it
         // between our SELECT above and this UPDATE, affectedRows() comes back 0 and
         // we skip it, instead of two processes both sending the same email.
+        // updated_at = when it was claimed, so release_stuck_emails() can spot a claim whose
+        // process died mid-send.
         $queueModel->where('id', $job['id'])
                    ->where('status', EmailStatus::PENDING->value)
-                   ->set(['status' => EmailStatus::SENDING->value])
+                   ->set(['status' => EmailStatus::SENDING->value, 'updated_at' => date('Y-m-d H:i:s')])
                    ->update();
 
         if ($queueModel->db->affectedRows() !== 1) {
@@ -107,11 +142,13 @@ function process_email_queue(int $limit = 5): array
 
             if ($emailService->send()) {
                 $queueModel->update($job['id'], ['status' => EmailStatus::SENT->value]);
+                $sent++;
             } else {
                 $queueModel->update($job['id'], [
                     'status'   => EmailStatus::FAILED->value,
                     'attempts' => $job['attempts'] + 1
                 ]);
+                $failed++;
             }
         } catch (\Throwable $e) {
             // Make sure a thrown error (e.g. an SMTP failure) still releases the claim
@@ -120,6 +157,7 @@ function process_email_queue(int $limit = 5): array
                 'status'   => EmailStatus::FAILED->value,
                 'attempts' => $job['attempts'] + 1
             ]);
+            $failed++;
         }
         $processed++;
     }
@@ -127,7 +165,9 @@ function process_email_queue(int $limit = 5): array
     $remaining = $queueModel->where('status', EmailStatus::PENDING->value)->countAllResults();
 
     return [
-        'processed' => $processed,
+        'processed' => $processed,   // attempted (sent + failed)
+        'sent'      => $sent,
+        'failed'    => $failed,
         'remaining' => $remaining
     ];
 }

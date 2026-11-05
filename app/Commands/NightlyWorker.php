@@ -109,6 +109,9 @@ class NightlyWorker extends BaseCommand
 
         $result = \process_email_queue(30);
 
-        CLI::write("Successfully sent {$result['processed']} automated emails.", 'green');
+        CLI::write("Sent {$result['sent']} automated email(s).", 'green');
+        if ($result['failed'] > 0) {
+            CLI::write("Failed to send {$result['failed']} email(s) (marked 'failed' in email_queue).", 'red');
+        }
     }
 }

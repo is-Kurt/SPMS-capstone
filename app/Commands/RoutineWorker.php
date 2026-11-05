@@ -68,10 +68,20 @@ class RoutineWorker extends BaseCommand
             CLI::write('Checking for pending automated emails...', 'yellow');
             
             helper('email_queue');
+            $released = \release_stuck_emails(10);
+            if ($released > 0) {
+                CLI::write("Put {$released} email(s) stuck at 'sending' back in the queue.", 'yellow');
+            }
             $result = \process_email_queue(30);
             
             if ($result['processed'] > 0) {
-                CLI::write("Successfully sent {$result['processed']} automated emails.", 'green');
+                CLI::write("Sent {$result['sent']} email(s).", 'green');
+                if ($result['failed'] > 0) {
+                    CLI::write("Failed to send {$result['failed']} email(s) (marked 'failed' in email_queue).", 'red');
+                }
+                if ($result['remaining'] > 0) {
+                    CLI::write("{$result['remaining']} still queued for the next run.", 'yellow');
+                }
             } else {
                 CLI::write("No pending emails to send.", 'cyan');
             }

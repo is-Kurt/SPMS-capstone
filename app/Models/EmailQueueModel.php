@@ -19,6 +19,7 @@ class EmailQueueModel extends Model
         'status',
         'attempts',
         'created_at',
+        'updated_at',
     ];
 
     protected bool $allowEmptyInserts = false;

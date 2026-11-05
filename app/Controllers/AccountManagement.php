@@ -160,7 +160,10 @@ class AccountManagement extends BaseController
                 'invitations' => $createdInvitations,
             ]);
 
-            return dispatch_email_now($response, count($validEmails));
+            // Send only the first few right away: they run after the response inside this same
+            // PHP worker, and PHP-FPM kills a request after 60 s (request_terminate_timeout).
+            // The rest stay queued for the every-minute cron (spark spms:routine, 30 per run).
+            return dispatch_email_now($response, min(count($validEmails), 5));
         });
     }
 
@@ -253,6 +256,8 @@ class AccountManagement extends BaseController
             'status'      => 'success', 
             'queue_state' => 'working', 
             'processed'   => $result['processed'],
+            'sent'        => $result['sent'],
+            'failed'      => $result['failed'],
             'remaining'   => $result['remaining']
         ]);
     }
