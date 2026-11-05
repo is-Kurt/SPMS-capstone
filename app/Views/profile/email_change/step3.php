@@ -22,7 +22,7 @@
             </div>
 
             <div class="pt-4">
-                <button type="submit" class="w-full bg-accent text-white font-bold py-3.5 rounded-xl cursor-pointer hover:bg-accent-hover transition-all text-sm shadow-lg shadow-accent/20 active:scale-[0.98]">
+                <button type="submit" class="w-full bg-accent text-accent-text font-bold py-3.5 rounded-xl cursor-pointer hover:bg-accent-hover transition-all text-sm shadow-lg shadow-accent/20 active:scale-[0.98]">
                     Complete Email Change
                 </button>
             </div>
@@ -36,7 +36,7 @@
             <p class="text-xs text-text-muted mb-2">Didn't receive the code?</p>
             <?= form_open('profile/email/step2', ['class' => 'inline']) ?>
                 <input type="hidden" name="new_email" value="<?= esc($new_email ?? '') ?>">
-                <button type="submit" id="btn-resend" <?= $timeLeft > 0 ? 'disabled' : '' ?> class="text-sm font-bold <?= $timeLeft > 0 ? 'text-text-muted' : 'text-accent hover:text-accent-hover' ?> transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                <button type="submit" id="btn-resend" <?= $timeLeft > 0 ? 'disabled' : '' ?> class="text-sm font-bold <?= $timeLeft > 0 ? 'text-text-muted' : 'text-accent-ink hover:text-accent-hover' ?> transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                     <?= $timeLeft > 0 ? "Resend Code ({$timeLeft}s)" : 'Resend Code Now' ?>
                 </button>
             <?= form_close() ?>
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.disabled = false;
             btn.textContent = 'Resend Code Now';
             btn.classList.remove('text-text-muted');
-            btn.classList.add('text-accent', 'hover:text-accent-hover');
+            btn.classList.add('text-accent-ink', 'hover:text-accent-hover');
         } else {
             btn.textContent = `Resend Code (${timeLeft}s)`;
         }

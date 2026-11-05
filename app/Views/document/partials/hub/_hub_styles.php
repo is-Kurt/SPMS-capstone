@@ -61,7 +61,7 @@
                         }
 
                         .spms-hub-kicker {
-                            color: #71717a;
+                            color: #6a6a73;
                             font-size: 10px;
                             font-weight: 800;
                             letter-spacing: 0.08em;
@@ -103,7 +103,7 @@
                         }
 
                         .spms-hub-subtitle {
-                            color: #64748b;
+                            color: #5f6f86;
                             font-size: 11px;
                             font-weight: 500;
                             margin-top: 2px;
@@ -248,7 +248,7 @@
                         }
 
                         .spms-hub-tracker-label {
-                            color: #64748b;
+                            color: #5f6f86;
                             font-size: 10.5px;
                             font-weight: 800;
                             letter-spacing: 0.08em;
@@ -390,7 +390,7 @@
                         }
 
                         .spms-hub-step-text-inactive {
-                            color: #94a3b8;
+                            color: #616f83;
                             font-size: 11.5px;
                             font-weight: 500;
                             white-space: nowrap;
@@ -481,7 +481,7 @@
                         }
 
                         .spms-hub-tile-label {
-                            color: #64748b;
+                            color: #5f6f86;
                             font-size: 10.5px;
                             font-weight: 600;
                             margin: 0;

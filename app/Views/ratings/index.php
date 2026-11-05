@@ -68,11 +68,11 @@
                 </button>
                 <div class="space-y-1">
                     <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
-                        <input type="checkbox" name="filter_type[]" value="1" class="checkbox ratings-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
+                        <input type="checkbox" name="filter_type[]" value="1" class="checkbox ratings-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer shrink-0">
                         <span>Teaching</span>
                     </label>
                     <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
-                        <input type="checkbox" name="filter_type[]" value="0" class="checkbox ratings-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
+                        <input type="checkbox" name="filter_type[]" value="0" class="checkbox ratings-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer shrink-0">
                         <span>Non-Teaching</span>
                     </label>
                 </div>
@@ -93,7 +93,7 @@
                             $stName = is_array($es) ? ($es['name'] ?? '') : (string)$es;
                         ?>
                             <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
-                                <input type="checkbox" name="filter_emp_status[]" value="<?= strtolower(esc($stName)) ?>" class="checkbox ratings-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
+                                <input type="checkbox" name="filter_emp_status[]" value="<?= strtolower(esc($stName)) ?>" class="checkbox ratings-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer shrink-0">
                                 <span><?= esc($stName) ?></span>
                             </label>
                         <?php endforeach; ?>
@@ -127,7 +127,7 @@
                     <div class="space-y-1 pr-1" id="positions-checkbox-list">
                         <?php foreach ($filterPositions as $pos): ?>
                             <label class="position-filter-label flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors" data-title="<?= strtolower(esc($pos)) ?>">
-                                <input type="checkbox" name="filter_pos[]" value="<?= esc($pos) ?>" class="checkbox ratings-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
+                                <input type="checkbox" name="filter_pos[]" value="<?= esc($pos) ?>" class="checkbox ratings-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer shrink-0">
                                 <span class="truncate"><?= esc($pos) ?></span>
                             </label>
                         <?php endforeach; ?>
@@ -160,7 +160,7 @@
         <!-- MOBILE RATINGS BAR -->
         <div class="lg:hidden flex items-center justify-between mb-3 shrink-0 px-4 pt-4">
             <h1 class="text-xl font-black text-text truncate">Ratings</h1>
-            <button type="button" id="open-mobile-filters" class="flex items-center gap-2 text-xs font-bold text-accent bg-accent/10 px-3 py-1.5 rounded-lg active:scale-95 transition-transform cursor-pointer">
+            <button type="button" id="open-mobile-filters" class="flex items-center gap-2 text-xs font-bold text-accent-ink bg-accent/10 px-3 py-1.5 rounded-lg active:scale-95 transition-transform cursor-pointer">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
                 Filters
             </button>
@@ -288,7 +288,7 @@
                                 'target_in_progress', 'eval_in_progress' => 'border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400',
                                 'target_for_review', 'eval_for_review'   => 'border-amber-500 dark:border-amber-400 text-amber-500 dark:text-amber-400',
                                 'target_completed', 'eval_completed'     => 'border-emerald-500 dark:border-emerald-400 text-emerald-500 dark:text-emerald-400',
-                                default => 'border-accent text-accent'
+                                default => 'border-accent text-accent-ink'
                             };
 
                             $activeBadgeClass = match($key) {
@@ -296,7 +296,7 @@
                                 'target_in_progress', 'eval_in_progress' => 'px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30',
                                 'target_for_review', 'eval_for_review'   => 'px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30',
                                 'target_completed', 'eval_completed'     => 'px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30',
-                                default => 'px-2 py-0.5 rounded-full text-[10px] font-black bg-accent/20 text-accent border border-accent/30'
+                                default => 'px-2 py-0.5 rounded-full text-[10px] font-black bg-accent/20 text-accent-ink border border-accent/30'
                             };
 
                             $defaultBadgeClass = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface-border/50 text-text-muted group-hover:text-text';

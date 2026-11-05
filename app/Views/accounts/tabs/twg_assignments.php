@@ -223,7 +223,7 @@ foreach (($twgUsers ?? []) as $tu) {
                                 <?php endif; ?>
                             </div>
                             <span class="text-xs font-semibold text-text-muted truncate"><?= esc($twg['email']) ?></span>
-                            <span class="text-[11px] font-bold text-text-muted/80 mt-0.5" id="twg-submeta-<?= $twgId ?>">
+                            <span class="text-[11px] font-bold text-text-muted mt-0.5" id="twg-submeta-<?= $twgId ?>">
                                 <?= $revStats['staff_count'] ?> staff covered
                             </span>
                         </div>

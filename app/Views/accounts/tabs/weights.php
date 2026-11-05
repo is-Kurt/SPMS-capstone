@@ -5,7 +5,7 @@
         <!-- Header / Guideline Banner -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-surface-border">
             <div class="flex items-start gap-3.5">
-                <div class="p-2.5 rounded-xl bg-accent/10 text-accent shrink-0">
+                <div class="p-2.5 rounded-xl bg-accent/10 text-accent-ink shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
@@ -81,7 +81,7 @@
                     <div class="flex items-start justify-between gap-3 pb-5 border-b border-surface-border">
                         <div>
                             <div class="flex items-center gap-2">
-                                <span class="px-2.5 py-1 rounded-lg text-xs font-black bg-accent/10 text-accent tracking-wider uppercase"><?= $cfg['title'] ?></span>
+                                <span class="px-2.5 py-1 rounded-lg text-xs font-black bg-accent/10 text-accent-ink tracking-wider uppercase"><?= $cfg['title'] ?></span>
                                 <span class="text-xs font-bold text-text-muted"><?= $cfg['target'] ?></span>
                             </div>
                             <h3 class="text-sm font-black text-text mt-2"><?= $cfg['subtitle'] ?></h3>

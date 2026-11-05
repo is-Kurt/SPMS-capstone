@@ -159,7 +159,7 @@ class CustomSelect {
                 }
                 
                 if (this.select.selectedIndex === index) {
-                    item.classList.add('bg-accent/10', 'text-accent', 'font-bold');
+                    item.classList.add('bg-accent/10', 'text-accent-ink', 'font-bold');
                 }
                 
                 const textNode = document.createElement('span');
@@ -340,8 +340,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 hiddenInput.dispatchEvent(new Event('change'));
                 label.textContent = opt.dataset.label;
                 
-                options.forEach(o => o.classList.remove('bg-accent/10', 'text-accent'));
-                opt.classList.add('bg-accent/10', 'text-accent');
+                options.forEach(o => o.classList.remove('bg-accent/10', 'text-accent-ink'));
+                opt.classList.add('bg-accent/10', 'text-accent-ink');
                 
                 dropdown.classList.remove('opacity-100', 'scale-100');
                 dropdown.classList.add('opacity-0', 'scale-95');

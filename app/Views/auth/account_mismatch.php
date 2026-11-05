@@ -24,12 +24,12 @@
             <?= form_open('account-mismatch/switch') ?>
                 <?php if ($targetEmail): ?>
                     <input type="hidden" name="email" value="<?= esc($targetEmail) ?>">
-                    <button type="submit" class="w-full flex flex-col items-center gap-0.5 bg-accent text-white px-5 py-3 rounded-xl cursor-pointer hover:bg-accent-hover transition-all shadow-lg shadow-accent/20 active:scale-[0.98]">
+                    <button type="submit" class="w-full flex flex-col items-center gap-0.5 bg-accent text-accent-text px-5 py-3 rounded-xl cursor-pointer hover:bg-accent-hover transition-all shadow-lg shadow-accent/20 active:scale-[0.98]">
                         <span class="text-xs font-semibold text-white/80">Log out and continue as</span>
                         <span class="text-sm font-bold break-all text-center leading-snug"><?= esc($targetEmail) ?></span>
                     </button>
                 <?php else: ?>
-                    <button type="submit" class="w-full bg-accent text-white px-5 py-3.5 rounded-xl cursor-pointer hover:bg-accent-hover transition-all shadow-lg shadow-accent/20 active:scale-[0.98] text-sm font-bold">
+                    <button type="submit" class="w-full bg-accent text-accent-text px-5 py-3.5 rounded-xl cursor-pointer hover:bg-accent-hover transition-all shadow-lg shadow-accent/20 active:scale-[0.98] text-sm font-bold">
                         Log out
                     </button>
                 <?php endif; ?>

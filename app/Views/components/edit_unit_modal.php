@@ -27,7 +27,7 @@
                             </div>
                         </div>
                         <ul id="edit-parent-options-list" class="overflow-y-auto custom-scrollbar p-1" style="max-height: 220px;">
-                            <li class="edit-parent-option px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors bg-accent/10 text-accent font-bold" data-value="">
+                            <li class="edit-parent-option px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors bg-accent/10 text-accent-ink font-bold" data-value="">
                                 No Parent (Top Level Node)
                             </li>
                             <?php foreach ($units as $u): ?>
@@ -74,13 +74,13 @@
                                 clearSearchBtn.classList.add('hidden');
                                 options.forEach(o => o.classList.remove('hidden'));
                                 options.forEach(o => {
-                                    o.classList.remove('bg-accent/10', 'text-accent', 'font-bold');
+                                    o.classList.remove('bg-accent/10', 'text-accent-ink', 'font-bold');
                                     o.classList.add('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
                                 });
                                 const noParentOpt = optionsList.querySelector('.edit-parent-option[data-value=""]');
                                 if (noParentOpt) {
                                     noParentOpt.classList.remove('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
-                                    noParentOpt.classList.add('bg-accent/10', 'text-accent', 'font-bold');
+                                    noParentOpt.classList.add('bg-accent/10', 'text-accent-ink', 'font-bold');
                                 }
                                 searchInput.focus();
                             });
@@ -99,12 +99,12 @@
                                 }
                                 
                                 options.forEach(o => {
-                                    o.classList.remove('bg-accent/10', 'text-accent', 'font-bold');
+                                    o.classList.remove('bg-accent/10', 'text-accent-ink', 'font-bold');
                                     o.classList.add('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
                                 });
                                 
                                 opt.classList.remove('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
-                                opt.classList.add('bg-accent/10', 'text-accent', 'font-bold');
+                                opt.classList.add('bg-accent/10', 'text-accent-ink', 'font-bold');
                             });
                         });
                     })();
@@ -124,7 +124,7 @@
                         hiddenInput.value = parentId ? String(parentId) : '';
 
                         options.forEach(o => {
-                            o.classList.remove('hidden', 'bg-accent/10', 'text-accent', 'font-bold');
+                            o.classList.remove('hidden', 'bg-accent/10', 'text-accent-ink', 'font-bold');
                             o.classList.add('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
                             // Hide the current unit itself to prevent selecting self as parent
                             if (o.getAttribute('data-value') === String(id)) {
@@ -135,7 +135,7 @@
                         const selectedOpt = optionsList.querySelector(`.edit-parent-option[data-value="${parentId || ''}"]`);
                         if (selectedOpt) {
                             selectedOpt.classList.remove('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
-                            selectedOpt.classList.add('bg-accent/10', 'text-accent', 'font-bold');
+                            selectedOpt.classList.add('bg-accent/10', 'text-accent-ink', 'font-bold');
                             searchInput.value = (parentId && selectedOpt) ? selectedOpt.textContent.trim() : '';
                         } else {
                             searchInput.value = '';
@@ -151,7 +151,7 @@
                 <button type="button" class="btn-close-modal w-full sm:flex-1 px-6 py-3.5 sm:py-3 rounded-xl border border-surface-border text-sm font-bold text-text hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all cursor-pointer" data-target="modal-edit-unit">
                     Cancel
                 </button>
-                <button type="submit" class="w-full sm:flex-1 px-6 py-3.5 sm:py-3 rounded-xl bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold shadow-lg shadow-accent/20 transition-all active:scale-95 cursor-pointer">
+                <button type="submit" class="w-full sm:flex-1 px-6 py-3.5 sm:py-3 rounded-xl bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-accent-text text-sm font-bold shadow-lg shadow-accent/20 transition-all active:scale-95 cursor-pointer">
                     Save Changes
                 </button>
             </div>

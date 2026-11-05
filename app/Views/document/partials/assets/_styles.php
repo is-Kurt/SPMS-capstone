@@ -620,7 +620,7 @@
         align-items: center;
         gap: 6px;
         font-size: 11.5px;
-        color: #64748b;
+        color: #5f6f86;
         font-weight: 500;
     }
     .spms-empty-cat-icon {
@@ -1225,7 +1225,9 @@
         }
         html.dark .spms-sheet-container [style*="color: #334155"],
         html.dark .spms-sheet-container [style*="color: #475569"] { color: #d4d4d8 !important; }
-        html.dark .spms-sheet-container [style*="color: #64748b"] { color: #a1a1aa !important; }
+        /* light mode: saved documents keep the older slate hint colour inline; darken it for 4.5:1 contrast on the tinted cells */
+        .spms-sheet-container [style*="color: #64748b"] { color: #5f6f86 !important; }
+        html.dark .spms-sheet-container [style*="color: #64748b"], html.dark .spms-sheet-container [style*="color: #5f6f86"] { color: #a1a1aa !important; }
         html.dark .spms-sheet-container [style*="color: #047857"] { color: #34d399 !important; }
         html.dark .spms-sheet-container [style*="color: #0284c7"],
         html.dark .spms-sheet-container [style*="color: #0369a1"] { color: #38bdf8 !important; }

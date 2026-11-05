@@ -33,7 +33,7 @@
                                     <div style="margin-bottom: 6px; color: #0f172a;">
                                         Date: <input type="date" aria-label="Approver signature date" class="field-footer-approver-date spms-meta-input dark:[color-scheme:dark]" id="sig-dean-date" value="<?= esc($supervisors[0]['evalDate'] ?? $signatories['deanDate'] ?? '') ?>" onclick="this.showPicker && this.showPicker()" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditSupervisorDate ? '' : 'disabled' ?>>
                                     </div>
-                                    <div style="color: #64748b; font-size: 10px; font-style: italic;">(may add signatories depending on position/designation)</div>
+                                    <div style="color: #5f6f86; font-size: 10px; font-style: italic;">(may add signatories depending on position/designation)</div>
                                 </div>
                             </div>
                         </td>

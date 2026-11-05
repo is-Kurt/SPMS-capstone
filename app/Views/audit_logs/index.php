@@ -45,7 +45,7 @@ $exportQuery = http_build_query(array_filter([
                 <!-- Mobile Export CSV button directly on the title row -->
                 <div class="sm:hidden">
                     <a href="<?= site_url('audit-logs/export-csv?' . $exportQuery) ?>"
-                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs bg-emerald-950/60 dark:bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-900/60 transition-colors shadow-xs">
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs bg-emerald-700 hover:bg-emerald-800 text-white border border-transparent dark:bg-emerald-950/80 dark:border-emerald-500/40 dark:text-emerald-400 dark:hover:bg-emerald-900/60 transition-colors shadow-xs">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
@@ -289,7 +289,7 @@ $exportQuery = http_build_query(array_filter([
                             <?= esc($log['details'] ?? '—') ?>
                         </div>
                         <?php if (!empty($log['entity_type']) && !empty($log['entity_id'])): ?>
-                            <div class="text-[11px] font-bold text-amber-500 dark:text-amber-400 uppercase tracking-wide">
+                            <div class="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide">
                                 TARGET: <?= esc($log['entity_type']) ?> #<?= esc($log['entity_id']) ?>
                             </div>
                         <?php endif; ?>
@@ -312,7 +312,7 @@ $exportQuery = http_build_query(array_filter([
                                     FP: <?= esc(substr($log['device_id'], 0, 8)) ?>...
                                 </span>
                             <?php endif; ?>
-                            <span class="font-mono text-[10px] text-text-muted/80"><?= $clientInfo ?></span>
+                            <span class="font-mono text-[10px] text-text-muted"><?= $clientInfo ?></span>
                         </div>
                     </div>
                 </div>
@@ -399,7 +399,7 @@ $exportQuery = http_build_query(array_filter([
                                                     <?= esc($log['role_name'] ?? 'Guest') ?>
                                                 </span>
                                                 <?php if (!empty($log['email'])): ?>
-                                                    <span class="truncate max-w-[130px] hidden sm:inline text-text-muted/80">
+                                                    <span class="truncate max-w-[130px] hidden sm:inline text-text-muted">
                                                         <?= esc($log['email']) ?>
                                                     </span>
                                                 <?php endif; ?>
@@ -426,7 +426,7 @@ $exportQuery = http_build_query(array_filter([
                                         <?= esc($log['details'] ?? '—') ?>
                                     </div>
                                     <?php if (!empty($log['entity_type']) && !empty($log['entity_id'])): ?>
-                                        <div class="text-[10px] font-semibold text-text-muted/80 mt-1 flex items-center gap-1">
+                                        <div class="text-[10px] font-semibold text-text-muted mt-1 flex items-center gap-1">
                                             <span class="uppercase tracking-wider">Target:</span>
                                             <code class="px-1 py-0.5 rounded bg-surface-border/40 text-text-muted"><?= esc($log['entity_type']) ?> #<?= esc($log['entity_id']) ?></code>
                                         </div>
@@ -484,7 +484,7 @@ $exportQuery = http_build_query(array_filter([
                         &larr; Prev
                     </a>
                 <?php else: ?>
-                    <span class="px-3 py-1.5 rounded-lg border border-surface-border/50 bg-surface/50 text-text-muted/40 font-semibold cursor-not-allowed">
+                    <span role="link" aria-disabled="true" class="px-3 py-1.5 rounded-lg border border-surface-border/50 bg-surface/50 text-text-muted/40 font-semibold cursor-not-allowed">
                         &larr; Prev
                     </span>
                 <?php endif; ?>
@@ -501,7 +501,7 @@ $exportQuery = http_build_query(array_filter([
                         Next &rarr;
                     </a>
                 <?php else: ?>
-                    <span class="px-3 py-1.5 rounded-lg border border-surface-border/50 bg-surface/50 text-text-muted/40 font-semibold cursor-not-allowed">
+                    <span role="link" aria-disabled="true" class="px-3 py-1.5 rounded-lg border border-surface-border/50 bg-surface/50 text-text-muted/40 font-semibold cursor-not-allowed">
                         Next &rarr;
                     </span>
                 <?php endif; ?>

@@ -22,7 +22,7 @@
             </div>
 
             <div class="pt-4">
-                <button type="submit" class="w-full bg-accent text-white font-bold py-3.5 rounded-xl cursor-pointer hover:bg-accent-hover transition-all text-sm shadow-lg shadow-accent/20 active:scale-[0.98]">
+                <button type="submit" class="w-full bg-accent text-accent-text font-bold py-3.5 rounded-xl cursor-pointer hover:bg-accent-hover transition-all text-sm shadow-lg shadow-accent/20 active:scale-[0.98]">
                     Verify & Continue
                 </button>
             </div>

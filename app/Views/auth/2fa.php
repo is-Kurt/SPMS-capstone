@@ -96,12 +96,12 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.disabled = false;
             btn.textContent = 'Resend Code Now';
             btn.classList.remove('text-text-muted');
-            btn.classList.add('text-accent', 'hover:text-accent-hover');
+            btn.classList.add('text-accent-ink', 'hover:text-accent-hover');
         } else {
             btn.disabled = true;
             btn.textContent = `Resend Code (${timeLeft}s)`;
             btn.classList.add('text-text-muted');
-            btn.classList.remove('text-accent', 'hover:text-accent-hover');
+            btn.classList.remove('text-accent-ink', 'hover:text-accent-hover');
         }
     };
     

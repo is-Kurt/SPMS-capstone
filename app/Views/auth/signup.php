@@ -31,7 +31,7 @@
 
         <div class="border border-surface-border p-8 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm">
             <h3 class="text-[10px] font-black uppercase tracking-widest text-text-muted mb-6 flex items-center gap-2">
-                <span class="w-5 h-5 rounded-full bg-accent text-white flex items-center justify-center">1</span>
+                <span class="w-5 h-5 rounded-full bg-accent text-accent-text flex items-center justify-center">1</span>
                 Basic Profile
             </h3>
             
@@ -111,7 +111,7 @@
             <div class="border border-surface-border p-8 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm mb-6">
                 <h3 class="text-[10px] font-black uppercase tracking-widest text-text-muted mb-6 flex items-center justify-between">
                     <div class="flex items-center gap-2">
-                        <span class="w-5 h-5 rounded-full bg-accent text-white flex items-center justify-center num-badge">2</span>
+                        <span class="w-5 h-5 rounded-full bg-accent text-accent-text flex items-center justify-center num-badge">2</span>
                         Document Type
                     </div>
                 </h3>
@@ -131,7 +131,7 @@
                         <ul class="js-select-dropdown absolute z-50 w-full mt-2 bg-surface border border-surface-border rounded-xl shadow-lg shadow-black/5 dark:shadow-black/20 overflow-hidden hidden transform origin-top transition-all duration-200 scale-95 opacity-0">
                             <?php foreach($docTypes as $type): ?>
                                 <?php $isSelected = ($oldDocType === $type); ?>
-                                <li class="px-4 py-3 text-sm font-bold text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 cursor-pointer transition-colors js-select-option <?= $isSelected ? 'bg-accent/10 text-accent' : '' ?>" data-value="<?= $type ?>" data-label="<?= $type ?>">
+                                <li class="px-4 py-3 text-sm font-bold text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 cursor-pointer transition-colors js-select-option <?= $isSelected ? 'bg-accent/10 text-accent-ink' : '' ?>" data-value="<?= $type ?>" data-label="<?= $type ?>">
                                     <?= $type ?>
                                 </li>
                             <?php endforeach; ?>
@@ -171,7 +171,7 @@
                 <div class="position-card border border-surface-border p-8 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm relative group">
                     <h3 class="text-[10px] font-black uppercase tracking-widest text-text-muted mb-6 flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <span class="w-5 h-5 rounded-full bg-accent text-white flex items-center justify-center num-badge">3</span>
+                            <span class="w-5 h-5 rounded-full bg-accent text-accent-text flex items-center justify-center num-badge">3</span>
                             Designation
                         </div>
                         <button type="button" class="btn-remove hidden text-danger-500 hover:text-danger-700 transition-colors">
@@ -238,7 +238,7 @@
             </button>
         <?php endif; ?>
 
-        <button type="submit" class="w-full mt-4 bg-accent text-white font-black uppercase tracking-widest py-4 rounded-2xl shadow-lg shadow-accent/20 hover:bg-accent-hover active:scale-[0.98] transition-all cursor-pointer">
+        <button type="submit" class="w-full mt-4 bg-accent text-accent-text font-black uppercase tracking-widest py-4 rounded-2xl shadow-lg shadow-accent/20 hover:bg-accent-hover active:scale-[0.98] transition-all cursor-pointer">
             Finalize Account Setup
         </button>
     <?= form_close() ?>

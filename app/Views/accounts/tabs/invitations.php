@@ -29,7 +29,7 @@
                 <div class="space-y-1">
                     <?php foreach ($roles as $role): ?>
                         <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
-                            <input type="checkbox" name="invite_filter_role[]" value="<?= esc($role['name']) ?>" class="checkbox invite-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer">
+                            <input type="checkbox" name="invite_filter_role[]" value="<?= esc($role['name']) ?>" class="checkbox invite-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer">
                             <?= esc($role['name']) ?>
                         </label>
                     <?php endforeach; ?>
@@ -47,11 +47,11 @@
                 </button>
                 <div class="space-y-1">
                     <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
-                        <input type="checkbox" name="invite_filter_status[]" value="pending" class="checkbox invite-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer">
+                        <input type="checkbox" name="invite_filter_status[]" value="pending" class="checkbox invite-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer">
                         Pending
                     </label>
                     <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
-                        <input type="checkbox" name="invite_filter_status[]" value="accepted" class="checkbox invite-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer">
+                        <input type="checkbox" name="invite_filter_status[]" value="accepted" class="checkbox invite-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer">
                         Accepted
                     </label>
                 </div>
@@ -68,11 +68,11 @@
                 </button>
                 <div class="space-y-1">
                     <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
-                        <input type="checkbox" name="invite_filter_expired[]" value="valid" class="checkbox invite-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer">
+                        <input type="checkbox" name="invite_filter_expired[]" value="valid" class="checkbox invite-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer">
                         Active / Valid
                     </label>
                     <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
-                        <input type="checkbox" name="invite_filter_expired[]" value="expired" class="checkbox invite-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer">
+                        <input type="checkbox" name="invite_filter_expired[]" value="expired" class="checkbox invite-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer">
                         Expired
                     </label>
                 </div>
@@ -93,7 +93,7 @@
         <!-- Mobile Filter Toggle Bar -->
         <div class="lg:hidden p-4 mb-2 bg-surface border-b border-surface-border shrink-0 flex items-center justify-between">
             <span class="text-xs font-bold text-text">Invitations <span class="text-text-muted font-normal">(<span id="mobile-invitations-count"><?= count($invitations) ?></span> invites)</span></span>
-            <button type="button" id="open-mobile-invite-filters" class="flex items-center gap-2 text-xs font-bold text-accent bg-accent/10 px-3 py-1.5 rounded-lg active:scale-95 transition-transform cursor-pointer">
+            <button type="button" id="open-mobile-invite-filters" class="flex items-center gap-2 text-xs font-bold text-accent-ink bg-accent/10 px-3 py-1.5 rounded-lg active:scale-95 transition-transform cursor-pointer">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
                 Filters
             </button>
@@ -122,7 +122,7 @@
                         $isExpired = $inv['status'] === 'pending' && strtotime($inv['expires_at']) < time();
                         if ($inv['status'] === 'accepted') {
                             $statusLabel = 'Accepted';
-                            $statusClass = 'text-success-500';
+                            $statusClass = 'text-success-600';
                         } elseif ($isExpired) {
                             $statusLabel = 'Expired';
                             $statusClass = 'text-danger-500';
@@ -172,7 +172,7 @@
                                     <?php if ($inv['status'] !== 'accepted'): ?>
                                         <?= form_open('account/invite/resend', ['class' => 'flex-1 lg:flex-none inline-block', 'data-ajax' => 'resend-invitation']) ?>
                                             <input type="hidden" name="id" value="<?= $inv['id'] ?>">
-                                            <button type="submit" class="w-full px-3 py-2 lg:py-1 rounded-lg text-xs font-bold text-accent bg-accent/10 lg:bg-transparent hover:bg-accent/20 lg:hover:bg-accent/10 border border-transparent transition-colors cursor-pointer text-center" title="Resend Email">Resend</button>
+                                            <button type="submit" class="w-full px-3 py-2 lg:py-1 rounded-lg text-xs font-bold text-accent-ink bg-accent/10 lg:bg-transparent hover:bg-accent/20 lg:hover:bg-accent/10 border border-transparent transition-colors cursor-pointer text-center" title="Resend Email">Resend</button>
                                         <?= form_close() ?>
                                         
                                         <?= form_open('account/invite/delete', ['class' => 'flex-1 lg:flex-none inline-block', 'data-ajax' => 'delete-invitation', 'data-confirm' => 'Revoke this invitation? The link will immediately stop working.', 'data-confirm-title' => 'Revoke Invitation']) ?>

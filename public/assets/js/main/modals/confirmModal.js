@@ -32,7 +32,7 @@ const VARIANTS = {
         path: 'M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0Zm-9-3.75h.008v.008H12V8.25Z'
     },
     primary: {
-        wrap: 'bg-accent/10 text-accent ring-accent/20',
+        wrap: 'bg-accent/10 text-accent-ink ring-accent/20',
         btn: 'bg-accent hover:bg-accent-hover shadow-accent/20',
         path: 'M3.478 2.404a.75.75 0 00-.926.941l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.404Z',
         fill: 'currentColor',
@@ -238,7 +238,7 @@ window.showToast = function (message, type = 'success') {
             icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />'
         },
         info: {
-            bg: 'bg-accent text-white shadow-accent/30',
+            bg: 'bg-accent text-accent-text shadow-accent/30',
             icon: '<path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0Zm-9-3.75h.008v.008H12V8.25Z" />'
         }
     };

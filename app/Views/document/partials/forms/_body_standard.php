@@ -5,7 +5,7 @@
                                     <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 12px;">
                                         <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                                             <span>CORE FUNCTIONS</span>
-                                            <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic; text-transform: none;">(depending on position/designation)</span>
+                                            <span style="font-weight: 500; font-size: 9px; color: #5f6f86; font-style: italic; text-transform: none;">(depending on position/designation)</span>
                                         </div>
                                     </div>
                                 </td>
@@ -19,7 +19,7 @@
                                     <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 12px;">
                                         <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                                             <span>STRATEGIC FUNCTIONS</span>
-                                            <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic; text-transform: none;">(depending on position/designation)</span>
+                                            <span style="font-weight: 500; font-size: 9px; color: #5f6f86; font-style: italic; text-transform: none;">(depending on position/designation)</span>
                                         </div>
                                     </div>
                                 </td>
@@ -33,7 +33,7 @@
                                     <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 12px;">
                                         <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                                             <span>SUPPORT FUNCTIONS</span>
-                                            <span style="font-weight: 500; font-size: 9px; color: #64748b; font-style: italic; text-transform: none;">(depending on position/designation)</span>
+                                            <span style="font-weight: 500; font-size: 9px; color: #5f6f86; font-style: italic; text-transform: none;">(depending on position/designation)</span>
                                         </div>
                                     </div>
                                 </td>

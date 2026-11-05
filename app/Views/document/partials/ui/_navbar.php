@@ -46,7 +46,7 @@
                             <span class="text-[11px]">Prev</span>
                         </a>
                     <?php else: ?>
-                        <span class="flex items-center gap-1 px-2 py-1 text-text-muted/30 rounded-md cursor-not-allowed">
+                        <span role="link" aria-disabled="true" class="flex items-center gap-1 px-2 py-1 text-text-muted/30 rounded-md cursor-not-allowed">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                             </svg>
@@ -56,7 +56,7 @@
 
                     <span class="px-2 py-0.5 text-[11px] font-black text-text border-x border-surface-border/50 whitespace-nowrap"
                           title="Reviewing Ratee <?= $rateeNav['currentIndex'] ?> of <?= $rateeNav['totalRatees'] ?>">
-                        <span class="text-accent font-extrabold"><?= $rateeNav['currentIndex'] ?></span>
+                        <span class="text-accent-ink font-extrabold"><?= $rateeNav['currentIndex'] ?></span>
                         <span class="text-text-muted font-normal">/</span>
                         <span><?= $rateeNav['totalRatees'] ?></span>
                     </span>
@@ -71,7 +71,7 @@
                             </svg>
                         </a>
                     <?php else: ?>
-                        <span class="flex items-center gap-1 px-2 py-1 text-text-muted/30 rounded-md cursor-not-allowed">
+                        <span role="link" aria-disabled="true" class="flex items-center gap-1 px-2 py-1 text-text-muted/30 rounded-md cursor-not-allowed">
                             <span class="text-[11px]">Next</span>
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
@@ -499,14 +499,14 @@
                         <span class="text-[10px]">Prev</span>
                     </a>
                 <?php else: ?>
-                    <span class="flex items-center gap-0.5 px-2 py-1 text-text-muted/30 rounded-md cursor-not-allowed">
+                    <span role="link" aria-disabled="true" class="flex items-center gap-0.5 px-2 py-1 text-text-muted/30 rounded-md cursor-not-allowed">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
                         <span class="text-[10px]">Prev</span>
                     </span>
                 <?php endif; ?>
 
                 <span class="px-2 py-0.5 text-[10px] font-black text-text border-x border-surface-border/50 whitespace-nowrap">
-                    <span class="text-accent font-extrabold"><?= $rateeNav['currentIndex'] ?></span>
+                    <span class="text-accent-ink font-extrabold"><?= $rateeNav['currentIndex'] ?></span>
                     <span class="text-text-muted font-normal">/</span>
                     <span><?= $rateeNav['totalRatees'] ?></span>
                 </span>
@@ -519,7 +519,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
                     </a>
                 <?php else: ?>
-                    <span class="flex items-center gap-0.5 px-2 py-1 text-text-muted/30 rounded-md cursor-not-allowed">
+                    <span role="link" aria-disabled="true" class="flex items-center gap-0.5 px-2 py-1 text-text-muted/30 rounded-md cursor-not-allowed">
                         <span class="text-[10px]">Next</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
                     </span>

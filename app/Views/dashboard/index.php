@@ -94,7 +94,7 @@
                             <?= esc($selectedUnitDisplayName) ?>
                         </span>
                         <svg id="college-dropdown-chevron-mobile" xmlns="http://www.w3.org/2000/svg" 
-                             class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 shrink-0 transition-transform duration-200" 
+                             class="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-500 shrink-0 transition-transform duration-200" 
                              fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                         </svg>
@@ -108,7 +108,7 @@
                         <!-- Search Filter Input -->
                         <div class="p-2 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-950/60">
                             <div class="relative">
-                                <svg class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <svg class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
                                 <input type="text" 
@@ -132,7 +132,7 @@
                             </button>
 
                             <?php if (!empty($colleges)): ?>
-                                <div class="college-opt-group-mobile pt-1.5 pb-0.5 px-2 text-[10px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                                <div class="college-opt-group-mobile pt-1.5 pb-0.5 px-2 text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-500">
                                     Colleges
                                 </div>
                                 <?php foreach ($colleges as $c): 
@@ -151,7 +151,7 @@
                             <?php endif; ?>
 
                             <?php if (!empty($adminOffices)): ?>
-                                <div class="college-opt-group-mobile pt-2 pb-0.5 px-2 text-[10px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                                <div class="college-opt-group-mobile pt-2 pb-0.5 px-2 text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-500">
                                     Administrative Departments &amp; Units
                                 </div>
                                 <?php foreach ($adminOffices as $ao): 
@@ -170,7 +170,7 @@
                             <?php endif; ?>
 
                             <?php if (!empty($subDepts)): ?>
-                                <div class="college-opt-group-mobile pt-2 pb-0.5 px-2 text-[10px] font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                                <div class="college-opt-group-mobile pt-2 pb-0.5 px-2 text-[10px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-500">
                                     Degree Programs / Sub-Departments
                                 </div>
                                 <?php foreach ($subDepts as $sd): 
@@ -363,7 +363,7 @@
                         <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-xs font-black shrink-0">1</span>
                         <div class="min-w-0">
                             <h2 class="text-sm font-bold text-zinc-900 dark:text-white truncate">Target Commitment Phase</h2>
-                            <div class="flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                            <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-500 mt-0.5">
                                 <svg class="w-3.5 h-3.5 shrink-0 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
@@ -382,7 +382,7 @@
                                 Closed
                             </span>
                         <?php else: ?>
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-400 dark:bg-zinc-800/80 dark:text-zinc-500 border border-zinc-200/60 dark:border-zinc-700/60">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-500 dark:bg-zinc-800/80 dark:text-zinc-500 border border-zinc-200/60 dark:border-zinc-700/60">
                                 <?= esc($p1['label']) ?>
                             </span>
                         <?php endif; ?>
@@ -411,7 +411,7 @@
                         <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-xs font-black shrink-0">2</span>
                         <div class="min-w-0">
                             <h2 class="text-sm font-bold text-zinc-900 dark:text-white truncate">Accomplishment Report Phase</h2>
-                            <div class="flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                            <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-500 mt-0.5">
                                 <svg class="w-3.5 h-3.5 shrink-0 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
@@ -439,7 +439,7 @@
                                 Closed
                             </span>
                         <?php else: ?>
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-400 dark:bg-zinc-800/80 dark:text-zinc-500 border border-zinc-200/60 dark:border-zinc-700/60">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-500 dark:bg-zinc-800/80 dark:text-zinc-500 border border-zinc-200/60 dark:border-zinc-700/60">
                                 <?= esc($p2['label']) ?>
                             </span>
                         <?php endif; ?>
@@ -547,7 +547,7 @@
                                 <option value="desc">Highest to Lowest</option>
                                 <option value="asc">Lowest to Highest</option>
                             </select>
-                            <svg class="w-3 h-3 text-zinc-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <svg class="w-3 h-3 text-zinc-500 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                             </svg>
                         </div>
@@ -577,7 +577,7 @@
                                         <div class="font-bold text-xs text-zinc-900 dark:text-white truncate">
                                             <?= esc($tp['full_name'] ?? 'Personnel') ?>
                                         </div>
-                                        <div class="text-[10px] text-zinc-400 truncate">
+                                        <div class="text-[10px] text-zinc-500 truncate">
                                             <?= esc($tp['position'] ?? '') ?>
                                         </div>
                                     </div>
@@ -594,12 +594,12 @@
                                 </div>
                             </div>
                         <?php endforeach; ?>
-                        <div class="performer-tier-empty col-span-full py-8 text-center text-zinc-400 dark:text-zinc-500 italic text-xs hidden">
+                        <div class="performer-tier-empty col-span-full py-8 text-center text-zinc-500 dark:text-zinc-500 italic text-xs hidden">
                             No personnel discovered in this rating tier.
                         </div>
                     </div>
                 <?php else: ?>
-                    <div class="py-8 text-center text-zinc-400 dark:text-zinc-500 italic text-xs">
+                    <div class="py-8 text-center text-zinc-500 dark:text-zinc-500 italic text-xs">
                         Performance ratings in progress. Top performers will appear here upon completion.
                     </div>
                 <?php endif; ?>
@@ -696,7 +696,7 @@
                         <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-xs font-black shrink-0">1</span>
                         <div class="min-w-0">
                             <h2 class="text-sm font-bold text-zinc-900 dark:text-white truncate">Target Commitment Phase</h2>
-                            <div class="flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                            <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-500 mt-0.5">
                                 <svg class="w-3.5 h-3.5 shrink-0 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
@@ -715,7 +715,7 @@
                                 Closed
                             </span>
                         <?php else: ?>
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-400 dark:bg-zinc-800/80 dark:text-zinc-500 border border-zinc-200/60 dark:border-zinc-700/60">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-500 dark:bg-zinc-800/80 dark:text-zinc-500 border border-zinc-200/60 dark:border-zinc-700/60">
                                 <?= esc($p1['label']) ?>
                             </span>
                         <?php endif; ?>
@@ -744,7 +744,7 @@
                         <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-xs font-black shrink-0">2</span>
                         <div class="min-w-0">
                             <h2 class="text-sm font-bold text-zinc-900 dark:text-white truncate">Accomplishment Report Phase</h2>
-                            <div class="flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                            <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-500 mt-0.5">
                                 <svg class="w-3.5 h-3.5 shrink-0 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
@@ -772,7 +772,7 @@
                                 Closed
                             </span>
                         <?php else: ?>
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-400 dark:bg-zinc-800/80 dark:text-zinc-500 border border-zinc-200/60 dark:border-zinc-700/60">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-zinc-100 text-zinc-500 dark:bg-zinc-800/80 dark:text-zinc-500 border border-zinc-200/60 dark:border-zinc-700/60">
                                 <?= esc($p2['label']) ?>
                             </span>
                         <?php endif; ?>
@@ -902,7 +902,7 @@
                             <div class="flex items-baseline justify-between mb-1.5">
                                 <span class="text-xs font-bold text-zinc-900 dark:text-white">
                                     <?= (int)($pipeline['stage1']['approved'] ?? 0) ?>
-                                    <span class="text-zinc-400 dark:text-zinc-400 font-normal">/ <?= $totalPersonnel ?> Approved</span>
+                                    <span class="text-zinc-500 dark:text-zinc-400 font-normal">/ <?= $totalPersonnel ?> Approved</span>
                                 </span>
                                 <span class="text-xs font-bold text-zinc-900 dark:text-white">
                                     <?= $totalPersonnel > 0 ? round(((int)($pipeline['stage1']['approved'] ?? 0) / $totalPersonnel) * 100) : 0 ?>%
@@ -948,7 +948,7 @@
                                         </span>
                                     <?php endif; ?>
                                 </div>
-                                <svg id="stage-2-chevron" class="w-4 h-4 text-zinc-400 dark:text-zinc-400 transition-transform duration-200 lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <svg id="stage-2-chevron" class="w-4 h-4 text-zinc-500 dark:text-zinc-400 transition-transform duration-200 lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                                 </svg>
                             </div>
@@ -993,9 +993,9 @@
                             <div class="flex items-baseline justify-between mb-1.5">
                                 <span class="text-xs font-bold text-zinc-900 dark:text-white">
                                     <?= (int)($pipeline['stage3']['completed'] ?? 0) ?>
-                                    <span class="text-zinc-400 dark:text-zinc-400 font-normal">/ <?= $totalPersonnel ?> Evaluated</span>
+                                    <span class="text-zinc-500 dark:text-zinc-400 font-normal">/ <?= $totalPersonnel ?> Evaluated</span>
                                 </span>
-                                <span class="text-xs font-bold text-zinc-400 dark:text-zinc-400">
+                                <span class="text-xs font-bold text-zinc-500 dark:text-zinc-400">
                                     <?= $totalPersonnel > 0 ? round(((int)($pipeline['stage3']['completed'] ?? 0) / $totalPersonnel) * 100) : 0 ?>%
                                 </span>
                             </div>
@@ -1039,7 +1039,7 @@
                                         </span>
                                     <?php endif; ?>
                                 </div>
-                                <svg id="stage-4-chevron" class="w-4 h-4 text-zinc-400 dark:text-zinc-400 transition-transform duration-200 lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <svg id="stage-4-chevron" class="w-4 h-4 text-zinc-500 dark:text-zinc-400 transition-transform duration-200 lg:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                                 </svg>
                             </div>
@@ -1146,7 +1146,7 @@
                                 <option value="desc">Highest to Lowest</option>
                                 <option value="asc">Lowest to Highest</option>
                             </select>
-                            <svg class="w-3 h-3 text-zinc-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <svg class="w-3 h-3 text-zinc-500 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                             </svg>
                         </div>
@@ -1185,7 +1185,7 @@
                                             </span>
                                         </div>
                                         <div class="text-[11px] text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
-                                            <?= esc($tp['department'] ?? 'Department') ?> &bull; <span class="text-zinc-400 dark:text-zinc-500"><?= esc($tp['position'] ?? '') ?></span>
+                                            <?= esc($tp['department'] ?? 'Department') ?> &bull; <span class="text-zinc-500 dark:text-zinc-500"><?= esc($tp['position'] ?? '') ?></span>
                                         </div>
                                     </div>
                                 </div>
@@ -1203,7 +1203,7 @@
                                 </div>
                             </div>
                         <?php endforeach; ?>
-                        <div class="performer-tier-empty col-span-full py-8 text-center text-zinc-400 dark:text-zinc-500 italic text-xs hidden">
+                        <div class="performer-tier-empty col-span-full py-8 text-center text-zinc-500 dark:text-zinc-500 italic text-xs hidden">
                             No personnel discovered in this rating tier.
                         </div>
                     </div>
@@ -1213,7 +1213,7 @@
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </div>
                         <h4 class="text-xs font-bold text-zinc-800 dark:text-zinc-200">Evaluations In Progress</h4>
-                        <p class="text-[11px] text-zinc-400 dark:text-zinc-500 max-w-xs mx-auto mt-1">
+                        <p class="text-[11px] text-zinc-500 dark:text-zinc-500 max-w-xs mx-auto mt-1">
                             Top performing personnel will populate automatically as soon as accomplishment ratings are finalized and approved.
                         </p>
                     </div>
@@ -1233,7 +1233,7 @@
 
                 <!-- Search Bar for Departments & Units -->
                 <div class="relative w-full sm:w-64">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-500">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </div>
                     <input type="text" id="office-table-search" oninput="filterOfficeLeaderboard(this.value)"
@@ -1261,7 +1261,7 @@
                         ?>
                         <?php if (empty($unitsToRender)): ?>
                             <tr>
-                                <td colspan="6" class="py-8 px-4 text-center text-zinc-400 italic">
+                                <td colspan="6" class="py-8 px-4 text-center text-zinc-500 italic">
                                     No department / unit records available for this cycle.
                                 </td>
                             </tr>
@@ -1338,7 +1338,7 @@
                                             <?php endif; ?>
 
                                             <?php if ($hasKids): ?>
-                                                <span class="inline-flex items-center text-[10px] font-bold text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800/80 px-1.5 py-0.5 rounded shrink-0">
+                                                <span class="inline-flex items-center text-[10px] font-bold text-zinc-500 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800/80 px-1.5 py-0.5 rounded shrink-0">
                                                     <?= $kidsCount ?> <?= $kidsCount === 1 ? 'sub-unit' : 'sub-units' ?>
                                                 </span>
                                             <?php endif; ?>
@@ -1347,7 +1347,7 @@
                                     <td class="py-3 px-3 text-center font-bold text-zinc-900 dark:text-white">
                                         <?= $headcount ?>
                                         <?php if ($directHeadcount > 0 && $directHeadcount !== $headcount): ?>
-                                            <span class="text-[10px] font-normal text-zinc-400 block" title="Direct personnel: <?= $directHeadcount ?>, Branch total: <?= $headcount ?>">(<?= $directHeadcount ?> direct)</span>
+                                            <span class="text-[10px] font-normal text-zinc-500 block" title="Direct personnel: <?= $directHeadcount ?>, Branch total: <?= $headcount ?>">(<?= $directHeadcount ?> direct)</span>
                                         <?php endif; ?>
                                     </td>
                                     <td class="py-3 px-3 text-center whitespace-nowrap">
@@ -1381,7 +1381,7 @@
                             <?php endforeach; ?>
                         <?php endif; ?>
                         <tr id="compliance-empty-row" class="hidden">
-                            <td colspan="6" class="py-8 px-4 text-center text-zinc-400 italic">
+                            <td colspan="6" class="py-8 px-4 text-center text-zinc-500 italic">
                                 No departments or units match the selected hierarchy filter.
                             </td>
                         </tr>
@@ -1409,7 +1409,7 @@
                             <span class="text-text-muted font-normal">(<span id="masterlist-mobile-records-count"><?= count($cycleFolders) ?></span> ratees)</span>
                         </span>
                         <div class="flex items-center gap-2">
-                            <button type="button" onclick="toggleMasterlistFilterSidebar()" class="flex items-center gap-1.5 text-xs font-bold text-accent bg-accent/10 px-3 py-1.5 rounded-lg active:scale-95 transition-transform cursor-pointer">
+                            <button type="button" onclick="toggleMasterlistFilterSidebar()" class="flex items-center gap-1.5 text-xs font-bold text-accent-ink bg-accent/10 px-3 py-1.5 rounded-lg active:scale-95 transition-transform cursor-pointer">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
                                 <span>Filters</span>
                                 <span id="mobile-masterlist-filter-badge" class="hidden px-1.5 py-0.2 rounded-full text-[9px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">0</span>
@@ -1520,7 +1520,7 @@
                                             <div class="text-[10px] font-medium text-text-muted truncate mt-0.5">
                                                 <?= esc($f['position'] ?? '—') ?>
                                             </div>
-                                            <div class="text-[10px] text-text-muted/80 truncate">
+                                            <div class="text-[10px] text-text-muted truncate">
                                                 <?= esc($f['department'] ?? '—') ?> • <?= esc($f['ratee_email'] ?? $f['email'] ?? '') ?>
                                             </div>
                                         </div>
@@ -1623,7 +1623,7 @@
                                                         <div class="text-[11px] font-medium text-text-muted truncate mt-0.5" title="<?= esc($f['position'] ?? '—') ?>">
                                                             <?= esc($f['position'] ?? '—') ?>
                                                         </div>
-                                                        <div class="text-[10px] text-text-muted/80 truncate" title="<?= esc($f['department'] ?? '—') ?> • <?= esc($f['ratee_email'] ?? $f['email'] ?? '') ?>">
+                                                        <div class="text-[10px] text-text-muted truncate" title="<?= esc($f['department'] ?? '—') ?> • <?= esc($f['ratee_email'] ?? $f['email'] ?? '') ?>">
                                                             <?= esc($f['department'] ?? '—') ?> • <?= esc($f['ratee_email'] ?? $f['email'] ?? '') ?>
                                                         </div>
                                                     </div>
@@ -1753,11 +1753,11 @@
                             </button>
                             <div class="space-y-1">
                                 <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
-                                    <input type="checkbox" name="masterlist_filter_type[]" value="teaching" onchange="filterMasterlist(true)" class="checkbox masterlist-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
+                                    <input type="checkbox" name="masterlist_filter_type[]" value="teaching" onchange="filterMasterlist(true)" class="checkbox masterlist-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer shrink-0">
                                     <span>Teaching</span>
                                 </label>
                                 <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
-                                    <input type="checkbox" name="masterlist_filter_type[]" value="non_teaching" onchange="filterMasterlist(true)" class="checkbox masterlist-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
+                                    <input type="checkbox" name="masterlist_filter_type[]" value="non_teaching" onchange="filterMasterlist(true)" class="checkbox masterlist-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer shrink-0">
                                     <span>Non-Teaching</span>
                                 </label>
                             </div>
@@ -1778,7 +1778,7 @@
                                         $stName = is_array($es) ? ($es['name'] ?? '') : (string)$es;
                                     ?>
                                         <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
-                                            <input type="checkbox" name="masterlist_filter_emp[]" value="<?= strtolower(esc($stName)) ?>" onchange="filterMasterlist(true)" class="checkbox masterlist-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
+                                            <input type="checkbox" name="masterlist_filter_emp[]" value="<?= strtolower(esc($stName)) ?>" onchange="filterMasterlist(true)" class="checkbox masterlist-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer shrink-0">
                                             <span><?= esc($stName) ?></span>
                                         </label>
                                     <?php endforeach; ?>
@@ -1811,7 +1811,7 @@
                                     <?php if (!empty($filterPositions)): ?>
                                         <?php foreach ($filterPositions as $pos): ?>
                                             <label class="position-filter-label flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors" data-title="<?= strtolower(esc($pos)) ?>">
-                                                <input type="checkbox" name="masterlist_filter_pos[]" value="<?= esc($pos) ?>" onchange="filterMasterlist(true)" class="checkbox masterlist-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
+                                                <input type="checkbox" name="masterlist_filter_pos[]" value="<?= esc($pos) ?>" onchange="filterMasterlist(true)" class="checkbox masterlist-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer shrink-0">
                                                 <span class="truncate" title="<?= esc($pos) ?>"><?= esc($pos) ?></span>
                                             </label>
                                         <?php endforeach; ?>
@@ -2719,7 +2719,7 @@ function renderMasterlistPagination(totalPages, currentPage = masterlistCurrentP
 
     pages.forEach(p => {
         if (p === '...') {
-            html += `<span class="hidden sm:inline-flex px-1.5 py-1 text-xs text-zinc-400 dark:text-zinc-600 font-bold">...</span>`;
+            html += `<span class="hidden sm:inline-flex px-1.5 py-1 text-xs text-zinc-500 dark:text-zinc-600 font-bold">...</span>`;
         } else {
             const isActive = p === currentPage;
             html += `<button type="button" onclick="goToMasterlistPage(${p})"

@@ -54,7 +54,7 @@
                                             <td style="width: 65px; border: none; padding: 3px 0; font-weight: bold; color: #0f172a;">Name:</td>
                                             <td style="border: none; padding: 3px 0;">
                                                 <input type="text" class="field-approver-name spms-meta-input" id="approver-name" value="<?= esc($supervisors[0]['name'] ?? '') ?>" placeholder="<?= $isDocOpcr ? '(name of head of office / approving authority)' : ($isDocDpcr ? '(name of office head)' : 'Name of Approving Authority') ?>" style="font-weight: bold; width: 60%; padding: 2px 4px;" <?= $canEditApprover ? '' : 'disabled' ?>>
-                                                <span style="color: #64748b; font-style: italic; font-size: 10px; margin-left: 6px;">(may add signatories depending on position)</span>
+                                                <span style="color: #5f6f86; font-style: italic; font-size: 10px; margin-left: 6px;">(may add signatories depending on position)</span>
                                             </td>
                                         </tr>
                                         <tr>

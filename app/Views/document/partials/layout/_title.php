@@ -6,7 +6,7 @@
                             : ($isDocDpcr ? 'DEPARTMENT PERFORMANCE COMMITMENT AND REVIEW (DPCR)' : ($isDocOpcr ? 'OFFICE PERFORMANCE COMMITMENT AND REVIEW (OPCR)' : 'INDIVIDUAL PERFORMANCE COMMITMENT AND REVIEW (IPCR)')) ?>
                     </h2>
                     <?php if ($isDocIperf): ?>
-                    <div style="font-size: 11px; font-style: italic; color: #64748b; margin-top: 4px;">
+                    <div style="font-size: 11px; font-style: italic; color: #5f6f86; margin-top: 4px;">
                         (attach rubrics for the rating of actual accomplishments vis-à-vis expected outputs)
                     </div>
                     <?php endif; ?>

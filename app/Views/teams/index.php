@@ -23,7 +23,7 @@
         <!-- Staff Info Inputs -->
         <div class="mb-4 shrink-0 flex flex-col sm:flex-row gap-3 lg:gap-4 bg-surface lg:bg-transparent p-4 lg:p-0 rounded-2xl lg:rounded-none border border-surface-border lg:border-none shadow-sm lg:shadow-none">
             <div class="w-full sm:w-[35%] flex flex-col justify-end">
-                <label class="block text-[10px] font-black uppercase tracking-widest text-accent mb-1 ml-1 lg:ml-0">Staff Title</label>
+                <label class="block text-[10px] font-black uppercase tracking-widest text-accent-ink mb-1 ml-1 lg:ml-0">Staff Title</label>
                 <div class="flex items-center gap-3">
                     <div class="flex-1 flex items-center gap-2 border-b border-transparent focus-within:border-accent/30 transition-colors pb-1">
                         <input type="text" name="name" value="<?= esc($activeTeam['name']) ?>" placeholder="Staff Name" class="w-full bg-transparent text-xl lg:text-2xl font-black text-text placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:ring-0 px-1">
@@ -54,9 +54,9 @@
             <div class="flex-1 flex flex-col min-w-0">
                 <!-- Sub Tabs (Now visible on Desktop too!) -->
                 <div class="flex gap-6 border-b border-surface-border mb-4 px-2 shrink-0 overflow-x-auto custom-scrollbar">
-                    <button type="button" id="tab-btn-selected" class="tab-btn pb-3 text-sm font-bold border-b-2 border-accent text-accent transition-all cursor-pointer whitespace-nowrap" onclick="switchTeamPanel('selected')">
+                    <button type="button" id="tab-btn-selected" class="tab-btn pb-3 text-sm font-bold border-b-2 border-accent text-accent-ink transition-all cursor-pointer whitespace-nowrap" onclick="switchTeamPanel('selected')">
                         Selected Members
-                        <span class="ml-1.5 px-2 py-0.5 rounded-full bg-accent/10 text-accent text-[10px] tab-badge transition-colors" id="tab-selected-count">0</span>
+                        <span class="ml-1.5 px-2 py-0.5 rounded-full bg-accent/10 text-accent-ink text-[10px] tab-badge transition-colors" id="tab-selected-count">0</span>
                     </button>
                     <button type="button" id="tab-btn-available" class="tab-btn pb-3 text-sm font-bold border-b-2 border-transparent text-text-muted hover:text-text hover:border-surface-border transition-all cursor-pointer whitespace-nowrap" onclick="switchTeamPanel('available')">
                         Available Users
@@ -78,7 +78,7 @@
                                         </svg>
                                         Filters
                                     </button>
-                                    <button type="button" onclick="selectAllVisible()" class="text-[10px] font-black uppercase tracking-widest text-accent hover:text-accent-hover transition-colors cursor-pointer flex items-center gap-1">
+                                    <button type="button" onclick="selectAllVisible()" class="text-[10px] font-black uppercase tracking-widest text-accent-ink hover:text-accent-hover transition-colors cursor-pointer flex items-center gap-1">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
                                         Select Visible
                                     </button>
@@ -92,7 +92,7 @@
                                 <div class="user-card flex items-center justify-between p-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800/50 cursor-pointer transition-all border border-transparent hover:border-surface-border min-w-0"
                                      data-id="<?= $user['user_id'] ?>" data-name="<?= strtolower(esc($user['first_name'] . ' ' . $user['last_name'])) ?>" data-email="<?= strtolower(esc($user['email'])) ?>" data-unit="<?= $user['unit_id'] ?>" data-position="<?= $user['position_id'] ?>" data-teaching="<?= $user['is_teaching'] ?>" data-emp-status="<?= strtolower(esc($user['employment_status'] ?? 'permanent')) ?>" onclick="moveToSelected(this)">
                                     <div class="flex items-center gap-3 min-w-0 flex-1">
-                                        <div class="size-9 rounded-full bg-accent/10 text-accent flex items-center justify-center font-black text-sm shrink-0">
+                                        <div class="size-9 rounded-full bg-accent/10 text-accent-ink flex items-center justify-center font-black text-sm shrink-0">
                                             <?= substr($user['first_name'], 0, 1) . substr($user['last_name'], 0, 1) ?>
                                         </div>
                                         <div class="flex flex-col min-w-0 flex-1 pr-2">
@@ -188,11 +188,11 @@
                         </button>
                         <div class="space-y-1">
                             <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
-                                <input type="checkbox" name="filter_staff_type[]" value="teaching" class="checkbox team-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
+                                <input type="checkbox" name="filter_staff_type[]" value="teaching" class="checkbox team-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer shrink-0">
                                 <span>Teaching</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
-                                <input type="checkbox" name="filter_staff_type[]" value="non-teaching" class="checkbox team-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
+                                <input type="checkbox" name="filter_staff_type[]" value="non-teaching" class="checkbox team-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer shrink-0">
                                 <span>Non-Teaching</span>
                             </label>
                         </div>
@@ -213,7 +213,7 @@
                                     $stName = is_array($es) ? ($es['name'] ?? '') : (string)$es;
                                 ?>
                                     <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
-                                        <input type="checkbox" name="filter_emp_status[]" value="<?= strtolower(esc($stName)) ?>" class="checkbox team-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
+                                        <input type="checkbox" name="filter_emp_status[]" value="<?= strtolower(esc($stName)) ?>" class="checkbox team-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer shrink-0">
                                         <span><?= esc($stName) ?></span>
                                     </label>
                                 <?php endforeach; ?>
@@ -247,7 +247,7 @@
                             <div class="space-y-1 pr-1" id="positions-checkbox-list">
                                 <?php foreach ($positions as $pos): ?>
                                     <label class="position-filter-label flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors" data-title="<?= strtolower(esc($pos['title'])) ?>" data-teaching="<?= $pos['is_teaching'] ?>" data-pos-id="<?= esc($pos['id']) ?>">
-                                        <input type="checkbox" name="filter_pos[]" value="<?= esc($pos['id']) ?>" class="checkbox team-filter-checkbox rounded border-surface-border text-accent focus:ring-accent cursor-pointer shrink-0">
+                                        <input type="checkbox" name="filter_pos[]" value="<?= esc($pos['id']) ?>" class="checkbox team-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer shrink-0">
                                         <span class="truncate"><?= esc($pos['title']) ?></span>
                                     </label>
                                 <?php endforeach; ?>
@@ -268,7 +268,7 @@
                 
                 <!-- Desktop Save Button Location (Sticky Bottom) -->
                 <div class="hidden lg:block p-4 border-t border-surface-border shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800 lg:rounded-b-2xl">
-                    <button type="submit" id="btn-save-desktop" class="w-full py-2 bg-accent text-white rounded-lg text-sm font-bold shadow-sm hover:bg-accent-hover transition-all active:scale-[0.98] cursor-pointer">
+                    <button type="submit" id="btn-save-desktop" class="w-full py-2 bg-accent text-accent-text rounded-lg text-sm font-bold shadow-sm hover:bg-accent-hover transition-all active:scale-[0.98] cursor-pointer">
                         Save Changes
                     </button>
                 </div>
@@ -278,7 +278,7 @@
 
         <!-- Mobile Floating Save Button Location -->
         <div class="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-surface/90 backdrop-blur-md border-t border-surface-border z-50">
-            <button type="submit" id="btn-save-mobile" class="w-full py-3.5 rounded-xl bg-accent text-white text-sm font-bold shadow-lg shadow-accent/20 active:scale-95 transition-all cursor-pointer">
+            <button type="submit" id="btn-save-mobile" class="w-full py-3.5 rounded-xl bg-accent text-accent-text text-sm font-bold shadow-lg shadow-accent/20 active:scale-95 transition-all cursor-pointer">
                 Save Staff Changes
             </button>
         </div>
@@ -458,14 +458,14 @@
             selected.classList.remove('flex');
             selected.classList.add('hidden');
 
-            btnAvail.classList.add('border-accent', 'text-accent');
+            btnAvail.classList.add('border-accent', 'text-accent-ink');
             btnAvail.classList.remove('border-transparent', 'text-text-muted');
             
-            btnSelected.classList.remove('border-accent', 'text-accent');
+            btnSelected.classList.remove('border-accent', 'text-accent-ink');
             btnSelected.classList.add('border-transparent', 'text-text-muted');
             const badge = btnSelected.querySelector('.tab-badge');
             if (badge) {
-                badge.classList.remove('bg-accent/10', 'text-accent');
+                badge.classList.remove('bg-accent/10', 'text-accent-ink');
                 badge.classList.add('bg-zinc-100', 'dark:bg-zinc-800', 'text-text-muted');
             }
         } else {
@@ -474,15 +474,15 @@
             avail.classList.remove('flex');
             avail.classList.add('hidden');
 
-            btnSelected.classList.add('border-accent', 'text-accent');
+            btnSelected.classList.add('border-accent', 'text-accent-ink');
             btnSelected.classList.remove('border-transparent', 'text-text-muted');
             const badge = btnSelected.querySelector('.tab-badge');
             if (badge) {
                 badge.classList.remove('bg-zinc-100', 'dark:bg-zinc-800', 'text-text-muted');
-                badge.classList.add('bg-accent/10', 'text-accent');
+                badge.classList.add('bg-accent/10', 'text-accent-ink');
             }
 
-            btnAvail.classList.remove('border-accent', 'text-accent');
+            btnAvail.classList.remove('border-accent', 'text-accent-ink');
             btnAvail.classList.add('border-transparent', 'text-text-muted');
         }
     }

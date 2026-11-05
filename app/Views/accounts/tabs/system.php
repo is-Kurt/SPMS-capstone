@@ -11,7 +11,7 @@
     <!-- Sub-Tabs Header -->
     <div class="px-4 pt-4 shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800/30 border-b border-surface-border flex items-end justify-between gap-4">
         <div class="flex gap-6 overflow-x-auto custom-scrollbar whitespace-nowrap">
-            <button type="button" id="subtab-btn-positions" class="subtab-btn pb-3 text-sm font-bold border-b-2 border-accent text-accent transition-all cursor-pointer" onclick="switchSystemTab('positions')">
+            <button type="button" id="subtab-btn-positions" class="subtab-btn pb-3 text-sm font-bold border-b-2 border-accent text-accent-ink transition-all cursor-pointer" onclick="switchSystemTab('positions')">
                 Job Positions
             </button>
             <button type="button" id="subtab-btn-units" class="subtab-btn pb-3 text-sm font-bold border-b-2 border-transparent text-text-muted hover:text-text hover:border-surface-border transition-all cursor-pointer" onclick="switchSystemTab('units')">
@@ -21,7 +21,7 @@
                 Employment Statuses
             </button>
         </div>
-        <button type="button" class="btn-open-system-mobile lg:hidden flex items-center gap-1.5 text-xs font-bold text-accent bg-accent/10 hover:bg-accent/20 px-3 py-1.5 rounded-lg active:scale-95 transition-colors cursor-pointer mb-2.5 shrink-0">
+        <button type="button" class="btn-open-system-mobile lg:hidden flex items-center gap-1.5 text-xs font-bold text-accent-ink bg-accent/10 hover:bg-accent/20 px-3 py-1.5 rounded-lg active:scale-95 transition-colors cursor-pointer mb-2.5 shrink-0">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
             Filters
         </button>
@@ -45,7 +45,7 @@
                 
                 <!-- Add Button -->
                 <div class="mt-2">
-                    <button type="button" class="btn-open-modal w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-3 rounded-xl text-xs font-bold transition-colors shadow-sm shadow-accent/20 cursor-pointer" data-target="modal-create-position">
+                    <button type="button" class="btn-open-modal w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent-hover text-accent-text px-4 py-3 rounded-xl text-xs font-bold transition-colors shadow-sm shadow-accent/20 cursor-pointer" data-target="modal-create-position">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
                         Add New Position
                     </button>
@@ -111,7 +111,7 @@
                 
                 <!-- Add Button -->
                 <div class="mt-2">
-                    <button type="button" class="btn-open-modal w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-3 rounded-xl text-xs font-bold transition-colors shadow-sm shadow-accent/20 cursor-pointer" data-target="modal-create-unit">
+                    <button type="button" class="btn-open-modal w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent-hover text-accent-text px-4 py-3 rounded-xl text-xs font-bold transition-colors shadow-sm shadow-accent/20 cursor-pointer" data-target="modal-create-unit">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
                         Add Department / Unit
                     </button>
@@ -168,7 +168,7 @@
                                     </div>
                                     <div class="flex items-center gap-1">
                                         <button type="button" 
-                                            class="text-accent hover:text-accent-hover opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-2 bg-accent/10 hover:bg-accent/20 lg:bg-transparent rounded-lg cursor-pointer"
+                                            class="text-accent-ink hover:text-accent-hover opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-2 bg-accent/10 hover:bg-accent/20 lg:bg-transparent rounded-lg cursor-pointer"
                                             title="Edit / Transfer Department / Unit"
                                             onclick="openEditUnitModal(<?= $unit['id'] ?>, '<?= esc($unit['name'], 'js') ?>', <?= $unit['parent_id'] ? (int)$unit['parent_id'] : 'null' ?>)">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
@@ -219,7 +219,7 @@
                 
                 <!-- Add Button -->
                 <div class="mt-2">
-                    <button type="button" class="btn-open-modal w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-3 rounded-xl text-xs font-bold transition-colors shadow-sm shadow-accent/20 cursor-pointer" data-target="modal-create-employment-status">
+                    <button type="button" class="btn-open-modal w-full flex items-center justify-center gap-2 bg-accent hover:bg-accent-hover text-accent-text px-4 py-3 rounded-xl text-xs font-bold transition-colors shadow-sm shadow-accent/20 cursor-pointer" data-target="modal-create-employment-status">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
                         Add New Status
                     </button>

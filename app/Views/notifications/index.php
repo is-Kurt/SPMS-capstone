@@ -22,7 +22,7 @@
     }
 
     .notif-subtext {
-        color: #64748b;
+        color: #5f6f86;
     }
     .dark .notif-subtext {
         color: #a1a1aa;
@@ -118,7 +118,7 @@
     .notif-tab-inactive {
         background-color: transparent;
         border: 1px solid transparent;
-        color: #64748b;
+        color: #5f6f86;
     }
     .notif-tab-inactive:hover {
         color: #0f172a;
@@ -289,12 +289,12 @@
     }
 
     .notif-btn-amber {
-        background-color: #d97706;
-        border: 1px solid #b45309;
+        background-color: #b35400;
+        border: 1px solid #9c4807;
         color: #ffffff;
     }
     .notif-btn-amber:hover {
-        background-color: #b45309;
+        background-color: #9c4807;
     }
     .dark .notif-btn-amber {
         background-color: #78350f;
@@ -322,7 +322,7 @@
     }
 
     .notif-text-meta {
-        color: #64748b;
+        color: #5f6f86;
     }
     .dark .notif-text-meta {
         color: #a1a1aa;

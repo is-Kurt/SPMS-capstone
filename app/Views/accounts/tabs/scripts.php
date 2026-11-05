@@ -279,9 +279,9 @@
                 row.querySelectorAll('.js-status-badge-desktop').forEach(el => {
                     el.textContent = isActive ? 'Active' : 'Disabled';
                     if (el.tagName === 'BUTTON') {
-                        el.className = `js-status-badge-desktop text-[10px] font-bold uppercase tracking-widest cursor-pointer transition-colors focus:outline-none ${isActive ? 'text-success-500 hover:text-success-600' : 'text-danger-500 hover:text-danger-600'}`;
+                        el.className = `js-status-badge-desktop text-[10px] font-bold uppercase tracking-widest cursor-pointer transition-colors focus:outline-none ${isActive ? 'text-success-600 hover:text-success-600' : 'text-danger-500 hover:text-danger-600'}`;
                     } else {
-                        el.className = `js-status-badge-desktop text-[10px] font-bold uppercase tracking-widest ${isActive ? 'text-success-500' : 'text-danger-500'}`;
+                        el.className = `js-status-badge-desktop text-[10px] font-bold uppercase tracking-widest ${isActive ? 'text-success-600' : 'text-danger-500'}`;
                     }
                 });
                 row.querySelectorAll('.js-status-badge-mobile').forEach(el => {
@@ -553,11 +553,11 @@
                         
                         const allOptions = ul.querySelectorAll('.parent-option');
                         allOptions.forEach(o => {
-                            o.classList.remove('bg-accent/10', 'text-accent', 'font-bold');
+                            o.classList.remove('bg-accent/10', 'text-accent-ink', 'font-bold');
                             o.classList.add('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
                         });
                         liOpt.classList.remove('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
-                        liOpt.classList.add('bg-accent/10', 'text-accent', 'font-bold');
+                        liOpt.classList.add('bg-accent/10', 'text-accent-ink', 'font-bold');
                     });
                 }
 
@@ -614,7 +614,7 @@
                             <div class="flex items-center justify-between lg:justify-end gap-2 w-full">
                                 <form action="/account/invite/resend" method="post" class="flex-1 lg:flex-none inline-block" data-ajax="resend-invitation">
                                     <input type="hidden" name="id" value="${inv.id}">
-                                    <button type="submit" class="w-full px-3 py-2.5 lg:py-1.5 rounded-lg text-xs font-bold text-accent bg-accent/10 lg:bg-transparent hover:bg-accent/20 lg:hover:bg-accent/10 border border-transparent transition-colors cursor-pointer text-center" title="Resend Email">Resend</button>
+                                    <button type="submit" class="w-full px-3 py-2.5 lg:py-1.5 rounded-lg text-xs font-bold text-accent-ink bg-accent/10 lg:bg-transparent hover:bg-accent/20 lg:hover:bg-accent/10 border border-transparent transition-colors cursor-pointer text-center" title="Resend Email">Resend</button>
                                 </form>
                                 <form action="/account/invite/delete" method="post" class="flex-1 lg:flex-none inline-block" data-ajax="delete-invitation" data-confirm="Revoke this invitation? The link will immediately stop working." data-confirm-title="Revoke Invitation">
                                     <input type="hidden" name="id" value="${inv.id}">
@@ -743,7 +743,7 @@
         });
 
         document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.remove('border-accent', 'text-accent');
+            btn.classList.remove('border-accent', 'text-accent-ink');
             btn.classList.add('border-transparent', 'text-text-muted');
         });
 
@@ -756,7 +756,7 @@
         const targetBtn = document.getElementById('tab-btn-' + tabId);
         if (targetBtn) {
             targetBtn.classList.remove('border-transparent', 'text-text-muted');
-            targetBtn.classList.add('border-accent', 'text-accent');
+            targetBtn.classList.add('border-accent', 'text-accent-ink');
         }
 
         if (pushUrl && window.history && window.history.pushState) {
@@ -780,13 +780,13 @@
     function switchSystemTab(tabId) {
         // Update Buttons
         document.querySelectorAll('.subtab-btn').forEach(btn => {
-            btn.classList.remove('border-accent', 'text-accent');
+            btn.classList.remove('border-accent', 'text-accent-ink');
             btn.classList.add('border-transparent', 'text-text-muted', 'hover:text-text', 'hover:border-surface-border');
         });
         const activeBtn = document.getElementById('subtab-btn-' + tabId);
         if (activeBtn) {
             activeBtn.classList.remove('border-transparent', 'text-text-muted', 'hover:text-text', 'hover:border-surface-border');
-            activeBtn.classList.add('border-accent', 'text-accent');
+            activeBtn.classList.add('border-accent', 'text-accent-ink');
         }
 
         // Update Panels

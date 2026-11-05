@@ -10,25 +10,25 @@
     </div>
 
     <div class="flex gap-6 border-b border-surface-border shrink-0 px-2 overflow-x-auto custom-scrollbar whitespace-nowrap">
-        <button type="button" id="tab-btn-directory" class="tab-btn pb-2.5 text-sm font-bold border-b-2 transition-all cursor-pointer <?= $activeTab === 'directory' ? 'border-accent text-accent' : 'border-transparent text-text-muted hover:text-text hover:border-surface-border' ?>" onclick="switchUserTab('directory')">
+        <button type="button" id="tab-btn-directory" class="tab-btn pb-2.5 text-sm font-bold border-b-2 transition-all cursor-pointer <?= $activeTab === 'directory' ? 'border-accent text-accent-ink' : 'border-transparent text-text-muted hover:text-text hover:border-surface-border' ?>" onclick="switchUserTab('directory')">
             User Directory
-            <span class="ml-1.5 px-2 py-0.5 rounded-full bg-accent/10 text-accent text-[10px] tab-badge transition-colors" id="directory-count"><?= count($users) ?></span>
+            <span class="ml-1.5 px-2 py-0.5 rounded-full bg-accent/10 text-accent-ink text-[10px] tab-badge transition-colors" id="directory-count"><?= count($users) ?></span>
         </button>
-        <button type="button" id="tab-btn-create" class="tab-btn pb-2.5 text-sm font-bold border-b-2 transition-all cursor-pointer <?= $activeTab === 'create' ? 'border-accent text-accent' : 'border-transparent text-text-muted hover:text-text hover:border-surface-border' ?>" onclick="switchUserTab('create')">
+        <button type="button" id="tab-btn-create" class="tab-btn pb-2.5 text-sm font-bold border-b-2 transition-all cursor-pointer <?= $activeTab === 'create' ? 'border-accent text-accent-ink' : 'border-transparent text-text-muted hover:text-text hover:border-surface-border' ?>" onclick="switchUserTab('create')">
             Send Invitations
         </button>
-        <button type="button" id="tab-btn-invitations" class="tab-btn pb-2.5 text-sm font-bold border-b-2 transition-all cursor-pointer <?= $activeTab === 'invitations' ? 'border-accent text-accent' : 'border-transparent text-text-muted hover:text-text hover:border-surface-border' ?>" onclick="switchUserTab('invitations')">
+        <button type="button" id="tab-btn-invitations" class="tab-btn pb-2.5 text-sm font-bold border-b-2 transition-all cursor-pointer <?= $activeTab === 'invitations' ? 'border-accent text-accent-ink' : 'border-transparent text-text-muted hover:text-text hover:border-surface-border' ?>" onclick="switchUserTab('invitations')">
             Invitations
-            <span class="ml-1.5 px-2 py-0.5 rounded-full bg-accent/10 text-accent text-[10px] tab-badge transition-colors" id="invitations-count"><?= count($invitations) ?></span>
+            <span class="ml-1.5 px-2 py-0.5 rounded-full bg-accent/10 text-accent-ink text-[10px] tab-badge transition-colors" id="invitations-count"><?= count($invitations) ?></span>
         </button>
-        <button type="button" id="tab-btn-system" class="tab-btn pb-2.5 text-sm font-bold border-b-2 transition-all cursor-pointer <?= $activeTab === 'system' ? 'border-accent text-accent' : 'border-transparent text-text-muted hover:text-text hover:border-surface-border' ?>" onclick="switchUserTab('system')">
+        <button type="button" id="tab-btn-system" class="tab-btn pb-2.5 text-sm font-bold border-b-2 transition-all cursor-pointer <?= $activeTab === 'system' ? 'border-accent text-accent-ink' : 'border-transparent text-text-muted hover:text-text hover:border-surface-border' ?>" onclick="switchUserTab('system')">
             System Data
         </button>
-        <button type="button" id="tab-btn-twg" class="tab-btn pb-2.5 text-sm font-bold border-b-2 transition-all cursor-pointer <?= $activeTab === 'twg' ? 'border-accent text-accent' : 'border-transparent text-text-muted hover:text-text hover:border-surface-border' ?>" onclick="switchUserTab('twg')">
+        <button type="button" id="tab-btn-twg" class="tab-btn pb-2.5 text-sm font-bold border-b-2 transition-all cursor-pointer <?= $activeTab === 'twg' ? 'border-accent text-accent-ink' : 'border-transparent text-text-muted hover:text-text hover:border-surface-border' ?>" onclick="switchUserTab('twg')">
             TWG Assignments
-            <span class="ml-1.5 px-2 py-0.5 rounded-full bg-accent/10 text-accent text-[10px] tab-badge transition-colors" id="twg-count"><?= count($twgUsers ?? []) ?></span>
+            <span class="ml-1.5 px-2 py-0.5 rounded-full bg-accent/10 text-accent-ink text-[10px] tab-badge transition-colors" id="twg-count"><?= count($twgUsers ?? []) ?></span>
         </button>
-        <button type="button" id="tab-btn-weights" class="tab-btn pb-2.5 text-sm font-bold border-b-2 transition-all cursor-pointer <?= $activeTab === 'weights' ? 'border-accent text-accent' : 'border-transparent text-text-muted hover:text-text hover:border-surface-border' ?>" onclick="switchUserTab('weights')">
+        <button type="button" id="tab-btn-weights" class="tab-btn pb-2.5 text-sm font-bold border-b-2 transition-all cursor-pointer <?= $activeTab === 'weights' ? 'border-accent text-accent-ink' : 'border-transparent text-text-muted hover:text-text hover:border-surface-border' ?>" onclick="switchUserTab('weights')">
             Default Weights
         </button>
     </div>

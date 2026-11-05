@@ -62,7 +62,7 @@
                 </div>
 
                 <div class="flex items-center gap-3 mt-2">
-                    <button type="submit" class="bg-accent text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-95 shadow-md shadow-accent/20">Save Initials</button>
+                    <button type="submit" class="bg-accent text-accent-text px-6 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-95 shadow-md shadow-accent/20">Save Initials</button>
                     <button type="submit" name="remove_image" value="1" id="btn-remove-avatar-image"
                             class="text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10 px-4 py-2.5 rounded-xl text-xs font-bold transition-all <?= session('avatar_image') ? '' : 'hidden' ?>">Remove Image</button>
                 </div>
@@ -123,7 +123,7 @@
                         <ul class="js-select-dropdown absolute z-50 w-full mt-2 bg-surface border border-surface-border rounded-xl shadow-lg shadow-black/5 dark:shadow-black/20 overflow-hidden hidden transform origin-top transition-all duration-200 scale-95 opacity-0">
                             <?php foreach($docTypes as $type): ?>
                                 <?php $isSelected = ($oldDocType === $type); ?>
-                                <li class="px-4 py-3 text-sm font-bold text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 cursor-pointer transition-colors js-select-option <?= $isSelected ? 'bg-accent/10 text-accent' : '' ?>" data-value="<?= $type ?>" data-label="<?= $type ?>">
+                                <li class="px-4 py-3 text-sm font-bold text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 cursor-pointer transition-colors js-select-option <?= $isSelected ? 'bg-accent/10 text-accent-ink' : '' ?>" data-value="<?= $type ?>" data-label="<?= $type ?>">
                                     <?= $type ?>
                                 </li>
                             <?php endforeach; ?>
@@ -147,7 +147,7 @@
                 <div class="position-card border border-surface-border p-6 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm relative group">
                     <h3 class="text-[10px] font-black uppercase tracking-widest text-text-muted mb-4 flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <span class="w-5 h-5 rounded-full bg-accent text-white flex items-center justify-center num-badge"><?= $index + 1 ?></span>
+                            <span class="w-5 h-5 rounded-full bg-accent text-accent-text flex items-center justify-center num-badge"><?= $index + 1 ?></span>
                             Designation
                         </div>
                         <!-- Trash icon (icon-only button): removes this extra position/designation card client-side. Hidden on the first card since at least one is required -->
@@ -222,7 +222,7 @@
         <?php endif; ?>
 
         <div class="px-8 py-4 bg-zinc-50 dark:bg-zinc-800/30 border-t border-surface-border flex justify-end">
-            <button type="submit" class="bg-accent hover:bg-accent-hover text-white text-xs font-bold py-2.5 px-6 rounded-lg shadow-lg shadow-accent/20 transition-all active:scale-[0.98] cursor-pointer">
+            <button type="submit" class="bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold py-2.5 px-6 rounded-lg shadow-lg shadow-accent/20 transition-all active:scale-[0.98] cursor-pointer">
                 Save Profile
             </button>
         </div>
@@ -241,7 +241,7 @@
         
         <?php if (session('success')): ?>
             <div class="px-8 py-4 bg-accent/10 border-b border-accent/20">
-                <p class="text-sm font-bold text-accent"><?= session('success') ?></p>
+                <p class="text-sm font-bold text-accent-ink"><?= session('success') ?></p>
             </div>
         <?php endif; ?>
 

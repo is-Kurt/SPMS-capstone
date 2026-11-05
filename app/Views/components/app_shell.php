@@ -91,14 +91,14 @@ $isTwgWithAssignedUnits = ($currentSysRole === 'TWG') && !empty($twgAssignedUnit
             <div class="sidebar-split-box pt-2">
                 <div class="flex justify-between items-center px-4 pb-2 lg:px-3 lg:pb-2 shrink-0">
                     <div class="flex items-center gap-1.5 min-w-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-accent shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-accent-ink shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                         </svg>
                         <p class="text-[11px] font-extrabold uppercase tracking-wider text-text-muted truncate">
                             Assigned Jurisdiction
                         </p>
                     </div>
-                    <span class="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-accent/15 text-accent border border-accent/25 shrink-0" title="<?= count($twgAssignedUnits) ?> assigned units">
+                    <span class="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-accent/15 text-accent-ink border border-accent/25 shrink-0" title="<?= count($twgAssignedUnits) ?> assigned units">
                         <?= count($twgAssignedUnits) ?>
                     </span>
                 </div>
@@ -129,13 +129,13 @@ $isTwgWithAssignedUnits = ($currentSysRole === 'TWG') && !empty($twgAssignedUnit
                 <div class="flex items-center gap-1.5">
                     <!-- Dynamic Add Button -->
                     <?php if ($context === 'folders' && session()->get('role') === 'Admin'): ?>
-                        <button id="btn-create-folder-modal" class="w-7 h-7 rounded-lg flex items-center justify-center text-accent hover:text-accent-hover hover:bg-accent/10 transition-colors cursor-pointer" title="New Folder">
+                        <button id="btn-create-folder-modal" class="w-7 h-7 rounded-lg flex items-center justify-center text-accent-ink hover:text-accent-hover hover:bg-accent/10 transition-colors cursor-pointer" title="New Folder">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                             </svg>
                         </button>
                     <?php elseif ($context === 'teams'): ?>
-                        <button id="btn-create-team-modal" class="w-7 h-7 rounded-lg flex items-center justify-center text-accent hover:text-accent-hover hover:bg-accent/10 transition-colors cursor-pointer" title="New Staff">
+                        <button id="btn-create-team-modal" class="w-7 h-7 rounded-lg flex items-center justify-center text-accent-ink hover:text-accent-hover hover:bg-accent/10 transition-colors cursor-pointer" title="New Staff">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                             </svg>

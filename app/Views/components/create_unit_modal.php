@@ -25,7 +25,7 @@
                             </div>
                         </div>
                         <ul id="parent-options-list" class="overflow-y-auto custom-scrollbar p-1" style="max-height: 220px;">
-                            <li class="parent-option px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors bg-accent/10 text-accent font-bold" data-value="">
+                            <li class="parent-option px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors bg-accent/10 text-accent-ink font-bold" data-value="">
                                 No Parent (Top Level)
                             </li>
                             <?php foreach ($units as $u): ?>
@@ -79,7 +79,7 @@
                                 
                                 // Reset all options visually
                                 options.forEach(o => {
-                                    o.classList.remove('bg-accent/10', 'text-accent', 'font-bold');
+                                    o.classList.remove('bg-accent/10', 'text-accent-ink', 'font-bold');
                                     o.classList.add('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
                                 });
                                 
@@ -87,7 +87,7 @@
                                 const noParentOpt = optionsList.querySelector('.parent-option[data-value=""]');
                                 if (noParentOpt) {
                                     noParentOpt.classList.remove('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
-                                    noParentOpt.classList.add('bg-accent/10', 'text-accent', 'font-bold');
+                                    noParentOpt.classList.add('bg-accent/10', 'text-accent-ink', 'font-bold');
                                 }
                                 
                                 searchInput.focus();
@@ -109,13 +109,13 @@
                                 
                                 // Reset all options visually
                                 options.forEach(o => {
-                                    o.classList.remove('bg-accent/10', 'text-accent', 'font-bold');
+                                    o.classList.remove('bg-accent/10', 'text-accent-ink', 'font-bold');
                                     o.classList.add('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
                                 });
                                 
                                 // Highlight selected option
                                 opt.classList.remove('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
-                                opt.classList.add('bg-accent/10', 'text-accent', 'font-bold');
+                                opt.classList.add('bg-accent/10', 'text-accent-ink', 'font-bold');
                             });
                         });
                     })();
@@ -126,7 +126,7 @@
                 <button type="button" class="btn-close-modal w-full sm:flex-1 px-6 py-3.5 sm:py-3 rounded-xl border border-surface-border text-sm font-bold text-text hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all cursor-pointer" data-target="modal-create-unit">
                     Cancel
                 </button>
-                <button type="submit" class="w-full sm:flex-1 px-6 py-3.5 sm:py-3 rounded-xl bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold shadow-lg shadow-accent/20 transition-all active:scale-95 cursor-pointer">
+                <button type="submit" class="w-full sm:flex-1 px-6 py-3.5 sm:py-3 rounded-xl bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-accent-text text-sm font-bold shadow-lg shadow-accent/20 transition-all active:scale-95 cursor-pointer">
                     Create Department / Unit
                 </button>
             </div>
