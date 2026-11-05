@@ -9,7 +9,6 @@
 <div class="lg:hidden <?= esc($containerClass) ?>">
     <button type="button" 
             onclick="typeof toggleAppSidebar === 'function' ? toggleAppSidebar() : (window.toggleAppSidebar && window.toggleAppSidebar())"
-            aria-label="Open evaluation folders sidebar"
             class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white hover:border-amber-500/50 dark:hover:border-amber-500/50 active:scale-[0.98] transition-all shadow-xs cursor-pointer text-left group">
         <div class="flex items-center gap-2.5 min-w-0">
             <svg class="w-5 h-5 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

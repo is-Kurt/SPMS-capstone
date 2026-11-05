@@ -202,10 +202,10 @@
         <?php endif; ?>
         
         <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
-            <?php if ($canEditTargets || $canEditEvaluation || !empty($canEditAccomplishments) || !empty($canReviewerEditRemarks)): ?>
+            <?php if (!empty($isEditable)): ?>
             <!-- Save Button with hover (Ctrl + S) -->
             <div class="relative group inline-flex items-center print-hide">
-                <button type="button" onclick="saveDocument(true)" title="Save (Ctrl + S)"
+                <button type="button" id="btn-save-doc" onclick="saveDocument(true)" title="Save (Ctrl + S)"
                         class="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] sm:text-xs font-bold rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
@@ -255,18 +255,14 @@
                     <!-- Historical version is read-only; indicator is shown in the version dropdown -->
 
                 <?php elseif ($canonStatus === FolderStatus::TARGET_MISSED || $canonStatus === FolderStatus::UNEVALUATED): ?>
-                    <span class="inline-flex items-center px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wider bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/30">
-                        Missed Deadline
-                    </span>
+                    <!-- Deadline passed; status is visible in version dropdown -->
 
                 <?php elseif ($isOwner): ?>
                     <!-- RATEE ACTIONS (Ultra-minimal: Submit / Unsubmit / Cascade) -->
                     <?php if ($canonStatus->isTargetPhase()): ?>
                         <?php if ($canonStatus === FolderStatus::DRAFT_TARGET): ?>
                             <?php if (session()->get('role') === 'Admin'): ?>
-                                <div class="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg shadow-xs">
-                                    <span>Master Cycle Template</span>
-                                </div>
+                                <!-- Admin Master Template -->
                             <?php elseif (isset($isParentTargetApproved) && !$isParentTargetApproved): ?>
                                 <button type="button" disabled 
                                         class="bg-amber-500/70 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-lg shadow-sm cursor-not-allowed" 
@@ -301,7 +297,7 @@
                         <!-- Evaluation Phase Ratee Actions -->
                         <?php if ($canonStatus === FolderStatus::DRAFT_EVALUATION): ?>
                             <button id="btn-submit" type="button" 
-                                    onclick="saveWith({ after: () => lockFolderEvaluation() })" 
+                                    onclick="saveWith({ before: (typeof validateEvaluationScores === 'function' ? validateEvaluationScores : null), after: () => lockFolderEvaluation() })" 
                                     class="bg-info-500 hover:bg-info-600 text-white text-[10px] sm:text-xs font-bold py-2 sm:py-2.5 px-3 sm:px-6 rounded-lg shadow-lg shadow-info-500/20 transition-all active:scale-[0.98] cursor-pointer">
                                 Submit
                             </button>
@@ -329,7 +325,10 @@
                     <?php endif; ?>
 
                 <?php else: ?>
-                    <!-- REVIEWER ACTIONS (Approve / Return / Unapprove) -->
+                    <!-- REVIEWER ACTIONS (Approve / Return / Unapprove / View & Comment Mode) -->
+                    <?php 
+                        ob_start(); 
+                    ?>
                     <?php if (in_array(session()->get('role'), ['TWG', 'PMT'])): ?>
                         <?php if ($canonStatus->isTargetPhase()): ?>
                             <?php if ($canonStatus === FolderStatus::TARGET_APPROVED && in_array($doc['target_approver_role'] ?? '', ['TWG', 'PMT'])): ?>
@@ -352,18 +351,7 @@
                                             Approve
                                         </button>
                                     </div>
-                                <?php else: ?>
-                                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-500/25 shadow-xs" title="All supervising authorities must approve first before TWG/PMT verification.">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        Queued for Verification
-                                    </span>
                                 <?php endif; ?>
-                            <?php elseif ($canonStatus === FolderStatus::DRAFT_TARGET): ?>
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-zinc-500/10 text-zinc-600 dark:text-zinc-300 border border-zinc-500/20 shadow-xs" title="Employee is currently drafting targets. You can view and leave comments on cells.">
-                                    <span>View & Comment Mode</span>
-                                </span>
                             <?php endif; ?>
                         <?php else: ?>
                             <!-- TWG in Evaluation Phase -->
@@ -387,18 +375,7 @@
                                             Approve
                                         </button>
                                     </div>
-                                <?php else: ?>
-                                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-500/25 shadow-xs" title="All supervising authorities must approve first before TWG/PMT verification.">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        Queued for Verification
-                                    </span>
                                 <?php endif; ?>
-                            <?php elseif ($canonStatus === FolderStatus::DRAFT_EVALUATION): ?>
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-zinc-500/10 text-zinc-600 dark:text-zinc-300 border border-zinc-500/20 shadow-xs" title="Employee is currently drafting accomplishments. You can view and leave comments on cells.">
-                                    <span>View & Comment Mode</span>
-                                </span>
                             <?php endif; ?>
                         <?php endif; ?>
 
@@ -433,10 +410,6 @@
                                         </button>
                                     </div>
                                 <?php endif; ?>
-                            <?php elseif ($canonStatus === FolderStatus::DRAFT_TARGET): ?>
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-zinc-500/10 text-zinc-600 dark:text-zinc-300 border border-zinc-500/20 shadow-xs" title="Employee is currently drafting targets. You can view and leave comments on cells.">
-                                    <span>View & Comment Mode</span>
-                                </span>
                             <?php endif; ?>
 
                         <?php else: ?>
@@ -470,13 +443,24 @@
                                         </button>
                                     </div>
                                 <?php endif; ?>
-                            <?php elseif ($canonStatus === FolderStatus::DRAFT_EVALUATION): ?>
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-zinc-500/10 text-zinc-600 dark:text-zinc-300 border border-zinc-500/20 shadow-xs" title="Employee is currently drafting accomplishments. You can view and leave comments on cells.">
-                                    <span>View & Comment Mode</span>
-                                </span>
                             <?php endif; ?>
                         <?php endif; ?>
                     <?php endif; ?>
+                    <?php 
+                        $rawBuffer = ob_get_clean();
+                        $reviewerActionsHtml = trim(preg_replace('/<!--.*?-->/s', '', $rawBuffer));
+                        if (!empty($reviewerActionsHtml)) {
+                            echo $reviewerActionsHtml;
+                        } else {
+                    ?>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-zinc-500/10 text-zinc-600 dark:text-zinc-300 border border-zinc-500/20 shadow-xs" title="You are in View & Comment Mode. You can inspect the document and leave comments on cells.">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <span>View & Comment Mode</span>
+                        </span>
+                    <?php } ?>
                 <?php endif; ?>
                 
             <?php else: ?>

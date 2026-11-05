@@ -167,14 +167,14 @@ $isTwgWithAssignedUnits = ($currentSysRole === 'TWG') && !empty($twgAssignedUnit
     <!-- Mobile App Sidebar Overlay -->
     <div id="app-sidebar-overlay" onclick="toggleAppSidebar()" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-[115] hidden lg:hidden opacity-0 transition-opacity duration-300"></div>
 
-    <!-- Main Content -->
-    <div id="main-content-container" class="flex-1 flex flex-col min-w-0 overflow-visible relative lg:min-h-[650px]">
+    <!-- Main Content Landmark -->
+    <main id="main-content-container" role="main" class="flex-1 flex flex-col min-w-0 overflow-visible relative lg:min-h-[650px]">
         <?= view($mainView, array_merge([
             'sidebarFolders'   => $sidebarFolders ?? [],
             'selectedFolderId' => $selectedFolderId ?? null,
             'sidebarTitle'     => $sidebarTitle ?? 'Evaluation Folders'
         ], $mainData)) ?>
-    </div>
+    </main>
 
 </div>
 

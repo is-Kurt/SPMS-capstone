@@ -371,15 +371,21 @@ class Folder extends BaseController
                 }
             }
 
-            // Flag whether targets or evaluation have been submitted (even if deadline has passed into missed state)
-            $isTargetSubmitted = in_array($rawFolderStatus, ['target_submitted', 'pending_target_approval', 'target_approved', 'target_unapproved'], true)
-                || !empty($activeFolder['target_submitted_at'])
-                || (in_array($rawFolderStatus, ['target_missed', 'target_unapproved'], true) && $hasPendingOrApprovedRouting);
+            $isTargetDraft = in_array($rawFolderStatus, ['draft_target', 'target_returned', FolderStatus::DRAFT_TARGET->value], true);
+            $isEvalDraft   = in_array($rawFolderStatus, ['draft_evaluation', 'eval_returned', FolderStatus::DRAFT_EVALUATION->value], true);
 
-            $isEvalSubmitted = in_array($rawFolderStatus, ['eval_submitted', 'submitted', 'evaluated', 'eval_approved', 'twg_approved', 'eval_unrated'], true)
-                || !empty($activeFolder['submitted_at'])
-                || !empty($activeFolder['final_rating'])
-                || (in_array($rawFolderStatus, ['unevaluated', 'eval_unrated'], true) && $hasPendingOrApprovedRouting);
+            // Flag whether targets or evaluation have been submitted (even if deadline has passed into missed state)
+            $isTargetSubmitted = !$isTargetDraft && (
+                in_array($rawFolderStatus, ['target_submitted', 'pending_target_approval', 'target_approved', 'target_unapproved'], true)
+                || !empty($activeFolder['target_submitted_at'])
+                || (in_array($rawFolderStatus, ['target_missed', 'target_unapproved'], true) && $hasPendingOrApprovedRouting)
+            );
+
+            $isEvalSubmitted = !$isEvalDraft && (
+                in_array($rawFolderStatus, ['eval_submitted', 'submitted', 'evaluated', 'eval_approved', 'twg_approved', 'eval_unrated'], true)
+                || (!empty($activeFolder['submitted_at']) && !empty($activeFolder['final_rating']))
+                || (in_array($rawFolderStatus, ['unevaluated', 'eval_unrated'], true) && $hasPendingOrApprovedRouting)
+            );
 
             $seenEvaluatorIds = [];
             $adminRoute = null;
@@ -411,7 +417,7 @@ class Folder extends BaseController
                 } elseif ($rStatus === 'returned' || $rStatus === 'target_returned' || $rStatus === 'target_unapproved' || $isTargetReturnedFolder) {
                     $tStatus = 'returned';
                     $tLabel  = 'Returned';
-                } elseif ($isTargetSubmitted || $rStatus === 'pending') {
+                } elseif ($isTargetSubmitted) {
                     $tStatus = 'pending';
                     $tLabel  = 'Pending Review';
                 } else {
@@ -430,7 +436,7 @@ class Folder extends BaseController
                     } elseif ($isEvalReturnedFolder || $rStatus === 'returned' || $rStatus === 'reevaluate') {
                         $eStatus = 'returned';
                         $eLabel  = 'Returned';
-                    } elseif ($isEvalSubmitted || $rStatus === 'pending') {
+                    } elseif ($isEvalSubmitted) {
                         $eStatus = 'pending';
                         $eLabel  = 'Pending Review';
                     } else {
@@ -526,7 +532,7 @@ class Folder extends BaseController
                         $tStatus = 'approved'; $tLabel = 'Approved';
                     } elseif ($adminRouteStatus === 'returned' || $adminRouteStatus === 'target_returned' || $isTargetReturnedFolder) {
                         $tStatus = 'returned'; $tLabel = 'Returned';
-                    } elseif ($isTargetSubmitted || $adminRouteStatus === 'pending') {
+                    } elseif ($isTargetSubmitted) {
                         $tStatus = 'pending'; $tLabel = 'Pending Review';
                     } else {
                         $tStatus = 'draft'; $tLabel = 'Awaiting Submission';
@@ -538,7 +544,7 @@ class Folder extends BaseController
                         $eStatus = 'approved'; $eLabel = 'Approved';
                     } elseif ($isEvalReturnedFolder || $adminRouteStatus === 'returned' || $adminRouteStatus === 'reevaluate') {
                         $eStatus = 'returned'; $eLabel = 'Returned';
-                    } elseif ($isEvalSubmitted || $adminRouteStatus === 'pending') {
+                    } elseif ($isEvalSubmitted) {
                         $eStatus = 'pending'; $eLabel = 'Pending Review';
                     } else {
                         $eStatus = 'draft'; $eLabel = 'Awaiting Submission';
@@ -568,6 +574,8 @@ class Folder extends BaseController
                     || !empty($activeFolder['target_approved_at']);
                 $areAllSupervisorsApproved = !empty($targetSupervisors) && empty(array_filter($targetSupervisors, fn($s) => $s['status'] !== 'approved'));
                 $areAllEvalSupervisorsApproved = !empty($evalSupervisors) && empty(array_filter($evalSupervisors, fn($s) => $s['status'] !== 'approved'));
+                $hasAnyTargetSupervisorReturned = !empty(array_filter($targetSupervisors, fn($s) => $s['status'] === 'returned'));
+                $hasAnySupervisorReturned = !empty(array_filter($evalSupervisors, fn($s) => $s['status'] === 'returned'));
                 $targetApprovedById = !empty($activeFolder['target_approved_by']) ? (int) $activeFolder['target_approved_by'] : 0;
                 $returnedByUserId   = !empty($latestVersionRec['returned_by']) ? (int) $latestVersionRec['returned_by'] : 0;
                 $hasMultipleTwgs    = count($assignedTwgs) > 1;
@@ -590,7 +598,7 @@ class Folder extends BaseController
                         } else {
                             $twgTargetLabel = 'Returned';
                         }
-                    } elseif ($isTargetSubmitted) {
+                    } elseif ($isTargetSubmitted && !$hasAnyTargetSupervisorReturned) {
                         if ($areAllSupervisorsApproved) {
                             $twgTargetStatus = 'pending';
                             $twgTargetLabel  = 'Pending Verification';
@@ -627,7 +635,7 @@ class Folder extends BaseController
                         } else {
                             $twgEvalLabel = 'Returned';
                         }
-                    } elseif ($isEvalSubmitted) {
+                    } elseif ($isEvalSubmitted && !$hasAnySupervisorReturned) {
                         if ($areAllEvalSupervisorsApproved) {
                             $twgEvalStatus = 'pending';
                             $twgEvalLabel  = 'Pending Verification';
@@ -2778,6 +2786,40 @@ class Folder extends BaseController
                 'submitted_at' => $now
             ]);
 
+            // Sync submitted scores as ratee's baseline (_self) and clear prior review adjustments
+            $docModel = new \App\Models\DocumentModel();
+            $userDocs = $docModel->where('document_folder_id', $folderId)->findAll();
+            foreach ($userDocs as $uDoc) {
+                $rawTabs = !empty($uDoc['tabs']) ? (is_string($uDoc['tabs']) ? json_decode($uDoc['tabs'], true) : $uDoc['tabs']) : [];
+                if (!empty($rawTabs)) {
+                    $tabsModified = false;
+                    foreach ($rawTabs as &$tabItem) {
+                        $categories = $tabItem['formData']['categories'] ?? [];
+                        foreach (['core', 'strategic', 'support'] as $cKey) {
+                            if (!empty($categories[$cKey]) && is_array($categories[$cKey])) {
+                                foreach ($categories[$cKey] as &$cRow) {
+                                    foreach (['q', 't', 'e'] as $dim) {
+                                        if (isset($cRow[$dim]) && $cRow[$dim] !== '' && $cRow[$dim] !== 'X' && $cRow[$dim] !== 'N/A') {
+                                            $cRow[$dim . '_self'] = $cRow[$dim];
+                                            $cRow[$dim . '_head'] = '';
+                                            $cRow[$dim . '_twg']  = '';
+                                            $cRow['last_rated_by_' . $dim] = 'self';
+                                            $tabsModified = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if ($tabsModified) {
+                            $tabItem['formData']['categories'] = $categories;
+                        }
+                    }
+                    if ($tabsModified) {
+                        $docModel->update($uDoc['id'], ['tabs' => $rawTabs]);
+                    }
+                }
+            }
+
             if ($folderModel->db->tableExists('document_versions')) {
                 (new \App\Models\DocumentVersionModel())->recordSubmissionSnapshot((string)$folderId, 'evaluation');
             }
@@ -4002,10 +4044,17 @@ class Folder extends BaseController
                 ? FolderStatus::DRAFT_TARGET->value
                 : FolderStatus::DRAFT_EVALUATION->value;
 
-            $folderModel->update($folderId, [
+            $updateFolderData = [
                 'status'     => $nextStatus,
                 'updated_at' => $now,
-            ]);
+            ];
+            if ($isTargetPhase) {
+                $updateFolderData['target_submitted_at'] = null;
+            } else {
+                $updateFolderData['submitted_at'] = null;
+            }
+
+            $folderModel->update($folderId, $updateFolderData);
 
             if ($folderModel->db->tableExists('document_versions')) {
                 $reviewer     = $userModel->find($currentUserId);

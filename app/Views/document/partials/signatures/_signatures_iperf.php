@@ -10,20 +10,20 @@
                             <!-- Targets Prepared By -->
                             <div style="margin-bottom: 16px;">
                                 <div style="font-weight: bold; color: #0f172a; margin-bottom: 4px;">Targets prepared by:</div>
-                                <input type="text" id="sig-targets-prepared-name" value="" placeholder="(Signature over Printed Name)" class="spms-meta-input" style="width: 90%; font-weight: bold; padding: 2px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                <input type="text" id="sig-targets-prepared-name" value="" placeholder="(Signature over Printed Name)" class="spms-meta-input" style="width: 90%; font-weight: bold; padding: 2px 4px;" <?= $canEditRateeSignatory ? '' : 'disabled' ?>>
                                 <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Employee (Ratee)</div>
                                 <div style="margin-top: 4px; font-size: 10.5px; color: #334155;">
-                                    Date: <input type="date" id="sig-targets-prepared-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input dark:[color-scheme:dark]" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                    Date: <input type="date" id="sig-targets-prepared-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input dark:[color-scheme:dark]" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditRateeSignatory ? '' : 'disabled' ?>>
                                 </div>
                             </div>
 
                             <!-- Approved By -->
                             <div>
                                 <div style="font-weight: bold; color: #0f172a; margin-bottom: 4px;">Approved by:</div>
-                                <input type="text" id="sig-targets-approved-name" value="" placeholder="(Signature over Printed Name)" class="spms-meta-input" style="width: 90%; font-weight: bold; padding: 2px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                <input type="text" id="sig-targets-approved-name" value="" placeholder="(Signature over Printed Name)" class="spms-meta-input" style="width: 90%; font-weight: bold; padding: 2px 4px;" <?= $canEditApprover ? '' : 'disabled' ?>>
                                 <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Immediate Supervisor (Rater)</div>
                                 <div style="margin-top: 4px; font-size: 10.5px; color: #334155;">
-                                    Date: <input type="date" id="sig-targets-approved-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input dark:[color-scheme:dark]" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                    Date: <input type="date" id="sig-targets-approved-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input dark:[color-scheme:dark]" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditSupervisorDate ? '' : 'disabled' ?>>
                                 </div>
                             </div>
                         </td>
@@ -37,20 +37,20 @@
                             <!-- Rated By -->
                             <div style="margin-bottom: 16px;">
                                 <div style="font-weight: bold; color: #0f172a; margin-bottom: 4px;">Rated by:</div>
-                                <input type="text" id="sig-eval-rated-name" value="" placeholder="(Signature over Printed Name)" class="spms-meta-input" style="width: 90%; font-weight: bold; padding: 2px 4px;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
+                                <input type="text" id="sig-eval-rated-name" value="" placeholder="(Signature over Printed Name)" class="spms-meta-input" style="width: 90%; font-weight: bold; padding: 2px 4px;" <?= $canEditApprover ? '' : 'disabled' ?>>
                                 <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Immediate Supervisor (Rater)</div>
                                 <div style="margin-top: 4px; font-size: 10.5px; color: #334155;">
-                                    Date: <input type="date" id="sig-eval-rated-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input dark:[color-scheme:dark]" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
+                                    Date: <input type="date" id="sig-eval-rated-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input dark:[color-scheme:dark]" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditSupervisorDate ? '' : 'disabled' ?>>
                                 </div>
                             </div>
 
                             <!-- Conforme -->
                             <div>
                                 <div style="font-weight: bold; color: #0f172a; margin-bottom: 4px;">Conforme:</div>
-                                <input type="text" id="sig-eval-conforme-name" value="" placeholder="(Signature over Printed Name)" class="spms-meta-input" style="width: 90%; font-weight: bold; padding: 2px 4px;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
+                                <input type="text" id="sig-eval-conforme-name" value="" placeholder="(Signature over Printed Name)" class="spms-meta-input" style="width: 90%; font-weight: bold; padding: 2px 4px;" <?= $canEditRateeSignatory ? '' : 'disabled' ?>>
                                 <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Employee (Ratee)</div>
                                 <div style="margin-top: 4px; font-size: 10.5px; color: #334155;">
-                                    Date: <input type="date" id="sig-eval-conforme-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input dark:[color-scheme:dark]" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditEvaluation ? '' : 'disabled' ?>>
+                                    Date: <input type="date" id="sig-eval-conforme-date" onclick="this.showPicker && this.showPicker()" class="spms-meta-input dark:[color-scheme:dark]" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditRateeSignatory ? '' : 'disabled' ?>>
                                 </div>
                             </div>
                         </td>

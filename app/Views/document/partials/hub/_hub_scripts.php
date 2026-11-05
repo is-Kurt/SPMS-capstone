@@ -1,17 +1,24 @@
     <script>
+    (function() {
+        // Scoped module state variables
+        const isUserAdmin = <?= json_encode((session()->get('role') === 'Admin')) ?>;
+        let isSheetOpen = false;
+        let activeMenuId = null;
+        let sending = false;
+        let currentSubPage = 1;
+        const subPageSize = 6;
+
         function openAttachmentsModal() {
             document.getElementById('movAttachmentsModal')?.classList.remove('hidden');
         }
+        window.openAttachmentsModal = openAttachmentsModal;
+
         function closeAttachmentsModal() {
             document.getElementById('movAttachmentsModal')?.classList.add('hidden');
         }
-
-        document.addEventListener("DOMContentLoaded", function() {
-            switchDocTab('mine');
-        });
+        window.closeAttachmentsModal = closeAttachmentsModal;
 
         // Bottom Sheet Logic
-        let isSheetOpen = false;
         function toggleBottomSheet() {
             const sheet = document.getElementById('bottom-sheet');
             const overlay = document.getElementById('bottom-sheet-overlay');
@@ -28,6 +35,7 @@
                 if (overlay) overlay.classList.add('hidden');
             }
         }
+        window.toggleBottomSheet = toggleBottomSheet;
 
         // Real-time Search and Filtering
         function filterDocuments() {
@@ -60,9 +68,9 @@
                 emptyMsg.style.display = (visibleCount === 0 && rows.length > 0) ? 'block' : 'none';
             }
         }
+        window.filterDocuments = filterDocuments;
 
         // Action Menu toggle
-        let activeMenuId = null;
         function toggleActionMenu(menuId) {
             const menu = document.getElementById(menuId);
             if (!menu) return;
@@ -72,13 +80,17 @@
             menu.classList.toggle('hidden');
             activeMenuId = menu.classList.contains('hidden') ? null : menuId;
         }
+        window.toggleActionMenu = toggleActionMenu;
 
-        document.addEventListener('click', function(e) {
-            if (activeMenuId && !e.target.closest('.group\\/actions')) {
-                document.getElementById(activeMenuId)?.classList.add('hidden');
-                activeMenuId = null;
-            }
-        });
+        if (!window._hubClickListenerAttached) {
+            window._hubClickListenerAttached = true;
+            document.addEventListener('click', function(e) {
+                if (activeMenuId && !e.target.closest('.group\\/actions')) {
+                    document.getElementById(activeMenuId)?.classList.add('hidden');
+                    activeMenuId = null;
+                }
+            });
+        }
 
         async function submitTargetFolder(folderId, btn) {
             const ok = await window.appConfirm("Submit these targets for approval? You won't be able to edit them until returned.", {
@@ -106,10 +118,7 @@
                 }
             });
         }
-
-
-        const isUserAdmin = <?= json_encode((session()->get('role') === 'Admin')) ?>;
-        let sending = false;
+        window.submitTargetFolder = submitTargetFolder;
 
         function triggerCascade(folderId) {
             if (sending) return;
@@ -135,6 +144,7 @@
                 }
             });
         }
+        window.triggerCascade = triggerCascade;
 
         async function triggerUncascade(folderId) {
             if (sending) return;
@@ -167,6 +177,7 @@
                 }
             });
         }
+        window.triggerUncascade = triggerUncascade;
 
         function triggerSyncCascade(folderId) {
             if (sending) return;
@@ -209,9 +220,7 @@
                 }
             });
         }
-
-        let currentSubPage = 1;
-        const subPageSize = 6;
+        window.triggerSyncCascade = triggerSyncCascade;
 
         function renderSubordinatesPage(page) {
             const cards = document.querySelectorAll('.subordinate-card');
@@ -261,16 +270,12 @@
                 }
             }
         }
+        window.renderSubordinatesPage = renderSubordinatesPage;
 
         function changeSubPage(delta) {
             renderSubordinatesPage(currentSubPage + delta);
         }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => renderSubordinatesPage(1));
-        } else {
-            renderSubordinatesPage(1);
-        }
+        window.changeSubPage = changeSubPage;
 
         function triggerRemoveCascadedSubordinate(childFolderId, subordinateName, parentFolderId) {
             if (sending) return;
@@ -304,6 +309,7 @@
                 });
             });
         }
+        window.triggerRemoveCascadedSubordinate = triggerRemoveCascadedSubordinate;
 
         function archiveFolder(folderId, folderTitle) {
             if (sending) return;
@@ -335,6 +341,7 @@
                 });
             });
         }
+        window.archiveFolder = archiveFolder;
 
         function unarchiveFolder(folderId, folderTitle) {
             if (sending) return;
@@ -366,6 +373,7 @@
                 });
             });
         }
+        window.unarchiveFolder = unarchiveFolder;
 
         function switchDocTab(tabId) {
             document.querySelectorAll('.tab-content-doc').forEach(el => {
@@ -400,6 +408,7 @@
                 }
             }
         }
+        window.switchDocTab = switchDocTab;
 
         async function unsubmitTargetFolder(folderId, btn) {
             const ok = await window.appConfirm("Revoke target submission and return this folder to draft?", {
@@ -415,13 +424,14 @@
             formData.append('folder_id', folderId);
 
             apiPost('<?= site_url('folder/unsubmit_target') ?>', formData, {
-                onSuccess: () => window.location.reload(),
+                onSuccess: () => (typeof window.refreshFolderWorkspace === 'function' ? window.refreshFolderWorkspace(folderId) : window.location.reload()),
                 onError: async (errMsg) => {
                     await window.appAlert(errMsg || "An error occurred.");
                     if (btn) btn.disabled = false;
                 }
             });
         }
+        window.unsubmitTargetFolder = unsubmitTargetFolder;
 
         async function unsubmitEvaluationFolder(folderId, btn) {
             const ok = await window.appConfirm("Are you sure you want to revoke your self-rating submission? This will return your evaluation to drafting status so you can edit your ratings and accomplishments.", {
@@ -437,11 +447,24 @@
             formData.append('folder_id', folderId);
 
             apiPost('<?= site_url('folder/unsubmit') ?>', formData, {
-                onSuccess: () => window.location.reload(),
+                onSuccess: () => (typeof window.refreshFolderWorkspace === 'function' ? window.refreshFolderWorkspace(folderId) : window.location.reload()),
                 onError: async (errMsg) => {
                     await window.appAlert(errMsg || "An error occurred.");
                     if (btn) btn.disabled = false;
                 }
             });
         }
+        window.unsubmitEvaluationFolder = unsubmitEvaluationFolder;
+
+        // Auto-run initializations for both first page load and AJAX workspace reload
+        if (document.readyState === 'loading') {
+            document.addEventListener("DOMContentLoaded", function() {
+                switchDocTab('mine');
+                renderSubordinatesPage(1);
+            });
+        } else {
+            switchDocTab('mine');
+            renderSubordinatesPage(1);
+        }
+    })();
     </script>

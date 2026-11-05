@@ -105,10 +105,13 @@ if [[ -f "$R/spms_db.sqlite3" ]]; then
     rm -f "$DB_PATH" "${DB_PATH}-wal" "${DB_PATH}-shm"
     cp "$R/spms_db.sqlite3" "$DB_PATH"
     chmod 666 "$DB_PATH" 2>/dev/null || true
+    # Integrity check, then switch to WAL mode: backups made before 2026-11-04 are in the
+    # old journal mode, and SPMS relies on WAL for many users at once.
     if command -v sqlite3 &>/dev/null; then
         sqlite3 "$DB_PATH" "PRAGMA integrity_check;"
+        echo "journal mode: $(sqlite3 "$DB_PATH" "PRAGMA journal_mode=WAL;")"
     elif command -v "$PHP_BIN" &>/dev/null; then
-        "$PHP_BIN" -r '$d=new SQLite3($argv[1]);echo $d->querySingle("PRAGMA integrity_check"),PHP_EOL;' -- "$DB_PATH"
+        "$PHP_BIN" -r '$d=new SQLite3($argv[1]);echo $d->querySingle("PRAGMA integrity_check"),PHP_EOL;echo "journal mode: ",$d->querySingle("PRAGMA journal_mode=WAL"),PHP_EOL;' -- "$DB_PATH"
     fi
 fi
 

@@ -66,7 +66,7 @@
                                         <tr>
                                             <td style="border: none; padding: 3px 0; font-weight: bold; color: #0f172a;">Date:</td>
                                             <td style="border: none; padding: 3px 0;">
-                                                <input type="date" class="field-approver-date spms-meta-input dark:[color-scheme:dark]" id="approver-date" value="<?= esc($supervisors[0]['date'] ?? $cascadeDate ?? '') ?>" onclick="this.showPicker && this.showPicker()" style="width: 130px; padding: 2px 4px; cursor: pointer;" <?= $canEditApprover ? '' : 'disabled' ?>>
+                                                <input type="date" class="field-approver-date spms-meta-input dark:[color-scheme:dark]" id="approver-date" value="<?= esc($supervisors[0]['date'] ?? '') ?>" onclick="this.showPicker && this.showPicker()" style="width: 130px; padding: 2px 4px; cursor: pointer;" <?= $canEditSupervisorDate ? '' : 'disabled' ?>>
                                             </td>
                                         </tr>
                                     </table>
@@ -80,11 +80,11 @@
                                 <!-- Name of Employee Block -->
                                 <div style="margin-bottom: 14px;">
                                     <div>
-                                        <input type="text" id="ratee-sign-name" value="<?= esc($ownerInfo['name'] ?? '') ?>" placeholder="(full name here)" class="spms-meta-input" style="font-weight: bold; width: 240px; padding: 2px 0;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                        <input type="text" id="ratee-sign-name" value="<?= esc($ownerInfo['name'] ?? '') ?>" placeholder="(full name here)" class="spms-meta-input" style="font-weight: bold; width: 240px; padding: 2px 0;" <?= $canEditRateeSignatory ? '' : 'disabled' ?>>
                                     </div>
                                     <div style="font-size: 11px; color: #334155; margin-top: 3px; font-weight: 600;">Name of Employee</div>
                                     <div style="margin-top: 4px; font-size: 11px; color: #334155;">
-                                        Date: <input type="date" id="ratee-sign-date" value="<?= esc($cascadeDate ?? '') ?>" onclick="this.showPicker && this.showPicker()" class="spms-meta-input dark:[color-scheme:dark]" style="width: 130px; cursor: pointer; padding: 1px 2px;" <?= $canEditTargets ? '' : 'disabled' ?>>
+                                        Date: <input type="date" id="ratee-sign-date" value="<?= esc($doc['ratee_date'] ?? '') ?>" onclick="this.showPicker && this.showPicker()" class="spms-meta-input dark:[color-scheme:dark]" style="width: 130px; cursor: pointer; padding: 1px 2px;" <?= $canEditRateeSignatory ? '' : 'disabled' ?>>
                                     </div>
                                 </div>
 

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Benguet State University Strategic Performance Management System (BSU-SPMS) — Institutional Performance Commitment and Evaluation Portal.">
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="<?= base_url('assets/images/spms_logo.png') ?>">
@@ -93,8 +94,15 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=UnifrakturMaguntia&display=swap" rel="stylesheet">
-    <link rel="preload" href="<?= base_url('assets/fonts/Roboto/Roboto-VariableFont_wdth,wght.ttf') ?>" as="font" type="font/ttf" crossorigin>
+    <!-- Asynchronous non-render-blocking font loading -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap" media="print" onload="this.media='all'">
+    <noscript>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap">
+    </noscript>
+    <!-- Main UI font (Roboto WOFF2, used by every page through style.css): start downloading it now,
+         in parallel with the stylesheet, instead of only after style.css has been parsed. -->
+    <link rel="preload" href="<?= base_url('assets/fonts/Roboto/Roboto-Variable-latin.woff2') ?>" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="<?= base_url('assets/css/main/style.css?v=' . filemtime(FCPATH . 'assets/css/main/style.css')) ?>">
 
     <script src="<?= base_url('assets/packages/axios/dist/axios.min.js') ?>"></script>

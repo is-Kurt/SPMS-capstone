@@ -50,7 +50,7 @@
                         $cascadedTeamId = $activeFolder['routing_preset_id'] ?? null; 
                     ?>
                     <div class="flex items-center justify-between shrink-0">
-                        <h4 class="text-[10px] font-black uppercase text-text-muted tracking-wider"><?= $isUserAdmin ? 'Cycle Release Management' : 'Cascade Management' ?></h4>
+                        <p class="text-[10px] font-black uppercase text-text-muted tracking-wider"><?= $isUserAdmin ? 'Cycle Release Management' : 'Cascade Management' ?></p>
                     </div>
 
                     <?php 
@@ -85,7 +85,7 @@
 
                     <?php if ($isAlreadyCascaded || !$canActuallyCascade): ?>
                         <div class="relative w-full shrink-0">
-                            <select id="team-cascade-select" disabled class="w-full bg-zinc-50 dark:bg-zinc-900 text-xs font-bold text-text outline-none pl-3.5 pr-8 py-2.5 rounded-xl appearance-none border border-surface-border opacity-60 cursor-not-allowed">
+                            <select id="team-cascade-select" disabled aria-label="Selected recipient staff list" class="w-full bg-zinc-50 dark:bg-zinc-900 text-xs font-bold text-text outline-none pl-3.5 pr-8 py-2.5 rounded-xl appearance-none border border-surface-border opacity-60 cursor-not-allowed">
                                 <?php if (!empty($cascadedTeamId)): ?>
                                     <?php foreach ($presets as $preset): ?>
                                         <option value="<?= $preset['id'] ?>" <?= ($cascadedTeamId == $preset['id']) ? 'selected' : '' ?> class="bg-surface text-text">
@@ -157,14 +157,10 @@
                                 <?= $isUserAdmin ? 'Select Recipient Staff' : 'Select Distribution Staff' ?>
                             </label>
                             <div class="relative w-full">
-                                <select id="team-cascade-select" <?= ($isLocked || !$canActuallyCascade) ? 'disabled' : '' ?> class="w-full bg-zinc-50 dark:bg-zinc-900 text-xs font-bold text-text outline-none pl-3.5 pr-8 py-2.5 rounded-xl appearance-none border border-surface-border <?= ($isLocked || !$canActuallyCascade) ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer focus:border-emerald-500/50' ?>">
-                                    <?php $onlyOnePreset = (count($presets) === 1); ?>
-                                    <?php if (!$onlyOnePreset): ?>
-                                        <option value="" disabled selected class="bg-surface text-text-muted"><?= $isUserAdmin ? '-- Select Staff to Release --' : '-- Select Staff to Cascade --' ?></option>
-                                    <?php endif; ?>
-                                    <?php foreach($presets as $preset): ?>
+                                <select id="team-cascade-select" aria-label="Select recipient staff team" <?= ($isLocked || !$canActuallyCascade) ? 'disabled' : '' ?> class="w-full bg-zinc-50 dark:bg-zinc-900 text-xs font-bold text-text outline-none pl-3.5 pr-8 py-2.5 rounded-xl appearance-none border border-surface-border <?= ($isLocked || !$canActuallyCascade) ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer focus:border-emerald-500/50' ?>">
+                                    <?php foreach($presets as $idx => $preset): ?>
                                         <?php $mCount = (int)($preset['member_count'] ?? 0); ?>
-                                        <option value="<?= $preset['id'] ?>" <?= $onlyOnePreset ? 'selected' : '' ?> class="bg-surface text-text">
+                                        <option value="<?= $preset['id'] ?>" <?= ($idx === 0) ? 'selected' : '' ?> class="bg-surface text-text">
                                             <?= esc($preset['name']) ?> (<?= $mCount ?> <?= ($mCount === 1 ? 'member' : 'members') ?>)
                                         </option>
                                     <?php endforeach; ?>
@@ -205,7 +201,7 @@
                 <!-- FOLDER MANAGEMENT BUTTONS (Admin Only) -->
                 <?php if (session()->get('role') === 'Admin'): ?>
                 <div class="flex flex-col gap-3 border-t border-zinc-200 dark:border-zinc-800/60 pt-4 shrink-0">
-                    <h4 class="text-[10px] font-black uppercase text-text-muted tracking-wider">Folder Management</h4>
+                    <p class="text-[10px] font-black uppercase text-text-muted tracking-wider">Folder Management</p>
                     
                     <?php if (!empty($activeFolder['deleted_at'])): ?>
                         <div class="flex flex-col gap-2">
@@ -314,7 +310,7 @@
                 <!-- Submission Summary Card -->
                 <div class="flex flex-col gap-3">
                     <div class="flex items-center justify-between">
-                        <h4 class="text-[10px] font-black uppercase text-zinc-400 dark:text-[#8ea396] tracking-wider">Submission Summary</h4>
+                        <p class="text-[10px] font-black uppercase text-zinc-400 dark:text-[#8ea396] tracking-wider">Submission Summary</p>
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 text-zinc-700 border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300">
                             <span class="w-1.5 h-1.5 rounded-full <?= $phaseDotColor ?> animate-pulse"></span>
                             <?= esc($currentPhaseLabel) ?>
@@ -397,7 +393,7 @@
 
                 <!-- Folder Details -->
                 <div class="flex flex-col gap-3 pt-5 border-t border-zinc-200 dark:border-zinc-800 mt-auto">
-                    <h4 class="text-[10px] font-black uppercase text-zinc-400 dark:text-[#8ea396] tracking-wider">Folder Details</h4>
+                    <p class="text-[10px] font-black uppercase text-zinc-400 dark:text-[#8ea396] tracking-wider">Folder Details</p>
                     
                     <div class="flex flex-col gap-2">
                         <div class="flex items-center justify-between text-xs py-0.5">

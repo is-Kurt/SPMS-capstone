@@ -3,6 +3,12 @@ let submitting = false;
 let saveStatusTimeout = null; 
 
 async function saveDocument(manualSave = true) {
+    if (typeof window.isDocumentReadOnly !== 'undefined' && window.isDocumentReadOnly) {
+        return;
+    }
+    if (typeof window.isEditable !== 'undefined' && !window.isEditable) {
+        return;
+    }
     if (savePromise && !isClosing) {
         console.log("Save already in progress. Waiting for it to finish...");
         try {
@@ -14,7 +20,7 @@ async function saveDocument(manualSave = true) {
         return;
     }
 
-    savePromise = new Promise((resolve, reject) => {
+    savePromise = new Promise(async (resolve, reject) => {
         const isRubricsActive = (typeof activeTabId !== 'undefined' && activeTabId === 'rubrics-tab');
         const hasTabs = (typeof tabs !== 'undefined' && Array.isArray(tabs) && tabs.length > 0);
         if (!window.isSpmsFormActive && !isRubricsActive && !hasTabs) return resolve();
@@ -183,6 +189,9 @@ function autoSave() {
 window.addEventListener('keydown', function(e) {
     if ((e.ctrlKey || e.metaKey) && e.key && e.key.toLowerCase() === 's') {
         e.preventDefault();
+        if (typeof window.isDocumentReadOnly !== 'undefined' && window.isDocumentReadOnly) return;
+        if (typeof window.isEditable !== 'undefined' && !window.isEditable) return;
+        if (!document.getElementById('btn-save-doc')) return;
         saveDocument(true);
     }
 });

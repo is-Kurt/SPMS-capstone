@@ -3873,6 +3873,9 @@
       --tw-ring-color: color-mix(in oklab, var(--color-purple-500) 20%, transparent);
     }
   }
+  .ring-red-500 {
+    --tw-ring-color: var(--color-red-500);
+  }
   .ring-sky-500\/20 {
     --tw-ring-color: color-mix(in srgb, oklch(68.5% 0.169 237.323) 20%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
@@ -8362,7 +8365,7 @@
 }
 @font-face {
   font-family: 'Roboto';
-  src: url('/assets/fonts/Roboto/Roboto-VariableFont_wdth,wght.ttf') format('truetype');
+  src: url('/assets/fonts/Roboto/Roboto-Variable-latin.woff2') format('woff2');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;

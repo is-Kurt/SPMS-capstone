@@ -339,8 +339,8 @@ class Document extends BaseController
                 $supervisors[] = [
                     'name'     => $cycleApprovingName,
                     'position' => $cycleApprovingPos ?: 'President',
-                    'date'     => $cascadeDate,
-                    'evalDate' => $cascadeDate
+                    'date'     => '',
+                    'evalDate' => ''
                 ];
             }
         } else {
@@ -362,15 +362,14 @@ class Document extends BaseController
                     $p = $userModel->getActivePlantillaDetails($eId);
                     $ePos = $p['position'] ?? 'Immediate Supervisor';
                 }
-                $rDate = !empty($route['created_at']) ? date('Y-m-d', strtotime($route['created_at'])) : $cascadeDate;
 
                 $supervisors[] = [
                     'id'        => $eId,
                     'folder_id' => $route['evaluator_folder_id'] ?? null,
                     'name'      => $eName,
                     'position'  => $ePos,
-                    'date'      => $rDate,
-                    'evalDate'  => $rDate
+                    'date'      => '',
+                    'evalDate'  => ''
                 ];
             }
 
@@ -392,8 +391,8 @@ class Document extends BaseController
                                     'folder_id' => $pFolder['id'],
                                     'name'      => trim(($pUser['first_name'] ?? '') . ' ' . ($pUser['last_name'] ?? '')),
                                     'position'  => $pPlantilla['position'] ?? 'Supervisor',
-                                    'date'      => $cascadeDate,
-                                    'evalDate'  => $cascadeDate
+                                    'date'      => '',
+                                    'evalDate'  => ''
                                 ];
                             }
                         }
@@ -408,8 +407,8 @@ class Document extends BaseController
                     'folder_id' => null,
                     'name'      => $cycleApprovingName,
                     'position'  => $cycleApprovingPos ?: 'President',
-                    'date'      => $cascadeDate,
-                    'evalDate'  => $cascadeDate
+                    'date'      => '',
+                    'evalDate'  => ''
                 ];
             }
         }
@@ -688,19 +687,29 @@ class Document extends BaseController
                     $nonAdminRoutes[] = $r;
                 }
             }
+            $docCanonStatus = \App\Enums\FolderStatus::canonical($currentFolderRec['status'] ?? ($docInfo['status'] ?? ''));
+            $isDocEvalPhase = $docCanonStatus->isEvaluationPhase();
+
             $effectiveRoutes = !empty($nonAdminRoutes) ? $nonAdminRoutes : $adminRoutes;
             foreach ($effectiveRoutes as $r) {
                 $eId = (int)$r['evaluator_id'];
                 $supervisorApprovals[$eId] = $r['status'];
                 $totalSupervisorsCount++;
                 $st = strtolower(trim((string)$r['status']));
-                if ($st === 'approved' || $st === 'target_approved') {
-                    $approvedSupervisorsCount++;
+                if ($isDocEvalPhase) {
+                    if ($st === 'approved' || $st === 'eval_approved') {
+                        $approvedSupervisorsCount++;
+                    }
+                } else {
+                    if ($st === 'approved' || $st === 'target_approved') {
+                        $approvedSupervisorsCount++;
+                    }
                 }
             }
         }
-        $data['allSupervisorsApproved'] = ($totalSupervisorsCount > 0 && $approvedSupervisorsCount >= $totalSupervisorsCount)
-            || ($totalSupervisorsCount === 0 && !empty($docInfo['target_approved_at']));
+        $data['allSupervisorsApproved'] = $isDocEvalPhase
+            ? (($totalSupervisorsCount > 0 && $approvedSupervisorsCount >= $totalSupervisorsCount) || ($totalSupervisorsCount === 0 && (!empty($currentFolderRec['rated_at']) || !empty($docInfo['eval_approved_at']))))
+            : (($totalSupervisorsCount > 0 && $approvedSupervisorsCount >= $totalSupervisorsCount) || ($totalSupervisorsCount === 0 && !empty($docInfo['target_approved_at'])));
 
         // Version History resolution
         $currentVersion = max(1, (int)($currentFolderRec['current_version'] ?? ($docInfo['current_version'] ?? 1)));

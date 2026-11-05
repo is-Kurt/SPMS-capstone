@@ -158,7 +158,11 @@
                 const newScript = document.createElement('script');
                 Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
                 newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-                oldScript.parentNode.replaceChild(newScript, oldScript);
+                try {
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                } catch (e) {
+                    console.warn("Script re-execution skipped:", e);
+                }
             });
         }
 

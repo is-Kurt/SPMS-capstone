@@ -434,7 +434,7 @@
                         }
                         @media (min-width: 1024px) {
                             .spms-hub-stat-grid.spms-hub-stat-grid-4 {
-                                grid-template-columns: repeat(4, minmax(0, 1fr));
+                                grid-template-columns: repeat(2, minmax(0, 1fr));
                             }
                         }
                         @media (min-width: 768px) {
@@ -538,9 +538,12 @@
                             align-items: center;
                             gap: 5px;
                             width: fit-content;
+                            max-width: 100%;
                             margin-top: 0;
                             white-space: nowrap;
                             flex-shrink: 0;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
                         }
                         .dark .spms-hub-window-pill {
                             background-color: #0e291e !important;

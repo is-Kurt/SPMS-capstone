@@ -43,6 +43,12 @@ class Database extends Config
         'failover'     => [],
         'port'         => 3306,
         'foreignKeys'  => true,
+        // SQLite under many users (the database itself is in WAL mode, set once with
+        // PRAGMA journal_mode=WAL): a save waits up to 5 s for another save to finish
+        // instead of failing at once with "database is locked"; synchronous=1 (NORMAL)
+        // is safe with WAL and makes each save faster.
+        'busyTimeout'  => 5000,
+        'synchronous'  => 1,
         'numberNative' => false,
         'foundRows'    => false,
         'dateFormat'   => [

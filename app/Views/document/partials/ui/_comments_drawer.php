@@ -9,11 +9,6 @@
         <span class="flex-1 font-semibold">View Comment</span>
         <span class="text-[10px] text-zinc-400">Alt+M</span>
     </button>
-    <button type="button" id="spms-ctx-mov-btn" class="spms-ctx-item flex items-center gap-2.5 px-3 py-1.5 w-full text-left hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors" data-action="mov" style="display: none;">
-        <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
-        <span class="flex-1 font-semibold" id="spms-ctx-mov-label">Means of Verification (MOV)</span>
-        <span class="text-[10px] text-zinc-400 font-bold" id="spms-ctx-mov-badge"></span>
-    </button>
     <div id="spms-ctx-div-1" class="h-px bg-zinc-200 dark:bg-zinc-800 my-1"></div>
     <button type="button" class="spms-ctx-item flex items-center gap-2.5 px-3 py-1.5 w-full text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" data-action="cut">
         <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0z"/></svg>

@@ -147,8 +147,8 @@
                 <!-- Notification Bell Direct Link -->
                 <a href="<?= site_url('notifications') ?>" id="notification-btn"
                    class="relative w-8 h-8 rounded-xl text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 shadow-xs flex items-center justify-center transition-all cursor-pointer shrink-0 <?= (isset($currentUri) && strpos($currentUri, 'notifications') === 0) ? 'ring-2 ring-zinc-400 dark:ring-zinc-600 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-xs' : '' ?>"
-                   title="Notifications"
-                   aria-label="View Notifications">
+                   title="Notifications">
+                    <span class="sr-only">Notifications</span>
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                     </svg>

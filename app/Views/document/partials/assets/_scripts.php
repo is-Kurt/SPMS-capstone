@@ -42,17 +42,24 @@
 
     const canEditTargets = <?= json_encode($canEditTargets) ?>;
     const canEditApprover = <?= json_encode($canEditApprover) ?>;
+    const canEditRateeSignatory = <?= json_encode($canEditRateeSignatory ?? false) ?>;
+    const canEditSupervisorDate = <?= json_encode($canEditSupervisorDate ?? false) ?>;
     const canEditEvaluation = <?= json_encode($canEditEvaluation) ?>;
     const canEditAccomplishments = <?= json_encode($canEditAccomplishments ?? false) ?>;
     const canEditRemarks = <?= json_encode($canEditRemarks) ?>;
+    const isEditable = <?= json_encode(!empty($isEditable)) ?>;
     const isTargetPhase = <?= json_encode($isTargetPhase) ?>;
     const isEvaluationPhase = <?= json_encode($isEvaluationPhase) ?>;
 
     window.canEditTargets = canEditTargets;
     window.canEditApprover = canEditApprover;
+    window.canEditRateeSignatory = canEditRateeSignatory;
+    window.canEditSupervisorDate = canEditSupervisorDate;
     window.canEditEvaluation = canEditEvaluation;
     window.canEditAccomplishments = canEditAccomplishments;
     window.canEditRemarks = canEditRemarks;
+    window.isEditable = isEditable;
+    window.isDocumentReadOnly = !isEditable;
     window.systemDefaultWeights = systemDefaultWeights;
 
     window.digitalRubricsData = (tabs[0]?.formData?.rubrics && !Array.isArray(tabs[0]?.formData?.rubrics)) ? tabs[0].formData.rubrics : {};
@@ -526,7 +533,67 @@
         document.querySelectorAll('.field-budget').forEach(adjustBudgetFontSize);
     });
 
+    function getUnratedActiveQteInputs() {
+        const unrated = [];
+        const rows = document.querySelectorAll('#printable-form tbody tr');
+        rows.forEach(tr => {
+            if (tr.classList.contains('category-header-row') || tr.classList.contains('empty-category-placeholder') || tr.dataset.isPlaceholder) return;
+            const mfoVal = tr.querySelector('.field-mfo')?.value?.trim();
+            const indVal = tr.querySelector('.field-indicators')?.value?.trim();
+            if (!mfoVal && !indVal) return;
+
+            ['field-q', 'field-t', 'field-e'].forEach(cls => {
+                const inp = tr.querySelector('.' + cls);
+                if (!inp) return;
+                const td = inp.closest('td');
+                const isBlocked = (inp.value === 'X' || inp.value === 'N/A' || (td && td.classList.contains('qte-na')));
+                if (!isBlocked) {
+                    const val = (inp.value || '').trim();
+                    const num = parseInt(val, 10);
+                    if (!val || val === '—' || isNaN(num) || num < 1 || num > 5) {
+                        unrated.push(inp);
+                    }
+                }
+            });
+        });
+        return unrated;
+    }
+    window.getUnratedActiveQteInputs = getUnratedActiveQteInputs;
+
+    async function validateEvaluationScores() {
+        const unrated = getUnratedActiveQteInputs();
+        if (unrated.length > 0) {
+            const firstUnrated = unrated[0];
+            const td = firstUnrated.closest('td');
+            if (td) {
+                td.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                td.classList.add('ring-2', 'ring-red-500', 'animate-pulse');
+                setTimeout(() => td.classList.remove('ring-2', 'ring-red-500', 'animate-pulse'), 3500);
+            }
+            firstUnrated.focus?.();
+            const msg = `All active QTE dimensions are required during the evaluation phase. There are ${unrated.length} active cell(s) without a rating score.\n\nPlease provide a score (1 to 5) for all active dimensions or mark non-applicable dimensions as N/A before submitting.`;
+            if (typeof window.appAlert === 'function') {
+                await window.appAlert(msg, { title: 'Incomplete Evaluation Scores', variant: 'warning' });
+            } else {
+                alert(msg);
+            }
+            return 'hasError';
+        }
+        return 'ok';
+    }
+    window.validateEvaluationScores = validateEvaluationScores;
+
     async function lockFolderEvaluation() {
+        if (typeof validateEvaluationScores === 'function') {
+            const val = await validateEvaluationScores();
+            if (val === 'hasError') return;
+        }
+
+        // Ensure latest document changes are saved before locking evaluation
+        if (typeof saveDocument === 'function') {
+            await saveDocument(true);
+        }
+
         let finalScore = document.getElementById('grand-score')?.innerText?.trim() || '';
         if (finalScore === '0.000' || finalScore === '—') finalScore = '';
 
@@ -560,6 +627,11 @@
     }
 
     async function approveFolderEvaluation() {
+        if (typeof validateEvaluationScores === 'function') {
+            const val = await validateEvaluationScores();
+            if (val === 'hasError') return;
+        }
+
         const isTwgOrPmt = (window.sysRole === 'TWG' || window.sysRole === 'PMT');
         const roleLabel = (window.sysRole === 'PMT') ? 'PMT' : 'TWG';
         let finalScore = document.getElementById('grand-score')?.innerText?.trim() || '';
@@ -666,7 +738,27 @@
         });
         if (!ok) return;
         
-        // Save evaluator row notes and PMT remarks before returning
+        // Post automatic score adjustment comments for any scores modified by the reviewing authority
+        if (!isTargetPhase && !window.isOwner) {
+            const scoreInputs = document.querySelectorAll('.spms-score-input');
+            for (const input of scoreInputs) {
+                const currentScore = input.value.trim();
+                const initialScore = String(input.dataset.initialScore || input.dataset.selfScore || '').trim();
+                if (currentScore && initialScore && currentScore !== 'X' && initialScore !== 'X' && currentScore !== 'N/A' && initialScore !== 'N/A' && currentScore !== initialScore) {
+                    if (input.dataset.lastReturnedAutoComment !== currentScore) {
+                        input.dataset.lastReturnedAutoComment = currentScore;
+                        const tr = input.closest('tr');
+                        const rowId = tr ? (tr.dataset.rowId || tr.id) : null;
+                        const fieldName = input.dataset.field || (input.className.match(/field-([qte])/) || [])[1];
+                        if (rowId && fieldName) {
+                            await postAutomaticScoreAdjustmentComment(rowId, fieldName, initialScore, currentScore);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Save evaluator row notes, PMT remarks, and adjusted scores before returning
         if (typeof saveDocument === 'function') {
             await saveDocument(true);
         }
@@ -1200,7 +1292,7 @@
                 <tr>
                     <td style="border: none; padding: 3px 0; font-weight: bold; color: ${isDpcrOrOpcr ? '#0f172a' : '#64748b'};">Date:</td>
                     <td style="border: none; padding: 3px 0;">
-                        <input type="date" class="field-approver-date spms-meta-input dark:[color-scheme:dark]" ${isActuallyFirst ? 'id="approver-date"' : ''} value="${escapeHtml(date)}" onclick="this.showPicker && this.showPicker()" style="width: 130px; padding: 2px 4px; cursor: pointer;" ${disabledAttr}>
+                        <input type="date" class="field-approver-date spms-meta-input dark:[color-scheme:dark]" ${isActuallyFirst ? 'id="approver-date"' : ''} value="${escapeHtml(date)}" onclick="this.showPicker && this.showPicker()" style="width: 130px; padding: 2px 4px; cursor: pointer;" ${canEditSupervisorDate ? '' : 'disabled'}>
                     </td>
                 </tr>
             </table>
@@ -1217,20 +1309,20 @@
 
             const footerNamePlaceholder = isOpcr ? '(name of head of office / approving authority)' : (isDpcr ? '(name of office head)' : '(name of office head)');
             const footerPosPlaceholder = isOpcr ? '(position / designation)' : (isDpcr ? '(position of office head)' : '(position of office head)');
-            const evalDateDisabled = canEditEvaluation ? '' : 'disabled';
-            const namePosDisabled = canEditTargets ? '' : 'disabled';
+            const supDateDisabled = canEditSupervisorDate ? '' : 'disabled';
+            const namePosDisabled = canEditApprover ? '' : 'disabled';
 
             footerDiv.innerHTML = `
                 <div style="margin-bottom: 6px; color: #0f172a; display: flex; align-items: center; justify-content: space-between;">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span style="font-weight: bold;">Final Rating by${!isActuallyFirst ? ` (Signatory ${index + 1})` : ''}:</span>
                         ${isActuallyFirst ? `
-                        <button type="button" id="btn-add-footer-approver" onclick="addApproverBlock()" class="print-hide" style="display: ${canEditTargets ? 'inline-flex' : 'none'}; align-items: center; gap: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 4px; cursor: pointer;" title="Add another approving signatory">
+                        <button type="button" id="btn-add-footer-approver" onclick="addApproverBlock()" class="print-hide" style="display: ${canEditApprover ? 'inline-flex' : 'none'}; align-items: center; gap: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 4px; cursor: pointer;" title="Add another approving signatory">
                             + Add Signatory
                         </button>
                         ` : ''}
                     </div>
-                    ${!isActuallyFirst && canEditTargets ? `
+                    ${!isActuallyFirst && canEditApprover ? `
                     <button type="button" onclick="removeFooterApproverBlock(this)" class="print-hide" style="color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5; font-size: 9px; padding: 1px 5px; border-radius: 3px; cursor: pointer; font-weight: bold;" title="Remove this signatory">✕ Remove</button>
                     ` : ''}
                 </div>
@@ -1241,7 +1333,7 @@
                     <input type="text" class="field-footer-approver-pos spms-meta-input" ${isActuallyFirst ? 'id="sig-dean-pos"' : ''} value="${escapeHtml(position)}" placeholder="${footerPosPlaceholder}" style="width: 70%; padding: 2px 4px;" ${namePosDisabled}>
                 </div>
                 <div style="margin-bottom: 6px; color: #0f172a;">
-                    Date: <input type="date" class="field-footer-approver-date spms-meta-input dark:[color-scheme:dark]" ${isActuallyFirst ? 'id="sig-dean-date"' : ''} value="${escapeHtml(evalDate)}" onclick="this.showPicker && this.showPicker()" style="width: 130px; cursor: pointer; padding: 1px 4px;" ${evalDateDisabled}>
+                    Date: <input type="date" class="field-footer-approver-date spms-meta-input dark:[color-scheme:dark]" ${isActuallyFirst ? 'id="sig-dean-date"' : ''} value="${escapeHtml(evalDate)}" onclick="this.showPicker && this.showPicker()" style="width: 130px; cursor: pointer; padding: 1px 4px;" ${supDateDisabled}>
                 </div>
                 ${isActuallyFirst ? `
                 <div style="color: #64748b; font-size: 10px; font-style: italic;">(may add signatories depending on position/designation)</div>
@@ -1744,35 +1836,35 @@
                 approversList = [{
                     name: data.signatories.dean,
                     position: data.signatories.deanPos || '',
-                    date: data.signatories.deanDate || cascadeDateVal,
-                    evalDate: data.signatories.deanDate || cascadeDateVal
+                    date: data.signatories.deanDate || '',
+                    evalDate: data.signatories.deanDate || ''
                 }];
             }
 
             if (!hasValidSavedApprovers) {
-                // Populate default from cascaded supervisor(s)
+                // Populate default from cascaded supervisor(s) without enforcing date default
                 if (defaultSupervisors && Array.isArray(defaultSupervisors) && defaultSupervisors.length > 0) {
                     approversList = defaultSupervisors.map(sup => ({
                         name: sup.name || '',
                         position: sup.position || '',
-                        date: sup.date || cascadeDateVal,
-                        evalDate: sup.evalDate || cascadeDateVal
+                        date: sup.date || '',
+                        evalDate: sup.evalDate || ''
                     }));
                 } else {
-                    approversList = [{ name: '', position: '', date: cascadeDateVal, evalDate: cascadeDateVal }];
+                    approversList = [{ name: '', position: '', date: '', evalDate: '' }];
                 }
             }
 
             approversList.forEach((appr, idx) => {
-                if (!appr.date) appr.date = cascadeDateVal;
-                if (!appr.evalDate) appr.evalDate = cascadeDateVal;
+                if (!appr.date) appr.date = '';
+                if (!appr.evalDate) appr.evalDate = '';
                 addApproverBlock(appr.name || '', appr.position || '', appr.date, idx === 0, appr.evalDate);
             });
         } else {
             const firstSup = (defaultSupervisors && defaultSupervisors[0]) ? defaultSupervisors[0] : {};
             setVal('approver-name', (data.approver?.name && data.approver.name.trim() !== '') ? data.approver.name : (firstSup.name || ''));
             setVal('approver-pos', (data.approver?.position && data.approver.position.trim() !== '') ? data.approver.position : (firstSup.position || ''));
-            setVal('approver-date', (data.approver?.date && data.approver.date.trim() !== '') ? data.approver.date : (firstSup.date || cascadeDateVal));
+            setVal('approver-date', (data.approver?.date && data.approver.date.trim() !== '') ? data.approver.date : (firstSup.date || ''));
         }
 
         const addApprBtn = document.getElementById('btn-add-approver') || document.getElementById('btn-add-approver-ipcr');
@@ -1785,7 +1877,7 @@
         }
 
         setVal('ratee-sign-name', (data.rateeSign?.name && data.rateeSign.name.trim() !== '') ? data.rateeSign.name : defaultRateeName);
-        setVal('ratee-sign-date', (data.rateeSign?.date && data.rateeSign.date.trim() !== '') ? data.rateeSign.date : cascadeDateVal);
+        setVal('ratee-sign-date', (data.rateeSign?.date && data.rateeSign.date.trim() !== '') ? data.rateeSign.date : '');
 
         window.currentDocCurrency = data.budget_currency || data.currency || '₱';
         document.querySelectorAll('.header-budget-currency').forEach(el => {
@@ -1798,23 +1890,23 @@
 
         setVal('sig-ratee-name', (data.signatories?.ratee && data.signatories.ratee.trim() !== '') ? data.signatories.ratee : defaultRateeName);
         setVal('sig-ratee-pos', (data.signatories?.rateePos && data.signatories.rateePos.trim() !== '') ? data.signatories.rateePos : defaultRateePos);
-        setVal('sig-ratee-date', (data.signatories?.rateeDate && data.signatories.rateeDate.trim() !== '') ? data.signatories.rateeDate : cascadeDateVal);
+        setVal('sig-ratee-date', (data.signatories?.rateeDate && data.signatories.rateeDate.trim() !== '') ? data.signatories.rateeDate : '');
         setVal('sig-dean-name', (data.signatories?.dean && data.signatories.dean.trim() !== '') ? data.signatories.dean : (approversList[0]?.name || defaultSupervisors[0]?.name || ''));
         setVal('sig-dean-pos', (data.signatories?.deanPos && data.signatories.deanPos.trim() !== '') ? data.signatories.deanPos : (approversList[0]?.position || defaultSupervisors[0]?.position || ''));
-        setVal('sig-dean-date', (data.signatories?.deanDate && data.signatories.deanDate.trim() !== '') ? data.signatories.deanDate : (approversList[0]?.evalDate || cascadeDateVal));
+        setVal('sig-dean-date', (data.signatories?.deanDate && data.signatories.deanDate.trim() !== '') ? data.signatories.deanDate : (approversList[0]?.evalDate || ''));
         setVal('sig-vp-name', data.signatories?.vp || '');
         setVal('sig-vp-date', data.signatories?.vpDate || '');
 
         if (isIperf) {
             setVal('ratee-classification', data.classification || 'Contract of Service (COS)');
             setVal('sig-targets-prepared-name', (data.signatories?.targetsPreparedName && data.signatories.targetsPreparedName.trim() !== '') ? data.signatories.targetsPreparedName : defaultRateeName);
-            setVal('sig-targets-prepared-date', (data.signatories?.targetsPreparedDate && data.signatories.targetsPreparedDate.trim() !== '') ? data.signatories.targetsPreparedDate : cascadeDateVal);
+            setVal('sig-targets-prepared-date', (data.signatories?.targetsPreparedDate && data.signatories.targetsPreparedDate.trim() !== '') ? data.signatories.targetsPreparedDate : '');
             setVal('sig-targets-approved-name', (data.signatories?.targetsApprovedName && data.signatories.targetsApprovedName.trim() !== '') ? data.signatories.targetsApprovedName : (approversList[0]?.name || defaultSupervisors[0]?.name || ''));
-            setVal('sig-targets-approved-date', (data.signatories?.targetsApprovedDate && data.signatories.targetsApprovedDate.trim() !== '') ? data.signatories.targetsApprovedDate : cascadeDateVal);
+            setVal('sig-targets-approved-date', (data.signatories?.targetsApprovedDate && data.signatories.targetsApprovedDate.trim() !== '') ? data.signatories.targetsApprovedDate : '');
             setVal('sig-eval-rated-name', (data.signatories?.evalRatedName && data.signatories.evalRatedName.trim() !== '') ? data.signatories.evalRatedName : (approversList[0]?.name || defaultSupervisors[0]?.name || ''));
-            setVal('sig-eval-rated-date', (data.signatories?.evalRatedDate && data.signatories.evalRatedDate.trim() !== '') ? data.signatories.evalRatedDate : cascadeDateVal);
+            setVal('sig-eval-rated-date', (data.signatories?.evalRatedDate && data.signatories.evalRatedDate.trim() !== '') ? data.signatories.evalRatedDate : '');
             setVal('sig-eval-conforme-name', (data.signatories?.evalConformeName && data.signatories.evalConformeName.trim() !== '') ? data.signatories.evalConformeName : defaultRateeName);
-            setVal('sig-eval-conforme-date', (data.signatories?.evalConformeDate && data.signatories.evalConformeDate.trim() !== '') ? data.signatories.evalConformeDate : cascadeDateVal);
+            setVal('sig-eval-conforme-date', (data.signatories?.evalConformeDate && data.signatories.evalConformeDate.trim() !== '') ? data.signatories.evalConformeDate : '');
 
             const elClass = document.getElementById('ratee-classification');
             if (elClass) elClass.disabled = !canEditTargets;
@@ -1950,10 +2042,24 @@
         }
 
         // Update header ratee inputs based on phase permissions and attach live styling listeners
-        ['ratee-name', 'ratee-position', 'ratee-dept', 'ratee-period', 'ratee-sign-name', 'ratee-sign-date', 'approver-name', 'approver-pos', 'approver-date', 'sig-ratee-name', 'sig-ratee-pos', 'sig-ratee-date', 'sig-dean-name', 'sig-dean-pos', 'sig-dean-date', 'sig-targets-prepared-date', 'sig-targets-approved-date', 'sig-eval-rated-date', 'sig-eval-conforme-date'].forEach(id => {
+        const rateeGeneralIds = ['ratee-name', 'ratee-position', 'ratee-dept', 'ratee-period'];
+        const rateeSignatoryIds = ['ratee-sign-name', 'ratee-sign-date', 'sig-ratee-name', 'sig-ratee-pos', 'sig-ratee-date', 'sig-targets-prepared-name', 'sig-targets-prepared-date', 'sig-eval-conforme-name', 'sig-eval-conforme-date'];
+        const approverMetaIds = ['approver-name', 'approver-pos', 'sig-dean-name', 'sig-dean-pos', 'sig-targets-approved-name', 'sig-eval-rated-name'];
+        const approverDateIds = ['approver-date', 'sig-dean-date', 'sig-targets-approved-date', 'sig-eval-rated-date'];
+
+        const allSignatoryFields = [...rateeGeneralIds, ...rateeSignatoryIds, ...approverMetaIds, ...approverDateIds];
+        allSignatoryFields.forEach(id => {
             const el = document.getElementById(id);
             if (el) {
-                el.disabled = !canEditTargets;
+                if (rateeGeneralIds.includes(id)) {
+                    el.disabled = !canEditTargets;
+                } else if (rateeSignatoryIds.includes(id)) {
+                    el.disabled = !canEditRateeSignatory;
+                } else if (approverMetaIds.includes(id)) {
+                    el.disabled = !canEditApprover;
+                } else if (approverDateIds.includes(id)) {
+                    el.disabled = !canEditSupervisorDate;
+                }
                 const updateStyle = function() {
                     el.style.color = '#0f172a';
                     el.style.borderColor = el.value.trim() !== '' ? '#94a3b8' : '#cbd5e1';
@@ -1989,6 +2095,10 @@
                 }
                 updateStyle();
             }
+        });
+
+        document.querySelectorAll('.field-approver-date, .field-footer-approver-date').forEach(el => {
+            el.disabled = !canEditSupervisorDate;
         });
 
         // Setup live sync for header currency inputs
@@ -2048,15 +2158,12 @@
         let twgVal = data[fieldKey + '_twg'];
         let lastActor = data['last_rated_by_' + fieldKey] || '';
 
-        // Backward compatibility: If selfVal is not set, initialize based on current data
-        if (selfVal === undefined || selfVal === null) {
-            if (val !== '' && val !== 'X') {
-                if (headVal || twgVal) {
-                    selfVal = '';
-                } else {
-                    selfVal = val;
-                    if (!lastActor) lastActor = 'self';
-                }
+        // Backward compatibility / baseline initialization:
+        // selfVal represents the ratee's submitted baseline rating. If missing or empty, default to val.
+        if (selfVal === undefined || selfVal === null || selfVal === '') {
+            if (val !== '' && val !== 'X' && val !== 'N/A') {
+                selfVal = val;
+                if (!lastActor) lastActor = 'self';
             } else {
                 selfVal = '';
             }
@@ -2064,7 +2171,7 @@
         headVal = (headVal !== undefined && headVal !== null) ? headVal : '';
         twgVal = (twgVal !== undefined && twgVal !== null) ? twgVal : '';
 
-        if (!lastActor && val !== '' && val !== 'X') {
+        if (!lastActor && val !== '' && val !== 'X' && val !== 'N/A') {
             if (twgVal !== '') lastActor = 'twg';
             else if (headVal !== '') lastActor = 'head';
             else if (selfVal !== '') lastActor = 'self';
@@ -2090,16 +2197,17 @@
             const val = String(input.value || '').trim();
             if (!val || val === 'X' || val === 'N/A' || val === '—') return;
 
-            const selfScore = String(input.dataset.selfScore || '').trim();
+            const selfScore = String(input.dataset.selfScore || input.dataset.initialScore || '').trim();
             const headScore = String(input.dataset.headScore || '').trim();
 
             if (actor === 'twg') {
-                const baseline = headScore || selfScore;
+                const baseline = headScore || selfScore || String(input.dataset.initialScore || '').trim();
                 if (baseline && baseline !== 'X' && baseline !== 'N/A' && baseline !== val) {
                     adjustedCount++;
                 }
             } else if (actor === 'head') {
-                if (selfScore && selfScore !== 'X' && selfScore !== 'N/A' && selfScore !== val) {
+                const baseline = selfScore || String(input.dataset.initialScore || '').trim();
+                if (baseline && baseline !== 'X' && baseline !== 'N/A' && baseline !== val) {
                     adjustedCount++;
                 }
             }
@@ -2230,18 +2338,21 @@
             `;
         }
 
+        const baselineScore = attr.self || attr.val || '';
         return `
             <td style="padding: 0; text-align: center; vertical-align: middle; border: 1px solid #000; position: relative;" class="spms-score-cell" data-field-name="${fieldKey}">
                 <input type="number" min="1" max="5" step="1" 
                     value="${attr.val}" 
                     placeholder="—" 
                     data-field="${fieldKey}"
-                    data-self-score="${escapeHtml(attr.self)}"
+                    data-prev-score="${escapeHtml(attr.val || '')}"
+                    data-initial-score="${escapeHtml(baselineScore)}"
+                    data-self-score="${escapeHtml(baselineScore)}"
                     data-head-score="${escapeHtml(attr.head)}"
                     data-twg-score="${escapeHtml(attr.twg)}"
                     data-last-actor="${escapeHtml(attr.lastActor)}"
                     data-eval-disabled="${evalDisabled}"
-                    ${evalDisabled ? 'disabled title="Locked"' : 'title="Enter 1 to 5" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
+                    ${evalDisabled ? 'disabled title="Locked"' : 'title="Enter 1 to 5" onfocus="handleScoreFocus(this)" onblur="handleScoreBlur(this)" oninput="handleScoreInput(this)" onkeydown="handleScoreKeydown(event, this)"'} 
                     class="spms-score-input ${fieldClass}">
                 
                 ${renderScoreBadgeHtml(attr, attr.val)}
@@ -2806,6 +2917,10 @@
     };
 
     function clearScore(input) {
+        if (!window.isOwner) {
+            // Reviewing authorities cannot clear active scores to blank
+            return;
+        }
         input.value = '';
         const actor = getCurrentScoreActor();
         if (actor === 'self') input.dataset.selfScore = '';
@@ -2820,6 +2935,16 @@
     }
 
     function handleScoreKeydown(e, input) {
+        if (!window.isOwner) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                return;
+            }
+            if (e.key === 'ArrowDown' && (input.value === '1' || input.value === '0' || input.value === '')) {
+                e.preventDefault();
+                return;
+            }
+        }
         if (e.key === 'Escape') {
             e.preventDefault();
             clearScore(input);
@@ -2835,7 +2960,7 @@
             e.preventDefault();
             return;
         }
-        // ArrowDown at 1 or blank clears back to blank
+        // ArrowDown at 1 or blank clears back to blank (ratee only)
         if (e.key === 'ArrowDown' && (input.value === '1' || input.value === '0' || input.value === '')) {
             e.preventDefault();
             clearScore(input);
@@ -2900,6 +3025,96 @@
         AppState.setDirty(true);
     }
 
+    function handleScoreFocus(input) {
+        if (window.isOwner) return;
+        if (input.dataset.prevScore === undefined || input.dataset.prevScore === null) {
+            input.dataset.prevScore = input.value.trim();
+        }
+    }
+
+    function handleScoreBlur(input) {
+        if (!window.isOwner) {
+            const rawVal = input.value.trim();
+            if (rawVal === '' || rawVal === '0' || rawVal === '—' || isNaN(parseInt(rawVal, 10))) {
+                const fallback = input.dataset.prevScore || input.dataset.selfScore || input.dataset.initialScore || '1';
+                input.value = (fallback && fallback !== 'X' && fallback !== 'N/A') ? fallback : '1';
+                handleScoreInput(input);
+            }
+        }
+        // Note: Automatic score adjustment comments are strictly posted upon Return for Revision, not on blur.
+    }
+
+    async function checkAndFlushPendingScoreComments() {
+        return;
+    }
+    window.checkAndFlushPendingScoreComments = checkAndFlushPendingScoreComments;
+
+    async function postAutomaticScoreAdjustmentComment(rowId, fieldName, oldScore, newScore) {
+        if (!rowId || !fieldName) return;
+        if (window.isOwner) return;
+        if (oldScore === newScore) return;
+
+        const docId = '<?= esc($doc['id'] ?? '') ?>';
+        if (!docId) return;
+
+        let commentText = '';
+        if (oldScore && newScore) {
+            commentText = `Rating score adjusted from ${oldScore} to ${newScore}.`;
+        } else if (newScore) {
+            commentText = `Rating score set to ${newScore}.`;
+        } else {
+            return;
+        }
+
+        try {
+            const { name: csrfName, hash: csrfHash } = getCsrfData();
+            const formData = new FormData();
+            formData.append('doc_id', docId);
+            formData.append('row_id', rowId);
+            formData.append('field_name', fieldName);
+            formData.append('comment_text', commentText);
+            if (csrfHash) {
+                formData.append(csrfName, csrfHash);
+            }
+
+            const reqHeaders = { 'X-Requested-With': 'XMLHttpRequest' };
+            if (csrfHash) {
+                reqHeaders['X-CSRF-TOKEN'] = csrfHash;
+            }
+
+            const resp = await fetch('<?= site_url('document/comment/create') ?>', {
+                method: 'POST',
+                headers: reqHeaders,
+                body: formData
+            });
+            updateCsrfFromResponse(resp);
+            let res;
+            try {
+                res = await resp.json();
+            } catch(e) {
+                return;
+            }
+
+            if (res.status === 'success' && res.comment) {
+                if (!window.docComments) window.docComments = [];
+                const existingIdx = window.docComments.findIndex(t => t.id === res.comment.id || (t.row_id === rowId && t.field_name === fieldName));
+                if (existingIdx !== -1) {
+                    window.docComments[existingIdx] = res.comment;
+                } else {
+                    window.docComments.push(res.comment);
+                }
+                if (window.activeCommentThread && window.activeCommentThread.row_id === rowId && window.activeCommentThread.field_name === fieldName) {
+                    window.activeCommentThread = res.comment;
+                    renderCommentThreadBody();
+                }
+                applyAllCellCommentBadges();
+            }
+        } catch(err) {
+            console.error('Failed to post automatic score adjustment comment:', err);
+        }
+    }
+    window.postAutomaticScoreAdjustmentComment = postAutomaticScoreAdjustmentComment;
+
     function parseWholeScore(val) {
         if (val === null || val === undefined) return null;
         const str = String(val).trim();
@@ -2952,6 +3167,51 @@
                 }
             }
         } else {
+            // Radio/Switching Mechanism: If another dimension in this row is already blocked (N/A),
+            // seamlessly unblock it so the newly clicked field takes over the 1 allowed blocked slot (no popup needed).
+            const tr = td.closest('tr');
+            if (tr) {
+                const otherInputs = Array.from(tr.querySelectorAll('.spms-score-input.field-q, .spms-score-input.field-t, .spms-score-input.field-e'))
+                    .filter(inp => inp !== input);
+                
+                otherInputs.forEach(otherInp => {
+                    const otherTd = otherInp.closest('td');
+                    const isOtherX = (otherInp.value === 'X' || otherInp.value === 'N/A' || (otherTd && otherTd.classList.contains('qte-na')));
+                    if (isOtherX && otherTd) {
+                        const otherDim = (otherInp.className.match(/field-([qte])/) || [])[1] || '';
+                        otherTd.classList.remove('qte-na', 'bg-zinc-100', 'dark:bg-zinc-800/40');
+                        otherTd.setAttribute('aria-checked', 'true');
+                        otherTd.title = 'Click to mark this dimension as Not Applicable (N/A)';
+                        otherInp.value = '';
+                        otherInp.type = 'text';
+                        otherInp.placeholder = '—';
+                        otherInp.className = `spms-score-input field-${otherDim}`;
+                        otherInp.disabled = true;
+
+                        if (actor === 'self') otherInp.dataset.selfScore = '';
+                        else if (actor === 'head') otherInp.dataset.headScore = '';
+                        else if (actor === 'twg') otherInp.dataset.twgScore = '';
+                        otherInp.dataset.lastActor = actor;
+
+                        const rowId = tr.dataset.rowId || tr.id;
+                        const rubrics = window.digitalRubricsData;
+                        if (rowId && rubrics && rubrics[rowId] && otherDim) {
+                            [5, 4, 3, 2, 1].forEach(sc => {
+                                const cell = rubrics[rowId][sc];
+                                if (cell && typeof cell[otherDim] === 'string' && cell[otherDim].trim().toUpperCase() === 'N/A') {
+                                    cell[otherDim] = '';
+                                }
+                            });
+                        }
+
+                        otherTd.classList.remove('qte-just-toggled');
+                        void otherTd.offsetWidth;
+                        otherTd.classList.add('qte-just-toggled');
+                        updateScoreCellBadge(otherTd, otherInp);
+                    }
+                });
+            }
+
             td.classList.add('qte-na');
             td.classList.remove('spms-cell-active');
             if (window.activeSelectedCell === td) {
@@ -3186,18 +3446,18 @@
                 q: q !== null ? q : '',
                 t: t !== null ? t : '',
                 e: e !== null ? e : '',
-                q_self: qInput?.dataset?.selfScore || '',
-                q_head: qInput?.dataset?.headScore || '',
-                q_twg: qInput?.dataset?.twgScore || '',
-                last_rated_by_q: qInput?.dataset?.lastActor || '',
-                t_self: tInput?.dataset?.selfScore || '',
-                t_head: tInput?.dataset?.headScore || '',
-                t_twg: tInput?.dataset?.twgScore || '',
-                last_rated_by_t: tInput?.dataset?.lastActor || '',
-                e_self: eInput?.dataset?.selfScore || '',
-                e_head: eInput?.dataset?.headScore || '',
-                e_twg: eInput?.dataset?.twgScore || '',
-                last_rated_by_e: eInput?.dataset?.lastActor || '',
+                q_self: (window.isOwner ? (q !== null ? q : '') : (qInput?.dataset?.selfScore || qInput?.dataset?.initialScore || '')),
+                q_head: (window.isOwner ? '' : (qInput?.dataset?.headScore || '')),
+                q_twg: (window.isOwner ? '' : (qInput?.dataset?.twgScore || '')),
+                last_rated_by_q: (window.isOwner ? 'self' : (qInput?.dataset?.lastActor || '')),
+                t_self: (window.isOwner ? (t !== null ? t : '') : (tInput?.dataset?.selfScore || tInput?.dataset?.initialScore || '')),
+                t_head: (window.isOwner ? '' : (tInput?.dataset?.headScore || '')),
+                t_twg: (window.isOwner ? '' : (tInput?.dataset?.twgScore || '')),
+                last_rated_by_t: (window.isOwner ? 'self' : (tInput?.dataset?.lastActor || '')),
+                e_self: (window.isOwner ? (e !== null ? e : '') : (eInput?.dataset?.selfScore || eInput?.dataset?.initialScore || '')),
+                e_head: (window.isOwner ? '' : (eInput?.dataset?.headScore || '')),
+                e_twg: (window.isOwner ? '' : (eInput?.dataset?.twgScore || '')),
+                last_rated_by_e: (window.isOwner ? 'self' : (eInput?.dataset?.lastActor || '')),
                 remarks: row.querySelector('.field-remarks')?.value || '',
                 twg_comment: row.querySelector('.field-twg-comment')?.value || ''
             };
@@ -4861,26 +5121,6 @@
             el.style.display = canModifyRows ? 'flex' : 'none';
         });
 
-        // MOV action - available for printable form rows once targets are approved or during evaluation
-        const movAction = menu.querySelector('[data-action="mov"]');
-        if (movAction) {
-            const rowId = target ? (target.rowId || (target.tr && (target.tr.dataset.rowId || target.tr.dataset.deliverableId))) : null;
-            const rowFiles = (rowId && window.documentAttachments && window.documentAttachments[rowId]) || [];
-            const count = rowFiles.length;
-            const canShowMov = isFormRow && (window.isEvaluationPhase || window.canEditAccomplishments || count > 0);
-
-            movAction.style.display = canShowMov ? 'flex' : 'none';
-            const movBadge = document.getElementById('spms-ctx-mov-badge');
-            const movLabel = document.getElementById('spms-ctx-mov-label');
-            if (movBadge) {
-                movBadge.innerText = count > 0 ? `${count} file${count === 1 ? '' : 's'}` : '';
-                movBadge.className = count > 0 ? 'text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded' : 'text-[10px] text-zinc-400';
-            }
-            if (movLabel) {
-                movLabel.innerText = count > 0 ? `Means of Verification (${count})` : (window.canEditAccomplishments ? 'Attach MOV Evidence' : 'Means of Verification');
-            }
-        }
-
         // Context Menu Dividers
         const div1 = document.getElementById('spms-ctx-div-1');
         const div2 = document.getElementById('spms-ctx-div-2');
@@ -5115,10 +5355,6 @@
 
                 if (action === 'comment') {
                     openCommentOverlay(rowId, fieldName, td);
-                } else if (action === 'mov') {
-                    if (rowId) {
-                        openMovModal(rowId);
-                    }
                 } else if (action === 'cut') {
                     if (input && !input.disabled) {
                         input.focus();

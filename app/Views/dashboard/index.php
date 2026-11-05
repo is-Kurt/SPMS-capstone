@@ -1844,9 +1844,14 @@ window.SPMS_MASTERLIST_UNITS = <?= json_encode(array_map(fn($u) => [
     'parent_id' => !empty($u['parent_id']) ? (int)$u['parent_id'] : 0
 ], $allUnitsList ?? $allUnits ?? [])) ?>;
 
-let currentMasterlistLifecycle = 'all';
-let masterlistCurrentPage = 1;
-let masterlistPerPage = (typeof window !== 'undefined' && window.innerWidth < 768) ? 6 : 50;
+// Top-level state uses `var`, not let/const: the seamless folder switcher
+// (document/_folder_rows.php, loadFolderWorkspace) re-runs this script on every
+// workspace load, and a second top-level let/const of the same name is a SyntaxError
+// ("Identifier ... has already been declared"). var may be redeclared; re-running
+// simply resets the state, like a fresh page load.
+var currentMasterlistLifecycle = 'all';
+var masterlistCurrentPage = 1;
+var masterlistPerPage = (typeof window !== 'undefined' && window.innerWidth < 768) ? 6 : 50;
 window._activeMasterlistUnitFilterId = null;
 
 function escapeHtml(str) {
@@ -1859,8 +1864,8 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
-const masterlistUnitParents = {};
-const masterlistUnitChildren = {};
+var masterlistUnitParents = {};
+var masterlistUnitChildren = {};
 
 function initMasterlistUnitTree() {
     const units = window.SPMS_MASTERLIST_UNITS || [];
@@ -1898,7 +1903,7 @@ function getDescendantUnitIds(rootId) {
     return result;
 }
 
-const DYNAMIC_UNIT_THEME = {
+var DYNAMIC_UNIT_THEME = {
     labelColor: 'text-text-muted',
     focusRing: 'focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20',
     activeBorder: 'border-amber-500 dark:border-amber-400',
@@ -2668,6 +2673,92 @@ function filterMasterlist(resetPage = true) {
     renderMasterlistPagination(totalPages);
 }
 
+// Masterlist pagination helpers. Restored after commit 8f9f6a2 removed them while
+// filterMasterlist() and the per-page <select> still call them.
+function renderMasterlistPagination(totalPages, currentPage = masterlistCurrentPage) {
+    const container = document.getElementById('masterlist-pagination-controls');
+    if (!container) return;
+
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+
+    // Prev Button
+    const prevDisabled = currentPage <= 1;
+    html += `<button type="button" onclick="goToMasterlistPage(${currentPage - 1})" ${prevDisabled ? 'disabled' : ''}
+                class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer spms-page-btn ${prevDisabled ? 'opacity-40 cursor-not-allowed' : ''}">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                <span class="hidden sm:inline">Prev</span>
+            </button>`;
+
+    // Mobile indicator: "Page X of Y"
+    html += `<span class="sm:hidden px-2 text-xs font-bold text-zinc-600 dark:text-zinc-400">
+                ${currentPage} / ${totalPages}
+            </span>`;
+
+    // Numbered page pills for tablet/desktop
+    let pages = [];
+    if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+        pages.push(1);
+        if (currentPage > 3) pages.push('...');
+
+        let start = Math.max(2, currentPage - 1);
+        let end = Math.min(totalPages - 1, currentPage + 1);
+        for (let i = start; i <= end; i++) {
+            if (!pages.includes(i)) pages.push(i);
+        }
+
+        if (currentPage < totalPages - 2) pages.push('...');
+        if (!pages.includes(totalPages)) pages.push(totalPages);
+    }
+
+    pages.forEach(p => {
+        if (p === '...') {
+            html += `<span class="hidden sm:inline-flex px-1.5 py-1 text-xs text-zinc-400 dark:text-zinc-600 font-bold">...</span>`;
+        } else {
+            const isActive = p === currentPage;
+            html += `<button type="button" onclick="goToMasterlistPage(${p})"
+                        class="hidden sm:inline-flex w-7 h-7 items-center justify-center rounded-lg text-xs font-bold transition-all cursor-pointer ${isActive ? 'spms-page-btn-active shadow-2xs' : 'spms-page-btn'}">
+                        ${p}
+                    </button>`;
+        }
+    });
+
+    // Next Button
+    const nextDisabled = currentPage >= totalPages;
+    html += `<button type="button" onclick="goToMasterlistPage(${currentPage + 1})" ${nextDisabled ? 'disabled' : ''}
+                class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer spms-page-btn ${nextDisabled ? 'opacity-40 cursor-not-allowed' : ''}">
+                <span class="hidden sm:inline">Next</span>
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            </button>`;
+
+    container.innerHTML = html;
+}
+
+function goToMasterlistPage(page) {
+    masterlistCurrentPage = page;
+    filterMasterlist(false);
+
+    const isMobile = window.innerWidth < 768;
+    const targetElem = isMobile
+        ? document.getElementById('masterlist-mobile-cards-list')
+        : document.getElementById('masterlist-table');
+    if (targetElem) {
+        targetElem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+function changeMasterlistPerPage(val) {
+    masterlistPerPage = val;
+    masterlistCurrentPage = 1;
+    filterMasterlist(false);
+}
+
 function setRosterFilter(filter, btn) {
     if (filter === 'all') setMasterlistLifecyclePill('all', btn);
     else if (filter === 'missing') setMasterlistLifecyclePill('target_phase', btn);
@@ -2691,7 +2782,7 @@ function applyCollegeFilter(unitId) {
 }
 
 // --- CUSTOM ANIMATED COLLEGE DROPDOWN CONTROLLER ---
-let openCollegeDropdownScope = null;
+var openCollegeDropdownScope = null;
 
 function openCollegeDropdown(scope) {
     const isMobile = scope === 'mobile';
