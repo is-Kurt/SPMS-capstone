@@ -202,24 +202,7 @@
         <?php endif; ?>
         
         <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
-            <?php if (!empty($isEditable)): ?>
-            <!-- Save Button with hover (Ctrl + S) -->
-            <div class="relative group inline-flex items-center print-hide">
-                <button type="button" id="btn-save-doc" onclick="saveDocument(true)" title="Save (Ctrl + S)"
-                        class="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] sm:text-xs font-bold rounded-lg shadow-sm transition-all active:scale-[0.98] cursor-pointer">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                    </svg>
-                    <span class="hidden sm:inline">Save</span>
-                </button>
-                <div class="absolute top-full left-1/2 -translate-x-1/2 mt-2 hidden group-hover:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-zinc-900 text-white shadow-xl pointer-events-none whitespace-nowrap z-50">
-                    <span>Save</span>
-                    <span class="text-zinc-400 font-mono text-[9px] bg-zinc-800 px-1 py-0.5 rounded border border-zinc-700">(Ctrl + S)</span>
-                    <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-zinc-900 rotate-45"></div>
-                </div>
-            </div>
-            <?php endif; ?>
-
+            <!-- Save and Export Excel live in the actions menu at the end of this bar -->
             <?php if ($canEditTargets): ?>
             <!-- Dynamic Reset Doc / Append from Basis Action Button -->
             <button id="btn-dynamic-doc-action" type="button" 
@@ -230,18 +213,6 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 <span id="dynamic-doc-action-label">Reset Doc</span>
-            </button>
-            <?php endif; ?>
-
-            <?php if ($isOwner || session()->get('role') === 'Admin'): ?>
-            <!-- Export to Excel Button (Desktop - hidden on mobile) -->
-            <button type="button" onclick="exportToExcel()" 
-                    class="hidden md:inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 sm:py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[10px] sm:text-xs font-bold rounded-lg border border-emerald-500/30 hover:border-emerald-500/50 transition-all cursor-pointer shadow-sm active:scale-[0.98] print-hide"
-                    title="Export document to official Civil Service Commission Excel spreadsheet (.xlsx)">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <span>Export Excel</span>
             </button>
             <?php endif; ?>
 
@@ -475,21 +446,73 @@
                 </div>
             <?php endif; ?>
 
-            <!-- Theme Toggle Divider & Button -->
+            <!-- Divider & document actions menu (Save, Export Excel, Light / Dark mode) -->
             <div class="h-6 w-px bg-surface-border hidden sm:block shrink-0 mx-0.5"></div>
-            <button type="button" onclick="window.handleThemeToggle(this)"
-                    class="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-surface-border/20 hover:bg-surface-border/40 text-text border border-surface-border transition-all cursor-pointer shadow-sm active:scale-[0.98] shrink-0 print-hide"
-                    title="Toggle Light / Dark Mode"
-                    aria-label="Toggle Light / Dark Mode">
-                <!-- Sun icon: visible in dark mode, click to switch to light -->
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 hidden dark:block text-amber-400 hover:rotate-45 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                <!-- Moon icon: visible in light mode, click to switch to dark -->
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 block dark:hidden text-zinc-700 hover:-rotate-12 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-            </button>
+            <div class="relative inline-block text-left shrink-0 print-hide" id="doc-actions-container">
+                <button type="button" id="doc-actions-toggle" onclick="toggleDocActionsMenu()"
+                        class="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-surface-border/20 hover:bg-surface-border/40 text-text border border-surface-border transition-all cursor-pointer shadow-sm active:scale-[0.98] shrink-0"
+                        title="Save, export and theme" aria-label="Document actions: save, export and theme"
+                        aria-haspopup="menu" aria-expanded="false" aria-controls="doc-actions-menu">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    </svg>
+                </button>
+                <div id="doc-actions-menu" role="menu" aria-labelledby="doc-actions-toggle"
+                     class="hidden absolute right-0 top-full mt-2 w-56 rounded-xl bg-surface border border-surface-border shadow-xl z-50 overflow-hidden py-1">
+                    <?php if (!empty($isEditable)): ?>
+                    <button type="button" role="menuitem" id="btn-save-doc" onclick="closeDocActionsMenu(); saveDocument(true)"
+                            class="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-text text-left hover:bg-surface-border/30 transition-colors cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                        </svg>
+                        <span>Save</span>
+                        <span class="ml-auto font-mono text-[10px] text-text-muted">Ctrl + S</span>
+                    </button>
+                    <?php endif; ?>
+                    <?php if ($isOwner || session()->get('role') === 'Admin'): ?>
+                    <button type="button" role="menuitem" onclick="closeDocActionsMenu(); exportToExcel()"
+                            title="Export document to official Civil Service Commission Excel spreadsheet (.xlsx)"
+                            class="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-text text-left hover:bg-surface-border/30 transition-colors cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>Export Excel</span>
+                    </button>
+                    <?php endif; ?>
+                    <button type="button" role="menuitem" onclick="closeDocActionsMenu(); window.handleThemeToggle(document.getElementById('doc-actions-toggle'))"
+                            class="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-text text-left hover:bg-surface-border/30 transition-colors cursor-pointer">
+                        <!-- Moon in light mode (switch to dark), sun in dark mode (switch to light) -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 block dark:hidden text-zinc-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 hidden dark:block text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        <span class="block dark:hidden">Dark mode</span>
+                        <span class="hidden dark:block">Light mode</span>
+                    </button>
+                </div>
+            </div>
+            <script>
+                (function () {
+                    const container = document.getElementById('doc-actions-container');
+                    const toggle = document.getElementById('doc-actions-toggle');
+                    const menu = document.getElementById('doc-actions-menu');
+                    function setOpen(open) {
+                        menu.classList.toggle('hidden', !open);
+                        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                        if (open) menu.querySelector('[role="menuitem"]')?.focus();
+                    }
+                    window.toggleDocActionsMenu = () => setOpen(menu.classList.contains('hidden'));
+                    window.closeDocActionsMenu = () => setOpen(false);
+                    document.addEventListener('click', (ev) => {
+                        if (!menu.classList.contains('hidden') && !container.contains(ev.target)) setOpen(false);
+                    });
+                    document.addEventListener('keydown', (ev) => {
+                        if (ev.key === 'Escape' && !menu.classList.contains('hidden')) { setOpen(false); toggle.focus(); }
+                    });
+                })();
+            </script>
         </div>
     </div>
 
