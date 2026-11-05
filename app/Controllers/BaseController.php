@@ -78,4 +78,28 @@ abstract class BaseController extends Controller
             return $this->respondError($e->getMessage());
         }
     }
+
+    /**
+     * True when the logged-in user may see and act on this document: its owner, an evaluator
+     * routed to it, or an Admin/PMT/TWG account. This is the rule Document::index uses to open
+     * the page, so endpoints that take a doc_id directly (comments, evidence lists) cannot reach
+     * a document the user could not open. $doc is a DocumentModel::getDocumentWithFolderInfo() row.
+     */
+    protected function canAccessDocument(array $doc): bool
+    {
+        $userId = session()->get('user_id');
+        if (!$userId || empty($doc['document_folder_id'])) {
+            return false;
+        }
+
+        if ((string) ($doc['owner_id'] ?? '') === (string) $userId
+            || in_array(session()->get('role'), ['Admin', 'PMT', 'TWG'], true)) {
+            return true;
+        }
+
+        return (new \App\Models\EvaluationRoutingModel())
+            ->where('folder_id', $doc['document_folder_id'])
+            ->where('evaluator_id', $userId)
+            ->countAllResults() > 0;
+    }
 }

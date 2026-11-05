@@ -32,6 +32,13 @@ class Comment extends BaseController
                 return $this->respondError('Document ID is required.', 400);
             }
 
+            // Same answer for a document that doesn't exist and one the user may not open,
+            // so the response doesn't reveal which document IDs exist.
+            $doc = $this->docModel->getDocumentWithFolderInfo($docId);
+            if (!$doc || !$this->canAccessDocument($doc)) {
+                return $this->respondError('Document not found.', 404);
+            }
+
             $versionParam = $this->request->getGet('version');
             $version = ($versionParam !== null && $versionParam !== '') ? max(1, (int)$versionParam) : null;
 
@@ -66,7 +73,7 @@ class Comment extends BaseController
 
             // Check document existence & permissions
             $doc = $this->docModel->getDocumentWithFolderInfo($docId);
-            if (!$doc) {
+            if (!$doc || !$this->canAccessDocument($doc)) {
                 return $this->respondError('Document not found.', 404);
             }
 
@@ -169,6 +176,9 @@ class Comment extends BaseController
             }
 
             $doc = $this->docModel->getDocumentWithFolderInfo($docId);
+            if (!$doc || !$this->canAccessDocument($doc)) {
+                return $this->respondError('Parent comment thread not found.', 404);
+            }
             if (!empty($doc['folder_deleted_at'])) {
                 return $this->respondError('Cannot reply on an archived cycle.', 403);
             }
@@ -238,7 +248,8 @@ class Comment extends BaseController
             $newStatus = $this->request->getPost('status') === 'resolved' ? 'resolved' : 'open';
 
             $comment = $this->commentModel->find($commentId);
-            if (!$comment) {
+            $doc     = $comment ? $this->docModel->getDocumentWithFolderInfo((string) $comment['document_id']) : null;
+            if (!$comment || !$doc || !$this->canAccessDocument($doc)) {
                 return $this->respondError('Comment not found.', 404);
             }
 

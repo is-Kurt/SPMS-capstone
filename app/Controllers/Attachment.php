@@ -387,6 +387,11 @@ class Attachment extends BaseController
             return $this->response->setStatusCode(400)->setJSON(['status' => 'error', 'message' => 'Invalid parameters.']);
         }
 
+        $doc = (new DocumentModel())->getDocumentWithFolderInfo((string)$docId);
+        if (!$doc || !$this->canAccessDocument($doc)) {
+            return $this->response->setStatusCode(404)->setJSON(['status' => 'error', 'message' => 'Document not found.']);
+        }
+
         $attachmentModel = new DocumentAttachmentModel();
         $all = $attachmentModel->getAttachmentsGroupedByRow((string)$docId);
         $rowAttachments = $all[$rowId] ?? [];

@@ -326,6 +326,12 @@
 
                 <?php else: ?>
                     <!-- REVIEWER ACTIONS (Approve / Return / Unapprove / View & Comment Mode) -->
+                    <?php if (!empty($ownerInfo['name'])): ?>
+                        <!-- Ratee name (see _ratee_label.php). Kept outside the buffer below, which only decides whether
+                             any action buttons rendered. Shown here from lg up; narrower screens get it in a row below the bar. -->
+                        <?php $rateeLabel = ['rateeName' => (string) $ownerInfo['name'], 'rateePosition' => (string) ($ownerInfo['position'] ?? '')]; ?>
+                        <?= view('document/partials/ui/_ratee_label', $rateeLabel + ['rateeClass' => 'hidden lg:flex', 'rateeStyle' => 'max-width: 16rem'], ['saveData' => false]) ?>
+                    <?php endif; ?>
                     <?php 
                         ob_start(); 
                     ?>
@@ -487,6 +493,13 @@
         </div>
     </div>
 
+    <?php if (!empty($rateeLabel)): ?>
+    <!-- Ratee name at tablet widths (md to lg): the main bar has no room for it there, and the mobile toolstrip below is hidden -->
+    <div class="hidden md:flex lg:hidden flex-none items-center px-3 sm:px-6 py-1.5 bg-surface/50 border-b border-surface-border print-hide">
+        <?= view('document/partials/ui/_ratee_label', $rateeLabel + ['rateeClass' => 'inline-flex max-w-xs'], ['saveData' => false]) ?>
+    </div>
+    <?php endif; ?>
+
     <!-- Mobile Secondary Action Toolstrip (Prev/Next Ratee, Print, Excel, Rubrics, Theme) -->
     <div class="md:hidden flex-none flex items-center gap-1.5 px-3 py-1.5 bg-surface/50 border-b border-surface-border overflow-x-auto custom-scrollbar print-hide">
         <?php if (!empty($rateeNav)): ?>
@@ -525,6 +538,10 @@
                     </span>
                 <?php endif; ?>
             </div>
+        <?php endif; ?>
+
+        <?php if (!empty($rateeLabel)): ?>
+            <?= view('document/partials/ui/_ratee_label', $rateeLabel + ['rateeClass' => 'inline-flex shrink-0 max-w-[150px]'], ['saveData' => false]) ?>
         <?php endif; ?>
 
         <?php if ($isOwner || session()->get('role') === 'Admin'): ?>
