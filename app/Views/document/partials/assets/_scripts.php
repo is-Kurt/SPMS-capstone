@@ -256,7 +256,8 @@
         editorCss: '<?= base_url('assets/css/editor/style.css') ?>',
         ciDebug: <?= (ENVIRONMENT === 'development') ? 'true' : 'false' ?>,
         baseUrl: '<?= site_url('document') ?>',
-        docId: '<?= $doc['id'] ?>'
+        docId: '<?= $doc['id'] ?>',
+        contentFingerprint: '<?= esc($contentFingerprint ?? '', 'js') ?>'   // updated after every successful save
     };
 
     const AppState = {

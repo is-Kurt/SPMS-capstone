@@ -9,9 +9,9 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
                 </svg>
             </div>
-            <h2 class="text-xl font-black tracking-tight text-text">Unsaved Changes</h2>
+            <h2 class="text-xl font-black tracking-tight text-text">Changes Not Saved</h2>
             <p class="text-xs text-text-muted mt-2 px-2 leading-relaxed font-medium">
-                You have recent edits that have not finished saving yet. Please save your changes before exiting.
+                Your recent edits could not be saved, so you are still on this page. Check your connection and try again.
             </p>
         </div>
 

@@ -760,6 +760,10 @@ class Document extends BaseController
         $data['currentEvaluatorRoute']  = $currentEvaluatorRoute;
         $data['systemDefaultWeights']   = (new DefaultFunctionWeightModel())->getAllWeightsKeyed();
 
+        // Content as stored right now; the editor sends it back with each save so update() can detect conflicts
+        $storedContent = $documentModel->db->table('document_folders')->select('tabs, title')->where('id', $docId)->get()->getRowArray();
+        $data['contentFingerprint'] = $storedContent ? self::contentFingerprint($storedContent) : '';
+
         return view('document/show', $data);
     }
     
@@ -860,9 +864,36 @@ class Document extends BaseController
             }
         }
 
-        $documentModel->save($payload);
+        // Two people (e.g. the owner and the evaluator) can have the same document open. The page sends the
+        // fingerprint of the content it last loaded or saved; if the stored content no longer matches, someone
+        // else saved in between, so this save is refused instead of silently overwriting their work. The update
+        // itself is conditional on the content just checked, so two saves arriving together cannot both pass.
+        // Pages from before this check send no fingerprint and keep the old last-save-wins behaviour.
+        $baseFingerprint = (string) $this->request->getPost('base_fingerprint');
+        if ($baseFingerprint !== '') {
+            $current = $documentModel->db->table('document_folders')->select('tabs, title')->where('id', $docId)->get()->getRowArray();
+            $conflict = ['status' => 'error', 'code' => 'conflict',
+                         'message' => 'Someone else saved this document after you opened it, so your latest edits were not saved.'];
+            if (!$current || !hash_equals(self::contentFingerprint($current), $baseFingerprint)) {
+                return $this->response->setJSON($conflict);
+            }
+            unset($payload['id']);
+            $documentModel->where('tabs', $current['tabs'])->where('title', $current['title'])->update($docId, $payload);
+            if ($documentModel->db->affectedRows() < 1) {
+                return $this->response->setJSON($conflict);
+            }
+        } else {
+            $documentModel->save($payload);
+        }
 
-        return $this->response->setJSON(['status' => 'success']);
+        $saved = $documentModel->db->table('document_folders')->select('tabs, title')->where('id', $docId)->get()->getRowArray();
+        return $this->response->setJSON(['status' => 'success', 'fingerprint' => $saved ? self::contentFingerprint($saved) : '']);
+    }
+
+    /** Fingerprint of a document's stored content (raw tabs JSON + title), used by update() to detect conflicting saves. */
+    private static function contentFingerprint(array $row): string
+    {
+        return sha1(($row['tabs'] ?? '') . "\x1f" . ($row['title'] ?? ''));
     }
     
     /**

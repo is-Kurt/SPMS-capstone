@@ -2,12 +2,82 @@ let savePromise = null;
 let submitting = false;
 let saveStatusTimeout = null; 
 
+function documentSaveUrl() {
+    return (typeof AppConfig !== 'undefined' && AppConfig.baseUrl) ? AppConfig.baseUrl : '/document';
+}
+
+/**
+ * Copies the editor's current state into the tabs data and builds the save request body, or returns
+ * null when there is nothing to save. Shared by saveDocument() and flushSaveOnUnload() so both send
+ * exactly the same fields.
+ */
+function buildSaveFormData() {
+    const isRubricsActive = (typeof activeTabId !== 'undefined' && activeTabId === 'rubrics-tab');
+    const hasTabs = (typeof tabs !== 'undefined' && Array.isArray(tabs) && tabs.length > 0);
+    if (!window.isSpmsFormActive && !isRubricsActive && !hasTabs) return null;
+
+    if (hasTabs) {
+        const isSpmsFormActiveDoc = window.isSpmsFormActive || isRubricsActive || Boolean(document.getElementById('printable-form'));
+        if (isSpmsFormActiveDoc && typeof window.syncSpmsActiveTab === 'function') {
+            window.syncSpmsActiveTab();
+        }
+        if (typeof window.syncDigitalRubricsData === 'function') {
+            window.syncDigitalRubricsData();
+        }
+    }
+
+    const title = document.getElementById('doc-title')?.value?.trim() || 'Untitled Document';
+    const formData = new FormData();
+    const docId = AppConfig.docId || new URLSearchParams(window.location.search).get('Id');
+
+    formData.append('id', docId);
+    if (typeof tabs !== 'undefined' && tabs.length > 0) {
+        formData.append('tabs', JSON.stringify(tabs));
+    }
+
+    formData.append('title', title);
+    formData.append('is_rating_mode', AppConfig.isRatingMode);
+    formData.append('_method', 'PATCH');
+    if (AppConfig.contentFingerprint) {
+        formData.append('base_fingerprint', AppConfig.contentFingerprint);
+    }
+    return formData;
+}
+
+/**
+ * Someone else saved this document after it was opened here (the server refused the save; see
+ * Document::update). Saving is stopped for this page, since every further save would be refused too,
+ * and the user is offered a reload. Choosing to stay lets them copy what they typed first; after that,
+ * leaving or reloading no longer tries to save or asks again.
+ */
+const SAVE_CONFLICT_MESSAGE = 'Someone else saved this document after you opened it, so your latest edits were not saved.';
+window.saveConflict = false;
+let conflictNoticeOpen = false;
+async function handleSaveConflict() {
+    window.saveConflict = true;
+    if (conflictNoticeOpen) return;
+    conflictNoticeOpen = true;
+    const text = SAVE_CONFLICT_MESSAGE + ' Reload to see their changes. If you need anything you typed, copy it before reloading.';
+    const reload = (typeof window.appConfirm === 'function')
+        ? await window.appConfirm(text, { title: 'Document Changed by Someone Else', confirmText: 'Reload Now', cancelText: 'Stay to Copy My Edits', variant: 'warning' })
+        : window.confirm(text);
+    conflictNoticeOpen = false;
+    if (reload) {
+        isClosing = true;
+        window.location.reload();
+    }
+}
+
 async function saveDocument(manualSave = true) {
     if (typeof window.isDocumentReadOnly !== 'undefined' && window.isDocumentReadOnly) {
         return;
     }
     if (typeof window.isEditable !== 'undefined' && !window.isEditable) {
         return;
+    }
+    if (window.saveConflict) {
+        if (manualSave) handleSaveConflict();
+        throw new Error(SAVE_CONFLICT_MESSAGE);
     }
     if (savePromise && !isClosing) {
         console.log("Save already in progress. Waiting for it to finish...");
@@ -21,21 +91,8 @@ async function saveDocument(manualSave = true) {
     }
 
     savePromise = new Promise(async (resolve, reject) => {
-        const isRubricsActive = (typeof activeTabId !== 'undefined' && activeTabId === 'rubrics-tab');
-        const hasTabs = (typeof tabs !== 'undefined' && Array.isArray(tabs) && tabs.length > 0);
-        if (!window.isSpmsFormActive && !isRubricsActive && !hasTabs) return resolve();
-
-        if (hasTabs) {
-            const isSpmsFormActiveDoc = window.isSpmsFormActive || isRubricsActive || Boolean(document.getElementById('printable-form'));
-            if (isSpmsFormActiveDoc && typeof window.syncSpmsActiveTab === 'function') {
-                window.syncSpmsActiveTab();
-            }
-            if (typeof window.syncDigitalRubricsData === 'function') {
-                window.syncDigitalRubricsData();
-            }
-        }
-
-        const title = document.getElementById('doc-title')?.value?.trim() || 'Untitled Document';
+        const formData = buildSaveFormData();
+        if (!formData) return resolve();
 
         const saveStatus = document.getElementById('save-status');
         const rubricsSaveStatus = document.getElementById('rubrics-save-status');
@@ -59,22 +116,10 @@ async function saveDocument(manualSave = true) {
             }
         }
 
-        const formData = new FormData();
-        const docId = AppConfig.docId || new URLSearchParams(window.location.search).get('Id');
-        
-        formData.append('id', docId);
-        if (typeof tabs !== 'undefined' && tabs.length > 0) {
-            formData.append('tabs', JSON.stringify(tabs));
-        }
-        
-        formData.append('title', title);
-        formData.append('is_rating_mode', AppConfig.isRatingMode);
-        formData.append('_method', 'PATCH');
-
-        const saveUrl = (typeof AppConfig !== 'undefined' && AppConfig.baseUrl) ? AppConfig.baseUrl : '/document';
-        apiPost(saveUrl, formData, {
-            onSuccess: (data) => { 
-                AppState.setDirty(false); 
+        apiPost(documentSaveUrl(), formData, {
+            onSuccess: (data) => {
+                if (data && data.fingerprint) AppConfig.contentFingerprint = data.fingerprint;
+                AppState.setDirty(false);
 
                 if (manualSave) {
                     if (saveStatus) {
@@ -117,7 +162,8 @@ async function saveDocument(manualSave = true) {
                 }
                 resolve(data);
             },
-            onError: (errorMessage) => {
+            onError: (errorMessage, data) => {
+                if (data && data.code === 'conflict') handleSaveConflict();
                 if (manualSave) {
                     if (saveStatus) {
                         saveStatus.innerText = '✗ Save Failed';
@@ -151,7 +197,7 @@ function triggerDebouncedAutoSave() {
         clearTimeout(debounceAutoSaveTimer);
     }
     debounceAutoSaveTimer = setTimeout(async () => {
-        if (typeof AppState !== 'undefined' && AppState.isDirty && !savePromise && !isClosing) {
+        if (typeof AppState !== 'undefined' && AppState.isDirty && !savePromise && !isClosing && !window.saveConflict) {
             try {
                 await saveDocument(false);
             } catch (error) {
@@ -165,7 +211,7 @@ window.triggerDebouncedAutoSave = triggerDebouncedAutoSave;
 // Instantly save whenever the user finishes editing and blurs an input/textarea
 document.addEventListener('focusout', (e) => {
     if (e.target && e.target.matches && e.target.matches('input, textarea, select')) {
-        if (typeof AppState !== 'undefined' && AppState.isDirty && !savePromise && !isClosing) {
+        if (typeof AppState !== 'undefined' && AppState.isDirty && !savePromise && !isClosing && !window.saveConflict) {
             if (debounceAutoSaveTimer) clearTimeout(debounceAutoSaveTimer);
             saveDocument(false);
         }
@@ -174,7 +220,7 @@ document.addEventListener('focusout', (e) => {
 
 function autoSave() {
     setTimeout(async () => {
-        if (typeof AppState !== 'undefined' && AppState.isDirty && !savePromise && !isClosing) {
+        if (typeof AppState !== 'undefined' && AppState.isDirty && !savePromise && !isClosing && !window.saveConflict) {
             try {
                 await saveDocument(false);
             } catch (error) {
@@ -252,14 +298,7 @@ async function handleSaveAndExit() {
         const target = window.pendingExitTarget;
         const useBack = window.pendingExitHistoryBack;
         closeUnsavedChangesModal();
-
-        if (useBack && window.history.length > 1 && document.referrer && document.referrer.indexOf(window.location.host) !== -1) {
-            window.history.back();
-        } else if (target) {
-            window.location.href = target;
-        } else {
-            window.history.back();
-        }
+        navigateAway(target, useBack);
     } catch (err) {
         console.error("Save on exit failed:", err);
         if (btn) btn.disabled = false;
@@ -280,7 +319,11 @@ function handleExitWithoutSaving() {
     const target = window.pendingExitTarget;
     const useBack = window.pendingExitHistoryBack;
     closeUnsavedChangesModal();
+    navigateAway(target, useBack);
+}
+window.handleExitWithoutSaving = handleExitWithoutSaving;
 
+function navigateAway(target, useBack) {
     if (useBack && window.history.length > 1 && document.referrer && document.referrer.indexOf(window.location.host) !== -1) {
         window.history.back();
     } else if (target) {
@@ -289,7 +332,31 @@ function handleExitWithoutSaving() {
         window.history.back();
     }
 }
-window.handleExitWithoutSaving = handleExitWithoutSaving;
+
+/**
+ * Leaving the document from inside the app (SPMS icon, any link): save pending edits first, then go.
+ * The unsaved-changes modal only appears if that save fails, so the user can retry or choose to leave.
+ */
+let leavingDocument = false;
+async function saveThenLeave(target, useBack) {
+    if (leavingDocument) return;
+    leavingDocument = true;
+    if (window.saveConflict) {   // already told that these edits cannot be saved
+        isClosing = true;
+        navigateAway(target, useBack);
+        return;
+    }
+    try {
+        await saveDocument(true);
+        if (typeof AppState !== 'undefined') AppState.setDirty(false);
+        isClosing = true;
+        navigateAway(target, useBack);
+    } catch (err) {
+        console.error("Save before leaving failed:", err);
+        leavingDocument = false;
+        openUnsavedChangesModal(target, useBack);
+    }
+}
 
 window.handleInAppExit = function(event, targetUrl, prefersHistoryBack = false) {
     const isDirty = (typeof AppState !== 'undefined' && AppState.isDirty) || Boolean(savePromise);
@@ -298,7 +365,7 @@ window.handleInAppExit = function(event, targetUrl, prefersHistoryBack = false) 
             event.preventDefault();
             event.stopPropagation();
         }
-        openUnsavedChangesModal(targetUrl, prefersHistoryBack);
+        saveThenLeave(targetUrl, prefersHistoryBack);
         return false;
     }
     if (prefersHistoryBack && window.history.length > 1 && document.referrer && document.referrer.indexOf(window.location.host) !== -1) {
@@ -320,19 +387,86 @@ document.addEventListener('click', (e) => {
     if (isDirty && !isClosing) {
         e.preventDefault();
         e.stopPropagation();
-        openUnsavedChangesModal(link.href, false);
+        saveThenLeave(link.href, false);
     }
 }, true);
 
-// Browser window/tab close safety net (only triggers when closing the whole browser tab directly while unsaved)
-window.addEventListener('beforeunload', (e) => {
-    if (isClosing) return;
-    if (typeof AppState !== 'undefined' && AppState.isDirty) {
-        saveDocument(false);
-        e.preventDefault();
-        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
-        return e.returnValue;
+// Reload shortcuts (F5, Ctrl+R, Cmd+R, also with Shift): save first, then reload. Works for any document size.
+window.addEventListener('keydown', async (e) => {
+    const isReload = e.key === 'F5' || ((e.ctrlKey || e.metaKey) && (e.key || '').toLowerCase() === 'r');
+    if (!isReload || isClosing || window.saveConflict) return;
+    const isDirty = (typeof AppState !== 'undefined' && AppState.isDirty) || Boolean(savePromise);
+    if (!isDirty) return;
+    e.preventDefault();
+    if (leavingDocument) return;
+    leavingDocument = true;
+    try {
+        await saveDocument(true);
+        isClosing = true;
+        window.location.reload();
+    } catch (err) {
+        console.error("Save before reload failed:", err);
+        leavingDocument = false;
+        if (typeof window.appAlert === 'function') {
+            await window.appAlert("Could not save recent changes, so the page was not reloaded. Please try again.", { title: 'Save Failed', variant: 'danger' });
+        }
     }
+});
+
+/**
+ * Saves pending edits while the page is being left by the browser itself (reload button, closing the tab,
+ * typing a new address), where the page cannot wait for an answer. axios requests are cancelled when the
+ * page unloads, so this sends the same request with fetch(keepalive), which the browser completes after
+ * the page is gone. Browsers cap keepalive bodies at 64 KB: returns false for a larger document, so the
+ * caller keeps the browser's own "changes may not be saved" warning instead.
+ */
+const KEEPALIVE_BODY_LIMIT = 60 * 1024;   // under the 64 KB cap, leaving room for the multipart framing
+let unloadSaveSent = false;
+function flushSaveOnUnload() {
+    if (unloadSaveSent) return true;
+    if (typeof window.isDocumentReadOnly !== 'undefined' && window.isDocumentReadOnly) return true;
+    if (typeof window.isEditable !== 'undefined' && !window.isEditable) return true;
+
+    const formData = buildSaveFormData();
+    if (!formData) return true;
+
+    const { name, hash } = getCsrfInfo();
+    formData.set(name, hash);
+
+    let size = 0;
+    for (const [key, value] of formData.entries()) {
+        size += key.length + 100 + (typeof value === 'string' ? new Blob([value]).size : value.size);
+    }
+    if (size > KEEPALIVE_BODY_LIMIT) return false;
+
+    try {
+        fetch(documentSaveUrl(), {
+            method: 'POST',
+            body: formData,
+            keepalive: true,
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': hash },
+        });
+        unloadSaveSent = true;
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
+window.addEventListener('beforeunload', (e) => {
+    if (isClosing || window.saveConflict) return;
+    if (typeof AppState === 'undefined' || !AppState.isDirty) return;
+    if (flushSaveOnUnload()) return;   // sent in the background: leave without asking
+
+    e.preventDefault();
+    e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+    return e.returnValue;
+});
+
+// Mobile browsers often skip beforeunload when a tab is closed or discarded; pagehide still fires.
+window.addEventListener('pagehide', () => {
+    if (!isClosing && !window.saveConflict && typeof AppState !== 'undefined' && AppState.isDirty) flushSaveOnUnload();
 });
 
 async function saveWith({before, after}) {
