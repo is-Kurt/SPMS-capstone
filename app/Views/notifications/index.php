@@ -205,12 +205,12 @@
     }
 
     .notif-btn-emerald {
-        background-color: #059669;
-        border: 1px solid #047857;
+        background-color: #047857;   /* was #059669: white text needs 4.5:1 */
+        border: 1px solid #065f46;
         color: #ffffff;
     }
     .notif-btn-emerald:hover {
-        background-color: #047857;
+        background-color: #065f46;
     }
     .dark .notif-btn-emerald {
         background-color: #064e3b;
@@ -262,7 +262,7 @@
     .notif-icon-amber {
         background-color: #fef3c7;
         border: 1px solid #fde68a;
-        color: #d97706;
+        color: #b45309;   /* was #d97706: icons need 3:1 */
     }
     .dark .notif-icon-amber {
         background-color: #2b1d0a;
