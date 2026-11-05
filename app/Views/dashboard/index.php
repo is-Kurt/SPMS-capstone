@@ -266,7 +266,7 @@
                 <svg class="w-12 h-12 text-zinc-300 dark:text-zinc-600 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                 </svg>
-                <h3 class="text-sm font-bold text-zinc-900 dark:text-white">No <?= !empty($isArchivedView) ? 'Archived' : 'Active' ?> Evaluation Cycles Found</h3>
+                <h2 class="text-sm font-bold text-zinc-900 dark:text-white">No <?= !empty($isArchivedView) ? 'Archived' : 'Active' ?> Evaluation Cycles Found</h2>
                 <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                     <?= !empty($isArchivedView) ? 'There are currently no closed or archived evaluation periods to display.' : 'There are no active evaluation periods currently running.' ?>
                 </p>
@@ -362,7 +362,7 @@
                     <div class="flex items-center gap-2.5 min-w-0">
                         <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-xs font-black shrink-0">1</span>
                         <div class="min-w-0">
-                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white truncate">Target Commitment Phase</h3>
+                            <h2 class="text-sm font-bold text-zinc-900 dark:text-white truncate">Target Commitment Phase</h2>
                             <div class="flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
                                 <svg class="w-3.5 h-3.5 shrink-0 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -410,7 +410,7 @@
                     <div class="flex items-center gap-2.5 min-w-0">
                         <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-xs font-black shrink-0">2</span>
                         <div class="min-w-0">
-                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white truncate">Accomplishment Report Phase</h3>
+                            <h2 class="text-sm font-bold text-zinc-900 dark:text-white truncate">Accomplishment Report Phase</h2>
                             <div class="flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
                                 <svg class="w-3.5 h-3.5 shrink-0 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -472,7 +472,7 @@
                             ★
                         </div>
                         <div>
-                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Top Performing Personnel</h3>
+                            <h2 class="text-sm font-bold text-zinc-900 dark:text-white">Top Performing Personnel</h2>
                             <p class="text-[11px] text-zinc-500 dark:text-zinc-400">Highest rated faculty &amp; staff in this unit</p>
                         </div>
                     </div>
@@ -695,7 +695,7 @@
                     <div class="flex items-center gap-2.5 min-w-0">
                         <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-xs font-black shrink-0">1</span>
                         <div class="min-w-0">
-                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white truncate">Target Commitment Phase</h3>
+                            <h2 class="text-sm font-bold text-zinc-900 dark:text-white truncate">Target Commitment Phase</h2>
                             <div class="flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
                                 <svg class="w-3.5 h-3.5 shrink-0 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -743,7 +743,7 @@
                     <div class="flex items-center gap-2.5 min-w-0">
                         <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-xs font-black shrink-0">2</span>
                         <div class="min-w-0">
-                            <h3 class="text-sm font-bold text-zinc-900 dark:text-white truncate">Accomplishment Report Phase</h3>
+                            <h2 class="text-sm font-bold text-zinc-900 dark:text-white truncate">Accomplishment Report Phase</h2>
                             <div class="flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
                                 <svg class="w-3.5 h-3.5 shrink-0 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -1141,7 +1141,7 @@
 
                         <!-- Sort Filter (Top to Least / Least to Top) -->
                         <div class="relative shrink-0">
-                            <select id="admin-top-performers-sort" onchange="sortTopPerformers(this.value, 'admin-performers-grid')"
+                            <select id="admin-top-performers-sort" aria-label="Sort top performers" onchange="sortTopPerformers(this.value, 'admin-performers-grid')"
                                     class="appearance-none bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg pl-2.5 pr-7 py-1.5 text-xs font-bold text-zinc-700 dark:text-zinc-200 outline-none cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors shadow-2xs">
                                 <option value="desc">Highest to Lowest</option>
                                 <option value="asc">Lowest to Highest</option>
@@ -1994,7 +1994,7 @@ function renderDynamicUnitLevel(level, parentUnitId, targetContainer) {
         ${headerHtml}
         <div class="js-unit-level-body ${wasCollapsed ? 'hidden' : ''}">
             <div class="relative w-full">
-                <select id="masterlist-filter-unit-level-${level}"
+                <select id="masterlist-filter-unit-level-${level}" aria-label="Unit filter, level ${level}"
                     class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border ${theme.focusRing} rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
                     ${optionsHtml}
                 </select>

@@ -7,7 +7,7 @@
             
             <div class="relative group flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all <?= $isActive ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'text-text-muted hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-text' ?>" data-preset-id="<?= $preset['id'] ?>" data-active="<?= $isActive ? '1' : '0' ?>">
 
-                <a href="<?= site_url('teams?team_id=' . $preset['id']) ?>" class="absolute inset-0 z-10 rounded-xl"></a>
+                <a href="<?= site_url('teams?team_id=' . $preset['id']) ?>" aria-label="<?= esc($preset['name'], 'attr') ?>" class="absolute inset-0 z-10 rounded-xl"></a>
 
                 <div class="flex items-center gap-3 truncate min-w-0 pr-4">
                     <span class="truncate"><?= esc($preset['name']) ?></span>

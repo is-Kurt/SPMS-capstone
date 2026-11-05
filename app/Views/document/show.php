@@ -140,7 +140,7 @@
     <?= view('document/partials/ui/_navbar', $viewData) ?>
 
     <!-- Main Workspace Split Container: Form (Left ~3/4) & Rubric (Right ~1/4) -->
-    <div class="flex-1 min-h-0 w-full relative flex flex-row overflow-hidden" id="workspace-split-container">
+    <div class="flex-1 min-h-0 w-full relative flex flex-row overflow-hidden" id="workspace-split-container" role="main">
         <div class="flex-1 min-h-0 h-full relative bg-zinc-200 dark:bg-zinc-950 overflow-auto transition-all duration-300 ease-out custom-scrollbar" id="editor-container">
             <?= view('document/partials/workspaces/_basis_workspace', $viewData) ?>
 

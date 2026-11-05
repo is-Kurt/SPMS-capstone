@@ -27,7 +27,7 @@ $exportQuery = http_build_query(array_filter([
 ]));
 ?>
 
-<div class="p-3.5 sm:p-6 md:p-8 max-w-[1600px] mx-auto flex flex-col gap-4 sm:gap-6 md:gap-8 pb-20 lg:min-h-[calc(100vh-6rem)]">
+<div role="main" class="p-3.5 sm:p-6 md:p-8 max-w-[1600px] mx-auto flex flex-col gap-4 sm:gap-6 md:gap-8 pb-20 lg:min-h-[calc(100vh-6rem)]">
 
     <!-- Header & Institutional Export -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 shrink-0">

@@ -38,7 +38,7 @@
                 <button type="button" id="reset-ratings-filters-btn" onclick="clearAllRatingsFilters()" class="text-[10px] font-bold text-text-muted hover:text-text transition-colors cursor-pointer leading-none hidden">
                     Reset all
                 </button>
-                <button type="button" id="close-mobile-filters" class="lg:hidden text-text-muted hover:text-text p-1 cursor-pointer">
+                <button type="button" id="close-mobile-filters" aria-label="Close filters" class="lg:hidden text-text-muted hover:text-text p-1 cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>
@@ -137,8 +137,8 @@
                             <span id="r-pos-page-start">0</span>-<span id="r-pos-page-end">0</span> of <span id="r-pos-page-total">0</span>
                         </div>
                         <div class="flex gap-1">
-                            <button type="button" class="js-page-prev p-1 rounded border border-surface-border text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg></button>
-                            <button type="button" class="js-page-next p-1 rounded border border-surface-border text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg></button>
+                            <button type="button" aria-label="Previous page" class="js-page-prev p-1 rounded border border-surface-border text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg></button>
+                            <button type="button" aria-label="Next page" class="js-page-next p-1 rounded border border-surface-border text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg></button>
                         </div>
                     </div>
                 </div>
@@ -1143,7 +1143,7 @@
             ${headerHtml}
             <div class="js-unit-level-body ${wasCollapsed ? 'hidden' : ''}">
                 <div class="relative w-full">
-                    <select id="ratings-filter-unit-level-${level}"
+                    <select id="ratings-filter-unit-level-${level}" aria-label="Unit filter, level ${level}"
                         class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border ${theme.focusRing} rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
                         ${optionsHtml}
                     </select>

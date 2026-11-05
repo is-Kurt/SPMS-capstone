@@ -10,7 +10,7 @@
                                 <input type="text" id="sig-ratee-pos" value="<?= esc($ownerInfo['position'] ?? '') ?>" placeholder="(position here)" class="spms-meta-input" style="width: 70%; padding: 2px 4px;" <?= $canEditRateeSignatory ? '' : 'disabled' ?>>
                             </div>
                             <div style="margin-bottom: 6px; color: #0f172a;">
-                                Date: <input type="date" id="sig-ratee-date" value="<?= esc($signatories['rateeDate'] ?? '') ?>" onclick="this.showPicker && this.showPicker()" class="spms-meta-input dark:[color-scheme:dark]" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditRateeSignatory ? '' : 'disabled' ?>>
+                                Date: <input type="date" aria-label="Ratee signature date" id="sig-ratee-date" value="<?= esc($signatories['rateeDate'] ?? '') ?>" onclick="this.showPicker && this.showPicker()" class="spms-meta-input dark:[color-scheme:dark]" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditRateeSignatory ? '' : 'disabled' ?>>
                             </div>
                         </td>
 
@@ -31,7 +31,7 @@
                                         <input type="text" class="field-footer-approver-pos spms-meta-input" id="sig-dean-pos" value="<?= esc($supervisors[0]['position'] ?? '') ?>" placeholder="(position of office head)" style="width: 70%; padding: 2px 4px;" <?= $canEditApprover ? '' : 'disabled' ?>>
                                     </div>
                                     <div style="margin-bottom: 6px; color: #0f172a;">
-                                        Date: <input type="date" class="field-footer-approver-date spms-meta-input dark:[color-scheme:dark]" id="sig-dean-date" value="<?= esc($supervisors[0]['evalDate'] ?? $signatories['deanDate'] ?? '') ?>" onclick="this.showPicker && this.showPicker()" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditSupervisorDate ? '' : 'disabled' ?>>
+                                        Date: <input type="date" aria-label="Approver signature date" class="field-footer-approver-date spms-meta-input dark:[color-scheme:dark]" id="sig-dean-date" value="<?= esc($supervisors[0]['evalDate'] ?? $signatories['deanDate'] ?? '') ?>" onclick="this.showPicker && this.showPicker()" style="width: 130px; cursor: pointer; padding: 1px 4px;" <?= $canEditSupervisorDate ? '' : 'disabled' ?>>
                                     </div>
                                     <div style="color: #64748b; font-size: 10px; font-style: italic;">(may add signatories depending on position/designation)</div>
                                 </div>

@@ -57,7 +57,7 @@
             <button type="button" id="btn-toggle-resolve-thread" onclick="toggleResolveCurrentThread()" class="text-[10px] font-bold px-2 py-0.5 rounded border transition-colors cursor-pointer text-emerald-700 bg-emerald-50 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 hover:bg-emerald-100" title="Mark this comment thread as resolved">
                 Resolve
             </button>
-            <button type="button" onclick="closeCommentOverlay()" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-0.5 rounded transition-colors cursor-pointer">
+            <button type="button" onclick="closeCommentOverlay()" aria-label="Close comments" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-0.5 rounded transition-colors cursor-pointer">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>

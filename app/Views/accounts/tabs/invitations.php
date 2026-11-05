@@ -206,7 +206,7 @@
                 </div>
                 <div class="flex items-center gap-1.5 border-l border-surface-border pl-4">
                     <span class="text-[10px] font-black uppercase tracking-widest text-text-muted">Per Page:</span>
-                    <select class="js-page-size bg-surface border border-surface-border rounded-lg px-2 py-1 text-xs font-bold text-text cursor-pointer outline-none focus:border-accent">
+                    <select aria-label="Rows per page" class="js-page-size bg-surface border border-surface-border rounded-lg px-2 py-1 text-xs font-bold text-text cursor-pointer outline-none focus:border-accent">
                         <option value="10" selected>10</option>
                         <option value="20">20</option>
                         <option value="50">50</option>
@@ -215,17 +215,17 @@
                 </div>
             </div>
             <div class="flex items-center gap-1">
-                <button type="button" class="js-page-first p-1.5 rounded-lg border border-surface-border text-xs text-text hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center" title="First Page">
+                <button type="button" aria-label="First page" class="js-page-first p-1.5 rounded-lg border border-surface-border text-xs text-text hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center" title="First Page">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
                 </button>
-                <button type="button" class="js-page-prev p-1.5 rounded-lg border border-surface-border text-xs text-text hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center" title="Previous Page">
+                <button type="button" aria-label="Previous page" class="js-page-prev p-1.5 rounded-lg border border-surface-border text-xs text-text hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center" title="Previous Page">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
                 </button>
                 <div class="js-page-numbers flex items-center gap-1"></div>
-                <button type="button" class="js-page-next p-1.5 rounded-lg border border-surface-border text-xs text-text hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center" title="Next Page">
+                <button type="button" aria-label="Next page" class="js-page-next p-1.5 rounded-lg border border-surface-border text-xs text-text hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center" title="Next Page">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
                 </button>
-                <button type="button" class="js-page-last p-1.5 rounded-lg border border-surface-border text-xs text-text hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center" title="Last Page">
+                <button type="button" aria-label="Last page" class="js-page-last p-1.5 rounded-lg border border-surface-border text-xs text-text hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center" title="Last Page">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
                 </button>
             </div>

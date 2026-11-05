@@ -915,7 +915,7 @@
             ${headerHtml}
             <div class="js-unit-level-body ${wasCollapsed ? 'hidden' : ''}">
                 <div class="relative w-full">
-                    <select id="filter-dir-unit-level-${level}"
+                    <select id="filter-dir-unit-level-${level}" aria-label="Unit filter, level ${level}"
                         class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border ${theme.focusRing} rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
                         ${optionsHtml}
                     </select>

@@ -3,7 +3,7 @@
 
 <?= view('components/header') ?>
 
-<div class="p-4 md:p-8 max-w-5xl mx-auto flex flex-col gap-6 md:gap-8 pb-20 h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar spms-content-slide">
+<div role="main" class="p-4 md:p-8 max-w-5xl mx-auto flex flex-col gap-6 md:gap-8 pb-20 h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar spms-content-slide">
     <div class="shrink-0">
         <h1 class="text-2xl md:text-3xl font-black tracking-tight text-text">My Account</h1>
         <p class="text-xs md:text-sm text-text-muted mt-1 font-medium italic">Manage your profile, avatar, and security settings.</p>
@@ -35,7 +35,7 @@
             <?= form_open_multipart('profile/updateAvatar', ['data-ajax' => 'update-avatar']) ?>
                 <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Upload Custom Image</label>
                 <div class="flex items-center gap-3">
-                    <input type="file" name="avatar_file" accept="image/png, image/jpeg, image/webp" required
+                    <input type="file" name="avatar_file" aria-label="Profile photo" accept="image/png, image/jpeg, image/webp" required
                            class="block w-full text-sm text-text-muted file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-accent/10 file:text-accent hover:file:bg-accent/20 transition-all cursor-pointer">
                     <button type="submit" class="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-4 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-95 whitespace-nowrap">Upload</button>
                 </div>
@@ -49,14 +49,14 @@
                     <div class="flex-1">
                         <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Background Color</label>
                         <div class="flex items-center gap-2">
-                            <input type="color" name="avatar_color" value="<?= esc(session('avatar_color')) ?>" class="h-10 w-16 rounded-lg cursor-pointer bg-transparent border-none p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-none [&::-webkit-color-swatch]:rounded-lg">
+                            <input type="color" name="avatar_color" aria-label="Avatar color" value="<?= esc(session('avatar_color')) ?>" class="h-10 w-16 rounded-lg cursor-pointer bg-transparent border-none p-0 [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-none [&::-webkit-color-swatch]:rounded-lg">
                             <span class="text-xs text-text-muted font-mono"><?= esc(session('avatar_color')) ?></span>
                         </div>
                     </div>
 
                     <div class="flex-1">
                         <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Display Letter</label>
-                        <input type="text" name="avatar_letter" value="<?= esc(session('avatar_letter')) ?>" maxlength="2" required
+                        <input type="text" name="avatar_letter" aria-label="Avatar letters" value="<?= esc(session('avatar_letter')) ?>" maxlength="2" required
                                class="w-20 bg-zinc-50 dark:bg-zinc-800/50 border border-surface-border rounded-xl px-4 py-2 text-center font-bold text-text focus:border-accent outline-none">
                     </div>
                 </div>
@@ -81,14 +81,14 @@
             <div class="grid grid-cols-1 <?= (!$isAdmin && !$isTwg && empty($isPmt)) ? 'md:grid-cols-3' : 'md:grid-cols-2' ?> gap-6">
                 <div>
                     <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">First Name</label>
-                    <input type="text" name="first_name" value="<?= esc($user['first_name']) ?>" required
+                    <input type="text" name="first_name" aria-label="First name" value="<?= esc($user['first_name']) ?>" required
                         class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold">
                     <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="first_name"></p>
                 </div>
 
                 <div>
                     <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Last Name</label>
-                    <input type="text" name="last_name" value="<?= esc($user['last_name']) ?>" required
+                    <input type="text" name="last_name" aria-label="Last name" value="<?= esc($user['last_name']) ?>" required
                         class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold">
                     <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="last_name"></p>
                 </div>
@@ -253,7 +253,7 @@
                 </div>
                 
                 <div class="flex flex-col md:flex-row md:items-center gap-4">
-                    <input type="email" value="<?= esc($user['email']) ?>" readonly disabled
+                    <input type="email" aria-label="Email address" value="<?= esc($user['email']) ?>" readonly disabled
                         class="w-full md:w-96 bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm text-text font-bold opacity-70">
                     <a href="<?= base_url('profile/email/step1') ?>" class="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:opacity-90 text-xs font-bold py-3 px-6 rounded-lg transition-all active:scale-[0.98] text-center shrink-0">
                         Change Email Address

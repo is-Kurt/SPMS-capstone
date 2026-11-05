@@ -581,7 +581,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
                             </div>
-                            <h3 class="text-base font-bold notif-title-main">No matches found</h3>
+                            <h2 class="text-base font-bold notif-title-main">No matches found</h2>
                             <p class="text-xs notif-subtext max-w-sm">No notifications found matching "${escapeHtml(searchQuery)}".</p>
                             <button type="button" id="btn-empty-clear-search" class="mt-2 px-4 py-2 rounded-xl text-xs font-bold notif-btn-secondary transition-all cursor-pointer shadow-xs">
                                 Clear Search
@@ -602,7 +602,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                 </svg>
                             </div>
-                            <h3 class="text-base font-bold notif-title-main">All caught up!</h3>
+                            <h2 class="text-base font-bold notif-title-main">All caught up!</h2>
                             <p class="text-xs notif-subtext max-w-sm">You have zero unread notifications.</p>
                             <button type="button" id="btn-empty-view-all" class="mt-2 px-4 py-2 rounded-xl text-xs font-bold notif-btn-secondary transition-all cursor-pointer shadow-sm">
                                 View Notification History (${notifications.length})
@@ -621,7 +621,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                                 </svg>
                             </div>
-                            <h3 class="text-base font-bold notif-title-main">Your inbox is empty</h3>
+                            <h2 class="text-base font-bold notif-title-main">Your inbox is empty</h2>
                             <p class="text-xs notif-subtext max-w-sm">No notifications found at this time.</p>
                         </div>
                     `;
@@ -695,7 +695,7 @@
 
                             <!-- Text Content -->
                             <div class="flex-1 min-w-0">
-                                <h4 class="text-sm font-bold tracking-tight ${titleClasses}">${escapeHtml(item.title)}</h4>
+                                <h2 class="text-sm font-bold tracking-tight ${titleClasses}">${escapeHtml(item.title)}</h2>
                                 <p class="text-xs notif-text-body mt-1 leading-relaxed">${messageHtml}</p>
                                 
                                 <div class="mt-2.5 flex items-center gap-2 text-[11px] notif-text-meta font-medium">

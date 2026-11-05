@@ -1292,7 +1292,7 @@
                 <tr>
                     <td style="border: none; padding: 3px 0; font-weight: bold; color: ${isDpcrOrOpcr ? '#0f172a' : '#64748b'};">Date:</td>
                     <td style="border: none; padding: 3px 0;">
-                        <input type="date" class="field-approver-date spms-meta-input dark:[color-scheme:dark]" ${isActuallyFirst ? 'id="approver-date"' : ''} value="${escapeHtml(date)}" onclick="this.showPicker && this.showPicker()" style="width: 130px; padding: 2px 4px; cursor: pointer;" ${canEditSupervisorDate ? '' : 'disabled'}>
+                        <input type="date" aria-label="Approver signature date" class="field-approver-date spms-meta-input dark:[color-scheme:dark]" ${isActuallyFirst ? 'id="approver-date"' : ''} value="${escapeHtml(date)}" onclick="this.showPicker && this.showPicker()" style="width: 130px; padding: 2px 4px; cursor: pointer;" ${canEditSupervisorDate ? '' : 'disabled'}>
                     </td>
                 </tr>
             </table>
@@ -1333,7 +1333,7 @@
                     <input type="text" class="field-footer-approver-pos spms-meta-input" ${isActuallyFirst ? 'id="sig-dean-pos"' : ''} value="${escapeHtml(position)}" placeholder="${footerPosPlaceholder}" style="width: 70%; padding: 2px 4px;" ${namePosDisabled}>
                 </div>
                 <div style="margin-bottom: 6px; color: #0f172a;">
-                    Date: <input type="date" class="field-footer-approver-date spms-meta-input dark:[color-scheme:dark]" ${isActuallyFirst ? 'id="sig-dean-date"' : ''} value="${escapeHtml(evalDate)}" onclick="this.showPicker && this.showPicker()" style="width: 130px; cursor: pointer; padding: 1px 4px;" ${supDateDisabled}>
+                    Date: <input type="date" aria-label="Approver signature date" class="field-footer-approver-date spms-meta-input dark:[color-scheme:dark]" ${isActuallyFirst ? 'id="sig-dean-date"' : ''} value="${escapeHtml(evalDate)}" onclick="this.showPicker && this.showPicker()" style="width: 130px; cursor: pointer; padding: 1px 4px;" ${supDateDisabled}>
                 </div>
                 ${isActuallyFirst ? `
                 <div style="color: #64748b; font-size: 10px; font-style: italic;">(may add signatories depending on position/designation)</div>
