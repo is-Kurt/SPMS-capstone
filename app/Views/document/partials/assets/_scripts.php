@@ -1,5 +1,8 @@
 <script>
     <?php
+    // PHP values that go into this script use json_encode with these flags: a valid, fully escaped JS string
+    // in any context. esc() is for HTML and leaves quotes' backslashes, backticks and ${ unescaped (2026-11-06).
+    $jsFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
     $tabsJson = '[]';
     if ($doc && !empty($doc['tabs'])) {
         $tabsJson = is_string($doc['tabs']) ? $doc['tabs'] : json_encode($doc['tabs']);
@@ -136,12 +139,12 @@
                 const basisBtn_<?= $gIdx ?> = document.createElement('div');
                 basisBtn_<?= $gIdx ?>.className = `group flex items-center gap-1.5 pb-2 border-b-2 transition-colors select-none cursor-pointer ${isBasisActive_<?= $gIdx ?> ? 'border-sky-600 text-sky-800 dark:border-sky-400 dark:text-sky-300 font-extrabold' : 'border-transparent text-zinc-500 hover:text-zinc-800 dark:text-text-muted dark:hover:text-text'}`;
                 basisBtn_<?= $gIdx ?>.onclick = () => switchEditorTab('<?= $tabKey ?>');
-                basisBtn_<?= $gIdx ?>.title = 'View Superior Basis Document: <?= esc($g['title']) ?> (<?= esc($g['superior_name']) ?>)';
+                basisBtn_<?= $gIdx ?>.title = <?= json_encode('View Superior Basis Document: ' . ($g['title'] ?? '') . ' (' . ($g['superior_name'] ?? '') . ')', $jsFlags) ?>;
                 basisBtn_<?= $gIdx ?>.innerHTML = `
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 ${isBasisActive_<?= $gIdx ?> ? 'text-sky-500' : 'text-sky-500/70'} shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    <span><?= $tabLabel ?></span>
+                    <span>${<?= json_encode($tabLabel, $jsFlags) ?>}</span>
                 `;
                 tabBar.appendChild(basisBtn_<?= $gIdx ?>);
             <?php endforeach; ?>
@@ -150,12 +153,12 @@
             const basisBtn = document.createElement('div');
             basisBtn.className = `group flex items-center gap-1.5 pb-2 border-b-2 transition-colors select-none cursor-pointer ${isBasisActive ? 'border-sky-600 text-sky-800 dark:border-sky-400 dark:text-sky-300 font-extrabold' : 'border-transparent text-zinc-500 hover:text-zinc-800 dark:text-text-muted dark:hover:text-text'}`;
             basisBtn.onclick = () => switchEditorTab('basis-tab-0');
-            basisBtn.title = 'View Superior Basis Document: <?= esc($basisDoc['title']) ?>';
+            basisBtn.title = <?= json_encode('View Superior Basis Document: ' . ($basisDoc['title'] ?? ''), $jsFlags) ?>;
             basisBtn.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 ${isBasisActive ? 'text-sky-500' : 'text-sky-500/70'} shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <span>Basis: <?= esc($basisDoc['title']) ?></span>
+                <span>${<?= json_encode('Basis: ' . esc($basisDoc['title'] ?? ''), $jsFlags) ?>}</span>
             `;
             tabBar.appendChild(basisBtn);
         <?php endif; ?>
@@ -1576,9 +1579,9 @@
     function populateSpmsForm(formData) {
         const data = formData || {};
 
-        const explicitDocTitle = '<?= strtoupper(trim($doc['title'] ?? '')) ?>';
+        const explicitDocTitle = <?= json_encode(strtoupper(trim($doc['title'] ?? '')), $jsFlags) ?>;
         const titleText = (data.title || explicitDocTitle).toUpperCase();
-        const docType = '<?= strtolower($doc['doc_type'] ?? 'ipcr') ?>';
+        const docType = <?= json_encode(strtolower($doc['doc_type'] ?? 'ipcr'), $jsFlags) ?>;
         
         // Prioritize explicit document title: A DPCR is always a DPCR regardless of user default doc_type
         const isDocExplicitDpcr = <?= $isDocDpcr ? 'true' : 'false' ?>;
@@ -1810,7 +1813,7 @@
         // Auto-sync masthead college / department subtitle
         const lhDept = document.getElementById('spms-letterhead-dept');
         if (lhDept) {
-            const currentDept = (data.ratee?.dept || '').trim() || (defaultRateeDept || '') || '<?= addslashes(esc($ownerInfo['dept'] ?? '')) ?>' || 'Office of the University President';
+            const currentDept = (data.ratee?.dept || '').trim() || (defaultRateeDept || '') || <?= json_encode(esc($ownerInfo['dept'] ?? ''), $jsFlags) ?> || 'Office of the University President';
             lhDept.textContent = currentDept;
         }
 
@@ -2072,7 +2075,7 @@
                         if (id === 'ratee-dept') {
                             const lh = document.getElementById('spms-letterhead-dept');
                             if (lh) {
-                                lh.textContent = el.value.trim() || '<?= addslashes(esc($ownerInfo['dept'] ?? '')) ?>' || 'Office of the University President';
+                                lh.textContent = el.value.trim() || <?= json_encode(esc($ownerInfo['dept'] ?? ''), $jsFlags) ?> || 'Office of the University President';
                             }
                         }
                         AppState.setDirty(true);
@@ -2085,7 +2088,7 @@
                         if (id === 'ratee-dept') {
                             const lh = document.getElementById('spms-letterhead-dept');
                             if (lh) {
-                                lh.textContent = el.value.trim() || '<?= addslashes(esc($ownerInfo['dept'] ?? '')) ?>' || 'Office of the University President';
+                                lh.textContent = el.value.trim() || <?= json_encode(esc($ownerInfo['dept'] ?? ''), $jsFlags) ?> || 'Office of the University President';
                             }
                         }
                         AppState.setDirty(true);
@@ -4340,7 +4343,7 @@
         if (fallbackEl) fallbackEl.classList.add('hidden');
 
         // Header info
-        const titleText = data.title || (guide ? guide.title : '<?= esc($basisDoc['title'] ?? '') ?>');
+        const titleText = data.title || (guide ? guide.title : <?= json_encode($basisDoc['title'] ?? '', $jsFlags) ?>);
         const sheetTitleEl = document.getElementById('basis-sheet-title');
         if (sheetTitleEl) sheetTitleEl.innerText = titleText;
 
