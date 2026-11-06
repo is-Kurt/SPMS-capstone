@@ -100,7 +100,7 @@ class ProfileEmailChange extends BaseController
             return redirect()->back()->with('error', "Please wait {$secondsLeft} seconds before requesting another code.");
         }
 
-        $code = sprintf("%06d", mt_rand(1, 999999));
+        $code = sprintf("%06d", random_int(0, 999999));   // random_int: cryptographically secure, unlike mt_rand
         $expiresAt = date('Y-m-d H:i:s', strtotime('+5 minutes'));
 
         $userModel->update($userId, [

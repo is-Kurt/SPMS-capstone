@@ -106,10 +106,24 @@ class PasswordReset extends BaseController
         $userModel = new UserModel();
         $user = $userModel->where('email', $email)->first();
 
-        // 2. Validate Code Accuracy
-        if (!$user || empty($user['reset_code']) || $user['reset_code'] !== $code) {
+        // 2. Validate Code Accuracy. Only a few wrong tries per code: a 6-digit code could otherwise be guessed
+        //    by anyone who knows the email address (security test, 2026-11-06). With 3 codes a day, that is
+        //    at most 15 guesses per account per day.
+        if (!$user || empty($user['reset_code']) || !hash_equals((string) $user['reset_code'], $code)) {
+            if ($user && !empty($user['reset_code'])) {
+                $failKey = 'pwreset_wrong_codes_' . (int) $user['id'];
+                $wrong = (int) (cache($failKey) ?? 0) + 1;
+                if ($wrong >= 5) {
+                    cache()->delete($failKey);
+                    $userModel->update($user['id'], ['reset_code' => null, 'reset_code_expires_at' => null]);
+                    audit_log('PASSWORD_RESET_LOCKED', 'AUTH', 'user', (int) $user['id'], 'Reset code cancelled after 5 wrong attempts', (int) $user['id']);
+                    return redirect()->to('password/forgot')->with('error', 'Too many wrong codes. Please request a new reset code.');
+                }
+                cache()->save($failKey, $wrong, 300);
+            }
             return redirect()->back()->with('error', 'The reset code you entered is incorrect.')->with('reset_email', $email);
         }
+        cache()->delete('pwreset_wrong_codes_' . (int) $user['id']);
 
         // 3. Validate Code Expiration
         if (date('Y-m-d H:i:s') > $user['reset_code_expires_at']) {

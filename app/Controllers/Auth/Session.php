@@ -9,6 +9,27 @@ use App\Models\UserModel;
 /** Login/logout and the CSRF-token refresh endpoint used by the axios retry interceptor. */
 class Session extends BaseController
 {
+    /** Wrong attempts before a login is locked for an hour, and before a 2FA code is cancelled. */
+    private const MAX_FAILED_LOGINS = 5;
+    private const MAX_WRONG_2FA_CODES = 5;
+
+    /**
+     * A bcrypt hash of a random throwaway password. Unknown emails are checked against it, so a wrong
+     * email takes as long as a wrong password and the login form does not reveal which emails exist.
+     */
+    private const DUMMY_PASSWORD_HASH = '$2y$10$gqeLM9WRy6QesWQHW0pJ9O/Xlr0l9U/3zcDsjAOzP8pLN8zZw3eAa';
+
+    /**
+     * Accounts on the domain set in .env as `auth.twoFactorExemptDomain` (e.g. test.com for the demo
+     * accounts, whose addresses cannot receive mail) log in without a 2FA code. Empty or unset: every
+     * account needs a code. This used to be hard-coded for every email containing "@test.com".
+     */
+    private function isTwoFactorExempt(string $email): bool
+    {
+        $domain = strtolower(trim((string) env('auth.twoFactorExemptDomain', '')));
+        return $domain !== '' && str_ends_with(strtolower($email), '@' . $domain);
+    }
+
     /** GET /login - `?email=` (from the account-mismatch "switch" flow) pre-fills the email field. */
     public function index() {
         $prefillEmail = $this->request->getGet('email');
@@ -108,8 +129,13 @@ class Session extends BaseController
             // Fallback to IP + Email block if JS is disabled
             $attempt = $attemptBuilder->where('ip_address', $ipAddress)->where('email', $email)->get()->getRowArray();
         }
+
+        // The device ID comes from the browser, so an attacker can send a new one with every guess.
+        // Failures for this email from this IP are therefore always counted too, whatever the device ID.
+        $ipEmailFailures = (int) ($db->table('login_attempts')->selectSum('attempts', 'n')
+            ->where('ip_address', $ipAddress)->where('email', $email)->get()->getRow()->n ?? 0);
         
-        if ($attempt && $attempt['attempts'] >= 5) {
+        if (($attempt && $attempt['attempts'] >= self::MAX_FAILED_LOGINS) || $ipEmailFailures >= self::MAX_FAILED_LOGINS) {
             return redirect()->back()->withInput()->with('errors', ['error' => 'Too many failed login attempts. Your device has been temporarily blocked. Please try again in 1 hour.']);
         }
 
@@ -118,7 +144,10 @@ class Session extends BaseController
 
         $rememberMe = (bool) $this->request->getPost('remember-me');
 
-        if ($user && isset($user['is_active']) && $user['is_active'] == 1 && password_verify($password, $user['password'])) {
+        // Always run one password check, against a dummy hash when the email is unknown (see DUMMY_PASSWORD_HASH)
+        $passwordOk = password_verify($password, $user['password'] ?? self::DUMMY_PASSWORD_HASH);
+
+        if ($user && isset($user['is_active']) && $user['is_active'] == 1 && $passwordOk) {
             
             // Clear failed attempts on successful login
             if ($attempt) {
@@ -128,8 +157,9 @@ class Session extends BaseController
                     $attemptBuilder->where('id', $attempt['id'])->delete();
                 }
             }
+            $db->table('login_attempts')->where('ip_address', $ipAddress)->where('email', $email)->delete();
             
-            if (strpos($user['email'], '@test.com') !== false) {
+            if ($this->isTwoFactorExempt($user['email'])) {
                 return $this->finalizeLogin($user, $rememberMe);
             }
 
@@ -216,13 +246,29 @@ class Session extends BaseController
         $userId = session()->get('pending_2fa_user_id');
         if (!$userId) return redirect()->to(site_url('login'));
 
-        $code = $this->request->getPost('code');
+        $code = (string) $this->request->getPost('code');
         $userModel = new UserModel();
         $user = $userModel->find($userId);
 
-        if (!$user || $user['two_factor_code'] !== $code || strtotime($user['two_factor_expires_at']) < time()) {
+        $failKey = 'tfa_wrong_codes_' . (int) $userId;
+        $isValid = $user && !empty($user['two_factor_code']) && hash_equals((string) $user['two_factor_code'], $code)
+                   && strtotime((string) $user['two_factor_expires_at']) >= time();
+        if (!$isValid) {
+            // A 6-digit code can be guessed if wrong tries are unlimited: cancel it after a few
+            $wrong = (int) (cache($failKey) ?? 0) + 1;
+            if ($wrong >= self::MAX_WRONG_2FA_CODES) {
+                cache()->delete($failKey);
+                if ($user) {
+                    $userModel->update($userId, ['two_factor_code' => null, 'two_factor_expires_at' => null]);
+                }
+                session()->remove(['pending_2fa_user_id', 'pending_remember_me']);
+                audit_log('2FA_LOCKED', 'AUTH', 'user', (int) $userId, '2FA code cancelled after ' . self::MAX_WRONG_2FA_CODES . ' wrong attempts', (int) $userId);
+                return redirect()->to(site_url('login'))->with('errors', ['error' => 'Too many wrong codes. Please log in again to get a new code.']);
+            }
+            cache()->save($failKey, $wrong, 600);
             return redirect()->back()->with('errors', ['error' => 'Invalid or expired code.']);
         }
+        cache()->delete($failKey);
 
         $userModel->update($userId, [
             'two_factor_code' => null,
