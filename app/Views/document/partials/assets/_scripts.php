@@ -33,14 +33,14 @@
 
     let activeTabId = tabs[0].id;
     
-    const allBasisGuides = <?= json_encode($allBasisGuidesJson ?? []) ?>;
-    const basisFormData = <?= json_encode($basisFormData ?? null) ?>;
-    const basisDocContent = <?= json_encode($basisDocContent ?? '') ?>;
-    const superiorUserInfo = <?= json_encode($superiorUser ?? null) ?>;
-    const ownerAccountInfo = <?= json_encode($ownerInfo ?? []) ?>;
-    const defaultSupervisors = <?= json_encode($supervisors ?? []) ?>;
+    const allBasisGuides = <?= json_encode($allBasisGuidesJson ?? [], $jsFlags) ?>;
+    const basisFormData = <?= json_encode($basisFormData ?? null, $jsFlags) ?>;
+    const basisDocContent = <?= json_encode($basisDocContent ?? '', $jsFlags) ?>;
+    const superiorUserInfo = <?= json_encode($superiorUser ?? null, $jsFlags) ?>;
+    const ownerAccountInfo = <?= json_encode($ownerInfo ?? [], $jsFlags) ?>;
+    const defaultSupervisors = <?= json_encode($supervisors ?? [], $jsFlags) ?>;
     const defaultCascadeDate = <?= json_encode($cascadeDate ?? date('Y-m-d')) ?>;
-    const cascadedTargets = <?= json_encode($cascadedTargets ?? null) ?>;
+    const cascadedTargets = <?= json_encode($cascadedTargets ?? null, $jsFlags) ?>;
     const systemDefaultWeights = <?= json_encode($systemDefaultWeights ?? []) ?>;
 
     const canEditTargets = <?= json_encode($canEditTargets) ?>;
@@ -4362,7 +4362,10 @@
         // If no structured categories, but has HTML content:
         if ((!data.categories || Object.keys(data.categories).length === 0) && docContent && docContent.trim() !== '') {
             if (fallbackEl) {
-                fallbackEl.innerHTML = docContent;
+                // This is HTML saved by another user (the superior), so it is shown as plain text: inserted as
+                // HTML, any handler in it would run in this user's session (security review, 2026-11-06).
+                // DOMParser documents are inert (no scripts, no loading). Every current form has structured rows.
+                fallbackEl.textContent = new DOMParser().parseFromString(docContent, 'text/html').body.textContent || '';
                 fallbackEl.classList.remove('hidden');
             }
             return;
