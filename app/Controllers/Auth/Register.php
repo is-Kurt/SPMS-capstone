@@ -52,14 +52,12 @@ class Register extends BaseController
         $isTwgInvite = $role && strtolower($role['name']) === 'twg';
         $isPmtInvite = $role && strtolower($role['name']) === 'pmt';
 
-        $units = $unitModel->orderBy('name', 'ASC')->findAll();
-        $positions = $positionModel->orderBy('title', 'ASC')->findAll();
         $employmentStatuses = (new EmploymentStatusModel())->orderBy('name', 'ASC')->findAll();
+        $assignment = $this->assignmentFor($invitation, $role['name'] ?? null);
 
         return view('auth/signup', [
             'invitation'         => $invitation,
-            'units'              => $units,
-            'positions'          => $positions,
+            'assignment'         => $assignment,
             'employmentStatuses' => $employmentStatuses,
             'isAdminInvite'      => $isAdminInvite,
             'isTwgInvite'        => $isTwgInvite,
@@ -68,9 +66,32 @@ class Register extends BaseController
     }
 
     /**
-     * POST /signup - Creates the account, assigns the invited role, records the
-     * plantilla (unit+position) rows unless this is an admin invite, and marks
-     * the invitation as accepted so the token can't be reused.
+     * The department the admin chose for this invitation, the positions the person may pick there (a
+     * Supervisor: the unit's head position(s); an Employee: its member positions and the General ones), and
+     * the doc types each employment status allows for this role. Null when the role has no department.
+     */
+    private function assignmentFor(array $invitation, ?string $roleName): ?array
+    {
+        if (!\App\Libraries\OrgStructure::isRatedRole($roleName)) return null;
+        $org = \App\Libraries\OrgStructure::instance();
+        $unitId = (int) ($invitation['unit_id'] ?? 0);
+        $unit = $unitId ? $org->unit($unitId) : null;
+        $positions = [];
+        foreach ($unit ? $org->positionChoicesFor($roleName, $unitId) : [] as $id) {
+            $positions[] = ['id' => $id, 'title' => $org->position($id)['title'] ?? ''];
+        }
+        $docsByStatus = [];
+        foreach ((new EmploymentStatusModel())->findAll() as $st) {
+            $docsByStatus[$st['name']] = $org->allowedDocTypes($roleName, $st['name']);
+        }
+        return ['unit' => $unit, 'role' => $roleName, 'positions' => $positions, 'docsByStatus' => $docsByStatus];
+    }
+
+    /**
+     * POST /signup - Creates the account with the invited role. A rated role (Employee / Supervisor) joins
+     * the department set on the invitation, in a position allowed there (picked from the list, or set when
+     * there is only one), with their employment status and a doc type the rules allow for both. Admin, TWG
+     * and PMT accounts have no department. The invitation is then marked accepted so it can't be reused.
      */
     public function store()
     {
@@ -101,61 +122,55 @@ class Register extends BaseController
             'password'   => 'required|min_length[8]',
             'confirm-password' => 'required|matches[password]'
         ];
-
-        if (!$skipDetails) {
-            $rules['doc_type'] = [
-                'rules' => 'required|in_list[IPCR,DPCR,OPCR,IPERF]',
-                'errors' => [
-                    'required' => 'Please select a document type.'
-                ]
-            ];
-            $rules['units'] = [
-                'rules' => 'required',
-                'errors' => [
-                    'required' => 'Please select a unit/department.'
-                ]
-            ];
-            $rules['units.*'] = [
-                'rules' => 'required',
-                'errors' => [
-                    'required' => 'Please select a unit/department.'
-                ]
-            ];
-            $rules['positions'] = [
-                'rules' => 'required',
-                'errors' => [
-                    'required' => 'Please select an official position.'
-                ]
-            ];
-            $rules['positions.*'] = [
-                'rules' => 'required',
-                'errors' => [
-                    'required' => 'Please select an official position.'
-                ]
-            ];
-        }
-
         $validation->setRules($rules);
-
         if (!$validation->run($this->request->getPost())) {
             return redirect()->back()->withInput();
         }
 
-        $userModel->db->transStart();
-
-        $userData = [
-            'first_name' => $this->request->getPost('first_name'),
-            'last_name'  => $this->request->getPost('last_name'),
-            'email'      => strtolower($invitation['email']),
-            'password'   => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT),
-            'is_active'  => 1
-        ];
-
+        // Rated roles: the department comes from the invitation; position, status and doc type are checked
+        // against what is allowed there (the form only offers those, but the request could say anything).
+        $assignment = $skipDetails ? null : $this->assignmentFor($invitation, $role['name'] ?? null);
+        $positionId = null; $status = null; $docType = null;
         if (!$skipDetails) {
-            $userData['doc_type'] = $this->request->getPost('doc_type');
+            if (!$assignment || !$assignment['unit']) {
+                return redirect()->back()->withInput()->with('error', 'This invitation has no department. Ask the administrator to send a new invitation.');
+            }
+            $allowedPositions = array_column($assignment['positions'], 'id');
+            $positionId = count($allowedPositions) === 1 ? $allowedPositions[0] : (int) $this->request->getPost('position_id');
+            if (!in_array($positionId, $allowedPositions, true)) {
+                $validation->setError('position_id', 'Please select your position.');
+                return redirect()->back()->withInput();
+            }
+            $status = trim((string) $this->request->getPost('employment_status'));
+            if (!array_key_exists($status, $assignment['docsByStatus'])) {
+                $validation->setError('employment_status', 'Please select your employment status.');
+                return redirect()->back()->withInput();
+            }
+            $allowedDocs = $assignment['docsByStatus'][$status];
+            $postedDoc = strtoupper(trim((string) $this->request->getPost('doc_type')));
+            if (count($allowedDocs) === 1) {
+                $docType = $allowedDocs[0];
+            } elseif ($allowedDocs) {
+                if (!in_array($postedDoc, $allowedDocs, true)) {
+                    $validation->setError('doc_type', 'Please select your form type.');
+                    return redirect()->back()->withInput();
+                }
+                $docType = $postedDoc;
+            }
+            // No doc type allowed at all: the account is still created; the admin sees it flagged.
         }
 
-        $userId = $userModel->insert($userData);
+        $userModel->db->transStart();
+
+        $userId = $userModel->insert([
+            'first_name'        => $this->request->getPost('first_name'),
+            'last_name'         => $this->request->getPost('last_name'),
+            'email'             => strtolower($invitation['email']),
+            'password'          => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT),
+            'is_active'         => 1,
+            'doc_type'          => $docType,
+            'employment_status' => $status,
+        ]);
 
         if ($invitation['role_id']) {
             $userModel->db->table('user_roles')->insert([
@@ -166,24 +181,14 @@ class Register extends BaseController
         }
 
         if (!$skipDetails) {
-            $units = $this->request->getPost('units');
-            $positions = $this->request->getPost('positions');
-            $employmentStatuses = $this->request->getPost('employment_statuses');
-
-            if (is_array($positions) && is_array($units)) {
-                foreach ($positions as $index => $posId) {
-                    if (!empty($posId) && !empty($units[$index])) {
-                        $empStatus = !empty($employmentStatuses[$index]) ? trim($employmentStatuses[$index]) : 'Permanent';
-                        $plantillaModel->insert([
-                            'user_id'           => $userId,
-                            'position_id'       => $posId,
-                            'unit_id'           => $units[$index],
-                            'employment_status' => $empStatus,
-                            'started_at'        => date('Y-m-d')
-                        ]);
-                    }
-                }
-            }
+            $plantillaModel->insert([
+                'user_id'           => $userId,
+                'position_id'       => $positionId,
+                'unit_id'           => (int) $assignment['unit']['id'],
+                'employment_status' => $status,
+                'started_at'        => date('Y-m-d'),
+                'created_at'        => date('Y-m-d H:i:s'),
+            ]);
         }
 
         $invitationModel->update($invitation['id'], ['status' => InvitationStatus::ACCEPTED->value]);

@@ -608,6 +608,7 @@
                                 <span class="w-max px-3 py-1 rounded-lg text-[10px] font-black bg-info-50 dark:bg-info-500/10 text-info-600 border border-info-200 dark:border-info-500/20 uppercase tracking-widest">
                                     ${escapeHtml(inv.role_name)}
                                 </span>
+                                    ${inv.unit_name ? `<span class="block text-[10px] font-bold text-text-muted mt-1">${escapeHtml(inv.unit_name)}</span>` : ''}
                                 <span class="lg:hidden px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border bg-zinc-50 dark:bg-zinc-800/50 border-surface-border text-warning-500 border-warning-200/50 dark:border-warning-500/30">
                                     Pending
                                 </span>

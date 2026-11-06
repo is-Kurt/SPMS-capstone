@@ -100,6 +100,28 @@ class AccountManagement extends BaseController
             $rawEmails = (string) $this->request->getPost('emails');
             $roleId    = $this->request->getPost('role_id');
 
+            // The invite sets the person's role and department (2026-11-07). Employees and Supervisors need a
+            // department; Admin, TWG and PMT accounts have none. A Supervisor becomes the head of that unit.
+            $role = (new RoleModel())->find($roleId);
+            if (!$role) return $this->respondError('Select a role.', 422);
+            $org = OrgStructure::instance();
+            $unitId = null;
+            $note = '';
+            if (OrgStructure::isRatedRole($role['name'])) {
+                $unitId = (int) $this->request->getPost('unit_id');
+                if (!$unitId || !$org->unit($unitId)) {
+                    return $this->respondError('Select the department / unit these people will join.', 422);
+                }
+                if ($role['name'] === 'Supervisor') {
+                    $heads = $org->headPositionIds($unitId);
+                    if (!$heads) {
+                        return $this->respondError('That department / unit has no head position yet. Link one in System Data (Departments & Units) first.', 422);
+                    }
+                    $holders = array_map(fn($h) => trim($h['first_name'] . ' ' . $h['last_name']), $org->headsOf($unitId));
+                    if ($holders) $note = ' Note: ' . implode(', ', $holders) . ' already heads that unit, so they will be co-heads.';
+                }
+            }
+
             // Split by whitespace, commas, or semicolons and normalize
             $rawList = preg_split('/[\s,;]+/', trim($rawEmails));
             $cleaned = [];
@@ -138,8 +160,8 @@ class AccountManagement extends BaseController
                 return $this->respondError('No valid or new email addresses found (they may already have accounts or pending invites).', 400);
             }
 
-            $roleModel = new RoleModel();
-            $roleName  = $roleModel->find($roleId)['name'] ?? 'No Role';
+            $roleName  = $role['name'];
+            $unitName  = $unitId ? ($org->unit($unitId)['name'] ?? null) : null;
             $expiresAt = date('Y-m-d H:i:s', strtotime('+7 days'));
 
             // Sent back so the Invitations dashboard tab can append these rows live,
@@ -155,6 +177,7 @@ class AccountManagement extends BaseController
                     'token'      => $token,
                     'status'     => InvitationStatus::PENDING->value,
                     'role_id'    => $roleId,
+                    'unit_id'    => $unitId,
                     'expires_at' => $expiresAt,
                     'created_at' => date('Y-m-d H:i:s')
                 ]);
@@ -163,6 +186,7 @@ class AccountManagement extends BaseController
                     'id'              => $invitationModel->getInsertID(),
                     'email'           => $email,
                     'role_name'       => $roleName,
+                    'unit_name'       => $unitName,
                     'created_display' => date('M d, Y'),
                     'expires_display' => date('M d, Y - h:i A', strtotime($expiresAt)),
                 ];
@@ -179,7 +203,7 @@ class AccountManagement extends BaseController
 
             $response = $this->respond([
                 'status'      => 'success',
-                'message'     => count($validEmails) . ' invitations queued for sending!',
+                'message'     => count($validEmails) . ' invitations queued for sending!' . $note,
                 'invitations' => $createdInvitations,
             ]);
 

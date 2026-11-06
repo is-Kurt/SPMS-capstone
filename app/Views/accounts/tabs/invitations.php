@@ -146,6 +146,9 @@
                                     <span class="w-max px-2.5 py-0.5 rounded-lg text-[10px] font-black bg-info-50 dark:bg-info-500/10 text-info-600 border border-info-200 dark:border-info-500/20 uppercase tracking-widest">
                                         <?= esc($inv['role_name'] ?? 'No Role') ?>
                                     </span>
+                                    <?php if (!empty($inv['unit_name'])): ?>
+                                        <span class="block text-[10px] font-bold text-text-muted mt-1"><?= esc($inv['unit_name']) ?></span>
+                                    <?php endif; ?>
                                     <span class="lg:hidden px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border bg-zinc-50 dark:bg-zinc-800/50 border-surface-border <?= $statusClass ?>">
                                         <?= $statusLabel ?>
                                     </span>

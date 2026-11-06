@@ -78,7 +78,7 @@
         </div>
 
         <div class="p-8 flex flex-col gap-8">
-            <div class="grid grid-cols-1 <?= (!$isAdmin && !$isTwg && empty($isPmt)) ? 'md:grid-cols-3' : 'md:grid-cols-2' ?> gap-6">
+            <div class="grid grid-cols-1 <?= !empty($isRated) ? 'md:grid-cols-3' : 'md:grid-cols-2' ?> gap-6">
                 <div>
                     <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">First Name</label>
                     <input type="text" name="first_name" aria-label="First name" value="<?= esc($user['first_name']) ?>" required
@@ -93,42 +93,32 @@
                     <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="last_name"></p>
                 </div>
 
-                <?php if (!$isAdmin && !$isTwg && empty($isPmt)): ?>
+                <?php if (!empty($isRated)): ?>
                 <div>
-                    <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Document Type</label>
-                    <div class="relative js-custom-select">
-                        <?php 
-                            $oldDocType = !empty($user['doc_type']) ? $user['doc_type'] : null;
-                            if (!$oldDocType) {
-                                $plantillaDetails = (new \App\Models\UserModel())->getActivePlantillaDetails($user['id']);
-                                $pTitle = strtolower($plantillaDetails['position'] ?? '');
-                                $uEmail = strtolower($user['email'] ?? '');
-                                if (str_contains($pTitle, 'president') || str_contains($pTitle, 'vice president') || str_contains($uEmail, 'vpaa') || str_contains($uEmail, 'cao')) {
-                                    $oldDocType = 'OPCR';
-                                } elseif (str_contains($pTitle, 'dean') || str_contains($pTitle, 'chair') || str_contains($pTitle, 'head') || str_contains($uEmail, 'dean') || str_contains($uEmail, 'chair')) {
-                                    $oldDocType = 'DPCR';
-                                } elseif (($plantillaDetails['is_teaching'] ?? 1) == 0) {
-                                    $oldDocType = 'IPERF';
-                                } else {
-                                    $oldDocType = 'IPCR';
-                                }
-                            }
-                            $docTypes = ['IPCR', 'DPCR', 'OPCR', 'IPERF'];
-                        ?>
-                        <input type="hidden" name="doc_type" value="<?= $oldDocType ?>" required>
-                        <button type="button" class="js-select-button w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent outline-none text-text cursor-pointer font-bold flex justify-between items-center transition-all">
-                            <span class="js-select-label"><?= $oldDocType ?></span>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-text-muted transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                        </button>
-                        <ul class="js-select-dropdown absolute z-50 w-full mt-2 bg-surface border border-surface-border rounded-xl shadow-lg shadow-black/5 dark:shadow-black/20 overflow-hidden hidden transform origin-top transition-all duration-200 scale-95 opacity-0">
-                            <?php foreach($docTypes as $type): ?>
-                                <?php $isSelected = ($oldDocType === $type); ?>
-                                <li class="px-4 py-3 text-sm font-bold text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 cursor-pointer transition-colors js-select-option <?= $isSelected ? 'bg-accent/10 text-accent-ink' : '' ?>" data-value="<?= $type ?>" data-label="<?= $type ?>">
-                                    <?= $type ?>
-                                </li>
+                    <label class="block text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Form Type</label>
+                    <?php
+                        // Choices come from the doc-type rules (role + employment status). A type the rules no longer
+                        // allow stays as it is until the admin fixes it; it cannot be newly chosen.
+                        $choices = $allowedDocs;
+                        if ($currentDoc !== '' && !in_array($currentDoc, $choices, true)) array_unshift($choices, $currentDoc);
+                        $canChoose = !$docFlagged && count($allowedDocs) > 1;
+                    ?>
+                    <?php if ($canChoose): ?>
+                        <select name="doc_type" aria-label="Form type" class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold cursor-pointer">
+                            <?php foreach ($choices as $t): ?>
+                                <option value="<?= esc($t) ?>" <?= $t === $currentDoc ? 'selected' : '' ?>><?= esc($t) ?></option>
                             <?php endforeach; ?>
-                        </ul>
-                    </div>
+                        </select>
+                        <p class="text-[10px] text-text-muted font-medium mt-1 pl-1">Changing it converts your target drafts to the new form.</p>
+                    <?php else: ?>
+                        <input type="hidden" name="doc_type" value="<?= esc($currentDoc) ?>">
+                        <div class="w-full bg-zinc-50 dark:bg-zinc-800/50 rounded-xl px-4 py-3 text-sm text-text font-bold"><?= esc($currentDoc ?: ($allowedDocs[0] ?? 'Not set')) ?></div>
+                        <?php if ($docFlagged): ?>
+                            <p class="text-[10px] font-bold text-warning-500 mt-1 pl-1">Your form type doesn't match the current rules; the admin will review it. Your forms are not affected meanwhile.</p>
+                        <?php else: ?>
+                            <p class="text-[10px] text-text-muted font-medium mt-1 pl-1">Set by your role and employment status.</p>
+                        <?php endif; ?>
+                    <?php endif; ?>
                     <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="doc_type"></p>
                 </div>
                 <?php endif; ?>
@@ -137,87 +127,32 @@
             <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="_general"></p>
         </div>
 
-        <?php if (!$isAdmin && !$isTwg && empty($isPmt)): ?>
+        <?php if (!empty($isRated)): ?>
         <div class="px-8 py-5 border-t border-surface-border bg-zinc-50 dark:bg-zinc-800/30">
             <h2 class="text-[11px] font-black uppercase tracking-widest text-text">Positions &amp; Departments / Units</h2>
         </div>
-        <div class="p-8 flex flex-col gap-6 bg-zinc-50/50 dark:bg-zinc-900/10">
-            <div id="positions-container" class="flex flex-col gap-4">
-                <?php foreach ($currentPlantilla as $index => $plantilla): ?>
-                <div class="position-card border border-surface-border p-6 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm relative group">
-                    <h3 class="text-[10px] font-black uppercase tracking-widest text-text-muted mb-4 flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <span class="w-5 h-5 rounded-full bg-accent text-accent-text flex items-center justify-center num-badge"><?= $index + 1 ?></span>
-                            Designation
-                        </div>
-                        <!-- Trash icon (icon-only button): removes this extra position/designation card client-side. Hidden on the first card since at least one is required -->
-                        <button type="button" class="btn-remove hidden text-danger-500 hover:text-danger-700 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                    </h3>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
-                        <div class="col-span-1">
-                            <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Department / Unit</label>
-                            <div class="relative">
-                                <select name="units[]" required data-custom-select class="w-full bg-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border-2 border-dashed border-surface-border hover:border-accent hover:text-accent rounded-xl px-4 py-3 text-sm focus:outline-none text-text cursor-pointer font-bold transition-all">
-                                    <option value="" disabled <?= empty($plantilla['unit_id']) ? 'selected' : '' ?>>Select Department / Unit...</option>
-                                    <?php 
-                                        $unitTree = [];
-                                        foreach ($units as $u) {
-                                            $pid = $u['parent_id'] ?: 0;
-                                            $unitTree[$pid][] = $u;
-                                        }
-                                        $renderOptionsTree = function($parentId, $level) use (&$renderOptionsTree, &$unitTree, $plantilla) {
-                                            if (!isset($unitTree[$parentId])) return;
-                                            foreach ($unitTree[$parentId] as $unit) {
-                                                $isSelected = (isset($plantilla['unit_id']) && $plantilla['unit_id'] == $unit['id']) ? 'selected' : '';
-                                                echo '<option value="' . $unit['id'] . '" data-level="' . $level . '" ' . $isSelected . '>' . esc($unit['name']) . '</option>';
-                                                // Recurse for children
-                                                $renderOptionsTree($unit['id'], $level + 1);
-                                            }
-                                        };
-                                        $renderOptionsTree(0, 0);
-                                    ?>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="col-span-1">
-                            <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Position</label>
-                            <div class="relative">
-                                <select name="positions[]" required data-custom-select class="w-full bg-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border-2 border-dashed border-surface-border hover:border-accent hover:text-accent rounded-xl px-4 py-3 text-sm focus:outline-none text-text cursor-pointer font-bold transition-all">
-                                    <option value="" disabled <?= empty($plantilla['position_id']) ? 'selected' : '' ?>>Select Position...</option>
-                                    <?php foreach($positions as $pos): ?>
-                                        <option value="<?= $pos['id'] ?>" <?= (isset($plantilla['position_id']) && $plantilla['position_id'] == $pos['id']) ? 'selected' : '' ?>><?= esc($pos['title']) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="col-span-1">
-                            <label class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Employment Status</label>
-                            <div class="relative">
-                                <select name="employment_statuses[]" required data-custom-select class="w-full bg-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border-2 border-dashed border-surface-border hover:border-accent hover:text-accent rounded-xl px-4 py-3 text-sm focus:outline-none text-text cursor-pointer font-bold transition-all">
-                                    <?php 
-                                        $curStatus = $plantilla['employment_status'] ?? 'Permanent';
-                                        $statusOptions = !empty($employmentStatuses) ? (is_array(reset($employmentStatuses)) ? array_column($employmentStatuses, 'name') : $employmentStatuses) : ['Permanent', 'Temporary', 'Casual', 'Contractual', 'Coterminous'];
-                                    ?>
-                                    <?php foreach ($statusOptions as $st): ?>
-                                        <option value="<?= esc($st) ?>" <?= (strcasecmp($curStatus, $st) === 0) ? 'selected' : '' ?>><?= esc($st) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
+        <div class="p-8 flex flex-col gap-4 bg-zinc-50/50 dark:bg-zinc-900/10">
+            <?php if (empty($assignments)): ?>
+                <p class="text-sm text-text-muted font-bold">No assignment yet.</p>
+            <?php endif; ?>
+            <?php foreach ($assignments as $i => $a): ?>
+                <div class="border border-surface-border p-5 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <span class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1">Department / Unit</span>
+                        <span class="text-sm font-bold text-text"><?= esc($a['unit_name'] ?? '—') ?></span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1">Position</span>
+                        <span class="text-sm font-bold text-text"><?= esc($a['position_title'] ?? '—') ?></span>
+                        <?php if ($a['is_head']): ?><span class="ml-1 text-[9px] font-black uppercase tracking-widest text-accent-ink">Head</span><?php endif; ?>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-1">Employment Status</span>
+                        <span class="text-sm font-bold text-text"><?= esc($user['employment_status'] ?? 'Permanent') ?></span>
                     </div>
                 </div>
-                <?php endforeach; ?>
-            </div>
-
-            <button type="button" id="btn-add-position" class="w-full py-4 border-2 border-dashed border-surface-border rounded-2xl text-sm font-bold text-text-muted hover:text-accent hover:border-accent hover:bg-accent/5 transition-all flex items-center justify-center gap-2 cursor-pointer">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-                Add Additional Position / Designation
-            </button>
+            <?php endforeach; ?>
+            <p class="text-[10px] text-text-muted font-medium">Your department, position and employment status are set by the administrator. Contact them to change any of these.</p>
         </div>
         <?php endif; ?>
 

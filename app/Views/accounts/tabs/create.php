@@ -31,6 +31,28 @@
                     </div>
                 </div>
 
+                <div class="shrink-0" id="invite-unit-wrap">
+                    <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Department / Unit</label>
+                    <?php
+                        $inviteUnitTree = [];
+                        foreach ($units as $u) $inviteUnitTree[$u['parent_id'] ?: 0][] = $u;
+                        $renderInviteUnits = function ($parent, $level) use (&$renderInviteUnits, $inviteUnitTree, $unitHeads) {
+                            foreach ($inviteUnitTree[$parent] ?? [] as $u) {
+                                $heads = $unitHeads[$u['id']]['titles'] ?? [];
+                                $holders = $unitHeads[$u['id']]['holders'] ?? [];
+                                echo '<option value="' . (int) $u['id'] . '" data-heads="' . esc(implode(' / ', $heads)) . '" data-holders="' . esc(implode(', ', $holders)) . '">'
+                                   . str_repeat('&nbsp;&nbsp;&nbsp;', $level) . esc($u['name']) . '</option>';
+                                $renderInviteUnits($u['id'], $level + 1);
+                            }
+                        };
+                    ?>
+                    <select name="unit_id" id="select-invite-unit" class="w-full lg:max-w-md bg-surface border border-surface-border rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text cursor-pointer font-bold">
+                        <option value="">Select the department / unit...</option>
+                        <?php $renderInviteUnits(0, 0); ?>
+                    </select>
+                    <p id="invite-unit-hint" class="text-[10px] lg:text-xs text-text-muted mt-2 font-medium">Everyone in this batch joins this department / unit. A Supervisor becomes its head; an Employee picks their position at sign-up.</p>
+                </div>
+
                 <div class="flex-1 flex flex-col">
                     <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Mass Email Invitations</label>
                     <p class="text-[10px] lg:text-xs text-text-muted mb-4 font-medium">Paste a list of email addresses below. Separate emails with commas, semicolons, or newlines.</p>
@@ -46,4 +68,37 @@
                     </button>
                 </div>
             <?= form_close() ?>
+            <script>
+            // Admin, TWG and PMT accounts have no department; for a Supervisor, show the head position they will hold.
+            (function () {
+                const roleInput = document.getElementById('select-invite-role');
+                const wrap = document.getElementById('invite-unit-wrap');
+                const unitSel = document.getElementById('select-invite-unit');
+                const hint = document.getElementById('invite-unit-hint');
+                if (!roleInput || !wrap || !unitSel) return;
+                const roleName = () => {
+                    const opt = document.querySelector('.js-select-option[data-value="' + roleInput.value + '"]');
+                    return opt ? opt.textContent.trim() : '';
+                };
+                function update() {
+                    const role = roleName();
+                    const needsUnit = role === 'Employee' || role === 'Supervisor';
+                    wrap.classList.toggle('hidden', !needsUnit);
+                    unitSel.disabled = !needsUnit;
+                    const o = unitSel.options[unitSel.selectedIndex];
+                    if (role === 'Supervisor' && o && o.value) {
+                        hint.textContent = o.dataset.heads
+                            ? 'They will be its head: ' + o.dataset.heads + (o.dataset.holders ? '. Already held by ' + o.dataset.holders + ' (they will be co-heads).' : '.')
+                            : 'This unit has no head position yet: link one in System Data first.';
+                    } else {
+                        hint.textContent = 'Everyone in this batch joins this department / unit. A Supervisor becomes its head; an Employee picks their position at sign-up.';
+                    }
+                }
+                new MutationObserver(update).observe(roleInput, { attributes: true, attributeFilter: ['value'] });
+                roleInput.addEventListener('change', update);
+                document.addEventListener('click', e => { if (e.target.closest('.js-select-option')) setTimeout(update, 0); });
+                unitSel.addEventListener('change', update);
+                update();
+            })();
+            </script>
         </div>

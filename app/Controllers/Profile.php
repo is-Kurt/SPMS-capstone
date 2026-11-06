@@ -11,110 +11,100 @@ use App\Models\PlantillaModel;
 use App\Models\EmploymentStatusModel;
 
 /**
- * The logged-in user's own "My Profile" page: editing name/email/plantilla
- * assignments, changing password, and managing the avatar (uploaded image or
- * generated color+initial).
+ * The logged-in user's own "My Profile" page: editing the name and (where the rules
+ * allow a choice) the form type, seeing their assignments, changing password, and
+ * managing the avatar (uploaded image or generated color+initial).
  */
 class Profile extends BaseController
 {
     /** GET /profile */
     public function index()
     {
-        $userId = session()->get('user_id');
-        $userModel      = new UserModel();
-        $unitModel      = new UnitModel();
-        $positionModel  = new PositionModel();
-        $plantillaModel = new PlantillaModel();
+        $userId = (int) session()->get('user_id');
+        $userModel = new UserModel();
+        $org = \App\Libraries\OrgStructure::instance();
+        $user = $userModel->find($userId);
+        $role = $org->roleOf($userId);
 
-        $currentPlantilla = $plantillaModel->where('user_id', $userId)->where('ended_at IS NULL')->findAll();
-        
-        if (empty($currentPlantilla)) {
-            $currentPlantilla = [['unit_id' => '', 'position_id' => '']];
+        // Assignments are set by the admin (invite + User Directory); the profile only shows them.
+        $assignments = \Config\Database::connect()->table('plantillas p')
+            ->select('p.unit_id, p.position_id, un.name as unit_name, pos.title as position_title, p.started_at')
+            ->join('units un', 'un.id = p.unit_id', 'left')->join('positions pos', 'pos.id = p.position_id', 'left')
+            ->where('p.user_id', $userId)->where('p.ended_at IS NULL')->orderBy('p.id', 'ASC')->get()->getResultArray();
+        foreach ($assignments as &$a) {
+            $a['is_head'] = $a['unit_id'] && $a['position_id'] && $org->isHeadOf((int) $a['unit_id'], (int) $a['position_id']);
         }
+        unset($a);
 
-        $isAdmin = $userModel->hasRole($userId, 'Admin');
-        $isTwg = $userModel->hasRole($userId, 'TWG');
-        $isPmt = $userModel->hasRole($userId, 'PMT');
+        $allowed = $org->allowedDocTypesForUser($userId);
+        $current = strtoupper((string) ($user['doc_type'] ?? ''));
 
-        $data = [
-            'user'               => $userModel->find($userId),
-            'units'              => $unitModel->orderBy('name', 'ASC')->findAll(),
-            'positions'          => $positionModel->orderBy('title', 'ASC')->findAll(),
-            'employmentStatuses' => (new EmploymentStatusModel())->orderBy('name', 'ASC')->findAll(),
-            'currentPlantilla'   => $currentPlantilla,
-            'isAdmin'            => $isAdmin,
-            'isTwg'              => $isTwg,
-            'isPmt'              => $isPmt
-        ];
-
-        return view('profile/index', $data);
+        return view('profile/index', [
+            'user'          => $user,
+            'assignments'   => $assignments,
+            'isRated'       => \App\Libraries\OrgStructure::isRatedRole($role),
+            'allowedDocs'   => $allowed,
+            'currentDoc'    => $current,
+            'docFlagged'    => $current === '' || !in_array($current, $allowed, true),
+            'isAdmin'       => $role === 'Admin',
+            'isTwg'         => $role === 'TWG',
+            'isPmt'         => $role === 'PMT',
+        ]);
     }
 
-    /** POST /profile/general - Updates name and replaces the user's current plantilla (unit+position) rows. */
+    /**
+     * POST /profile/general - Updates the name and, where the rules allow a choice, the doc type.
+     * Department, position and employment status are the admin's (User Directory), so they are not
+     * accepted here. A doc type the rules no longer allow can be kept (the admin is flagged to fix it)
+     * but not newly chosen; the paper sync only runs when the doc type really changes.
+     */
     public function updateGeneral()
     {
         return $this->tryOrFail(function() {
-            $userId = session()->get('user_id');
-            $userModel      = new UserModel();
-            $plantillaModel = new PlantillaModel();
-
-            $userModel->db->transStart();
-
+            $userId = (int) session()->get('user_id');
+            $userModel = new UserModel();
+            $org = \App\Libraries\OrgStructure::instance();
             $existingUser = $userModel->find($userId);
-            $postedDocType = $this->request->getPost('doc_type');
-            if (!empty($postedDocType) && in_array(strtoupper(trim($postedDocType)), ['IPCR', 'DPCR', 'OPCR', 'IPERF'], true)) {
-                $newDocType = strtoupper(trim($postedDocType));
-            } else {
-                $newDocType = !empty($existingUser['doc_type']) ? $existingUser['doc_type'] : 'IPCR';
+            $current = strtoupper((string) ($existingUser['doc_type'] ?? ''));
+            $newDocType = $current;
+
+            if (\App\Libraries\OrgStructure::isRatedRole($org->roleOf($userId))) {
+                $allowed = $org->allowedDocTypesForUser($userId);
+                $posted = strtoupper(trim((string) $this->request->getPost('doc_type')));
+                if ($posted !== '' && $posted !== $current) {
+                    if (!in_array($posted, $allowed, true)) {
+                        return $this->respondError('That form type is not allowed for your role and employment status.', 422, ['doc_type' => 'Not allowed for your role and employment status.']);
+                    }
+                    $newDocType = $posted;
+                } elseif ($current === '' && count($allowed) === 1) {
+                    $newDocType = $allowed[0];                         // nothing set yet and only one choice
+                }
             }
 
             $saved = $userModel->update($userId, [
                 'first_name' => $this->request->getPost('first_name'),
                 'last_name'  => $this->request->getPost('last_name'),
-                'doc_type'   => $newDocType
+                'doc_type'   => $newDocType !== '' ? $newDocType : null,
             ]);
-
             if (!$saved) {
                 $errors = $userModel->errors();
                 return $this->respondError(implode(' ', $errors), 422, $errors);
             }
 
-            $plantillaModel->where('user_id', $userId)->where('ended_at IS NULL')->delete();
-
-            $units              = $this->request->getPost('units');
-            $positions          = $this->request->getPost('positions');
-            $employmentStatuses = $this->request->getPost('employment_statuses');
-
-            if (!empty($units) && !empty($positions)) {
-                for ($i = 0; $i < count($units); $i++) {
-                    if (!empty($units[$i]) && !empty($positions[$i])) {
-                        $empStatus = !empty($employmentStatuses[$i]) ? trim($employmentStatuses[$i]) : 'Permanent';
-                        $plantillaModel->insert([
-                            'user_id'           => $userId,
-                            'unit_id'           => $units[$i],
-                            'position_id'       => $positions[$i],
-                            'employment_status' => $empStatus,
-                            'created_at'        => date('Y-m-d H:i:s')
-                        ]);
-                    }
-                }
-            }
-
-            $userModel->db->transComplete();
-
-            // Fetch the user to get the current email to put back in session
             $user = $userModel->find($userId);
-
             session()->set([
-                'first_name' => $this->request->getPost('first_name'),
-                'last_name'  => $this->request->getPost('last_name'),
+                'first_name' => $user['first_name'],
+                'last_name'  => $user['last_name'],
                 'email'      => $user['email'],
-                'username'   => $this->request->getPost('first_name') . ' ' . $this->request->getPost('last_name'),
-                'doc_type'   => $newDocType
+                'username'   => $user['first_name'] . ' ' . $user['last_name'],
+                'doc_type'   => $user['doc_type'],
             ]);
 
-            // If account changed paper type mid target setting, synchronize their papers immediately
-            sync_user_papers_mid_target_setting($userId, $newDocType);
+            if ($newDocType !== $current && $newDocType !== '') {
+                // The person chose another allowed form type: convert their target drafts to it.
+                sync_user_papers_mid_target_setting($userId, $newDocType);
+                audit_log('DOC_TYPE_CHANGED', 'ACCOUNT', 'user', $userId, "Changed own form type from " . ($current ?: 'none') . " to {$newDocType}");
+            }
 
             return $this->respond(['status' => 'success', 'message' => 'Profile updated successfully.']);
         });
