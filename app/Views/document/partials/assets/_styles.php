@@ -290,8 +290,8 @@
         align-items: center !important;
         justify-content: center !important;
         width: 100% !important;
-        height: 100% !important;
-        min-height: var(--spms-row-min-height, 68px) !important;
+        height: 100%;                                        /* not !important: the row sync (autoExpandRow) sets this */
+        min-height: var(--spms-row-min-height, 68px);        /* inline to match the row's textareas */
         padding: 4px 6px !important;
         box-sizing: border-box !important;
         border: none !important;
@@ -454,7 +454,7 @@
     /* Score Role Attribution Indicators (Minimal Corner Notification Marker) */
     .spms-score-cell {
         position: relative;
-        padding: 2px 2px !important;
+        padding: 0 2px !important;   /* no vertical padding: it made score cells (and so the row) 4 px taller than the synced textareas, leaving a gap under them */
         vertical-align: middle !important;
         text-align: center !important;
     }
@@ -470,8 +470,8 @@
         align-items: center !important;
         justify-content: center !important;
         width: 100% !important;
-        height: 100% !important;
-        min-height: var(--spms-row-min-height, 68px) !important;
+        height: 100%;                                        /* not !important: the row sync (autoExpandRow) sets this */
+        min-height: var(--spms-row-min-height, 68px);        /* inline to match the row's textareas */
         border: none !important;
         border-radius: 0 !important;
         background: transparent !important;
