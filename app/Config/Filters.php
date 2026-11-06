@@ -27,7 +27,7 @@ class Filters extends BaseFilters
     public array $aliases = [
         'csrf'          => CSRF::class,
         'toolbar'       => DebugToolbar::class,
-        'honeypot'      => Honeypot::class,
+        'honeypot'      => \App\Filters\HoneypotFilter::class,   // 403 instead of a 500 for bots
         'invalidchars'  => InvalidChars::class,
         'secureheaders' => SecureHeaders::class,
         'cors'          => Cors::class,

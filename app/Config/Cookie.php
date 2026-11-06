@@ -54,7 +54,10 @@ class Cookie extends BaseConfig
      *
      * Cookie will only be set if a secure HTTPS connection exists.
      */
-    public bool $secure = false;
+    // Session and CSRF cookies are only sent over HTTPS (they lacked the Secure flag; security test 2026-11-06).
+    // Browsers also accept Secure cookies on http://localhost. Any other plain-HTTP site (a LAN address,
+    // the load-test copy) needs `cookie.secure = false` in its .env, or logging in will not stick.
+    public bool $secure = true;
 
     /**
      * --------------------------------------------------------------------------
