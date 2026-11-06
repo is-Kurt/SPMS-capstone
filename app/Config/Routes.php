@@ -45,6 +45,11 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     // System Data Management Routes
     $routes->post('account/position/add', 'AccountManagement::addPosition', ['filter' => 'role:Admin']);
     $routes->post('account/position/delete', 'AccountManagement::deletePosition', ['filter' => 'role:Admin']);
+    $routes->post('account/position/update', 'AccountManagement::updatePosition', ['filter' => 'role:Admin']);
+    $routes->post('account/doc-rules/update', 'AccountManagement::updateDocRules', ['filter' => 'role:Admin']);
+    $routes->post('account/user/assignment/add', 'AccountManagement::addAssignment', ['filter' => 'role:Admin']);
+    $routes->post('account/user/assignment/end', 'AccountManagement::endAssignment', ['filter' => 'role:Admin']);
+    $routes->post('account/user/details', 'AccountManagement::updateUserDetails', ['filter' => 'role:Admin']);
 
     // ...
     $routes->post('account/unit/add', 'AccountManagement::addUnit', ['filter' => 'role:Admin']);

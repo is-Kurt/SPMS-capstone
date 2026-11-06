@@ -15,6 +15,8 @@ class PositionModel extends Model
     protected $allowedFields    = [
         'title',
         'is_teaching',
+        'parent_id',
+        'is_general_root',
     ];
 
     protected bool $allowEmptyInserts = false;

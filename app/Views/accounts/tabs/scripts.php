@@ -378,6 +378,14 @@
                 break;
             }
 
+            case 'update-position':
+            case 'save-doc-rules': {
+                document.querySelectorAll('#modal-edit-position').forEach(m => { m.classList.add('hidden'); m.classList.remove('flex'); });
+                await window.appAlert(action === 'save-doc-rules' ? (data.message || 'Doc-type rules saved.') : 'Position updated.', { title: action === 'save-doc-rules' ? 'Doc Type Rules' : 'Position Updated', variant: 'success' });
+                window.location.reload();
+                break;
+            }
+
             case 'update-unit': {
                 const modal = document.getElementById('modal-edit-unit');
                 if (modal) {
@@ -390,6 +398,12 @@
             }
 
             case 'add-position': {
+                await window.appAlert('Position created.', { title: 'Position Created', variant: 'success' });
+                window.location.reload();
+                break;
+            }
+
+            case 'add-position-flat-legacy': {
                 const li = document.createElement('li');
                 li.className = 'position-item block lg:table-row bg-surface hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors group';
                 li.dataset.title = data.item.title.toLowerCase();

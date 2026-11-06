@@ -1,8 +1,9 @@
 <div id="tab-content-system" class="tab-content <?= $activeTab === 'system' ? 'flex' : 'hidden' ?> flex-col lg:absolute lg:inset-0 bg-transparent lg:bg-surface">
 
-    <?= view('components/create_position_modal') ?>
+    <?= view('components/create_position_modal', ['positionTree' => $positionTree]) ?>
+    <?= view('components/edit_position_modal', ['positionTree' => $positionTree]) ?>
     <?= view('components/create_unit_modal') ?>
-    <?= view('components/edit_unit_modal') ?>
+    <?= view('components/edit_unit_modal', ['positionTree' => $positionTree, 'hasOpenCycle' => $hasOpenCycle]) ?>
     <?= view('components/create_employment_status_modal') ?>
     
     <!-- MOBILE FILTER OVERLAY -->
@@ -19,6 +20,9 @@
             </button>
             <button type="button" id="subtab-btn-employment_statuses" class="subtab-btn pb-3 text-sm font-bold border-b-2 border-transparent text-text-muted hover:text-text hover:border-surface-border transition-all cursor-pointer" onclick="switchSystemTab('employment_statuses')">
                 Employment Statuses
+            </button>
+            <button type="button" id="subtab-btn-doc_rules" class="subtab-btn pb-3 text-sm font-bold border-b-2 border-transparent text-text-muted hover:text-text hover:border-surface-border transition-all cursor-pointer" onclick="switchSystemTab('doc_rules')">
+                Doc Type Rules
             </button>
         </div>
         <button type="button" class="btn-open-system-mobile lg:hidden flex items-center gap-1.5 text-xs font-bold text-accent-ink bg-accent/10 hover:bg-accent/20 px-3 py-1.5 rounded-lg active:scale-95 transition-colors cursor-pointer mb-2.5 shrink-0">
@@ -59,20 +63,39 @@
             
             <div class="overflow-y-auto custom-scrollbar flex-1 p-0 border-t border-surface-border lg:border-t-0">
                 <ul class="border-collapse divide-y divide-surface-border block lg:table lg:table-fixed w-full" id="positions-list">
-                    <?php foreach ($positions as $pos): ?>
-                        <li class="position-item block lg:table-row bg-surface hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors group" data-title="<?= strtolower(esc($pos['title'])) ?>">
-                            <div class="flex flex-col justify-center lg:table-cell px-6 py-4 align-middle h-[72px]">
+                    <?php foreach ($positionTree as $pos): ?>
+                        <?php
+                            $kind = $pos['is_general_root'] ? 'general-root' : ($pos['is_general'] ? 'general' : ($pos['is_head'] ? 'head' : 'member'));
+                        ?>
+                        <li class="position-item block lg:table-row bg-surface hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors group" data-title="<?= strtolower(esc($pos['title'])) ?>" data-id="<?= $pos['id'] ?>">
+                            <div class="flex flex-col justify-center lg:table-cell py-4 align-middle h-[72px]" style="padding-left: <?= ($pos['level'] * 24 + 24) ?>px; padding-right: 24px;">
                                 <div class="flex justify-between items-center w-full">
                                     <div class="flex flex-col">
                                         <span class="text-sm font-bold text-text"><?= esc($pos['title']) ?></span>
-                                        <span class="text-[9px] font-black tracking-widest uppercase <?= $pos['is_teaching'] ? 'text-warning-500' : 'text-zinc-400' ?>"><?= $pos['is_teaching'] ? 'Teaching' : 'Non-Teaching' ?></span>
+                                        <span class="text-[9px] font-black tracking-widest uppercase <?= $kind === 'head' ? 'text-accent-ink' : ($kind === 'member' ? ($pos['is_teaching'] ? 'text-warning-500' : 'text-zinc-400') : 'text-info-500') ?>">
+                                            <?php if ($kind === 'general-root'): ?>General group &middot; its positions show for everyone below a head
+                                            <?php elseif ($kind === 'general'): ?>General &middot; <?= $pos['is_teaching'] ? 'Teaching' : 'Non-Teaching' ?>
+                                            <?php elseif ($kind === 'head'): ?>Head position &middot; <?= $pos['is_teaching'] ? 'Teaching' : 'Non-Teaching' ?>
+                                            <?php else: ?><?= $pos['is_teaching'] ? 'Teaching' : 'Non-Teaching' ?><?= $pos['parent_id'] ? '' : ' &middot; not under any head' ?>
+                                            <?php endif; ?>
+                                        </span>
                                     </div>
-                                    <?= form_open('account/position/delete', ['data-ajax' => 'delete-position', 'data-confirm' => 'Delete this position? Staff currently assigned to it will keep their account but lose that designation.', 'data-confirm-title' => 'Delete Position']) ?>
-                                        <input type="hidden" name="id" value="<?= $pos['id'] ?>">
-                                        <button type="submit" class="text-danger-400 hover:text-danger-600 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-2 -mr-2 bg-danger-50 hover:bg-danger-100 dark:bg-danger-500/10 dark:hover:bg-danger-500/20 lg:bg-transparent rounded-lg cursor-pointer">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                    <div class="flex items-center gap-1">
+                                        <button type="button"
+                                            class="text-accent-ink hover:text-accent-hover opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-2 bg-accent/10 hover:bg-accent/20 lg:bg-transparent rounded-lg cursor-pointer"
+                                            title="Edit / move position"
+                                            onclick="openEditPositionModal(<?= $pos['id'] ?>, <?= esc(json_encode($pos['title'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), 'attr') ?>, <?= (int) $pos['is_teaching'] ?>, <?= $pos['parent_id'] ? (int) $pos['parent_id'] : 'null' ?>, <?= (int) $pos['is_general_root'] ?>)">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                                         </button>
-                                    <?= form_close() ?>
+                                        <?php if (!$pos['is_general_root']): ?>
+                                        <?= form_open('account/position/delete', ['data-ajax' => 'delete-position', 'data-confirm' => 'Delete this position? Only a position nobody holds or held can be deleted.', 'data-confirm-title' => 'Delete Position']) ?>
+                                            <input type="hidden" name="id" value="<?= $pos['id'] ?>">
+                                            <button type="submit" class="text-danger-400 hover:text-danger-600 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-2 -mr-2 bg-danger-50 hover:bg-danger-100 dark:bg-danger-500/10 dark:hover:bg-danger-500/20 lg:bg-transparent rounded-lg cursor-pointer" title="Delete position">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                            </button>
+                                        <?= form_close() ?>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                             </div>
                         </li>
@@ -161,8 +184,14 @@
                                         <?php endif; ?>
                                         <div class="flex flex-col">
                                             <span class="text-sm font-bold text-text"><?= esc($unit['name']) ?></span>
-                                            <?php if (!$unit['parent_id']): ?>
-                                                <span class="text-[9px] font-bold text-info-500 uppercase tracking-widest mt-0.5">Top Level Node</span>
+                                            <?php $uh = $unitHeads[$unit['id']] ?? ['titles' => [], 'linked' => false, 'holders' => []]; ?>
+                                            <?php if (empty($uh['titles'])): ?>
+                                                <span class="text-[9px] font-bold text-danger-500 uppercase tracking-widest mt-0.5">No head position &middot; link one (or link a parent unit)</span>
+                                            <?php else: ?>
+                                                <span class="text-[9px] font-bold uppercase tracking-widest mt-0.5 <?= count($uh['holders']) > 1 ? 'text-warning-500' : 'text-text-muted' ?>">
+                                                    <?= !$unit['parent_id'] ? 'Top level &middot; ' : '' ?>Head: <?= esc(implode(' / ', $uh['titles'])) ?> &middot; <?= $uh['linked'] ? 'linked' : 'inherited' ?>
+                                                    &middot; <?= empty($uh['holders']) ? 'vacant' : esc(implode(', ', $uh['holders'])) ?><?= count($uh['holders']) > 1 ? ' (co-heads)' : '' ?>
+                                                </span>
                                             <?php endif; ?>
                                         </div>
                                     </div>
@@ -170,10 +199,10 @@
                                         <button type="button" 
                                             class="text-accent-ink hover:text-accent-hover opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-2 bg-accent/10 hover:bg-accent/20 lg:bg-transparent rounded-lg cursor-pointer"
                                             title="Edit / Transfer Department / Unit"
-                                            onclick="openEditUnitModal(<?= $unit['id'] ?>, '<?= esc($unit['name'], 'js') ?>', <?= $unit['parent_id'] ? (int)$unit['parent_id'] : 'null' ?>)">
+                                            onclick="openEditUnitModal(<?= $unit['id'] ?>, '<?= esc($unit['name'], 'js') ?>', <?= $unit['parent_id'] ? (int)$unit['parent_id'] : 'null' ?>, <?= !empty($unit['head_position_id']) ? (int)$unit['head_position_id'] : 'null' ?>)">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                                         </button>
-                                        <?= form_open('account/unit/delete', ['data-ajax' => 'delete-unit', 'data-confirm' => 'Delete this department / unit? Staff currently assigned to it will keep their account but lose that designation. Sub-units under it will be deleted too.', 'data-confirm-title' => 'Delete Department / Unit']) ?>
+                                        <?= form_open('account/unit/delete', ['data-ajax' => 'delete-unit', 'data-confirm' => 'Delete this department / unit? Only a unit nobody is or was assigned to, with no sub-units, can be deleted.', 'data-confirm-title' => 'Delete Department / Unit']) ?>
                                             <input type="hidden" name="id" value="<?= $unit['id'] ?>">
                                             <button type="submit" class="text-danger-400 hover:text-danger-600 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-2 -mr-2 bg-danger-50 hover:bg-danger-100 dark:bg-danger-500/10 dark:hover:bg-danger-500/20 lg:bg-transparent rounded-lg cursor-pointer" title="Delete Department / Unit">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -266,4 +295,90 @@
             </div>
         </div>
     </div>
+
+    <!-- DOC TYPE RULES SUB-TAB (2026-11-07): which doc types each role and each employment status allows -->
+    <div id="system-panel-doc_rules" class="system-panel hidden flex-col flex-1 lg:min-h-0 relative">
+        <div class="overflow-y-auto custom-scrollbar flex-1 p-4 lg:p-6">
+            <?= form_open('account/doc-rules/update', ['id' => 'form-doc-rules', 'data-ajax' => 'save-doc-rules', 'class' => 'flex flex-col gap-6 max-w-4xl']) ?>
+                <p class="text-xs text-text-muted font-medium">A person may use the doc types allowed by <strong class="text-text">both</strong> their role and their employment status. When exactly one is allowed it is set automatically; when several are, the person picks. Changing a rule never changes anyone's current doc type: people it no longer fits are flagged in the User Directory for you to fix.</p>
+
+                <?php foreach ([['Roles', 'role', $docRules['roles'], 'name'], ['Employment statuses', 'status', $docRules['statuses'], 'name']] as [$heading, $kind, $rows, $label]): ?>
+                <div class="rounded-xl border border-surface-border overflow-hidden">
+                    <div class="px-4 py-3 bg-zinc-50 dark:bg-zinc-800/30 border-b border-surface-border text-[10px] font-black uppercase tracking-widest text-text-muted"><?= $heading ?></div>
+                    <div class="divide-y divide-surface-border">
+                        <?php foreach ($rows as $r): ?>
+                            <?php $noLimit = $r['allowed'] === null; ?>
+                            <div class="js-rule-row px-4 py-3 flex flex-col lg:flex-row lg:items-center gap-3" data-kind="<?= $kind ?>" data-name="<?= esc($r[$label]) ?>">
+                                <input type="hidden" name="<?= $kind ?>_present[<?= $r['id'] ?>]" value="1">
+                                <span class="text-sm font-bold text-text w-full shrink-0" style="max-width: 12rem;"><?= esc($r[$label]) ?></span>
+                                <div class="flex flex-wrap items-center gap-4">
+                                    <label class="flex items-center gap-2 cursor-pointer text-xs text-text-muted font-bold">
+                                        <input type="checkbox" class="js-rule-nolimit checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer" name="<?= $kind ?>_nolimit[<?= $r['id'] ?>]" value="1" <?= $noLimit ? 'checked' : '' ?>>
+                                        No limit
+                                    </label>
+                                    <?php foreach ($docTypes as $t): ?>
+                                        <label class="flex items-center gap-2 cursor-pointer text-xs text-text font-bold">
+                                            <input type="checkbox" class="js-rule-type checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer" name="<?= $kind ?>_types[<?= $r['id'] ?>][]" value="<?= $t ?>" <?= (!$noLimit && in_array($t, $r['allowed'], true)) ? 'checked' : '' ?> <?= $noLimit ? 'disabled' : '' ?>>
+                                            <?= $t ?>
+                                        </label>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+
+                <div class="rounded-xl border border-surface-border overflow-hidden">
+                    <div class="px-4 py-3 bg-zinc-50 dark:bg-zinc-800/30 border-b border-surface-border text-[10px] font-black uppercase tracking-widest text-text-muted">Preview: every role and status combination</div>
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="text-[10px] font-black uppercase tracking-widest text-text-muted border-b border-surface-border">
+                                <tr><th class="px-4 py-2.5">Role</th><th class="px-4 py-2.5">Employment status</th><th class="px-4 py-2.5">Allowed doc types</th><th class="px-4 py-2.5">People</th><th class="px-4 py-2.5">Would be flagged</th></tr>
+                            </thead>
+                            <tbody id="doc-rules-preview" class="divide-y divide-surface-border text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <button type="submit" class="w-full lg:w-auto bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold py-3 px-8 rounded-xl shadow-lg shadow-accent/20 transition-all cursor-pointer">Save Rules</button>
+                </div>
+            <?= form_close() ?>
+        </div>
+    </div>
+    <script>
+    (function () {
+        const DOC_TYPES = <?= json_encode($docTypes) ?>;
+        const PREVIEW = <?= json_encode($docRules['preview'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+        const form = document.getElementById('form-doc-rules');
+        if (!form) return;
+        const allowedOf = (kind, name) => {
+            const row = Array.from(form.querySelectorAll('.js-rule-row')).find(r => r.dataset.kind === kind && r.dataset.name.toLowerCase() === String(name).toLowerCase());
+            if (!row || row.querySelector('.js-rule-nolimit').checked) return null;
+            return Array.from(row.querySelectorAll('.js-rule-type:checked')).map(c => c.value);
+        };
+        const esc = v => { const d = document.createElement('div'); d.textContent = v; return d.innerHTML; };
+        function render() {
+            const body = document.getElementById('doc-rules-preview');
+            body.innerHTML = PREVIEW.map(p => {
+                const r = allowedOf('role', p.role), st = allowedOf('status', p.status);
+                const allowed = DOC_TYPES.filter(t => (r === null || r.includes(t)) && (st === null || st.includes(t)));
+                const flagged = Object.entries(p.by_type || {}).reduce((n, [t, c]) => n + (allowed.includes(t) ? 0 : c), 0);
+                const empty = allowed.length === 0;
+                return `<tr><td class="px-4 py-2.5 font-bold text-text">${esc(p.role)}</td><td class="px-4 py-2.5 text-text">${esc(p.status)}</td>`
+                     + `<td class="px-4 py-2.5 font-bold ${empty ? 'text-danger-500' : 'text-text'}">${empty ? 'Nothing allowed' : allowed.join(', ') + (allowed.length === 1 ? ' (set automatically)' : ' (person picks)')}</td>`
+                     + `<td class="px-4 py-2.5 text-text-muted">${p.people}</td>`
+                     + `<td class="px-4 py-2.5 font-bold ${flagged ? 'text-warning-500' : 'text-text-muted'}">${flagged}</td></tr>`;
+            }).join('');
+        }
+        form.addEventListener('change', e => {
+            if (e.target.classList.contains('js-rule-nolimit')) {
+                e.target.closest('.js-rule-row').querySelectorAll('.js-rule-type').forEach(c => { c.disabled = e.target.checked; });
+            }
+            render();
+        });
+        render();
+    })();
+    </script>
 </div>

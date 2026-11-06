@@ -40,6 +40,22 @@
                 </div>
 
                 <script>
+                    // While a cycle is open, ask before a change that moves people in My Staff / the dashboards.
+                    (function () {
+                        const form = document.getElementById('form-edit-unit');
+                        if (!form || <?= !empty($hasOpenCycle) ? 'false' : 'true' ?>) return;
+                        form.addEventListener('submit', function () {
+                            const parentNow = document.getElementById('edit-hidden-parent-id').value || '';
+                            const headNow = (document.getElementById('edit-unit-head') || {}).value || '';
+                            if (parentNow !== (form.dataset.origParent || '') || headNow !== (form.dataset.origHead || '')) {
+                                form.dataset.confirm = 'A rating cycle is open. This change moves people in My Staff reach and on the dashboards right away (existing routings stay as they are). Continue?';
+                                form.dataset.confirmTitle = 'Change during an open cycle';
+                                form.dataset.confirmText = 'Save Changes';
+                            } else {
+                                delete form.dataset.confirm;
+                            }
+                        });
+                    })();
                     (function() {
                         const searchInput = document.getElementById('edit-parent-search-input');
                         const optionsList = document.getElementById('edit-parent-options-list');
@@ -109,9 +125,14 @@
                         });
                     })();
 
-                    window.openEditUnitModal = function(id, name, parentId) {
+                    window.openEditUnitModal = function(id, name, parentId, headPositionId) {
                         const modal = document.getElementById('modal-edit-unit');
                         if (!modal) return;
+                        const form = document.getElementById('form-edit-unit');
+                        const headSel = document.getElementById('edit-unit-head');
+                        if (headSel) headSel.value = headPositionId ? String(headPositionId) : '';
+                        form.dataset.origParent = parentId ? String(parentId) : '';
+                        form.dataset.origHead = headPositionId ? String(headPositionId) : '';
 
                         document.getElementById('edit-unit-id').value = id;
                         document.getElementById('edit-unit-name').value = name;
@@ -145,6 +166,21 @@
                         modal.classList.add('flex');
                     };
                 </script>
+            </div>
+
+            <div class="mt-4">
+                <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Head position</label>
+                <select name="head_position_id" id="edit-unit-head" class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold cursor-pointer">
+                    <option value="">Inherit from the parent unit (one level down)</option>
+                    <?php foreach (($positionTree ?? []) as $p): ?>
+                        <?php if ($p['is_general']) continue; ?>
+                        <option value="<?= $p['id'] ?>"><?= str_repeat('&nbsp;&nbsp;&nbsp;', $p['level']) . esc($p['title']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <p class="text-[10px] text-text-muted font-medium mt-2">Link a position only where this unit differs from its parent's line (e.g. an office headed by a Unit Head). Its own link overrides what it would inherit; sub-units follow it.</p>
+                <?php if (!empty($hasOpenCycle)): ?>
+                    <p class="text-[10px] font-bold text-warning-500 mt-2">A rating cycle is open. Moving this unit or changing its head position changes My Staff reach and dashboards right away; you will be asked to confirm.</p>
+                <?php endif; ?>
             </div>
 
             <div class="mt-8 flex flex-col-reverse sm:flex-row gap-3">

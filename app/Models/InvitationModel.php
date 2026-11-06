@@ -17,6 +17,7 @@ class InvitationModel extends Model
         'token',
         'status',
         'role_id',
+        'unit_id',
         'expires_at',
         'created_at',
     ];

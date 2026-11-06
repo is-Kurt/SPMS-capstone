@@ -15,6 +15,7 @@ class UnitModel extends Model
     protected $allowedFields    = [
         'name',
         'parent_id',
+        'head_position_id',
     ];
 
     protected bool $allowEmptyInserts = false;

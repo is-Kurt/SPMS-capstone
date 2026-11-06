@@ -10,6 +10,11 @@
                     <input type="text" name="title" required placeholder="e.g. Guidance Counselor" class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none text-text transition-all" />
                 </div>
                 <div>
+                    <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Under (parent position)</label>
+                    <?= view('components/_position_parent_select', ['positionTree' => $positionTree ?? [], 'name' => 'parent_id', 'id' => 'create-position-parent']) ?>
+                    <p class="text-[10px] text-text-muted font-medium mt-2">A position with positions under it is a head position. Put positions anyone can hold under General.</p>
+                </div>
+                <div>
                     <label class="flex items-center gap-2 cursor-pointer text-xs text-text-muted font-bold p-1 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors w-max">
                         <input type="checkbox" name="is_teaching" value="1" class="checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer">
                         Is Teaching Staff?

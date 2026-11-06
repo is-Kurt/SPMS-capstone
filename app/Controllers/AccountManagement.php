@@ -12,6 +12,9 @@ use App\Models\UnitModel;
 use App\Models\EmploymentStatusModel;
 use App\Models\InvitationModel;
 use App\Models\DefaultFunctionWeightModel;
+use App\Models\DocumentFolderModel;
+use App\Libraries\OrgStructure;
+use App\Enums\DocType;
 
 /**
  * Admin-only "Accounts" section: the user directory, email invitations, and the
@@ -33,6 +36,7 @@ class AccountManagement extends BaseController
             if ($u['department']) $u['department'] = str_replace(',', ', ', $u['department']);
             if ($u['role_name'])  $u['role_name']  = str_replace(',', ', ', $u['role_name']);
         }
+        unset($u);   // $u stays a reference to the last user otherwise
 
         $roleModel             = new RoleModel();
         $positionModel         = new PositionModel();
@@ -52,7 +56,26 @@ class AccountManagement extends BaseController
         $twgUnitCoverageMeta   = $twgAssignmentModel->getUnitCoverageMetadata();
         $defaultWeights        = $defaultWeightModel->getAllWeightsKeyed();
 
+        // Organisation structure (2026-11-07): position tree, each unit's head, doc-type rules and their preview.
+        OrgStructure::reset();
+        $org = OrgStructure::instance();
+        $unitHeads = [];
+        foreach ($org->units() as $unitRow) {
+            $unitHeads[$unitRow['id']] = [
+                'titles'  => array_map(fn($id) => $org->position($id)['title'] ?? '', $org->headPositionIds($unitRow['id'])),
+                'linked'  => $unitRow['head_position_id'] !== null,
+                'link_id' => $unitRow['head_position_id'],
+                'holders' => array_map(fn($h) => trim($h['first_name'] . ' ' . $h['last_name']), $org->headsOf($unitRow['id'])),
+            ];
+        }
+        $hasOpenCycle = (new DocumentFolderModel())->where('parent_folder_id IS NULL')->where('deleted_at IS NULL')->countAllResults() > 0;
+
         return view('accounts/index', [
+            'positionTree'          => $this->flattenPositionTree($org),
+            'unitHeads'             => $unitHeads,
+            'hasOpenCycle'          => $hasOpenCycle,
+            'docRules'              => $this->docRulesData($org, $roleModel, $employmentStatusModel),
+            'docTypes'              => DocType::values(),
             'users'                 => $users,
             'roles'                 => $roles,
             'positions'             => $positions,
@@ -367,40 +390,108 @@ class AccountManagement extends BaseController
     // Roles have no CRUD endpoints here at all - role names are hardcoded into access-control
     // checks throughout the app (nav visibility, route filters), so they're managed in the backend only.
 
-    /** POST /account/position/add */
+    /** Parent position from a form field: null for top level; an error message when it is not usable. */
+    private function parentPositionFrom($raw, ?int $selfId = null): array
+    {
+        $parentId = ($raw !== null && $raw !== '' && $raw !== '0') ? (int) $raw : null;
+        if ($parentId === null) return [null, null];
+        $org = OrgStructure::instance();
+        if (!$org->position($parentId)) return [null, 'The parent position was not found.'];
+        if ($selfId !== null && $org->wouldLoop($selfId, $parentId)) {
+            return [null, 'A position cannot be placed under itself or under one of its own sub-positions.'];
+        }
+        return [$parentId, null];
+    }
+
+    /** POST /account/position/add - `parent_id` places the position in the tree (a position with children is a head position). */
     public function addPosition() {
         $title = trim($this->request->getPost('title') ?? '');
         $isTeaching = $this->request->getPost('is_teaching') ? 1 : 0;
 
-        if (empty($title)) return $this->respondError('Position title is required.');
+        if (empty($title)) return $this->respondError('Position title is required.', 422);
+        [$parentId, $err] = $this->parentPositionFrom($this->request->getPost('parent_id'));
+        if ($err) return $this->respondError($err, 422);
 
         $positionModel = new PositionModel();
         $existing = $positionModel->where('LOWER(title)', strtolower($title))->first();
         if ($existing) {
-            return $this->respondError("A position with the title '{$title}' already exists.");
+            return $this->respondError("A position with the title '{$title}' already exists.", 422);
         }
 
         $id = $positionModel->insert([
-            'title' => $title,
+            'title'       => $title,
             'is_teaching' => $isTeaching,
-            'created_at' => date('Y-m-d H:i:s')
+            'parent_id'   => $parentId,
+            'created_at'  => date('Y-m-d H:i:s')
         ]);
-        return $this->respond(['status' => 'success', 'item' => ['id' => $id, 'title' => $title, 'is_teaching' => $isTeaching]]);
+        OrgStructure::reset();
+        $parentTitle = $parentId ? (OrgStructure::instance()->position($parentId)['title'] ?? '') : null;
+        audit_log('POSITION_CREATED', 'ACCOUNT', 'position', (int) $id, "Created position: {$title}" . ($parentTitle ? " (under {$parentTitle})" : ' (top level)'));
+        return $this->respond(['status' => 'success', 'item' => ['id' => $id, 'title' => $title, 'is_teaching' => $isTeaching, 'parent_id' => $parentId]]);
+    }
+
+    /** POST /account/position/update - Renames a position, sets teaching, or moves it in the tree. */
+    public function updatePosition() {
+        $id = (int) $this->request->getPost('id');
+        $title = trim($this->request->getPost('title') ?? '');
+        $isTeaching = $this->request->getPost('is_teaching') ? 1 : 0;
+
+        $positionModel = new PositionModel();
+        $pos = $positionModel->find($id);
+        if (!$pos) return $this->respondError('Position not found.', 422);
+        if (empty($title)) return $this->respondError('Position title is required.', 422);
+        if ($positionModel->where('LOWER(title)', strtolower($title))->where('id !=', $id)->first()) {
+            return $this->respondError("A position with the title '{$title}' already exists.", 422);
+        }
+
+        $isGeneralRoot = (int) ($pos['is_general_root'] ?? 0) === 1;
+        [$parentId, $err] = $isGeneralRoot ? [null, null] : $this->parentPositionFrom($this->request->getPost('parent_id'), $id);
+        if ($err) return $this->respondError($err, 422);
+
+        // A position that heads a unit (linked) cannot move under General: General positions never head anything.
+        $org = OrgStructure::instance();
+        if ($parentId !== null && $org->isGeneral($parentId)
+            && \Config\Database::connect()->table('units')->where('head_position_id', $id)->countAllResults() > 0) {
+            return $this->respondError('This position heads a department / unit, so it cannot be a General position. Change that unit\'s head position first.', 422);
+        }
+
+        $oldParent = $pos['parent_id'] ? ($org->position((int) $pos['parent_id'])['title'] ?? '') : 'top level';
+        $positionModel->update($id, ['title' => $title, 'is_teaching' => $isTeaching, 'parent_id' => $parentId,
+                                     'updated_at' => date('Y-m-d H:i:s')]);
+        OrgStructure::reset();
+        $newParent = $parentId ? (OrgStructure::instance()->position($parentId)['title'] ?? '') : 'top level';
+        audit_log('POSITION_UPDATED', 'ACCOUNT', 'position', $id, "Updated position {$title}" . ($oldParent !== $newParent ? " (moved from {$oldParent} to {$newParent})" : ''));
+        return $this->respond(['status' => 'success']);
     }
 
     /**
-     * POST /account/position/delete - Deleting an in-use position doesn't fail: the
-     * plantillas.position_id FK is ON DELETE SET NULL, so any affected users keep
-     * their plantilla row (and stay visible everywhere) but with no position.
+     * POST /account/position/delete - Only an unused position can be deleted. plantillas.position_id is
+     * ON DELETE CASCADE, so deleting a position that anyone holds (or held) would silently delete those
+     * assignments and their history; rename or move it instead.
      */
     public function deletePosition() {
-        try {
-            $positionModel = new PositionModel();
-            $positionModel->delete($this->request->getPost('id'));
-            return $this->respond(['status' => 'success']);
-        } catch (\Exception $e) {
-            return $this->respondError('Could not delete this position.');
+        $id = (int) $this->request->getPost('id');
+        $positionModel = new PositionModel();
+        $pos = $positionModel->find($id);
+        if (!$pos) return $this->respondError('Position not found.', 422);
+        $db = \Config\Database::connect();
+        if ((int) ($pos['is_general_root'] ?? 0) === 1) {
+            return $this->respondError('The General group cannot be deleted.', 422);
         }
+        if ($positionModel->where('parent_id', $id)->countAllResults() > 0) {
+            return $this->respondError('This position has positions under it. Move or delete those first.', 422);
+        }
+        $used = $db->table('plantillas')->where('position_id', $id)->countAllResults();
+        if ($used > 0) {
+            return $this->respondError("This position is used by {$used} assignment(s), including past ones kept as history. Rename or move it instead of deleting it.", 422);
+        }
+        if ($db->table('units')->where('head_position_id', $id)->countAllResults() > 0) {
+            return $this->respondError('A department / unit uses this as its head position. Change that unit first.', 422);
+        }
+        $positionModel->delete($id);
+        OrgStructure::reset();
+        audit_log('POSITION_DELETED', 'ACCOUNT', 'position', $id, "Deleted position: {$pos['title']}");
+        return $this->respond(['status' => 'success']);
     }
 
     /** POST /account/unit/add - `parent_id` lets units nest (e.g. a college under a campus). */
@@ -408,19 +499,23 @@ class AccountManagement extends BaseController
         $name = trim($this->request->getPost('name') ?? '');
         $parentId = $this->request->getPost('parent_id') ?: null;
 
-        if (empty($name)) return $this->respondError('Department / unit name is required.');
+        if (empty($name)) return $this->respondError('Department / unit name is required.', 422);
+        [$headPositionId, $err] = $this->headPositionFrom($this->request->getPost('head_position_id'));
+        if ($err) return $this->respondError($err, 422);
 
         $unitModel = new UnitModel();
         $existing = $unitModel->where('LOWER(name)', strtolower($name))->first();
         if ($existing) {
-            return $this->respondError("A department / unit named '{$name}' already exists.");
+            return $this->respondError("A department / unit named '{$name}' already exists.", 422);
         }
 
         $id = $unitModel->insert([
             'name' => $name,
             'parent_id' => $parentId,
+            'head_position_id' => $headPositionId,
             'created_at' => date('Y-m-d H:i:s')
         ]);
+        OrgStructure::reset();
 
         $parentName = null;
         if ($parentId) {
@@ -443,30 +538,32 @@ class AccountManagement extends BaseController
         $name = trim($this->request->getPost('name') ?? '');
         $parentId = $this->request->getPost('parent_id');
         $parentId = ($parentId !== '' && $parentId !== null && $parentId !== '0') ? (int) $parentId : null;
+        [$headPositionId, $err] = $this->headPositionFrom($this->request->getPost('head_position_id'));
+        if ($err) return $this->respondError($err, 422);
 
-        if (!$unitId) return $this->respondError('Invalid department / unit ID.');
-        if (empty($name)) return $this->respondError('Department / unit name is required.');
+        if (!$unitId) return $this->respondError('Invalid department / unit ID.', 422);
+        if (empty($name)) return $this->respondError('Department / unit name is required.', 422);
 
         $unitModel = new UnitModel();
         $unit = $unitModel->find($unitId);
-        if (!$unit) return $this->respondError('Department / unit not found.');
+        if (!$unit) return $this->respondError('Department / unit not found.', 422);
 
         // Prevent duplicate unit names
         $existing = $unitModel->where('LOWER(name)', strtolower($name))->where('id !=', $unitId)->first();
         if ($existing) {
-            return $this->respondError("A department / unit named '{$name}' already exists.");
+            return $this->respondError("A department / unit named '{$name}' already exists.", 422);
         }
 
         // Prevent self-parenting
         if ($parentId && $parentId === $unitId) {
-            return $this->respondError('A department / unit cannot be its own parent.');
+            return $this->respondError('A department / unit cannot be its own parent.', 422);
         }
 
         // Prevent circular parenting (cannot set parent to one of its own descendants)
         if ($parentId) {
             $descendants = $unitModel->getDescendantIds([$unitId]);
             if (in_array($parentId, $descendants, true)) {
-                return $this->respondError('Cannot set parent to a descendant department / unit.');
+                return $this->respondError('Cannot set parent to a descendant department / unit.', 422);
             }
         }
 
@@ -475,14 +572,21 @@ class AccountManagement extends BaseController
         $newParentName = $parentId ? ($unitModel->find($parentId)['name'] ?? "Unit #{$parentId}") : 'Top Level Node';
 
         $unitModel->update($unitId, [
-            'name'      => $name,
-            'parent_id' => $parentId,
-            'updated_at'=> date('Y-m-d H:i:s')
+            'name'             => $name,
+            'parent_id'        => $parentId,
+            'head_position_id' => $headPositionId,
+            'updated_at'       => date('Y-m-d H:i:s')
         ]);
+        OrgStructure::reset();
 
         $logMsg = "Updated unit #{$unitId} ({$name})";
         if ($oldParentId !== $parentId) {
             $logMsg = "Transferred unit {$name} from {$oldParentName} to {$newParentName}";
+        }
+        $oldLink = !empty($unit['head_position_id']) ? (int) $unit['head_position_id'] : null;
+        if ($oldLink !== $headPositionId) {
+            $org = OrgStructure::instance();
+            $logMsg .= '; head position ' . ($headPositionId ? 'linked to ' . ($org->position($headPositionId)['title'] ?? '') : 'now inherited from the parent unit');
         }
         audit_log('UNIT_UPDATED', 'ACCOUNT', 'unit', $unitId, $logMsg);
 
@@ -497,12 +601,21 @@ class AccountManagement extends BaseController
         ]);
     }
 
+    /** Head position for a unit from a form field: null = inherit from the parent unit. */
+    private function headPositionFrom($raw): array
+    {
+        $id = ($raw !== null && $raw !== '' && $raw !== '0') ? (int) $raw : null;
+        if ($id === null) return [null, null];
+        $org = OrgStructure::instance();
+        if (!$org->position($id)) return [null, 'The head position was not found.'];
+        if ($org->isGeneral($id)) return [null, 'A General position cannot head a department / unit.'];
+        return [$id, null];
+    }
+
     /**
-     * POST /account/unit/delete - Deleting an in-use unit doesn't fail: the
-     * plantillas.unit_id FK is ON DELETE SET NULL, so any affected users keep
-     * their plantilla row (and stay visible everywhere) but with no unit.
-     * Note: units.parent_id is ON DELETE CASCADE, so deleting a unit that has
-     * sub-units still deletes that whole sub-tree - that part is unchanged.
+     * POST /account/unit/delete - Only an unused unit can be deleted. plantillas.unit_id is ON DELETE
+     * CASCADE, so deleting a unit anyone is (or was) assigned to would silently delete those assignments
+     * and their history; sub-units must be moved or deleted first.
      */
     public function deleteUnit() {
         try {
@@ -510,14 +623,26 @@ class AccountManagement extends BaseController
             $unitId = $this->request->getPost('id');
             $unit = $unitModel->find($unitId);
             $unitName = $unit['name'] ?? "ID #{$unitId}";
-            
+            $db = \Config\Database::connect();
+            if ($unitModel->where('parent_id', $unitId)->countAllResults() > 0) {
+                return $this->respondError('This department / unit has sub-units. Move or delete them first.', 422);
+            }
+            $used = $db->table('plantillas')->where('unit_id', $unitId)->countAllResults();
+            if ($used > 0) {
+                return $this->respondError("{$used} assignment(s) use this department / unit, including past ones kept as history. Rename it instead of deleting it.", 422);
+            }
+            if ($db->table('invitations')->where('unit_id', $unitId)->where('status', \App\Enums\InvitationStatus::PENDING->value)->countAllResults() > 0) {
+                return $this->respondError('A pending invitation is for this department / unit. Cancel it first.', 422);
+            }
+
             $unitModel->delete($unitId);
+            OrgStructure::reset();
 
             audit_log('UNIT_DELETED', 'ACCOUNT', 'unit', (int) $unitId, "Deleted department / unit: {$unitName}");
 
             return $this->respond(['status' => 'success']);
         } catch (\Exception $e) {
-            return $this->respondError('Could not delete this department / unit.');
+            return $this->respondError('Could not delete this department / unit.', 422);
         }
     }
 
@@ -559,6 +684,102 @@ class AccountManagement extends BaseController
         } catch (\Exception $e) {
             return $this->respondError('Could not delete this employment status.');
         }
+    }
+
+    /**
+     * POST /account/doc-rules/update - Which doc types each role and each employment status allows.
+     * A person may use the doc types allowed by both. "No limit" stores NULL. Nobody's current doc type is
+     * changed here: people the new rules don't fit are flagged in the User Directory for the admin to fix.
+     */
+    public function updateDocRules() {
+        return $this->tryOrFail(function() {
+            $db = \Config\Database::connect();
+            $read = function (string $kind, $id) {
+                if ($this->request->getPost("{$kind}_nolimit")[$id] ?? null) return null;
+                $types = (array) ($this->request->getPost("{$kind}_types")[$id] ?? []);
+                return DocType::toCsv($types);
+            };
+            $changes = [];
+            foreach ($db->table('roles')->get()->getResultArray() as $r) {
+                if (!array_key_exists($r['id'], (array) $this->request->getPost('role_present'))) continue;
+                $csv = $read('role', $r['id']);
+                if ($csv !== $r['allowed_doc_types']) {
+                    $db->table('roles')->where('id', $r['id'])->update(['allowed_doc_types' => $csv]);
+                    $changes[] = "{$r['name']}: " . ($csv === null ? 'no limit' : ($csv === '' ? 'nothing' : $csv));
+                }
+            }
+            foreach ($db->table('employment_statuses')->get()->getResultArray() as $st) {
+                if (!array_key_exists($st['id'], (array) $this->request->getPost('status_present'))) continue;
+                $csv = $read('status', $st['id']);
+                if ($csv !== $st['allowed_doc_types']) {
+                    $db->table('employment_statuses')->where('id', $st['id'])->update(['allowed_doc_types' => $csv]);
+                    $changes[] = "{$st['name']}: " . ($csv === null ? 'no limit' : ($csv === '' ? 'nothing' : $csv));
+                }
+            }
+            OrgStructure::reset();
+            if ($changes) {
+                audit_log('DOC_TYPE_RULES_UPDATED', 'ACCOUNT', 'system', 0, 'Doc-type rules changed: ' . implode('; ', $changes));
+            }
+            return $this->respond(['status' => 'success', 'message' => $changes ? 'Doc-type rules saved.' : 'No changes.']);
+        });
+    }
+
+    /** Positions in tree order (parents before children, alphabetical), General last, with level and kind. */
+    private function flattenPositionTree(OrgStructure $org): array
+    {
+        $all = $org->positions();
+        $children = [];
+        foreach ($all as $p) {
+            $children[$p['parent_id'] !== null && isset($all[$p['parent_id']]) ? $p['parent_id'] : 0][] = $p;
+        }
+        foreach ($children as &$list) {
+            usort($list, fn($a, $b) => [$a['is_general_root'], strcasecmp($a['title'], $b['title'])] <=> [$b['is_general_root'], 0]);
+        }
+        unset($list);
+        $out = [];
+        $walk = function ($parent, $level) use (&$walk, &$out, $children, $org) {
+            foreach ($children[$parent] ?? [] as $p) {
+                $p['level'] = $level;
+                $p['is_head'] = $org->isHeadPosition($p['id']);
+                $p['is_general'] = $org->isGeneral($p['id']);
+                $p['has_children'] = !empty($children[$p['id']]);
+                $out[] = $p;
+                $walk($p['id'], $level + 1);
+            }
+        };
+        $walk(0, 0);
+        return $out;
+    }
+
+    /** Rules per role / status and the preview of every role x status combination (with how many people it affects). */
+    private function docRulesData(OrgStructure $org, RoleModel $roleModel, EmploymentStatusModel $statusModel): array
+    {
+        $db = \Config\Database::connect();
+        $roles = array_values(array_filter($roleModel->orderBy('name', 'ASC')->findAll(), fn($r) => in_array($r['name'], ['Employee', 'Supervisor', 'Admin'], true)));
+        $statuses = $statusModel->orderBy('name', 'ASC')->findAll();
+        foreach ($roles as &$r) $r['allowed'] = DocType::fromCsv($r['allowed_doc_types']);
+        foreach ($statuses as &$st) $st['allowed'] = DocType::fromCsv($st['allowed_doc_types']);
+        unset($r, $st);
+
+        $people = $db->table('users u')->select('u.id, u.doc_type, u.employment_status, r.name as role')
+            ->join('user_roles ur', 'ur.user_id = u.id', 'left')->join('roles r', 'r.id = ur.role_id', 'left')
+            ->where('u.is_active', 1)->get()->getResultArray();
+        $preview = [];
+        foreach (['Employee', 'Supervisor'] as $role) {
+            foreach ($statuses as $st) {
+                $allowed = $org->allowedDocTypes($role, $st['name']);
+                $inCombo = array_filter($people, fn($p) => $p['role'] === $role && strcasecmp((string) $p['employment_status'], $st['name']) === 0);
+                $misfits = array_filter($inCombo, fn($p) => !in_array(strtoupper((string) $p['doc_type']), $allowed, true));
+                $byType = [];
+                foreach ($inCombo as $p) {
+                    $t = strtoupper((string) $p['doc_type']) ?: 'NONE';
+                    $byType[$t] = ($byType[$t] ?? 0) + 1;
+                }
+                $preview[] = ['role' => $role, 'status' => $st['name'], 'allowed' => $allowed,
+                              'people' => count($inCombo), 'misfits' => count($misfits), 'by_type' => $byType];
+            }
+        }
+        return ['roles' => $roles, 'statuses' => $statuses, 'preview' => $preview];
     }
 
     /**
