@@ -2385,60 +2385,76 @@
     // ==========================================
     // ROW-SYNCHRONIZED AUTO-EXPANSION (Uniform Height across all Columns)
     // ==========================================
-    function autoExpandRow(tr) {
-        if (!tr || tr.nodeType !== Node.ELEMENT_NODE) return;
-        const minH = 68;
-        const textareas = Array.from(tr.querySelectorAll('.spms-textarea'));
-        if (textareas.length === 0) return;
+    // Row heights. All textareas of a row get the height of the tallest one. Setting a height and then reading
+    // scrollHeight forces the browser to lay out the page, so rows are handled in three passes (reset all,
+    // measure all, apply all): one layout for the whole table instead of one per row, which made loading the
+    // editor slow on phones (2026-11-06).
+    const ROW_MIN_H = 68;
+    const ROW_SYNC_SELECTORS = ['.spms-cell-accomplishments > div:not(.mov-badge-container)', '.budget-input-wrapper', '.spms-score-input', '.field-row-avg-wrapper'];
 
-        // Reset height on all textareas and column wrappers in this row so scrollHeight can accurately shrink when lines are deleted
+    function rowTextareas(tr) {
+        if (!tr || tr.nodeType !== Node.ELEMENT_NODE) return [];
+        return Array.from(tr.querySelectorAll('.spms-textarea'));
+    }
+
+    // Pass 1: back to the minimum, so scrollHeight can shrink when lines were deleted
+    function resetRowHeights(tr, textareas) {
         textareas.forEach(ta => {
             ta.style.height = 'auto';
-            ta.style.minHeight = minH + 'px';
+            ta.style.minHeight = ROW_MIN_H + 'px';
         });
         tr.querySelectorAll('.budget-input-wrapper').forEach(bw => {
             bw.style.height = 'auto';
-            bw.style.minHeight = minH + 'px';
+            bw.style.minHeight = ROW_MIN_H + 'px';
         });
+    }
 
-        let maxContentH = minH;
+    // Pass 2: read only (the first read lays out once; the next reads reuse that layout)
+    function measureRowHeight(textareas) {
+        let maxContentH = ROW_MIN_H;
         textareas.forEach(ta => {
             const sh = ta.scrollHeight;
-            if (sh > maxContentH) {
-                maxContentH = sh;
-            }
+            if (sh > maxContentH) maxContentH = sh;
         });
+        return Math.max(ROW_MIN_H, Math.ceil(maxContentH)) + 'px';
+    }
 
-        const targetHStr = Math.max(minH, Math.ceil(maxContentH)) + 'px';
-
-        // Apply uniform height to all textareas in this row
+    // Pass 3: the same height for the row's textareas, the accomplishments container (not the floating MOV
+    // badge), the budget wrapper, the score inputs and the row-average wrapper
+    function applyRowHeight(tr, textareas, targetHStr) {
         textareas.forEach(ta => {
             ta.style.height = targetHStr;
             ta.style.minHeight = targetHStr;
         });
-
-        // Accomplishments column container (exclude floating MOV badge)
-        tr.querySelectorAll('.spms-cell-accomplishments > div:not(.mov-badge-container)').forEach(div => {
-            div.style.minHeight = targetHStr;
-            div.style.height = targetHStr;
+        tr.querySelectorAll(ROW_SYNC_SELECTORS.join(', ')).forEach(el => {
+            el.style.minHeight = targetHStr;
+            el.style.height = targetHStr;
         });
+    }
 
-        // Budget column wrapper
-        tr.querySelectorAll('.budget-input-wrapper').forEach(bw => {
-            bw.style.minHeight = targetHStr;
-            bw.style.height = targetHStr;
-        });
+    function autoExpandRows(rows) {
+        const list = rows.map(tr => [tr, rowTextareas(tr)]).filter(([, tas]) => tas.length > 0);
+        list.forEach(([tr, tas]) => resetRowHeights(tr, tas));
+        const heights = list.map(([, tas]) => measureRowHeight(tas));
+        list.forEach(([tr, tas], i) => applyRowHeight(tr, tas, heights[i]));
+    }
 
-        // Score inputs & score cells
-        tr.querySelectorAll('.spms-score-input').forEach(si => {
-            si.style.minHeight = targetHStr;
-            si.style.height = targetHStr;
-        });
+    // One row, right away (typing, pasting, cutting)
+    function autoExpandRow(tr) {
+        autoExpandRows([tr]);
+    }
 
-        // Row average wrapper
-        tr.querySelectorAll('.field-row-avg-wrapper').forEach(rw => {
-            rw.style.minHeight = targetHStr;
-            rw.style.height = targetHStr;
+    // Rows added in one go (loading a document, adding cascaded targets) are resized together in the next frame
+    const pendingExpandRows = new Set();
+    let pendingExpandFrame = 0;
+    function scheduleRowExpand(tr) {
+        pendingExpandRows.add(tr);
+        if (pendingExpandFrame) return;
+        pendingExpandFrame = requestAnimationFrame(() => {
+            pendingExpandFrame = 0;
+            const rows = Array.from(pendingExpandRows).filter(r => r.isConnected);
+            pendingExpandRows.clear();
+            autoExpandRows(rows);
         });
     }
 
@@ -2449,12 +2465,18 @@
     }
 
     function autoExpandAllRowTextareas() {
+        // A full pass covers any rows still queued for the next frame: drop that second layout
+        pendingExpandRows.clear();
+        if (pendingExpandFrame) {
+            cancelAnimationFrame(pendingExpandFrame);
+            pendingExpandFrame = 0;
+        }
         const rows = new Set();
         document.querySelectorAll('.spms-table .spms-textarea').forEach(ta => {
             const tr = ta.closest('tr');
             if (tr) rows.add(tr);
         });
-        rows.forEach(tr => autoExpandRow(tr, true));
+        autoExpandRows(Array.from(rows));
     }
 
     function autoResizePreambleInput(el) {
@@ -2498,9 +2520,15 @@
         autoResizeAllPreambleInputs();
     }
 
+    // At most once per frame while the window is being resized
+    let resizeFrame = 0;
     window.addEventListener('resize', () => {
-        autoExpandAllRowTextareas();
-        autoResizeAllPreambleInputs();
+        if (resizeFrame) return;
+        resizeFrame = requestAnimationFrame(() => {
+            resizeFrame = 0;
+            autoExpandAllRowTextareas();
+            autoResizeAllPreambleInputs();
+        });
     });
 
     function addTableRow(category, rowData = null, referenceRow = null, insertPosition = 'append') {
@@ -2765,7 +2793,7 @@
         }
 
         // Track changes for autoSave and bind row-synchronized auto-expanding
-        autoExpandRow(tr);
+        scheduleRowExpand(tr);
         tr.querySelectorAll('.spms-textarea').forEach(ta => {
             ta.addEventListener('input', function() {
                 autoExpandRow(tr);
