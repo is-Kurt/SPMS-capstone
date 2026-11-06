@@ -9,6 +9,7 @@ use App\Models\DocumentFolderModel;
 use App\Models\EvaluationRoutingModel;
 use App\Models\TemplateModel;
 use App\Models\DefaultFunctionWeightModel;
+use App\Enums\FolderStatus;
 
 /**
  * Handles individual documents (the actual IPCR/DPCR/OPCR pages inside a folder):
@@ -820,7 +821,7 @@ class Document extends BaseController
         $documentModel = new DocumentModel();
 
         $docOwnerInfo = $documentModel->db->table('document_folders df')
-            ->select('df.user_id as owner_id, df.id as folder_id, df.deleted_at as folder_deleted_at, df.parent_folder_id')
+            ->select('df.user_id as owner_id, df.id as folder_id, df.deleted_at as folder_deleted_at, df.parent_folder_id, df.status, df.tabs')
             ->where('df.id', $docId)->get()->getRowArray();
 
         if (!$docOwnerInfo) return $this->response->setJSON(['status' => 'error', 'message' => 'Document not found']);
@@ -837,19 +838,33 @@ class Document extends BaseController
             }
         }
 
-        $isAuthorized = false;
-
-        if ((string)$docOwnerInfo['owner_id'] === (string)$userId || in_array($sysRole, ['Admin', 'TWG', 'PMT'])) {
-            $isAuthorized = true; 
+        // Who may save, and when. The editor page locks the form the same way (document/show.php), but that
+        // lock is only in the browser, so the save itself must check it too (2026-11-06):
+        //  - the owner only while the form is theirs to edit: target draft, targets approved (accomplishments)
+        //    and evaluation draft. Once it is submitted, or after the final approval, it is read-only for them;
+        //  - a reviewer (routed supervisor, TWG assigned to the unit, PMT) only while the form is with the
+        //    reviewers: targets or evaluation submitted, and approved targets (approver names);
+        //  - Admin as before.
+        // Inside those windows applyEditRules() keeps the parts the saver may not change.
+        $isOwner   = (string) $docOwnerInfo['owner_id'] === (string) $userId;
+        $topStatus = FolderStatus::canonical((string) ($docOwnerInfo['status'] ?? ''));
+        if ($sysRole === 'Admin') {
+            $editMode = 'admin';
+        } elseif ($isOwner) {
+            if (!in_array($topStatus, [FolderStatus::DRAFT_TARGET, FolderStatus::TARGET_APPROVED, FolderStatus::DRAFT_EVALUATION], true)) {
+                return $this->respondError('This form has been submitted, so it can no longer be changed. Reload the page to see its current state.', 403);
+            }
+            $editMode = 'owner';
         } else {
-            $routingModel = new EvaluationRoutingModel();
-            $isEvaluator = $routingModel->where('folder_id', $docOwnerInfo['folder_id'])
-                                        ->where('evaluator_id', $userId)
-                                        ->countAllResults() > 0;
-            if ($isEvaluator) $isAuthorized = true;
+            if (!$this->isReviewerOf(['id' => $docOwnerInfo['folder_id'], 'user_id' => $docOwnerInfo['owner_id']])) {
+                return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized']);
+            }
+            if (!in_array($topStatus, [FolderStatus::TARGET_SUBMITTED, FolderStatus::TARGET_UNAPPROVED, FolderStatus::TARGET_APPROVED,
+                                       FolderStatus::EVAL_SUBMITTED, FolderStatus::EVAL_UNRATED], true)) {
+                return $this->respondError('This form is not open for review right now, so your changes were not saved. Reload the page to see its current state.', 403);
+            }
+            $editMode = 'reviewer';
         }
-
-        if (!$isAuthorized) return $this->response->setJSON(['status' => 'error', 'message' => 'Unauthorized']);
 
         $payload = [
             'id'    => $docId,
@@ -863,7 +878,8 @@ class Document extends BaseController
                 if (!$this->hasSafeIdentifiers($decoded)) {
                     return $this->respondError('The document contains invalid row identifiers. Please reload the page and try again.', 422);
                 }
-                $payload['tabs'] = $decoded;
+                $storedTabs = json_decode((string) ($docOwnerInfo['tabs'] ?? ''), true);
+                $payload['tabs'] = $this->applyEditRules($decoded, is_array($storedTabs) ? $storedTabs : [], $editMode, $topStatus, (string) $docId);
             }
         }
 
@@ -891,6 +907,139 @@ class Document extends BaseController
 
         $saved = $documentModel->db->table('document_folders')->select('tabs, title')->where('id', $docId)->get()->getRowArray();
         return $this->response->setJSON(['status' => 'success', 'fingerprint' => $saved ? self::contentFingerprint($saved) : '']);
+    }
+
+    /** Row fields that make up the targets: set by the owner while drafting targets, then fixed. */
+    private const TARGET_ROW_FIELDS = ['mfo', 'indicators', 'budget', 'accountable', 'std_1', 'std_2', 'std_3', 'std_4', 'std_5'];
+    /** Row text written by reviewers: the owner never changes it. */
+    private const REVIEWER_ROW_FIELDS = ['remarks', 'twg_comment'];
+    /** The ratee's own self-rating: reviewers never change it (their scores go in the _head / _twg fields). */
+    private const RATEE_ROW_FIELDS = ['q_self', 't_self', 'e_self'];
+    /** Evaluation-phase row fields: reviewers cannot change them while the targets are under review. */
+    private const EVAL_ROW_FIELDS = ['accomplishments', 'q', 't', 'e', 'q_head', 't_head', 'e_head', 'q_twg', 't_twg', 'e_twg',
+                                     'last_rated_by_q', 'last_rated_by_t', 'last_rated_by_e'];
+    /** Form-level parts that belong to the ratee: reviewers never change them. */
+    private const RATEE_FORM_FIELDS = ['ratee', 'rateeSign', 'doc_type'];
+    /**
+     * Settings the page fills in with defaults when they are empty (routing approver, default weights, peso
+     * sign, rubric matrix). The first save stores them, so they may be filled in while empty, but a stored
+     * value cannot be changed by someone who may not edit it.
+     */
+    private const TARGET_FORM_DEFAULTS = ['approver', 'approvers', 'weights', 'currency', 'budget_currency', 'rubrics'];
+    private const RATEE_FORM_DEFAULTS  = ['weights', 'currency', 'budget_currency', 'rubrics'];
+    private const TARGET_ROW_DEFAULTS  = ['budget_currency'];
+
+    /**
+     * Applies what the editor page locks to a save, using the stored form for every part the saver may not
+     * change. The page sends the whole form on every save with the locked parts unchanged (checked against
+     * the real editor for each role and stage), so this only matters for a save sent by hand.
+     *  - owner: the reviewers' remarks stay as stored; outside the target draft the targets are fixed (stored
+     *    rows kept with their target fields; a new row is kept only as a blank row, as the page adds one to an
+     *    empty category; approvers and other settings only filled in while empty).
+     *  - reviewer: the same fixed targets, and the ratee's self-ratings and details stay as stored; while the
+     *    targets are under review the accomplishments and ratings stay as stored too.
+     *  - admin: unchanged. The revision history is written by the server only (on a return) and stays as stored.
+     * The ratee's saves still clear the reviewers' scores as the page does (a re-rated form starts again).
+     */
+    private function applyEditRules(array $tabs, array $stored, string $mode, FolderStatus $status, string $docId): array
+    {
+        if ($mode === 'admin' || !$stored) {
+            return $tabs;                                                        // admin, or nothing stored yet to protect
+        }
+        $changed = [];
+        $isEmpty = fn($v) => $v === null || $v === '' || $v === [];
+        $norm = fn($v) => $isEmpty($v) ? '' : (is_scalar($v) ? (string) $v : json_encode($v));
+        // strict: $to gets the stored value (a field the stored row lacks becomes '' in a row, is removed from the form).
+        // fill: as strict, unless the stored value is empty, in which case $to keeps what was sent.
+        $keep = function (array &$to, array $from, array $fields, string $where, bool $isRow, bool $fill = false) use (&$changed, $norm, $isEmpty) {
+            foreach ($fields as $f) {
+                if ($fill && $isEmpty($from[$f] ?? null)) continue;
+                if ($norm($to[$f] ?? null) !== $norm($from[$f] ?? null)) {
+                    $changed[$where . $f] = true;
+                }
+                if (array_key_exists($f, $from)) {
+                    $to[$f] = $from[$f];
+                } elseif ($isRow) {
+                    if (array_key_exists($f, $to)) $to[$f] = '';
+                } else {
+                    unset($to[$f]);
+                }
+            }
+        };
+        $tabKey = fn($t, $i) => (string) ($t['id'] ?? ('#' . $i));
+        $rowsFixed   = $mode === 'reviewer' || $status !== FolderStatus::DRAFT_TARGET;
+        $targetPhase = in_array($status, [FolderStatus::TARGET_SUBMITTED, FolderStatus::TARGET_UNAPPROVED, FolderStatus::TARGET_APPROVED], true);
+
+        $storedByKey = [];
+        foreach ($stored as $i => $t) $storedByKey[$tabKey($t, $i)] = $t;
+        $sentByKey = [];
+        foreach ($tabs as $i => $t) $sentByKey[$tabKey($t, $i)] = $t;
+
+        $result = [];
+        foreach (($rowsFixed ? $stored : $tabs) as $i => $base) {                // a fixed form keeps the stored tabs, in order
+            $key = $tabKey($base, $i);
+            if ($rowsFixed && !isset($sentByKey[$key])) { $result[] = $base; continue; }
+            $tab = $rowsFixed ? $sentByKey[$key] : $base;
+            $old = $storedByKey[$key] ?? [];
+            $F = is_array($tab['formData'] ?? null) ? $tab['formData'] : [];
+            $S = is_array($old['formData'] ?? null) ? $old['formData'] : [];
+
+            $keep($F, $S, ['revisionHistory'], 'form.', false);
+            if ($mode === 'owner') {
+                $keep($F, $S, ['pmtRemarks'], 'form.', false);
+                if ($rowsFixed) $keep($F, $S, self::TARGET_FORM_DEFAULTS, 'form.', false, true);
+            } else {
+                $keep($F, $S, self::RATEE_FORM_FIELDS, 'form.', false);
+                $keep($F, $S, self::RATEE_FORM_DEFAULTS, 'form.', false, true);
+            }
+
+            $cats = [];
+            foreach (['core', 'strategic', 'support'] as $cat) {
+                $sentRows = is_array($F['categories'][$cat] ?? null) ? $F['categories'][$cat] : [];
+                $oldRows  = is_array($S['categories'][$cat] ?? null) ? $S['categories'][$cat] : [];
+                $oldById = $sentById = [];
+                foreach ($oldRows as $r)  if (isset($r['row_id'])) $oldById[(string) $r['row_id']] = $r;
+                foreach ($sentRows as $r) if (isset($r['row_id'])) $sentById[(string) $r['row_id']] = $r;
+
+                // Fixed targets: every stored row in its stored place, then any new rows from this save as blanks.
+                $order = $rowsFixed
+                    ? array_merge($oldRows, array_values(array_diff_key($sentById, $oldById)))
+                    : $sentRows;
+                $out = [];
+                foreach ($order as $r) {
+                    $id  = (string) ($r['row_id'] ?? '');
+                    $was = $oldById[$id] ?? [];                                  // a new row has no stored values yet
+                    if ($rowsFixed && $was && !isset($sentById[$id])) {          // left out of this save: keep as stored
+                        $changed["rows.$cat"] = true; $out[] = $r; continue;
+                    }
+                    $row = $rowsFixed ? ($sentById[$id] ?? $r) : $r;
+                    if ($rowsFixed) {
+                        $keep($row, $was, self::TARGET_ROW_FIELDS, 'row.', true);
+                        $keep($row, $was, self::TARGET_ROW_DEFAULTS, 'row.', true, true);
+                    }
+                    if ($mode === 'owner') {
+                        $keep($row, $was, self::REVIEWER_ROW_FIELDS, 'row.', true);
+                    } else {
+                        $keep($row, $was, self::RATEE_ROW_FIELDS, 'row.', true);
+                        if ($targetPhase) $keep($row, $was, self::EVAL_ROW_FIELDS, 'row.', true);
+                    }
+                    $out[] = $row;
+                }
+                $cats[$cat] = $out;
+            }
+            if (isset($F['categories']) || isset($S['categories'])) {
+                $F['categories'] = array_merge(is_array($F['categories'] ?? null) ? $F['categories'] : [], $cats);
+            }
+            $tab['formData'] = $F;
+            $result[] = $tab;
+        }
+
+        if ($changed) {
+            log_message('warning', 'Document {doc}: save by user {user} ({mode}, {status}) tried to change locked parts, kept as stored: {parts}', [
+                'doc' => $docId, 'user' => session()->get('user_id'), 'mode' => $mode, 'status' => $status->value, 'parts' => implode(', ', array_keys($changed)),
+            ]);
+        }
+        return $result;
     }
 
     /**

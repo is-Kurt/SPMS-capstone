@@ -102,4 +102,29 @@ abstract class BaseController extends Controller
             ->where('evaluator_id', $userId)
             ->countAllResults() > 0;
     }
+
+    /**
+     * Whether the logged-in user may review this folder (approve, return or withdraw approval): an Admin,
+     * PMT, a TWG member assigned to the folder's unit, or a supervisor routed to it as an evaluator.
+     * The owner never reviews their own folder. Without this check any logged-in user could approve
+     * other people's targets, set their final rating or return their folder (security test, 2026-11-06).
+     * Used by Folder (approve, return, withdraw) and Document::update (reviewer saves).
+     */
+    protected function isReviewerOf(array $folder): bool
+    {
+        $userId = (int) session()->get('user_id');
+        $role   = session()->get('role');
+        if ($role === 'Admin' || $role === 'PMT') {
+            return true;
+        }
+        if ($role === 'TWG') {
+            return (new \App\Models\TwgUnitAssignmentModel())->isTwgAssignedToFolder($userId, $folder['id']);
+        }
+        if ($userId === (int) $folder['user_id']) {
+            return false;
+        }
+        return (new \App\Models\EvaluationRoutingModel())->where('folder_id', $folder['id'])
+            ->where('evaluator_id', $userId)
+            ->countAllResults() > 0;
+    }
 }
