@@ -175,8 +175,8 @@
             'containerClass'   => 'px-4 mb-3.5 shrink-0'
         ]) ?>
 
-        <div class="relative mb-6 px-4 lg:px-8 pt-0 lg:pt-8 shrink-0 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div>
+        <div class="relative mb-6 px-4 lg:px-8 pt-0 lg:pt-8 shrink-0 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+            <div class="min-w-0">
                 <div class="hidden lg:flex items-center">
                     <h1 class="text-3xl font-black tracking-tight text-text truncate">
                         <?= esc($activeFolder['title']) ?>
@@ -266,7 +266,7 @@
         <!-- QUEUE NAVIGATION TABS -->
         <div class="px-4 lg:px-8 border-b border-surface-border shrink-0 overflow-x-auto no-scrollbar">
             <?php foreach ($periods as $pKey => $period): ?>
-                <div id="period-subtabs-<?= $pKey ?>" class="period-subtabs items-center gap-4 sm:gap-8 <?= ($pKey === $firstPeriodKey) ? 'flex' : 'hidden' ?>">
+                <div id="period-subtabs-<?= $pKey ?>" class="period-subtabs flex-wrap items-center gap-4 sm:gap-8 <?= ($pKey === $firstPeriodKey) ? 'flex' : 'hidden' ?>">
                     <?php foreach ($period['tabs'] as $key => $group): ?>
                         <?php 
                             $isActive = ($pKey === $firstPeriodKey && $key === $firstTabKey);
@@ -361,39 +361,39 @@
                 <div id="tab-content-<?= $key ?>" class="tab-content <?= ($pKey === $firstPeriodKey && $key === $firstTabKey) ? 'flex flex-col flex-1 min-w-0 min-h-0 h-full' : 'hidden' ?>">
                     
                     <?php
-                        $colWidths = ($sysRole === 'Admin') ? ['28%', '20%'] : ['40%'];
-                        
+                        // Desktop columns: User, (Department), Folder Status, (Score). The whole row opens the folder.
+                        // Below 1280px the Department column folds away (see .ratings-table in the style block).
                         if ($pKey === 'target') {
-                            $colWidths = array_merge($colWidths, ($sysRole === 'Admin') ? ['30%', '22%'] : ['38%', '22%']); // Only Folder Status and Action
+                            $colWidths = ($sysRole === 'Admin') ? ['name' => '40%', 'dept' => '30%', 'status' => '30%'] : ['name' => '60%', 'status' => '40%'];
                         } else {
-                            $colWidths = array_merge($colWidths, ($sysRole === 'Admin') ? ['18%', '14%', '20%'] : ['20%', '18%', '22%']); // Folder Status, Score, Action
+                            $colWidths = ($sysRole === 'Admin') ? ['name' => '34%', 'dept' => '26%', 'status' => '24%', 'score' => '16%'] : ['name' => '50%', 'status' => '30%', 'score' => '20%'];
                         }
+                        $tableClass = 'ratings-table ' . ($sysRole === 'Admin' ? 'rt-admin ' : '') . ($pKey === 'target' ? 'rt-target' : 'rt-eval');
                     ?>
                     <div id="ratings-header-<?= $key ?>" class="hidden lg:block shrink-0 overflow-hidden bg-zinc-50 dark:bg-zinc-800/30 border-b border-surface-border" data-frozen-header>
-                        <table class="w-full text-left border-collapse table-fixed lg:min-w-[900px]">
+                        <table class="w-full text-left border-collapse table-fixed <?= $tableClass ?>">
                             <colgroup>
-                                <?php foreach ($colWidths as $cw): ?><col style="width:<?= $cw ?>"><?php endforeach; ?>
+                                <?php foreach ($colWidths as $cn => $cw): ?><col class="rc-<?= $cn ?>" style="width:<?= $cw ?>"><?php endforeach; ?>
                             </colgroup>
                             <thead class="text-[10px] font-black uppercase tracking-widest text-text-muted">
                                 <tr>
                                     <th class="px-6 py-4">User / Position</th>
                                     <?php if ($sysRole === 'Admin'): ?>
-                                        <th class="px-6 py-4">Department / Unit</th>
+                                        <th class="rc-dept-cell px-6 py-4">Department / Unit</th>
                                     <?php endif; ?>
                                     <th class="px-6 py-4 min-w-[110px]">Folder Status</th>
                                     <?php if ($pKey !== 'target'): ?>
                                         <th class="px-6 py-4 min-w-[60px] text-center">Score</th>
                                     <?php endif; ?>
-                                    <th class="px-6 py-4 min-w-[135px] text-right">Action</th>
                                 </tr>
                             </thead>
                         </table>
                     </div>
 
                     <div class="overflow-y-auto overflow-x-auto custom-scrollbar flex-1 w-full max-w-full p-2 lg:p-0" data-frozen-body onscroll="document.getElementById('ratings-header-<?= $key ?>').scrollLeft = this.scrollLeft">
-                        <table class="w-full text-left border-collapse block lg:table lg:table-fixed lg:min-w-[900px]">
+                        <table class="w-full text-left border-collapse block lg:table lg:table-fixed <?= $tableClass ?>">
                             <colgroup>
-                                <?php foreach ($colWidths as $cw): ?><col style="width:<?= $cw ?>"><?php endforeach; ?>
+                                <?php foreach ($colWidths as $cn => $cw): ?><col class="rc-<?= $cn ?>" style="width:<?= $cw ?>"><?php endforeach; ?>
                             </colgroup>
                             <tbody class="block lg:table-row-group divide-y lg:divide-y-0 divide-transparent lg:divide-surface-border">
                                 <?php if (empty($group['folders'])): ?>
@@ -404,8 +404,37 @@
                                     </tr>
                                 <?php else: ?>
                                     <?php foreach ($group['folders'] as $row): ?>
-                                        
-                                        <tr class="rating-card block lg:table-row hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors bg-surface border lg:border-none border-surface-border rounded-xl lg:rounded-none mb-3 lg:mb-0 p-4 lg:p-0 shadow-sm lg:shadow-none"
+                                                <?php 
+                                                    $isDirect = empty($sysRole) || $sysRole !== 'Admin' || !empty($row['is_cascaded_by_me']);
+                                                    $rowBucket = $row['queue_bucket'] ?? (
+                                                        in_array($key, ['target_in_progress', 'eval_in_progress'], true) ? 'in_progress' : (
+                                                        in_array($key, ['target_completed', 'eval_completed'], true) ? 'completed' : 'for_review'
+                                                    ));
+                                                    $isInProgressTab = ($rowBucket === 'in_progress');
+                                                    $isCompletedTab  = ($rowBucket === 'completed');
+
+                                                    if ($isInProgressTab) {
+                                                        $actionLabel = 'View & Comment';
+                                                        $btnClass = 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-text font-bold border border-surface-border';
+                                                    } elseif ($isCompletedTab) {
+                                                        $actionLabel = 'View Form';
+                                                        $btnClass = 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-text font-bold border border-surface-border';
+                                                    } else {
+                                                        if (in_array($sysRole, ['TWG', 'PMT'], true)) {
+                                                            $actionLabel = ($pKey === 'target') ? 'Verify Targets' : 'Verify Evaluation';
+                                                            $btnClass = 'bg-accent hover:bg-accent-hover text-zinc-950 font-black';
+                                                        } else {
+                                                            $actionLabel = $isDirect 
+                                                                ? (($pKey === 'target') ? 'Review Targets' : 'Open Evaluation') 
+                                                                : (($pKey === 'target') ? 'Monitor Targets' : 'Monitor Review');
+                                                            $btnClass = $isDirect
+                                                                ? 'bg-accent hover:bg-accent-hover text-zinc-950 font-black'
+                                                                : 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-text font-bold border border-surface-border';
+                                                        }
+                                                    }
+                                                ?>
+                                        <?php $rowUrl = site_url('ratings/show/' . $row['folder_id']); ?>
+                                        <tr class="rating-card rating-row-link block lg:table-row hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors bg-surface border lg:border-none border-surface-border rounded-xl lg:rounded-none mb-3 lg:mb-0 p-4 lg:p-0 shadow-sm lg:shadow-none"
                                             data-name="<?= esc($row['username']) ?>" 
                                             data-unit="<?= esc($row['unit_id'] ?? '') ?>" 
                                             data-department="<?= esc($row['department'] ?? '') ?>" 
@@ -414,14 +443,15 @@
                                             data-teaching="<?= esc($row['is_teaching'] ?? 0) ?>"
                                             data-emp-status="<?= strtolower(esc($row['employment_status'] ?? 'permanent')) ?>"
                                             data-status="<?= strtolower(esc($row['folder_status'])) ?>"
-                                            data-cascaded="<?= !empty($row['is_cascaded_by_me']) ? '1' : '0' ?>"> 
+                                            data-cascaded="<?= !empty($row['is_cascaded_by_me']) ? '1' : '0' ?>"
+                                            data-href="<?= $rowUrl ?>"> 
                                             
                                             <td class="block lg:table-cell px-0 lg:px-6 py-1 lg:py-4">
                                                 <div class="flex justify-between items-start lg:items-center">
                                                     <div class="flex flex-col min-w-0 pr-4">
-                                                        <span class="text-sm font-bold text-text truncate">
+                                                        <a href="<?= $rowUrl ?>" class="rating-row-name text-sm font-bold text-text truncate hover:underline underline-offset-2" aria-label="<?= esc($actionLabel . ': ' . $row['username']) ?>">
                                                             <?= esc($row['username']) ?>
-                                                        </span>
+                                                        </a>
                                                         <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
                                                             <?php $staffType = \App\Enums\StaffType::fromBoolean($row['is_teaching'] ?? 0); ?>
                                                             <span class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest <?= $staffType->badgeClass() ?>">
@@ -481,14 +511,17 @@
                                             </td>
 
                                             <?php if ($sysRole === 'Admin'): ?>
-                                                <td class="hidden lg:table-cell px-6 py-4 min-w-0 overflow-hidden">
+                                                <td class="rc-dept-cell hidden lg:table-cell px-6 py-4 min-w-0 overflow-hidden">
                                                     <span class="text-xs font-semibold text-text-muted truncate block max-w-full" title="<?= esc($row['department'] ?? 'N/A') ?>"><?= esc($row['department'] ?? 'N/A') ?></span>
                                                 </td>
                                             <?php endif; ?>
 
                                             <td class="hidden lg:table-cell px-6 py-4 lg:min-w-[110px]">
-                                                <span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border <?= $c ?> whitespace-nowrap">
+                                                <span class="rc-badge inline-block px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border <?= $c ?> whitespace-nowrap">
                                                     <?= esc($displayStatus) ?>
+                                                </span>
+                                                <span class="block mt-1 text-[10px] font-bold uppercase tracking-widest <?= $isDirect && !$isInProgressTab && !$isCompletedTab ? 'text-accent-ink' : 'text-text-muted' ?>" aria-hidden="true">
+                                                    <?= esc($actionLabel) ?> &rsaquo;
                                                 </span>
                                             </td>
 
@@ -511,38 +544,9 @@
                                                 </td>
                                             <?php endif; ?>
 
-                                            <td class="block lg:table-cell px-0 lg:px-6 pt-1 pb-0 lg:py-4 text-right lg:min-w-[135px]">
-                                                <?php 
-                                                    $isDirect = empty($sysRole) || $sysRole !== 'Admin' || !empty($row['is_cascaded_by_me']);
-                                                    $rowBucket = $row['queue_bucket'] ?? (
-                                                        in_array($key, ['target_in_progress', 'eval_in_progress'], true) ? 'in_progress' : (
-                                                        in_array($key, ['target_completed', 'eval_completed'], true) ? 'completed' : 'for_review'
-                                                    ));
-                                                    $isInProgressTab = ($rowBucket === 'in_progress');
-                                                    $isCompletedTab  = ($rowBucket === 'completed');
-
-                                                    if ($isInProgressTab) {
-                                                        $actionLabel = 'View & Comment';
-                                                        $btnClass = 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-text font-bold border border-surface-border';
-                                                    } elseif ($isCompletedTab) {
-                                                        $actionLabel = 'View Form';
-                                                        $btnClass = 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-text font-bold border border-surface-border';
-                                                    } else {
-                                                        if (in_array($sysRole, ['TWG', 'PMT'], true)) {
-                                                            $actionLabel = ($pKey === 'target') ? 'Verify Targets' : 'Verify Evaluation';
-                                                            $btnClass = 'bg-accent hover:bg-accent-hover text-zinc-950 font-black';
-                                                        } else {
-                                                            $actionLabel = $isDirect 
-                                                                ? (($pKey === 'target') ? 'Review Targets' : 'Open Evaluation') 
-                                                                : (($pKey === 'target') ? 'Monitor Targets' : 'Monitor Review');
-                                                            $btnClass = $isDirect
-                                                                ? 'bg-accent hover:bg-accent-hover text-zinc-950 font-black'
-                                                                : 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-text font-bold border border-surface-border';
-                                                        }
-                                                    }
-                                                ?>
-                                                <a href="<?= site_url('ratings/show/' . $row['folder_id']) ?>" 
-                                                class="w-full lg:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 lg:py-2 <?= $btnClass ?> rounded-xl text-xs transition-all shadow-sm active:scale-95 cursor-pointer whitespace-nowrap">
+                                            <td class="block lg:hidden px-0 pt-1 pb-0 text-right">
+                                                <a href="<?= $rowUrl ?>" tabindex="-1"
+                                                class="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 lg:py-2 <?= $btnClass ?> rounded-xl text-xs transition-all shadow-sm active:scale-95 cursor-pointer whitespace-nowrap">
                                                     <?php if ($isInProgressTab): ?>
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                             <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
@@ -578,7 +582,35 @@
 
 <style>
     .page-hidden { display: none !important; }
+    @media (min-width: 1024px) {
+        .rating-row-link { cursor: pointer; }
+    }
+    @media (min-width: 1280px) {
+        .ratings-table { min-width: 600px; }
+    }
+    /* 1024-1279px: the panel is narrow, so fold the admin Department column and tighten the cells instead of scrolling sideways */
+    @media (min-width: 1024px) and (max-width: 1279px) {
+        .ratings-table th, .ratings-table td { padding-inline: .75rem !important; }
+        .ratings-table .rc-badge { white-space: normal; }
+        .rt-admin col.rc-dept { visibility: collapse; width: 0 !important; }
+        .rt-admin .rc-dept-cell { white-space: nowrap; overflow: hidden; padding-inline: 0 !important; }
+        .rt-admin.rt-target col.rc-name { width: 58% !important; }
+        .rt-admin.rt-target col.rc-status { width: 42% !important; }
+        .rt-admin.rt-eval col.rc-name { width: 46% !important; }
+        .rt-admin.rt-eval col.rc-status { width: 34% !important; }
+        .rt-admin.rt-eval col.rc-score { width: 20% !important; }
+    }
 </style>
+<script>
+    // The whole row opens the folder; links, buttons and the score box keep their own behaviour.
+    document.addEventListener('click', function (e) {
+        const row = e.target.closest('tr.rating-row-link');
+        if (!row || !row.dataset.href || e.target.closest('a, button, input, select, textarea, label')) return;
+        if (window.getSelection && String(window.getSelection()).length) return;   // selecting text, not opening
+        if (e.ctrlKey || e.metaKey) { window.open(row.dataset.href, '_blank'); return; }
+        window.location.href = row.dataset.href;
+    });
+</script>
 <script>
     class RatingsPaginator {
         constructor(config) {

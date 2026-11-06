@@ -502,7 +502,7 @@
                     ?>
                     <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                         <!-- Adjectival Rating Filter Pills -->
-                        <div class="performer-tier-pills-container flex items-center gap-1.5 overflow-x-auto custom-scrollbar py-0.5">
+                        <div class="performer-tier-pills-container flex flex-wrap items-center gap-1.5 py-0.5">
                             <button type="button" onclick="filterTopPerformersByTier('all', 'supervisor-performers-grid', this)"
                                     data-tier="all"
                                     class="performer-tier-pill active inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 bg-zinc-900 text-white dark:bg-zinc-800 dark:text-white border border-zinc-900 dark:border-zinc-600 shadow-2xs">
@@ -1101,7 +1101,7 @@
                     ?>
                     <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                         <!-- Adjectival Rating Filter Pills -->
-                        <div class="performer-tier-pills-container flex items-center gap-1.5 overflow-x-auto custom-scrollbar py-0.5">
+                        <div class="performer-tier-pills-container flex flex-wrap items-center gap-1.5 py-0.5">
                             <button type="button" onclick="filterTopPerformersByTier('all', 'admin-performers-grid', this)"
                                     data-tier="all"
                                     class="performer-tier-pill active inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 bg-zinc-900 text-white dark:bg-zinc-800 dark:text-white border border-zinc-900 dark:border-zinc-600 shadow-2xs">
@@ -1243,6 +1243,15 @@
             </div>
 
             <!-- Department & Unit Table -->
+            <style>
+                /* Action column stays pinned to the right edge while the rest of the table scrolls sideways */
+                #office-leaderboard-table .lb-pin { position: sticky; right: 0; z-index: 1; background: #fff; box-shadow: -10px 0 10px -10px rgba(0, 0, 0, .18); }
+                .dark #office-leaderboard-table .lb-pin { background: var(--color-zinc-900); box-shadow: -10px 0 10px -10px rgba(0, 0, 0, .6); }
+                #office-leaderboard-table thead .lb-pin,
+                #office-leaderboard-table .compliance-unit-row:hover .lb-pin { background: var(--color-zinc-50); }
+                .dark #office-leaderboard-table thead .lb-pin { background: var(--color-zinc-950); }
+                .dark #office-leaderboard-table .compliance-unit-row:hover .lb-pin { background: color-mix(in srgb, #fff 5%, var(--color-zinc-900)); }
+            </style>
             <div class="overflow-x-auto custom-scrollbar rounded-xl border border-zinc-200 dark:border-zinc-800">
                 <table class="w-full text-left border-collapse" id="office-leaderboard-table">
                     <thead>
@@ -1252,7 +1261,7 @@
                             <th class="py-3 px-3 text-center">Phase 1: Targets</th>
                             <th class="py-3 px-3 text-center">Phase 2: Accomplishments</th>
                             <th class="py-3 px-3 text-center">Average Rating</th>
-                            <th class="py-3 px-3.5 text-right">Action</th>
+                            <th class="lb-pin py-3 px-3.5 text-right">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-zinc-100 dark:divide-[#1a2b22] text-xs">
@@ -1369,7 +1378,7 @@
                                     <td class="py-3 px-3 text-center whitespace-nowrap font-black text-zinc-900 dark:text-white">
                                         <?= $avgRating > 0 ? number_format($avgRating, 2) : '——' ?>
                                     </td>
-                                    <td class="py-3 px-3.5 text-right whitespace-nowrap">
+                                    <td class="lb-pin py-3 px-3.5 text-right whitespace-nowrap">
                                         <button type="button" onclick="event.stopPropagation(); filterMasterlistByUnit('<?= esc($uId) ?>', '<?= esc(addslashes($uName)) ?>')"
                                                 class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold text-amber-500 hover:text-amber-400 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/10 transition-all cursor-pointer shadow-2xs group"
                                                 title="Filter Master List by <?= esc($uName) ?>">

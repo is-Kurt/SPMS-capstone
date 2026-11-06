@@ -99,7 +99,7 @@
             </button>
         </div>
 
-        <div class="flex-1 overflow-x-auto min-h-0 overflow-y-hidden">
+        <div class="flex-1 overflow-x-auto min-h-0 overflow-y-auto custom-scrollbar">
             <table class="w-full text-left border-collapse block lg:table lg:table-fixed">
                 <colgroup>
                     <col style="width:34%">
@@ -108,7 +108,7 @@
                     <col style="width:20%">
                     <col style="width:16%">
                 </colgroup>
-                <thead class="hidden lg:table-header-group bg-zinc-50 dark:bg-zinc-800 border-b border-surface-border text-[10px] font-black uppercase tracking-widest text-text-muted">
+                <thead class="hidden lg:table-header-group sticky top-0 z-10 bg-zinc-50 dark:bg-zinc-800 border-b border-surface-border text-[10px] font-black uppercase tracking-widest text-text-muted">
                     <tr>
                         <th class="px-6 py-2.5">Email</th>
                         <th class="px-6 py-2.5">Invited Role</th>
