@@ -6,6 +6,22 @@ use CodeIgniter\Model;
 
 class DocumentAttachmentModel extends Model
 {
+    /**
+     * Allowed evidence types: extension => [type the file is served as, types its content may be detected as].
+     * The served type always comes from this list, never from the uploader's browser: a file declared as
+     * text/html used to be shown as a web page and ran its script for every reviewer (security test, 2026-11-06).
+     */
+    public const EVIDENCE_TYPES = [
+        'pdf'  => ['application/pdf', ['application/pdf']],
+        'png'  => ['image/png', ['image/png']],
+        'jpg'  => ['image/jpeg', ['image/jpeg']],
+        'jpeg' => ['image/jpeg', ['image/jpeg']],
+        'webp' => ['image/webp', ['image/webp']],
+        'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                   ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip', 'application/octet-stream']],
+        'doc'  => ['application/msword', ['application/msword', 'application/vnd.ms-office', 'application/x-ole-storage', 'application/CDFV2', 'application/octet-stream']],
+    ];
+
     protected $table            = 'document_attachments';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
@@ -55,6 +71,12 @@ class DocumentAttachmentModel extends Model
             $row['uploader_name'] = trim(($row['uploader_first_name'] ?? '') . ' ' . ($row['uploader_last_name'] ?? ''));
             $isLink = !empty($row['is_link']) || !empty($row['link_url']) || str_starts_with($row['file_type'] ?? '', 'link/');
             $row['is_link'] = $isLink;
+            if (!$isLink) {
+                // The type the file is served as, from its stored (server-chosen) extension; older rows kept the
+                // uploader's claimed type, which the evidence list put straight into its HTML
+                $ext = strtolower(pathinfo((string) $row['file_path'], PATHINFO_EXTENSION));
+                $row['file_type'] = self::EVIDENCE_TYPES[$ext][0] ?? 'application/octet-stream';
+            }
             if ($isLink) {
                 $row['link_url'] = $row['link_url'] ?: $row['file_path'];
                 $url = strtolower($row['link_url']);

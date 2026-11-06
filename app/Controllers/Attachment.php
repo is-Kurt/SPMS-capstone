@@ -10,6 +10,9 @@ use CodeIgniter\RESTful\ResourceController;
 
 class Attachment extends BaseController
 {
+    /** Shown in the browser; everything else is always downloaded. */
+    private const INLINE_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'webp'];
+
     /**
      * POST /attachments/upload
      * Upload an evidence file (MOV) attached to an accomplishment row.
@@ -88,13 +91,22 @@ class Attachment extends BaseController
         }
 
         // Validate MIME / extension
-        $allowedExtensions = ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'docx', 'doc'];
+        $allowedExtensions = array_keys(DocumentAttachmentModel::EVIDENCE_TYPES);
         $ext = strtolower($file->getClientExtension());
 
         if (!in_array($ext, $allowedExtensions)) {
             return $this->response->setStatusCode(422)->setJSON([
                 'status'  => 'error',
                 'message' => 'Invalid file format. Allowed formats: PDF, PNG, JPG, WEBP, DOC, DOCX.'
+            ]);
+        }
+
+        // The content must match the extension (detected from the file itself, not the browser's claim)
+        $detected = $file->getMimeType();
+        if (!in_array($detected, DocumentAttachmentModel::EVIDENCE_TYPES[$ext][1], true)) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'status'  => 'error',
+                'message' => 'The file content does not match its type. Allowed formats: PDF, PNG, JPG, WEBP, DOC, DOCX.'
             ]);
         }
 
@@ -117,12 +129,17 @@ class Attachment extends BaseController
 
         // Read raw file content and encrypt with AES-256
         $rawContents = file_get_contents($file->getTempName());
+        // NFR-03: evidence is always stored encrypted. If encryption is not possible (e.g. encryption.key is
+        // missing from .env), refuse the upload instead of quietly saving the plain file, as it used to.
         try {
             $encrypter = \Config\Services::encrypter();
             $dataToSave = $encrypter->encrypt($rawContents);
         } catch (\Throwable $e) {
             log_message('error', 'Attachment encryption error: ' . $e->getMessage());
-            $dataToSave = $rawContents;
+            return $this->response->setStatusCode(500)->setJSON([
+                'status'  => 'error',
+                'message' => 'The file could not be stored securely. Please contact the system administrator.'
+            ]);
         }
 
         file_put_contents($uploadDir . $newName, $dataToSave);
@@ -134,7 +151,7 @@ class Attachment extends BaseController
             'row_id'      => $rowId,
             'file_name'   => $clientName,
             'file_path'   => $subDir . $newName,
-            'file_type'   => $file->getClientMimeType() ?: 'application/octet-stream',
+            'file_type'   => DocumentAttachmentModel::EVIDENCE_TYPES[$ext][0],
             'file_size'   => $file->getSize(),
             'uploaded_by' => $userId,
         ];
@@ -484,13 +501,26 @@ class Attachment extends BaseController
             $payload = $rawContents;
         }
 
-        $mimeType = $attachment['file_type'] ?: 'application/octet-stream';
-        $fileName = $attachment['file_name'] ?: 'evidence';
+        // Type from the stored file's own extension (chosen by the server at upload), never the stored
+        // file_type, which older uploads took from the browser. Only PDFs and images are shown inline.
+        $storedExt = strtolower(pathinfo($attachment['file_path'], PATHINFO_EXTENSION));
+        $mimeType  = DocumentAttachmentModel::EVIDENCE_TYPES[$storedExt][0] ?? 'application/octet-stream';
+        if (!in_array($storedExt, self::INLINE_EXTENSIONS, true)) {
+            $disposition = 'attachment';
+        }
+        $fileName  = $attachment['file_name'] ?: 'evidence';
+        $asciiName = preg_replace('/[^A-Za-z0-9._ -]/', '_', $fileName);
 
         // Clean headers and stream
         header('Content-Type: ' . $mimeType);
-        header('Content-Disposition: ' . $disposition . '; filename="' . addslashes($fileName) . '"');
+        header('Content-Disposition: ' . $disposition . '; filename="' . $asciiName . '"; filename*=UTF-8\'\'' . rawurlencode($fileName));
         header('Content-Length: ' . strlen($payload));
+        header('X-Content-Type-Options: nosniff');
+        // Extra layer where PHP's headers reach the browser. Behind this server's nginx they do not: it replaces
+        // any CSP from PHP with the site's own, so the fixed type and nosniff above are what keep a file inert.
+        if (str_starts_with($mimeType, 'image/')) {
+            header("Content-Security-Policy: default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox");
+        }
         header('Cache-Control: private, max-age=86400');
         header('Pragma: public');
 

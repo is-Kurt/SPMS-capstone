@@ -230,6 +230,15 @@
     window.activeMovRowId = null;
     window.documentAttachments = <?= json_encode($attachmentsByRow ?? []) ?>;
 
+    /**
+     * A value for a quoted argument of an inline onclick handler. JSON.stringify makes it a valid JS string
+     * and escapeHtml keeps it inside the attribute. escapeHtml alone is not enough: the browser turns &#039;
+     * back into ' before running the handler, so a file name or link could break out and run script.
+     */
+    function movJsArg(value) {
+        return escapeHtml(JSON.stringify(String(value ?? '')));
+    }
+
     function openMovModal(rowId, btnEl) {
         window.activeMovRowId = rowId;
 
@@ -396,7 +405,7 @@
                         </div>
 
                         <div class="flex items-center gap-1.5 shrink-0">
-                            <button type="button" onclick="previewMovLink('${escapeHtml(linkUrl)}', '${escapeHtml(file.file_name)}', '${providerLabel}')" 
+                            <button type="button" onclick="previewMovLink(${movJsArg(linkUrl)}, ${movJsArg(file.file_name)}, ${movJsArg(providerLabel)})" 
                                     class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-accent/10 hover:bg-accent/20 text-accent-ink border border-accent/20 transition-all cursor-pointer" title="Preview link in-app">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -457,7 +466,7 @@
                         </div>
 
                         <div class="flex items-center gap-1.5 shrink-0">
-                            <button type="button" onclick="previewMovAttachment(${file.id}, '${escapeHtml(file.file_name)}', '${file.file_type}')" 
+                            <button type="button" onclick="previewMovAttachment(${Number(file.id)}, ${movJsArg(file.file_name)}, ${movJsArg(file.file_type)})" 
                                     class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-accent/10 hover:bg-accent/20 text-accent-ink border border-accent/20 transition-all cursor-pointer" title="Preview file in-app">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
