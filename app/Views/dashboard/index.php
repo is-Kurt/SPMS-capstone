@@ -405,7 +405,7 @@
             </div>
 
             <!-- Phase 2 Card: Accomplishment Report Phase -->
-            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 <?= !empty($p2['is_ongoing']) ? ($p2['status'] === 'calibration' ? 'border-purple-500/80 dark:border-purple-500 ring-2 ring-purple-500/20 shadow-md' : 'border-emerald-500/80 dark:border-emerald-500 ring-2 ring-emerald-500/20 shadow-md') : 'border-zinc-200 dark:border-zinc-800 shadow-xs' ?>">
+            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 <?= !empty($p2['is_ongoing']) ? 'border-emerald-500/80 dark:border-emerald-500 ring-2 ring-emerald-500/20 shadow-md' : 'border-zinc-200 dark:border-zinc-800 shadow-xs' ?>">
                 <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-4">
                     <div class="flex items-center gap-2.5 min-w-0">
                         <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-xs font-black shrink-0">2</span>
@@ -426,8 +426,8 @@
                                 Ongoing
                             </span>
                         <?php elseif ($p2['status'] === 'calibration'): ?>
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800 shadow-2xs">
-                                <span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-[#102a1e] dark:text-emerald-400 border border-emerald-200 dark:border-[#1b4330] shadow-2xs">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                 Calibration
                             </span>
                         <?php elseif ($p2['status'] === 'monitoring'): ?>
@@ -738,7 +738,7 @@
             </div>
 
             <!-- Phase 2 Card: Accomplishment Report Phase -->
-            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 <?= !empty($p2['is_ongoing']) ? ($p2['status'] === 'calibration' ? 'border-purple-500/80 dark:border-purple-500 ring-2 ring-purple-500/20 shadow-md' : 'border-emerald-500/80 dark:border-emerald-500 ring-2 ring-emerald-500/20 shadow-md') : 'border-zinc-200 dark:border-zinc-800 shadow-xs' ?>">
+            <div class="p-5 rounded-2xl bg-white dark:bg-zinc-900 border transition-all duration-200 <?= !empty($p2['is_ongoing']) ? 'border-emerald-500/80 dark:border-emerald-500 ring-2 ring-emerald-500/20 shadow-md' : 'border-zinc-200 dark:border-zinc-800 shadow-xs' ?>">
                 <div class="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800 mb-4">
                     <div class="flex items-center gap-2.5 min-w-0">
                         <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 flex items-center justify-center text-xs font-black shrink-0">2</span>
@@ -759,8 +759,8 @@
                                 Ongoing
                             </span>
                         <?php elseif ($p2['status'] === 'calibration'): ?>
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800 shadow-2xs">
-                                <span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-[#102a1e] dark:text-emerald-400 border border-emerald-200 dark:border-[#1b4330] shadow-2xs">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                 Calibration
                             </span>
                         <?php elseif ($p2['status'] === 'monitoring'): ?>
