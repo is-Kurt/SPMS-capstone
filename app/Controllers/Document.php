@@ -860,6 +860,9 @@ class Document extends BaseController
         if ($tabsJson) {
             $decoded = json_decode($tabsJson, true);
             if (json_last_error() === JSON_ERROR_NONE) {
+                if (!$this->hasSafeIdentifiers($decoded)) {
+                    return $this->respondError('The document contains invalid row identifiers. Please reload the page and try again.', 422);
+                }
                 $payload['tabs'] = $decoded;
             }
         }
@@ -888,6 +891,35 @@ class Document extends BaseController
 
         $saved = $documentModel->db->table('document_folders')->select('tabs, title')->where('id', $docId)->get()->getRowArray();
         return $this->response->setJSON(['status' => 'success', 'fingerprint' => $saved ? self::contentFingerprint($saved) : '']);
+    }
+
+    /**
+     * Tab ids, category keys and row ids end up inside HTML attributes and inline handlers on the editor
+     * page (e.g. openMovModal('<row id>')), so the owner could otherwise plant script there for every
+     * reviewer (security test, 2026-11-06). The editor only ever creates ids from letters, digits, _ and -.
+     */
+    private function hasSafeIdentifiers($tabs): bool
+    {
+        if (!is_array($tabs)) {
+            return false;
+        }
+        $id = '/^[A-Za-z0-9_-]{1,100}$/';
+        foreach ($tabs as $tab) {
+            if (!is_array($tab) || (isset($tab['id']) && !preg_match($id, (string) $tab['id']))) {
+                return false;
+            }
+            foreach (($tab['formData']['categories'] ?? []) as $cat => $rows) {
+                if (!preg_match('/^[A-Za-z0-9_-]{1,40}$/', (string) $cat) || !is_array($rows)) {
+                    return false;
+                }
+                foreach ($rows as $row) {
+                    if (is_array($row) && isset($row['row_id']) && !preg_match($id, (string) $row['row_id'])) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     /** Fingerprint of a document's stored content (raw tabs JSON + title), used by update() to detect conflicting saves. */
