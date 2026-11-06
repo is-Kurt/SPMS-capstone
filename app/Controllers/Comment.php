@@ -326,15 +326,10 @@ class Comment extends BaseController
             return 'Administrator';
         }
 
-        $pos = strtolower($user['position_title'] ?? session()->get('position') ?? '');
-        if (str_contains($pos, 'dean')) {
-            return 'College Dean';
-        }
-        if (str_contains($pos, 'vice president') || str_contains($pos, 'vp')) {
-            return 'Vice President';
-        }
-        if (str_contains($pos, 'chair') || str_contains($pos, 'head')) {
-            return 'Department Head';
+        // A head is labelled with the head position they hold (e.g. "Dean"), read from their assignment.
+        $headTitles = \App\Libraries\OrgStructure::instance()->headTitlesOf((int) ($user['id'] ?? $userId));
+        if ($headTitles) {
+            return $headTitles[0];
         }
         if ($sysRole === 'Supervisor') {
             return 'Immediate Supervisor';

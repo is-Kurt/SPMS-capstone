@@ -511,30 +511,14 @@ function sync_user_papers_mid_target_setting(int $userId, ?string $targetPaperTy
     $user = $userModel->find($userId);
     if (!$user) return ['updated_docs' => 0, 'updated_folders' => 0];
 
-    // Determine target paper type if not provided
+    // Target paper type if not given: the person's form type, or the one the doc-type rules give them.
     if (empty($targetPaperType)) {
-        if (!empty($user['doc_type'])) {
-            $targetPaperType = strtoupper(trim($user['doc_type']));
-        } else {
-            $plantilla = $userModel->getActivePlantillaDetails($userId);
-            $posTitle = strtolower($plantilla['position'] ?? '');
-            $userEmail = strtolower($user['email'] ?? '');
-            if (str_contains($posTitle, 'president') || str_contains($posTitle, 'vice president') || str_contains($userEmail, 'vpaa') || str_contains($userEmail, 'cao')) {
-                $targetPaperType = 'OPCR';
-            } elseif (str_contains($posTitle, 'dean') || str_contains($posTitle, 'chair') || str_contains($posTitle, 'head') || str_contains($userEmail, 'dean') || str_contains($userEmail, 'chair')) {
-                $targetPaperType = 'DPCR';
-            } elseif (($plantilla['is_teaching'] ?? 1) == 0) {
-                $targetPaperType = 'IPERF';
-            } else {
-                $targetPaperType = 'IPCR';
-            }
-        }
+        $targetPaperType = !empty($user['doc_type'])
+            ? strtoupper(trim($user['doc_type']))
+            : \App\Libraries\OrgStructure::instance()->defaultDocTypeFor($userId);
     }
 
-    $targetPaperType = strtoupper(trim($targetPaperType));
-    if (!in_array($targetPaperType, ['IPCR', 'DPCR', 'OPCR', 'IPERF'], true)) {
-        $targetPaperType = 'IPCR';
-    }
+    $targetPaperType = \App\Enums\DocType::canonical(strtoupper(trim($targetPaperType)))->value;
 
     // Mid target setting statuses (before targets are approved or evaluation begins)
     $targetSettingStatuses = [

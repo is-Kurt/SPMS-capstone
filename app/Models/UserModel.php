@@ -120,7 +120,7 @@ class UserModel extends Model
                       GROUP_CONCAT(DISTINCT pos.id) as position_id, 
                       GROUP_CONCAT(DISTINCT pos.title) as position, 
                       MAX(pos.is_teaching) as is_teaching, 
-                      COALESCE(MAX(p.employment_status), 'Permanent') as employment_status,
+                      COALESCE(u.employment_status, MAX(p.employment_status), 'Permanent') as employment_status,
                       GROUP_CONCAT(DISTINCT un.id) as unit_id, 
                       GROUP_CONCAT(DISTINCT un.name) as department")
             ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')

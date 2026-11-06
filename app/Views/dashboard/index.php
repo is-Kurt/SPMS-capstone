@@ -45,13 +45,13 @@
         <div id="analytics-mobile-header" class="lg:hidden space-y-2.5 mb-1">
             <div class="flex items-center gap-2">
                 <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
-                    <?= ($sysRole === 'Supervisor' && empty($isPresidentScope)) ? (!empty($isChairScope) ? 'Department Submission Compliance' : 'College Submission Compliance') : 'Executive Performance Analytics' ?>
+                    <?= ($sysRole === 'Supervisor') ? (!empty($isChairScope) ? 'Department Submission Compliance' : 'College Submission Compliance') : 'Executive Performance Analytics' ?>
                 </span>
             </div>
             <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2 min-w-0">
                     <h1 class="text-xl font-black tracking-tight text-zinc-900 dark:text-white truncate">
-                        <?= ($sysRole === 'Supervisor' && empty($isPresidentScope)) ? (!empty($isChairScope) ? 'Department Overview' : 'College Overview') : 'Executive Overview' ?>
+                        <?= ($sysRole === 'Supervisor') ? (!empty($isChairScope) ? 'Department Overview' : 'College Overview') : 'Executive Overview' ?>
                     </h1>
                     <?php if (!empty($isArchivedView)): ?>
                         <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 shrink-0">
@@ -206,7 +206,7 @@
             <!-- Eyebrow Row -->
             <div class="flex items-center gap-2 mb-1">
                 <span class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 truncate">
-                    <?= ($sysRole === 'Supervisor' && empty($isPresidentScope)) ? (!empty($isChairScope) ? 'Department Submission Compliance' : 'College Submission Compliance') : 'Executive Performance Analytics' ?>
+                    <?= ($sysRole === 'Supervisor') ? (!empty($isChairScope) ? 'Department Submission Compliance' : 'College Submission Compliance') : 'Executive Performance Analytics' ?>
                 </span>
             </div>
             
@@ -215,7 +215,7 @@
                 <div class="min-w-0">
                     <div class="flex items-center gap-2.5">
                         <h1 class="text-2xl lg:text-3xl font-black tracking-tight text-zinc-900 dark:text-white truncate">
-                            <?= ($sysRole === 'Supervisor' && empty($isPresidentScope)) ? (!empty($isChairScope) ? 'Department Overview' : 'College Overview') : 'Executive Overview' ?>
+                            <?= ($sysRole === 'Supervisor') ? (!empty($isChairScope) ? 'Department Overview' : 'College Overview') : 'Executive Overview' ?>
                         </h1>
                         <?php if (!empty($isArchivedView)): ?>
                             <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 shrink-0">
@@ -225,11 +225,7 @@
                     </div>
                     <?php if ($sysRole === 'Supervisor'): ?>
                         <p class="text-xs font-medium text-zinc-500 dark:text-zinc-400 mt-0.5">
-                            <?php if (!empty($isPresidentScope)): ?>
-                                Executive oversight tracking sector &amp; Vice Presidential OPCR performance across <span class="font-bold text-zinc-700 dark:text-zinc-200">Benguet State University</span>
-                            <?php else: ?>
                                 Tracking faculty &amp; staff submissions for <span class="font-bold text-zinc-700 dark:text-zinc-200"><?= esc($supervisorCollegeName ?? (!empty($isChairScope) ? 'Your Department' : 'Your College')) ?></span>
-                            <?php endif; ?>
                         </p>
                     <?php endif; ?>
                 </div>

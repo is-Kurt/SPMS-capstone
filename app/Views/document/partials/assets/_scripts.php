@@ -1628,9 +1628,9 @@
             coreTitle = coreW ? `CORE FUNCTIONS (${Math.round(coreW * 100)}%)` : 'CORE FUNCTIONS ( ____ %)';
             stratTitle = stratW ? `STRATEGIC FUNCTIONS (${Math.round(stratW * 100)}%)` : 'STRATEGIC FUNCTIONS ( ____ %)';
             suppTitle = suppW ? `SUPPORT FUNCTIONS (${Math.round(suppW * 100)}%)` : 'SUPPORT FUNCTIONS ( ____ %)';
-            const posLower = (ownerAccountInfo.position || '').toLowerCase();
-            rateeRole = posLower.includes('dean') ? "College Dean / Supervisor" : "Department Chairperson / Unit Head";
-            deanRole = posLower.includes('dean') ? "Vice President for Academic Affairs" : "College Dean / Supervisor";
+            const headsSubunits = !!ownerAccountInfo.headsSubunits;   // from the organisation structure, not the title
+            rateeRole = headsSubunits ? "College Dean / Supervisor" : "Department Chairperson / Unit Head";
+            deanRole = headsSubunits ? "Vice President for Academic Affairs" : "College Dean / Supervisor";
             vpRole = "Vice President for Academic Affairs";
             if (!data.title || data.title.includes('IPCR') || data.title.includes('OPCR') || data.title.includes('Division Performance')) {
                 data.title = defaultDocTitle;
@@ -5709,10 +5709,10 @@
         const r = (role || '').toUpperCase();
         if (r.includes('RATEE')) return 'bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300';
         if (r.includes('SUPERVISOR')) return 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300';
-        if (r.includes('DEAN') || r.includes('VP')) return 'bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300';
         if (r.includes('TWG') || r.includes('PMT')) return 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300';
-        if (r.includes('ADMIN')) return 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300';
-        return 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300';
+        if (r.includes('ADMINISTRATOR')) return 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300';
+        // Any other label is the head position the commenter holds (e.g. "Dean", "Unit Head")
+        return 'bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300';
     }
 
     function formatCommentTime(dateStr) {

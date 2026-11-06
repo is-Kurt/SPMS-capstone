@@ -260,37 +260,11 @@ class Dashboard extends BaseController
         $scopedUnitIds = [];
         $isChairScope = false;
 
-        // Role Scoping for Supervisors:
-        $isPresidentScope = false;
+        // Supervisors (2026-11-07): the dashboard lists the folders in their cascade tree for this cycle (the people
+        // they review, the people those review, and so on); the units they belong to and everything below
+        // them only decide who shows as "not yet cascaded". No job titles or emails.
         if ($sysRole === 'Supervisor') {
-            $ownPlantilla  = $userModel->getActivePlantillaDetails($userId);
-            if ($ownPlantilla) {
-                $posTitle = strtolower($ownPlantilla['position'] ?? '');
-                $userEmail = strtolower(session()->get('email') ?? '');
-                $isPresident = session()->get('is_president') 
-                            || (str_contains($posTitle, 'president') && !str_contains($posTitle, 'vice')) 
-                            || str_contains($userEmail, 'president');
-
-                if ($isPresident) {
-                    $isPresidentScope = true;
-                    $scopedUnitIds = []; // President has university-wide executive oversight
-                    $supervisorCollegeName = 'Executive Oversight';
-                } else {
-                    $isChairScope = str_contains($posTitle, 'chair') || str_contains($posTitle, 'head');
-                    
-                    if ($isChairScope) {
-                        // Department Chair: Scope strictly to own department
-                        $scopedUnitIds = [(int)$ownPlantilla['unit_id']];
-                        $supervisorCollegeName = $ownPlantilla['department'] ?? 'Department';
-                    } else {
-                        // College Dean: Scope to college and all sub-departments
-                        $scopedUnitIds = $unitModel->getDescendantIds([$ownPlantilla['unit_id']]);
-                        $scopedUnitIds[] = (int)$ownPlantilla['unit_id'];
-                        $supervisorCollegeName = $ownPlantilla['department'] ?? 'College';
-                    }
-                }
-            }
-            $scopedUnitIds = array_unique(array_filter($scopedUnitIds));
+            [$scopedUnitIds, $isChairScope, $supervisorCollegeName] = $this->supervisorScope((int) $userId);
         }
 
         $targetFolderIds = [];
@@ -829,7 +803,6 @@ class Dashboard extends BaseController
             'filterPositions'      => array_values($filterPositions),
             'employmentStatuses'   => $employmentStatuses,
             'isChairScope'          => $isChairScope,
-            'isPresidentScope'      => $isPresidentScope,
             'supervisorCollegeName' => $supervisorCollegeName,
             'collegeDepartments'    => $collegeDepartments,
             'cycleFolders'          => $cycleFolders,
@@ -992,20 +965,7 @@ class Dashboard extends BaseController
         $scopedUnitIds = null;
         $supervisorCollegeName = null;
         if ($sysRole === 'Supervisor') {
-            $ownPlantilla = $userModel->getActivePlantillaDetails($userId);
-            if ($ownPlantilla) {
-                $posTitle = strtolower($ownPlantilla['position'] ?? '');
-                $isChairScope = str_contains($posTitle, 'chair') || str_contains($posTitle, 'head');
-                if ($isChairScope) {
-                    $scopedUnitIds = [(int)$ownPlantilla['unit_id']];
-                    $supervisorCollegeName = $ownPlantilla['department'] ?? 'Department';
-                } else {
-                    $scopedUnitIds = $unitModel->getDescendantIds([$ownPlantilla['unit_id']]);
-                    $scopedUnitIds[] = (int)$ownPlantilla['unit_id'];
-                    $supervisorCollegeName = $ownPlantilla['department'] ?? 'College';
-                }
-            }
-            $scopedUnitIds = array_unique(array_filter($scopedUnitIds ?? []));
+            [$scopedUnitIds, , $supervisorCollegeName] = $this->supervisorScope((int) $userId);
         }
 
         $cycleFolders = $this->gatherCycleFolders($activeCycle, $selectedUnitId, $sysRole, $userId, $allUnits, $scopedUnitIds, $supervisorCollegeName);
@@ -1015,8 +975,49 @@ class Dashboard extends BaseController
     }
 
     /**
+     * A Supervisor's scope from the organisation structure: the units they reach (their units and everything
+     * below, all assignments merged; used for "not yet cascaded"), whether to label it as a department (they
+     * head no unit with sub-units) or a college, and the name of their first unit.
+     */
+    private function supervisorScope(int $userId): array
+    {
+        $org = \App\Libraries\OrgStructure::instance();
+        $own = $org->unitIdsOf($userId);
+        $name = $own ? ($org->unit($own[0])['name'] ?? null) : null;
+        return [$org->reachUnitIds($userId), !$org->headsUnitWithSubunits($userId), $name];
+    }
+
+    /**
+     * Folders of this cycle in the viewer's cascade tree, following the evaluator links (a folder can have
+     * several evaluators, e.g. co-heads): folders they review, folders reviewed by those folders' owners, ...
+     */
+    private function cascadeTreeFolderIds(array $cycleFolderIds, int $userId): array
+    {
+        if (!$cycleFolderIds) return [];
+        $db = $this->db ?? \Config\Database::connect();
+        $edges = $db->table('evaluation_routings er')->select('er.folder_id, er.evaluator_id, df.user_id as owner_id')
+            ->join('document_folders df', 'df.id = er.folder_id')
+            ->whereIn('er.folder_id', $cycleFolderIds)->where('df.deleted_at IS NULL')
+            ->get()->getResultArray();
+        $byEvaluator = [];
+        foreach ($edges as $e) $byEvaluator[(int) $e['evaluator_id']][] = $e;
+        $seenUsers = [$userId => true];
+        $folders = [];
+        $queue = [$userId];
+        while ($queue) {
+            $u = array_shift($queue);
+            foreach ($byEvaluator[$u] ?? [] as $e) {
+                $folders[$e['folder_id']] = true;
+                $owner = (int) $e['owner_id'];
+                if (!isset($seenUsers[$owner])) { $seenUsers[$owner] = true; $queue[] = $owner; }
+            }
+        }
+        return array_keys($folders);
+    }
+
+    /**
      * Resolves accessible evaluation cycle root folders for the current user session.
-     * Admin, PMT, and University President have institutional oversight across all root cycles.
+     * Admin and PMT have institutional oversight across all root cycles.
      * Supervisors only see evaluation cycles that have been cascaded to them (matching Folders tab).
      */
     private function getAccessibleRootFolders(DocumentFolderModel $folderModel, int $userId, string $sysRole, bool $isArchived = false): array
@@ -1034,26 +1035,7 @@ class Dashboard extends BaseController
                 ->findAll();
         }
 
-        $userModel = new UserModel();
-        $userRow = $userModel->find($userId);
-        $userEmail = strtolower($userRow['email'] ?? '');
-
-        $isPresidentSession = false;
-        try {
-            if (session_status() === PHP_SESSION_ACTIVE || !headers_sent()) {
-                $isPresidentSession = (bool)session()->get('is_president');
-            }
-        } catch (\Throwable $e) {
-            $isPresidentSession = false;
-        }
-
-        $ownPlantilla = $userModel->getActivePlantillaDetails($userId);
-        $posTitle = strtolower($ownPlantilla['position'] ?? '');
-        $isPresident = $isPresidentSession 
-                    || (str_contains($posTitle, 'president') && !str_contains($posTitle, 'vice')) 
-                    || str_contains($userEmail, 'president');
-
-        if (in_array($sysRole, ['Admin', 'PMT']) || $isPresident) {
+        if (in_array($sysRole, ['Admin', 'PMT'])) {
             return $folderModel->groupStart()
                 ->where('parent_folder_id IS NULL')
                 ->orWhere('parent_folder_id', '')
@@ -1121,7 +1103,7 @@ class Dashboard extends BaseController
                 $builder = $db->table('document_folders df')
                     ->select("df.id as folder_id, df.user_id, df.title as folder_title, df.final_rating, df.status as folder_status, df.updated_at, df.created_at,
                               u.first_name, u.last_name, u.email, u.doc_type,
-                              p.employment_status,
+                              COALESCE(u.employment_status, p.employment_status) as employment_status,
                               pos.title as position, pos.is_teaching,
                               un.id as unit_id, un.name as department")
                     ->join('users u', 'u.id = df.user_id')
@@ -1141,12 +1123,8 @@ class Dashboard extends BaseController
                 }
 
                 if ($sysRole === 'Supervisor') {
-                    if (!empty($scopedUnitIds)) {
-                        $builder->whereIn('un.id', $scopedUnitIds);
-                    } else {
-                        $builder->join('evaluation_routings er_sc', 'er_sc.folder_id = df.id')
-                                ->where('er_sc.evaluator_id', $userId);
-                    }
+                    $treeIds = $this->cascadeTreeFolderIds($targetFolderIds, $userId);
+                    $builder->whereIn('df.id', $treeIds ?: ['__none__']);
                 } elseif (!in_array($sysRole, ['Admin', 'HR', 'TWG', 'PMT'])) {
                     $builder->where('df.user_id', $userId);
                 }
@@ -1171,10 +1149,17 @@ class Dashboard extends BaseController
         }
 
         if (!$isCycleArchived && !empty($unstartedScopedUnitIds)) {
+            // "Not yet cascaded" = no folder in this cycle at all, from anyone (and never the viewer).
             $existingUserIds = array_column($cycleFolders, 'user_id');
+            if (!empty($targetFolderIds)) {
+                foreach ($db->table('document_folders')->select('user_id')->whereIn('id', $targetFolderIds)->where('deleted_at IS NULL')->get()->getResultArray() as $r) {
+                    $existingUserIds[] = $r['user_id'];
+                }
+            }
+            $existingUserIds[] = $userId;
             $activeEmployees = $db->table('users u')
-                ->select("u.id as user_id, u.first_name, u.last_name, u.email,
-                          p.employment_status,
+                ->select("u.id as user_id, u.first_name, u.last_name, u.email, u.doc_type,
+                          COALESCE(u.employment_status, p.employment_status) as employment_status,
                           pos.title as position, pos.is_teaching,
                           un.id as unit_id, un.name as department")
                 ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'inner')
@@ -1200,7 +1185,7 @@ class Dashboard extends BaseController
                         'last_name'         => $ce['last_name'],
                         'email'             => $ce['email'],
                         'employment_status' => $ce['employment_status'] ?? 'Permanent',
-                        'doc_type'          => (($ce['is_teaching'] ?? 0) == 1 ? 'IPCR' : 'IPERF'),
+                        'doc_type'          => $ce['doc_type'] ?: \App\Libraries\OrgStructure::instance()->defaultDocTypeFor((int) $ce['user_id']),
                         'position'          => $ce['position'] ?? 'Faculty / Staff',
                         'is_teaching'       => $ce['is_teaching'] ?? 0,
                         'unit_id'           => $ce['unit_id'],
@@ -1219,7 +1204,7 @@ class Dashboard extends BaseController
             $f['is_unstarted'] = empty($f['folder_id']) || ($f['folder_status'] ?? '') === 'unstarted';
             $f['department']   = !empty($f['department']) ? $f['department'] : 'General Administration / Unassigned';
             $f['position']     = !empty($f['position']) ? $f['position'] : 'Faculty / Staff';
-            $f['doc_type']     = !empty($f['doc_type']) ? strtoupper($f['doc_type']) : (($f['is_teaching'] ?? 0) == 1 ? 'IPCR' : 'IPERF');
+            $f['doc_type']     = !empty($f['doc_type']) ? strtoupper($f['doc_type']) : \App\Libraries\OrgStructure::instance()->defaultDocTypeFor((int) ($f['user_id'] ?? 0));
 
             $empStatus = !empty($f['employment_status']) ? trim($f['employment_status']) : 'Permanent';
             $f['employment_status'] = $empStatus;

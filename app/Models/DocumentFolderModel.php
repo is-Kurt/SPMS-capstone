@@ -77,7 +77,7 @@ class  DocumentFolderModel extends Model
      * only sees folders they've actually been routed to evaluate via a cascaded Team
      * (evaluation_routings.evaluator_id), not everyone in the organization.
      */
-    public function getRatingDashboardFolders(int $userId, string $sysRole, ?string $parentFolderId = null, bool $isPresident = false): array
+    public function getRatingDashboardFolders(int $userId, string $sysRole, ?string $parentFolderId = null): array
     {
         $cascadedCondition = ($sysRole === 'Admin')
             ? "(pf.parent_folder_id IS NULL AND (pf.user_id = " . (int)$userId . " OR er_me.evaluator_id IS NOT NULL))"
@@ -90,7 +90,7 @@ class  DocumentFolderModel extends Model
                       REPLACE(GROUP_CONCAT(DISTINCT un.name), ',', ', ') as department,
                       GROUP_CONCAT(DISTINCT un.id) as unit_id,
                       MAX(pos.is_teaching) as is_teaching,
-                      COALESCE(MAX(p.employment_status), 'Permanent') as employment_status,
+                      COALESCE(u.employment_status, MAX(p.employment_status), 'Permanent') as employment_status,
                       df.final_rating, df.status as folder_status,
                       df.current_version, df.target_submitted_at, df.submitted_at,
                       df.target_approved_at, df.target_approver_role,
@@ -115,15 +115,7 @@ class  DocumentFolderModel extends Model
             }
         }
 
-        if ($isPresident) {
-            // President's exclusive scope: Executive review of Vice Presidents' institutional OPCRs
-            $builder->groupStart()
-                ->where('LOWER(u.doc_type)', 'opcr')
-                ->orLike('pos.title', 'Vice President', 'both')
-                ->orLike('u.email', 'vp', 'both')
-                ->orLike('u.email', 'cao', 'both')
-            ->groupEnd();
-        } elseif ($sysRole === 'Admin') {
+        if ($sysRole === 'Admin') {
             // Admin has institutional oversight over all submissions in the cycle,
             // while distinguishing what Admin directly cascaded vs subordinate folders via is_cascaded_by_me
         } elseif ($sysRole === 'TWG') {
@@ -549,22 +541,13 @@ class  DocumentFolderModel extends Model
         $userModel = new \App\Models\UserModel();
         $owner = !empty($folder['user_id']) ? $userModel->find($folder['user_id']) : null;
         
+        // The deadlines that apply follow the owner's form type (or, when none is set yet, the one the
+        // doc-type rules give them), never their job title or email.
         $docType = null;
         if ($owner) {
-            $plantilla = $userModel->getActivePlantillaDetails($owner['id']);
-            $pos = strtolower($plantilla['position'] ?? '');
-            $email = strtolower($owner['email'] ?? '');
-            $isDean = str_contains($pos, 'dean') || str_contains($email, 'dean');
-            $isChair = str_contains($pos, 'chair') || str_contains($pos, 'head') || str_contains($email, 'chair');
-
-            $docType = !empty($owner['doc_type']) ? strtolower($owner['doc_type']) : null;
-            if (!$docType) {
-                if ($isDean || $isChair) {
-                    $docType = 'dpcr';
-                } elseif (str_contains($pos, 'president') || str_contains($pos, 'vpaa') || str_contains($email, 'vpaa')) {
-                    $docType = 'opcr';
-                }
-            }
+            $docType = !empty($owner['doc_type'])
+                ? strtolower($owner['doc_type'])
+                : strtolower(\App\Libraries\OrgStructure::instance()->defaultDocTypeFor((int) $owner['id']));
         }
         $docType = $docType ?: 'ipcr';
 

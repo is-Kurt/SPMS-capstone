@@ -531,7 +531,9 @@ class Document extends BaseController
             'dept'        => $ownerDept,
             'roles'       => $ownerRoles,
             'period'      => $docPeriod,
-            'cascadeDate' => $cascadeDate
+            'cascadeDate' => $cascadeDate,
+            // Heads a unit with sub-units (e.g. a college): picks the DPCR signature labels (2026-11-07).
+            'headsSubunits' => \App\Libraries\OrgStructure::instance()->headsUnitWithSubunits((int) $docOwnerId),
         ];
 
         // Ratee navigation for evaluators

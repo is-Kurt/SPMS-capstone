@@ -29,8 +29,8 @@ class Rating extends BaseController
 
         $folderModel = new DocumentFolderModel();
 
-        // For TWG/PMT (who do not author personal folders), Admins, or Supervisors without personal folders
-        // (such as the University President), display institutional root evaluation cycle folders in the sidebar.
+        // For TWG/PMT (who do not author personal folders), Admins, or Supervisors without personal folders,
+        // display institutional root evaluation cycle folders in the sidebar.
         $userPersonalFolders = $folderModel->where('user_id', $userId)->where('deleted_at IS NULL')->orderBy('created_at', 'DESC')->findAll();
         if (in_array($sysRole, ['TWG', 'PMT', 'Admin']) || empty($userPersonalFolders)) {
             $folders = $folderModel->where('parent_folder_id IS NULL')
@@ -86,10 +86,6 @@ class Rating extends BaseController
         }
 
         if ($sysRole === 'Admin' && !empty($folders)) {
-            $userModel = new \App\Models\UserModel();
-            $presidentUser = $userModel->where('email', 'president@test.com')->first();
-            $presId = $presidentUser ? (int)$presidentUser['id'] : null;
-
             $routingModel = new EvaluationRoutingModel();
             $parentIds = array_column($folders, 'id');
             if (!empty($parentIds)) {
@@ -100,9 +96,6 @@ class Rating extends BaseController
                     ->findAll();
 
                 foreach ($childFolders as $cf) {
-                    if ($presId && $presId !== (int)$userId) {
-                        $routingModel->where('folder_id', $cf['id'])->where('evaluator_id', $presId)->delete();
-                    }
                     $rExists = $routingModel->where('folder_id', $cf['id'])->where('evaluator_id', $userId)->first();
                     if (!$rExists) {
                         $routingModel->insert([
@@ -132,8 +125,7 @@ class Rating extends BaseController
             ");
         }
 
-        $isPresident = (bool) (session()->get('is_president') ?? false);
-        $rawFolders = $folderModel->getRatingDashboardFolders($userId, $sysRole, $rootFolderId, $isPresident);
+        $rawFolders = $folderModel->getRatingDashboardFolders($userId, $sysRole, $rootFolderId);
 
         foreach ($rawFolders as &$f) {
             if ($f['position'])   $f['position']   = str_replace(',', ', ', $f['position']);

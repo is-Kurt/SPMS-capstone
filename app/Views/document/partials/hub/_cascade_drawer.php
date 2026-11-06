@@ -1,13 +1,10 @@
         <?php 
             $isUserAdmin = (session()->get('role') === 'Admin');
-            $userPos = strtolower(session()->get('position') ?? '');
             $userDocType = strtolower(session()->get('doc_type') ?? '');
             $docType = strtolower($ownerDocType ?? 'ipcr');
-            $isOpcrFolder = ($docType === 'opcr') 
+            // OPCR folder: by form type and title only (no job titles or emails).
+            $isOpcrFolder = ($docType === 'opcr')
                          || str_contains(strtoupper($activeFolder['title'] ?? ''), 'OPCR')
-                         || str_contains($userPos, 'vice president')
-                         || str_contains($userPos, 'vpaa')
-                         || str_contains($userPos, 'president')
                          || ($userDocType === 'opcr');
 
             if (!$isOpcrFolder && !empty($documents)) {
@@ -19,12 +16,8 @@
                 }
             }
 
-            $isSupervisorOrChair = in_array(session()->get('role'), ['Supervisor', 'Admin']) 
-                                || !empty($isOwnerChair) 
-                                || str_contains($userPos, 'chair') 
-                                || str_contains($userPos, 'head')
-                                || str_contains($userPos, 'dean')
-                                || $isOpcrFolder;
+            // Cascading (My Staff) is for Admins and Supervisors: the same roles the cascade routes allow.
+            $isSupervisorOrChair = in_array(session()->get('role'), ['Supervisor', 'Admin']);
             $canCascade = $isUserAdmin || ($isSupervisorOrChair && ($activeFolder['user_id'] == session()->get('user_id'))); 
             $tStartDate = !empty($activeFolder[$docType . '_target_start']) ? date('M d, Y', strtotime($activeFolder[$docType . '_target_start'])) : null;
             $tEndDate   = !empty($activeFolder[$docType . '_target_end'])   ? date('M d, Y', strtotime($activeFolder[$docType . '_target_end']))   : null;

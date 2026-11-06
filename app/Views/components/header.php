@@ -4,11 +4,6 @@
     $currentUri = uri_string();
     $role = session()->get('role');
     $uRole = UserRole::canonical($role);
-    $userPos = strtolower(session()->get('position') ?? '');
-    $userEmail = strtolower(session()->get('email') ?? '');
-    $isPresident = session()->get('is_president') 
-                || (str_contains($userPos, 'president') && !str_contains($userPos, 'vice')) 
-                || str_contains($userEmail, 'president');
 
     $navItems = [];
 
@@ -18,7 +13,7 @@
     }
 
     // TWG, PMT only review performance; they don't author personal folders.
-    if ($uRole && !$uRole->isComplianceAuthority() && ($uRole === UserRole::ADMIN || !$isPresident)) {
+    if ($uRole && !$uRole->isComplianceAuthority()) {
         $navItems['folders'] = 'Folders';
     }
 
@@ -28,12 +23,12 @@
     if ($sessUserId) {
         $isEvaluator = (new \App\Models\EvaluationRoutingModel())->where('evaluator_id', $sessUserId)->countAllResults() > 0;
     }
-    if (($uRole && ($uRole->isReviewer() || $uRole === UserRole::HR)) || $isEvaluator || $isPresident) {
+    if (($uRole && ($uRole->isReviewer() || $uRole === UserRole::HR)) || $isEvaluator) {
         $navItems['ratings'] = 'Ratings';
     }
 
-    // Admins, Supervisors, and Department Chairs create Distribution Lists (Staff)
-    $canManageTeams = ($uRole === UserRole::ADMIN) || (!$isPresident && (($uRole && $uRole->isAdministrative()) || str_contains($userPos, 'chair') || str_contains($userPos, 'head')));
+    // Admins and Supervisors (unit heads) create Distribution Lists (Staff): the roles the teams routes allow.
+    $canManageTeams = ($uRole === UserRole::ADMIN) || ($uRole && $uRole->isAdministrative());
     if ($canManageTeams) {
         $navItems['teams'] = 'My Staff';
     }

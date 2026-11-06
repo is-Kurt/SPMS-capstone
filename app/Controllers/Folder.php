@@ -30,16 +30,10 @@ class Folder extends BaseController
      * their commitments alongside their own.
      */
     public function index($folderId = null) {
-        $userPos = strtolower(session()->get('position') ?? '');
-        $userEmail = strtolower(session()->get('email') ?? '');
-        $isPresident = session()->get('is_president') 
-                    || (str_contains($userPos, 'president') && !str_contains($userPos, 'vice')) 
-                    || str_contains($userEmail, 'president');
-
         $userId   = session()->get('user_id');
         $role     = session()->get('role');
 
-        if (in_array($role, ['TWG', 'PMT']) || ($role !== 'Admin' && $isPresident)) {
+        if (in_array($role, ['TWG', 'PMT'])) {
             return redirect()->to(site_url('ratings'));
         }
 
@@ -235,11 +229,10 @@ class Folder extends BaseController
         if ($activeFolder) {
             $owner = $userModel->find($activeFolder['user_id']);
             $ownerDocType = $owner['doc_type'] ?? null;
-            $ownerPlantilla = $userModel->getActivePlantillaDetails($activeFolder['user_id']);
-            $posTitle = strtolower($ownerPlantilla['position'] ?? '');
-            $userEmail = strtolower($owner['email'] ?? '');
-            $isOwnerDean = str_contains($posTitle, 'dean') || str_contains($userEmail, 'dean');
-            $isOwnerChair = str_contains($posTitle, 'chair') || str_contains($posTitle, 'head') || str_contains($userEmail, 'chair');
+            // From the organisation structure, not job titles: "Dean" = heads a unit with sub-units (collegiate DPCR).
+            $org = \App\Libraries\OrgStructure::instance();
+            $isOwnerDean = $org->headsUnitWithSubunits((int) $activeFolder['user_id']);
+            $isOwnerChair = $org->isHead((int) $activeFolder['user_id']);
         }
 
         $parentFolder = null;
@@ -273,14 +266,8 @@ class Folder extends BaseController
 
         $cascadedChildren = [];
         $pendingTeamMembers = [];
-        $userPosLower = strtolower(session()->get('position') ?? '');
-        $isUserSupervisorOrChair = in_array($role, ['Admin', 'Supervisor']) 
-                                || $isOwnerChair 
-                                || str_contains($userPosLower, 'chair')
-                                || str_contains($userPosLower, 'head')
-                                || str_contains($userPosLower, 'dean')
-                                || str_contains($userPosLower, 'president')
-                                || str_contains($userPosLower, 'vpaa')
+        $isUserSupervisorOrChair = in_array($role, ['Admin', 'Supervisor'])
+                                || \App\Libraries\OrgStructure::instance()->isHead((int) $userId)
                                 || !empty($isMyDocOpcr);
         if ($activeFolder && $isUserSupervisorOrChair) {
             $routingModel = new \App\Models\EvaluationRoutingModel();
@@ -914,14 +901,6 @@ class Folder extends BaseController
                     // Pre-generate the member's official evaluation paper based on profile doc_type
                     $this->ensureUserDocumentExists($newFolderId, $member['user_id'], $activeFolder['title']);
 
-                    // Remove any stale routing to a separate president user so Admin who cascaded is the sole evaluator
-                    $presidentUser = $userModel->where('email', 'president@test.com')->first();
-                    if ($presidentUser && (int)$presidentUser['id'] !== (int)$userId) {
-                        $routingModel->where('folder_id', $newFolderId)
-                                      ->where('evaluator_id', (int)$presidentUser['id'])
-                                      ->delete();
-                    }
-
                     // Register evaluator routing so member's submission routes to Admin (who cascaded it)
                     $routingExists = $routingModel->where('folder_id', $newFolderId)
                                                   ->where('evaluator_id', $userId)->first();
@@ -951,13 +930,6 @@ class Folder extends BaseController
             } else {
                 $batchId = $activeFolder['id'];
 
-                // Detect supervisor position/tier (e.g. Department Chair cascading to faculty)
-                $callerPlantilla = $userModel->getActivePlantillaDetails($userId);
-                $callerPos = strtolower($callerPlantilla['position'] ?? '');
-                $callerEmail = strtolower(session()->get('email') ?? '');
-                $isCallerChair = str_contains($callerPos, 'chair') 
-                              || str_contains($callerPos, 'head') 
-                              || str_contains($callerEmail, 'chair');
 
                 $cascadedCount = 0;
 
@@ -968,8 +940,14 @@ class Folder extends BaseController
                     
                     // If member already has a folder for this cycle, attach to it to support multiple supervisor cascades
                     if (!$subFolder) {
+                        // Same cycle = same root cycle folder (titles can repeat across cycles); title only as a
+                        // fallback for a folder that has no cycle recorded.
+                        $cycleRootId = $activeFolder['cycle_folder_id'] ?? $folderModel->getRootCycleFolderId($activeFolder['id']);
                         $existingCycleFolder = $folderModel->where('user_id', $member['user_id'])
-                                                           ->where('title', $activeFolder['title'])
+                                                           ->groupStart()
+                                                               ->where('cycle_folder_id', $cycleRootId)
+                                                               ->orGroupStart()->where('cycle_folder_id IS NULL')->where('title', $activeFolder['title'])->groupEnd()
+                                                           ->groupEnd()
                                                            ->where('deleted_at IS NULL')->first();
                         if ($existingCycleFolder) {
                             $subFolder = $existingCycleFolder;
@@ -1259,14 +1237,6 @@ class Folder extends BaseController
                 return $this->respondError("The staff list currently has no members. Add members in the My Staff tab first.", 400);
             }
 
-            // Detect caller position
-            $callerPlantilla = $userModel->getActivePlantillaDetails($userId);
-            $callerPos = strtolower($callerPlantilla['position'] ?? '');
-            $callerEmail = strtolower(session()->get('email') ?? '');
-            $isCallerChair = str_contains($callerPos, 'chair') 
-                          || str_contains($callerPos, 'head') 
-                          || str_contains($callerEmail, 'chair');
-
             $folderModel->db->transStart();
 
             $addedCount = 0;
@@ -1295,9 +1265,14 @@ class Folder extends BaseController
                     continue;
                 }
 
-                // Check if member already has a folder for this cycle/title (cascaded by another supervisor)
+                // Check if member already has a folder for this cycle (cascaded by another supervisor): matched by
+                // the root cycle folder, title only as a fallback for a folder with no cycle recorded.
+                $cycleRootId = $activeFolder['cycle_folder_id'] ?? $folderModel->getRootCycleFolderId($activeFolder['id']);
                 $existingCycleFolder = $folderModel->where('user_id', $targetUserId)
-                                                   ->where('title', $activeFolder['title'])
+                                                   ->groupStart()
+                                                       ->where('cycle_folder_id', $cycleRootId)
+                                                       ->orGroupStart()->where('cycle_folder_id IS NULL')->where('title', $activeFolder['title'])->groupEnd()
+                                                   ->groupEnd()
                                                    ->where('deleted_at IS NULL')
                                                    ->first();
                 if ($existingCycleFolder) {
@@ -1556,35 +1531,12 @@ class Folder extends BaseController
         $user = $userModel->find($userId);
         if (!$user) return null;
 
-        $targetUserIsAdmin = $userModel->hasRole($userId, 'Admin');
-
-        // Check if user is an Executive (VPAA, VP, President), Dean, or Department Chair
-        $plantilla = $userModel->getActivePlantillaDetails($userId);
-        $posTitle = strtolower($plantilla['position'] ?? '');
-        $userEmail = strtolower($user['email'] ?? '');
-        $isExecutive = str_contains($posTitle, 'vpaa') 
-                    || str_contains($posTitle, 'vice president') 
-                    || str_contains($posTitle, 'president')
-                    || str_contains($userEmail, 'vpaa')
-                    || str_contains($userEmail, 'cao');
-        $isDean = str_contains($posTitle, 'dean') || str_contains($userEmail, 'dean');
-        $isChair = str_contains($posTitle, 'chair') 
-                || str_contains($posTitle, 'head')
-                || str_contains($userEmail, 'chair');
-
-        $defaultDoc = 'IPCR';
-        if ($targetUserIsAdmin || $isExecutive) {
-            $defaultDoc = 'OPCR';
-        } elseif ($isDean || $isChair) {
-            $defaultDoc = 'DPCR';
-        } elseif (($plantilla['is_teaching'] ?? 1) == 0) {
-            $defaultDoc = 'IPERF';
-        }
-
-        $docType = $overrideDocType 
-                ?: (!empty($user['doc_type']) 
-                    ? strtoupper(trim($user['doc_type'])) 
-                    : $defaultDoc);
+        // The form type: an explicit override, else the person's form type, else the one the doc-type rules give
+        // their role and employment status (Admin: OPCR). Never guessed from job titles or emails (2026-11-07).
+        $docType = $overrideDocType
+                ?: (!empty($user['doc_type'])
+                    ? strtoupper(trim($user['doc_type']))
+                    : \App\Libraries\OrgStructure::instance()->defaultDocTypeFor((int) $userId));
 
         // Check if document already exists in this folder
         $existing = $documentModel->where('document_folder_id', $folderId)->first();
@@ -3039,10 +2991,6 @@ class Folder extends BaseController
     public function approveTarget() {
         return $this->tryOrFail(function() {
             $folderId = $this->request->getPost('folder_id');
-            $releaseScope = $this->request->getPost('release_scope');
-            $releaseToDeans = (bool) $this->request->getPost('release_to_deans') || ($releaseScope === 'deans');
-            $releaseToChairs = ($releaseScope === 'chairs');
-            $releaseToFaculty = ($releaseScope === 'faculty') || ($releaseScope === 'subordinates');
             $folderModel = new DocumentFolderModel();
             
             $folder = $folderModel->find($folderId);
@@ -3188,8 +3136,9 @@ class Folder extends BaseController
                 return $this->respond(['status' => 'success', 'message' => "Targets verified and approved by {$userRole} successfully."]);
             }
 
-            $approverRole = (session()->get('is_president') || session()->get('role') === 'Admin') 
-                ? 'University President' 
+            // The Admin approves the Vice Presidents' OPCRs on the University President's behalf.
+            $approverRole = session()->get('role') === 'Admin'
+                ? 'University President'
                 : (session()->get('role') ?: 'Supervisor');
 
             // If there are multiple supervisors and NOT all have approved yet:
@@ -3251,247 +3200,6 @@ class Folder extends BaseController
                 'target_approver_role' => $approverRole
             ]);
 
-            $unitModel = new \App\Models\UnitModel();
-            $releasedCount = 0;
-            $cycleFolderId = $folder['cycle_folder_id'] ?? $folderModel->getRootCycleFolderId($folder['id']);
-            $cycleId = $folder['cycle_id'] ?? null;
-
-            // --- TIER 1 -> TIER 2: APPROVE & RELEASE TO COLLEGE DEANS (FROM OPCR) ---
-            if ($releaseToDeans) {
-                // Find all active accounts holding a Dean position (or dean test accounts)
-                $deanUsers = $userModel
-                    ->select('users.id, users.first_name, users.last_name, users.doc_type')
-                    ->join('plantillas p', 'p.user_id = users.id AND p.ended_at IS NULL', 'left')
-                    ->join('positions pos', 'pos.id = p.position_id', 'left')
-                    ->where('users.is_active', 1)
-                    ->groupStart()
-                        ->like('pos.title', 'Dean', 'both')
-                        ->orLike('users.email', 'dean', 'both')
-                    ->groupEnd()
-                    ->groupBy('users.id')
-                    ->findAll();
-
-                foreach ($deanUsers as $dean) {
-                    $existing = $folderModel->where('parent_folder_id', $folder['id'])
-                                            ->where('user_id', $dean['id'])
-                                            ->where('deleted_at IS NULL')->first();
-                    if (!$existing) {
-                        $newFolderId = create_unique_row($folderModel, [
-                            'title'               => $folder['title'],
-                            'user_id'             => $dean['id'],
-                            'cycle_id'            => $cycleId,
-                            'parent_folder_id'    => $folder['id'],
-                            'cycle_folder_id'     => $cycleFolderId,
-                            'status'              => FolderStatus::DRAFT_TARGET->value,
-                        ]);
-                        
-                        // Force DPCR paper generation for the Dean
-                        $this->ensureUserDocumentExists($newFolderId, $dean['id'], $folder['title'], 'DPCR');
-
-                        // Route Dean to VPAA / Root authority
-                        $rExists = $routingModel->where('folder_id', $newFolderId)->where('evaluator_id', $folder['user_id'])->first();
-                        if (!$rExists) {
-                            $routingModel->insert([
-                                'folder_id'           => $newFolderId,
-                                'evaluator_id'        => $folder['user_id'],
-                                'evaluator_folder_id' => $folder['id'],
-                                'status'              => \App\Enums\EvaluationRoutingStatus::DRAFT->value
-                            ]);
-                        }
-
-                        notify_user((int) $dean['id'], [
-                            'sender_id' => session()->get('user_id'),
-                            'type'      => 'target_released',
-                            'title'     => 'Institutional OPCR Basis Released',
-                            'message'   => "Institutional OPCR targets for \"{$folder['title']}\" have been approved and released to all colleges as basis for your collegiate DPCR.",
-                            'link'      => 'folders/' . $newFolderId,
-                            'icon'      => 'file',
-                        ]);
-
-                        $releasedCount++;
-                    }
-                }
-            }
-
-            // --- TIER 2 -> TIER 3: APPROVE & RELEASE TO DEPARTMENT CHAIRS (FROM DEAN DPCR) ---
-            if ($releaseToChairs) {
-                $deanPlantilla = $userModel->getActivePlantillaDetails($folder['user_id']);
-                $collegeUnitId = $deanPlantilla['unit_id'] ?? null;
-                $chairs = $collegeUnitId ? $unitModel->getChairsForCollege((int) $collegeUnitId) : [];
-
-                foreach ($chairs as $chair) {
-                    $existing = $folderModel->where('parent_folder_id', $folder['id'])
-                                            ->where('user_id', $chair['user_id'])
-                                            ->where('deleted_at IS NULL')->first();
-                    if (!$existing) {
-                        $newFolderId = create_unique_row($folderModel, [
-                            'title'               => $folder['title'],
-                            'user_id'             => $chair['user_id'],
-                            'cycle_id'            => $cycleId,
-                            'parent_folder_id'    => $folder['id'],
-                            'cycle_folder_id'     => $cycleFolderId,
-                            'status'              => FolderStatus::DRAFT_TARGET->value,
-                        ]);
-
-                        // Force DPCR paper generation for the Department Chair
-                        $this->ensureUserDocumentExists($newFolderId, $chair['user_id'], $folder['title'], 'DPCR');
-
-                        // Immediate Evaluator: College Dean
-                        $r1 = $routingModel->where('folder_id', $newFolderId)->where('evaluator_id', $folder['user_id'])->first();
-                        if (!$r1) {
-                            $routingModel->insert([
-                                'folder_id'           => $newFolderId,
-                                'evaluator_id'        => $folder['user_id'],
-                                'evaluator_folder_id' => $folder['id'],
-                                'status'              => \App\Enums\EvaluationRoutingStatus::DRAFT->value
-                            ]);
-                        }
-
-                        // Next-in-Rank Calibrator: VPAA (parent folder owner)
-                        if (!empty($folder['parent_folder_id'])) {
-                            $vpaaFolder = $folderModel->find($folder['parent_folder_id']);
-                            if ($vpaaFolder && !empty($vpaaFolder['user_id']) && $vpaaFolder['user_id'] != $folder['user_id']) {
-                                $r2 = $routingModel->where('folder_id', $newFolderId)->where('evaluator_id', $vpaaFolder['user_id'])->first();
-                                if (!$r2) {
-                                    $routingModel->insert([
-                                        'folder_id'           => $newFolderId,
-                                        'evaluator_id'        => $vpaaFolder['user_id'],
-                                        'evaluator_folder_id' => $vpaaFolder['id'],
-                                        'status'              => \App\Enums\EvaluationRoutingStatus::DRAFT->value
-                                    ]);
-                                }
-                            }
-                        }
-
-                        notify_user((int) $chair['user_id'], [
-                            'sender_id' => session()->get('user_id'),
-                            'type'      => 'target_released',
-                            'title'     => 'Collegiate DPCR Basis Released',
-                            'message'   => "Collegiate DPCR targets for \"{$folder['title']}\" have been approved and released to your department as basis for your DPCR.",
-                            'link'      => 'folders/' . $newFolderId,
-                            'icon'      => 'file',
-                        ]);
-
-                        $releasedCount++;
-                    }
-                }
-
-                // Skip-level: personnel directly assigned to the college (not under any department with a chair)
-                $chairUserIds = array_column($chairs, 'user_id');
-                $directPersonnel = $collegeUnitId ? $unitModel->getPersonnelForDepartment((int) $collegeUnitId, (int) $folder['user_id']) : [];
-                foreach ($directPersonnel as $dp) {
-                    if (in_array($dp['user_id'], $chairUserIds)) continue;
-                    $existing = $folderModel->where('parent_folder_id', $folder['id'])
-                                            ->where('user_id', $dp['user_id'])
-                                            ->where('deleted_at IS NULL')->first();
-                    if (!$existing) {
-                        $newFolderId = create_unique_row($folderModel, [
-                            'title'               => $folder['title'],
-                            'user_id'             => $dp['user_id'],
-                            'cycle_id'            => $cycleId,
-                            'parent_folder_id'    => $folder['id'],
-                            'cycle_folder_id'     => $cycleFolderId,
-                            'status'              => FolderStatus::DRAFT_TARGET->value,
-                        ]);
-                        $this->ensureUserDocumentExists($newFolderId, $dp['user_id'], $folder['title'], 'IPCR');
-
-                        $r = $routingModel->where('folder_id', $newFolderId)->where('evaluator_id', $folder['user_id'])->first();
-                        if (!$r) {
-                            $routingModel->insert([
-                                'folder_id'           => $newFolderId,
-                                'evaluator_id'        => $folder['user_id'],
-                                'evaluator_folder_id' => $folder['id'],
-                                'status'              => \App\Enums\EvaluationRoutingStatus::DRAFT->value
-                            ]);
-                        }
-                        $releasedCount++;
-                    }
-                }
-            }
-
-            // --- TIER 3 -> TIER 4: APPROVE & RELEASE TO FACULTY/STAFF (FROM CHAIR DPCR) ---
-            if ($releaseToFaculty) {
-                $chairPlantilla = $userModel->getActivePlantillaDetails($folder['user_id']);
-                $deptUnitId = $chairPlantilla['unit_id'] ?? null;
-                $facultyList = $deptUnitId ? $unitModel->getPersonnelForDepartment((int) $deptUnitId, (int) $folder['user_id']) : [];
-
-                // Also include any team members if this folder was cascaded to a team preset
-                if (!empty($folder['routing_preset_id'])) {
-                    $teamMembers = (new \App\Models\RoutingPresetMemberModel())->where('preset_id', $folder['routing_preset_id'])->findAll();
-                    $existingFacultyUserIds = array_column($facultyList, 'user_id');
-                    foreach ($teamMembers as $tm) {
-                        if ($tm['user_id'] != $folder['user_id'] && !in_array($tm['user_id'], $existingFacultyUserIds)) {
-                            $facultyList[] = ['user_id' => $tm['user_id']];
-                        }
-                    }
-                }
-
-                // Resolve Dean for Secondary Evaluator / Next-in-Rank Calibrator
-                $deanUserId = null;
-                $deanFolderId = null;
-                if (!empty($folder['parent_folder_id'])) {
-                    $parentFolder = $folderModel->find($folder['parent_folder_id']);
-                    if ($parentFolder && !empty($parentFolder['user_id'])) {
-                        $deanUserId = $parentFolder['user_id'];
-                        $deanFolderId = $parentFolder['id'];
-                    }
-                }
-
-                foreach ($facultyList as $faculty) {
-                    $existing = $folderModel->where('parent_folder_id', $folder['id'])
-                                            ->where('user_id', $faculty['user_id'])
-                                            ->where('deleted_at IS NULL')->first();
-                    if (!$existing) {
-                        $newFolderId = create_unique_row($folderModel, [
-                            'title'               => $folder['title'],
-                            'user_id'             => $faculty['user_id'],
-                            'cycle_id'            => $cycleId,
-                            'parent_folder_id'    => $folder['id'],
-                            'cycle_folder_id'     => $cycleFolderId,
-                            'status'              => FolderStatus::DRAFT_TARGET->value,
-                        ]);
-
-                        // Ensure IPCR paper exists for Faculty
-                        $this->ensureUserDocumentExists($newFolderId, $faculty['user_id'], $folder['title'], 'IPCR');
-
-                        // Immediate Evaluator: Department Chair
-                        $r1 = $routingModel->where('folder_id', $newFolderId)->where('evaluator_id', $folder['user_id'])->first();
-                        if (!$r1) {
-                            $routingModel->insert([
-                                'folder_id'           => $newFolderId,
-                                'evaluator_id'        => $folder['user_id'],
-                                'evaluator_folder_id' => $folder['id'],
-                                'status'              => \App\Enums\EvaluationRoutingStatus::DRAFT->value
-                            ]);
-                        }
-
-                        // Secondary Evaluator: College Dean
-                        if ($deanUserId && $deanUserId != $folder['user_id']) {
-                            $r2 = $routingModel->where('folder_id', $newFolderId)->where('evaluator_id', $deanUserId)->first();
-                            if (!$r2) {
-                                $routingModel->insert([
-                                    'folder_id'           => $newFolderId,
-                                    'evaluator_id'        => $deanUserId,
-                                    'evaluator_folder_id' => $deanFolderId,
-                                    'status'              => \App\Enums\EvaluationRoutingStatus::DRAFT->value
-                                ]);
-                            }
-                        }
-
-                        notify_user((int) $faculty['user_id'], [
-                            'sender_id' => session()->get('user_id'),
-                            'type'      => 'target_released',
-                            'title'     => 'Department Targets Released',
-                            'message'   => "Department targets for \"{$folder['title']}\" have been approved and released. You may now craft and submit your IPCR.",
-                            'link'      => 'folders/' . $newFolderId,
-                            'icon'      => 'file',
-                        ]);
-
-                        $releasedCount++;
-                    }
-                }
-            }
-
             // In-app notification to the employee whose target was approved
             notify_user((int) $folder['user_id'], [
                 'sender_id' => session()->get('user_id'),
@@ -3504,28 +3212,15 @@ class Folder extends BaseController
                 'icon'      => 'check',
             ]);
 
+            // Subordinates get their folders through cascading (My Staff / the Admin's cycle cascade).
             $logAction = $isTwgReviewer
                 ? "Target commitments verified by {$approverRole}: "
-                : ($releaseToDeans 
-                    ? "Target commitments approved and released to Deans: " 
-                    : ($releaseToChairs 
-                        ? "Target commitments approved and released to Department Chairs: " 
-                        : ($releaseToFaculty 
-                            ? "Target commitments approved and released to Faculty: " 
-                            : "Target commitments approved: ")));
+                : "Target commitments approved: ";
             audit_log('TARGET_APPROVED', 'TARGET', 'document_folder', (int) $folderId, $logAction . $folder['title']);
 
-            if ($isTwgReviewer) {
-                $msg = "Targets verified and approved by {$approverRole} successfully.";
-            } elseif ($releaseToDeans) {
-                $msg = "OPCR targets approved and successfully released to {$releasedCount} College Dean(s).";
-            } elseif ($releaseToChairs) {
-                $msg = "Collegiate DPCR targets approved and successfully released to {$releasedCount} Department Chair(s).";
-            } elseif ($releaseToFaculty) {
-                $msg = "Department DPCR targets approved and successfully released to {$releasedCount} Faculty member(s).";
-            } else {
-                $msg = "Targets approved successfully.";
-            }
+            $msg = $isTwgReviewer
+                ? "Targets verified and approved by {$approverRole} successfully."
+                : "Targets approved successfully.";
             
             return $this->respond(['status' => 'success', 'message' => $msg]);
         });
@@ -4265,11 +3960,6 @@ class Folder extends BaseController
             if ($owner && strtoupper($owner['doc_type'] ?? '') === 'OPCR') {
                 return true;
             }
-            $plantilla = $userModel->getActivePlantillaDetails($ownerId);
-            $pos = strtolower($plantilla['position'] ?? '');
-            if (str_contains($pos, 'vice president') || str_contains($pos, 'president') || str_contains($pos, 'vpaa')) {
-                return true;
-            }
         }
 
         if (!empty($folder['id'])) {
@@ -4301,14 +3991,11 @@ class Folder extends BaseController
         $owner = $userModel->find($folderUserId);
         if (!$owner) return;
 
-        $plantilla = $userModel->getActivePlantillaDetails($folderUserId);
-        $posTitle = strtolower($plantilla['position'] ?? '');
+        // Executive = an OPCR or the head of a top-level unit (e.g. a Vice President): their forms report
+        // to the Admin, who approves them on the University President's behalf.
         $docType = strtolower($owner['doc_type'] ?? '');
-        $isExecutive = ($docType === 'opcr') 
-                    || str_contains($posTitle, 'vice president') 
-                    || str_contains($posTitle, 'chief administrative officer')
-                    || str_contains(strtolower($owner['email'] ?? ''), 'vp')
-                    || str_contains(strtolower($owner['email'] ?? ''), 'cao');
+        $isExecutive = ($docType === 'opcr')
+                    || \App\Libraries\OrgStructure::instance()->isTopHead((int) $folderUserId);
 
         // If this folder is not an executive folder, ensure no Admin routing is inadvertently attached
         if (!$isExecutive) {
@@ -4351,14 +4038,6 @@ class Folder extends BaseController
         }
 
         if ($adminUserId && $adminUserId !== $folderUserId) {
-            // Remove any stale routing to a separate president account if distinct from admin
-            $presidentUser = $userModel->where('email', 'president@test.com')->first();
-            if ($presidentUser && (int)$presidentUser['id'] !== $adminUserId) {
-                $routingModel->where('folder_id', $folderId)
-                             ->where('evaluator_id', (int)$presidentUser['id'])
-                             ->delete();
-            }
-
             $exists = $routingModel->where('folder_id', $folderId)
                                   ->where('evaluator_id', $adminUserId)
                                   ->first();

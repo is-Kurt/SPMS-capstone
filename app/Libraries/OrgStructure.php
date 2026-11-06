@@ -247,6 +247,27 @@ class OrgStructure
         return array_values($out);
     }
 
+    /** Titles of the head positions this person holds (e.g. ['Dean']), for labels. */
+    public function headTitlesOf(int $userId): array
+    {
+        $out = [];
+        foreach ($this->assignmentsOf($userId) as $a) {
+            if ($a['unit_id'] && $a['position_id'] && $this->isHeadOf((int) $a['unit_id'], (int) $a['position_id'])) {
+                $out[] = $this->positions[(int) $a['position_id']]['title'] ?? '';
+            }
+        }
+        return array_values(array_unique(array_filter($out)));
+    }
+
+    /** Heads a unit that has sub-units (e.g. a college): its DPCR is collegiate / divisional. */
+    public function headsUnitWithSubunits(int $userId): bool
+    {
+        foreach ($this->headedUnitIds($userId) as $u) {
+            if (!empty($this->unitChildren[$u])) return true;
+        }
+        return false;
+    }
+
     public function isHead(int $userId): bool
     {
         return $this->headedUnitIds($userId) !== [];

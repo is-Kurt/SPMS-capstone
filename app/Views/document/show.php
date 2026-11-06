@@ -13,15 +13,20 @@
 
     $ownerDocType = strtolower($doc['doc_type'] ?? ($tabFormDocType ?: 'ipcr'));
     $docTitleUpper = strtoupper(trim($doc['title'] ?? '')) . ' ' . $tabFormTitleUpper;
-    $ownerPos = strtolower($ownerInfo['position'] ?? '');
-    $isOwnerDean = str_contains($ownerPos, 'dean');
-    $isOwnerChairOrHead = str_contains($ownerPos, 'chair') || str_contains($ownerPos, 'head');
+    // When neither the document nor its form says which form it is, use the owner's form type (or the one the
+    // doc-type rules give them), never their job title (2026-11-07).
+    $noStoredType = empty($doc['doc_type']) && empty($tabFormDocType);
+    $ownerFormType = '';
+    if ($noStoredType && !empty($doc['owner_id'])) {
+        $ownerRow = (new \App\Models\UserModel())->find($doc['owner_id']);
+        $ownerFormType = strtoupper((string) ($ownerRow['doc_type'] ?? '')) ?: \App\Libraries\OrgStructure::instance()->defaultDocTypeFor((int) $doc['owner_id']);
+    }
 
     $isTrueOpcr = $tabFormDocType === 'opcr' || str_contains($docTitleUpper, 'OPCR') || str_contains($docTitleUpper, 'OFFICE') || (strtoupper($doc['doc_type'] ?? '') === 'OPCR');
     $isTrueDpcr = $tabFormDocType === 'dpcr' || str_contains($docTitleUpper, 'DPCR') || str_contains($docTitleUpper, 'DIVISION') || str_contains($docTitleUpper, 'DEPARTMENT') || (strtoupper($doc['doc_type'] ?? '') === 'DPCR');
-    $isDocDpcr = ($ownerDocType === 'dpcr') || $isTrueDpcr || (empty($doc['doc_type']) && empty($tabFormDocType) && ($isOwnerDean || $isOwnerChairOrHead));
-    $isDocOpcr = (!$isDocDpcr) && ($isTrueOpcr || str_contains($ownerPos, 'vice president') || str_contains($ownerPos, 'president'));
-    $isDocIperf = (!$isDocDpcr && !$isDocOpcr) && ($ownerDocType === 'iperf' || $tabFormDocType === 'iperf' || stripos($docTitleUpper, 'iperf') !== false || (empty($doc['doc_type']) && empty($tabFormDocType) && isset($ownerInfo['is_teaching']) && (int)$ownerInfo['is_teaching'] === 0));
+    $isDocDpcr = ($ownerDocType === 'dpcr') || $isTrueDpcr || ($noStoredType && $ownerFormType === 'DPCR');
+    $isDocOpcr = (!$isDocDpcr) && ($isTrueOpcr || ($noStoredType && $ownerFormType === 'OPCR'));
+    $isDocIperf = (!$isDocDpcr && !$isDocOpcr) && ($ownerDocType === 'iperf' || $tabFormDocType === 'iperf' || stripos($docTitleUpper, 'iperf') !== false || ($noStoredType && $ownerFormType === 'IPERF'));
     $activeDocType = $isDocDpcr ? 'dpcr' : ($isDocOpcr ? 'opcr' : ($isDocIperf ? 'iperf' : 'ipcr'));
     $targetEndCol = $activeDocType . '_target_end';
     $evalEndCol = $activeDocType . '_eval_end';

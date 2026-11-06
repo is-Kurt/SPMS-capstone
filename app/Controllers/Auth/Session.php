@@ -304,19 +304,9 @@ class Session extends BaseController
         $department = $plantillaData ? $plantillaData['department'] : null;
         $position   = $plantillaData ? $plantillaData['position'] : null;
 
-        $posLower = strtolower($position ?? '');
-        $emailLower = strtolower($user['email'] ?? '');
-        $isPresident = str_contains($posLower, 'university president') 
-                    || (str_contains($posLower, 'president') && !str_contains($posLower, 'vice'))
-                    || str_contains($emailLower, 'president');
-
-        if (($systemRole === 'Employee') && (str_contains($posLower, 'chair') || str_contains($posLower, 'head'))) {
-            $systemRole = 'Supervisor';
-            $supRole = $userModel->db->table('roles')->where('name', 'Supervisor')->get()->getRowArray();
-            if ($supRole) {
-                $userModel->db->table('user_roles')->where('user_id', $user['id'])->update(['role_id' => $supRole['id']]);
-            }
-        }
+        // The role comes only from the admin (invite / User Directory). Logging in used to promote an
+        // Employee whose job title contained "chair" or "head" to Supervisor and rewrite their role;
+        // heads are now Supervisors by invitation (App\Libraries\OrgStructure), 2026-11-07.
 
         $deviceId = session()->get('device_id') ?: ($this->request->getCookie('spms_device_id') ?: $this->request->getPost('device_id'));
 
@@ -329,7 +319,6 @@ class Session extends BaseController
             'role'          => $systemRole, 
             'department'    => $department,
             'position'      => $position,
-            'is_president'  => $isPresident,
             'username'      => $user['first_name'] . ' ' . $user['last_name'],
             'doc_type'      => $user['doc_type'] ?? null,
             'isLoggedIn'    => true,
@@ -364,7 +353,7 @@ class Session extends BaseController
             return redirect()->to(site_url('dashboard'));
         }
 
-        if (in_array(session()->get('role'), ['TWG', 'PMT']) || $isPresident) {
+        if (in_array(session()->get('role'), ['TWG', 'PMT'])) {
             return redirect()->to(site_url('ratings'));
         }
 
