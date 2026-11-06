@@ -366,15 +366,20 @@
                                 </label>
                             </div>
 
-                            <?php if (getenv('CI_ENVIRONMENT') !== 'development'): ?>
+                            <?php $turnstileGate = getenv('CI_ENVIRONMENT') !== 'development'; ?>
+                            <?php if ($turnstileGate): ?>
                             <div class="pt-1.5 flex justify-center">
+                                <script src="<?= base_url('assets/js/main/turnstileGate.js') ?>"></script>
                                 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-                                <div class="cf-turnstile" data-sitekey="<?= esc(getenv('TURNSTILE_SITE_KEY')) ?>"></div>
+                                <div class="cf-turnstile" data-sitekey="<?= esc(getenv('TURNSTILE_SITE_KEY')) ?>"
+                                     data-callback="spmsTurnstilePassed" data-expired-callback="spmsTurnstileReset"
+                                     data-error-callback="spmsTurnstileReset" data-timeout-callback="spmsTurnstileReset"></div>
                             </div>
                             <?php endif; ?>
 
+                            <?php // Disabled until the security check passes (turnstileGate.js) ?>
                             <div class="pt-1.5">
-                                <button id="hero-login-submit-btn" type="submit" class="w-full bg-[#064e3b] hover:bg-[#085a3a] text-white font-bold py-3.5 rounded-xl cursor-pointer transition-all text-xs uppercase tracking-wider shadow-md active:scale-[0.98] flex items-center justify-center gap-2">
+                                <button id="hero-login-submit-btn" type="submit" <?= $turnstileGate ? 'disabled data-turnstile-gated title="Complete the security check above first"' : '' ?> class="w-full bg-[#064e3b] hover:bg-[#085a3a] text-white font-bold py-3.5 rounded-xl cursor-pointer transition-all text-xs uppercase tracking-wider shadow-md active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                     <span id="hero-login-btn-content" class="inline-flex items-center justify-center gap-2">
                                         <span>Log in</span>
                                     </span>

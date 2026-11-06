@@ -181,12 +181,16 @@
                             </div>
 
                             <div class="pt-2 flex justify-center">
-                                <div class="cf-turnstile" data-sitekey="<?= esc(getenv('TURNSTILE_SITE_KEY')) ?>"></div>
+                                <div class="cf-turnstile" data-sitekey="<?= esc(getenv('TURNSTILE_SITE_KEY')) ?>"
+                                     data-callback="spmsTurnstilePassed" data-expired-callback="spmsTurnstileReset"
+                                     data-error-callback="spmsTurnstileReset" data-timeout-callback="spmsTurnstileReset"></div>
                             </div>
 
+                            <?php // The button stays disabled until the security check passes (turnstileGate.js), wherever the server requires it (Auth\Session) ?>
+                            <?php $turnstileGate = getenv('CI_ENVIRONMENT') !== 'development'; ?>
                             <div class="pt-2">
-                                <button id="login-submit-btn" type="submit" 
-                                        class="w-full bg-[#064e3b] hover:bg-[#085a3a] text-white font-bold py-3 rounded-lg cursor-pointer transition-all duration-200 text-xs uppercase tracking-wider shadow-xs flex items-center justify-center gap-2">
+                                <button id="login-submit-btn" type="submit" <?= $turnstileGate ? 'disabled data-turnstile-gated title="Complete the security check above first"' : '' ?>
+                                        class="w-full bg-[#064e3b] hover:bg-[#085a3a] text-white font-bold py-3 rounded-lg cursor-pointer transition-all duration-200 text-xs uppercase tracking-wider shadow-xs flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                     <span id="login-btn-content" class="inline-flex items-center justify-center gap-2">
                                         <span>Log In to Workspace</span>
                                     </span>
@@ -256,6 +260,7 @@
     </div>
 </div>
 
+<script src="<?= base_url('assets/js/main/turnstileGate.js') ?>"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script src="<?= base_url('assets/packages/fingerprintjs/fp.min.js') ?>"></script>
 <script>
