@@ -25,6 +25,16 @@
                 <input type="text" id="filter-search" oninput="filterUsers()" placeholder="Search users by name or email..." class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-xl px-3 py-2 text-xs focus:border-accent outline-none text-text font-bold shadow-sm">
             </div>
 
+            <!-- Needs review (2026-11-07) -->
+            <?php if (!empty($flagCount)): ?>
+            <div class="shrink-0 pb-4 border-b border-surface-border/50">
+                <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-warning-500 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
+                    <input type="checkbox" id="filter-needs-review" onchange="filterUsers()" class="checkbox directory-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer">
+                    Needs review (<?= (int) $flagCount ?>)
+                </label>
+            </div>
+            <?php endif; ?>
+
             <!-- Roles Filter -->
             <div class="shrink-0 pb-4 border-b border-surface-border/50">
                 <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group cursor-pointer" onclick="
@@ -119,7 +129,8 @@
                             data-unit="<?= esc($u['unit_id'] ?? '') ?>"
                             data-dept="<?= esc($u['department'] ?? 'No Unit') ?>"
                             data-position="<?= esc($u['position'] ?? 'No Position') ?>"
-                            data-status="<?= $u['is_active'] ?? 1 ?>">
+                            data-status="<?= $u['is_active'] ?? 1 ?>"
+                            data-flag="<?= !empty($u['flags']) ? '1' : '0' ?>">
                             
                             <td class="block lg:table-cell px-0 lg:px-6 py-1 lg:py-4">
                                 <div class="flex flex-col min-w-0 pr-4">
@@ -178,6 +189,9 @@
                                         <span class="text-xs font-bold text-text truncate"><?= esc($u['department'] ?? 'No Department / Unit') ?></span>
                                         <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate"><?= esc($u['position'] ?? 'No Position') ?></span>
                                     <?php endif; ?>
+                                    <?php foreach (($u['flags'] ?? []) as $flag): ?>
+                                        <span class="text-[10px] font-bold text-warning-500 truncate" title="<?= esc($flag) ?>">&#9888; <?= esc($flag) ?></span>
+                                    <?php endforeach; ?>
                                 </div>
                             </td>
 
@@ -213,11 +227,19 @@
                                         <?php endif; ?>
                                     </div>
 
+                                    <?php $uRole = explode(', ', (string) ($u['role_name'] ?? ''))[0]; ?>
+                                    <?php if (in_array($uRole, ['Employee', 'Supervisor'], true)): ?>
+                                        <button type="button" onclick="openManageUser(<?= (int) $u['id'] ?>)" title="Manage department, position, status and form type"
+                                            class="flex-1 lg:flex-none px-2.5 py-1.5 lg:p-1.5 rounded-lg text-xs font-bold text-accent-ink bg-accent/10 hover:bg-accent/20 lg:bg-transparent transition-colors cursor-pointer">
+                                            <span class="lg:hidden">Manage</span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="hidden lg:block h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                        </button>
+                                    <?php endif; ?>
                                     <?php if ($u['id'] != session()->get('user_id')): ?>
                                         <?= form_open('account', [
                                             'class' => 'flex-1 lg:flex-none inline-block',
                                             'data-ajax' => 'delete-user',
-                                            'data-confirm' => 'Are you sure you want to permanently delete this user?',
+                                            'data-confirm' => 'Permanently delete this user? Only an account with no rating records can be deleted; otherwise disable it.',
                                             'data-confirm-title' => 'Delete User Account',
                                             'data-confirm-text' => 'Delete Permanently'
                                         ]) ?>
@@ -278,3 +300,5 @@
         
     </div>
 </div>
+
+<?= view('components/user_manage_modal', ['users' => $users, 'units' => $units, 'positionTree' => $positionTree, 'unitFit' => $unitFit, 'docRules' => $docRules, 'employmentStatuses' => $employmentStatuses, 'docTypes' => $docTypes]) ?>

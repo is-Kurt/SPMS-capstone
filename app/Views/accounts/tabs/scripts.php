@@ -1073,8 +1073,10 @@
             }
 
             const matchesPos = checkedPos.length === 0 || checkedPos.some(p => rowPos.includes(p.toLowerCase()));
+            const reviewOnly = document.getElementById('filter-needs-review');
+            const matchesReview = !(reviewOnly && reviewOnly.checked) || row.dataset.flag === '1';
 
-            if (matchesSearch && matchesRole && matchesDept && matchesPos) {
+            if (matchesSearch && matchesRole && matchesDept && matchesPos && matchesReview) {
                 matchedRows.push(row);
             } else {
                 row.classList.add('page-hidden');

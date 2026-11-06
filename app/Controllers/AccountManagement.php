@@ -70,7 +70,46 @@ class AccountManagement extends BaseController
         }
         $hasOpenCycle = (new DocumentFolderModel())->where('parent_folder_id IS NULL')->where('deleted_at IS NULL')->countAllResults() > 0;
 
+        // Per person: current assignments and what needs the admin's attention (shown as flags in the directory).
+        $db = \Config\Database::connect();
+        $assignRows = $db->table('plantillas p')->select('p.id, p.user_id, p.unit_id, p.position_id, un.name as unit_name, pos.title as position_title, p.started_at')
+            ->join('units un', 'un.id = p.unit_id', 'left')->join('positions pos', 'pos.id = p.position_id', 'left')
+            ->where('p.ended_at IS NULL')->orderBy('p.id', 'ASC')->get()->getResultArray();
+        $assignByUser = [];
+        foreach ($assignRows as $a) {
+            $a['is_head'] = $a['unit_id'] && $a['position_id'] && $org->isHeadOf((int) $a['unit_id'], (int) $a['position_id']);
+            $a['co_heads'] = $a['is_head'] ? count($org->headsOf((int) $a['unit_id'])) : 0;
+            $assignByUser[(int) $a['user_id']][] = $a;
+        }
+        $flagCount = 0;
+        foreach ($users as &$usr) {
+            $usr['assignments'] = $assignByUser[(int) $usr['id']] ?? [];
+            $usr['flags'] = [];
+            $roleName = explode(', ', (string) ($usr['role_name'] ?? ''))[0] ?: null;
+            if (OrgStructure::isRatedRole($roleName) && (int) $usr['is_active'] === 1) {
+                $allowed = $org->allowedDocTypes($roleName, $usr['employment_status']);
+                $usr['allowed_docs'] = $allowed;
+                if (!$usr['assignments']) $usr['flags'][] = 'No department assignment';
+                if (!in_array(strtoupper((string) $usr['doc_type']), $allowed, true)) {
+                    $usr['flags'][] = 'Form type ' . ($usr['doc_type'] ?: 'not set') . ' not allowed' . ($allowed ? ' (allowed: ' . implode(', ', $allowed) . ')' : ' (nothing allowed)');
+                }
+                foreach ($usr['assignments'] as $a) {
+                    if ($a['co_heads'] > 1) $usr['flags'][] = 'Co-head of ' . $a['unit_name'];
+                }
+                if ($usr['flags']) $flagCount++;
+            }
+        }
+        unset($usr);
+
+        // What the Manage modal needs: which positions fit each unit (heads / members + General).
+        $unitFit = [];
+        foreach ($org->units() as $unitRow) {
+            $unitFit[$unitRow['id']] = ['heads' => $org->headPositionIds($unitRow['id']), 'members' => $org->memberPositionIds($unitRow['id'])];
+        }
+
         return view('accounts/index', [
+            'flagCount'             => $flagCount,
+            'unitFit'               => $unitFit,
             'positionTree'          => $this->flattenPositionTree($org),
             'unitHeads'             => $unitHeads,
             'hasOpenCycle'          => $hasOpenCycle,
@@ -322,10 +361,31 @@ class AccountManagement extends BaseController
             if (!$user) return $this->respondError('User not found.', 400);
 
             $newStatus = $user['is_active'] == 1 ? 0 : 1;
+            $db = \Config\Database::connect();
+            $db->transStart();
             $userModel->update($targetId, ['is_active' => $newStatus]);
+            $today = date('Y-m-d');
+            $note = '';
+            if ($newStatus === 0) {
+                // Disabled: their assignments end today (kept as history, not deleted).
+                $n = $db->table('plantillas')->where('user_id', $targetId)->where('ended_at IS NULL')->countAllResults();
+                $db->table('plantillas')->where('user_id', $targetId)->where('ended_at IS NULL')->update(['ended_at' => $today, 'updated_at' => date('Y-m-d H:i:s')]);
+                if ($n) $note = "; {$n} assignment(s) ended";
+            } elseif ($db->table('plantillas')->where('user_id', $targetId)->where('ended_at IS NULL')->countAllResults() === 0) {
+                // Re-enabled: start again the assignments they had when they were disabled (the last ones ended).
+                $last = $db->table('plantillas')->selectMax('ended_at', 'd')->where('user_id', $targetId)->get()->getRowArray()['d'] ?? null;
+                $rows = $last ? $db->table('plantillas')->where('user_id', $targetId)->where('ended_at', $last)->get()->getResultArray() : [];
+                foreach ($rows as $r) {
+                    $db->table('plantillas')->insert(['user_id' => $targetId, 'unit_id' => $r['unit_id'], 'position_id' => $r['position_id'],
+                        'employment_status' => $user['employment_status'] ?? $r['employment_status'], 'started_at' => $today, 'created_at' => date('Y-m-d H:i:s')]);
+                }
+                if ($rows) $note = '; ' . count($rows) . ' assignment(s) restored';
+            }
+            $db->transComplete();
+            OrgStructure::reset();
 
             $action = ($newStatus === 1) ? 'ACCOUNT_ACTIVATED' : 'ACCOUNT_DEACTIVATED';
-            audit_log($action, 'ACCOUNT', 'user', (int) $targetId, "User account {$user['email']} set to " . ($newStatus === 1 ? 'Active' : 'Disabled'));
+            audit_log($action, 'ACCOUNT', 'user', (int) $targetId, "User account {$user['email']} set to " . ($newStatus === 1 ? 'Active' : 'Disabled') . $note);
 
             return $this->respond(['status' => 'success', 'is_active' => $newStatus]);
         });
@@ -401,12 +461,128 @@ class AccountManagement extends BaseController
 
             $userModel = new UserModel();
             $targetUser = $userModel->find($targetId);
-            $targetEmail = $targetUser ? $targetUser['email'] : "ID #{$targetId}";
+            if (!$targetUser) return $this->respondError('User not found.', 404);
+            $targetEmail = $targetUser['email'];
+
+            // Only an account without rating history can be deleted. Deleting removes the user row, and the
+            // folders, routings, comments and evidence that point to it would be left without an owner.
+            $db = \Config\Database::connect();
+            $history = [
+                'folders'              => $db->table('document_folders')->where('user_id', $targetId)->countAllResults(),
+                'reviews'              => $db->table('evaluation_routings')->where('evaluator_id', $targetId)->countAllResults(),
+                'comments'             => $db->table('document_comments')->where('user_id', $targetId)->countAllResults(),
+                'evidence files'       => $db->table('document_attachments')->where('uploaded_by', $targetId)->countAllResults(),
+            ];
+            $history = array_filter($history);
+            if ($history) {
+                $what = implode(', ', array_map(fn($k, $v) => "{$v} {$k}", array_keys($history), $history));
+                return $this->respondError("This account has rating records ({$what}), so it can't be deleted without losing them. Disable it instead.", 422);
+            }
             $userModel->delete($targetId);
 
             audit_log('ACCOUNT_DELETED', 'ACCOUNT', 'user', (int) $targetId, "User account deleted: {$targetEmail}");
 
             return $this->respond(['status' => 'success']);
+        });
+    }
+
+    /** Target user for the assignment / details endpoints: exists, not yourself, and a rated role. */
+    private function managedUser(): array
+    {
+        $userId = (int) $this->request->getPost('user_id');
+        $user = (new UserModel())->find($userId);
+        if (!$user) return [null, null, 'User not found.'];
+        $role = OrgStructure::instance()->roleOf($userId);
+        if (!OrgStructure::isRatedRole($role)) return [null, null, 'Admin, TWG and PMT accounts have no department assignment or form type.'];
+        return [$user, $role, null];
+    }
+
+    /** POST /account/user/assignment/add - Adds a unit + position assignment (any position: the admin decides). */
+    public function addAssignment() {
+        return $this->tryOrFail(function() {
+            [$user, $role, $err] = $this->managedUser();
+            if ($err) return $this->respondError($err, 422);
+            $org = OrgStructure::instance();
+            $unitId = (int) $this->request->getPost('unit_id');
+            $positionId = (int) $this->request->getPost('position_id');
+            if (!$org->unit($unitId)) return $this->respondError('Select a department / unit.', 422);
+            $pos = $org->position($positionId);
+            if (!$pos || (int) $pos['is_general_root'] === 1) return $this->respondError('Select a position.', 422);
+            $db = \Config\Database::connect();
+            if ($db->table('plantillas')->where('user_id', $user['id'])->where('unit_id', $unitId)->where('position_id', $positionId)->where('ended_at IS NULL')->countAllResults()) {
+                return $this->respondError('They already hold this position in this unit.', 422);
+            }
+            $others = $org->isHeadOf($unitId, $positionId) ? $org->headsOf($unitId, (int) $user['id']) : [];
+            $db->table('plantillas')->insert([
+                'user_id' => $user['id'], 'unit_id' => $unitId, 'position_id' => $positionId,
+                'employment_status' => $user['employment_status'], 'started_at' => date('Y-m-d'), 'created_at' => date('Y-m-d H:i:s'),
+            ]);
+            OrgStructure::reset();
+            $unitName = $org->unit($unitId)['name'];
+            audit_log('ASSIGNMENT_ADDED', 'ACCOUNT', 'user', (int) $user['id'], "{$user['email']}: {$pos['title']}, {$unitName}");
+            $msg = "Added: {$pos['title']}, {$unitName}.";
+            if ($others) $msg .= ' ' . implode(', ', array_map(fn($h) => trim($h['first_name'] . ' ' . $h['last_name']), $others)) . ' also heads this unit (co-heads).';
+            return $this->respond(['status' => 'success', 'message' => $msg]);
+        });
+    }
+
+    /** POST /account/user/assignment/end - Ends a current assignment today (kept as history, never deleted). */
+    public function endAssignment() {
+        return $this->tryOrFail(function() {
+            [$user, $role, $err] = $this->managedUser();
+            if ($err) return $this->respondError($err, 422);
+            $db = \Config\Database::connect();
+            $row = $db->table('plantillas p')->select('p.id, un.name as unit_name, pos.title')
+                ->join('units un', 'un.id = p.unit_id', 'left')->join('positions pos', 'pos.id = p.position_id', 'left')
+                ->where('p.id', (int) $this->request->getPost('plantilla_id'))->where('p.user_id', $user['id'])->where('p.ended_at IS NULL')
+                ->get()->getRowArray();
+            if (!$row) return $this->respondError('That assignment is not current.', 422);
+            $db->table('plantillas')->where('id', $row['id'])->update(['ended_at' => date('Y-m-d'), 'updated_at' => date('Y-m-d H:i:s')]);
+            OrgStructure::reset();
+            audit_log('ASSIGNMENT_ENDED', 'ACCOUNT', 'user', (int) $user['id'], "{$user['email']}: {$row['title']}, {$row['unit_name']} ended");
+            return $this->respond(['status' => 'success', 'message' => "Ended: {$row['title']}, {$row['unit_name']}."]);
+        });
+    }
+
+    /**
+     * POST /account/user/details - Sets a person's employment status and form type. The form type must be
+     * one the rules allow for their role and (new) status. Changing it converts their target drafts (and
+     * sends submitted, unapproved targets back to draft), so the first request only reports what would
+     * happen; the admin confirms and the request is sent again with confirm=1.
+     */
+    public function updateUserDetails() {
+        return $this->tryOrFail(function() {
+            [$user, $role, $err] = $this->managedUser();
+            if ($err) return $this->respondError($err, 422);
+            $org = OrgStructure::instance();
+            $status = trim((string) $this->request->getPost('employment_status'));
+            if (!(new EmploymentStatusModel())->where('name', $status)->first()) return $this->respondError('Select an employment status.', 422);
+            $allowed = $org->allowedDocTypes($role, $status);
+            $doc = strtoupper(trim((string) $this->request->getPost('doc_type')));
+            $current = strtoupper((string) $user['doc_type']);
+            if ($doc === '' && count($allowed) === 1) $doc = $allowed[0];
+            if ($doc !== $current && !in_array($doc, $allowed, true)) {
+                return $this->respondError('That form type is not allowed for this role and employment status' . ($allowed ? ' (allowed: ' . implode(', ', $allowed) . ').' : '.'), 422);
+            }
+
+            $docChanges = $doc !== '' && $doc !== $current;
+            if ($docChanges && !$this->request->getPost('confirm')) {
+                $folders = (new DocumentFolderModel())->where('user_id', $user['id'])->where('deleted_at IS NULL')
+                    ->whereIn('status', [\App\Enums\FolderStatus::DRAFT_TARGET->value, \App\Enums\FolderStatus::TARGET_SUBMITTED->value, \App\Enums\FolderStatus::TARGET_MISSED->value])
+                    ->findAll();
+                $submitted = count(array_filter($folders, fn($f) => $f['status'] === \App\Enums\FolderStatus::TARGET_SUBMITTED->value));
+                $msg = "Change the form type from " . ($current ?: 'none') . " to {$doc}? ";
+                $msg .= $folders
+                    ? count($folders) . " target paper(s) still in target setting will be converted to {$doc}" . ($submitted ? ", and {$submitted} submitted one(s) will go back to draft for resubmission" : '') . '. Approved targets and evaluations are not touched.'
+                    : 'They have no target papers in target setting, so no paper changes.';
+                return $this->respond(['status' => 'confirm', 'message' => $msg]);
+            }
+
+            (new UserModel())->update($user['id'], ['employment_status' => $status, 'doc_type' => $doc !== '' ? $doc : null]);
+            $result = $docChanges ? sync_user_papers_mid_target_setting((int) $user['id'], $doc) : ['updated_docs' => 0, 'updated_folders' => 0];
+            OrgStructure::reset();
+            audit_log('USER_DETAILS_UPDATED', 'ACCOUNT', 'user', (int) $user['id'], "{$user['email']}: status {$status}" . ($docChanges ? ", form type {$current} -> {$doc} ({$result['updated_docs']} paper(s) converted, {$result['updated_folders']} back to draft)" : ''));
+            return $this->respond(['status' => 'success', 'message' => 'Saved.' . ($docChanges ? " {$result['updated_docs']} paper(s) converted." : '')]);
         });
     }
 

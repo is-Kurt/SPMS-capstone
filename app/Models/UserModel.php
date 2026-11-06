@@ -88,7 +88,7 @@ class UserModel extends Model
     public function getAllUsersWithDetails(): array
     {
         $users = $this->db->table('users u')
-            ->select("u.id, u.first_name, u.last_name, u.email, u.is_active,
+            ->select("u.id, u.first_name, u.last_name, u.email, u.is_active, u.doc_type, u.employment_status,
                       GROUP_CONCAT(DISTINCT pos.title) as position,
                       GROUP_CONCAT(DISTINCT un.id) as unit_id,
                       GROUP_CONCAT(DISTINCT un.name) as department,
