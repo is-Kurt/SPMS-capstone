@@ -53,6 +53,9 @@ app.forceGlobalSecureRequests = false
 # ENCRYPTION
 #--------------------------------------------------------------------
 
+# Required: evidence (MOV) uploads are encrypted with this key (NFR-03) and are refused without it.
+# Generate one with `php spark key:generate`, and keep a copy: encrypted files cannot be read without it.
+# After setting it on a site that already has unencrypted uploads, run `php spark spms:encrypt-evidence`.
 # encryption.key =
 
 #--------------------------------------------------------------------
