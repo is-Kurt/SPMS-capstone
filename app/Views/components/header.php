@@ -154,7 +154,7 @@
                     </svg>
                     <!-- Dynamic Notification Badge -->
                     <span id="notification-badge" 
-                          class="hidden absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 bg-rose-500 text-white font-black text-[9px] rounded-full flex items-center justify-center shadow-xs border border-white dark:border-zinc-900">
+                          class="hidden absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 bg-rose-600 text-white font-black text-[9px] rounded-full flex items-center justify-center shadow-xs border border-white dark:border-zinc-900">
                         0
                     </span>
                 </a>
@@ -511,7 +511,7 @@
                         </svg>
                     </span>
                     <span class="flex-1">Notifications</span>
-                    <span id="drawer-notif-badge" class="hidden px-2 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black shadow-xs">0</span>
+                    <span id="drawer-notif-badge" class="hidden px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-black shadow-xs">0</span>
                 </a>
 
                 <!-- Secondary Links: Profile & User Guide -->
