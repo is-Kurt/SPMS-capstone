@@ -166,11 +166,12 @@ class DepartmentSeeder extends Seeder
 
             if (!empty($u['position']) && !empty($u['unit'])) {
                 $db->table('plantillas')->insert([
-                    'user_id'     => $uid,
-                    'position_id' => $posMap[$u['position']] ?? 1,
-                    'unit_id'     => $unitMap[$u['unit']] ?? 1,
-                    'started_at'  => '2020-01-01',
-                    'ended_at'    => null,
+                    'user_id'           => $uid,
+                    'position_id'       => $posMap[$u['position']] ?? 1,
+                    'unit_id'           => $unitMap[$u['unit']] ?? 1,
+                    'employment_status' => strtoupper((string) $u['doc_type']) === 'IPERF' ? 'Contractual' : 'Permanent',
+                    'started_at'        => '2020-01-01',
+                    'ended_at'          => null,
                 ]);
             }
         }
@@ -611,6 +612,7 @@ class DepartmentSeeder extends Seeder
         $db->table('user_roles')->insert(['user_id' => $staffGso1Id, 'role_id' => $roleMap['Employee']]);
         $db->table('plantillas')->insert([
             'user_id'     => $staffGso1Id,
+            'employment_status' => 'Contractual',   // IPERF: contract of service / job order
             'position_id' => $posMap['Administrative Aide'],
             'unit_id'     => $unitMap['General Services Office'],
             'started_at'  => '2022-01-01',
@@ -634,6 +636,7 @@ class DepartmentSeeder extends Seeder
         $db->table('user_roles')->insert(['user_id' => $staffGso2Id, 'role_id' => $roleMap['Employee']]);
         $db->table('plantillas')->insert([
             'user_id'     => $staffGso2Id,
+            'employment_status' => 'Contractual',   // IPERF: contract of service / job order
             'position_id' => $posMap['Administrative Assistant'],
             'unit_id'     => $unitMap['General Services Office'],
             'started_at'  => '2022-05-01',
@@ -658,6 +661,7 @@ class DepartmentSeeder extends Seeder
         $db->table('user_roles')->insert(['user_id' => $iperfId, 'role_id' => $roleMap['Employee']]);
         $db->table('plantillas')->insert([
             'user_id'     => $iperfId,
+            'employment_status' => 'Contractual',   // IPERF: contract of service / job order
             'position_id' => $posMap['Administrative Aide'],
             'unit_id'     => $unitMap['General Services Office'],
             'started_at'  => '2022-01-01',
@@ -705,6 +709,7 @@ class DepartmentSeeder extends Seeder
         $db->table('user_roles')->insert(['user_id' => $staffHrmoId, 'role_id' => $roleMap['Employee']]);
         $db->table('plantillas')->insert([
             'user_id'     => $staffHrmoId,
+            'employment_status' => 'Contractual',   // IPERF: contract of service / job order
             'position_id' => $posMap['Administrative Assistant'],
             'unit_id'     => $unitMap['Human Resource Management Office'],
             'started_at'  => '2021-09-01',
@@ -752,6 +757,7 @@ class DepartmentSeeder extends Seeder
         $db->table('user_roles')->insert(['user_id' => $staffAccId, 'role_id' => $roleMap['Employee']]);
         $db->table('plantillas')->insert([
             'user_id'     => $staffAccId,
+            'employment_status' => 'Contractual',   // IPERF: contract of service / job order
             'position_id' => $posMap['Bookkeeper'] ?? $posMap['Administrative Aide'],
             'unit_id'     => $unitMap['Accounting Office'],
             'started_at'  => '2023-11-01',

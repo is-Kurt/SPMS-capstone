@@ -52,8 +52,10 @@ class MultiVpSeeder extends Seeder
         $gsoUnit = $db->table('units')->where('name', 'General Services Office')->get()->getRowArray();
         $hrmoUnit = $db->table('units')->where('name', 'Human Resource Management Office')->get()->getRowArray();
 
-        $deanPos = $db->table('positions')->where('title', 'Dean')->get()->getRowArray();
-        $headPos = $db->table('positions')->where('title', 'Unit Head')->get()->getRowArray();
+        // The second assignment only gives the other VP's branch reach (My Staff), so it is a member position,
+        // not a head position: a head position there would make them co-heads of that unit (2026-11-07).
+        $deanPos = $db->table('positions')->where('title', 'Professor')->get()->getRowArray();
+        $headPos = $db->table('positions')->where('title', 'Administrative Officer')->get()->getRowArray();
 
         // 3. Configure 3 co-supervised subordinates directly under BOTH VPAA and VPAF:
         //    - dean@test.com (Roberto Reyes, fld_dean_cn): TARGET_SUBMITTED (Both VPs pending review)

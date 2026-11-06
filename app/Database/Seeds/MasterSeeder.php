@@ -69,7 +69,6 @@ class MasterSeeder extends Seeder
         // ==========================================
         echo ">>> Seeding Positions...\n";
         $positions = [
-            ['title' => 'University President',                         'is_teaching' => 0],
             ['title' => 'Vice President for Academic Affairs',          'is_teaching' => 0],
             ['title' => 'Vice President for Administration and Finance', 'is_teaching' => 0],
             ['title' => 'Vice President',                               'is_teaching' => 0],
@@ -113,9 +112,8 @@ class MasterSeeder extends Seeder
         echo ">>> Seeding Units Hierarchy...\n";
         $now = date('Y-m-d H:i:s');
 
-        // Top Executive Offices
-        $db->table('units')->insert(['name' => 'Office of the President', 'parent_id' => null, 'created_at' => $now]);
-        $opId = $db->insertID();
+        // Top-level offices. The system starts at the Vice Presidents (the Admin approves their OPCRs on the
+        // President's behalf), so there is no Office of the President unit; Planning and QA are top-level offices.
 
         $db->table('units')->insert(['name' => 'Office of the Vice President for Academic Affairs', 'parent_id' => null, 'created_at' => $now]);
         $ovpaaId = $db->insertID();
@@ -128,8 +126,8 @@ class MasterSeeder extends Seeder
             ['name' => 'General Services Office',           'parent_id' => $ovpafId, 'created_at' => $now],
             ['name' => 'Human Resource Management Office',   'parent_id' => $ovpafId, 'created_at' => $now],
             ['name' => 'Accounting Office',                  'parent_id' => $ovpafId, 'created_at' => $now],
-            ['name' => 'Planning and Development Office',    'parent_id' => $opId,    'created_at' => $now],
-            ['name' => 'Quality Assurance Office',           'parent_id' => $opId,    'created_at' => $now],
+            ['name' => 'Planning and Development Office',    'parent_id' => null,     'created_at' => $now],
+            ['name' => 'Quality Assurance Office',           'parent_id' => null,     'created_at' => $now],
         ];
         $db->table('units')->insertBatch($adminUnits);
 
@@ -183,6 +181,16 @@ class MasterSeeder extends Seeder
         // 5. SEED DEFAULT FUNCTION WEIGHTS (CSC SPMS)
         // ==========================================
         $this->call('DefaultFunctionWeightsSeeder');
+
+        // ==========================================
+        // 6. ORGANISATION STRUCTURE (2026-11-07)
+        // ==========================================
+        // Employment status belongs to the person; the position tree, unit head links and doc-type rules are
+        // set up by the same one-time command used on existing databases (one place for that mapping).
+        echo ">>> Setting up the organisation structure...\n";
+        $db->query("UPDATE users SET employment_status = COALESCE((SELECT p.employment_status FROM plantillas p
+                    WHERE p.user_id = users.id AND p.ended_at IS NULL ORDER BY p.id LIMIT 1), 'Permanent')");
+        command('spms:org-bootstrap');
 
         echo ">>> [SPMS MasterSeeder] Complete! Fresh SPMS database ready.\n";
     }
