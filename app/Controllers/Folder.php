@@ -1509,6 +1509,30 @@ class Folder extends BaseController
      * any single "return for revision" sends the whole folder back, otherwise it
      * only becomes "Approved" once every assigned evaluator has approved it.
      */
+    /**
+     * Whether the logged-in user may review this folder (approve, return or withdraw approval): an Admin,
+     * PMT, a TWG member assigned to the folder's unit, or a supervisor routed to it as an evaluator.
+     * The owner never reviews their own folder. Without this check any logged-in user could approve
+     * other people's targets, set their final rating or return their folder (security test, 2026-11-06).
+     */
+    private function isReviewerOf(array $folder): bool
+    {
+        $userId = (int) session()->get('user_id');
+        $role   = session()->get('role');
+        if ($role === 'Admin' || $role === 'PMT') {
+            return true;
+        }
+        if ($role === 'TWG') {
+            return (new \App\Models\TwgUnitAssignmentModel())->isTwgAssignedToFolder($userId, $folder['id']);
+        }
+        if ($userId === (int) $folder['user_id']) {
+            return false;
+        }
+        return (new EvaluationRoutingModel())->where('folder_id', $folder['id'])
+            ->where('evaluator_id', $userId)
+            ->countAllResults() > 0;
+    }
+
     private function updateFolderConsensus($folderId) {
         $folderModel = new DocumentFolderModel();
         $routingModel = new EvaluationRoutingModel();
@@ -3047,6 +3071,9 @@ class Folder extends BaseController
             
             $folder = $folderModel->find($folderId);
             if (!$folder) return $this->respondError("Folder not found.", 400);
+            if (!$this->isReviewerOf($folder)) {
+                return $this->respondError('Unauthorized: you are not a reviewer of this folder.', 403);
+            }
 
             $evalStatuses = [
                 FolderStatus::EVAL_SUBMITTED->value,
@@ -3537,6 +3564,9 @@ class Folder extends BaseController
             if (!$folder) {
                 return $this->respondError("Folder not found.", 404);
             }
+            if (!$this->isReviewerOf($folder)) {
+                return $this->respondError('Unauthorized: you are not a reviewer of this folder.', 403);
+            }
 
             $dates = $folderModel->getFolderDates($folder);
             if (!empty($dates['target_date_end']) && date('Y-m-d H:i:s') > $dates['target_date_end']) {
@@ -3655,6 +3685,9 @@ class Folder extends BaseController
             $canonStatus = FolderStatus::canonical($folder['status'] ?? '');
             if (!in_array($canonStatus, [FolderStatus::EVAL_SUBMITTED, FolderStatus::EVAL_APPROVED], true)) {
                 return $this->respondError("Cannot approve evaluation: The employee has revoked their self-rating submission. Please refresh the page.", 409);
+            }
+            if (!$this->isReviewerOf($folder)) {
+                return $this->respondError('Unauthorized: you are not a reviewer of this folder.', 403);
             }
 
             $finalScore = $this->request->getPost('final_score') ?? $this->request->getPost('final_rating');
@@ -3956,6 +3989,9 @@ class Folder extends BaseController
             $folder = $folderModel->find($folderId);
             if (!$folder || !empty($folder['deleted_at'])) {
                 return $this->respondError("Cannot return folder: This evaluation cycle is closed or archived.", 400);
+            }
+            if (!$this->isReviewerOf($folder)) {
+                return $this->respondError('Unauthorized: you are not a reviewer of this folder.', 403);
             }
 
             if ($userRole === 'TWG') {
