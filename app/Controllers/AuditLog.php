@@ -101,7 +101,7 @@ class AuditLog extends BaseController
         ]);
 
         foreach ($logs as $row) {
-            fputcsv($fp, [
+            fputcsv($fp, array_map([$this, 'csvCell'], [
                 $row['id'],
                 $row['created_at'],
                 $row['action'],
@@ -115,7 +115,7 @@ class AuditLog extends BaseController
                 $row['device_id'] ?? '—',
                 $row['details'] ?? '—',
                 $row['user_agent'] ?? '—',
-            ]);
+            ]));
         }
 
         rewind($fp);
@@ -128,5 +128,18 @@ class AuditLog extends BaseController
             ->setHeader('Pragma', 'no-cache')
             ->setHeader('Expires', '0')
             ->setBody($csvContent);
+    }
+
+    /**
+     * Logged values such as the user agent, device ID or a typed email come from visitors. A cell that
+     * starts with = + - @ (or a tab / carriage return) would run as a formula when the CSV is opened in
+     * Excel, so it gets a leading apostrophe and is shown as text (security test, 2026-11-06).
+     */
+    private function csvCell($value)
+    {
+        if (is_string($value) && $value !== '' && !is_numeric($value) && strpbrk($value[0], "=+-@\t\r") !== false) {
+            return "'" . $value;
+        }
+        return $value;
     }
 }
