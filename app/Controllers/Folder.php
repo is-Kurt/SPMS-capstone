@@ -1532,7 +1532,7 @@ class Folder extends BaseController
         if (!$user) return null;
 
         // The form type: an explicit override, else the person's form type, else the one the doc-type rules give
-        // their role and employment status (Admin: OPCR). Never guessed from job titles or emails (2026-11-07).
+        // their role and employment status. Never guessed from job titles or emails (2026-11-07).
         $docType = $overrideDocType
                 ?: (!empty($user['doc_type'])
                     ? strtoupper(trim($user['doc_type']))

@@ -54,7 +54,8 @@ class OrgBootstrap extends BaseCommand
         'Planning and Development Office'                            => 'Unit Head',
         'Quality Assurance Office'                                   => 'Unit Head',
     ];
-    private const ROLE_RULES = ['Employee' => 'IPCR,IPERF', 'Supervisor' => 'DPCR,OPCR', 'Admin' => 'OPCR'];
+    // Only the rated roles fill in forms: Admin, TWG and PMT never get a paper (Folder skips them on purpose).
+    private const ROLE_RULES = ['Employee' => 'IPCR,IPERF', 'Supervisor' => 'DPCR,OPCR'];
     private const STATUS_RULES = ['Permanent' => 'IPCR,DPCR,OPCR', 'Contractual' => 'IPERF'];
 
     public function run(array $params)

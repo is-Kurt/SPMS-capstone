@@ -952,7 +952,8 @@ class AccountManagement extends BaseController
     private function docRulesData(OrgStructure $org, RoleModel $roleModel, EmploymentStatusModel $statusModel): array
     {
         $db = \Config\Database::connect();
-        $roles = array_values(array_filter($roleModel->orderBy('name', 'ASC')->findAll(), fn($r) => in_array($r['name'], ['Employee', 'Supervisor', 'Admin'], true)));
+        // Only the roles that fill in forms (Admin, TWG and PMT review; they never get a paper).
+        $roles = array_values(array_filter($roleModel->orderBy('name', 'ASC')->findAll(), fn($r) => OrgStructure::isRatedRole($r['name'])));
         $statuses = $statusModel->orderBy('name', 'ASC')->findAll();
         foreach ($roles as &$r) $r['allowed'] = $org->docRule('role', $r['name']);
         foreach ($statuses as &$st) $st['allowed'] = $org->docRule('status', $st['name']);
