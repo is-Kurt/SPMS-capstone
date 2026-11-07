@@ -24,6 +24,9 @@ use App\Enums\DocType;
  */
 class OrgStructure
 {
+    private ?bool $statusLinksReady = null;
+    private array $statusOpenCache = [];
+
     private static ?OrgStructure $instance = null;
 
     private $db;
@@ -188,12 +191,18 @@ class OrgStructure
         return $this->headCache[$unitId] = array_values($level);
     }
 
-    /** Positions a member (not the head) of the unit can hold: the leaves under its head position(s), plus General. */
+    /**
+     * Positions a member (not the head) of the unit can hold: the non-head positions directly under its head
+     * position(s), plus General. A position's parent is who it reports to, so deeper positions belong to the
+     * units below (e.g. faculty ranks sit under Department Chair, not under Dean).
+     */
     public function memberPositionIds(int $unitId): array
     {
         $out = [];
         foreach ($this->headPositionIds($unitId) as $h) {
-            foreach ($this->leafPositionsUnder($h) as $id) $out[$id] = $id;
+            foreach ($this->posChildren[$h] ?? [] as $id) {
+                if (!$this->isHeadPosition($id)) $out[$id] = $id;
+            }
         }
         foreach ($this->generalPositionIds() as $id) $out[$id] = $id;
         return array_values($out);
@@ -342,12 +351,41 @@ class OrgStructure
     }
 
     /**
-     * Doc type to use when a person has none set: the only allowed one, or the first allowed one,
-     * or IPCR when the rules allow nothing (the directory flags that person).
+     * Doc type to use when a person has none set: the first one the rules allow. When the role and status
+     * rules allow nothing together (the directory flags that person), the role's own first type, so a
+     * Supervisor still gets a supervisor form (DPCR / OPCR); IPCR only when the role has no rule either.
      */
     public function defaultDocTypeFor(int $userId): string
     {
-        return $this->allowedDocTypesForUser($userId)[0] ?? DocType::IPCR->value;
+        return $this->allowedDocTypesForUser($userId)[0]
+            ?? $this->docRule('role', $this->roleOf($userId))[0]
+            ?? DocType::IPCR->value;
+    }
+
+    // ---------------------------------------------------------------- role / employment status link
+
+    /** Is the role / employment status link stored yet (migration 000023)? Without it every status is open. */
+    public function hasStatusLinks(): bool
+    {
+        return $this->statusLinksReady ??= $this->db->tableExists('role_employment_statuses');
+    }
+
+    /** Employment status names open to a rated role (System Data > Employment Statuses); null = every status. */
+    public function statusesOpenTo(?string $role): ?array
+    {
+        if (!self::isRatedRole($role) || !$this->hasStatusLinks()) return null;
+        return $this->statusOpenCache[$role] ??= array_column($this->db->table('role_employment_statuses rs')->select('es.name')
+            ->join('roles r', 'r.id = rs.role_id')->join('employment_statuses es', 'es.id = rs.employment_status_id')
+            ->where('r.name', $role)->get()->getResultArray(), 'name');
+    }
+
+    /** May a person with this role have this employment status? (Always true for Admin / TWG / PMT.) */
+    public function isStatusOpenTo(?string $role, ?string $status): bool
+    {
+        $open = $this->statusesOpenTo($role);
+        if ($open === null || $status === null || $status === '') return true;
+        foreach ($open as $name) if (strcasecmp($name, $status) === 0) return true;
+        return false;
     }
 
     /** Roles that fill in a form of their own (Admin, TWG and PMT review, they are not rated). */

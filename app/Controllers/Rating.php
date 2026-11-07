@@ -514,7 +514,7 @@ class Rating extends BaseController
             'mainData'         => [
                 'activeFolder'           => $subFolder,
                 'subFolderOwner'         => $subFolderOwner,
-                'ownerDocType'           => $subFolderOwner['doc_type'] ?? null,
+                'ownerDocType'           => $subFolderOwner ? (($subFolderOwner['doc_type'] ?? '') ?: \App\Libraries\OrgStructure::instance()->defaultDocTypeFor((int) $subFolderOwner['id'])) : null,
                 'parentFolder'           => $parentFolder,
                 'isParentTargetApproved' => $isParentTargetApproved,
                 'myDocs'                 => $myDocs,

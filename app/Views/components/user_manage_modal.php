@@ -17,13 +17,15 @@ foreach ($users as $u) {
 $rules = ['roles' => [], 'statuses' => []];
 foreach ($docRules['roles'] as $r) $rules['roles'][$r['name']] = $r['allowed'];
 foreach ($docRules['statuses'] as $st) $rules['statuses'][$st['name']] = $st['allowed'];
+$rules['open'] = $docRules['open'];                                  // statuses open to each role (null = all)
+$statusNamesJs = array_column($employmentStatuses, 'name');
 $positionsJs = array_map(fn($p) => ['id' => (int) $p['id'], 'title' => $p['title'], 'level' => $p['level'], 'general' => $p['is_general'], 'root' => (bool) $p['is_general_root']], $positionTree);
 $unitTreeRows = [];
 foreach ($units as $un) $unitTreeRows[$un['parent_id'] ?: 0][] = $un;
 $field = 'w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold cursor-pointer';
 ?>
-<div id="modal-manage-user" class="fixed inset-0 z-[200] hidden overflow-y-auto items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
-    <div class="relative w-full max-w-2xl rounded-2xl bg-surface border border-surface-border p-8 shadow-2xl transition-all m-4">
+<div id="modal-manage-user" class="fixed inset-0 z-[200] hidden overflow-y-auto items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all p-4">
+    <div class="relative w-full max-w-2xl rounded-2xl bg-surface border border-surface-border p-8 shadow-2xl transition-all my-auto">
         <h3 class="text-xl font-black text-text tracking-tight mb-1" id="mu-name"></h3>
         <p class="text-xs font-bold text-text-muted uppercase tracking-widest mb-4" id="mu-sub"></p>
         <div id="mu-flags" class="flex flex-col gap-1 mb-4"></div>
@@ -34,20 +36,27 @@ $field = 'w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:b
         <div class="rounded-xl border border-surface-border p-4 mb-6">
             <div class="text-[10px] font-black uppercase tracking-widest text-text-muted mb-3">Add assignment</div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <select id="mu-unit" class="<?= $field ?>" aria-label="Department / unit">
+                <div>
+                <label for="mu-unit" class="block text-[10px] font-bold text-text-muted mb-1.5">1. Department / unit</label>
+                <select data-themed-select id="mu-unit" class="<?= $field ?>" aria-label="Department / unit">
                     <option value="">Department / unit...</option>
                     <?php
                         $render = function ($parent, $level) use (&$render, $unitTreeRows) {
                             foreach ($unitTreeRows[$parent] ?? [] as $un) {
-                                echo '<option value="' . (int) $un['id'] . '">' . str_repeat('&nbsp;&nbsp;&nbsp;', $level) . esc($un['name']) . '</option>';
+                                echo '<option value="' . (int) $un['id'] . '" data-level="' . (int) $level . '">' . esc($un['name']) . '</option>';
                                 $render($un['id'], $level + 1);
                             }
                         };
                         $render(0, 0);
                     ?>
                 </select>
-                <select id="mu-position" class="<?= $field ?>" aria-label="Position"><option value="">Position...</option></select>
+                </div>
+                <div>
+                <label for="mu-position" class="block text-[10px] font-bold text-text-muted mb-1.5">2. Position</label>
+                <select data-themed-select id="mu-position" class="<?= $field ?>" aria-label="Position" disabled><option value="">Pick a department / unit first</option></select>
+                </div>
             </div>
+            <p id="mu-position-hint" class="text-[10px] text-text-muted font-medium mt-2"></p>
             <div class="flex justify-end mt-3">
                 <button type="button" id="mu-add" class="bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold py-2.5 px-6 rounded-xl cursor-pointer">Add Assignment</button>
             </div>
@@ -55,12 +64,12 @@ $field = 'w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:b
 
         <div class="text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Employment status &amp; form type</div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <select id="mu-status" class="<?= $field ?>" aria-label="Employment status">
+            <select data-themed-select id="mu-status" class="<?= $field ?>" aria-label="Employment status">
                 <?php foreach ($employmentStatuses as $st): ?>
                     <option value="<?= esc($st['name']) ?>"><?= esc($st['name']) ?></option>
                 <?php endforeach; ?>
             </select>
-            <select id="mu-doc" class="<?= $field ?>" aria-label="Form type"></select>
+            <select data-themed-select id="mu-doc" class="<?= $field ?>" aria-label="Form type"></select>
         </div>
         <p id="mu-doc-note" class="text-[10px] text-text-muted font-medium mt-2"></p>
 
@@ -77,6 +86,7 @@ $field = 'w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:b
     const DOC_TYPES = <?= json_encode($docTypes, $jsFlags) ?>;
     const POSITIONS = <?= json_encode($positionsJs, $jsFlags) ?>;
     const FIT = <?= json_encode($unitFit, $jsFlags) ?>;
+    const STATUSES = <?= json_encode($statusNamesJs, $jsFlags) ?>;
     const URL = { add: '<?= site_url('account/user/assignment/add') ?>', end: '<?= site_url('account/user/assignment/end') ?>', details: '<?= site_url('account/user/details') ?>' };
     const $ = id => document.getElementById(id);
     const esc = v => { const d = document.createElement('div'); d.textContent = v ?? ''; return d.innerHTML; };
@@ -94,14 +104,32 @@ $field = 'w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:b
         $('mu-doc').innerHTML = opts.join('');
         $('mu-doc-note').textContent = 'Changing the form type converts their target papers still in target setting; you will see what changes before it happens.';
     }
+    // Department first, then position: only the positions that fit this person's role in that unit
+    // (Supervisor: its head position(s); Employee: the positions directly under its head, plus General).
     function fillPositions() {
-        const fit = FIT[$('mu-unit').value] || { heads: [], members: [] };
-        const head = POSITIONS.filter(p => fit.heads.includes(p.id));
-        const mem = POSITIONS.filter(p => fit.members.includes(p.id) && !p.general);
-        const gen = POSITIONS.filter(p => fit.members.includes(p.id) && p.general);
-        const other = POSITIONS.filter(p => !p.root && !fit.heads.includes(p.id) && !fit.members.includes(p.id));
+        const unitId = $('mu-unit').value, sel = $('mu-position'), hint = $('mu-position-hint');
+        const role = (PEOPLE[current] || {}).role;
+        const fit = FIT[unitId] || { heads: [], members: [] };
         const group = (label, list) => list.length ? `<optgroup label="${label}">${list.map(p => `<option value="${p.id}">${esc(p.title)}</option>`).join('')}</optgroup>` : '';
-        $('mu-position').innerHTML = '<option value="">Position...</option>' + group('Head of this unit', head) + group('Members', mem) + group('General', gen) + group('Other positions', other);
+        let html = '', count = 0;
+        if (!unitId) {
+            html = '<option value="">Pick a department / unit first</option>';
+            hint.textContent = '';
+        } else if (role === 'Supervisor') {
+            const head = POSITIONS.filter(p => fit.heads.includes(p.id));
+            count = head.length;
+            html = (count ? '<option value="">Position...</option>' : '<option value="">This unit has no head position</option>') + group('Head of this unit', head);
+            hint.textContent = count ? 'A Supervisor holds the head position of the unit.' : 'Give this unit (or one above it) a head position in System Data first.';
+        } else {
+            const mem = POSITIONS.filter(p => fit.members.includes(p.id) && !p.general);
+            const gen = POSITIONS.filter(p => fit.members.includes(p.id) && p.general);
+            count = mem.length + gen.length;
+            html = '<option value="">Position...</option>' + group('Under the head of this unit', mem) + group('General', gen);
+            hint.textContent = 'An Employee holds a position directly under the head of the unit, or a General one.';
+        }
+        sel.innerHTML = html;
+        sel.disabled = !unitId || !count;
+        sel._themed?.refresh();
     }
     function render() {
         const p = PEOPLE[current];
@@ -114,7 +142,14 @@ $field = 'w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:b
                 <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate">${esc(a.unit)}${a.since ? ' · since ' + esc(a.since) : ''}</span></div>
                 <button type="button" data-end="${a.id}" class="text-xs font-bold text-danger-500 hover:text-danger-600 px-3 py-1.5 rounded-lg bg-danger-50 hover:bg-danger-100 dark:bg-danger-500/10 cursor-pointer">End</button>
             </div>`).join('') : '<p class="text-sm font-bold text-text-muted">No current assignment.</p>';
-        $('mu-status').value = p.status || $('mu-status').value;
+        // Only the statuses open to their role; a current one that is not stays, marked, until changed.
+        const open = (RULES.open || {})[p.role] ?? null;
+        const isOpen = st => open === null || open.some(o => o.toLowerCase() === String(st).toLowerCase());
+        const opts = STATUSES.filter(isOpen).map(st => `<option value="${esc(st)}">${esc(st)}</option>`);
+        if (p.status && !isOpen(p.status)) opts.unshift(`<option value="${esc(p.status)}">${esc(p.status)} (current, not open to ${esc(p.role)})</option>`);
+        $('mu-status').innerHTML = opts.join('');
+        $('mu-status').value = p.status && STATUSES.includes(p.status) ? p.status : ($('mu-status').options[0] || {}).value;
+        $('mu-status')._themed?.refresh();
         fillDocs();
     }
     function post(url, fields, done) {
@@ -129,7 +164,7 @@ $field = 'w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:b
     window.openManageUser = function (id) {
         if (!PEOPLE[id]) return;
         current = id;
-        $('mu-unit').value = ''; fillPositions(); render();
+        $('mu-unit').value = ''; $('mu-unit')._themed?.refresh(); fillPositions(); render();
         const m = $('modal-manage-user'); m.classList.remove('hidden'); m.classList.add('flex');
     };
     $('mu-unit').addEventListener('change', fillPositions);

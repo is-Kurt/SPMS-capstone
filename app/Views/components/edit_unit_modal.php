@@ -1,5 +1,5 @@
-<div id="modal-edit-unit" class="fixed inset-0 z-[200] hidden overflow-y-auto items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
-    <div class="relative w-full max-w-md rounded-2xl bg-surface border border-surface-border p-8 shadow-2xl transition-all m-4">
+<div id="modal-edit-unit" class="fixed inset-0 z-[200] hidden overflow-y-auto items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all p-4">
+    <div class="relative w-full max-w-md rounded-2xl bg-surface border border-surface-border p-8 shadow-2xl transition-all my-auto">
         <h3 class="text-xl font-black text-text tracking-tight mb-2">Edit / Transfer Department / Unit</h3>
         <p class="text-xs font-bold text-text-muted uppercase tracking-widest mb-6">Modify details or reassign parent department / unit</p>
 
@@ -27,14 +27,7 @@
                             </div>
                         </div>
                         <ul id="edit-parent-options-list" class="overflow-y-auto custom-scrollbar p-1" style="max-height: 220px;">
-                            <li class="edit-parent-option px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors bg-accent/10 text-accent-ink font-bold" data-value="">
-                                No Parent (Top Level Node)
-                            </li>
-                            <?php foreach ($units as $u): ?>
-                                <li class="edit-parent-option px-3 py-2 text-sm text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-lg cursor-pointer transition-colors truncate" data-value="<?= $u['id'] ?>">
-                                    <?= esc($u['name']) ?>
-                                </li>
-                            <?php endforeach; ?>
+                            <?= view('components/_unit_parent_options', ['units' => $units, 'optionClass' => 'edit-parent-option', 'topLabel' => 'No Parent (Top Level Node)']) ?>
                         </ul>
                     </div>
                 </div>
@@ -57,71 +50,53 @@
                         });
                     })();
                     (function() {
+                        // Options are looked up on every use (event delegation), so the list can be refreshed in place.
                         const searchInput = document.getElementById('edit-parent-search-input');
                         const optionsList = document.getElementById('edit-parent-options-list');
                         const hiddenInput = document.getElementById('edit-hidden-parent-id');
                         const clearSearchBtn = document.getElementById('edit-clear-parent-search');
-
                         if (!searchInput || !optionsList) return;
-
-                        const options = optionsList.querySelectorAll('.edit-parent-option');
-
+                        const options = () => optionsList.querySelectorAll('.edit-parent-option');
+                        const rows = () => Array.from(optionsList.querySelectorAll('.edit-parent-option[data-tl-index]'));
+                        const top = () => optionsList.querySelector('.edit-parent-option[data-value=""]');
+                        const filter = (term) => {
+                            window.TreeList.apply(rows(), term);
+                            top().classList.toggle('hidden', !!term && !top().textContent.toLowerCase().includes(term.toLowerCase().trim()));
+                        };
+                        document.addEventListener('DOMContentLoaded', () => { window.TreeList.init(optionsList, '.edit-parent-option'); filter(''); });
+                        const mark = (opt) => {
+                            options().forEach(o => {
+                                o.classList.remove('bg-accent/10', 'text-accent-ink', 'font-bold');
+                                o.classList.add('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
+                            });
+                            if (opt) {
+                                opt.classList.remove('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
+                                opt.classList.add('bg-accent/10', 'text-accent-ink', 'font-bold');
+                            }
+                        };
                         searchInput.addEventListener('input', (e) => {
                             const term = e.target.value.toLowerCase();
-                            if (term.length > 0) {
-                                clearSearchBtn.classList.remove('hidden');
-                            } else {
-                                clearSearchBtn.classList.add('hidden');
-                            }
-
-                            options.forEach(opt => {
-                                if (opt.textContent.toLowerCase().includes(term)) {
-                                    opt.classList.remove('hidden');
-                                } else {
-                                    opt.classList.add('hidden');
-                                }
-                            });
+                            clearSearchBtn.classList.toggle('hidden', term.length === 0);
+                            filter(term);
                         });
-
                         if (clearSearchBtn) {
                             clearSearchBtn.addEventListener('click', () => {
                                 searchInput.value = '';
                                 hiddenInput.value = '';
                                 clearSearchBtn.classList.add('hidden');
-                                options.forEach(o => o.classList.remove('hidden'));
-                                options.forEach(o => {
-                                    o.classList.remove('bg-accent/10', 'text-accent-ink', 'font-bold');
-                                    o.classList.add('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
-                                });
-                                const noParentOpt = optionsList.querySelector('.edit-parent-option[data-value=""]');
-                                if (noParentOpt) {
-                                    noParentOpt.classList.remove('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
-                                    noParentOpt.classList.add('bg-accent/10', 'text-accent-ink', 'font-bold');
-                                }
+                                filter('');
+                                mark(optionsList.querySelector('.edit-parent-option[data-value=""]'));
                                 searchInput.focus();
                             });
                         }
-
-                        options.forEach(opt => {
-                            opt.addEventListener('click', () => {
-                                const val = opt.getAttribute('data-value');
-                                hiddenInput.value = val;
-                                searchInput.value = val === "" ? "" : opt.textContent.trim();
-                                
-                                if (searchInput.value.length > 0) {
-                                    clearSearchBtn.classList.remove('hidden');
-                                } else {
-                                    clearSearchBtn.classList.add('hidden');
-                                }
-                                
-                                options.forEach(o => {
-                                    o.classList.remove('bg-accent/10', 'text-accent-ink', 'font-bold');
-                                    o.classList.add('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
-                                });
-                                
-                                opt.classList.remove('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
-                                opt.classList.add('bg-accent/10', 'text-accent-ink', 'font-bold');
-                            });
+                        optionsList.addEventListener('click', (e) => {
+                            const opt = e.target.closest('.edit-parent-option');
+                            if (!opt || e.target.closest('.js-tl-toggle')) return;
+                            const val = opt.getAttribute('data-value');
+                            hiddenInput.value = val;
+                            searchInput.value = val === "" ? "" : opt.querySelector('.truncate').textContent.trim();
+                            clearSearchBtn.classList.toggle('hidden', searchInput.value.length === 0);
+                            mark(opt);
                         });
                     })();
 
@@ -130,7 +105,7 @@
                         if (!modal) return;
                         const form = document.getElementById('form-edit-unit');
                         const headSel = document.getElementById('edit-unit-head');
-                        if (headSel) headSel.value = headPositionId ? String(headPositionId) : '';
+                        if (headSel) { headSel.value = headPositionId ? String(headPositionId) : ''; headSel.dispatchEvent(new Event('change')); }
                         form.dataset.origParent = parentId ? String(parentId) : '';
                         form.dataset.origHead = headPositionId ? String(headPositionId) : '';
 
@@ -140,27 +115,27 @@
                         const hiddenInput = document.getElementById('edit-hidden-parent-id');
                         const searchInput = document.getElementById('edit-parent-search-input');
                         const optionsList = document.getElementById('edit-parent-options-list');
-                        const options = optionsList.querySelectorAll('.edit-parent-option');
+                        const rows = Array.from(optionsList.querySelectorAll('.edit-parent-option[data-tl-index]'));
+                        const top = optionsList.querySelector('.edit-parent-option[data-value=""]');
 
                         hiddenInput.value = parentId ? String(parentId) : '';
+                        document.getElementById('edit-clear-parent-search').classList.toggle('hidden', !parentId);
 
-                        options.forEach(o => {
+                        // A unit cannot move under itself or under one of its own sub-units: hide that branch.
+                        // Start with every branch closed except the path to the current parent.
+                        [top, ...rows].forEach(o => {
                             o.classList.remove('hidden', 'bg-accent/10', 'text-accent-ink', 'font-bold');
                             o.classList.add('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
-                            // Hide the current unit itself to prevent selecting self as parent
-                            if (o.getAttribute('data-value') === String(id)) {
-                                o.classList.add('hidden');
-                            }
                         });
-
-                        const selectedOpt = optionsList.querySelector(`.edit-parent-option[data-value="${parentId || ''}"]`);
+                        rows.forEach(o => { o.dataset.open = '0'; o.dataset.excluded = o.dataset.value === String(id) ? '1' : '0'; });
+                        const selectedOpt = parentId ? optionsList.querySelector(`.edit-parent-option[data-value="${parentId}"]`) : top;
                         if (selectedOpt) {
                             selectedOpt.classList.remove('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
                             selectedOpt.classList.add('bg-accent/10', 'text-accent-ink', 'font-bold');
-                            searchInput.value = (parentId && selectedOpt) ? selectedOpt.textContent.trim() : '';
-                        } else {
-                            searchInput.value = '';
                         }
+                        searchInput.value = parentId && selectedOpt ? selectedOpt.querySelector('.truncate').textContent.trim() : '';
+                        if (parentId) window.TreeList.reveal(rows, parentId);
+                        window.TreeList.apply(rows, '');
 
                         modal.classList.remove('hidden');
                         modal.classList.add('flex');
@@ -170,11 +145,11 @@
 
             <div class="mt-4">
                 <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Head position</label>
-                <select name="head_position_id" id="edit-unit-head" class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold cursor-pointer">
+                <select data-themed-select name="head_position_id" id="edit-unit-head" class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold cursor-pointer">
                     <option value="">Inherit from the parent unit (one level down)</option>
                     <?php foreach (($positionTree ?? []) as $p): ?>
                         <?php if ($p['is_general']) continue; ?>
-                        <option value="<?= $p['id'] ?>"><?= str_repeat('&nbsp;&nbsp;&nbsp;', $p['level']) . esc($p['title']) ?></option>
+                        <option value="<?= $p['id'] ?>" data-level="<?= (int) $p['level'] ?>"><?= esc($p['title']) ?></option>
                     <?php endforeach; ?>
                 </select>
                 <p class="text-[10px] text-text-muted font-medium mt-2">Link a position only where this unit differs from its parent's line (e.g. an office headed by a Unit Head). Its own link overrides what it would inherit; sub-units follow it.</p>

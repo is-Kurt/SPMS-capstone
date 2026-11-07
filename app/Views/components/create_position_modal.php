@@ -1,5 +1,5 @@
-<div id="modal-create-position" class="fixed inset-0 z-[200] hidden overflow-y-auto items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
-    <div class="relative w-full max-w-md rounded-2xl bg-surface border border-surface-border p-8 shadow-2xl transition-all m-4">
+<div id="modal-create-position" class="fixed inset-0 z-[200] hidden overflow-y-auto items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all p-4">
+    <div class="relative w-full max-w-md rounded-2xl bg-surface border border-surface-border p-8 shadow-2xl transition-all my-auto">
         <h3 class="text-xl font-black text-text tracking-tight mb-2">Create New Position</h3>
         <p class="text-xs font-bold text-text-muted uppercase tracking-widest mb-6">Job Positions</p>
 

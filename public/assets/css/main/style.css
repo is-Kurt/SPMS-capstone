@@ -8890,8 +8890,9 @@ input[type="date"], input[type="datetime-local"] {
   }
 }
 .spms-content-slide {
-  animation: spmsSlideIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: transform, opacity;
+  /* backwards, not both: a transform left on the page after the slide (even translateX(0)) or
+     will-change: transform makes it the box for position: fixed, trapping modals under the header. */
+  animation: spmsSlideIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 .spms-content-slide.spms-nav-transitioning {
   opacity: 0.55 !important;
@@ -9351,3 +9352,17 @@ button:active:not(:disabled), [role="button"]:active:not(:disabled), .button:act
     }
   }
 }
+
+/* System Data > Doc Type Rules: rules on the left, weights + preview on the right. On large screens the panel
+   fits the screen and only the growing lists (employment statuses, the preview) scroll. */
+.doc-rules-panel { display: flex; flex-direction: column; gap: 1rem; }
+.doc-rules-cols { display: flex; flex-direction: column; gap: 1.5rem; }
+.doc-rules-col { display: flex; flex-direction: column; gap: 1rem; }
+@media (min-width: 64rem) {
+    .doc-rules-cols { flex-direction: row; flex: 1 1 0; min-height: 0; }
+    .doc-rules-cols > .doc-rules-col { flex: 1 1 0; min-width: 0; min-height: 0; }
+    .doc-rules-col > .doc-rules-col { flex: 1 1 0; min-height: 0; }
+    .doc-rules-grow { flex: 1 1 0; min-height: 10rem; display: flex; flex-direction: column; }
+    .doc-rules-scroll { flex: 1 1 0; min-height: 0; overflow-y: auto; }
+}
+.weights-msg:empty { display: none; }

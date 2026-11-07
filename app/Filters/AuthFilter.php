@@ -49,6 +49,21 @@ class AuthFilter implements FilterInterface
                 'error' => 'Your account has been disabled by an administrator.'
             ]);
         }
+
+        self::syncRole((int) $userId);
+    }
+
+    /**
+     * Puts the person's current role in the session. Read on every page (here and in RoleFilter), not only at
+     * login, so a role change by the admin applies right away. Returns the role.
+     */
+    public static function syncRole(int $userId): string
+    {
+        $row = \Config\Database::connect()->table('user_roles ur')->select('r.name')->join('roles r', 'r.id = ur.role_id')
+            ->where('ur.user_id', $userId)->get()->getRowArray();
+        $role = $row ? $row['name'] : 'Employee';
+        if (session()->get('role') !== $role) session()->set('role', $role);
+        return $role;
     }
 
     /**

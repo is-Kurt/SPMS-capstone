@@ -40,13 +40,13 @@
                             foreach ($inviteUnitTree[$parent] ?? [] as $u) {
                                 $heads = $unitHeads[$u['id']]['titles'] ?? [];
                                 $holders = $unitHeads[$u['id']]['holders'] ?? [];
-                                echo '<option value="' . (int) $u['id'] . '" data-heads="' . esc(implode(' / ', $heads)) . '" data-holders="' . esc(implode(', ', $holders)) . '">'
-                                   . str_repeat('&nbsp;&nbsp;&nbsp;', $level) . esc($u['name']) . '</option>';
+                                echo '<option value="' . (int) $u['id'] . '" data-level="' . (int) $level . '" data-heads="' . esc(implode(' / ', $heads)) . '" data-holders="' . esc(implode(', ', $holders)) . '">'
+                                   . esc($u['name']) . '</option>';
                                 $renderInviteUnits($u['id'], $level + 1);
                             }
                         };
                     ?>
-                    <select name="unit_id" id="select-invite-unit" class="w-full lg:max-w-md bg-surface border border-surface-border rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text cursor-pointer font-bold">
+                    <select data-themed-select name="unit_id" id="select-invite-unit" class="w-full lg:max-w-md bg-surface border border-surface-border rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text cursor-pointer font-bold">
                         <option value="">Select the department / unit...</option>
                         <?php $renderInviteUnits(0, 0); ?>
                     </select>

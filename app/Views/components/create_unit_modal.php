@@ -1,5 +1,5 @@
-<div id="modal-create-unit" class="fixed inset-0 z-[200] hidden overflow-y-auto items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
-    <div class="relative w-full max-w-md rounded-2xl bg-surface border border-surface-border p-8 shadow-2xl transition-all m-4">
+<div id="modal-create-unit" class="fixed inset-0 z-[200] hidden overflow-y-auto items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all p-4">
+    <div class="relative w-full max-w-md rounded-2xl bg-surface border border-surface-border p-8 shadow-2xl transition-all my-auto">
         <h3 class="text-xl font-black text-text tracking-tight mb-2">Create Department / Unit</h3>
         <p class="text-xs font-bold text-text-muted uppercase tracking-widest mb-6">Departments &amp; Units</p>
 
@@ -25,98 +25,60 @@
                             </div>
                         </div>
                         <ul id="parent-options-list" class="overflow-y-auto custom-scrollbar p-1" style="max-height: 220px;">
-                            <li class="parent-option px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors bg-accent/10 text-accent-ink font-bold" data-value="">
-                                No Parent (Top Level)
-                            </li>
-                            <?php foreach ($units as $u): ?>
-                                <li class="parent-option px-3 py-2 text-sm text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-lg cursor-pointer transition-colors truncate" data-value="<?= $u['id'] ?>">
-                                    <?= esc($u['name']) ?>
-                                </li>
-                            <?php endforeach; ?>
+                            <?= view('components/_unit_parent_options', ['units' => $units, 'optionClass' => 'parent-option', 'topLabel' => 'No Parent (Top Level)']) ?>
                         </ul>
                     </div>
                 </div>
 
                 <script>
                     (function() {
+                        // Options are looked up on every use (event delegation), so the list can be refreshed in place.
                         const searchInput = document.getElementById('parent-search-input');
                         const optionsList = document.getElementById('parent-options-list');
                         const hiddenInput = document.getElementById('hidden-parent-id');
                         const clearSearchBtn = document.getElementById('clear-parent-search');
-
                         if (!searchInput || !optionsList) return;
-
-                        const options = optionsList.querySelectorAll('.parent-option');
-
-                        // Filter options
+                        const options = () => optionsList.querySelectorAll('.parent-option');
+                        const rows = () => Array.from(optionsList.querySelectorAll('.parent-option[data-tl-index]'));
+                        const top = () => optionsList.querySelector('.parent-option[data-value=""]');
+                        const filter = (term) => {
+                            window.TreeList.apply(rows(), term);
+                            top().classList.toggle('hidden', !!term && !top().textContent.toLowerCase().includes(term.toLowerCase().trim()));
+                        };
+                        document.addEventListener('DOMContentLoaded', () => { window.TreeList.init(optionsList, '.parent-option'); filter(''); });
+                        const mark = (opt) => {
+                            options().forEach(o => {
+                                o.classList.remove('bg-accent/10', 'text-accent-ink', 'font-bold');
+                                o.classList.add('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
+                            });
+                            if (opt) {
+                                opt.classList.remove('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
+                                opt.classList.add('bg-accent/10', 'text-accent-ink', 'font-bold');
+                            }
+                        };
                         searchInput.addEventListener('input', (e) => {
                             const term = e.target.value.toLowerCase();
-                            
-                            if (term.length > 0) {
-                                clearSearchBtn.classList.remove('hidden');
-                            } else {
-                                clearSearchBtn.classList.add('hidden');
-                            }
-
-                            options.forEach(opt => {
-                                if (opt.textContent.toLowerCase().includes(term)) {
-                                    opt.classList.remove('hidden');
-                                } else {
-                                    opt.classList.add('hidden');
-                                }
-                            });
+                            clearSearchBtn.classList.toggle('hidden', term.length === 0);
+                            filter(term);
                         });
-
-                        // Clear search and reset to No Parent
                         if (clearSearchBtn) {
                             clearSearchBtn.addEventListener('click', () => {
                                 searchInput.value = '';
                                 hiddenInput.value = '';
                                 clearSearchBtn.classList.add('hidden');
-                                
-                                // Unhide all options
-                                options.forEach(o => o.classList.remove('hidden'));
-                                
-                                // Reset all options visually
-                                options.forEach(o => {
-                                    o.classList.remove('bg-accent/10', 'text-accent-ink', 'font-bold');
-                                    o.classList.add('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
-                                });
-                                
-                                // Highlight No Parent
-                                const noParentOpt = optionsList.querySelector('.parent-option[data-value=""]');
-                                if (noParentOpt) {
-                                    noParentOpt.classList.remove('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
-                                    noParentOpt.classList.add('bg-accent/10', 'text-accent-ink', 'font-bold');
-                                }
-                                
+                                filter('');
+                                mark(optionsList.querySelector('.parent-option[data-value=""]'));
                                 searchInput.focus();
                             });
                         }
-
-                        // Select option
-                        options.forEach(opt => {
-                            opt.addEventListener('click', () => {
-                                const val = opt.getAttribute('data-value');
-                                hiddenInput.value = val;
-                                searchInput.value = val === "" ? "" : opt.textContent.trim();
-                                
-                                if (searchInput.value.length > 0) {
-                                    clearSearchBtn.classList.remove('hidden');
-                                } else {
-                                    clearSearchBtn.classList.add('hidden');
-                                }
-                                
-                                // Reset all options visually
-                                options.forEach(o => {
-                                    o.classList.remove('bg-accent/10', 'text-accent-ink', 'font-bold');
-                                    o.classList.add('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
-                                });
-                                
-                                // Highlight selected option
-                                opt.classList.remove('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
-                                opt.classList.add('bg-accent/10', 'text-accent-ink', 'font-bold');
-                            });
+                        optionsList.addEventListener('click', (e) => {
+                            const opt = e.target.closest('.parent-option');
+                            if (!opt || e.target.closest('.js-tl-toggle')) return;
+                            const val = opt.getAttribute('data-value');
+                            hiddenInput.value = val;
+                            searchInput.value = val === "" ? "" : opt.querySelector('.truncate').textContent.trim();
+                            clearSearchBtn.classList.toggle('hidden', searchInput.value.length === 0);
+                            mark(opt);
                         });
                     })();
                 </script>

@@ -4,7 +4,7 @@
     which exposes window.appConfirm()/window.appAlert() and fills in the title/message/icon/button
     color below based on the `variant` option (danger/warning/info) passed by the caller.
 -->
-<div id="confirm-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all">
+<div id="confirm-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-zinc-950/40 backdrop-blur-sm transition-all" style="z-index: 100000;"><?php /* above every other modal and overlay (even the editor's 99999 ones): it is opened from inside them */ ?>
 
     <style>
         #confirm-modal-icon {

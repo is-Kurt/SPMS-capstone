@@ -366,3 +366,261 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+/**
+ * ThemedSelect (2026-11-07): a plain dropdown in the app's colours for <select data-themed-select>.
+ * The real <select> stays in the form (hidden) and keeps its value; the button shows the chosen option with a
+ * chevron kept clear of the edge, and the list supports indentation (option data-level) and <optgroup> headings.
+ * Options are read when the list opens, so selects whose options are rebuilt by script stay in sync; after
+ * setting .value from script, dispatch a 'change' event (or call select._themed.refresh()) to update the label.
+ */
+const TREE_CHEVRON = '<span class="js-tl-toggle shrink-0 flex items-center justify-center w-6 h-6 rounded-md text-text-muted hover:text-text cursor-pointer" role="button" aria-label="Show or hide the items under this one"><svg class="h-4 w-4 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg></span>';
+
+/**
+ * Collapsible tree rows. Each row has data-tl-index and data-tl-parent ('' at the top); data-open="1" opens a
+ * branch, data-excluded="1" hides a row and everything under it. With a search term, matches show with their
+ * parents; without one, a row shows when every branch above it is open.
+ */
+const TreeList = {
+    apply(rows, term) {
+        const byIndex = new Map(rows.map(r => [r.dataset.tlIndex, r]));
+        const parentOf = r => byIndex.get(r.dataset.tlParent);
+        const excluded = r => { for (let x = r; x; x = parentOf(x)) if (x.dataset.excluded === '1') return true; return false; };
+        const hasKids = new Set(rows.filter(r => !excluded(r)).map(r => r.dataset.tlParent));
+        const shown = new Set();
+        term = (term || '').toLowerCase().trim();
+        rows.forEach(r => {
+            if (excluded(r)) return;
+            if (term) {
+                const name = (r.querySelector('.truncate') || r).textContent.toLowerCase();
+                if (name.includes(term)) for (let x = r; x && !shown.has(x); x = parentOf(x)) shown.add(x);
+            } else {
+                let ok = true;
+                for (let x = parentOf(r); x; x = parentOf(x)) if (x.dataset.open !== '1') { ok = false; break; }
+                if (ok) shown.add(r);
+            }
+        });
+        rows.forEach(r => {
+            r.style.display = shown.has(r) ? '' : 'none';
+            const t = r.querySelector('.js-tl-toggle');
+            if (!t) return;
+            t.style.visibility = hasKids.has(r.dataset.tlIndex) ? '' : 'hidden';
+            const open = term ? rows.some(c => c.dataset.tlParent === r.dataset.tlIndex && shown.has(c)) : r.dataset.open === '1';
+            t.firstElementChild.style.transform = open ? '' : 'rotate(-90deg)';
+        });
+        return shown.size;
+    },
+    /** Opens every branch above the row whose data-tl-index is index. */
+    reveal(rows, index) {
+        const byIndex = new Map(rows.map(r => [r.dataset.tlIndex, r]));
+        for (let r = byIndex.get(String(index)); r && r.dataset.tlParent !== ''; ) {
+            r = byIndex.get(r.dataset.tlParent);
+            if (r) r.dataset.open = '1';
+        }
+    },
+    /** Wires a server-rendered list once: chevron clicks open / close branches (delegated, survives swaps). */
+    init(list, rowSelector) {
+        if (!list || list._tl) return;
+        list._tl = true;
+        list.addEventListener('click', e => {
+            const t = e.target.closest('.js-tl-toggle');
+            if (!t) return;
+            const row = t.closest(rowSelector);
+            row.dataset.open = row.dataset.open === '1' ? '0' : '1';
+            TreeList.apply(Array.from(list.querySelectorAll(rowSelector + '[data-tl-index]')), '');
+        });
+    },
+};
+window.TreeList = TreeList;
+window.TREE_CHEVRON = TREE_CHEVRON;
+
+class ThemedSelect {
+    constructor(select) {
+        if (select._themed) return;
+        select._themed = this;
+        this.select = select;
+        select.style.cssText += 'position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;';
+        select.tabIndex = -1;
+
+        this.wrap = document.createElement('div');
+        this.wrap.className = 'relative w-full';
+        if (select.classList.contains('lg:max-w-md')) this.wrap.classList.add('lg:max-w-md');
+        select.parentNode.insertBefore(this.wrap, select.nextSibling);
+
+        this.button = document.createElement('button');
+        this.button.type = 'button';
+        this.button.className = 'w-full flex items-center justify-between gap-3 bg-zinc-50 dark:bg-zinc-800/50 border border-surface-border hover:border-accent focus:border-accent focus:outline-none rounded-xl py-3 text-sm font-bold text-text cursor-pointer transition-colors text-left';
+        this.button.style.paddingLeft = '1rem';
+        this.button.style.paddingRight = '0.875rem';
+        this.button.setAttribute('aria-haspopup', 'listbox');
+        this.button.setAttribute('aria-expanded', 'false');
+        if (select.getAttribute('aria-label')) this.button.setAttribute('aria-label', select.getAttribute('aria-label'));
+        if (select.id) {
+            const label = document.querySelector(`label[for="${select.id}"]`);
+            if (label) label.addEventListener('click', e => { e.preventDefault(); this.button.focus(); });
+        }
+        this.label = document.createElement('span');
+        this.label.className = 'truncate';
+        this.button.appendChild(this.label);
+        this.button.insertAdjacentHTML('beforeend', '<svg class="h-4 w-4 shrink-0 text-text-muted transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>');
+        this.chevron = this.button.lastElementChild;
+
+        this.panel = document.createElement('div');
+        this.panel.className = 'hidden bg-surface border border-surface-border rounded-xl shadow-lg overflow-y-auto custom-scrollbar p-1';
+        this.panel.setAttribute('role', 'listbox');
+        this.panel.style.cssText = 'position:absolute;left:0;right:0;z-index:60;max-height:16rem;';
+
+        this.wrap.appendChild(this.button);
+        this.wrap.appendChild(this.panel);
+
+        this.button.addEventListener('click', e => { e.preventDefault(); this.isOpen() ? this.close() : this.open(); });
+        this.button.addEventListener('keydown', e => {
+            if (['ArrowDown', 'ArrowUp'].includes(e.key)) { e.preventDefault(); this.step(e.key === 'ArrowDown' ? 1 : -1); }
+            if (e.key === 'Escape') this.close();
+        });
+        document.addEventListener('click', e => { if (!this.wrap.contains(e.target)) this.close(); });
+        select.addEventListener('change', () => this.refresh());
+        new MutationObserver(() => this.refresh()).observe(select, { childList: true, subtree: true });
+        this.refresh();
+    }
+
+    isOpen() { return !this.panel.classList.contains('hidden'); }
+
+    refresh() {
+        const opt = this.select.options[this.select.selectedIndex];
+        this.label.textContent = opt ? opt.text.replace(/ /g, ' ').trim() : 'Select...';
+        this.label.classList.toggle('text-text-muted', !opt || opt.value === '');
+        this.button.disabled = this.select.disabled;
+        this.button.classList.toggle('opacity-50', this.select.disabled);
+    }
+
+    step(dir) {
+        const opts = Array.from(this.select.options).filter(o => !o.disabled);
+        const i = opts.indexOf(this.select.options[this.select.selectedIndex]);
+        const next = opts[Math.max(0, Math.min(opts.length - 1, i + dir))];
+        if (next && next !== this.select.options[this.select.selectedIndex]) {
+            this.select.value = next.value;
+            this.select.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    }
+
+    option(opt) {
+        const item = document.createElement('div');
+        const selected = opt === this.select.options[this.select.selectedIndex];
+        item.setAttribute('role', 'option');
+        item.setAttribute('aria-selected', selected ? 'true' : 'false');
+        item.className = 'px-3 py-2 rounded-lg text-sm transition-colors truncate '
+            + (opt.disabled ? 'text-text-muted cursor-not-allowed opacity-50 '
+                            : (selected ? 'bg-accent/10 text-accent-ink font-bold cursor-pointer ' : 'text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 cursor-pointer '));
+        const level = parseInt(opt.dataset.level || '0', 10);
+        const text = opt.text.replace(/ /g, ' ').trim();
+        if (this.tree) {
+            // Tree rows: a chevron opens / closes the branch; clicking the name picks it.
+            item.className = item.className.replace('truncate', 'flex items-center gap-1');
+            item.style.paddingLeft = `calc(0.25rem + ${level * 1.1}rem)`;
+            item.dataset.level = String(level);
+            item.insertAdjacentHTML('beforeend', TREE_CHEVRON);
+            const name = document.createElement('span');
+            name.className = 'truncate';
+            name.textContent = text;
+            item.appendChild(name);
+        } else {
+            if (level > 0) item.style.paddingLeft = `calc(0.75rem + ${level * 1.1}rem)`;
+            item.textContent = text;
+        }
+        if (!opt.disabled) {
+            item.addEventListener('click', e => {
+                if (e.target.closest('.js-tl-toggle')) return; // the panel opens / closes the branch
+                e.stopPropagation();
+                this.select.value = opt.value;
+                this.select.dispatchEvent(new Event('change', { bubbles: true }));
+                this.close();
+                this.button.focus();
+            });
+        }
+        return item;
+    }
+
+    open() {
+        if (this.select.disabled) return;
+        this.panel.innerHTML = '';
+        this.tree = Array.from(this.select.options).some(o => parseInt(o.dataset.level || '0', 10) > 0);
+        Array.from(this.select.children).forEach(node => {
+            if (node.tagName === 'OPTGROUP') {
+                const head = document.createElement('div');
+                head.className = 'px-3 pt-2 pb-1 text-[10px] font-black uppercase tracking-widest text-text-muted';
+                head.textContent = node.label;
+                this.panel.appendChild(head);
+                Array.from(node.children).forEach(o => this.panel.appendChild(this.option(o)));
+            } else if (node.tagName === 'OPTION') {
+                this.panel.appendChild(this.option(node));
+            }
+        });
+        if (this.tree) this.initTree();
+        // Open downwards, scrolling the modal (or page) just enough to show the list. Opening upwards
+        // covers the fields above (it reads as part of them), so it is only the last resort.
+        this.panel.style.top = 'calc(100% + 0.375rem)';
+        this.panel.style.bottom = '';
+        this.panel.classList.remove('hidden');
+        const overflow = () => {
+            const box = this.scroller === document.scrollingElement ? { bottom: window.innerHeight } : this.scroller.getBoundingClientRect();
+            return this.panel.getBoundingClientRect().bottom + 8 - Math.min(box.bottom, window.innerHeight);
+        };
+        this.scroller = this.scrollParent();
+        let need = overflow();
+        if (need > 0) { this.scroller.scrollTop += need; need = overflow(); }
+        if (need > 0 && this.button.getBoundingClientRect().top > this.panel.offsetHeight + 16) {
+            this.panel.style.top = '';
+            this.panel.style.bottom = 'calc(100% + 0.375rem)';
+        }
+        this.button.setAttribute('aria-expanded', 'true');
+        this.chevron.style.transform = 'rotate(180deg)';
+        const sel = this.panel.querySelector('[aria-selected="true"]');
+        if (sel) sel.scrollIntoView({ block: 'nearest' });
+    }
+
+    /** Rows follow the options' data-level; branches start closed except the path to the chosen option. */
+    initTree() {
+        const rows = Array.from(this.panel.querySelectorAll('[role="option"]'));
+        const stack = [];
+        rows.forEach((row, i) => {
+            const level = +(row.dataset.level || 0);
+            while (stack.length && +stack[stack.length - 1].dataset.level >= level) stack.pop();
+            row.dataset.tlParent = stack.length ? stack[stack.length - 1].dataset.tlIndex : '';
+            row.dataset.tlIndex = String(i);
+            stack.push(row);
+        });
+        const selected = this.panel.querySelector('[aria-selected="true"]');
+        if (selected) TreeList.reveal(rows, selected.dataset.tlIndex);
+        TreeList.apply(rows, '');
+        if (!this.panel._tl) {
+            this.panel._tl = true;
+            this.panel.addEventListener('click', e => {
+                const t = e.target.closest('.js-tl-toggle');
+                if (!t) return;
+                e.stopPropagation();
+                const row = t.closest('[role="option"]');
+                row.dataset.open = row.dataset.open === '1' ? '0' : '1';
+                TreeList.apply(Array.from(this.panel.querySelectorAll('[role="option"]')), '');
+            });
+        }
+    }
+
+    scrollParent() {
+        for (let el = this.wrap.parentElement; el && el !== document.body; el = el.parentElement) {
+            const oy = getComputedStyle(el).overflowY;
+            if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight) return el;
+        }
+        return document.scrollingElement;
+    }
+
+    close() {
+        this.panel.classList.add('hidden');
+        this.button.setAttribute('aria-expanded', 'false');
+        this.chevron.style.transform = '';
+    }
+}
+window.ThemedSelect = ThemedSelect;
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('select[data-themed-select]').forEach(s => new ThemedSelect(s));
+});

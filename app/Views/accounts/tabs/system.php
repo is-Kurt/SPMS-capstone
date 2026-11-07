@@ -67,12 +67,20 @@
                         <?php
                             $kind = $pos['is_general_root'] ? 'general-root' : ($pos['is_general'] ? 'general' : ($pos['is_head'] ? 'head' : 'member'));
                         ?>
-                        <li class="position-item block lg:table-row bg-surface hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors group" data-title="<?= strtolower(esc($pos['title'])) ?>" data-id="<?= $pos['id'] ?>">
-                            <div class="flex flex-col justify-center lg:table-cell py-4 align-middle h-[72px]" style="padding-left: <?= ($pos['level'] * 24 + 24) ?>px; padding-right: 24px;">
+                        <li class="position-item block lg:table-row bg-surface hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors group" data-title="<?= strtolower(esc($pos['title'])) ?>" data-id="<?= $pos['id'] ?>" data-parent="<?= $pos['parent_id'] ?: 0 ?>" style="<?= $pos['parent_id'] ? 'display: none;' : '' ?><?= $kind === 'general-root' ? 'background: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface));' : '' ?>">
+                            <div class="flex flex-col justify-center lg:table-cell py-4 align-middle h-[72px]" style="padding-left: <?= ($pos['level'] * 24 + 24) ?>px; padding-right: 24px;<?= $kind === 'general-root' ? ' box-shadow: inset 3px 0 0 var(--color-accent);' : '' ?>">
                                 <div class="flex justify-between items-center w-full">
+                                    <div class="flex items-center gap-2 pr-2">
+                                        <?php if ($pos['has_children']): ?>
+                                            <button type="button" class="js-tree-toggle text-text-muted hover:text-text transition-transform transform -rotate-90 focus:outline-none p-1 cursor-pointer" onclick="togglePositionTree(this, <?= $pos['id'] ?>)" aria-label="Show or hide positions under <?= esc($pos['title'], 'attr') ?>">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                                            </button>
+                                        <?php else: ?>
+                                            <div class="w-6 h-4"></div>
+                                        <?php endif; ?>
                                     <div class="flex flex-col">
-                                        <span class="text-sm font-bold text-text"><?= esc($pos['title']) ?></span>
-                                        <span class="text-[9px] font-black tracking-widest uppercase <?= $kind === 'head' ? 'text-accent-ink' : ($kind === 'member' ? ($pos['is_teaching'] ? 'text-warning-500' : 'text-zinc-400') : 'text-info-500') ?>">
+                                        <span class="text-sm font-bold <?= $kind === 'general-root' ? 'text-accent-ink' : 'text-text' ?>"><?= esc($pos['title']) ?></span>
+                                        <span class="text-[9px] font-black tracking-widest uppercase text-text-muted">
                                             <?php if ($kind === 'general-root'): ?>General group &middot; its positions show for everyone below a head
                                             <?php elseif ($kind === 'general'): ?>General &middot; <?= $pos['is_teaching'] ? 'Teaching' : 'Non-Teaching' ?>
                                             <?php elseif ($kind === 'head'): ?>Head position &middot; <?= $pos['is_teaching'] ? 'Teaching' : 'Non-Teaching' ?>
@@ -80,14 +88,15 @@
                                             <?php endif; ?>
                                         </span>
                                     </div>
+                                    </div>
                                     <div class="flex items-center gap-1">
+                                        <?php if ($kind !== 'general-root'): ?>
                                         <button type="button"
                                             class="text-accent-ink hover:text-accent-hover opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-2 bg-accent/10 hover:bg-accent/20 lg:bg-transparent rounded-lg cursor-pointer"
                                             title="Edit / move position"
                                             onclick="openEditPositionModal(<?= $pos['id'] ?>, <?= esc(json_encode($pos['title'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), 'attr') ?>, <?= (int) $pos['is_teaching'] ?>, <?= $pos['parent_id'] ? (int) $pos['parent_id'] : 'null' ?>, <?= (int) $pos['is_general_root'] ?>)">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                                         </button>
-                                        <?php if (!$pos['is_general_root']): ?>
                                         <?= form_open('account/position/delete', ['data-ajax' => 'delete-position', 'data-confirm' => 'Delete this position? Only a position nobody holds or held can be deleted.', 'data-confirm-title' => 'Delete Position']) ?>
                                             <input type="hidden" name="id" value="<?= $pos['id'] ?>">
                                             <button type="submit" class="text-danger-400 hover:text-danger-600 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-2 -mr-2 bg-danger-50 hover:bg-danger-100 dark:bg-danger-500/10 dark:hover:bg-danger-500/20 lg:bg-transparent rounded-lg cursor-pointer" title="Delete position">
@@ -188,9 +197,10 @@
                                             <?php if (empty($uh['titles'])): ?>
                                                 <span class="text-[9px] font-bold text-danger-500 uppercase tracking-widest mt-0.5">No head position &middot; link one (or link a parent unit)</span>
                                             <?php else: ?>
-                                                <span class="text-[9px] font-bold uppercase tracking-widest mt-0.5 <?= count($uh['holders']) > 1 ? 'text-warning-500' : 'text-text-muted' ?>">
+                                                <span class="text-[9px] font-bold uppercase tracking-widest mt-0.5 text-text-muted">
                                                     <?= !$unit['parent_id'] ? 'Top level &middot; ' : '' ?>Head: <?= esc(implode(' / ', $uh['titles'])) ?> &middot; <?= $uh['linked'] ? 'linked' : 'inherited' ?>
-                                                    &middot; <?= empty($uh['holders']) ? 'vacant' : esc(implode(', ', $uh['holders'])) ?><?= count($uh['holders']) > 1 ? ' (co-heads)' : '' ?>
+                                                    <?php $nHolders = count($uh['holders']); ?>
+                                                    &middot; <span title="<?= esc(implode(', ', $uh['holders'])) ?>"><?= $nHolders . ($nHolders === 1 ? ' holder' : ' holders') ?></span>
                                                 </span>
                                             <?php endif; ?>
                                         </div>
@@ -267,14 +277,28 @@
                                     <div class="flex justify-between items-center w-full">
                                         <div class="flex flex-col">
                                             <span class="text-sm font-bold text-text"><?= esc($es['name']) ?></span>
-                                            <span class="text-[9px] font-black tracking-widest uppercase text-emerald-500">Employment Status</span>
                                         </div>
-                                        <?= form_open('account/employment-status/delete', ['data-ajax' => 'delete-employment-status', 'data-confirm' => 'Delete this employment status? Plantilla assignments with this status will remain intact.', 'data-confirm-title' => 'Delete Employment Status']) ?>
+                                        <div class="flex items-center gap-4">
+                                        <?php if (!empty($docRules['linksReady'])): ?>
+                                            <div class="flex items-center gap-3" data-status-id="<?= (int) $es['id'] ?>">
+                                                <span class="text-[10px] font-black uppercase tracking-widest text-text-muted">Open to</span>
+                                                <?php foreach (['Employee', 'Supervisor'] as $roleName):
+                                                    $openList = $docRules['open'][$roleName] ?? null;
+                                                    $isOpen = $openList === null || in_array(strtolower($es['name']), array_map('strtolower', $openList), true); ?>
+                                                    <label class="flex items-center gap-2 cursor-pointer text-xs text-text font-bold">
+                                                        <input type="checkbox" class="js-status-role checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer" value="<?= $roleName ?>" <?= $isOpen ? 'checked' : '' ?>>
+                                                        <?= $roleName ?>
+                                                    </label>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?= form_open('account/employment-status/delete', ['data-ajax' => 'delete-employment-status', 'data-confirm' => 'Delete this employment status? People who have it keep it until you change it.', 'data-confirm-title' => 'Delete Employment Status']) ?>
                                             <input type="hidden" name="id" value="<?= $es['id'] ?>">
                                             <button type="submit" class="text-danger-400 hover:text-danger-600 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-2 -mr-2 bg-danger-50 hover:bg-danger-100 dark:bg-danger-500/10 dark:hover:bg-danger-500/20 lg:bg-transparent rounded-lg cursor-pointer" title="Delete Employment Status">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                             </button>
                                         <?= form_close() ?>
+                                        </div>
                                     </div>
                                 </div>
                             </li>
@@ -298,22 +322,24 @@
 
     <!-- DOC TYPE RULES SUB-TAB (2026-11-07): which doc types each role and each employment status allows -->
     <div id="system-panel-doc_rules" class="system-panel hidden flex-col flex-1 lg:min-h-0 relative">
-        <div class="overflow-y-auto custom-scrollbar flex-1 p-4 lg:p-6">
-            <?= form_open('account/doc-rules/update', ['id' => 'form-doc-rules', 'data-ajax' => 'save-doc-rules', 'class' => 'flex flex-col gap-6 max-w-4xl']) ?>
-                <p class="text-xs text-text-muted font-medium">A person may use the doc types allowed by <strong class="text-text">both</strong> their role and their employment status. When exactly one is allowed it is set automatically; when several are, the person picks. Leave a row with nothing ticked for no limit. Changing a rule never changes anyone's current doc type: people it no longer fits are flagged in the User Directory for you to fix.</p>
-
+        <div class="doc-rules-panel overflow-y-auto custom-scrollbar flex-1 p-4 lg:p-6">
+                <p class="text-xs text-text-muted font-medium shrink-0">A person may use the doc types allowed by <strong class="text-text">both</strong> their role and their employment status: one allowed is set automatically, several means they pick. Keep at least one ticked; all four means no limit. Which statuses each role may have is set in Employment Statuses. A rule change never changes anyone's doc type; people it no longer fits are flagged in the User Directory.</p>
+            <div class="doc-rules-cols">
+                <!-- Left: the rules (only the employment statuses list grows, so only it scrolls) -->
+                <div id="doc-rules-swap" class="doc-rules-col">
+                <?= form_open('account/doc-rules/update', ['id' => 'form-doc-rules', 'data-ajax' => 'save-doc-rules', 'class' => 'doc-rules-col']) ?>
                 <?php foreach ([['Roles', 'role', $docRules['roles'], 'name'], ['Employment statuses', 'status', $docRules['statuses'], 'name']] as [$heading, $kind, $rows, $label]): ?>
-                <div class="rounded-xl border border-surface-border overflow-hidden">
+                <div class="rounded-xl border border-surface-border overflow-hidden<?= $kind === 'status' ? ' doc-rules-grow' : '' ?>">
                     <div class="px-4 py-3 bg-zinc-50 dark:bg-zinc-800/30 border-b border-surface-border text-[10px] font-black uppercase tracking-widest text-text-muted"><?= $heading ?></div>
-                    <div class="divide-y divide-surface-border">
+                    <div class="divide-y divide-surface-border<?= $kind === 'status' ? ' doc-rules-scroll custom-scrollbar' : '' ?>">
                         <?php foreach ($rows as $r): ?>
                             <div class="js-rule-row px-4 py-3 flex flex-col lg:flex-row lg:items-center gap-3" data-kind="<?= $kind ?>" data-name="<?= esc($r[$label]) ?>">
                                 <input type="hidden" name="<?= $kind ?>_present[<?= $r['id'] ?>]" value="1">
-                                <span class="text-sm font-bold text-text w-full shrink-0" style="max-width: 12rem;"><?= esc($r[$label]) ?></span>
+                                <span class="text-sm font-bold text-text w-full shrink-0" style="max-width: 9rem;"><?= esc($r[$label]) ?></span>
                                 <div class="flex flex-wrap items-center gap-4">
                                     <?php foreach ($docTypes as $t): ?>
                                         <label class="flex items-center gap-2 cursor-pointer text-xs text-text font-bold">
-                                            <input type="checkbox" class="js-rule-type checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer" name="<?= $kind ?>_types[<?= $r['id'] ?>][]" value="<?= $t ?>" <?= ($r['allowed'] !== null && in_array($t, $r['allowed'], true)) ? 'checked' : '' ?>>
+                                            <input type="checkbox" class="js-rule-type checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer" name="<?= $kind ?>_types[<?= $r['id'] ?>][]" value="<?= $t ?>" <?= ($r['allowed'] === null || in_array($t, $r['allowed'], true)) ? 'checked' : '' ?>>
                                             <?= $t ?>
                                         </label>
                                     <?php endforeach; ?>
@@ -324,25 +350,10 @@
                     </div>
                 </div>
                 <?php endforeach; ?>
-
-                <div class="rounded-xl border border-surface-border overflow-hidden">
-                    <div class="px-4 py-3 bg-zinc-50 dark:bg-zinc-800/30 border-b border-surface-border text-[10px] font-black uppercase tracking-widest text-text-muted">Preview: every role and status combination</div>
-                    <div class="overflow-x-auto custom-scrollbar">
-                        <table class="w-full text-left border-collapse">
-                            <thead class="text-[10px] font-black uppercase tracking-widest text-text-muted border-b border-surface-border">
-                                <tr><th class="px-4 py-2.5">Role</th><th class="px-4 py-2.5">Employment status</th><th class="px-4 py-2.5">Allowed doc types</th><th class="px-4 py-2.5">People</th><th class="px-4 py-2.5">Would be flagged</th></tr>
-                            </thead>
-                            <tbody id="doc-rules-preview" class="divide-y divide-surface-border text-sm"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="flex justify-end">
+                <div class="flex justify-end shrink-0">
                     <button type="submit" class="w-full lg:w-auto bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold py-3 px-8 rounded-xl shadow-lg shadow-accent/20 transition-all cursor-pointer">Save Rules</button>
                 </div>
-            <?= form_close() ?>
-        </div>
-    </div>
+                <?= form_close() ?>
     <script>
     (function () {
         const DOC_TYPES = <?= json_encode($docTypes) ?>;
@@ -352,8 +363,7 @@
         const allowedOf = (kind, name) => {
             const row = Array.from(form.querySelectorAll('.js-rule-row')).find(r => r.dataset.kind === kind && r.dataset.name.toLowerCase() === String(name).toLowerCase());
             if (!row) return null;
-            const ticked = Array.from(row.querySelectorAll('.js-rule-type:checked')).map(c => c.value);
-            return ticked.length ? ticked : null;              // nothing ticked = no limit
+            return Array.from(row.querySelectorAll('.js-rule-type:checked')).map(c => c.value);   // all four = no limit
         };
         const esc = v => { const d = document.createElement('div'); d.textContent = v; return d.innerHTML; };
         function render() {
@@ -361,6 +371,12 @@
             body.innerHTML = PREVIEW.map(p => {
                 const r = allowedOf('role', p.role), st = allowedOf('status', p.status);
                 const allowed = DOC_TYPES.filter(t => (r === null || r.includes(t)) && (st === null || st.includes(t)));
+                if (p.open === false) {
+                    // The role may not have this status (Employment Statuses tab): everyone in it is flagged.
+                    return `<tr class="opacity-60"><td class="px-4 py-2.5 font-bold text-text-muted">${esc(p.role)}</td><td class="px-4 py-2.5 text-text-muted">${esc(p.status)}</td>`
+                         + `<td class="px-4 py-2.5 text-text-muted">Not open to ${esc(p.role)}</td><td class="px-4 py-2.5 text-text-muted">${p.people}</td>`
+                         + `<td class="px-4 py-2.5 font-bold ${p.people ? 'text-warning-500' : 'text-text-muted'}">${p.people}</td></tr>`;
+                }
                 const flagged = Object.entries(p.by_type || {}).reduce((n, [t, c]) => n + (allowed.includes(t) ? 0 : c), 0);
                 const empty = allowed.length === 0;
                 return `<tr><td class="px-4 py-2.5 font-bold text-text">${esc(p.role)}</td><td class="px-4 py-2.5 text-text">${esc(p.status)}</td>`
@@ -369,14 +385,39 @@
                      + `<td class="px-4 py-2.5 font-bold ${flagged ? 'text-warning-500' : 'text-text-muted'}">${flagged}</td></tr>`;
             }).join('');
         }
-        function hints() {
-            form.querySelectorAll('.js-rule-row').forEach(row => {
-                row.querySelector('.js-rule-hint').textContent = row.querySelector('.js-rule-type:checked') ? '' : 'No limit';
-            });
-        }
-        form.addEventListener('change', () => { hints(); render(); });
-        hints();
-        render();
+        // At least one doc type stays ticked in every row (all four = no limit).
+        form.addEventListener('change', (e) => {
+            const box = e.target.closest('.js-rule-type');
+            if (box && !box.checked && !box.closest('.js-rule-row').querySelector('.js-rule-type:checked')) {
+                box.checked = true;
+                const hint = box.closest('.js-rule-row').querySelector('.js-rule-hint');
+                hint.textContent = 'Keep at least one';
+                clearTimeout(hint._t); hint._t = setTimeout(() => { hint.textContent = ''; }, 2000);
+            }
+            render();
+        });
+        // The preview table comes after this script on the page: wait for it on first load.
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render); else render();
     })();
     </script>
+                </div>
+                <!-- Right: default weights (fixed size) and the preview (scrolls) -->
+                <div class="doc-rules-col">
+                    <?= $this->include('accounts/tabs/_default_weights') ?>
+                <div class="rounded-xl border border-surface-border overflow-hidden doc-rules-grow">
+                    <div class="px-4 py-3 bg-zinc-50 dark:bg-zinc-800/30 border-b border-surface-border text-[10px] font-black uppercase tracking-widest text-text-muted">Preview: every role and status</div>
+                    <div class="overflow-x-auto custom-scrollbar doc-rules-scroll">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="text-[10px] font-black uppercase tracking-widest text-text-muted border-b border-surface-border sticky top-0 z-10 bg-surface">
+                                <tr><th class="px-4 py-2.5">Role</th><th class="px-4 py-2.5">Employment status</th><th class="px-4 py-2.5">Allowed doc types</th><th class="px-4 py-2.5">People</th><th class="px-4 py-2.5">Would be flagged</th></tr>
+                            </thead>
+                            <tbody id="doc-rules-preview" class="divide-y divide-surface-border text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

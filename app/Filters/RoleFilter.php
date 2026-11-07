@@ -25,7 +25,7 @@ class RoleFilter implements FilterInterface
      */
     public function before(RequestInterface $request, $arguments = null)
     {
-        $role = session()->get('role');
+        $role = session()->get('user_id') ? AuthFilter::syncRole((int) session()->get('user_id')) : session()->get('role');
         $uRole = \App\Enums\UserRole::canonical($role);
         $isAllowed = $role && in_array($role, $arguments);
 

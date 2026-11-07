@@ -226,17 +226,8 @@
         }
 
         if (action === 'change-role') {
-            const select = form.querySelector('.js-role-select');
-            const newLabel = select.options[select.selectedIndex].text;
-            const ok = await window.appConfirm(`Change this user's role to "${newLabel}"? This updates their system permissions immediately.`, {
-                title: 'Change Role',
-                confirmText: 'Change Role',
-                variant: 'warning'
-            });
-            if (!ok) {
-                select.value = select.dataset.previous;
-                return;
-            }
+            await changeRoleFlow(form);
+            return;
         }
 
         const formData = new FormData(form);
@@ -259,11 +250,142 @@
         });
     });
 
+    /**
+     * Role change in two steps: the server first says what will happen (assignments that end, TWG units that are
+     * cleared, a head position that no longer fits) and may offer to restore the assignments the person had before
+     * they left Employee / Supervisor; then the change is sent again with confirm=1.
+     */
+    async function changeRoleFlow(form) {
+        const select = form.querySelector('.js-role-select');
+        const revert = () => { select.value = select.dataset.previous; };
+        const post = (extra) => new Promise(resolve => {
+            const fd = new FormData(form);
+            Object.entries(extra).forEach(([k, v]) => fd.append(k, v));
+            apiPost(form.getAttribute('action'), fd, {
+                onSuccess: d => resolve({ ok: true, d }), onError: m => resolve({ ok: false, m }),
+                onDefault: d => { if (d && d.status === 'confirm') resolve({ ok: true, d }); },   // apiPost hands 'confirm' replies to onDefault
+            });
+        });
+        const fail = (m) => { revert(); window.appAlert(m || 'Something went wrong.', { variant: 'danger' }); };
+
+        const first = await post({});
+        if (!first.ok) return fail(first.m);
+        if (first.d.status !== 'confirm') return handleAccountsAjaxSuccess('change-role', form, first.d);
+        if (!await window.appConfirm(first.d.message, { title: 'Change Role', confirmText: 'Change Role', variant: 'warning' })) return revert();
+
+        let restore = 0;
+        const offer = first.d.restore || [];
+        if (offer.length) {
+            restore = await window.appConfirm(`Restore their previous assignment${offer.length > 1 ? 's' : ''}?\n\n${offer.join('\n')}`,
+                { title: 'Restore Assignments', confirmText: 'Restore', cancelText: 'Skip, pick in Manage', variant: 'info' }) ? 1 : 0;
+        }
+        const done = await post({ confirm: 1, restore });
+        if (!done.ok) return fail(done.m);
+        handleAccountsAjaxSuccess('change-role', form, done.d);
+    }
+
+    // Employment Statuses: "Open to Employee / Supervisor" saves on click (at least one stays ticked).
+    document.getElementById('employment-statuses-list')?.addEventListener('change', (e) => {
+        const box = e.target.closest('.js-status-role');
+        if (!box) return;
+        const group = box.closest('[data-status-id]');
+        const roles = Array.from(group.querySelectorAll('.js-status-role:checked')).map(c => c.value);
+        if (!roles.length) {
+            box.checked = true;
+            return window.appAlert('A status must be open to at least one role.', { title: 'Employment Status', variant: 'warning' });
+        }
+        const fd = new FormData();
+        fd.append('status_id', group.dataset.statusId);
+        roles.forEach(r => fd.append('roles[]', r));
+        apiPost('<?= site_url('account/employment-status/roles') ?>', fd, {
+            onSuccess: async (d) => {
+                await refreshSystemData();
+                if (/flagged/.test(d.message || '')) window.appAlert(d.message, { title: 'Employment Status', variant: 'warning' });
+            },
+            onError: (m) => { box.checked = !box.checked; window.appAlert(m || 'Something went wrong.', { variant: 'danger' }); },
+        });
+    });
+
+    // After a role change that reloads the page: show its message, and open Manage when it needs follow-up.
+    document.addEventListener('DOMContentLoaded', async () => {
+        let notice = null;
+        try { notice = sessionStorage.getItem('accountsNotice'); sessionStorage.removeItem('accountsNotice'); } catch (e) {}
+        if (notice) await window.appAlert(notice, { title: 'Role Updated', variant: 'success' });
+        const params = new URLSearchParams(window.location.search);
+        const manageId = params.get('manage');
+        if (manageId && typeof window.openManageUser === 'function') {
+            history.replaceState(history.state, '', window.location.pathname);
+            window.openManageUser(parseInt(manageId, 10));
+        }
+    });
+
     function escapeHtml(str) {
         const div = document.createElement('div');
         div.textContent = str ?? '';
         return div.innerHTML;
     }
+
+    /**
+     * Refreshes System Data in place after a change (no page reload): fetches the page again and swaps in the
+     * server-rendered lists, pickers and doc-type rules, keeping the open sub-tab, expanded branches and search.
+     * reveal = {kind: 'unit'|'position', id}: also opens the branch that holds a newly added item.
+     */
+    async function refreshSystemData(reveal = null) {
+        const openIds = (listId) => Array.from(document.querySelectorAll(`#${listId} li[data-id]`))
+            .filter(li => { const b = li.querySelector('.js-tree-toggle'); return b && !b.classList.contains('-rotate-90'); })
+            .map(li => li.dataset.id);
+        const keep = { units: openIds('units-list'), positions: openIds('positions-list') };
+        let html;
+        try {
+            const res = await fetch('<?= site_url('accounts/system') ?>', { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } });
+            html = await res.text();
+        } catch (e) {
+            window.location.reload();
+            return;
+        }
+        const fresh = new DOMParser().parseFromString(html, 'text/html');
+        const swap = (id, runScripts = false) => {
+            const now = document.getElementById(id), next = fresh.getElementById(id);
+            if (!now || !next) return;
+            now.innerHTML = next.innerHTML;
+            if (runScripts) {
+                now.querySelectorAll('script').forEach(old => {
+                    const sc = document.createElement('script');
+                    sc.textContent = old.textContent;
+                    old.replaceWith(sc);
+                });
+            }
+        };
+        ['units-list', 'positions-list', 'employment-statuses-list', 'parent-options-list', 'edit-parent-options-list',
+         'create-position-parent', 'edit-position-parent', 'edit-unit-head', 'select-invite-unit'].forEach(id => swap(id));
+        swap('doc-rules-swap', true);   // not the weights form below it: unsaved weights stay
+
+        // Expand what was open, plus the branch of a new item.
+        const expand = (listId, toggleFn, ids) => ids.forEach(id => {
+            const li = document.querySelector(`#${listId} li[data-id="${id}"]`);
+            const btn = li && li.querySelector('.js-tree-toggle');
+            if (btn && btn.classList.contains('-rotate-90')) toggleFn(btn, id);
+        });
+        if (reveal) {
+            const listId = reveal.kind === 'unit' ? 'units-list' : 'positions-list';
+            const chain = [];
+            let li = document.querySelector(`#${listId} li[data-id="${reveal.id}"]`);
+            while (li && li.dataset.parent && li.dataset.parent !== '0') {
+                chain.unshift(li.dataset.parent);
+                li = document.querySelector(`#${listId} li[data-id="${li.dataset.parent}"]`);
+            }
+            keep[reveal.kind === 'unit' ? 'units' : 'positions'].push(...chain);
+        }
+        expand('units-list', window.toggleUnitTree, keep.units);
+        expand('positions-list', window.togglePositionTree, keep.positions);
+
+        // Re-apply searches (they show matches with their parents).
+        if ((document.getElementById('filter-units') || {}).value) filterUnits();
+        if ((document.getElementById('filter-positions') || {}).value) filterPositions();
+        if (typeof filterEmploymentStatuses === 'function') filterEmploymentStatuses();
+        window.systemDataChanged = true;
+    }
+    window.refreshSystemData = refreshSystemData;
 
     async function handleAccountsAjaxSuccess(action, form, data) {
         if (['add-position', 'delete-position', 'add-unit', 'delete-unit', 'add-role', 'delete-role', 'add-employment-status', 'delete-employment-status'].includes(action)) {
@@ -306,278 +428,42 @@
             }
 
             case 'change-role': {
-                form.closest('.user-dir-row').dataset.role = data.role_name;
                 const select = form.querySelector('.js-role-select');
+                if (data.reload) {
+                    // Assignments, flags and Manage's data changed with the role: reload the directory.
+                    try { sessionStorage.setItem('accountsNotice', data.message || `Role updated to "${data.role_name}".`); } catch (e) {}
+                    const userId = form.querySelector('input[name="user_id"]').value;
+                    window.location.href = ACCOUNTS_BASE_URL + (data.open_manage ? '?manage=' + encodeURIComponent(userId) : '');
+                    break;
+                }
+                form.closest('.user-dir-row').dataset.role = data.role_name;
                 select.dataset.previous = select.value;
-                window.appAlert(`Role updated to "${data.role_name}".`, { title: 'Role Updated', variant: 'success' });
+                window.appAlert(data.message || `Role updated to "${data.role_name}".`, { title: 'Role Updated', variant: 'success' });
                 break;
             }
 
-            case 'delete-position': {
-                form.closest('li').remove();
-                if (typeof filterPositions === 'function') filterPositions();
-                break;
-            }
-
-            case 'delete-employment-status': {
-                form.closest('li').remove();
-                if (typeof filterEmploymentStatuses === 'function') filterEmploymentStatuses();
-                break;
-            }
-
-            case 'delete-unit': {
-                const li = form.closest('li');
-                if (li) {
-                    const unitId = li.dataset.id;
-                    const parentId = li.dataset.parent;
-
-                    // Remove all descendants recursively
-                    const removeDescendants = (pId) => {
-                        document.querySelectorAll(`.unit-item[data-parent="${pId}"]`).forEach(child => {
-                            const childId = child.dataset.id;
-                            removeDescendants(childId);
-                            
-                    // Remove from dropdown
-                    const opt1 = document.querySelector(`#parent-options-list li[data-value="${childId}"]`);
-                    if (opt1) opt1.remove();
-                            
-                            child.remove();
-                        });
-                    };
-                    removeDescendants(unitId);
-
-                    // Remove from dropdown
-                    const opt2 = document.querySelector(`#parent-options-list li[data-value="${unitId}"]`);
-                    if (opt2) opt2.remove();
-
-                    li.remove();
-
-                    // If parent has no children left, remove its toggle
-                    if (parentId && parentId !== "0") {
-                        const siblings = document.querySelectorAll(`.unit-item[data-parent="${parentId}"]`);
-                        if (siblings.length === 0) {
-                            const parentLi = document.querySelector(`.unit-item[data-id="${parentId}"]`);
-                            if (parentLi) {
-                                const toggleBtn = parentLi.querySelector('.js-tree-toggle');
-                                if (toggleBtn) {
-                                    toggleBtn.remove();
-                                    const flexContainer = parentLi.querySelector('.flex.items-center.gap-2.pr-2');
-                                    if (flexContainer) {
-                                        const div = document.createElement('div');
-                                        div.className = 'w-4 h-4';
-                                        flexContainer.prepend(div);
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    const unitInput = document.getElementById('filter-units');
-                    if (unitInput) unitInput.dispatchEvent(new Event('input'));
-                }
-                break;
-            }
-
+            case 'add-unit':
+            case 'add-position':
+            case 'update-unit':
             case 'update-position':
+            case 'delete-unit':
+            case 'delete-position':
+            case 'add-employment-status':
+            case 'delete-employment-status': {
+                // Close the modal this form is in, clear the form, and refresh the System Data lists in place.
+                const modal = form.closest('.fixed.inset-0');
+                if (modal && action !== 'delete-unit' && action !== 'delete-position' && action !== 'delete-employment-status') {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+                if (action.startsWith('add-')) form.reset();
+                await refreshSystemData(data.item ? { kind: action.endsWith('unit') ? 'unit' : 'position', id: data.item.id } : null);
+                break;
+            }
+
             case 'save-doc-rules': {
-                document.querySelectorAll('#modal-edit-position').forEach(m => { m.classList.add('hidden'); m.classList.remove('flex'); });
-                await window.appAlert(action === 'save-doc-rules' ? (data.message || 'Doc-type rules saved.') : 'Position updated.', { title: action === 'save-doc-rules' ? 'Doc Type Rules' : 'Position Updated', variant: 'success' });
-                window.location.reload();
-                break;
-            }
-
-            case 'update-unit': {
-                const modal = document.getElementById('modal-edit-unit');
-                if (modal) {
-                    modal.classList.add('hidden');
-                    modal.classList.remove('flex');
-                }
-                await window.appAlert('Department / unit updated successfully!', { title: 'Department / Unit Updated', variant: 'success' });
-                window.location.reload();
-                break;
-            }
-
-            case 'add-position': {
-                await window.appAlert('Position created.', { title: 'Position Created', variant: 'success' });
-                window.location.reload();
-                break;
-            }
-
-            case 'add-position-flat-legacy': {
-                const li = document.createElement('li');
-                li.className = 'position-item block lg:table-row bg-surface hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors group';
-                li.dataset.title = data.item.title.toLowerCase();
-                const isTeaching = data.item.is_teaching == 1;
-                li.innerHTML = `
-                    <div class="flex flex-col justify-center lg:table-cell px-6 py-4 align-middle h-[72px]">
-                        <div class="flex justify-between items-center w-full">
-                            <div class="flex flex-col">
-                                <span class="text-sm font-bold text-text">${escapeHtml(data.item.title)}</span>
-                                <span class="text-[9px] font-black tracking-widest uppercase ${isTeaching ? 'text-warning-500' : 'text-zinc-400'}">${isTeaching ? 'Teaching' : 'Non-Teaching'}</span>
-                            </div>
-                            <form action="${form.getAttribute('action').replace('/add', '/delete')}" method="post" data-ajax="delete-position" data-confirm="Delete this position? Staff currently assigned to it will keep their account but lose that designation." data-confirm-title="Delete Position">
-                                <input type="hidden" name="id" value="${data.item.id}">
-                                <button type="submit" class="text-danger-400 hover:text-danger-600 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-1 cursor-pointer">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                `;
-                document.getElementById('positions-list').appendChild(li);
-                form.reset();
-                if (typeof filterPositions === 'function') filterPositions();
-                break;
-            }
-
-            case 'add-employment-status': {
-                const li = document.createElement('li');
-                li.className = 'employment-status-item block lg:table-row bg-surface hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors group';
-                li.dataset.name = data.item.name.toLowerCase();
-                li.innerHTML = `
-                    <div class="flex flex-col justify-center lg:table-cell px-6 py-4 align-middle h-[72px]">
-                        <div class="flex justify-between items-center w-full">
-                            <div class="flex flex-col">
-                                <span class="text-sm font-bold text-text">${escapeHtml(data.item.name)}</span>
-                                <span class="text-[9px] font-black tracking-widest uppercase text-emerald-500">Employment Status</span>
-                            </div>
-                            <form action="${form.getAttribute('action').replace('/add', '/delete')}" method="post" data-ajax="delete-employment-status" data-confirm="Delete this employment status? Plantilla assignments with this status will remain intact." data-confirm-title="Delete Employment Status">
-                                <input type="hidden" name="id" value="${data.item.id}">
-                                <button type="submit" class="text-danger-400 hover:text-danger-600 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-2 -mr-2 bg-danger-50 hover:bg-danger-100 dark:bg-danger-500/10 dark:hover:bg-danger-500/20 lg:bg-transparent rounded-lg cursor-pointer" title="Delete Employment Status">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                `;
-                document.getElementById('employment-statuses-list').appendChild(li);
-                form.reset();
-                const modal = document.getElementById('modal-create-employment-status');
-                if (modal) {
-                    modal.classList.add('hidden');
-                    modal.classList.remove('flex');
-                }
-                if (typeof filterEmploymentStatuses === 'function') filterEmploymentStatuses();
-                break;
-            }
-
-            case 'add-unit': {
-                const item = data.item;
-                const parentId = item.parent_id || 0;
-                let level = 0;
-                let insertAfterNode = null;
-                
-                if (parentId !== 0) {
-                    const parentLi = document.querySelector(`.unit-item[data-id="${parentId}"]`);
-                    if (parentLi) {
-                        const paddingLeft = parseInt(parentLi.style.paddingLeft || '16', 10);
-                        level = (paddingLeft - 16) / 24 + 1;
-                        
-                        const flexContainer = parentLi.querySelector('.flex.items-center.gap-2.pr-2');
-                        if (flexContainer && !flexContainer.querySelector('.js-tree-toggle')) {
-                            const emptyDiv = flexContainer.querySelector('.w-4.h-4');
-                            if (emptyDiv) emptyDiv.remove();
-                            
-                            const btn = document.createElement('button');
-                            btn.type = 'button';
-                            btn.className = 'js-tree-toggle text-text-muted hover:text-text transition-transform transform -rotate-90 focus:outline-none';
-                            btn.setAttribute('onclick', `toggleUnitTree(this, ${parentId})`);
-                            btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>`;
-                            flexContainer.prepend(btn);
-                        }
-                        
-                        insertAfterNode = parentLi;
-                        let nextNode = parentLi.nextElementSibling;
-                        while (nextNode && nextNode.classList.contains('unit-item')) {
-                            const nextPadding = parseInt(nextNode.style.paddingLeft || '16', 10);
-                            const nextLevel = (nextPadding - 16) / 24;
-                            if (nextLevel <= level - 1) break; 
-                            insertAfterNode = nextNode;
-                            nextNode = nextNode.nextElementSibling;
-                        }
-                    }
-                }
-
-                const li = document.createElement('li');
-                li.className = 'unit-item block lg:table-row bg-surface hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors group';
-                li.dataset.id = item.id;
-                li.dataset.parent = parentId;
-                li.dataset.name = item.name.toLowerCase();
-
-                let display = '';
-                if (parentId !== 0) {
-                    const parentLi = document.querySelector(`.unit-item[data-id="${parentId}"]`);
-                    if (parentLi) {
-                        const toggleBtn = parentLi.querySelector('.js-tree-toggle');
-                        if (toggleBtn && toggleBtn.classList.contains('-rotate-90')) {
-                            display = 'none';
-                        } else if (parentLi.style.display === 'none') {
-                            display = 'none';
-                        }
-                    }
-                }
-                li.style.display = display;
-
-                li.innerHTML = `
-                    <div class="flex flex-col justify-center lg:table-cell py-4 align-middle h-[72px]" style="padding-left: ${level * 24 + 24}px; padding-right: 24px;">
-                        <div class="flex justify-between items-center w-full">
-                            <div class="flex items-center gap-2 pr-2">
-                                ${parentId !== 0 ? '' : ''}
-                                <div class="w-6 h-4"></div>
-                                <div class="flex flex-col">
-                                    <span class="text-sm font-bold text-text">${escapeHtml(item.name)}</span>
-                                    ${parentId === 0 ? '<span class="text-[9px] font-bold text-info-500 uppercase tracking-widest mt-0.5">Top Level Node</span>' : ''}
-                                </div>
-                            </div>
-                            <form action="${form.getAttribute('action').replace('/add', '/delete')}" method="post" data-ajax="delete-unit" data-confirm="Delete this department / unit? Staff currently assigned to it will keep their account but lose that designation. Sub-units under it will be deleted too." data-confirm-title="Delete Department / Unit">
-                                <input type="hidden" name="id" value="${item.id}">
-                                <button type="submit" class="text-danger-400 hover:text-danger-600 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity p-1 cursor-pointer">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                `;
-
-                if (insertAfterNode) {
-                    insertAfterNode.after(li);
-                } else {
-                    const emptyState = document.getElementById('units-empty-state');
-                    if (emptyState) {
-                        emptyState.before(li);
-                    } else {
-                        document.getElementById('units-list').appendChild(li);
-                    }
-                }
-
-                const ul = document.getElementById('parent-options-list');
-                if (ul) {
-                    const liOpt = document.createElement('li');
-                    liOpt.className = 'parent-option px-3 py-2 text-sm text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-lg cursor-pointer transition-colors truncate';
-                    liOpt.dataset.value = item.id;
-                    liOpt.textContent = item.name;
-                    ul.appendChild(liOpt);
-                    
-                    // Re-bind the click event to the newly added option
-                    liOpt.addEventListener('click', () => {
-                        const hiddenInput = document.getElementById('hidden-parent-id');
-                        const searchInput = document.getElementById('parent-search-input');
-                        if (hiddenInput) hiddenInput.value = item.id;
-                        if (searchInput) searchInput.value = item.name;
-                        
-                        const allOptions = ul.querySelectorAll('.parent-option');
-                        allOptions.forEach(o => {
-                            o.classList.remove('bg-accent/10', 'text-accent-ink', 'font-bold');
-                            o.classList.add('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
-                        });
-                        liOpt.classList.remove('text-text', 'hover:bg-zinc-50', 'dark:hover:bg-zinc-800/50');
-                        liOpt.classList.add('bg-accent/10', 'text-accent-ink', 'font-bold');
-                    });
-                }
-
-                form.querySelector('input[name="name"]').value = '';
-                const unitInput = document.getElementById('filter-units');
-                if (unitInput) unitInput.dispatchEvent(new Event('input'));
+                await refreshSystemData();
+                window.appAlert(data.message || 'Doc-type rules saved.', { title: 'Doc Type Rules', variant: 'success' });
                 break;
             }
 
@@ -1292,24 +1178,67 @@
     window.filterInvitations = filterInvitations;
 
     // --- SYSTEM DATA: JOB POSITIONS PAGINATION & SEARCH ---
+    // Job Positions are a tree like Departments & Units: top-level positions shown, the rest under a toggle;
+    // a search shows every match with the positions above it (no paging, so collapsing stays consistent).
+    function togglePositionTree(btn, parentId) {
+        if (!btn) return;
+        if (btn.classList.contains('-rotate-90')) {
+            btn.classList.remove('-rotate-90');
+            document.querySelectorAll(`.position-item[data-parent="${parentId}"]`).forEach(li => { li.style.display = ''; });
+        } else {
+            btn.classList.add('-rotate-90');
+            hidePositionDescendants(parentId);
+        }
+    }
+    window.togglePositionTree = togglePositionTree;
+
+    function hidePositionDescendants(parentId) {
+        document.querySelectorAll(`.position-item[data-parent="${parentId}"]`).forEach(li => {
+            li.style.display = 'none';
+            const b = li.querySelector('.js-tree-toggle');
+            if (b) b.classList.add('-rotate-90');
+            hidePositionDescendants(li.dataset.id);
+        });
+    }
+
     function filterPositions() {
         const input = document.getElementById('filter-positions');
         const query = (input ? input.value : '').trim().toLowerCase();
         const list = document.getElementById('positions-list');
         if (!list) return;
-
-        const allRows = Array.from(list.querySelectorAll('li.position-item'));
-        posPaginator.init(allRows);
-
-        const matchedRows = allRows.filter(row => {
-            const title = (row.dataset.title || row.textContent || '').trim().toLowerCase();
-            return !query || title.includes(query);
-        });
-
-        posPaginator.updateItems(matchedRows);
-
+        const items = list.querySelectorAll('.position-item');
+        let visible = 0;
+        if (query === '') {
+            items.forEach(li => {
+                li.classList.remove('page-hidden');
+                li.style.display = li.dataset.parent === '0' ? '' : 'none';
+                const b = li.querySelector('.js-tree-toggle');
+                if (b) { b.classList.add('-rotate-90'); b.style.visibility = ''; }
+                visible++;
+            });
+        } else {
+            items.forEach(li => { li.classList.remove('page-hidden'); li.style.display = 'none'; });
+            items.forEach(li => {
+                if ((li.dataset.title || '').includes(query)) {
+                    li.style.display = '';
+                    visible++;
+                    for (let pId = li.dataset.parent; pId && pId !== '0';) {
+                        const p = list.querySelector(`.position-item[data-id="${pId}"]`);
+                        if (!p) break;
+                        p.style.display = '';
+                        const pb = p.querySelector('.js-tree-toggle');
+                        if (pb) pb.classList.remove('-rotate-90');
+                        pId = p.dataset.parent;
+                    }
+                }
+                const b = li.querySelector('.js-tree-toggle');
+                if (b) b.style.visibility = 'hidden';
+            });
+        }
+        const pager = document.getElementById('positions-pagination');
+        if (pager) pager.classList.add('hidden');
         const emptyState = document.getElementById('positions-empty-state');
-        if (emptyState) emptyState.style.display = matchedRows.length === 0 ? '' : 'none';
+        if (emptyState) emptyState.style.display = query !== '' && visible === 0 ? '' : 'none';
     }
     window.filterPositions = filterPositions;
 
@@ -2462,13 +2391,8 @@
         const isExact100 = Math.abs(total - 100) < 0.01;
 
         if (badgeEl) {
-            if (isExact100) {
-                badgeEl.className = 'px-2.5 py-1 rounded-lg text-xs font-black transition-colors bg-emerald-500/10 text-emerald-600 dark:text-emerald-400';
-                badgeEl.innerHTML = `<span id="text-total-${key}">${total}</span>% ✓`;
-            } else {
-                badgeEl.className = 'px-2.5 py-1 rounded-lg text-xs font-black transition-colors bg-rose-500/10 text-rose-600 dark:text-rose-400';
-                badgeEl.innerHTML = `<span id="text-total-${key}">${total}</span>% (Must be 100%)`;
-            }
+            badgeEl.className = 'text-xs font-black ' + (isExact100 ? 'text-success-600' : 'text-danger-500');
+            badgeEl.innerHTML = `<span id="text-total-${key}">${total}</span>%`;
         }
 
         validateAllWeightsCards();
@@ -2502,9 +2426,9 @@
 
         if (statusMsg) {
             if (!allValid) {
-                statusMsg.innerHTML = `<span class="text-rose-500 font-bold">Cannot save: ${invalidTypes.join(', ')} do not total 100%.</span>`;
+                statusMsg.innerHTML = `<span class="text-danger-500 font-bold">Cannot save: ${invalidTypes.join(', ')} ${invalidTypes.length === 1 ? 'does' : 'do'} not total 100%.</span>`;
             } else {
-                statusMsg.innerHTML = `<span class="text-text-muted">All document types total 100%. Ready to save.</span>`;
+                statusMsg.innerHTML = '';
             }
         }
 
@@ -2530,7 +2454,7 @@
         });
 
         if (window.toast) {
-            window.toast('Values reset to CSC standard baseline (70/20/10 for OPCR, 70/15/15 for DPCR & IPCR). Click "Save Default Weights" to apply.', 'info');
+            window.toast('Values reset to CSC standard baseline (70/20/10 for OPCR, 70/15/15 for DPCR & IPCR). Click "Save Weights" to apply.', 'info');
         }
     }
     window.resetToCscDefaults = resetToCscDefaults;

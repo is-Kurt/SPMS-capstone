@@ -228,7 +228,7 @@ class Folder extends BaseController
         $isOwnerChair = false;
         if ($activeFolder) {
             $owner = $userModel->find($activeFolder['user_id']);
-            $ownerDocType = $owner['doc_type'] ?? null;
+            $ownerDocType = $owner ? ($owner['doc_type'] ?: \App\Libraries\OrgStructure::instance()->defaultDocTypeFor((int) $owner['id'])) : null;
             // From the organisation structure, not job titles: "Dean" = heads a unit with sub-units (collegiate DPCR).
             $org = \App\Libraries\OrgStructure::instance();
             $isOwnerDean = $org->headsUnitWithSubunits((int) $activeFolder['user_id']);
@@ -1321,7 +1321,7 @@ class Folder extends BaseController
 
                 // In-app notification
                 $targetUser = $userModel->find($targetUserId);
-                $paperType = strtoupper($targetUser['doc_type'] ?? 'IPCR');
+                $paperType = strtoupper(($targetUser['doc_type'] ?? '') ?: \App\Libraries\OrgStructure::instance()->defaultDocTypeFor((int) $targetUserId));
                 notify_user($targetUserId, [
                     'sender_id' => $userId,
                     'type'      => 'target_assigned',
@@ -2120,7 +2120,7 @@ class Folder extends BaseController
                 }
                 $myDocs = $documentModel->where('document_folder_id', $folderId)->findAll();
                 $owner = $userModel->find($activeFolder['user_id']);
-                $ownerDocType = $owner['doc_type'] ?? null;
+                $ownerDocType = $owner ? ($owner['doc_type'] ?: \App\Libraries\OrgStructure::instance()->defaultDocTypeFor((int) $owner['id'])) : null;
 
                 // Ensure the assigned team preset is included in $presets even if soft-deleted
                 if (!empty($activeFolder['routing_preset_id']) && !in_array($activeFolder['routing_preset_id'], array_column($presets, 'id'))) {

@@ -111,7 +111,8 @@
             <?php
                 $asg = $assignment ?? null;
                 $oldStatus = old('employment_status') ?: 'Permanent';
-                $statusNames = array_column($employmentStatuses, 'name');
+                // Only the statuses open to the invited role (System Data > Employment Statuses).
+                $statusNames = $asg ? array_keys($asg['docsByStatus']) : array_column($employmentStatuses, 'name');
                 if (!in_array($oldStatus, $statusNames, true)) $oldStatus = $statusNames[0] ?? '';
             ?>
             <div class="border border-surface-border p-8 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm mb-6">
@@ -136,7 +137,7 @@
                         <?php elseif (empty($asg['positions'])): ?>
                             <p class="text-sm font-bold text-danger-500">No positions are set up for this unit yet. Ask the administrator.</p>
                         <?php else: ?>
-                            <select name="position_id" id="signup-position" required class="w-full bg-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border border-surface-border rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text cursor-pointer font-bold">
+                            <select data-themed-select name="position_id" id="signup-position" required class="w-full bg-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border border-surface-border rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text cursor-pointer font-bold">
                                 <option value="" disabled <?= old('position_id') ? '' : 'selected' ?>>Select your position...</option>
                                 <?php foreach ($asg['positions'] as $pos): ?>
                                     <option value="<?= (int) $pos['id'] ?>" <?= (string) old('position_id') === (string) $pos['id'] ? 'selected' : '' ?>><?= esc($pos['title']) ?></option>
@@ -147,7 +148,7 @@
                     </div>
                     <div>
                         <label for="signup-status" class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Employment Status</label>
-                        <select name="employment_status" id="signup-status" required class="w-full bg-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border border-surface-border rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text cursor-pointer font-bold">
+                        <select data-themed-select name="employment_status" id="signup-status" required class="w-full bg-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border border-surface-border rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text cursor-pointer font-bold">
                             <?php foreach ($statusNames as $st): ?>
                                 <option value="<?= esc($st) ?>" <?= $st === $oldStatus ? 'selected' : '' ?>><?= esc($st) ?></option>
                             <?php endforeach; ?>
@@ -156,7 +157,7 @@
                     </div>
                     <div>
                         <label for="signup-doc" class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Form Type</label>
-                        <select name="doc_type" id="signup-doc" class="w-full bg-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border border-surface-border rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text cursor-pointer font-bold"></select>
+                        <div id="signup-doc-wrap"><select data-themed-select name="doc_type" id="signup-doc" class="w-full bg-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/50 border border-surface-border rounded-xl px-4 py-3 text-sm focus:border-accent outline-none text-text cursor-pointer font-bold"></select></div>
                         <div id="signup-doc-fixed" class="hidden w-full rounded-xl px-4 py-3 text-sm font-bold text-text bg-zinc-50 dark:bg-zinc-800/50"></div>
                         <p id="signup-doc-note" class="text-[10px] text-text-muted font-medium mt-1 pl-1"></p>
                         <div class="h-3 pl-1 mt-1"><p class="text-danger-500 text-[10px] font-bold uppercase tracking-wider"><?= validation_show_error('doc_type') ?></p></div>
@@ -173,10 +174,10 @@
                         const allowed = DOCS[status.value] || [];
                         sel.innerHTML = allowed.map(t => `<option value="${t}" ${t === OLD ? 'selected' : ''}>${t}</option>`).join('');
                         const one = allowed.length === 1, none = allowed.length === 0;
-                        sel.classList.toggle('hidden', one || none);
+                        document.getElementById('signup-doc-wrap').classList.toggle('hidden', one || none);
                         fixed.classList.toggle('hidden', !(one || none));
                         fixed.textContent = one ? allowed[0] : 'None allowed';
-                        note.textContent = one ? 'Set by your role and employment status.'
+                        note.textContent = one ? ''
                             : (none ? 'No form type is allowed for this status yet. You can still sign up; the administrator will set it.' : 'Pick the form you will fill in.');
                     }
                     status.addEventListener('change', update);

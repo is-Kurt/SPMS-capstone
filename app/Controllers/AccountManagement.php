@@ -24,7 +24,10 @@ class AccountManagement extends BaseController
 {
     /** GET /accounts[/{tab}] - Lists every user plus the reference lists (roles/positions/units) shown on the page. */
     public function index(?string $tab = null) {
-        $validTabs = ['directory', 'create', 'invitations', 'system', 'twg', 'weights'];
+        // Default weights now live in System Data > Doc Type Rules; old /accounts/weights links open it there.
+        $openDocRules = $tab === 'weights';
+        if ($openDocRules) $tab = 'system';
+        $validTabs = ['directory', 'create', 'invitations', 'system', 'twg'];
         $activeTab = in_array($tab, $validTabs, true) ? $tab : 'directory';
 
         $userModel = new UserModel();
@@ -90,11 +93,21 @@ class AccountManagement extends BaseController
                 $allowed = $org->allowedDocTypes($roleName, $usr['employment_status']);
                 $usr['allowed_docs'] = $allowed;
                 if (!$usr['assignments']) $usr['flags'][] = 'No department assignment';
+                if (!$org->isStatusOpenTo($roleName, $usr['employment_status'])) {
+                    $usr['flags'][] = "Status {$usr['employment_status']} is not open to {$roleName}";
+                }
                 if (!in_array(strtoupper((string) $usr['doc_type']), $allowed, true)) {
-                    $usr['flags'][] = 'Form type ' . ($usr['doc_type'] ?: 'not set') . ' not allowed' . ($allowed ? ' (allowed: ' . implode(', ', $allowed) . ')' : ' (nothing allowed)');
+                    $usr['flags'][] = ($usr['doc_type'] ? 'Form type ' . $usr['doc_type'] . ' not allowed' : 'Form type not set') . ($allowed ? ' (allowed: ' . implode(', ', $allowed) . ')' : ' (nothing allowed)');
                 }
                 foreach ($usr['assignments'] as $a) {
                     if ($a['co_heads'] > 1) $usr['flags'][] = 'Co-head of ' . $a['unit_name'];
+                }
+                // Role and position should agree: a Supervisor heads a unit, an Employee does not.
+                $headAssignments = array_filter($usr['assignments'], fn($a) => $a['is_head']);
+                if ($roleName === 'Supervisor' && $usr['assignments'] && !$headAssignments) {
+                    $usr['flags'][] = 'Supervisor without a head position';
+                } elseif ($roleName === 'Employee' && $headAssignments) {
+                    $usr['flags'][] = 'Employee holding a head position (' . implode(', ', array_map(fn($a) => $a['position_title'] . ' · ' . $a['unit_name'], $headAssignments)) . ')';
                 }
                 if ($usr['flags']) $flagCount++;
             }
@@ -126,6 +139,7 @@ class AccountManagement extends BaseController
             'twgAssignmentsGrouped' => $twgAssignmentsGrouped,
             'twgUnitCoverageMeta'   => $twgUnitCoverageMeta,
             'defaultWeights'        => $defaultWeights,
+            'openDocRules'          => $openDocRules,
         ]);
     }
 
@@ -394,28 +408,143 @@ class AccountManagement extends BaseController
     /** POST /account/update-role - Replaces a user's role assignment with the selected one. Can't target yourself. */
     public function updateRole() {
         return $this->tryOrFail(function() {
-            $targetId = $this->request->getPost('user_id');
+            $targetId = (int) $this->request->getPost('user_id');
             $roleId   = $this->request->getPost('role_id');
 
             if ($targetId == session()->get('user_id')) {
                 return $this->respondError('Cannot change your own role.', 400);
             }
 
-            $userModel = new UserModel();
-            $roleModel = new RoleModel();
-
-            $user = $userModel->find($targetId);
-            $role = $roleModel->find($roleId);
+            $user = (new UserModel())->find($targetId);
+            $role = (new RoleModel())->find($roleId);
             if (!$user || !$role) return $this->respondError('User or role not found.', 400);
 
+            $org = OrgStructure::instance();
+            $oldRole = $org->roleOf($targetId);
+            $newRole = $role['name'];
+            if ($oldRole === $newRole) return $this->respond(['status' => 'success', 'role_name' => $newRole]);
+
             $db = \Config\Database::connect();
+            $name = trim($user['first_name'] . ' ' . $user['last_name']);
+            $wasRated = OrgStructure::isRatedRole($oldRole);
+            $isRated  = OrgStructure::isRatedRole($newRole);
+            $label = fn($a) => ($a['position_title'] ?? '?') . ' · ' . ($a['unit_name'] ?? '?');
+            $active = $this->assignmentRows($targetId, true);
+            $restorable = (!$wasRated && $isRated && !$active) ? $this->lastEndedAssignments($targetId) : [];
+            $twgUnits = $oldRole === 'TWG'
+                ? array_column((new \App\Models\TwgUnitAssignmentModel())->getAssignmentsByUser($targetId), 'unit_name') : [];
+
+            // Step 1: say what will happen and ask (the page sends the request again with confirm=1).
+            if (!$this->request->getPost('confirm')) {
+                $lines = ["Change {$name}'s role from " . ($oldRole ?: 'none') . " to {$newRole}? It takes effect on their next page."];
+                if ($wasRated && !$isRated) {
+                    if ($active) {
+                        $lines[] = 'Their department assignment' . (count($active) > 1 ? 's end' : ' ends') . ' today and stay' . (count($active) > 1 ? '' : 's') . ' in their history: ' . implode('; ', array_map($label, $active)) . '.';
+                        foreach ($active as $a) {
+                            if ($a['unit_id'] && $a['position_id'] && $org->isHeadOf((int) $a['unit_id'], (int) $a['position_id'])
+                                && !$org->headsOf((int) $a['unit_id'], $targetId)) {
+                                $lines[] = "{$a['unit_name']} will have no head until you assign one.";
+                            }
+                        }
+                    }
+                    $inProgress = $db->table('document_folders')->where('user_id', $targetId)->where('deleted_at IS NULL')
+                        ->whereNotIn('status', [\App\Enums\FolderStatus::EVAL_APPROVED->value])->countAllResults();
+                    if ($inProgress) $lines[] = ($inProgress === 1 ? 'Their unfinished paper stays' : "Their {$inProgress} unfinished papers stay") . ' on their account as they are.';
+                    $lines[] = "Their papers and ratings are kept. Switching back later offers to restore these assignments.";
+                } elseif (!$wasRated && $isRated) {
+                    if ($twgUnits) $lines[] = 'Their TWG units are cleared: ' . implode(', ', $twgUnits) . '.';
+                    if (!$org->isStatusOpenTo($newRole, $user['employment_status'])) {
+                        $lines[] = "Their status {$user['employment_status']} is not open to {$newRole}; change it in Manage.";
+                    }
+                    if (!$restorable) $lines[] = 'Next, add their department and position in Manage (it opens after this).';
+                } elseif ($wasRated && $isRated) {
+                    $headOf = array_values(array_filter($active, fn($a) => $a['unit_id'] && $a['position_id'] && $org->isHeadOf((int) $a['unit_id'], (int) $a['position_id'])));
+                    if ($newRole === 'Supervisor' && !$headOf) {
+                        $lines[] = 'They hold no head position, so they will not head any unit until you change their assignment in Manage (it opens after this).';
+                    } elseif ($newRole === 'Employee' && $headOf) {
+                        $lines[] = 'They still hold ' . implode('; ', array_map($label, $headOf)) . ', a head position: change it in Manage (it opens after this), or they keep counting as its head.';
+                    }
+                    if (!$org->isStatusOpenTo($newRole, $user['employment_status'])) {
+                        $lines[] = "Their status {$user['employment_status']} is not open to {$newRole}; they will be flagged until you change it in Manage.";
+                    }
+                    $allowed = $org->allowedDocTypes($newRole, $user['employment_status']);
+                    if ($user['doc_type'] && !in_array(strtoupper($user['doc_type']), $allowed, true)) {
+                        $lines[] = "Their form type {$user['doc_type']} does not fit {$newRole}" . ($allowed ? ' (allowed: ' . implode(', ', $allowed) . ')' : '') . '; they will be flagged until you change it.';
+                    }
+                }
+                $offer = array_map(function ($a) use ($org, $targetId, $label) {
+                    $text = $label($a);
+                    if ($org->isHeadOf((int) $a['unit_id'], (int) $a['position_id'])) {
+                        $others = array_map(fn($h) => trim($h['first_name'] . ' ' . $h['last_name']), $org->headsOf((int) $a['unit_id'], $targetId));
+                        if ($others) $text .= ' (now held by ' . implode(', ', $others) . ': they would be co-heads)';
+                    }
+                    return $text;
+                }, $restorable);
+                return $this->respond(['status' => 'confirm', 'message' => implode("\n\n", $lines), 'restore' => $offer]);
+            }
+
+            // Step 2: apply.
+            $today = date('Y-m-d');
+            $now = date('Y-m-d H:i:s');
+            $notes = [];
+            $db->transStart();
             $db->table('user_roles')->where('user_id', $targetId)->delete();
             $db->table('user_roles')->insert(['user_id' => $targetId, 'role_id' => $roleId]);
+            if ($wasRated && !$isRated && $active) {
+                $db->table('plantillas')->where('user_id', $targetId)->where('ended_at IS NULL')->update(['ended_at' => $today, 'updated_at' => $now]);
+                $notes[] = (count($active) === 1 ? 'Assignment ended: ' : count($active) . ' assignments ended: ') . implode('; ', array_map($label, $active));
+            }
+            if ($twgUnits && $newRole !== 'TWG') {
+                (new \App\Models\TwgUnitAssignmentModel())->assignUnits($targetId, []);
+                $notes[] = 'TWG units cleared: ' . implode(', ', $twgUnits);
+            }
+            if ($restorable && $this->request->getPost('restore')) {
+                foreach ($restorable as $a) {
+                    $db->table('plantillas')->insert(['user_id' => $targetId, 'unit_id' => $a['unit_id'], 'position_id' => $a['position_id'],
+                        'employment_status' => $user['employment_status'] ?? $a['employment_status'], 'started_at' => $today, 'created_at' => $now]);
+                }
+                $notes[] = (count($restorable) === 1 ? 'Assignment restored: ' : count($restorable) . ' assignments restored: ') . implode('; ', array_map($label, $restorable));
+            }
+            $db->transComplete();
+            OrgStructure::reset();
+            $org = OrgStructure::instance();
 
-            audit_log('ROLE_CHANGED', 'ACCOUNT', 'user', (int) $targetId, "Role for {$user['email']} changed to {$role['name']}");
+            // Open Manage when the new role still needs a department, or the position does not fit the role.
+            $openManage = false;
+            if ($isRated) {
+                $heads = $org->headedUnitIds($targetId);
+                $openManage = !$org->assignmentsOf($targetId) || ($newRole === 'Supervisor' && !$heads) || ($newRole === 'Employee' && $heads);
+            }
+            audit_log('ROLE_CHANGED', 'ACCOUNT', 'user', $targetId, "Role for {$user['email']} changed from " . ($oldRole ?: 'none') . " to {$newRole}" . ($notes ? ' (' . implode('; ', $notes) . ')' : ''));
 
-            return $this->respond(['status' => 'success', 'role_name' => $role['name']]);
+            return $this->respond([
+                'status'      => 'success',
+                'role_name'   => $newRole,
+                'message'     => "{$name} is now {$newRole}." . ($notes ? ' ' . implode('. ', $notes) . '.' : ''),
+                'reload'      => $wasRated !== $isRated || $openManage,
+                'open_manage' => $openManage,
+            ]);
         });
+    }
+
+    /** A person's assignments with unit and position names: current ones, or all. */
+    private function assignmentRows(int $userId, bool $currentOnly): array
+    {
+        $b = \Config\Database::connect()->table('plantillas p')
+            ->select('p.id, p.unit_id, p.position_id, p.employment_status, p.ended_at, un.name as unit_name, pos.title as position_title')
+            ->join('units un', 'un.id = p.unit_id', 'left')->join('positions pos', 'pos.id = p.position_id', 'left')
+            ->where('p.user_id', $userId);
+        if ($currentOnly) $b->where('p.ended_at IS NULL');
+        return $b->orderBy('p.id', 'ASC')->get()->getResultArray();
+    }
+
+    /** The assignments that ended last (e.g. when the person was switched to TWG), whose unit and position still exist. */
+    private function lastEndedAssignments(int $userId): array
+    {
+        $rows = array_filter($this->assignmentRows($userId, false), fn($a) => $a['ended_at'] !== null);
+        if (!$rows) return [];
+        $last = max(array_column($rows, 'ended_at'));
+        return array_values(array_filter($rows, fn($a) => $a['ended_at'] === $last && $a['unit_name'] !== null && $a['position_title'] !== null));
     }
 
     /** POST /account/twg-assignments/update - Updates assigned units/offices for a TWG member. */
@@ -508,6 +637,10 @@ class AccountManagement extends BaseController
             if (!$org->unit($unitId)) return $this->respondError('Select a department / unit.', 422);
             $pos = $org->position($positionId);
             if (!$pos || (int) $pos['is_general_root'] === 1) return $this->respondError('Select a position.', 422);
+            // Same rule as sign-up: a Supervisor takes the unit's head position, an Employee one directly under it or a General one.
+            if (!in_array($positionId, $org->positionChoicesFor($role, $unitId), true)) {
+                return $this->respondError("{$pos['title']} is not " . ($role === 'Employee' ? 'an Employee' : 'a Supervisor') . " position in {$org->unit($unitId)['name']}.", 422);
+            }
             $db = \Config\Database::connect();
             if ($db->table('plantillas')->where('user_id', $user['id'])->where('unit_id', $unitId)->where('position_id', $positionId)->where('ended_at IS NULL')->countAllResults()) {
                 return $this->respondError('They already hold this position in this unit.', 422);
@@ -557,6 +690,9 @@ class AccountManagement extends BaseController
             $org = OrgStructure::instance();
             $status = trim((string) $this->request->getPost('employment_status'));
             if (!(new EmploymentStatusModel())->where('name', $status)->first()) return $this->respondError('Select an employment status.', 422);
+            if ($status !== (string) $user['employment_status'] && !$org->isStatusOpenTo($role, $status)) {
+                return $this->respondError("{$status} is not open to {$role} (System Data > Employment Statuses).", 422);
+            }
             $allowed = $org->allowedDocTypes($role, $status);
             $doc = strtoupper(trim((string) $this->request->getPost('doc_type')));
             $current = strtoupper((string) $user['doc_type']);
@@ -644,8 +780,10 @@ class AccountManagement extends BaseController
             return $this->respondError("A position with the title '{$title}' already exists.", 422);
         }
 
-        $isGeneralRoot = (int) ($pos['is_general_root'] ?? 0) === 1;
-        [$parentId, $err] = $isGeneralRoot ? [null, null] : $this->parentPositionFrom($this->request->getPost('parent_id'), $id);
+        if ((int) ($pos['is_general_root'] ?? 0) === 1) {
+            return $this->respondError('The General group cannot be edited.', 422);
+        }
+        [$parentId, $err] = $this->parentPositionFrom($this->request->getPost('parent_id'), $id);
         if ($err) return $this->respondError($err, 422);
 
         // A position that heads a unit (linked) cannot move under General: General positions never head anything.
@@ -863,9 +1001,46 @@ class AccountManagement extends BaseController
             'updated_at' => date('Y-m-d H:i:s'),
         ]);
 
+        // A new status is open to both rated roles until the admin unticks one.
+        if (OrgStructure::instance()->hasStatusLinks()) {
+            $db = \Config\Database::connect();
+            foreach ($db->table('roles')->whereIn('name', ['Employee', 'Supervisor'])->get()->getResultArray() as $r) {
+                $db->table('role_employment_statuses')->ignore(true)->insert(['role_id' => $r['id'], 'employment_status_id' => $id]);
+            }
+            OrgStructure::reset();
+        }
         audit_log('EMPLOYMENT_STATUS_CREATED', 'ACCOUNT', 'employment_status', (int) $id, "Created employment status: {$name}");
 
         return $this->respond(['status' => 'success', 'item' => ['id' => $id, 'name' => $name]]);
+    }
+
+    /**
+     * POST /account/employment-status/roles - Which rated roles may have this status (status_id, roles[] = role
+     * names). At least one. Never changes anyone's status: people it no longer fits are flagged in the directory.
+     */
+    public function updateEmploymentStatusRoles() {
+        return $this->tryOrFail(function() {
+            $org = OrgStructure::instance();
+            if (!$org->hasStatusLinks()) return $this->respondError('Run the database migrations first (php spark migrate).', 422);
+            $status = (new EmploymentStatusModel())->find((int) $this->request->getPost('status_id'));
+            if (!$status) return $this->respondError('Employment status not found.', 422);
+            $names = array_values(array_intersect(['Employee', 'Supervisor'], (array) $this->request->getPost('roles')));
+            if (!$names) return $this->respondError("Open {$status['name']} to at least one role.", 422);
+            $db = \Config\Database::connect();
+            $roleIds = array_column($db->table('roles')->whereIn('name', ['Employee', 'Supervisor'])->get()->getResultArray(), 'id', 'name');
+            $db->transStart();
+            $db->table('role_employment_statuses')->where('employment_status_id', $status['id'])->whereIn('role_id', array_values($roleIds))->delete();
+            foreach ($names as $n) $db->table('role_employment_statuses')->insert(['role_id' => $roleIds[$n], 'employment_status_id' => $status['id']]);
+            $db->transComplete();
+            OrgStructure::reset();
+            $closed = array_values(array_diff(['Employee', 'Supervisor'], $names));
+            $affected = $closed ? $db->table('users u')->join('user_roles ur', 'ur.user_id = u.id')->join('roles r', 'r.id = ur.role_id')
+                ->where('u.is_active', 1)->where('u.employment_status', $status['name'])->whereIn('r.name', $closed)->countAllResults() : 0;
+            audit_log('EMPLOYMENT_STATUS_ROLES', 'ACCOUNT', 'employment_status', (int) $status['id'], "{$status['name']} open to: " . implode(', ', $names));
+            return $this->respond(['status' => 'success',
+                'message' => "{$status['name']} is open to " . implode(' and ', $names) . '.'
+                    . ($affected ? " {$affected} " . implode('/', $closed) . ($affected === 1 ? ' has' : 's have') . ' this status and ' . ($affected === 1 ? 'is' : 'are') . ' now flagged in the User Directory.' : '')]);
+        });
     }
 
     /** POST /account/employment-status/delete */
@@ -903,13 +1078,19 @@ class AccountManagement extends BaseController
                 $posted = (array) $this->request->getPost("{$kind}_types");
                 foreach ($db->table($parent)->get()->getResultArray() as $row) {
                     if (!array_key_exists($row['id'], $present)) continue;
-                    // Ticked types in enum order; none ticked = no limit (no rows).
+                    // Ticked types in enum order. At least one; all ticked = no limit (stored as no rows, so a
+                    // form type added later is allowed too).
                     $types = array_values(array_intersect(DocType::values(), array_map('strtoupper', (array) ($posted[$row['id']] ?? []))));
-                    $before = $org->docRule($kind, $row['name']) ?? [];
+                    if (!$types) {
+                        $db->transRollback();
+                        return $this->respondError("Tick at least one doc type for {$row['name']}.", 422);
+                    }
+                    $all = $types === DocType::values();
+                    $before = $org->docRule($kind, $row['name']) ?? DocType::values();
                     if ($types === $before) continue;
                     $db->table($table)->where($key, $row['id'])->delete();
-                    foreach ($types as $t) $db->table($table)->insert([$key => $row['id'], 'doc_type' => $t]);
-                    $changes[] = "{$row['name']}: " . ($types ? implode(',', $types) : 'no limit');
+                    if (!$all) foreach ($types as $t) $db->table($table)->insert([$key => $row['id'], 'doc_type' => $t]);
+                    $changes[] = "{$row['name']}: " . ($all ? 'all' : implode(',', $types));
                 }
             }
             $db->transComplete();
@@ -921,7 +1102,7 @@ class AccountManagement extends BaseController
         });
     }
 
-    /** Positions in tree order (parents before children, alphabetical), General last, with level and kind. */
+    /** Positions in tree order (parents before children, alphabetical), General first, with level and kind. */
     private function flattenPositionTree(OrgStructure $org): array
     {
         $all = $org->positions();
@@ -930,7 +1111,7 @@ class AccountManagement extends BaseController
             $children[$p['parent_id'] !== null && isset($all[$p['parent_id']]) ? $p['parent_id'] : 0][] = $p;
         }
         foreach ($children as &$list) {
-            usort($list, fn($a, $b) => [$a['is_general_root'], strcasecmp($a['title'], $b['title'])] <=> [$b['is_general_root'], 0]);
+            usort($list, fn($a, $b) => ((int) $b['is_general_root'] <=> (int) $a['is_general_root']) ?: strcasecmp($a['title'], $b['title']));
         }
         unset($list);
         $out = [];
@@ -977,7 +1158,10 @@ class AccountManagement extends BaseController
                               'people' => count($inCombo), 'misfits' => count($misfits), 'by_type' => $byType];
             }
         }
-        return ['roles' => $roles, 'statuses' => $statuses, 'preview' => $preview];
+        $open = ['Employee' => $org->statusesOpenTo('Employee'), 'Supervisor' => $org->statusesOpenTo('Supervisor')];
+        foreach ($preview as &$pv) $pv['open'] = $org->isStatusOpenTo($pv['role'], $pv['status']);
+        unset($pv);
+        return ['roles' => $roles, 'statuses' => $statuses, 'preview' => $preview, 'open' => $open, 'linksReady' => $org->hasStatusLinks()];
     }
 
     /**

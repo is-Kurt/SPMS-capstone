@@ -1316,31 +1316,10 @@
                                                 <span class="w-6 shrink-0"></span>
                                             <?php endif; ?>
 
-                                            <?php if ($level === 0): ?>
-                                                <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
-                                                <span class="font-bold text-zinc-900 dark:text-white truncate block max-w-[280px]" title="<?= esc($uName) ?>">
-                                                    <?= esc($uName) ?>
-                                                </span>
-                                                <span class="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 shrink-0">Executive Sector</span>
-                                            <?php elseif ($hasKids): ?>
-                                                <span class="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>
-                                                <span class="font-bold text-zinc-900 dark:text-white truncate block max-w-[260px]" title="<?= esc($uName) ?>">
-                                                    <?= esc($uName) ?>
-                                                </span>
-                                                <span class="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">College</span>
-                                            <?php elseif ($level === 1): ?>
-                                                <span class="w-2 h-2 rounded-full bg-zinc-400 shrink-0"></span>
-                                                <span class="font-semibold text-zinc-800 dark:text-zinc-200 truncate block max-w-[260px]" title="<?= esc($uName) ?>">
-                                                    <?= esc($uName) ?>
-                                                </span>
-                                                <span class="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-zinc-500/10 text-zinc-500 dark:text-zinc-400 border border-zinc-500/20 shrink-0">Office</span>
-                                            <?php else: ?>
-                                                <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
-                                                <span class="font-medium text-zinc-700 dark:text-zinc-300 truncate block max-w-[240px]" title="<?= esc($uName) ?>">
-                                                    <?= esc($uName) ?>
-                                                </span>
-                                                <span class="text-[9px] uppercase font-black px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">Program</span>
-                                            <?php endif; ?>
+                                            <?php // No unit-type badges: levels are not fixed (only the VPAA line has colleges / programs). ?>
+                                            <span class="<?= $level === 0 ? 'font-bold text-zinc-900 dark:text-white' : 'font-semibold text-zinc-800 dark:text-zinc-200' ?> truncate block max-w-[280px]" title="<?= esc($uName) ?>">
+                                                <?= esc($uName) ?>
+                                            </span>
 
                                             <?php if ($hasKids): ?>
                                                 <span class="inline-flex items-center text-[10px] font-bold text-zinc-500 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800/80 px-1.5 py-0.5 rounded shrink-0">

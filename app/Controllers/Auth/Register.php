@@ -81,7 +81,8 @@ class Register extends BaseController
             $positions[] = ['id' => $id, 'title' => $org->position($id)['title'] ?? ''];
         }
         $docsByStatus = [];
-        foreach ((new EmploymentStatusModel())->findAll() as $st) {
+        foreach ((new EmploymentStatusModel())->orderBy('name', 'ASC')->findAll() as $st) {
+            if (!$org->isStatusOpenTo($roleName, $st['name'])) continue;   // only statuses open to this role
             $docsByStatus[$st['name']] = $org->allowedDocTypes($roleName, $st['name']);
         }
         return ['unit' => $unit, 'role' => $roleName, 'positions' => $positions, 'docsByStatus' => $docsByStatus];

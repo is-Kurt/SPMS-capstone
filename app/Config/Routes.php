@@ -59,6 +59,7 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     // Employment Status Routes
     $routes->post('account/employment-status/add', 'AccountManagement::addEmploymentStatus', ['filter' => 'role:Admin']);
     $routes->post('account/employment-status/delete', 'AccountManagement::deleteEmploymentStatus', ['filter' => 'role:Admin']);
+    $routes->post('account/employment-status/roles', 'AccountManagement::updateEmploymentStatusRoles', ['filter' => 'role:Admin']);
 
     // Default Function Weights
     $routes->post('account/update-default-weights', 'AccountManagement::updateDefaultWeights', ['filter' => 'role:Admin']);

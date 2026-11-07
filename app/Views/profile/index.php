@@ -104,7 +104,7 @@
                         $canChoose = !$docFlagged && count($allowedDocs) > 1;
                     ?>
                     <?php if ($canChoose): ?>
-                        <select name="doc_type" aria-label="Form type" class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold cursor-pointer">
+                        <select data-themed-select name="doc_type" aria-label="Form type" class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold cursor-pointer">
                             <?php foreach ($choices as $t): ?>
                                 <option value="<?= esc($t) ?>" <?= $t === $currentDoc ? 'selected' : '' ?>><?= esc($t) ?></option>
                             <?php endforeach; ?>
@@ -115,8 +115,6 @@
                         <div class="w-full bg-zinc-50 dark:bg-zinc-800/50 rounded-xl px-4 py-3 text-sm text-text font-bold"><?= esc($currentDoc ?: ($allowedDocs[0] ?? 'Not set')) ?></div>
                         <?php if ($docFlagged): ?>
                             <p class="text-[10px] font-bold text-warning-500 mt-1 pl-1">Your form type doesn't match the current rules; the admin will review it. Your forms are not affected meanwhile.</p>
-                        <?php else: ?>
-                            <p class="text-[10px] text-text-muted font-medium mt-1 pl-1">Set by your role and employment status.</p>
                         <?php endif; ?>
                     <?php endif; ?>
                     <p class="field-error hidden text-danger-500 text-[10px] font-bold uppercase tracking-wider mt-1 pl-1" data-field="doc_type"></p>
