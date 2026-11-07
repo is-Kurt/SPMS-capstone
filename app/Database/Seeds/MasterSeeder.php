@@ -32,6 +32,8 @@ class MasterSeeder extends Seeder
             'rating_cycles',
             'plantillas',
             'default_function_weights',
+            'role_doc_types',
+            'employment_status_doc_types',
             'employment_statuses',
             'user_roles',
             'positions',

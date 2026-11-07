@@ -887,35 +887,32 @@ class AccountManagement extends BaseController
     }
 
     /**
-     * POST /account/doc-rules/update - Which doc types each role and each employment status allows.
-     * A person may use the doc types allowed by both. "No limit" stores NULL. Nobody's current doc type is
+     * POST /account/doc-rules/update - Which doc types each role and each employment status allows (rows in
+     * role_doc_types / employment_status_doc_types). A person may use the doc types allowed by both; a role or
+     * status with nothing ticked has no limit. Nobody's current doc type is
      * changed here: people the new rules don't fit are flagged in the User Directory for the admin to fix.
      */
     public function updateDocRules() {
         return $this->tryOrFail(function() {
             $db = \Config\Database::connect();
-            $read = function (string $kind, $id) {
-                if ($this->request->getPost("{$kind}_nolimit")[$id] ?? null) return null;
-                $types = (array) ($this->request->getPost("{$kind}_types")[$id] ?? []);
-                return DocType::toCsv($types);
-            };
+            $org = OrgStructure::instance();
             $changes = [];
-            foreach ($db->table('roles')->get()->getResultArray() as $r) {
-                if (!array_key_exists($r['id'], (array) $this->request->getPost('role_present'))) continue;
-                $csv = $read('role', $r['id']);
-                if ($csv !== $r['allowed_doc_types']) {
-                    $db->table('roles')->where('id', $r['id'])->update(['allowed_doc_types' => $csv]);
-                    $changes[] = "{$r['name']}: " . ($csv === null ? 'no limit' : ($csv === '' ? 'nothing' : $csv));
+            $db->transStart();
+            foreach ([['role', 'roles', 'role_doc_types', 'role_id'], ['status', 'employment_statuses', 'employment_status_doc_types', 'employment_status_id']] as [$kind, $parent, $table, $key]) {
+                $present = (array) $this->request->getPost("{$kind}_present");
+                $posted = (array) $this->request->getPost("{$kind}_types");
+                foreach ($db->table($parent)->get()->getResultArray() as $row) {
+                    if (!array_key_exists($row['id'], $present)) continue;
+                    // Ticked types in enum order; none ticked = no limit (no rows).
+                    $types = array_values(array_intersect(DocType::values(), array_map('strtoupper', (array) ($posted[$row['id']] ?? []))));
+                    $before = $org->docRule($kind, $row['name']) ?? [];
+                    if ($types === $before) continue;
+                    $db->table($table)->where($key, $row['id'])->delete();
+                    foreach ($types as $t) $db->table($table)->insert([$key => $row['id'], 'doc_type' => $t]);
+                    $changes[] = "{$row['name']}: " . ($types ? implode(',', $types) : 'no limit');
                 }
             }
-            foreach ($db->table('employment_statuses')->get()->getResultArray() as $st) {
-                if (!array_key_exists($st['id'], (array) $this->request->getPost('status_present'))) continue;
-                $csv = $read('status', $st['id']);
-                if ($csv !== $st['allowed_doc_types']) {
-                    $db->table('employment_statuses')->where('id', $st['id'])->update(['allowed_doc_types' => $csv]);
-                    $changes[] = "{$st['name']}: " . ($csv === null ? 'no limit' : ($csv === '' ? 'nothing' : $csv));
-                }
-            }
+            $db->transComplete();
             OrgStructure::reset();
             if ($changes) {
                 audit_log('DOC_TYPE_RULES_UPDATED', 'ACCOUNT', 'system', 0, 'Doc-type rules changed: ' . implode('; ', $changes));
@@ -957,8 +954,8 @@ class AccountManagement extends BaseController
         $db = \Config\Database::connect();
         $roles = array_values(array_filter($roleModel->orderBy('name', 'ASC')->findAll(), fn($r) => in_array($r['name'], ['Employee', 'Supervisor', 'Admin'], true)));
         $statuses = $statusModel->orderBy('name', 'ASC')->findAll();
-        foreach ($roles as &$r) $r['allowed'] = DocType::fromCsv($r['allowed_doc_types']);
-        foreach ($statuses as &$st) $st['allowed'] = DocType::fromCsv($st['allowed_doc_types']);
+        foreach ($roles as &$r) $r['allowed'] = $org->docRule('role', $r['name']);
+        foreach ($statuses as &$st) $st['allowed'] = $org->docRule('status', $st['name']);
         unset($r, $st);
 
         $people = $db->table('users u')->select('u.id, u.doc_type, u.employment_status, r.name as role')

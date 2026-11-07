@@ -18,7 +18,7 @@ use App\Enums\DocType;
  * hold several head positions (e.g. Dean and Director); then a Supervisor picks which one is theirs.
  *
  * Doc types allowed for a person = allowed for their role AND for their employment status
- * (roles.allowed_doc_types / employment_statuses.allowed_doc_types; NULL means no limit).
+ * (junction tables role_doc_types / employment_status_doc_types; no rows means no limit).
  *
  * One instance per request (instance()); call reset() after changing units, positions or rules.
  */
@@ -303,18 +303,30 @@ class OrgStructure
 
     // ---------------------------------------------------------------- doc types
 
+    /**
+     * Doc types a role / an employment status allows (rows of role_doc_types / employment_status_doc_types),
+     * in enum order; null when it has no rows (no limit).
+     */
+    public function docRule(string $kind, ?string $name): ?array
+    {
+        if ($name === null || $name === '') return null;
+        [$parent, $table, $key] = $kind === 'role'
+            ? ['roles', 'role_doc_types', 'role_id']
+            : ['employment_statuses', 'employment_status_doc_types', 'employment_status_id'];
+        $codes = array_column($this->db->table("{$table} t")->select('t.doc_type')
+            ->join("{$parent} p", "p.id = t.{$key}")->where('LOWER(p.name)', strtolower($name))
+            ->get()->getResultArray(), 'doc_type');
+        if (!$codes) return null;
+        return array_values(array_filter(DocType::values(), fn($t) => in_array($t, $codes, true)));
+    }
+
     /** Allowed doc types for a role and an employment status (intersection, enum order). */
     public function allowedDocTypes(?string $role, ?string $status): array
     {
-        $byRole = $role !== null
-            ? DocType::fromCsv($this->db->table('roles')->select('allowed_doc_types')->where('name', $role)->get()->getRowArray()['allowed_doc_types'] ?? null)
-            : null;
-        $byStatus = $status !== null && $status !== ''
-            ? DocType::fromCsv($this->db->table('employment_statuses')->select('allowed_doc_types')->where('LOWER(name)', strtolower($status))->get()->getRowArray()['allowed_doc_types'] ?? null)
-            : null;
-        $all = DocType::values();
-        return array_values(array_filter($all, fn($t) => ($byRole === null || in_array($t, $byRole, true))
-                                                    && ($byStatus === null || in_array($t, $byStatus, true))));
+        $byRole = $this->docRule('role', $role);
+        $byStatus = $this->docRule('status', $status);
+        return array_values(array_filter(DocType::values(), fn($t) => ($byRole === null || in_array($t, $byRole, true))
+                                                                   && ($byStatus === null || in_array($t, $byStatus, true))));
     }
 
     public function roleOf(int $userId): ?string

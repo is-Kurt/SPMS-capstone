@@ -29,29 +29,6 @@ enum DocType: string
     }
 
     /**
-     * Doc types stored as a comma-separated list (roles / employment statuses allowed_doc_types).
-     * NULL means "no limit" and returns null; unknown codes are dropped; the result keeps enum order.
-     */
-    public static function fromCsv(?string $csv): ?array
-    {
-        if ($csv === null) {
-            return null;
-        }
-        $given = array_map(fn($v) => strtoupper(trim($v)), explode(',', $csv));
-        return array_values(array_filter(self::values(), fn($v) => in_array($v, $given, true)));
-    }
-
-    /** The opposite of fromCsv(): null (no limit) stays null. */
-    public static function toCsv(?array $types): ?string
-    {
-        if ($types === null) {
-            return null;
-        }
-        $types = array_map(fn($v) => strtoupper(trim((string) $v)), $types);
-        return implode(',', array_values(array_filter(self::values(), fn($v) => in_array($v, $types, true))));
-    }
-
-    /**
      * Short acronym / code.
      */
     public function code(): string

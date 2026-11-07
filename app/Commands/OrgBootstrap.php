@@ -4,7 +4,6 @@ namespace App\Commands;
 
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
-use App\Enums\DocType;
 
 /**
  * One-time setup of the organisation structure for an existing database (2026-11-07). Run once after
@@ -163,17 +162,14 @@ class OrgBootstrap extends BaseCommand
 
     private function setRules(): void
     {
-        foreach (self::ROLE_RULES as $role => $csv) {
-            $row = $this->db->table('roles')->where('name', $role)->get()->getRowArray();
-            if (!$row || $row['allowed_doc_types'] !== null) continue;
-            $this->say("role {$role} allows {$csv}");
-            if (!$this->dry) $this->db->table('roles')->where('id', $row['id'])->update(['allowed_doc_types' => DocType::toCsv(explode(',', $csv))]);
-        }
-        foreach (self::STATUS_RULES as $status => $csv) {
-            $row = $this->db->table('employment_statuses')->where('name', $status)->get()->getRowArray();
-            if (!$row || $row['allowed_doc_types'] !== null) continue;
-            $this->say("status {$status} allows {$csv}");
-            if (!$this->dry) $this->db->table('employment_statuses')->where('id', $row['id'])->update(['allowed_doc_types' => DocType::toCsv(explode(',', $csv))]);
+        foreach ([['roles', 'role_doc_types', 'role_id', self::ROLE_RULES], ['employment_statuses', 'employment_status_doc_types', 'employment_status_id', self::STATUS_RULES]] as [$parent, $table, $key, $rules]) {
+            foreach ($rules as $name => $csv) {
+                $row = $this->db->table($parent)->where('name', $name)->get()->getRowArray();
+                if (!$row || $this->db->table($table)->where($key, $row['id'])->countAllResults() > 0) continue;   // already set
+                $this->say("{$name} allows {$csv}");
+                if ($this->dry) continue;
+                foreach (explode(',', $csv) as $t) $this->db->table($table)->insert([$key => $row['id'], 'doc_type' => $t]);
+            }
         }
     }
 }

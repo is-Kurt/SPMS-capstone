@@ -300,28 +300,24 @@
     <div id="system-panel-doc_rules" class="system-panel hidden flex-col flex-1 lg:min-h-0 relative">
         <div class="overflow-y-auto custom-scrollbar flex-1 p-4 lg:p-6">
             <?= form_open('account/doc-rules/update', ['id' => 'form-doc-rules', 'data-ajax' => 'save-doc-rules', 'class' => 'flex flex-col gap-6 max-w-4xl']) ?>
-                <p class="text-xs text-text-muted font-medium">A person may use the doc types allowed by <strong class="text-text">both</strong> their role and their employment status. When exactly one is allowed it is set automatically; when several are, the person picks. Changing a rule never changes anyone's current doc type: people it no longer fits are flagged in the User Directory for you to fix.</p>
+                <p class="text-xs text-text-muted font-medium">A person may use the doc types allowed by <strong class="text-text">both</strong> their role and their employment status. When exactly one is allowed it is set automatically; when several are, the person picks. Leave a row with nothing ticked for no limit. Changing a rule never changes anyone's current doc type: people it no longer fits are flagged in the User Directory for you to fix.</p>
 
                 <?php foreach ([['Roles', 'role', $docRules['roles'], 'name'], ['Employment statuses', 'status', $docRules['statuses'], 'name']] as [$heading, $kind, $rows, $label]): ?>
                 <div class="rounded-xl border border-surface-border overflow-hidden">
                     <div class="px-4 py-3 bg-zinc-50 dark:bg-zinc-800/30 border-b border-surface-border text-[10px] font-black uppercase tracking-widest text-text-muted"><?= $heading ?></div>
                     <div class="divide-y divide-surface-border">
                         <?php foreach ($rows as $r): ?>
-                            <?php $noLimit = $r['allowed'] === null; ?>
                             <div class="js-rule-row px-4 py-3 flex flex-col lg:flex-row lg:items-center gap-3" data-kind="<?= $kind ?>" data-name="<?= esc($r[$label]) ?>">
                                 <input type="hidden" name="<?= $kind ?>_present[<?= $r['id'] ?>]" value="1">
                                 <span class="text-sm font-bold text-text w-full shrink-0" style="max-width: 12rem;"><?= esc($r[$label]) ?></span>
                                 <div class="flex flex-wrap items-center gap-4">
-                                    <label class="flex items-center gap-2 cursor-pointer text-xs text-text-muted font-bold">
-                                        <input type="checkbox" class="js-rule-nolimit checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer" name="<?= $kind ?>_nolimit[<?= $r['id'] ?>]" value="1" <?= $noLimit ? 'checked' : '' ?>>
-                                        No limit
-                                    </label>
                                     <?php foreach ($docTypes as $t): ?>
                                         <label class="flex items-center gap-2 cursor-pointer text-xs text-text font-bold">
-                                            <input type="checkbox" class="js-rule-type checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer" name="<?= $kind ?>_types[<?= $r['id'] ?>][]" value="<?= $t ?>" <?= (!$noLimit && in_array($t, $r['allowed'], true)) ? 'checked' : '' ?> <?= $noLimit ? 'disabled' : '' ?>>
+                                            <input type="checkbox" class="js-rule-type checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer" name="<?= $kind ?>_types[<?= $r['id'] ?>][]" value="<?= $t ?>" <?= ($r['allowed'] !== null && in_array($t, $r['allowed'], true)) ? 'checked' : '' ?>>
                                             <?= $t ?>
                                         </label>
                                     <?php endforeach; ?>
+                                    <span class="js-rule-hint text-[10px] font-bold uppercase tracking-widest text-text-muted"></span>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -355,8 +351,9 @@
         if (!form) return;
         const allowedOf = (kind, name) => {
             const row = Array.from(form.querySelectorAll('.js-rule-row')).find(r => r.dataset.kind === kind && r.dataset.name.toLowerCase() === String(name).toLowerCase());
-            if (!row || row.querySelector('.js-rule-nolimit').checked) return null;
-            return Array.from(row.querySelectorAll('.js-rule-type:checked')).map(c => c.value);
+            if (!row) return null;
+            const ticked = Array.from(row.querySelectorAll('.js-rule-type:checked')).map(c => c.value);
+            return ticked.length ? ticked : null;              // nothing ticked = no limit
         };
         const esc = v => { const d = document.createElement('div'); d.textContent = v; return d.innerHTML; };
         function render() {
@@ -372,12 +369,13 @@
                      + `<td class="px-4 py-2.5 font-bold ${flagged ? 'text-warning-500' : 'text-text-muted'}">${flagged}</td></tr>`;
             }).join('');
         }
-        form.addEventListener('change', e => {
-            if (e.target.classList.contains('js-rule-nolimit')) {
-                e.target.closest('.js-rule-row').querySelectorAll('.js-rule-type').forEach(c => { c.disabled = e.target.checked; });
-            }
-            render();
-        });
+        function hints() {
+            form.querySelectorAll('.js-rule-row').forEach(row => {
+                row.querySelector('.js-rule-hint').textContent = row.querySelector('.js-rule-type:checked') ? '' : 'No limit';
+            });
+        }
+        form.addEventListener('change', () => { hints(); render(); });
+        hints();
         render();
     })();
     </script>
