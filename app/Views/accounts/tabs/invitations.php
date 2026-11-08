@@ -3,9 +3,9 @@
     <!-- MOBILE FILTER OVERLAY -->
     <div id="mobile-invite-filter-overlay" class="fixed inset-0 z-[115] bg-black/50 hidden lg:hidden transition-opacity opacity-0" aria-hidden="true"></div>
 
-    <!-- SIDEBAR FILTERS (Left) -->
+    <!-- SIDEBAR FILTERS (right of the list on wide screens; a drawer from the left on phones) -->
     <div id="invitations-sidebar" class="fixed inset-y-0 left-0 z-[120] w-72 bg-surface lg:bg-zinc-50 lg:dark:bg-zinc-800/30 border-r border-surface-border shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 transition-transform duration-300 lg:static shrink-0 flex flex-col h-full">
-        <div class="px-5 py-3 border-b border-surface-border flex justify-between items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800">
+        <div style="height: 54px; min-height: 54px; max-height: 54px;" class="h-[54px] min-h-[54px] max-h-[54px] px-5 border-b border-surface-border flex justify-between items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800 box-border">
             <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest">Filters</h2>
             <button type="button" id="close-mobile-invite-filters" class="lg:hidden text-text-muted hover:text-text p-1 cursor-pointer">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -104,24 +104,43 @@
             </button>
         </div>
 
-        <div class="flex-1 overflow-x-auto min-h-0 overflow-y-auto custom-scrollbar">
-            <table class="w-full text-left border-collapse block lg:table lg:table-fixed">
+        <style>
+                /* Up to 1535px the table sits between the sections list and its Filters panel and is narrow: tighter cells. */
+                @media (min-width: 1024px) and (max-width: 1535px) {
+                    .inv-table th, .inv-table td { padding-left: .75rem !important; padding-right: .75rem !important; }
+                }
+            </style>
+        <!-- Column titles: outside the scrolling list (the scrollbar starts below them), as tall as the Filters header -->
+        <div class="hidden lg:block shrink-0 overflow-hidden bg-zinc-50 dark:bg-zinc-800 border-b border-surface-border box-border" style="height: 54px; min-height: 54px;" data-frozen-header>
+            <table class="inv-table w-full h-full text-left border-collapse table-fixed">
                 <colgroup>
-                    <col style="width:34%">
-                    <col style="width:16%">
-                    <col style="width:14%">
-                    <col style="width:20%">
-                    <col style="width:16%">
+                    <col style="width:24%">
+                    <col style="width:22%">
+                    <col style="width:13%">
+                    <col style="width:19%">
+                    <col style="width:22%">
                 </colgroup>
-                <thead class="hidden lg:table-header-group sticky top-0 z-10 bg-zinc-50 dark:bg-zinc-800 border-b border-surface-border text-[10px] font-black uppercase tracking-widest text-text-muted">
+                <thead class="text-[10px] font-black uppercase tracking-widest text-text-muted">
                     <tr>
-                        <th class="px-6 py-2.5">Email</th>
-                        <th class="px-6 py-2.5">Invited Role</th>
-                        <th class="px-6 py-2.5 text-center">Status</th>
-                        <th class="px-6 py-2.5">Expires</th>
-                        <th class="px-6 py-2.5 text-right">Actions</th>
+                        <th class="px-6 py-0">Email</th>
+                        <th class="px-6 py-0">Invited Role</th>
+                        <th class="px-6 py-0 text-center">Status</th>
+                        <th class="px-6 py-0">Expires</th>
+                        <th class="px-6 py-0 text-right">Actions</th>
                     </tr>
                 </thead>
+            </table>
+        </div>
+        <div class="flex-1 overflow-x-auto min-h-0 overflow-y-auto custom-scrollbar" data-frozen-body onscroll="this.previousElementSibling.scrollLeft = this.scrollLeft">
+            <table class="inv-table w-full text-left border-collapse block lg:table lg:table-fixed">
+                <colgroup>
+                    <col style="width:24%">
+                    <col style="width:22%">
+                    <col style="width:13%">
+                    <col style="width:19%">
+                    <col style="width:22%">
+                </colgroup>
+                
                 <tbody class="block lg:table-row-group divide-y divide-surface-border" id="invitations-table-body">
                     <?php foreach ($invitations as $inv):
                         $isExpired = $inv['status'] === 'pending' && strtotime($inv['expires_at']) < time();
@@ -148,11 +167,11 @@
                             
                             <td class="block lg:table-cell px-0 lg:px-6 py-1.5 lg:py-4">
                                 <div class="flex justify-between items-center lg:block">
-                                    <span class="w-max px-2.5 py-0.5 rounded-lg text-[10px] font-black bg-info-50 dark:bg-info-500/10 text-info-600 border border-info-200 dark:border-info-500/20 uppercase tracking-widest">
+                                    <span class="inline-block w-max max-w-full truncate align-top px-2.5 py-0.5 rounded-lg text-[10px] font-black bg-info-50 dark:bg-info-500/10 text-info-600 border border-info-200 dark:border-info-500/20 uppercase tracking-widest">
                                         <?= esc(staff_role_label($inv['role_name'] ?? null) ?: 'No Role') ?>
                                     </span>
                                     <?php if (!empty($inv['unit_name'])): ?>
-                                        <span class="block text-[10px] font-bold text-text-muted mt-1"><?= esc($inv['unit_name']) ?></span>
+                                        <span class="block truncate text-[10px] font-bold text-text-muted mt-1"><?= esc($inv['unit_name']) ?></span>
                                     <?php endif; ?>
                                     <span class="lg:hidden px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border bg-zinc-50 dark:bg-zinc-800/50 border-surface-border <?= $statusClass ?>">
                                         <?= $statusLabel ?>
@@ -176,7 +195,7 @@
                             </td>
 
                             <td class="block lg:table-cell px-0 lg:px-6 pt-2 pb-0 lg:py-4 text-right">
-                                <div class="flex items-center justify-between lg:justify-end gap-2 w-full">
+                                <div class="flex items-center justify-between lg:justify-end gap-2 w-full whitespace-nowrap">
                                     <?php if ($inv['status'] !== 'accepted'): ?>
                                         <?= form_open('account/invite/resend', ['class' => 'flex-1 lg:flex-none inline-block', 'data-ajax' => 'resend-invitation']) ?>
                                             <input type="hidden" name="id" value="<?= $inv['id'] ?>">

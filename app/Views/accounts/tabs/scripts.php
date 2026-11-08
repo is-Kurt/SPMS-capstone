@@ -658,9 +658,14 @@
             el.classList.remove('flex', 'lg:absolute', 'lg:inset-0');
         });
 
+        // The sections list (accounts/index.php): the chosen one is raised with the amber marker, like Folders
+        const nav = document.getElementById('accounts-nav');
+        const navOn = (nav?.dataset.on || '').split(' ').filter(Boolean), navOff = (nav?.dataset.off || '').split(' ').filter(Boolean);
         document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.remove('border-accent', 'text-accent-ink');
-            btn.classList.add('border-transparent', 'text-text-muted');
+            btn.classList.remove(...navOn);
+            btn.classList.add(...navOff);
+            btn.removeAttribute('aria-current');
+            btn.querySelector('.tab-marker')?.classList.add('hidden');
         });
 
         const targetContent = document.getElementById('tab-content-' + tabId);
@@ -671,9 +676,14 @@
 
         const targetBtn = document.getElementById('tab-btn-' + tabId);
         if (targetBtn) {
-            targetBtn.classList.remove('border-transparent', 'text-text-muted');
-            targetBtn.classList.add('border-accent', 'text-accent-ink');
+            targetBtn.classList.remove(...navOff);
+            targetBtn.classList.add(...navOn);
+            targetBtn.setAttribute('aria-current', 'page');
+            targetBtn.querySelector('.tab-marker')?.classList.remove('hidden');
+            const cur = document.getElementById('accounts-nav-current');
+            if (cur) cur.textContent = targetBtn.querySelector('.tab-label')?.textContent || '';
         }
+        window.toggleAccountsNav?.(false);   // phones: close the list after picking
 
         if (pushUrl && window.history && window.history.pushState) {
             const url = tabId === 'directory' ? ACCOUNTS_BASE_URL : ACCOUNTS_BASE_URL + '/' + tabId;
@@ -681,6 +691,27 @@
         }
     }
     window.switchUserTab = switchUserTab;
+
+    // Phones: the sections list opens from one button (on wide screens it is always shown)
+    window.toggleAccountsNav = function (open) {
+        const list = document.getElementById('accounts-nav-list'), btn = document.getElementById('accounts-nav-toggle');
+        if (!list || !btn) return;
+        const show = open === undefined ? list.classList.contains('hidden') : open;
+        list.classList.toggle('hidden', !show);
+        list.classList.toggle('flex', show);   // wide screens show it anyway (lg:flex)
+        btn.setAttribute('aria-expanded', show ? 'true' : 'false');
+        btn.querySelector('svg')?.classList.toggle('rotate-180', show);
+    };
+    document.getElementById('accounts-nav-toggle')?.addEventListener('click', () => window.toggleAccountsNav());
+    // 1024-1279px: icons only, so each section names itself on hover (the full list needs no tooltip)
+    (function () {
+        const rail = window.matchMedia('(min-width: 1024px) and (max-width: 1279px)');
+        const apply = () => document.querySelectorAll('#accounts-nav .tab-btn').forEach(b => {
+            if (rail.matches) b.title = b.querySelector('.tab-label')?.textContent.trim() || ''; else b.removeAttribute('title');
+        });
+        apply();
+        rail.addEventListener?.('change', apply);
+    })();
 
     // The initial page load's history entry
     try {

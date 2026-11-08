@@ -19,7 +19,7 @@
         const el = candidate(e.target);
         if (!el) return;
         if (el.hasAttribute('title') && !el.dataset.autoTitle) return;   // the page's own title wins
-        const text = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
+        const text = (el.textContent || '').replace(/\s+/g, ' ').trim();   // as written (not CSS upper-case)
         if (text && isCut(el)) {
             if (el.title !== text) el.title = text;
             el.dataset.autoTitle = '1';

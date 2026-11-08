@@ -51,6 +51,30 @@ class AuthFilter implements FilterInterface
         }
 
         self::syncRole((int) $userId);
+        self::syncProfile($user);
+    }
+
+    /**
+     * Puts the person's name, email, form type and avatar from the database in the session (2026-11-08). Read on
+     * every page like the role, so a backup restore or an admin's edit shows right away, not at the next login.
+     * Same values as at login (Auth\Session); the row is already loaded above, so this costs no query.
+     */
+    public static function syncProfile(array $user): void
+    {
+        $want = [
+            'first_name'    => $user['first_name'],
+            'last_name'     => $user['last_name'],
+            'email'         => $user['email'],
+            'username'      => $user['first_name'] . ' ' . $user['last_name'],
+            'doc_type'      => $user['doc_type'] ?? null,
+            'avatar_image'  => $user['avatar_image'] ?? $user['avatar'] ?? null,
+            'avatar_color'  => $user['avatar_color'] ?? '#' . substr(md5($user['email']), 0, 6),
+            'avatar_letter' => $user['avatar_letter'] ?? strtoupper(substr($user['first_name'], 0, 1)),
+        ];
+        $session = session();
+        foreach ($want as $key => $value) {
+            if ($session->get($key) !== $value) $session->set($key, $value);
+        }
     }
 
     /**

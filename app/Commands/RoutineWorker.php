@@ -57,6 +57,10 @@ class RoutineWorker extends BaseCommand
      */
     public function run(array $params)
     {
+        if (\App\Libraries\Backups::inMaintenance()) {   // a backup is being restored: skip this run
+            CLI::write('The site is down for a restore; skipped.', 'yellow');
+            return;
+        }
         CLI::write('Sweeping database for expired evaluation dates...', 'yellow');
 
         try {

@@ -35,7 +35,7 @@
     <div id="system-panel-positions" class="system-panel flex flex-col lg:flex-row flex-1 lg:min-h-0 relative">
         <!-- Sidebar -->
         <div class="system-sidebar fixed inset-y-0 left-0 z-[120] w-72 bg-surface lg:bg-zinc-50 lg:dark:bg-zinc-800/30 lg:border-r border-surface-border shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 transition-transform duration-300 lg:static shrink-0 flex flex-col h-full">
-            <div class="px-6 py-4 border-b border-surface-border flex justify-center relative items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800">
+            <div style="height: 54px; min-height: 54px; max-height: 54px;" class="px-6 border-b border-surface-border flex justify-center relative items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800 box-border">
                 <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest w-full">Filters</h2>
                 <button type="button" class="btn-close-system-mobile absolute right-6 lg:hidden text-text-muted hover:text-text p-1 cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -129,7 +129,7 @@
     <div id="system-panel-units" class="system-panel hidden flex-col lg:flex-row flex-1 lg:min-h-0 relative">
         <!-- Sidebar -->
         <div class="system-sidebar fixed inset-y-0 left-0 z-[120] w-72 bg-surface lg:bg-zinc-50 lg:dark:bg-zinc-800/30 lg:border-r border-surface-border shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 transition-transform duration-300 lg:static shrink-0 flex flex-col h-full">
-            <div class="px-6 py-4 border-b border-surface-border flex justify-center relative items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800">
+            <div style="height: 54px; min-height: 54px; max-height: 54px;" class="px-6 border-b border-surface-border flex justify-center relative items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800 box-border">
                 <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest w-full">Filters</h2>
                 <button type="button" class="btn-close-system-mobile absolute right-6 lg:hidden text-text-muted hover:text-text p-1 cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -244,7 +244,7 @@
     <div id="system-panel-employment_statuses" class="system-panel hidden flex-col lg:flex-row flex-1 lg:min-h-0 relative">
         <!-- Sidebar -->
         <div class="system-sidebar fixed inset-y-0 left-0 z-[120] w-72 bg-surface lg:bg-zinc-50 lg:dark:bg-zinc-800/30 lg:border-r border-surface-border shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 transition-transform duration-300 lg:static shrink-0 flex flex-col h-full">
-            <div class="px-6 py-4 border-b border-surface-border flex justify-center relative items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800">
+            <div style="height: 54px; min-height: 54px; max-height: 54px;" class="px-6 border-b border-surface-border flex justify-center relative items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800 box-border">
                 <h2 class="text-[10px] font-black text-text-muted uppercase tracking-widest w-full">Filters</h2>
                 <button type="button" class="btn-close-system-mobile absolute right-6 lg:hidden text-text-muted hover:text-text p-1 cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>

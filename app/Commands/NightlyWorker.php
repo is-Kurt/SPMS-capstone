@@ -58,6 +58,10 @@ class NightlyWorker extends BaseCommand
      */
     public function run(array $params)
     {
+        if (\App\Libraries\Backups::inMaintenance()) {   // a backup is being restored: skip this run
+            CLI::write('The site is down for a restore; skipped.', 'yellow');
+            return;
+        }
         helper('email_queue');
         $folderModel = new DocumentFolderModel();
 

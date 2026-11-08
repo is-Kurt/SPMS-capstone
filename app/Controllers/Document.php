@@ -275,43 +275,13 @@ class Document extends BaseController
             ? date('Y-m-d', strtotime($currentFolderRec['created_at'])) 
             : date('Y-m-d');
 
-        // Resolve evaluation period (from cycle rating_period configuration or month fallback)
-        $refTime = !empty($docInfo['target_start']) ? strtotime($docInfo['target_start']) 
-                 : (!empty($currentFolderRec['created_at']) ? strtotime($currentFolderRec['created_at']) : time());
-        $m = (int)date('n', $refTime);
-        $y = date('Y', $refTime);
-        $docPeriod = !empty($currentFolderRec['rating_period'])
-            ? $currentFolderRec['rating_period']
-            : (($m <= 6) ? "January - June {$y}" : "July - December {$y}");
+        // Rating period, root cycle and approving authority (shared with the Excel export, 2026-11-08)
+        ['rootFolderId' => $rootFolderId, 'rootCycle' => $rootCycle, 'docPeriod' => $docPeriod,
+         'cycleApprovingName' => $cycleApprovingName, 'cycleApprovingPos' => $cycleApprovingPos] = $this->paperCycle($docInfo, $currentFolderRec);
 
         $isCycleArchived = !empty($docInfo['folder_deleted_at']) || (!empty($parentFolder) && !empty($parentFolder['deleted_at']));
 
-        // Resolve root evaluation cycle folder ID and root cycle metadata
-        $rootFolderId = $docInfo['parent_folder_id'] ?? $docInfo['document_folder_id'];
-        $rootCycle = $folderModel->find($rootFolderId);
-        if (!empty($docInfo['parent_folder_id'])) {
-            $pObj = $folderModel->find($docInfo['parent_folder_id']);
-            while ($pObj && !empty($pObj['parent_folder_id'])) {
-                $rootFolderId = $pObj['parent_folder_id'];
-                $pObj = $folderModel->find($rootFolderId);
-            }
-            if ($pObj) {
-                $rootCycle = $pObj;
-            }
-        }
-        if (!empty($rootCycle['rating_period'])) {
-            $docPeriod = $rootCycle['rating_period'];
-        }
         $data['rootFolderId'] = $rootFolderId;
-
-        // Resolve Approving Authority (from the cycle configuration). The President role is gone (2026-11-07):
-        // with nothing set, the approver fields stay blank for the signatory to be filled in.
-        $cycleApprovingName = !empty($currentFolderRec['approving_authority_name']) 
-            ? $currentFolderRec['approving_authority_name'] 
-            : ($rootCycle['approving_authority_name'] ?? '');
-        $cycleApprovingPos  = !empty($currentFolderRec['approving_authority_position']) 
-            ? $currentFolderRec['approving_authority_position'] 
-            : ($rootCycle['approving_authority_position'] ?? '');
 
         // Resolve default supervisors / approving authorities for this document
         $docTitleUpper = strtoupper($docInfo['title'] ?? '');
@@ -319,90 +289,7 @@ class Document extends BaseController
                     || str_contains($docTitleUpper, 'OFFICE') 
                     || (strtoupper($docInfo['doc_type'] ?? '') === 'OPCR');
 
-        $supervisors = [];
-        $seenEvaluatorIds = [];
-
-        if ($isMyDocOpcr) {
-            // For OPCR: The highest approving authority (e.g. University President / Head of Agency)
-            if (!empty($cycleApprovingName)) {
-                $supervisors[] = [
-                    'name'     => $cycleApprovingName,
-                    'position' => $cycleApprovingPos,
-                    'date'     => '',
-                    'evalDate' => ''
-                ];
-            }
-        } else {
-            // For DPCR, IPCR, IPERF: Gather supervisors from evaluation_routings (supports multiple cascades)
-            $routingModel = new \App\Models\EvaluationRoutingModel();
-            $cascadedRoutes = $routingModel->getEvaluatorsForFolder((string)$docInfo['document_folder_id']);
-
-            foreach ($cascadedRoutes as $route) {
-                $eId = (int)$route['evaluator_id'];
-                if (in_array($eId, $seenEvaluatorIds) || $eId === (int)$docOwnerId) continue;
-                // Exclude Admin from being listed as an evaluating supervisor
-                if ($userModel->hasRole($eId, 'Admin')) continue;
-
-                $seenEvaluatorIds[] = $eId;
-
-                $eName = trim(($route['first_name'] ?? '') . ' ' . ($route['last_name'] ?? ''));
-                $ePos  = $route['evaluator_position'] ?? '';
-                if (empty($ePos)) {
-                    $p = $userModel->getActivePlantillaDetails($eId);
-                    $ePos = $p['position'] ?? 'Immediate Supervisor';
-                }
-
-                $supervisors[] = [
-                    'id'        => $eId,
-                    'folder_id' => $route['evaluator_folder_id'] ?? null,
-                    'name'      => $eName,
-                    'position'  => $ePos,
-                    'date'      => '',
-                    'evalDate'  => ''
-                ];
-            }
-
-            // Fallback: If no routings were recorded in evaluation_routings, inspect the immediate parent folder
-            // (not while waiting for a supervisor: "Approved by" stays blank until the new one cascades)
-            $waitingForSupervisor = !empty($docInfo['waiting_supervisor']);
-            if (empty($supervisors) && !$waitingForSupervisor) {
-                $currParentId = $currentFolderRec['parent_folder_id'] ?? null;
-                if (!empty($currParentId)) {
-                    $pFolder = $folderModel->find($currParentId);
-                    // Only use if parent folder is an intermediate supervisor folder (not an institutional root cycle)
-                    // and its owner is not an Admin
-                    if ($pFolder && !empty($pFolder['parent_folder_id']) && !empty($pFolder['user_id'])) {
-                        $pUserId = (int)$pFolder['user_id'];
-                        if ($pUserId !== (int)$docOwnerId && !$userModel->hasRole($pUserId, 'Admin')) {
-                            $pUser = $userModel->find($pUserId);
-                            if ($pUser) {
-                                $pPlantilla = $userModel->getActivePlantillaDetails($pUserId);
-                                $supervisors[] = [
-                                    'id'        => $pUserId,
-                                    'folder_id' => $pFolder['id'],
-                                    'name'      => trim(($pUser['first_name'] ?? '') . ' ' . ($pUser['last_name'] ?? '')),
-                                    'position'  => $pPlantilla['position'] ?? 'Supervisor',
-                                    'date'      => '',
-                                    'evalDate'  => ''
-                                ];
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Fallback if no supervisor found
-            if (empty($supervisors) && !empty($cycleApprovingName) && !$waitingForSupervisor) {
-                $supervisors[] = [
-                    'id'        => null,
-                    'folder_id' => null,
-                    'name'      => $cycleApprovingName,
-                    'position'  => $cycleApprovingPos,
-                    'date'      => '',
-                    'evalDate'  => ''
-                ];
-            }
-        }
+        $supervisors = $this->defaultSupervisors($docInfo, $currentFolderRec, $cycleApprovingName, $cycleApprovingPos);
 
         // Resolve cascaded target inputs and rubrics matrix from all supervisors
         $cascadedCategories = [
@@ -520,6 +407,7 @@ class Document extends BaseController
             'position'    => $ownerPosition,
             'dept'        => $ownerDept,
             'roles'       => $ownerRoles,
+            'employment_status' => $paperOwner['employment_status'],
             'period'      => $docPeriod,
             'cascadeDate' => $cascadeDate,
             // Heads a unit with sub-units (e.g. a college): picks the DPCR signature labels (2026-11-07).
@@ -1095,6 +983,154 @@ class Document extends BaseController
         return $this->response->setJSON(['status' => 'success']);
     }
 
+    /**
+     * The cycle a paper belongs to: its root folder, the rating period and the approving authority. Used by the form
+     * and by its Excel export, so both show the same defaults (2026-11-08).
+     */
+    private function paperCycle(array $docInfo, ?array $currentFolderRec): array
+    {
+        $folderModel = new DocumentFolderModel();
+        // Resolve evaluation period (from cycle rating_period configuration or month fallback)
+        $refTime = !empty($docInfo['target_start']) ? strtotime($docInfo['target_start']) 
+                 : (!empty($currentFolderRec['created_at']) ? strtotime($currentFolderRec['created_at']) : time());
+        $m = (int)date('n', $refTime);
+        $y = date('Y', $refTime);
+        $docPeriod = !empty($currentFolderRec['rating_period'])
+            ? $currentFolderRec['rating_period']
+            : (($m <= 6) ? "January - June {$y}" : "July - December {$y}");
+
+        // Resolve root evaluation cycle folder ID and root cycle metadata
+        $rootFolderId = $docInfo['parent_folder_id'] ?? $docInfo['document_folder_id'];
+        $rootCycle = $folderModel->find($rootFolderId);
+        if (!empty($docInfo['parent_folder_id'])) {
+            $pObj = $folderModel->find($docInfo['parent_folder_id']);
+            while ($pObj && !empty($pObj['parent_folder_id'])) {
+                $rootFolderId = $pObj['parent_folder_id'];
+                $pObj = $folderModel->find($rootFolderId);
+            }
+            if ($pObj) {
+                $rootCycle = $pObj;
+            }
+        }
+        if (!empty($rootCycle['rating_period'])) {
+            $docPeriod = $rootCycle['rating_period'];
+        }
+
+        // Resolve Approving Authority (from the cycle configuration). The President role is gone (2026-11-07):
+        // with nothing set, the approver fields stay blank for the signatory to be filled in.
+        $cycleApprovingName = !empty($currentFolderRec['approving_authority_name']) 
+            ? $currentFolderRec['approving_authority_name'] 
+            : ($rootCycle['approving_authority_name'] ?? '');
+        $cycleApprovingPos  = !empty($currentFolderRec['approving_authority_position']) 
+            ? $currentFolderRec['approving_authority_position'] 
+            : ($rootCycle['approving_authority_position'] ?? '');
+
+        return compact('rootFolderId', 'rootCycle', 'docPeriod', 'cycleApprovingName', 'cycleApprovingPos');
+    }
+
+    /**
+     * The approvers the form shows when the paper has none saved: its reviewers (evaluation_routings), else the
+     * supervisor folder above it, else the cycle's approving authority; an OPCR gets the approving authority only.
+     * Used by the form and by its Excel export (2026-11-08).
+     */
+    private function defaultSupervisors(array $docInfo, ?array $currentFolderRec, string $cycleApprovingName, string $cycleApprovingPos): array
+    {
+        $userModel   = new \App\Models\UserModel();
+        $folderModel = new DocumentFolderModel();
+        $docOwnerId  = $docInfo['owner_id'];
+        $docTitleUpper = strtoupper($docInfo['title'] ?? '');
+        $isMyDocOpcr = str_contains($docTitleUpper, 'OPCR')
+                    || str_contains($docTitleUpper, 'OFFICE')
+                    || (strtoupper($docInfo['doc_type'] ?? '') === 'OPCR');
+
+        $supervisors = [];
+        $seenEvaluatorIds = [];
+
+        if ($isMyDocOpcr) {
+            // For OPCR: The highest approving authority (e.g. University President / Head of Agency)
+            if (!empty($cycleApprovingName)) {
+                $supervisors[] = [
+                    'name'     => $cycleApprovingName,
+                    'position' => $cycleApprovingPos,
+                    'date'     => '',
+                    'evalDate' => ''
+                ];
+            }
+        } else {
+            // For DPCR, IPCR, IPERF: Gather supervisors from evaluation_routings (supports multiple cascades)
+            $routingModel = new \App\Models\EvaluationRoutingModel();
+            $cascadedRoutes = $routingModel->getEvaluatorsForFolder((string)$docInfo['document_folder_id']);
+
+            foreach ($cascadedRoutes as $route) {
+                $eId = (int)$route['evaluator_id'];
+                if (in_array($eId, $seenEvaluatorIds) || $eId === (int)$docOwnerId) continue;
+                // Exclude Admin from being listed as an evaluating supervisor
+                if ($userModel->hasRole($eId, 'Admin')) continue;
+
+                $seenEvaluatorIds[] = $eId;
+
+                $eName = trim(($route['first_name'] ?? '') . ' ' . ($route['last_name'] ?? ''));
+                $ePos  = $route['evaluator_position'] ?? '';
+                if (empty($ePos)) {
+                    $p = $userModel->getActivePlantillaDetails($eId);
+                    $ePos = $p['position'] ?? 'Immediate Supervisor';
+                }
+
+                $supervisors[] = [
+                    'id'        => $eId,
+                    'folder_id' => $route['evaluator_folder_id'] ?? null,
+                    'name'      => $eName,
+                    'position'  => $ePos,
+                    'date'      => '',
+                    'evalDate'  => ''
+                ];
+            }
+
+            // Fallback: If no routings were recorded in evaluation_routings, inspect the immediate parent folder
+            // (not while waiting for a supervisor: "Approved by" stays blank until the new one cascades)
+            $waitingForSupervisor = !empty($docInfo['waiting_supervisor']);
+            if (empty($supervisors) && !$waitingForSupervisor) {
+                $currParentId = $currentFolderRec['parent_folder_id'] ?? null;
+                if (!empty($currParentId)) {
+                    $pFolder = $folderModel->find($currParentId);
+                    // Only use if parent folder is an intermediate supervisor folder (not an institutional root cycle)
+                    // and its owner is not an Admin
+                    if ($pFolder && !empty($pFolder['parent_folder_id']) && !empty($pFolder['user_id'])) {
+                        $pUserId = (int)$pFolder['user_id'];
+                        if ($pUserId !== (int)$docOwnerId && !$userModel->hasRole($pUserId, 'Admin')) {
+                            $pUser = $userModel->find($pUserId);
+                            if ($pUser) {
+                                $pPlantilla = $userModel->getActivePlantillaDetails($pUserId);
+                                $supervisors[] = [
+                                    'id'        => $pUserId,
+                                    'folder_id' => $pFolder['id'],
+                                    'name'      => trim(($pUser['first_name'] ?? '') . ' ' . ($pUser['last_name'] ?? '')),
+                                    'position'  => $pPlantilla['position'] ?? 'Supervisor',
+                                    'date'      => '',
+                                    'evalDate'  => ''
+                                ];
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Fallback if no supervisor found
+            if (empty($supervisors) && !empty($cycleApprovingName) && !$waitingForSupervisor) {
+                $supervisors[] = [
+                    'id'        => null,
+                    'folder_id' => null,
+                    'name'      => $cycleApprovingName,
+                    'position'  => $cycleApprovingPos,
+                    'date'      => '',
+                    'evalDate'  => ''
+                ];
+            }
+        }
+
+        return $supervisors;
+    }
+
     /** GET /document/{id}/export-excel - Exports document to official CSC Excel spreadsheet */
     public function exportExcel($docId = null) {
         $userId  = session()->get('user_id');
@@ -1128,28 +1164,17 @@ class Document extends BaseController
             }
         }
 
-        // Owner Account Details
-        // Position and department as saved on the paper (paper_owner_info / owner_snapshot), not live.
-        $ownerInfo = paper_owner_info($docInfo) + ['period' => $formData['ratee']['period'] ?? ''];
+        // The defaults the form uses when the paper has nothing saved: the cycle's rating period, the default
+        // approvers and the default function weights (2026-11-08), so the file matches the form on screen.
+        $folderRec = (new DocumentFolderModel())->find($docInfo['document_folder_id']);
+        $cycle = $this->paperCycle($docInfo, $folderRec);
+        $ownerInfo = paper_owner_info($docInfo) + ['period' => $cycle['docPeriod']];
+        $defaults = [
+            'supervisors' => $this->defaultSupervisors($docInfo, $folderRec, $cycle['cycleApprovingName'], $cycle['cycleApprovingPos']),
+            'weights'     => (new DefaultFunctionWeightModel())->getAllWeightsKeyed(),
+        ];
 
-        // Superior / Supervisor Account Details
-        $superiorInfo = null;
-        // Not while waiting for a supervisor (ReviewHandover): the parent folder belonged to the revoked one.
-        if (!empty($docInfo['parent_folder_id']) && empty($docInfo['waiting_supervisor'])) {
-            $folderModel = new \App\Models\DocumentFolderModel();
-            $parentFolder = $folderModel->find($docInfo['parent_folder_id']);
-            if ($parentFolder && !empty($parentFolder['user_id'])) {
-                $superiorUser = $userModel->find($parentFolder['user_id']);
-                if ($superiorUser) {
-                    $plantilla = $userModel->getActivePlantillaDetails($superiorUser['id']);
-                    $superiorUser['position'] = $plantilla['position'] ?? 'Supervisor';
-                    $superiorUser['department'] = $plantilla['department'] ?? '';
-                    $superiorInfo = $superiorUser;
-                }
-            }
-        }
-
-        \App\Libraries\CscExcelExporter::export($docInfo, $formData, $ownerInfo, $superiorInfo);
+        \App\Libraries\CscExcelExporter::export($docInfo, $formData, $ownerInfo, $defaults);
     }
 
     /**

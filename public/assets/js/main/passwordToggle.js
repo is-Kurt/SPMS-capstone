@@ -17,6 +17,11 @@
         input.parentNode.insertBefore(wrapper, input);
         wrapper.appendChild(input);
         input.classList.add('pr-11');
+        // Margins go on the wrapper: inside it they made the eye (centred on the wrapper) sit low (2026-11-08)
+        [...input.classList].filter(c => /^(?:[a-z0-9]+:)*-?m[trblxy]?-/.test(c)).forEach(c => {
+            input.classList.remove(c);
+            wrapper.classList.add(c);
+        });
 
         const btn = document.createElement('button');
         btn.type = 'button';

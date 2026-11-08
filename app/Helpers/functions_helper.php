@@ -659,7 +659,22 @@ function paper_owner_info(array $docInfo): array
         'position' => $roles[0]['position'] ?? '',
         'dept'     => $roles[0]['dept'] ?? '',
         'roles'    => $roles,
+        'employment_status' => (string) ($user['employment_status'] ?? ''),
     ];
+}
+
+/**
+ * The IPERF form's Classification: the owner's employment status (2026-11-08), as the form words it ("Contract of
+ * Service (COS)", "Job Order"); any other status by its own name. Shown read-only on the form and in the Excel file.
+ */
+function iperf_classification(?string $status): string
+{
+    $status = trim((string) $status);
+    return match (strtolower($status)) {
+        'contract of service', 'cos' => 'Contract of Service (COS)',
+        'job order', 'jo'            => 'Job Order',
+        default                      => $status,
+    };
 }
 
 /**

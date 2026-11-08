@@ -13,1268 +13,635 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 class CscExcelExporter
 {
     /**
-     * Generate and stream a standardized CSC SPMS spreadsheet.
+     * Streams a paper's form as an .xlsx that matches the form on screen (2026-11-08): the same title, commitment
+     * sentence, columns, function headings, scores ("N/A" included), summary, remarks and signatories, with the same
+     * defaults the screen uses (Document::paperCycle / defaultSupervisors, the default function weights). The
+     * screen's rules live in app/Views/document/partials/assets/_scripts.php (populateSpmsForm, calculateCategory,
+     * getAdjectivalRating); keep the two in step.
      *
-     * @param array $doc Document record from database
-     * @param array|null $formData Parsed form data from tabs
-     * @param array $ownerInfo Ratee account details
-     * @param array|null $superiorInfo Supervisor details
-     * @return void
+     * @param array $doc       Document::getDocumentWithFolderInfo row
+     * @param array|null $formData tabs[0].formData
+     * @param array $ownerInfo paper_owner_info + period (the screen's default rating period)
+     * @param array $defaults  ['supervisors' => the screen's default approvers, 'weights' => DefaultFunctionWeightModel::getAllWeightsKeyed()]
      */
-    public static function export(array $doc, ?array $formData, array $ownerInfo, ?array $superiorInfo = null)
+    public static function export(array $doc, ?array $formData, array $ownerInfo, array $defaults = [])
     {
+        $formData = $formData ?? [];
+        $type = self::formType($doc, $formData);
         $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-
-        // ---------------------------------------------------------------------
-        // 1. PAGE SETUP (CSC Standard: Letter, Landscape, Fit-to-Width)
-        // ---------------------------------------------------------------------
-        $sheet->getPageSetup()->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
-        $sheet->getPageSetup()->setPaperSize(PageSetup::PAPERSIZE_LETTER);
-        $sheet->getPageSetup()->setFitToWidth(1);
-        $sheet->getPageSetup()->setFitToHeight(0);
-        $sheet->setShowGridLines(true);
-
-        $sheet->getPageMargins()->setTop(0.5);
-        $sheet->getPageMargins()->setRight(0.4);
-        $sheet->getPageMargins()->setBottom(0.5);
-        $sheet->getPageMargins()->setLeft(0.4);
-
-        // Determine Form Type & Weights
-        $titleRaw = strtoupper($formData['title'] ?? ($doc['title'] ?? ''));
-        $docTypeUpper = strtoupper($doc['doc_type'] ?? 'IPCR');
-
-        $isOpcr = str_contains($titleRaw, 'OPCR') || str_contains($titleRaw, 'OFFICE') || $docTypeUpper === 'OPCR';
-        $isDpcr = str_contains($titleRaw, 'DPCR') || str_contains($titleRaw, 'DIVISION') || str_contains($titleRaw, 'DEPARTMENT') || $docTypeUpper === 'DPCR';
-        $isIperf = (!$isOpcr && !$isDpcr) && (str_contains($titleRaw, 'IPERF') || str_contains($titleRaw, 'CONTRACT OF SERVICE') || str_contains($titleRaw, 'JOB ORDER') || $docTypeUpper === 'IPERF');
-
-        if ($isIperf) {
-            self::exportIperf($spreadsheet, $formData ?? [], $doc, $ownerInfo, $superiorInfo);
-            $rateeName = $formData['ratee']['name'] ?? ($ownerInfo['name'] ?? 'Employee');
-            $sanitizedName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $rateeName ?: 'Employee');
-            $sanitizedDocType = 'IPERF';
-            $fileName = "{$sanitizedDocType}_{$sanitizedName}_" . date('Ymd') . ".xlsx";
-
-            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-            header('Content-Disposition: attachment; filename="' . $fileName . '"');
-            header('Cache-Control: max-age=0');
-            self::applyProtection($spreadsheet, $spreadsheet->getActiveSheet());
-
-            $writer = new Xlsx($spreadsheet);
-            $writer->save('php://output');
-            exit;
-        }
-
-        if ($isOpcr) {
-            $sheetTitle = 'OPCR - Office';
-            $formFullTitle = 'OFFICE PERFORMANCE COMMITMENT AND REVIEW (OPCR)';
-            $hasExplicitWeights = isset($formData['weights']) && is_array($formData['weights']) && !empty($formData['weights']['core']);
-            $coreW = $hasExplicitWeights ? (float)$formData['weights']['core'] : 0.60;
-            $stratW = $hasExplicitWeights ? (float)$formData['weights']['strategic'] : 0.25;
-            $suppW = $hasExplicitWeights ? (float)$formData['weights']['support'] : 0.15;
-            
-            $corePctStr = $hasExplicitWeights ? ' (' . round($coreW * 100) . '%)' : ' (     %)';
-            $stratPctStr = $hasExplicitWeights ? ' (' . round($stratW * 100) . '%)' : ' (     %)';
-            $suppPctStr = $hasExplicitWeights ? ' (' . round($suppW * 100) . '%)' : ' (     %)';
-
-            $coreLabel = 'CORE FUNCTIONS' . $corePctStr;
-            $stratLabel = 'STRATEGIC FUNCTIONS' . $stratPctStr;
-            $suppLabel = 'SUPPORT FUNCTIONS' . $suppPctStr;
-            $rateeRoleLabel = 'Vice President / Head of Office';
-            $approverRoleLabel = 'University President / PMT Chair';
-        } elseif ($isDpcr) {
-            $sheetTitle = 'DPCR - Division';
-            $formFullTitle = 'DIVISION / DEPARTMENT PERFORMANCE COMMITMENT AND REVIEW (DPCR)';
-            $hasExplicitWeights = isset($formData['weights']) && is_array($formData['weights']) && !empty($formData['weights']['core']);
-            $coreW = $hasExplicitWeights ? (float)$formData['weights']['core'] : 0.60;
-            $stratW = $hasExplicitWeights ? (float)$formData['weights']['strategic'] : 0.30;
-            $suppW = $hasExplicitWeights ? (float)$formData['weights']['support'] : 0.10;
-
-            $corePctStr = $hasExplicitWeights ? ' (' . round($coreW * 100) . '%)' : ' (     %)';
-            $stratPctStr = $hasExplicitWeights ? ' (' . round($stratW * 100) . '%)' : ' (     %)';
-            $suppPctStr = $hasExplicitWeights ? ' (' . round($suppW * 100) . '%)' : ' (     %)';
-
-            $coreLabel = '1. Core Functions — Department Academic Operations' . $corePctStr;
-            $stratLabel = '2. Strategic Functions — Department Extension & Research' . $stratPctStr;
-            $suppLabel = '3. Support Functions — Academic Support & Administration' . $suppPctStr;
-            $rateeRoleLabel = 'Department Chairperson / Unit Head';
-            $approverRoleLabel = 'College Dean / Approving Authority';
-        } elseif ($isIperf) {
-            $sheetTitle = 'IPERF - Non-Teaching';
-            $formFullTitle = 'INDIVIDUAL PERFORMANCE EVALUATION AND REVIEW FORM (IPERF)';
-            $coreW = 0.70; $stratW = 0.20; $suppW = 0.10;
-            $coreLabel = '1. Core Functions — Administrative & Technical Services (70%)';
-            $stratLabel = '2. Strategic Functions — Process Improvement & Special Projects (20%)';
-            $suppLabel = '3. Support Functions — Office Support & Cross-Functional Services (10%)';
-            $rateeRoleLabel = 'Administrative Staff / Non-Teaching';
-            $approverRoleLabel = 'Administrative Unit Head / Supervisor';
-        } else {
-            // Default: IPCR
-            $sheetTitle = 'IPCR';
-            $formFullTitle = 'INDIVIDUAL PERFORMANCE COMMITMENT AND REVIEW';
-            $hasExplicitWeights = isset($formData['weights']) && is_array($formData['weights']) && !empty($formData['weights']['core']);
-            $coreW = $hasExplicitWeights ? (float)$formData['weights']['core'] : 0.70;
-            $stratW = $hasExplicitWeights ? (float)$formData['weights']['strategic'] : 0.20;
-            $suppW = $hasExplicitWeights ? (float)$formData['weights']['support'] : 0.10;
-
-            $corePctStr = $hasExplicitWeights ? ' (' . round($coreW * 100) . '%)' : ' (     %)';
-            $stratPctStr = $hasExplicitWeights ? ' (' . round($stratW * 100) . '%)' : ' (     %)';
-            $suppPctStr = $hasExplicitWeights ? ' (' . round($suppW * 100) . '%)' : ' (     %)';
-
-            $coreLabel = 'CORE FUNCTIONS' . $corePctStr;
-            $stratLabel = 'STRATEGIC FUNCTIONS' . $stratPctStr;
-            $suppLabel = 'SUPPORT FUNCTIONS' . $suppPctStr;
-            $rateeRoleLabel = 'Ratee';
-            $approverRoleLabel = 'College Dean / Unit Head';
-        }
-
-        $sheet->setTitle(substr($sheetTitle, 0, 31));
-
-        $lastCol = $isOpcr ? 'J' : 'H';
-
-        // ---------------------------------------------------------------------
-        // 2. COLUMN WIDTHS
-        // ---------------------------------------------------------------------
-        if ($isOpcr) {
-            // 10-Column Standard for VP / OPCR
-            $sheet->getColumnDimension('A')->setWidth(26); // PROJECT/ PROGRAM/ ACTIVITIES
-            $sheet->getColumnDimension('B')->setWidth(28); // SUCCESS INDICATORS (TARGETS + MEASURES) PERFORMANCE
-            $sheet->getColumnDimension('C')->setWidth(16); // ALLOTTED BUDGET
-            $sheet->getColumnDimension('D')->setWidth(20); // DIVISIONS ACCOUNTABLE
-            $sheet->getColumnDimension('E')->setWidth(26); // ACTUAL ACCOMPLISHMENT
-            $sheet->getColumnDimension('F')->setWidth(6.5); // Q
-            $sheet->getColumnDimension('G')->setWidth(6.5); // T
-            $sheet->getColumnDimension('H')->setWidth(6.5); // E
-            $sheet->getColumnDimension('I')->setWidth(9.5); // AVE
-            $sheet->getColumnDimension('J')->setWidth(20); // REMARKS
-        } else {
-            // Standardized 8-Column Layout A to H
-            $sheet->getColumnDimension('A')->setWidth(26); // MFO / PAPs
-            $sheet->getColumnDimension('B')->setWidth(26); // Success Indicators
-            $sheet->getColumnDimension('C')->setWidth(26); // Actual Accomplishments
-            $sheet->getColumnDimension('D')->setWidth(6.5); // Q
-            $sheet->getColumnDimension('E')->setWidth(6.5); // E
-            $sheet->getColumnDimension('F')->setWidth(6.5); // T
-            $sheet->getColumnDimension('G')->setWidth(9.5); // Ave.
-            $sheet->getColumnDimension('H')->setWidth(18); // Remarks
-        }
-
-        // Base Font: Arial 10
         $spreadsheet->getDefaultStyle()->getFont()->setName('Arial')->setSize(9.5);
+        $sheet = $spreadsheet->getActiveSheet();
+        self::pageSetup($sheet);
 
-        // ---------------------------------------------------------------------
-        // 3. INSTITUTIONAL CSC & BSU HEADER (Rows 1 to 4)
-        // ---------------------------------------------------------------------
-        $sheet->mergeCells("A1:{$lastCol}1");
-        self::put($sheet, 'A1', 'Republic of the Philippines');
-        $sheet->getStyle('A1')->getFont()->setName('Bookman Old Style')->setSize(10)->setBold(true)->getColor()->setRGB('111827');
-        $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-        $sheet->mergeCells("A2:{$lastCol}2");
-        self::put($sheet, 'A2', 'Benguet State University');
-        $sheet->getStyle('A2')->getFont()->setName('Old English Text MT')->setSize(17)->getColor()->setRGB('436531');
-        $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet->getRowDimension(2)->setRowHeight(28);
-
-        $sheet->mergeCells("A3:{$lastCol}3");
-        self::put($sheet, 'A3', 'La Trinidad, 2601 Benguet');
-        $sheet->getStyle('A3')->getFont()->setName('Bookman Old Style')->setSize(9.5)->setItalic(true)->getColor()->setRGB('1F2937');
-        $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet->getRowDimension(3)->setRowHeight(16);
-
-        // Office / College Masthead Subtitle (e.g. Office of the University President / College of Nursing)
-        $officeTitle = !empty($formData['ratee']['dept']) 
-            ? $formData['ratee']['dept'] 
-            : (!empty($ownerInfo['dept']) ? $ownerInfo['dept'] : 'Office of the University President');
-
-        $sheet->mergeCells("A4:{$lastCol}4");
-        self::put($sheet, 'A4', $officeTitle);
-        $sheet->getStyle('A4')->getFont()->setName('Monotype Corsiva')->setSize(14)->setItalic(true)->setBold(true)->getColor()->setRGB('111827');
-        $sheet->getStyle('A4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet->getRowDimension(4)->setRowHeight(20);
-
-        $sheet->mergeCells("A5:{$lastCol}5");
-        self::put($sheet, 'A5', $formFullTitle);
-        $sheet->getStyle('A5')->getFont()->setSize(10.5)->setBold(true);
-        $sheet->getStyle('A5')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet->getRowDimension(5)->setRowHeight(19);
-
-        // Add BSU Seal (Left) and Bagong Pilipinas (Right)
-        self::addOfficialSeals($sheet, $lastCol);
-
-        // ---------------------------------------------------------------------
-        // 4. RATEE COMMITMENT STATEMENT (Rows 6 to 7)
-        // ---------------------------------------------------------------------
-        $rateeName = $formData['ratee']['name'] ?? ($ownerInfo['name'] ?? '—');
-        $rateePos  = $formData['ratee']['position'] ?? ($ownerInfo['position'] ?? '—');
-        $rateeDept = $formData['ratee']['dept'] ?? ($ownerInfo['dept'] ?? '—');
-        $rateePeriod = $formData['ratee']['period'] ?? ($ownerInfo['period'] ?? '—');
-
-        $roles = $formData['ratee']['roles'] ?? ($ownerInfo['roles'] ?? []);
-        if (empty($roles)) {
-            $roles = [[
-                'position' => $rateePos,
-                'dept'     => $rateeDept
-            ]];
-        }
-
-        $roleParts = [];
-        foreach ($roles as $r) {
-            $p = !empty($r['position']) ? $r['position'] : ($rateePos ?: '[Position]');
-            $d = !empty($r['dept']) ? $r['dept'] : ($rateeDept ?: '[College / Unit]');
-            $roleParts[] = "{$p} of the {$d}";
-        }
-
-        $rolesCount = count($roleParts);
-        if ($rolesCount === 1) {
-            $rolesFormatted = $roleParts[0];
-        } elseif ($rolesCount === 2) {
-            $rolesFormatted = $roleParts[0] . ', and ' . $roleParts[1];
+        if ($type === 'IPERF') {
+            self::exportIperf($spreadsheet, $formData, $doc, $ownerInfo, $defaults);
         } else {
-            $lastRole = array_pop($roleParts);
-            $rolesFormatted = implode(', ', $roleParts) . ', and ' . $lastRole;
+            self::exportStandard($sheet, $type, $formData, $ownerInfo, $defaults);
         }
 
-        $commitmentText = "I, " . ($rateeName ?: '[Name]') . ", " . $rolesFormatted . ", commit to deliver and agree to be rated on the attainment of targets for " . ($rateePeriod ?: '[Rating Period]') . " in accordance with the indicated measures.";
-
-        $sheet->mergeCells("A6:{$lastCol}7");
-        self::put($sheet, 'A6', $commitmentText);
-        $sheet->getStyle('A6')->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_CENTER)->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet->getStyle('A6')->getFont()->setItalic(true)->setSize(9.5);
-        $sheet->getStyle("A6:{$lastCol}7")->getBorders()->getTop()->setBorderStyle(Border::BORDER_THIN);
-        $sheet->getStyle("A6:{$lastCol}7")->getBorders()->getBottom()->setBorderStyle(Border::BORDER_DOUBLE);
-
-        // ---------------------------------------------------------------------
-        // 5. TOP APPROVAL, RATEE SIGN-OFF & CSC RATING SCALE GUIDE (Rows 9 to 15)
-        // ---------------------------------------------------------------------
-        if (!empty($formData['approvers']) && is_array($formData['approvers'])) {
-            $approverNames = array_filter(array_map(fn($a) => trim($a['name'] ?? ''), $formData['approvers']));
-            $approverPoses = array_filter(array_map(fn($a) => trim($a['position'] ?? ''), $formData['approvers']));
-            $approverDates = array_filter(array_map(fn($a) => trim($a['date'] ?? ''), $formData['approvers']));
-            $approverName = !empty($approverNames) ? implode(' / ', $approverNames) : ($formData['approver']['name'] ?? '—');
-            $approverPos  = !empty($approverPoses) ? implode(' / ', $approverPoses) : ($formData['approver']['position'] ?? $approverRoleLabel);
-            $approverDate = !empty($approverDates) ? implode(' / ', $approverDates) : ($formData['approver']['date'] ?? '');
-        } else {
-            $approverName = $formData['approver']['name'] ?? (trim(($superiorInfo['first_name'] ?? '') . ' ' . ($superiorInfo['last_name'] ?? '')) ?: '—');
-            $approverPos  = $formData['approver']['position'] ?? ($superiorInfo['position'] ?? $approverRoleLabel);
-            $approverDate = $formData['approver']['date'] ?? '';
-        }
-
-        $rateeSignName = $formData['rateeSign']['name'] ?? $rateeName;
-        $rateeSignDate = $formData['rateeSign']['date'] ?? '';
-
-        if ($isOpcr) {
-            // Header Labels for OPCR
-            $sheet->mergeCells('A9:D9');
-            self::put($sheet, 'A9', 'APPROVED BY:');
-            $sheet->mergeCells('E9:G9');
-            self::put($sheet, 'E9', 'RATEE SIGN-OFF:');
-            $sheet->mergeCells('H9:J9');
-            self::put($sheet, 'H9', 'CSC / BSU RATING SCALE:');
-
-            $sheet->getStyle('A9:J9')->getFont()->setBold(true)->setSize(8.5);
-            $sheet->getStyle('A9:J9')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FFF2CC');
-
-            // Content
-            $sheet->mergeCells('A10:D10');
-            self::put($sheet, 'A10', 'Name: ' . $approverName);
-            $sheet->mergeCells('A11:D11');
-            self::put($sheet, 'A11', 'Position: ' . $approverPos);
-            $sheet->mergeCells('A12:D12');
-            self::put($sheet, 'A12', 'Date: ' . ($approverDate ?: '_____________'));
-            $sheet->mergeCells('A13:D14');
-            self::put($sheet, 'A13', 'Signature: __________________________');
-            $sheet->getStyle('A13')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
-
-            $sheet->mergeCells('E10:G10');
-            self::put($sheet, 'E10', 'Name: ' . $rateeSignName);
-            $sheet->mergeCells('E11:G11');
-            self::put($sheet, 'E11', 'Position: ' . $rateePos);
-            $sheet->mergeCells('E12:G12');
-            self::put($sheet, 'E12', 'Date: ' . ($rateeSignDate ?: '_____________'));
-            $sheet->mergeCells('E13:G14');
-            self::put($sheet, 'E13', 'Signature: __________________________');
-            $sheet->getStyle('E13')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
-
-            // CSC Rating Scale Box
-            $sheet->mergeCells('H10:J10'); self::put($sheet, 'H10', '5 — Outstanding (4.500 – 5.000)');
-            $sheet->mergeCells('H11:J11'); self::put($sheet, 'H11', '4 — Very Satisfactory (3.500 – 4.499)');
-            $sheet->mergeCells('H12:J12'); self::put($sheet, 'H12', '3 — Satisfactory (2.500 – 3.499)');
-            $sheet->mergeCells('H13:J13'); self::put($sheet, 'H13', '2 — Unsatisfactory (1.500 – 2.499)');
-            $sheet->mergeCells('H14:J14'); self::put($sheet, 'H14', '1 / 0 — Poor / Unmet (< 1.499)');
-
-            $sheet->getStyle('A9:D14')->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
-            $sheet->getStyle('E9:G14')->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
-            $sheet->getStyle('H9:J14')->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
-            $sheet->getStyle('H10:J14')->getFont()->setSize(8);
-        } elseif (!$isDpcr) {
-            // Rows 5-7: Employee Name Block on Right (Cols D to H)
-            $sheet->mergeCells('D5:H5');
-            self::put($sheet, 'D5', $rateeSignName ?: '(full name here)');
-            $sheet->getStyle('D5')->getFont()->setBold(true)->getColor()->setRGB('BA372A');
-            $sheet->mergeCells('D6:H6');
-            self::put($sheet, 'D6', 'Name of Employee');
-            $sheet->mergeCells('D7:H7');
-            self::put($sheet, 'D7', 'Date: ' . ($rateeSignDate ?: '_____________'));
-
-            // Rows 9-14: Approved By (Cols A to C)
-            self::put($sheet, 'A9', 'APPROVED BY:');
-            $sheet->getStyle('A9')->getFont()->setBold(true)->setSize(9);
-            $sheet->mergeCells('A10:C10');
-            self::put($sheet, 'A10', 'Name: ' . ($approverName ?: '(name of office head)'));
-            $sheet->mergeCells('A11:C11');
-            self::put($sheet, 'A11', 'Position: ' . ($approverPos ?: '(position of office head)'));
-            $sheet->mergeCells('A12:C12');
-            self::put($sheet, 'A12', 'Date: ' . ($approverDate ?: '_____________'));
-
-            // Rating Scale (Cols D to H)
-            $sheet->mergeCells('D9:H9');
-            self::put($sheet, 'D9', 'Rating Scale:');
-            $sheet->getStyle('D9')->getFont()->setBold(true)->setSize(8.5);
-            $sheet->mergeCells('D10:H10'); self::put($sheet, 'D10', '5 — Outstanding');
-            $sheet->mergeCells('D11:H11'); self::put($sheet, 'D11', '4 — Very Satisfactory');
-            $sheet->mergeCells('D12:H12'); self::put($sheet, 'D12', '3 — Satisfactory');
-            $sheet->mergeCells('D13:H13'); self::put($sheet, 'D13', '2 — Unsatisfactory');
-            $sheet->mergeCells('D14:H14'); self::put($sheet, 'D14', '1 — Poor');
-            $sheet->getStyle('D10:H14')->getFont()->setSize(8);
-        } else {
-            // Header Labels for DPCR
-            $sheet->mergeCells('A9:C9');
-            self::put($sheet, 'A9', 'APPROVED BY:');
-            $sheet->mergeCells('D9:F9');
-            self::put($sheet, 'D9', 'RATEE SIGN-OFF:');
-            $sheet->mergeCells('G9:H9');
-            self::put($sheet, 'G9', 'CSC / BSU RATING SCALE:');
-
-            $sheet->getStyle('A9:H9')->getFont()->setBold(true)->setSize(8.5);
-            $sheet->getStyle('A9:H9')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F1F5F9');
-
-            // Content
-            $sheet->mergeCells('A10:C10');
-            self::put($sheet, 'A10', 'Name: ' . $approverName);
-            $sheet->mergeCells('A11:C11');
-            self::put($sheet, 'A11', 'Position: ' . $approverPos);
-            $sheet->mergeCells('A12:C12');
-            self::put($sheet, 'A12', 'Date: ' . ($approverDate ?: '_____________'));
-            $sheet->mergeCells('A13:C14');
-            self::put($sheet, 'A13', 'Signature: __________________________');
-            $sheet->getStyle('A13')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
-
-            $sheet->mergeCells('D10:F10');
-            self::put($sheet, 'D10', 'Name: ' . $rateeSignName);
-            $sheet->mergeCells('D11:F11');
-            self::put($sheet, 'D11', 'Position: ' . $rateePos);
-            $sheet->mergeCells('D12:F12');
-            self::put($sheet, 'D12', 'Date: ' . ($rateeSignDate ?: '_____________'));
-            $sheet->mergeCells('D13:F14');
-            self::put($sheet, 'D13', 'Signature: __________________________');
-            $sheet->getStyle('D13')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
-
-            // CSC Rating Scale Box
-            $sheet->mergeCells('G10:H10'); self::put($sheet, 'G10', '5 — Outstanding (4.500 – 5.000)');
-            $sheet->mergeCells('G11:H11'); self::put($sheet, 'G11', '4 — Very Satisfactory (3.500 – 4.499)');
-            $sheet->mergeCells('G12:H12'); self::put($sheet, 'G12', '3 — Satisfactory (2.500 – 3.499)');
-            $sheet->mergeCells('G13:H13'); self::put($sheet, 'G13', '2 — Unsatisfactory (1.500 – 2.499)');
-            $sheet->mergeCells('G14:H14'); self::put($sheet, 'G14', '1 / 0 — Poor / Unmet (< 1.499)');
-
-            $sheet->getStyle('A9:C14')->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
-            $sheet->getStyle('D9:F14')->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
-            $sheet->getStyle('G9:H14')->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
-            $sheet->getStyle('G10:H14')->getFont()->setSize(8);
-        }
-
-        // ---------------------------------------------------------------------
-        // 6. DELIVERABLES MATRIX HEADERS (Rows 16 to 17)
-        // ---------------------------------------------------------------------
-        if ($isOpcr) {
-            $sheet->mergeCells('A16:A17');
-            self::put($sheet, 'A16', "PROJECT/ PROGRAM/\nACTIVITIES");
-
-            $sheet->mergeCells('B16:B17');
-            self::put($sheet, 'B16', "SUCCESS INDICATORS\n(TARGETS + MEASURES)\nPERFORMANCE");
-
-            $docCurrency = trim((string)($formData['budget_currency'] ?? ($formData['currency'] ?? '₱')));
-            $sheet->mergeCells('C16:C17');
-            self::put($sheet, 'C16', "ALLOTTED\nBUDGET" . ($docCurrency !== '' ? "\n({$docCurrency})" : ''));
-
-            $sheet->mergeCells('D16:D17');
-            self::put($sheet, 'D16', "DIVISIONS\nACCOUNTABLE");
-
-            $sheet->mergeCells('E16:E17');
-            self::put($sheet, 'E16', "ACTUAL\nACCOMPLISHMENT");
-
-            $sheet->mergeCells('F16:I16');
-            self::put($sheet, 'F16', "RATINGS");
-
-            self::put($sheet, 'F17', 'Q');
-            self::put($sheet, 'G17', 'T');
-            self::put($sheet, 'H17', 'E');
-            self::put($sheet, 'I17', 'AVE');
-
-            $sheet->mergeCells('J16:J17');
-            self::put($sheet, 'J16', "REMARKS");
-
-            $sheet->getStyle('A16:J17')->getFont()->setBold(true)->setSize(9);
-            $sheet->getStyle('A16:J17')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER)->setWrapText(true);
-            $sheet->getStyle('A16:J17')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FFF2CC');
-            $sheet->getStyle('A16:J17')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-        } else {
-            $sheet->mergeCells('A16:A17');
-            self::put($sheet, 'A16', "MAJOR FINAL OUTPUT\n(MFO / PAPs)");
-
-            $sheet->mergeCells('B16:B17');
-            self::put($sheet, 'B16', "SUCCESS INDICATORS\n(Targets + Measures)");
-
-            $sheet->mergeCells('C16:C17');
-            self::put($sheet, 'C16', "ACTUAL ACCOMPLISHMENTS\n(Outputs Delivered)");
-
-            $sheet->mergeCells('D16:G16');
-            self::put($sheet, 'D16', "RATING");
-
-            self::put($sheet, 'D17', 'Q');
-            self::put($sheet, 'E17', 'T');
-            self::put($sheet, 'F17', 'E');
-            self::put($sheet, 'G17', 'Ave.');
-
-            $sheet->mergeCells('H16:H17');
-            self::put($sheet, 'H16', "REMARKS");
-
-            $sheet->getStyle('A16:H17')->getFont()->setBold(true)->setSize(9);
-            $sheet->getStyle('A16:H17')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER)->setWrapText(true);
-            $sheet->getStyle('A16:H17')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('D9D9D9');
-            $sheet->getStyle('A16:H17')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-        }
-
-        // Repeat Header row on every printed page
-        $sheet->getPageSetup()->setRowsToRepeatAtTopByStartAndEnd(16, 17);
-
-        // ---------------------------------------------------------------------
-        // 7. POPULATE CATEGORIES & ACCOMPLISHMENT ROWS (Rows 18+)
-        // ---------------------------------------------------------------------
-        $currentRow = 18;
-        $categoriesData = $formData['categories'] ?? [];
-
-        $categoryConfigs = [
-            'core' => [
-                'label'   => $coreLabel,
-                'weight'  => $coreW,
-                'bgColor' => $isOpcr ? 'FFF2CC' : 'DCFCE7', // Emerald light
-                'txtColor'=> $isOpcr ? '000000' : '166534',
-                'rows'    => $categoriesData['core'] ?? []
-            ],
-            'strategic' => [
-                'label'   => $stratLabel,
-                'weight'  => $stratW,
-                'bgColor' => $isOpcr ? 'FFF2CC' : 'E0F2FE', // Sky light
-                'txtColor'=> $isOpcr ? '000000' : '075985',
-                'rows'    => $categoriesData['strategic'] ?? []
-            ],
-            'support' => [
-                'label'   => $suppLabel,
-                'weight'  => $suppW,
-                'bgColor' => 'FFF2CC', // Amber light
-                'txtColor'=> '000000',
-                'rows'    => $categoriesData['support'] ?? []
-            ]
-        ];
-
-        $categoryRowRanges = [];
-
-        foreach ($categoryConfigs as $catKey => $config) {
-            // Category Section Header Band
-            if ($isOpcr) {
-                $sheet->mergeCells("A{$currentRow}:H{$currentRow}");
-                self::put($sheet, "A{$currentRow}", $config['label']);
-                $sheet->getStyle("A{$currentRow}")->getFont()->setBold(true)->setSize(9.5);
-
-                $sheet->mergeCells("I{$currentRow}:J{$currentRow}");
-                $subtotalCellCoord = "I{$currentRow}";
-                self::put($sheet, $subtotalCellCoord, "Subtotal: 0.000");
-                $sheet->getStyle($subtotalCellCoord)->getFont()->setBold(true)->setSize(9.5);
-                $sheet->getStyle($subtotalCellCoord)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-
-                $sheet->getStyle("A{$currentRow}:J{$currentRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FFF2CC');
-                $sheet->getStyle("A{$currentRow}:J{$currentRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-                $sheet->getRowDimension($currentRow)->setRowHeight(22);
-            } elseif (!$isDpcr) {
-                $sheet->mergeCells("A{$currentRow}:H{$currentRow}");
-                self::put($sheet, "A{$currentRow}", $config['label']);
-                $sheet->getStyle("A{$currentRow}")->getFont()->setBold(true)->setSize(9.5);
-                $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('D9D9D9');
-                $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-                $sheet->getRowDimension($currentRow)->setRowHeight(22);
-            } else {
-                $sheet->mergeCells("A{$currentRow}:F{$currentRow}");
-                self::put($sheet, "A{$currentRow}", $config['label']);
-                $sheet->getStyle("A{$currentRow}")->getFont()->setBold(true)->setSize(9.5);
-
-                $sheet->mergeCells("G{$currentRow}:H{$currentRow}");
-                $subtotalCellCoord = "G{$currentRow}";
-                self::put($sheet, $subtotalCellCoord, "Subtotal: 0.000");
-                $sheet->getStyle($subtotalCellCoord)->getFont()->setBold(true)->setSize(9.5);
-                $sheet->getStyle($subtotalCellCoord)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-
-                $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB($config['bgColor']);
-                $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-                $sheet->getRowDimension($currentRow)->setRowHeight(22);
-            }
-
-            $headerRowIdx = $currentRow;
-            $currentRow++;
-
-            $startRowIdx = $currentRow;
-            $items = !empty($config['rows']) ? $config['rows'] : [
-                ['mfo' => '', 'indicators' => '', 'budget' => '', 'accountable' => '', 'accomplishments' => '', 'q' => '', 'e' => '', 't' => '', 'remarks' => '']
-            ];
-
-            foreach ($items as $item) {
-                if ($isOpcr) {
-                    self::put($sheet, "A{$currentRow}", $item['mfo'] ?? '');
-                    self::put($sheet, "B{$currentRow}", $item['indicators'] ?? '');
-                    $budgetVal = trim((string)($item['budget'] ?? ''));
-                    if ($budgetVal !== '') {
-                        $curr = trim((string)($item['budget_currency'] ?? ($formData['budget_currency'] ?? ($formData['currency'] ?? '₱'))));
-                        if (!str_starts_with($budgetVal, $curr)) {
-                            $budgetVal = $curr . ' ' . $budgetVal;
-                        }
-                    }
-                    self::put($sheet, "C{$currentRow}", $budgetVal);
-                    self::put($sheet, "D{$currentRow}", $item['accountable'] ?? '');
-                    self::put($sheet, "E{$currentRow}", $item['accomplishments'] ?? '');
-
-                    $qVal = is_numeric($item['q'] ?? null) ? (int)$item['q'] : '';
-                    $tVal = is_numeric($item['t'] ?? null) ? (int)$item['t'] : '';
-                    $eVal = is_numeric($item['e'] ?? null) ? (int)$item['e'] : '';
-
-                    if ($qVal !== '') self::put($sheet, "F{$currentRow}", $qVal);
-                    if ($tVal !== '') self::put($sheet, "G{$currentRow}", $tVal);
-                    if ($eVal !== '') self::put($sheet, "H{$currentRow}", $eVal);
-
-                    // Row Average Formula: =IF(COUNT(F{row}:H{row})>0, AVERAGE(F{row}:H{row}), "")
-                    $sheet->setCellValue("I{$currentRow}", "=IF(COUNT(F{$currentRow}:H{$currentRow})>0, AVERAGE(F{$currentRow}:H{$currentRow}), \"\")");
-
-                    self::put($sheet, "J{$currentRow}", $item['remarks'] ?? '');
-
-                    // Alignments & Styles
-                    $sheet->getStyle("A{$currentRow}:E{$currentRow}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
-                    $sheet->getStyle("F{$currentRow}:I{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
-                    $sheet->getStyle("J{$currentRow}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
-
-                    $sheet->getStyle("F{$currentRow}:H{$currentRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FFE599');
-
-                    $sheet->getStyle("I{$currentRow}")->getNumberFormat()->setFormatCode('0.000');
-                    $sheet->getStyle("I{$currentRow}")->getFont()->setBold(true)->getColor()->setRGB('0369A1');
-                    $sheet->getStyle("I{$currentRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F0F9FF');
-
-                    $sheet->getStyle("A{$currentRow}:J{$currentRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-                } else {
-                    self::put($sheet, "A{$currentRow}", $item['mfo'] ?? '');
-                    self::put($sheet, "B{$currentRow}", $item['indicators'] ?? '');
-                    self::put($sheet, "C{$currentRow}", $item['accomplishments'] ?? '');
-
-                    // Q, E, T scores (In IPCR column order: D=Q, E=T, F=E)
-                    $qVal = is_numeric($item['q'] ?? null) ? (int)$item['q'] : '';
-                    $tVal = is_numeric($item['t'] ?? null) ? (int)$item['t'] : '';
-                    $eVal = is_numeric($item['e'] ?? null) ? (int)$item['e'] : '';
-
-                    if ($qVal !== '') self::put($sheet, "D{$currentRow}", $qVal);
-                    if ($tVal !== '') self::put($sheet, "E{$currentRow}", $tVal);
-                    if ($eVal !== '') self::put($sheet, "F{$currentRow}", $eVal);
-
-                    // Row Average Formula: =IF(COUNT(D{row}:F{row})>0, AVERAGE(D{row}:F{row}), "")
-                    $sheet->setCellValue("G{$currentRow}", "=IF(COUNT(D{$currentRow}:F{$currentRow})>0, AVERAGE(D{$currentRow}:F{$currentRow}), \"\")");
-
-                    self::put($sheet, "H{$currentRow}", $item['remarks'] ?? '');
-
-                    // Alignments & Styles
-                    $sheet->getStyle("A{$currentRow}:C{$currentRow}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
-                    $sheet->getStyle("D{$currentRow}:G{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
-                    $sheet->getStyle("H{$currentRow}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
-
-                    $sheet->getStyle("G{$currentRow}")->getNumberFormat()->setFormatCode('0.000');
-                    $sheet->getStyle("G{$currentRow}")->getFont()->setBold(true)->getColor()->setRGB('0369A1');
-                    $sheet->getStyle("G{$currentRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F0F9FF');
-
-                    $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-                }
-
-                $currentRow++;
-            }
-
-            $endRowIdx = $currentRow - 1;
-            $categoryRowRanges[$catKey] = [
-                'headerRow' => $headerRowIdx,
-                'start'     => $startRowIdx,
-                'end'       => $endRowIdx,
-                'weight'    => $config['weight']
-            ];
-
-            if ($isOpcr) {
-                // Set Subtotal Formula on Header Row: =IFERROR(AVERAGE(I{start}:I{end}) * weight, 0)
-                $sheet->setCellValue("I{$headerRowIdx}", "=IFERROR(AVERAGE(I{$startRowIdx}:I{$endRowIdx}) * {$config['weight']}, 0)");
-                $sheet->getStyle("I{$headerRowIdx}")->getNumberFormat()->setFormatCode('"Subtotal: "0.000');
-            } elseif ($isDpcr) {
-                // Set Subtotal Formula on Header Row: =IFERROR(AVERAGE(G{start}:G{end}) * weight, 0)
-                $sheet->setCellValue("G{$headerRowIdx}", "=IFERROR(AVERAGE(G{$startRowIdx}:G{$endRowIdx}) * {$config['weight']}, 0)");
-                $sheet->getStyle("G{$headerRowIdx}")->getNumberFormat()->setFormatCode('"Subtotal: "0.000');
-            }
-        }
-
-        // ---------------------------------------------------------------------
-        // 8. GRAND SUMMARY & CALCULATION MATRIX
-        // ---------------------------------------------------------------------
-        if ($isOpcr) {
-            $summaryStartRow = $currentRow;
-
-            // Formula Explanation Box (Cols A to E)
-            $sheet->mergeCells("A{$summaryStartRow}:E" . ($summaryStartRow + 2));
-            $wCoreText = ($hasExplicitWeights && $coreW > 0) ? ($coreW * 100) . "%" : "   %";
-            $wStratText = ($hasExplicitWeights && $stratW > 0) ? ($stratW * 100) . "%" : "   %";
-            $wSuppText = ($hasExplicitWeights && $suppW > 0) ? ($suppW * 100) . "%" : "   %";
-            $weightText = "Formula Weights:\nCore Functions ({$wCoreText}) + Strategic Functions ({$wStratText}) + Support Functions ({$wSuppText}).\nValidated against Benguet State University OPCR SPMS Guidelines.";
-            self::put($sheet, "A{$summaryStartRow}", $weightText);
-            $sheet->getStyle("A{$summaryStartRow}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
-            $sheet->getStyle("A{$summaryStartRow}")->getFont()->setSize(8.5)->setItalic(true);
-            $sheet->getStyle("A{$summaryStartRow}:E" . ($summaryStartRow + 2))->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FFFDF5');
-            $sheet->getStyle("A{$summaryStartRow}:E" . ($summaryStartRow + 2))->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
-
-            // Category Breakdown Rows (Cols F to J)
-            $cats = ['core' => 'CORE FUNCTIONS', 'strategic' => 'STRATEGIC FUNCTIONS', 'support' => 'SUPPORT FUNCTIONS'];
-            $idx = 0;
-            $subtotalRowRefs = [];
-
-            foreach ($cats as $k => $cName) {
-                $r = $summaryStartRow + $idx;
-                $range = $categoryRowRanges[$k];
-
-                $sheet->mergeCells("F{$r}:G{$r}");
-                self::put($sheet, "F{$r}", $cName);
-                $sheet->getStyle("F{$r}")->getFont()->setBold(true)->setSize(9);
-
-                self::put($sheet, "H{$r}", "× " . number_format($range['weight'], 2));
-                $sheet->getStyle("H{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-                // Ave score: =IFERROR(AVERAGE(I{start}:I{end}), 0)
-                $sheet->setCellValue("I{$r}", "=IFERROR(AVERAGE(I{$range['start']}:I{$range['end']}), 0)");
-                $sheet->getStyle("I{$r}")->getNumberFormat()->setFormatCode('0.000');
-                $sheet->getStyle("I{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-
-                // Weighted Subtotal: =I{r} * weight
-                $sheet->setCellValue("J{$r}", "=I{$r} * {$range['weight']}");
-                $sheet->getStyle("J{$r}")->getNumberFormat()->setFormatCode('0.000');
-                $sheet->getStyle("J{$r}")->getFont()->setBold(true);
-                $sheet->getStyle("J{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-
-                $subtotalRowRefs[] = "J{$r}";
-                $sheet->getStyle("F{$r}:J{$r}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-                $idx++;
-            }
-
-            $currentRow = $summaryStartRow + 3;
-
-            // Dark Navy Final Average Rating Bar
-            $sheet->mergeCells("A{$currentRow}:E{$currentRow}");
-            self::put($sheet, "A{$currentRow}", "FINAL AVERAGE RATING");
-            $sheet->getStyle("A{$currentRow}")->getFont()->setBold(true)->setSize(10)->getColor()->setRGB('FFFFFF');
-            $sheet->getStyle("A{$currentRow}")->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
-
-            // Grand Total Formula: =SUM(J{r1}, J{r2}, J{r3})
-            $sheet->mergeCells("F{$currentRow}:I{$currentRow}");
-            $sheet->setCellValue("F{$currentRow}", "=SUM(" . implode(',', $subtotalRowRefs) . ")");
-            $sheet->getStyle("F{$currentRow}")->getFont()->setBold(true)->setSize(14)->getColor()->setRGB('38BDF8'); // Cyan bold
-            $sheet->getStyle("F{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
-            $sheet->getStyle("F{$currentRow}")->getNumberFormat()->setFormatCode('0.000');
-
-            // Adjectival Rating Formula
-            $sheet->setCellValue("J{$currentRow}", "=IF(F{$currentRow}>=4.5,\"OUTSTANDING\",IF(F{$currentRow}>=3.5,\"VERY SATISFACTORY\",IF(F{$currentRow}>=2.5,\"SATISFACTORY\",IF(F{$currentRow}>=1.5,\"UNSATISFACTORY\",\"POOR\"))))");
-            $sheet->getStyle("J{$currentRow}")->getFont()->setBold(true)->setSize(9)->getColor()->setRGB('FFFFFF');
-            $sheet->getStyle("J{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
-
-            $sheet->getStyle("A{$currentRow}:J{$currentRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('0A192F');
-            $sheet->getStyle("A{$currentRow}:J{$currentRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_MEDIUM);
-            $sheet->getRowDimension($currentRow)->setRowHeight(28);
-
-            $currentRow++;
-        } elseif (!$isDpcr) {
-            $coreRef = $categoryRowRanges['core'];
-            $stratRef = $categoryRowRanges['strategic'];
-            $suppRef = $categoryRowRanges['support'];
-
-            // Row 24: CORE
-            $sheet->mergeCells("D{$currentRow}:G{$currentRow}");
-            self::put($sheet, "D{$currentRow}", "CORE");
-            $sheet->getStyle("D{$currentRow}")->getFont()->setBold(true)->setSize(9.5);
-            $sheet->getStyle("D{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->setCellValue("H{$currentRow}", "=IFERROR(AVERAGE(G{$coreRef['start']}:G{$coreRef['end']}) * {$coreRef['weight']}, 0)");
-            $sheet->getStyle("H{$currentRow}")->getNumberFormat()->setFormatCode('0.000');
-            $sheet->getStyle("H{$currentRow}")->getFont()->setBold(true);
-            $sheet->getStyle("H{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-            $coreRowIdx = $currentRow;
-            $currentRow++;
-
-            // Row 25: STRATEGIC
-            $sheet->mergeCells("D{$currentRow}:G{$currentRow}");
-            self::put($sheet, "D{$currentRow}", "STRATEGIC");
-            $sheet->getStyle("D{$currentRow}")->getFont()->setBold(true)->setSize(9.5);
-            $sheet->getStyle("D{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->setCellValue("H{$currentRow}", "=IFERROR(AVERAGE(G{$stratRef['start']}:G{$stratRef['end']}) * {$stratRef['weight']}, 0)");
-            $sheet->getStyle("H{$currentRow}")->getNumberFormat()->setFormatCode('0.000');
-            $sheet->getStyle("H{$currentRow}")->getFont()->setBold(true);
-            $sheet->getStyle("H{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-            $stratRowIdx = $currentRow;
-            $currentRow++;
-
-            // Row 26: SUPPORT
-            $sheet->mergeCells("D{$currentRow}:G{$currentRow}");
-            self::put($sheet, "D{$currentRow}", "SUPPORT");
-            $sheet->getStyle("D{$currentRow}")->getFont()->setBold(true)->setSize(9.5);
-            $sheet->getStyle("D{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->setCellValue("H{$currentRow}", "=IFERROR(AVERAGE(G{$suppRef['start']}:G{$suppRef['end']}) * {$suppRef['weight']}, 0)");
-            $sheet->getStyle("H{$currentRow}")->getNumberFormat()->setFormatCode('0.000');
-            $sheet->getStyle("H{$currentRow}")->getFont()->setBold(true);
-            $sheet->getStyle("H{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-            $suppRowIdx = $currentRow;
-            $currentRow++;
-
-            // Row 27: FINAL AVERAGE RATING
-            $sheet->mergeCells("D{$currentRow}:G{$currentRow}");
-            self::put($sheet, "D{$currentRow}", "FINAL AVERAGE RATING");
-            $sheet->getStyle("D{$currentRow}")->getFont()->setBold(true)->setSize(9.5);
-            $sheet->getStyle("D{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->setCellValue("H{$currentRow}", "=SUM(H{$coreRowIdx}:H{$suppRowIdx})");
-            $sheet->getStyle("H{$currentRow}")->getNumberFormat()->setFormatCode('0.000');
-            $sheet->getStyle("H{$currentRow}")->getFont()->setBold(true)->setSize(10);
-            $sheet->getStyle("H{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-            $currentRow++;
-
-            // Row 28: Other Accomplishments
-            self::put($sheet, "A{$currentRow}", "Other Accomplishments");
-            $sheet->getStyle("A{$currentRow}")->getFont()->setBold(true)->setSize(9.5);
-            $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-            $currentRow++;
-        } else {
-            $summaryStartRow = $currentRow;
-
-            // Formula Explanation Box (Cols A to C)
-            $sheet->mergeCells("A{$summaryStartRow}:C" . ($summaryStartRow + 2));
-            $weightText = "Formula Weights:\nCore Function (" . ($coreW * 100) . "%) + Strategic Function (" . ($stratW * 100) . "%) + Support Functions (" . ($suppW * 100) . "%).\nValidated against standard Civil Service Commission SPMS Guidelines.";
-            self::put($sheet, "A{$summaryStartRow}", $weightText);
-            $sheet->getStyle("A{$summaryStartRow}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
-            $sheet->getStyle("A{$summaryStartRow}")->getFont()->setSize(8.5)->setItalic(true);
-            $sheet->getStyle("A{$summaryStartRow}:C" . ($summaryStartRow + 2))->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F8FAFC');
-            $sheet->getStyle("A{$summaryStartRow}:C" . ($summaryStartRow + 2))->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
-
-            // Category Breakdown Rows (Cols D to H)
-            $cats = ['core' => 'CORE FUNCTION', 'strategic' => 'STRATEGIC FUNCTION', 'support' => 'SUPPORT FUNCTIONS'];
-            $idx = 0;
-            $subtotalRowRefs = [];
-
-            foreach ($cats as $k => $cName) {
-                $r = $summaryStartRow + $idx;
-                $range = $categoryRowRanges[$k];
-
-                $sheet->mergeCells("D{$r}:E{$r}");
-                self::put($sheet, "D{$r}", $cName);
-                $sheet->getStyle("D{$r}")->getFont()->setBold(true)->setSize(9);
-
-                self::put($sheet, "F{$r}", "× " . number_format($range['weight'], 2));
-                $sheet->getStyle("F{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-                // Ave score: =IFERROR(AVERAGE(G{start}:G{end}), 0)
-                $sheet->setCellValue("G{$r}", "=IFERROR(AVERAGE(G{$range['start']}:G{$range['end']}), 0)");
-                $sheet->getStyle("G{$r}")->getNumberFormat()->setFormatCode('0.000');
-                $sheet->getStyle("G{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-
-                // Weighted Subtotal: =G{r} * weight
-                $sheet->setCellValue("H{$r}", "=G{$r} * {$range['weight']}");
-                $sheet->getStyle("H{$r}")->getNumberFormat()->setFormatCode('0.000');
-                $sheet->getStyle("H{$r}")->getFont()->setBold(true);
-                $sheet->getStyle("H{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-
-                $subtotalRowRefs[] = "H{$r}";
-                $sheet->getStyle("D{$r}:H{$r}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-                $idx++;
-            }
-
-            $currentRow = $summaryStartRow + 3;
-
-            // Dark Navy Final Average Rating Bar
-            $sheet->mergeCells("A{$currentRow}:D{$currentRow}");
-            self::put($sheet, "A{$currentRow}", "FINAL AVERAGE RATING");
-            $sheet->getStyle("A{$currentRow}")->getFont()->setBold(true)->setSize(10)->getColor()->setRGB('FFFFFF');
-            $sheet->getStyle("A{$currentRow}")->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
-
-            // Grand Total Formula: =SUM(H{r1}, H{r2}, H{r3})
-            $sheet->mergeCells("E{$currentRow}:G{$currentRow}");
-            $sheet->setCellValue("E{$currentRow}", "=SUM(" . implode(',', $subtotalRowRefs) . ")");
-            $sheet->getStyle("E{$currentRow}")->getFont()->setBold(true)->setSize(14)->getColor()->setRGB('38BDF8'); // Cyan bold
-            $sheet->getStyle("E{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
-            $sheet->getStyle("E{$currentRow}")->getNumberFormat()->setFormatCode('0.000');
-
-            // Adjectival Rating Formula
-            $sheet->setCellValue("H{$currentRow}", "=IF(E{$currentRow}>=4.5,\"OUTSTANDING\",IF(E{$currentRow}>=3.5,\"VERY SATISFACTORY\",IF(E{$currentRow}>=2.5,\"SATISFACTORY\",IF(E{$currentRow}>=1.5,\"UNSATISFACTORY\",\"POOR\"))))");
-            $sheet->getStyle("H{$currentRow}")->getFont()->setBold(true)->setSize(9)->getColor()->setRGB('FFFFFF');
-            $sheet->getStyle("H{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
-
-            $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('0A192F');
-            $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_MEDIUM);
-            $sheet->getRowDimension($currentRow)->setRowHeight(28);
-
-            $currentRow++;
-        }
-
-        // ---------------------------------------------------------------------
-        // 9. PMT & DEAN REMARKS BOX
-        // ---------------------------------------------------------------------
-        $remarksTitle = ($isDpcr || (!$isOpcr && !$isIperf)) 
-            ? "Remarks/Suggestions/Recommendations on Ratee's Performance:"
-            : "Performance Management Team (PMT) & Dean Remarks / Recommendations:";
-
-        $sheet->mergeCells("A{$currentRow}:{$lastCol}{$currentRow}");
-        self::put($sheet, "A{$currentRow}", $remarksTitle);
-        $sheet->getStyle("A{$currentRow}")->getFont()->setBold(true)->setSize(8.5);
-        $sheet->getStyle("A{$currentRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F8FAFC');
-
-        $currentRow++;
-        $sheet->mergeCells("A{$currentRow}:{$lastCol}" . ($currentRow + 1));
-        $pmtRemarks = $formData['pmtRemarks'] ?? '';
-        self::put($sheet, "A{$currentRow}", $pmtRemarks ?: '(No additional remarks recorded.)');
-        $sheet->getStyle("A{$currentRow}")->getFont()->setItalic(true)->setSize(9)->getColor()->setRGB('334155');
-        $sheet->getStyle("A{$currentRow}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
-        $sheet->getStyle("A" . ($currentRow - 1) . ":{$lastCol}" . ($currentRow + 1))->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
-
-        $currentRow += 2;
-
-        // ---------------------------------------------------------------------
-        // 10. INSTITUTIONAL SIGNATORIES BLOCK
-        // ---------------------------------------------------------------------
-        $sigRatee = $formData['signatories']['ratee'] ?? $rateeName;
-        $sigRateeDate = $formData['signatories']['rateeDate'] ?? $rateeSignDate;
-
-        $sigDean = $formData['signatories']['dean'] ?? $approverName;
-        $sigDeanDate = $formData['signatories']['deanDate'] ?? $approverDate;
-
-        $sigVp = $formData['signatories']['vp'] ?? '';
-        $sigVpDate = $formData['signatories']['vpDate'] ?? '';
-
-        if ($isOpcr) {
-            // 3-Column Signatories for OPCR (Vice President)
-            $sheet->mergeCells("A{$currentRow}:C{$currentRow}");
-            self::put($sheet, "A{$currentRow}", "Discussed with (Vice President / Ratee):");
-
-            $sheet->mergeCells("D{$currentRow}:G{$currentRow}");
-            self::put($sheet, "D{$currentRow}", "Assessed by (University President / PMT Chair):");
-
-            $sheet->mergeCells("H{$currentRow}:J{$currentRow}");
-            self::put($sheet, "H{$currentRow}", "Final Approval (University President):");
-
-            $sheet->getStyle("A{$currentRow}:J{$currentRow}")->getFont()->setBold(true)->setSize(8.5)->getColor()->setRGB('475569');
-            $sheet->getStyle("A{$currentRow}:J{$currentRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FFF2CC');
-
-            $currentRow++;
-            $sigRowStart = $currentRow;
-
-            $sheet->mergeCells("A{$currentRow}:C" . ($currentRow + 1));
-            self::put($sheet, "A{$currentRow}", "\n\n____________________________________\n" . ($sigRatee ?: 'Ratee Signature') . "\nVice President\nDate: " . ($sigRateeDate ?: '_____________'));
-
-            $sheet->mergeCells("D{$currentRow}:G" . ($currentRow + 1));
-            self::put($sheet, "D{$currentRow}", "\n\n____________________________________\n" . ($sigDean ?: 'PMT Chair Signature') . "\nUniversity President / PMT Chair\nDate: " . ($sigDeanDate ?: '_____________'));
-
-            $sheet->mergeCells("H{$currentRow}:J" . ($currentRow + 1));
-            self::put($sheet, "H{$currentRow}", "\n\n____________________________________\n" . ($sigVp ?: 'Approving Authority Signature') . "\nUniversity President\nDate: " . ($sigVpDate ?: '_____________'));
-
-            $sheet->getStyle("A{$sigRowStart}:J" . ($currentRow + 1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER)->setWrapText(true);
-            $sheet->getStyle("A{$sigRowStart}:J" . ($currentRow + 1))->getFont()->setSize(8.5);
-            $sheet->getStyle("A" . ($sigRowStart - 1) . ":C" . ($currentRow + 1))->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
-            $sheet->getStyle("D" . ($sigRowStart - 1) . ":G" . ($currentRow + 1))->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
-            $sheet->getStyle("H" . ($sigRowStart - 1) . ":J" . ($currentRow + 1))->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
-
-            $sheet->getRowDimension($sigRowStart)->setRowHeight(40);
-            $sheet->getRowDimension($sigRowStart + 1)->setRowHeight(40);
-        } elseif (!$isDpcr && !$isIperf) {
-            // Institutional 2-Column Signatories for IPCR (Exact Excel Spreadsheet Layout)
-            $sheet->mergeCells("A{$currentRow}:C{$currentRow}");
-            self::put($sheet, "A{$currentRow}", "Name and Signature of Ratee: " . ($sigRatee ?: '(name here)'));
-            $sheet->mergeCells("D{$currentRow}:H{$currentRow}");
-            self::put($sheet, "D{$currentRow}", "Final Rating by: " . ($sigDean ?: '(name of office head)'));
-            $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getFont()->setSize(9);
-
-            $currentRow++;
-            $sheet->mergeCells("A{$currentRow}:C{$currentRow}");
-            self::put($sheet, "A{$currentRow}", "Position: " . ($rateePos ?: '(position here)'));
-            $sheet->mergeCells("D{$currentRow}:H{$currentRow}");
-            self::put($sheet, "D{$currentRow}", "Position: " . ($approverPos ?: '(position of office head)'));
-            $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getFont()->setSize(9);
-
-            $currentRow++;
-            $sheet->mergeCells("A{$currentRow}:C{$currentRow}");
-            self::put($sheet, "A{$currentRow}", "Date: " . ($sigRateeDate ?: ''));
-            $sheet->mergeCells("D{$currentRow}:H{$currentRow}");
-            self::put($sheet, "D{$currentRow}", "Date: " . ($sigDeanDate ?: ''));
-            $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getFont()->setSize(9);
-        } elseif ($isDpcr) {
-            // 2-Column Institutional Signatories for DPCR
-            $sheet->mergeCells("A{$currentRow}:D{$currentRow}");
-            self::put($sheet, "A{$currentRow}", "Name and Signature of Ratee:");
-
-            $sheet->mergeCells("E{$currentRow}:H{$currentRow}");
-            self::put($sheet, "E{$currentRow}", "Final Rating by:");
-
-            $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getFont()->setBold(true)->setSize(8.5)->getColor()->setRGB('000000');
-            $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F1F5F9');
-
-            $currentRow++;
-            $sigRowStart = $currentRow;
-
-            $sheet->mergeCells("A{$currentRow}:D" . ($currentRow + 1));
-            self::put($sheet, "A{$currentRow}", "\n\n____________________________________\n" . ($sigRatee ?: 'Ratee Signature') . "\nPosition: " . ($rateePos ?: '—') . "\nDate: " . ($sigRateeDate ?: '_____________'));
-
-            $sheet->mergeCells("E{$currentRow}:H" . ($currentRow + 1));
-            self::put($sheet, "E{$currentRow}", "\n\n____________________________________\n" . ($sigDean ?: 'Office Head Signature') . "\nPosition: " . ($approverPos ?: '—') . "\nDate: " . ($sigDeanDate ?: '_____________'));
-
-            $sheet->getStyle("A{$sigRowStart}:H" . ($currentRow + 1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER)->setWrapText(true);
-            $sheet->getStyle("A{$sigRowStart}:H" . ($currentRow + 1))->getFont()->setSize(8.5);
-            $sheet->getStyle("A" . ($sigRowStart - 1) . ":D" . ($currentRow + 1))->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
-            $sheet->getStyle("E" . ($sigRowStart - 1) . ":H" . ($currentRow + 1))->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
-
-            $sheet->getRowDimension($sigRowStart)->setRowHeight(40);
-            $sheet->getRowDimension($sigRowStart + 1)->setRowHeight(40);
-        } else {
-            // 3-Column Signatories for OPCR / IPERF
-            $sheet->mergeCells("A{$currentRow}:C{$currentRow}");
-            self::put($sheet, "A{$currentRow}", "Discussed with ({$rateeRoleLabel}):");
-
-            $sheet->mergeCells("D{$currentRow}:F{$currentRow}");
-            self::put($sheet, "D{$currentRow}", "Assessed by (Supervisor / Dean):");
-
-            $sheet->mergeCells("G{$currentRow}:H{$currentRow}");
-            self::put($sheet, "G{$currentRow}", "Final Approval (PMT / VP / President):");
-
-            $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getFont()->setBold(true)->setSize(8.5)->getColor()->setRGB('475569');
-            $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F1F5F9');
-
-            $currentRow++;
-            $sigRowStart = $currentRow;
-
-            $sheet->mergeCells("A{$currentRow}:C" . ($currentRow + 1));
-            self::put($sheet, "A{$currentRow}", "\n\n____________________________________\n" . ($sigRatee ?: 'Ratee Signature') . "\n{$rateeRoleLabel}\nDate: " . ($sigRateeDate ?: '_____________'));
-
-            $sheet->mergeCells("D{$currentRow}:F" . ($currentRow + 1));
-            self::put($sheet, "D{$currentRow}", "\n\n____________________________________\n" . ($sigDean ?: 'Supervisor Signature') . "\nCollege Dean / Immediate Supervisor\nDate: " . ($sigDeanDate ?: '_____________'));
-
-            $sheet->mergeCells("G{$currentRow}:H" . ($currentRow + 1));
-            self::put($sheet, "G{$currentRow}", "\n\n____________________________________\n" . ($sigVp ?: 'Approving Authority Signature') . "\nVice President / PMT Chair / President\nDate: " . ($sigVpDate ?: '_____________'));
-
-            $sheet->getStyle("A{$sigRowStart}:H" . ($currentRow + 1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER)->setWrapText(true);
-            $sheet->getStyle("A{$sigRowStart}:H" . ($currentRow + 1))->getFont()->setSize(8.5);
-            $sheet->getStyle("A" . ($sigRowStart - 1) . ":C" . ($currentRow + 1))->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
-            $sheet->getStyle("D" . ($sigRowStart - 1) . ":F" . ($currentRow + 1))->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
-            $sheet->getStyle("G" . ($sigRowStart - 1) . ":H" . ($currentRow + 1))->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
-
-            $sheet->getRowDimension($sigRowStart)->setRowHeight(40);
-            $sheet->getRowDimension($sigRowStart + 1)->setRowHeight(40);
-        }
-
-        // ---------------------------------------------------------------------
-        // 11. STREAM OUTPUT (.xlsx Download)
-        // ---------------------------------------------------------------------
+        $rateeName = self::rateeName($formData, $ownerInfo);
         $sanitizedName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $rateeName ?: 'Employee');
-        $sanitizedDocType = preg_replace('/[^A-Za-z0-9_\-]/', '_', $docTypeUpper);
-        $fileName = "{$sanitizedDocType}_{$sanitizedName}_" . date('Ymd') . ".xlsx";
+        $fileName = "{$type}_{$sanitizedName}_" . date('Ymd') . '.xlsx';
 
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment; filename="' . $fileName . '"');
         header('Cache-Control: max-age=0');
         header('Pragma: public');
-        self::applyProtection($spreadsheet, $sheet);
+        self::applyProtection($spreadsheet, $spreadsheet->getActiveSheet());
 
         $writer = new Xlsx($spreadsheet);
         $writer->save('php://output');
         exit;
     }
 
-    /**
-     * Generate spreadsheet for CSC IPERF (Individual Performance Evaluation Rating Form for COS & Job Order)
-     */
-    private static function exportIperf(Spreadsheet $spreadsheet, array $formData, array $doc, array $ownerInfo, ?array $superiorInfo = null): void
+    /** IPCR, DPCR, OPCR or IPERF, decided as the form does (app/Views/document/show.php). */
+    private static function formType(array $doc, array $formData): string
     {
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('IPERF - COS & JO');
+        $tabType = strtolower(trim((string) ($formData['doc_type'] ?? '')));
+        $ownerType = strtolower((string) ($doc['doc_type'] ?? '') ?: ($tabType ?: 'ipcr'));
+        $titles = strtoupper(trim((string) ($doc['title'] ?? ''))) . ' ' . strtoupper(trim((string) ($formData['title'] ?? '')));
+        $noStoredType = empty($doc['doc_type']) && $tabType === '';
+        $ownerFormType = '';
+        if ($noStoredType && !empty($doc['owner_id'])) {
+            $owner = (new \App\Models\UserModel())->find($doc['owner_id']);
+            $ownerFormType = strtoupper((string) ($owner['doc_type'] ?? '')) ?: \App\Libraries\OrgStructure::instance()->defaultDocTypeFor((int) $doc['owner_id']);
+        }
+        $stored = strtoupper((string) ($doc['doc_type'] ?? ''));
+        $trueOpcr = $tabType === 'opcr' || str_contains($titles, 'OPCR') || str_contains($titles, 'OFFICE') || $stored === 'OPCR';
+        $trueDpcr = $tabType === 'dpcr' || str_contains($titles, 'DPCR') || str_contains($titles, 'DIVISION') || str_contains($titles, 'DEPARTMENT') || $stored === 'DPCR';
+        if ($ownerType === 'dpcr' || $trueDpcr || ($noStoredType && $ownerFormType === 'DPCR')) return 'DPCR';
+        if ($trueOpcr || ($noStoredType && $ownerFormType === 'OPCR')) return 'OPCR';
+        if ($ownerType === 'iperf' || $tabType === 'iperf' || stripos($titles, 'iperf') !== false || ($noStoredType && $ownerFormType === 'IPERF')) return 'IPERF';
+        return 'IPCR';
+    }
 
+    private static function pageSetup(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet): void
+    {
         $sheet->getPageSetup()->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
         $sheet->getPageSetup()->setPaperSize(PageSetup::PAPERSIZE_LETTER);
         $sheet->getPageSetup()->setFitToWidth(1);
         $sheet->getPageSetup()->setFitToHeight(0);
         $sheet->setShowGridLines(true);
+        $sheet->getPageMargins()->setTop(0.5)->setRight(0.4)->setBottom(0.5)->setLeft(0.4);
+    }
 
-        $sheet->getPageMargins()->setTop(0.5);
-        $sheet->getPageMargins()->setRight(0.4);
-        $sheet->getPageMargins()->setBottom(0.5);
-        $sheet->getPageMargins()->setLeft(0.4);
+    /** A saved value, unless it is blank (the screen treats "" and "   " as not set). */
+    private static function filled($value): ?string
+    {
+        $value = is_scalar($value) ? trim((string) $value) : '';
+        return $value === '' ? null : $value;
+    }
 
-        // Columns A to H Widths (Exact match for 8-column layout)
-        $sheet->getColumnDimension('A')->setWidth(28); // OFFICE PPA
-        $sheet->getColumnDimension('B')->setWidth(28); // EXPECTED OUTPUTS
-        $sheet->getColumnDimension('C')->setWidth(28); // ACTUAL ACCOMPLISHMENTS
-        $sheet->getColumnDimension('D')->setWidth(6.5); // Q
-        $sheet->getColumnDimension('E')->setWidth(6.5); // T
-        $sheet->getColumnDimension('F')->setWidth(6.5); // E
-        $sheet->getColumnDimension('G')->setWidth(9.5); // Ave.
-        $sheet->getColumnDimension('H')->setWidth(20);  // REMARKS
+    private static function rateeName(array $fd, array $ownerInfo): string
+    {
+        return self::filled($fd['ratee']['name'] ?? null) ?? (string) ($ownerInfo['name'] ?? '');
+    }
 
-        $spreadsheet->getDefaultStyle()->getFont()->setName('Arial')->setSize(9.5);
+    /** The title on screen: the saved one, unless it belongs to another form type. */
+    private static function formTitle(string $type, array $fd): string
+    {
+        $defaults = [
+            'IPCR'  => 'INDIVIDUAL PERFORMANCE COMMITMENT AND REVIEW',
+            'DPCR'  => 'DEPARTMENT PERFORMANCE COMMITMENT AND REVIEW (DPCR)',
+            'OPCR'  => 'OFFICE PERFORMANCE COMMITMENT AND REVIEW (OPCR)',
+            'IPERF' => 'INDIVIDUAL PERFORMANCE EVALUATION RATING FORM FOR CONTRACT OF SERVICE AND JOB ORDER PERSONNEL',
+        ];
+        $title = (string) ($fd['title'] ?? '');
+        $foreign = ['IPCR' => [], 'DPCR' => ['IPCR', 'OPCR', 'Division Performance'], 'OPCR' => ['IPCR', 'DPCR', 'Faculty / Professors'], 'IPERF' => ['IPCR', 'DPCR', 'OPCR']][$type];
+        foreach ($foreign as $word) if (str_contains($title, $word)) $title = '';
+        if (str_contains($title, 'Faculty / Professors') || str_contains($title, 'IPCR Form')) $title = '';
+        return $title !== '' ? $title : $defaults[$type];
+    }
 
-        // 1. Institutional Header
-        $sheet->mergeCells('A1:H1');
-        self::put($sheet, 'A1', 'Republic of the Philippines');
+    /** The rating period on screen: the saved one, else the cycle's (ownerInfo period). */
+    private static function period(array $fd, array $ownerInfo): string
+    {
+        $saved = (string) ($fd['ratee']['period'] ?? '');
+        if (str_starts_with(strtolower($saved), 'untitled evaluation')) $saved = '';
+        return $saved !== '' ? $saved : (string) ($ownerInfo['period'] ?? '');
+    }
+
+    /** The approvers on screen: the saved ones, else the default approvers, else one blank. */
+    private static function approvers(array $fd, array $defaults): array
+    {
+        $list = [];
+        if (!empty($fd['approvers']) && is_array($fd['approvers'])) {
+            foreach ($fd['approvers'] as $a) if (is_array($a) && self::filled($a['name'] ?? null) !== null) { $list = $fd['approvers']; break; }
+        } elseif (self::filled($fd['approver']['name'] ?? null) !== null) {
+            $list = [$fd['approver']];
+        } elseif (self::filled($fd['signatories']['dean'] ?? null) !== null) {
+            $list = [['name' => $fd['signatories']['dean'], 'position' => $fd['signatories']['deanPos'] ?? '',
+                      'date' => $fd['signatories']['deanDate'] ?? '', 'evalDate' => $fd['signatories']['deanDate'] ?? '']];
+        }
+        if (!$list) $list = $defaults['supervisors'] ?? [];
+        if (!$list) $list = [['name' => '', 'position' => '', 'date' => '', 'evalDate' => '']];
+        return array_values(array_map(fn($a) => [
+            'name' => (string) ($a['name'] ?? ''), 'position' => (string) ($a['position'] ?? ''),
+            'date' => (string) ($a['date'] ?? ''), 'evalDate' => (string) ($a['evalDate'] ?? ''),
+        ], array_filter($list, 'is_array')));
+    }
+
+    /** Core / strategic / support weights as fractions (null = not set): the saved ones, else the default weights. */
+    private static function weights(string $type, array $fd, array $defaults): array
+    {
+        $w = [];
+        foreach (['core', 'strategic', 'support'] as $k) {
+            $v = $fd['weights'][$k] ?? null;
+            $w[$k] = ($v === null || $v === '') ? null : (float) $v;
+        }
+        $sys = $defaults['weights'][$type] ?? null;
+        if (in_array(null, $w, true) && $sys && isset($sys['core_fraction'])) {
+            $w = ['core' => (float) $sys['core_fraction'], 'strategic' => (float) $sys['strategic_fraction'], 'support' => (float) $sys['support_fraction']];
+        }
+        return $w;
+    }
+
+    /** A score as on screen: 1 to 5, "N/A" for a dimension marked not applicable, else blank. */
+    private static function score($v)
+    {
+        $s = is_scalar($v) ? strtoupper(trim((string) $v)) : '';
+        if ($s === 'X' || $s === 'N/A') return 'N/A';
+        if ($s === '' || !preg_match('/^-?\d+/', $s)) return null;
+        $n = (int) $s;
+        return ($n >= 1 && $n <= 5) ? $n : null;
+    }
+
+    private static function rich(array $runs): \PhpOffice\PhpSpreadsheet\RichText\RichText
+    {
+        $rt = new \PhpOffice\PhpSpreadsheet\RichText\RichText();
+        foreach ($runs as [$text, $style]) {
+            $font = $rt->createTextRun($text)->getFont();
+            $font->setName('Arial')->setSize($style['size'] ?? 9.5)->setBold(!empty($style['bold']))->setItalic(!empty($style['italic']));
+            $font->getColor()->setRGB($style['color'] ?? '0F172A');
+        }
+        return $rt;
+    }
+
+    private static function merge(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, string $range, $value = null): void
+    {
+        if (str_contains($range, ':')) {
+            [$a, $b] = explode(':', $range);
+            if ($a !== $b) $sheet->mergeCells($range);
+        }
+        if ($value !== null) {
+            $first = explode(':', $range)[0];
+            $value instanceof \PhpOffice\PhpSpreadsheet\RichText\RichText ? $sheet->setCellValue($first, $value) : self::put($sheet, $first, $value);
+        }
+    }
+
+    /**
+     * Rows tall enough for $text in the merged block $fromCol..$toCol x $rowFrom..$rowTo: Excel sizes a row to its
+     * wrapped text, but never for merged cells. $lines adds fixed line breaks; ~1.15 characters per width unit at 9.5pt.
+     */
+    private static function fit(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, string $fromCol, string $toCol, int $rowFrom, int $rowTo, string $text, float $lineHeight = 12.5): void
+    {
+        $width = 0.0;
+        for ($c = $fromCol; ; $c++) { $width += $sheet->getColumnDimension($c)->getWidth(); if ($c === $toCol) break; }
+        $perLine = max(10, $width * 1.15);
+        $lines = 0;
+        foreach (explode("\n", $text) as $part) $lines += max(1, (int) ceil(mb_strlen($part) / $perLine));
+        $per = max(15, ($lines * $lineHeight + 4) / ($rowTo - $rowFrom + 1));
+        for ($r = $rowFrom; $r <= $rowTo; $r++) {
+            if ($sheet->getRowDimension($r)->getRowHeight() < $per) $sheet->getRowDimension($r)->setRowHeight($per);
+        }
+    }
+
+    private static function letterhead(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, string $last, string $office, string $title): void
+    {
+        self::merge($sheet, "A1:{$last}1", 'Republic of the Philippines');
         $sheet->getStyle('A1')->getFont()->setName('Bookman Old Style')->setSize(10)->setBold(true)->getColor()->setRGB('111827');
-        $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-        $sheet->mergeCells('A2:H2');
-        self::put($sheet, 'A2', 'Benguet State University');
+        self::merge($sheet, "A2:{$last}2", 'Benguet State University');
         $sheet->getStyle('A2')->getFont()->setName('Old English Text MT')->setSize(17)->getColor()->setRGB('436531');
-        $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getRowDimension(2)->setRowHeight(28);
-
-        $sheet->mergeCells('A3:H3');
-        self::put($sheet, 'A3', 'La Trinidad, 2601 Benguet');
+        self::merge($sheet, "A3:{$last}3", 'La Trinidad, 2601 Benguet');
         $sheet->getStyle('A3')->getFont()->setName('Bookman Old Style')->setSize(9.5)->setItalic(true)->getColor()->setRGB('1F2937');
-        $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getRowDimension(3)->setRowHeight(16);
+        self::merge($sheet, "A4:{$last}4", $office);
+        $sheet->getStyle('A4')->getFont()->setName('Monotype Corsiva')->setSize(14)->setItalic(true)->setBold(true)->getColor()->setRGB('111827');
+        $sheet->getRowDimension(4)->setRowHeight(20);
+        self::merge($sheet, "A5:{$last}5", $title);
+        $sheet->getStyle('A5')->getFont()->setSize(11)->setBold(true);
+        $sheet->getStyle('A5')->getAlignment()->setWrapText(true);
+        $sheet->getRowDimension(5)->setRowHeight(22);
+        $sheet->getStyle("A1:{$last}5")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+        self::addOfficialSeals($sheet, $last);
+    }
 
-        // Title & Subtitle
-        $sheet->mergeCells('A4:H4');
-        self::put($sheet, 'A4', 'INDIVIDUAL PERFORMANCE EVALUATION RATING FORM FOR CONTRACT OF SERVICE AND JOB ORDER PERSONNEL');
-        $sheet->getStyle('A4')->getFont()->setSize(11)->setBold(true);
-        $sheet->getStyle('A4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    /** IPCR, DPCR and OPCR: one layout, the columns per type as on screen (templates/ipcr.php, dpcr.php, opcr.php). */
+    private static function exportStandard(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, string $type, array $fd, array $ownerInfo, array $defaults): void
+    {
+        $wide = $type !== 'IPCR';   // DPCR and OPCR add Allotted Budget and the accountable column
+        $sheet->setTitle($type);
+        $C = $wide
+            ? ['mfo' => 'A', 'ind' => 'B', 'budget' => 'C', 'acc' => 'D', 'done' => 'E', 'q' => 'F', 't' => 'G', 'e' => 'H', 'ave' => 'I', 'rem' => 'J']
+            : ['mfo' => 'A', 'ind' => 'B', 'done' => 'C', 'q' => 'D', 't' => 'E', 'e' => 'F', 'ave' => 'G', 'rem' => 'H'];
+        $last = $C['rem'];
+        $widths = $wide ? ['A' => 24, 'B' => 28, 'C' => 15, 'D' => 18, 'E' => 24, 'F' => 6, 'G' => 6, 'H' => 6, 'I' => 8, 'J' => 20]
+                        : ['A' => 28, 'B' => 30, 'C' => 28, 'D' => 6, 'E' => 6, 'F' => 6, 'G' => 8, 'H' => 22];
+        foreach ($widths as $col => $w) $sheet->getColumnDimension($col)->setWidth($w);
+        // left and right halves for the header and signature blocks
+        $leftEnd = $wide ? 'D' : 'C';
+        $rightStart = $wide ? 'E' : 'D';
 
-        $sheet->mergeCells('A5:H5');
-        self::put($sheet, 'A5', '(attach rubrics for the rating of actual accomplishments vis-à-vis expected outputs)');
-        $sheet->getStyle('A5')->getFont()->setSize(8.5)->setItalic(true);
-        $sheet->getStyle('A5')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $defaultName = (string) ($ownerInfo['name'] ?? '');
+        $defaultPos = (string) ($ownerInfo['position'] ?? '');
+        $defaultDept = (string) ($ownerInfo['dept'] ?? '');
+        $rateeName = self::rateeName($fd, $ownerInfo);
+        $office = self::filled($fd['ratee']['dept'] ?? null) ?? ($defaultDept ?: 'Office of the University President');
+        self::letterhead($sheet, $last, $office, self::formTitle($type, $fd));
 
-        // Add BSU Seal (Left) and Bagong Pilipinas (Right)
-        self::addOfficialSeals($sheet, 'H');
+        // commitment sentence (meta/_meta_standard.php)
+        $roles = (!empty($fd['ratee']['roles']) && is_array($fd['ratee']['roles'])) ? $fd['ratee']['roles'] : ($ownerInfo['roles'] ?? []);
+        if ($roles && self::filled($fd['ratee']['position'] ?? null) !== null && empty($fd['ratee']['roles'])) {
+            $roles[0]['position'] = $fd['ratee']['position'];
+            if (self::filled($fd['ratee']['dept'] ?? null) !== null) $roles[0]['dept'] = $fd['ratee']['dept'];
+        }
+        if (!$roles) $roles = [['position' => self::filled($fd['ratee']['position'] ?? null) ?? $defaultPos, 'dept' => self::filled($fd['ratee']['dept'] ?? null) ?? $defaultDept]];
+        $blank = '____________';
+        $parts = [];
+        foreach (array_values($roles) as $i => $r) {
+            $p = (string) ($r['position'] ?? ($i === 0 ? $defaultPos : ''));
+            $d = (string) ($r['dept'] ?? ($i === 0 ? $defaultDept : ''));
+            $parts[] = ($p !== '' ? $p : $blank) . ' of the ' . ($d !== '' ? $d : $blank);
+        }
+        $rolesText = count($parts) <= 2 ? implode(', and ', $parts) : implode(', ', array_slice($parts, 0, -1)) . ', and ' . end($parts);
+        $period = self::period($fd, $ownerInfo);
+        $sentence = 'I, ' . ($rateeName !== '' ? $rateeName : $blank) . ', ' . $rolesText
+            . ', commit to deliver and agree to be rated on the attainment of the following targets in accordance with the indicated measure for the period '
+            . ($period !== '' ? $period : $blank) . '.';
+        self::merge($sheet, "A7:{$last}8", $sentence);
+        $sheet->getStyle('A7')->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_CENTER)->setHorizontal(Alignment::HORIZONTAL_JUSTIFY);
+        self::fit($sheet, 'A', $last, 7, 8, $sentence, 13);
 
-        // 2. 3-Row Metadata Matrix (Rows 6-8)
-        $rateeName = $formData['ratee']['name'] ?? ($ownerInfo['name'] ?? '');
-        $classification = $formData['classification'] ?? 'Contract of Service (COS)';
-        $rateePos = $formData['ratee']['position'] ?? ($ownerInfo['position'] ?? '');
-        $rateePeriod = $formData['ratee']['period'] ?? ($ownerInfo['period'] ?? '');
-        $rateeDept = $formData['ratee']['dept'] ?? ($ownerInfo['dept'] ?? '');
+        // Approved by (left) and the employee + rating scale (right)
+        $approvers = self::approvers($fd, $defaults);
+        $r = 10;
+        self::merge($sheet, "A{$r}:{$leftEnd}{$r}", 'APPROVED BY:');
+        $sheet->getStyle("A{$r}")->getFont()->setBold(true);
+        $r++;
+        foreach ($approvers as $i => $a) {
+            $nameRuns = [['Name: ', ['bold' => true]], [$a['name'], ['bold' => true]]];
+            if ($i === 0 && $wide) $nameRuns[] = ['   (may add signatories depending on position)', ['italic' => true, 'size' => 8, 'color' => '5F6F86']];
+            self::merge($sheet, "A{$r}:{$leftEnd}{$r}", self::rich($nameRuns)); $r++;
+            self::merge($sheet, "A{$r}:{$leftEnd}{$r}", self::rich([['Position: ', ['bold' => true]], [$a['position'], []]])); $r++;
+            self::merge($sheet, "A{$r}:{$leftEnd}{$r}", self::rich([['Date: ', ['bold' => true]], [$a['date'], []]])); $r++;
+            if ($i < count($approvers) - 1) $r++;
+        }
+        $leftBottom = $r - 1;
+        $rr = 10;
+        $signName = self::filled($fd['rateeSign']['name'] ?? null) ?? $defaultName;
+        $right = [
+            [$signName, ['bold' => true]],
+            ['Name of Employee', ['bold' => true, 'size' => 9, 'color' => '334155']],
+            ['Date: ' . (string) ($fd['rateeSign']['date'] ?? ''), ['size' => 9, 'color' => '334155']],
+            null,
+            ['Rating Scale:', ['bold' => true, 'size' => 9]],
+            ['5 – Outstanding', ['size' => 9, 'color' => '475569']],
+            ['4 – Very Satisfactory', ['size' => 9, 'color' => '475569']],
+            ['3 – Satisfactory', ['size' => 9, 'color' => '475569']],
+            ['2 – Unsatisfactory', ['size' => 9, 'color' => '475569']],
+            ['1 – Poor', ['size' => 9, 'color' => '475569']],
+        ];
+        foreach ($right as $line) {
+            if ($line !== null) self::merge($sheet, "{$rightStart}{$rr}:{$last}{$rr}", self::rich([$line]));
+            $rr++;
+        }
+        $r = max($leftBottom, $rr - 1) + 2;
 
-        // Row 6: Name & Classification
-        self::put($sheet, 'A6', 'Name of Employee:');
-        $sheet->mergeCells('B6:D6');
-        self::put($sheet, 'B6', $rateeName ?: 'indicate full name (First Name Middle Initial Last Name, Extension)');
-        self::put($sheet, 'E6', 'Classification:');
-        $sheet->mergeCells('F6:H6');
-        self::put($sheet, 'F6', $classification);
+        // table header (templates/*.php)
+        $currency = self::filled($fd['budget_currency'] ?? null) ?? self::filled($fd['currency'] ?? null) ?? '₱';
+        $heads = [
+            'IPCR' => ['mfo' => 'MAJOR FINAL OUTPUT', 'ind' => "SUCCESS INDICATORS\n(TARGETS + MEASURES)", 'done' => 'ACTUAL ACCOMPLISHMENTS', 'rating' => 'RATING', 'ave' => 'Ave.'],
+            'DPCR' => ['mfo' => 'PROGRAMS, PROJECTS, ACTIVITIES', 'ind' => "SUCCESS INDICATORS\n(TARGETS + MEASURES)", 'budget' => "ALLOTTED BUDGET\n({$currency})",
+                       'acc' => "INDIVIDUALS /\nOFFICES ACCOUNTABLE", 'done' => 'ACTUAL ACCOMPLISHMENTS', 'rating' => 'RATING', 'ave' => 'Ave.'],
+            'OPCR' => ['mfo' => "PROJECT/\nPROGRAM/\nACTIVITIES", 'ind' => "SUCCESS INDICATORS (TARGETS +\nMEASURES) PERFORMANCE", 'budget' => "ALLOTTED\nBUDGET\n({$currency})",
+                       'acc' => "DIVISIONS\nACCOUNTABLE", 'done' => 'ACTUAL ACCOMPLISHMENT', 'rating' => 'RATINGS', 'ave' => 'AVE'],
+        ][$type];
+        $h1 = $r; $h2 = $r + 1;
+        foreach (['mfo', 'ind', 'budget', 'acc', 'done'] as $k) if (isset($C[$k])) self::merge($sheet, "{$C[$k]}{$h1}:{$C[$k]}{$h2}", $heads[$k]);
+        self::merge($sheet, "{$C['q']}{$h1}:{$C['ave']}{$h1}", $heads['rating']);
+        self::put($sheet, "{$C['q']}{$h2}", 'Q');
+        self::put($sheet, "{$C['t']}{$h2}", 'T');
+        self::put($sheet, "{$C['e']}{$h2}", 'E');
+        self::put($sheet, "{$C['ave']}{$h2}", $heads['ave']);
+        self::merge($sheet, "{$C['rem']}{$h1}:{$C['rem']}{$h2}", 'REMARKS');
+        $hs = $sheet->getStyle("A{$h1}:{$last}{$h2}");
+        $hs->getFont()->setBold(true)->setSize(9);
+        $hs->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER)->setWrapText(true);
+        $hs->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F1F5F9');
+        $hs->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        $sheet->getRowDimension($h1)->setRowHeight($type === 'OPCR' ? 30 : 22);
+        $sheet->getPageSetup()->setRowsToRepeatAtTopByStartAndEnd($h1, $h2);
+        $r = $h2 + 1;
 
-        // Row 7: Position & Rating Period
-        self::put($sheet, 'A7', 'Position:');
-        $sheet->mergeCells('B7:D7');
-        self::put($sheet, 'B7', $rateePos ?: 'indicate the full position title specified in the contract/job order');
-        self::put($sheet, 'E7', 'Rating Period:');
-        $sheet->mergeCells('F7:H7');
-        self::put($sheet, 'F7', $rateePeriod ?: 'e.g., July - December 2024');
+        // function sections and rows (forms/_body_standard.php, renderScoreCellTdHtml, calculateCategory)
+        $w = self::weights($type, $fd, $defaults);
+        $names = ['core' => 'CORE FUNCTIONS', 'strategic' => 'STRATEGIC FUNCTIONS', 'support' => 'SUPPORT FUNCTIONS'];
+        $ranges = [];
+        foreach ($names as $cat => $label) {
+            $pct = ($w[$cat] !== null && $w[$cat] > 0) ? round($w[$cat] * 100) . '%' : ' ____ %';
+            self::merge($sheet, "A{$r}:{$last}{$r}", self::rich([
+                ["{$label} ({$pct})", ['bold' => true]],
+                ['   (depending on position/designation)', ['italic' => true, 'size' => 8, 'color' => '5F6F86']],
+            ]));
+            $sheet->getStyle("A{$r}:{$last}{$r}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F8FAFC');
+            $sheet->getStyle("A{$r}:{$last}{$r}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+            $sheet->getRowDimension($r)->setRowHeight(20);
+            $r++;
+            $rows = array_values(array_filter($fd['categories'][$cat] ?? [], 'is_array')) ?: [[]];
+            $start = $r;
+            foreach ($rows as $row) {
+                self::put($sheet, "{$C['mfo']}{$r}", (string) ($row['mfo'] ?? ''));
+                self::put($sheet, "{$C['ind']}{$r}", (string) ($row['indicators'] ?? ''));
+                if (isset($C['budget'])) {
+                    $b = trim((string) ($row['budget'] ?? ''));
+                    $cur = self::filled($row['budget_currency'] ?? null) ?? $currency;
+                    $num = str_replace([',', ' ', $cur], '', $b);
+                    if ($b !== '' && is_numeric($num)) {
+                        $sheet->setCellValue("{$C['budget']}{$r}", (float) $num);
+                        $sheet->getStyle("{$C['budget']}{$r}")->getNumberFormat()->setFormatCode('"' . str_replace('"', '', $cur) . ' "#,##0.00');
+                    } else {
+                        self::put($sheet, "{$C['budget']}{$r}", $b);
+                    }
+                }
+                if (isset($C['acc'])) self::put($sheet, "{$C['acc']}{$r}", (string) ($row['accountable'] ?? ''));
+                self::put($sheet, "{$C['done']}{$r}", (string) ($row['accomplishments'] ?? ''));
+                foreach (['q', 't', 'e'] as $d) {
+                    $s = self::score($row[$d] ?? null);
+                    if ($s !== null) self::put($sheet, "{$C[$d]}{$r}", $s);
+                }
+                $sheet->setCellValue("{$C['ave']}{$r}", "=IF(COUNT({$C['q']}{$r}:{$C['e']}{$r})>0,AVERAGE({$C['q']}{$r}:{$C['e']}{$r}),\"—\")");
+                self::put($sheet, "{$C['rem']}{$r}", (string) ($row['remarks'] ?? ''));
+                $sheet->getStyle("A{$r}:{$last}{$r}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
+                $sheet->getStyle("{$C['q']}{$r}:{$C['ave']}{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+                $sheet->getStyle("{$C['ave']}{$r}")->getNumberFormat()->setFormatCode('0.00');
+                $sheet->getStyle("{$C['ave']}{$r}")->getFont()->setBold(true);
+                $sheet->getStyle("A{$r}:{$last}{$r}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+                $r++;
+            }
+            $ranges[$cat] = "{$C['ave']}{$start}:{$C['ave']}" . ($r - 1);
+        }
 
-        // Row 8: Office
-        self::put($sheet, 'A8', 'Office:');
-        $sheet->mergeCells('B8:H8');
-        self::put($sheet, 'B8', $rateeDept ?: 'indicate in full the specific area of assignment');
+        // summary (forms/_summary_table.php): weights on the left, the breakdown and the final rating on the right
+        $s = $r;
+        [$boxEnd, $labelCols, $scoreCols, $noteCols] = $wide
+            ? ['B', ['C', 'D'], ['E', 'E'], ['F', 'J']]
+            : ['B', ['C', 'C'], ['D', 'F'], ['G', 'H']];
+        $allSet = $w['core'] && $w['strategic'] && $w['support'];
+        if ($allSet) {
+            $total = (int) round(($w['core'] + $w['strategic'] + $w['support']) * 100);
+            $formula = sprintf('Core Functions (%d%%) + Strategic Functions (%d%%) + Support Functions (%d%%).', round($w['core'] * 100), round($w['strategic'] * 100), round($w['support'] * 100));
+            $check = $total === 100 ? [' (Total: 100%)', ['bold' => true, 'color' => '10B981']] : [" Error: Total weight is {$total}% (Must equal 100% exactly)", ['bold' => true, 'color' => 'EF4444']];
+        } else {
+            $formula = 'Core Functions ( ____ %) + Strategic Functions ( ____ %) + Support Functions ( ____ %).';
+            $check = [' (Required: All category weights must be entered and total 100%)', ['bold' => true, 'color' => 'EF4444']];
+        }
+        self::merge($sheet, "A{$s}:{$boxEnd}" . ($s + 3), self::rich([
+            ["Formula Weights:\n", ['bold' => true, 'size' => 8.5, 'color' => '64748B']],
+            [$formula, ['size' => 9.5, 'color' => '334155']], $check,
+            ["\n\nValidated against standard Civil Service Commission SPMS Guidelines.", ['italic' => true, 'size' => 8.5, 'color' => '94A3B8']],
+        ]));
+        $sheet->getStyle("A{$s}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
+        self::fit($sheet, 'A', $boxEnd, $s, $s + 3, "Formula Weights:\n{$formula}{$check[0]}\n\nValidated against standard Civil Service Commission SPMS Guidelines.");
+        $sheet->getStyle("A{$s}:{$boxEnd}" . ($s + 3))->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FAFAFA');
+        $sheet->getStyle("A{$s}:{$boxEnd}" . ($s + 3))->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
 
-        // Styles for metadata matrix
-        $sheet->getStyle('A6:H8')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-        $sheet->getStyle('A6:A8')->getFont()->setBold(true)->setSize(9);
-        $sheet->getStyle('E6:E7')->getFont()->setBold(true)->setSize(9);
-        $sheet->getStyle('A6:A8')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FAFAFA');
-        $sheet->getStyle('E6:E7')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FAFAFA');
-        $sheet->getStyle('B6:H8')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
-        $sheet->getStyle('B6')->getFont()->setBold(true)->getColor()->setRGB('BA372A');
-        $sheet->getStyle('F6')->getFont()->setBold(true);
-        $sheet->getStyle('B7')->getFont()->getColor()->setRGB('BA372A');
-        $sheet->getStyle('F7')->getFont()->setBold(true);
-        $sheet->getStyle('B8')->getFont()->getColor()->setRGB('BA372A');
+        $lines = ['core' => 'CORE FUNCTION', 'strategic' => 'STRATEGIC FUNCTION', 'support' => 'SUPPORT FUNCTIONS'];
+        $scoreCells = [];
+        $i = 0;
+        foreach ($lines as $cat => $label) {
+            $row = $s + $i++;
+            $weight = $w[$cat] ?? 0.0;
+            $mult = $w[$cat] !== null ? number_format($w[$cat], 2) : '—';
+            self::merge($sheet, "{$labelCols[0]}{$row}:{$labelCols[1]}{$row}", $label);
+            $sheet->getStyle("{$labelCols[0]}{$row}")->getFont()->setBold(true)->setSize(9);
+            $score = "{$scoreCols[0]}{$row}";
+            self::merge($sheet, "{$scoreCols[0]}{$row}:{$scoreCols[1]}{$row}");
+            $sheet->setCellValue($score, "=IFERROR(AVERAGE({$ranges[$cat]}),0)*" . (float) $weight);
+            $sheet->getStyle($score)->getNumberFormat()->setFormatCode('0.000');
+            $sheet->getStyle($score)->getFont()->setBold(true)->setSize(11)->getColor()->setRGB(['core' => '047857', 'strategic' => '0284C7', 'support' => 'D97706'][$cat]);
+            self::merge($sheet, "{$noteCols[0]}{$row}:{$noteCols[1]}{$row}");
+            $sheet->setCellValue("{$noteCols[0]}{$row}", "=\"(Average: \"&TEXT(IFERROR(AVERAGE({$ranges[$cat]}),0),\"0.000\")&\" × {$mult})\"");
+            $sheet->getStyle("{$noteCols[0]}{$row}")->getFont()->setSize(9)->getColor()->setRGB('64748B');
+            $sheet->getStyle("{$noteCols[0]}{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle("{$labelCols[0]}{$row}:{$last}{$row}")->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN);
+            $scoreCells[$cat] = $score;
+        }
+        $fr = $s + 3;
+        self::merge($sheet, "{$labelCols[0]}{$fr}:{$labelCols[1]}{$fr}", 'FINAL AVERAGE RATING');
+        $sheet->getStyle("{$labelCols[0]}{$fr}")->getFont()->setBold(true)->setSize(9.5)->getColor()->setRGB('E2E8F0');
+        $grand = "{$scoreCols[0]}{$fr}";
+        self::merge($sheet, "{$scoreCols[0]}{$fr}:{$scoreCols[1]}{$fr}");
+        $sheet->setCellValue($grand, '=' . implode('+', $scoreCells));
+        $sheet->getStyle($grand)->getNumberFormat()->setFormatCode('0.000');
+        $sheet->getStyle($grand)->getFont()->setBold(true)->setSize(16)->getColor()->setRGB('FBBF24');
+        $rated = 'COUNT(' . implode(',', $ranges) . ')';
+        self::merge($sheet, "{$noteCols[0]}{$fr}:{$noteCols[1]}{$fr}");
+        $sheet->setCellValue("{$noteCols[0]}{$fr}", "=IF({$rated}=0,\"PENDING EVALUATION\",IF({$grand}>=4.5,\"OUTSTANDING\",IF({$grand}>=3.5,\"VERY SATISFACTORY\",IF({$grand}>=2.5,\"SATISFACTORY\",IF({$grand}>=1.5,\"UNSATISFACTORY\",\"POOR\")))))"
+            . "&CHAR(10)&\"(Core \"&TEXT({$scoreCells['core']},\"0.000\")&\" + Strategic \"&TEXT({$scoreCells['strategic']},\"0.000\")&\" + Support \"&TEXT({$scoreCells['support']},\"0.000\")&\")\"");
+        $sheet->getStyle("{$noteCols[0]}{$fr}")->getFont()->setBold(true)->setSize(9)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle("{$noteCols[0]}{$fr}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT)->setWrapText(true);
+        $sheet->getStyle("{$labelCols[0]}{$fr}:{$last}{$fr}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('062316');
+        $sheet->getStyle("{$labelCols[0]}{$fr}:{$last}{$fr}")->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->getRowDimension($fr)->setRowHeight(30);
+        self::fit($sheet, $noteCols[0], $noteCols[1], $fr, $fr, "VERY SATISFACTORY\n(Core 0.000 + Strategic 0.000 + Support 0.000)", 13);
+        $sheet->getStyle("{$labelCols[0]}{$s}:{$last}{$fr}")->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
+        $sheet->getStyle("A{$s}:{$last}{$fr}")->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
+        $r = $fr + 1;
 
-        // 3. Table Headers (Rows 10-11)
-        $sheet->mergeCells('A10:A11');
-        self::put($sheet, 'A10', "OFFICE PPA\n(PROGRAMS, PROJECTS, ACTIVITIES)\n(aligned with the deliverables of the office)");
+        // remarks box (layout/_remarks_box.php)
+        self::merge($sheet, "A{$r}:{$last}{$r}", "Remarks/Suggestions/Recommendations on Ratee's Performance:");
+        $sheet->getStyle("A{$r}")->getFont()->setBold(true)->setSize(9.5);
+        self::merge($sheet, "A" . ($r + 1) . ":{$last}" . ($r + 2), (string) ($fd['pmtRemarks'] ?? ''));
+        $sheet->getStyle("A" . ($r + 1))->getFont()->setItalic(true)->setSize(9.5);
+        $sheet->getStyle("A" . ($r + 1))->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
+        self::fit($sheet, 'A', $last, $r + 1, $r + 2, (string) ($fd['pmtRemarks'] ?? ''));
+        $sheet->getStyle("A{$r}:{$last}" . ($r + 2))->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
+        $r += 4;
 
-        $sheet->mergeCells('B10:B11');
-        self::put($sheet, 'B10', "EXPECTED OUTPUTS\n(based on contract or duties and responsibilities in the request to hire personnel)");
-
-        $sheet->mergeCells('C10:C11');
-        self::put($sheet, 'C10', "ACTUAL ACCOMPLISHMENTS");
-
-        $sheet->mergeCells('D10:G10');
-        self::put($sheet, 'D10', "RATING");
-
-        self::put($sheet, 'D11', 'Q');
-        self::put($sheet, 'E11', 'T');
-        self::put($sheet, 'F11', 'E');
-        self::put($sheet, 'G11', 'Ave.');
-
-        $sheet->mergeCells('H10:H11');
-        self::put($sheet, 'H10', "REMARKS");
-
-        $sheet->getStyle('A10:H11')->getFont()->setBold(true)->setSize(9);
-        $sheet->getStyle('A10:H11')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER)->setWrapText(true);
-        $sheet->getStyle('A10:H11')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F1F5F9');
-        $sheet->getStyle('A10:H11')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-
-        $sheet->getPageSetup()->setRowsToRepeatAtTopByStartAndEnd(10, 11);
-
-        // 4. Flat Deliverable Rows (Rows 12+)
-        $currentRow = 12;
-        $items = $formData['categories']['core'] ?? [];
-        if (empty($items)) {
-            $items = [
-                ['mfo' => '', 'indicators' => '', 'accomplishments' => '', 'q' => '', 't' => '', 'e' => '', 'remarks' => '']
+        // signatories (signatures/_signatures_standard.php): the ratee left, "Final Rating by" per approver right
+        $sig = is_array($fd['signatories'] ?? null) ? $fd['signatories'] : [];
+        $sigTop = $r;
+        $left = [
+            [['Name and Signature of Ratee: ', []], [self::filled($sig['ratee'] ?? null) ?? $defaultName, ['bold' => true]]],
+            [['Position: ', []], [self::filled($sig['rateePos'] ?? null) ?? $defaultPos, []]],
+            [['Date: ', []], [self::filled($sig['rateeDate'] ?? null) ?? '', []]],
+        ];
+        foreach ($left as $k => $runs) self::merge($sheet, "A" . ($sigTop + $k) . ":{$leftEnd}" . ($sigTop + $k), self::rich($runs));
+        $rr = $sigTop;
+        foreach ($approvers as $i => $a) {
+            if ($i === 0) {
+                $a['name'] = self::filled($sig['dean'] ?? null) ?? $a['name'];
+                $a['position'] = self::filled($sig['deanPos'] ?? null) ?? $a['position'];
+                $a['evalDate'] = self::filled($sig['deanDate'] ?? null) ?? $a['evalDate'];
+            }
+            $block = [
+                [['Final Rating by' . ($i > 0 ? ' (Signatory ' . ($i + 1) . ')' : '') . ':', ['bold' => true]]],
+                [[$a['name'], ['bold' => true]]],
+                [['Position: ', []], [$a['position'], []]],
+                [['Date: ', []], [$a['evalDate'], []]],
             ];
+            if ($i === 0) $block[] = [['(may add signatories depending on position/designation)', ['italic' => true, 'size' => 8, 'color' => '5F6F86']]];
+            foreach ($block as $runs) { self::merge($sheet, "{$rightStart}{$rr}:{$last}{$rr}", self::rich($runs)); $rr++; }
+            $rr++;
         }
+    }
 
-        $startRowIdx = $currentRow;
+    /**
+     * IPERF (COS and Job Order personnel), as on screen: templates/iperf.php, meta/_meta_iperf.php,
+     * forms/_body_iperf.php, signatures/_signatures_iperf.php (2026-11-08).
+     */
+    private static function exportIperf(Spreadsheet $spreadsheet, array $fd, array $doc, array $ownerInfo, array $defaults = []): void
+    {
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('IPERF - COS & JO');
+        foreach (['A' => 28, 'B' => 30, 'C' => 28, 'D' => 6, 'E' => 6, 'F' => 6, 'G' => 8, 'H' => 22] as $col => $w) $sheet->getColumnDimension($col)->setWidth($w);
 
-        foreach ($items as $item) {
-            self::put($sheet, "A{$currentRow}", $item['mfo'] ?? '');
-            self::put($sheet, "B{$currentRow}", $item['indicators'] ?? '');
-            self::put($sheet, "C{$currentRow}", $item['accomplishments'] ?? '');
+        $defaultName = (string) ($ownerInfo['name'] ?? '');
+        $rateeName = self::rateeName($fd, $ownerInfo);
+        $rateePos = self::filled($fd['ratee']['position'] ?? null) ?? (string) ($ownerInfo['position'] ?? '');
+        $rateeDept = self::filled($fd['ratee']['dept'] ?? null) ?? (string) ($ownerInfo['dept'] ?? '');
+        $office = self::filled($fd['ratee']['dept'] ?? null) ?? ((string) ($ownerInfo['dept'] ?? '') ?: 'Office of the University President');
+        self::letterhead($sheet, 'H', $office, self::formTitle('IPERF', $fd));
+        self::merge($sheet, 'A6:H6', '(attach rubrics for the rating of actual accomplishments vis-à-vis expected outputs)');
+        $sheet->getStyle('A6')->getFont()->setSize(9)->setItalic(true)->getColor()->setRGB('5F6F86');
+        $sheet->getStyle('A6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-            $qVal = is_numeric($item['q'] ?? null) ? (int)$item['q'] : '';
-            $tVal = is_numeric($item['t'] ?? null) ? (int)$item['t'] : '';
-            $eVal = is_numeric($item['e'] ?? null) ? (int)$item['e'] : '';
-
-            if ($qVal !== '') self::put($sheet, "D{$currentRow}", $qVal);
-            if ($tVal !== '') self::put($sheet, "E{$currentRow}", $tVal);
-            if ($eVal !== '') self::put($sheet, "F{$currentRow}", $eVal);
-
-            // Row Average Formula: =IF(COUNT(D{row}:F{row})>0, AVERAGE(D{row}:F{row}), "")
-            $sheet->setCellValue("G{$currentRow}", "=IF(COUNT(D{$currentRow}:F{$currentRow})>0, AVERAGE(D{$currentRow}:F{$currentRow}), \"\")");
-
-            self::put($sheet, "H{$currentRow}", $item['remarks'] ?? '');
-
-            // Alignments & Styles
-            $sheet->getStyle("A{$currentRow}:C{$currentRow}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
-            $sheet->getStyle("D{$currentRow}:G{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
-            $sheet->getStyle("H{$currentRow}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
-
-            $sheet->getStyle("G{$currentRow}")->getNumberFormat()->setFormatCode('0.000');
-            $sheet->getStyle("G{$currentRow}")->getFont()->setBold(true)->getColor()->setRGB('0369A1');
-            $sheet->getStyle("G{$currentRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F0F9FF');
-
-            $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-
-            $currentRow++;
+        // name, classification, position, rating period, office
+        $meta = [
+            8  => ['Name of Employee:', $rateeName ?: 'indicate full name (First Name Middle Initial Last Name, Extension; e.g., Juan D. Cruz III)', 'Classification:', iperf_classification($ownerInfo['employment_status'] ?? null) ?: (self::filled($fd['classification'] ?? null) ?? '')],
+            9  => ['Position:', $rateePos ?: 'indicate the full position title specified in the contract/job order', 'Rating Period:', self::period($fd, $ownerInfo) ?: 'e.g., July - December 2024'],
+            10 => ['Office:', $rateeDept ?: 'indicate in full the specific area of assignment (e.g., CIS - Department of Development Communication)', null, null],
+        ];
+        foreach ($meta as $row => [$l1, $v1, $l2, $v2]) {
+            self::put($sheet, "A{$row}", $l1);
+            if ($l2 === null) {
+                self::merge($sheet, "B{$row}:H{$row}", $v1);
+            } else {
+                self::merge($sheet, "B{$row}:C{$row}", $v1);
+                self::merge($sheet, "D{$row}:F{$row}", $l2);
+                self::merge($sheet, "G{$row}:H{$row}", $v2);
+                $sheet->getStyle("D{$row}")->getFont()->setBold(true);
+                $sheet->getStyle("D{$row}:F{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FAFAFA');
+                $sheet->getStyle("G{$row}")->getFont()->setBold(true);
+            }
+            self::fit($sheet, 'B', $l2 === null ? 'H' : 'C', $row, $row, (string) $v1);
+            $sheet->getStyle("A{$row}")->getFont()->setBold(true);
+            $sheet->getStyle("A{$row}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FAFAFA');
         }
+        $sheet->getStyle('B8')->getFont()->setBold(true);
+        $sheet->getStyle('A8:H10')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        $sheet->getStyle('A8:H10')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER)->setWrapText(true);
 
-        $endRowIdx = $currentRow - 1;
+        // table header
+        self::merge($sheet, 'A12:A13', self::rich([
+            ["OFFICE PPA\n", ['bold' => true, 'size' => 9]], ["(PROGRAMS, PROJECTS, ACTIVITIES)\n", ['size' => 8.5]],
+            ['(aligned with the deliverables of the office)', ['italic' => true, 'size' => 8, 'color' => '5F6F86']],
+        ]));
+        self::merge($sheet, 'B12:B13', self::rich([
+            ["EXPECTED OUTPUTS\n", ['bold' => true, 'size' => 9]],
+            ['(based on contract or duties and responsibilities in the request to hire personnel)', ['italic' => true, 'size' => 8, 'color' => '5F6F86']],
+        ]));
+        self::merge($sheet, 'C12:C13', 'ACTUAL ACCOMPLISHMENTS');
+        self::merge($sheet, 'D12:G12', 'RATING');
+        foreach (['D13' => 'Q', 'E13' => 'T', 'F13' => 'E', 'G13' => 'Ave.'] as $cell => $v) self::put($sheet, $cell, $v);
+        self::merge($sheet, 'H12:H13', 'REMARKS');
+        $hs = $sheet->getStyle('A12:H13');
+        $hs->getFont()->setBold(true)->setSize(9);
+        $hs->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER)->setWrapText(true);
+        $hs->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F1F5F9');
+        $hs->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        $sheet->getRowDimension(12)->setRowHeight(34);
+        $sheet->getRowDimension(13)->setRowHeight(30);
+        $sheet->getPageSetup()->setRowsToRepeatAtTopByStartAndEnd(12, 13);
 
-        // 5. OVERALL AVERAGE RATING Footer Row
-        $sheet->mergeCells("A{$currentRow}:F{$currentRow}");
-        self::put($sheet, "A{$currentRow}", "OVERALL AVERAGE RATING");
-        $sheet->getStyle("A{$currentRow}")->getFont()->setBold(true)->setSize(9.5);
-        $sheet->getStyle("A{$currentRow}")->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+        // deliverables (one flat list)
+        $r = 14;
+        $rows = array_values(array_filter($fd['categories']['core'] ?? [], 'is_array')) ?: [[]];
+        foreach ($rows as $row) {
+            self::put($sheet, "A{$r}", (string) ($row['mfo'] ?? ''));
+            self::put($sheet, "B{$r}", (string) ($row['indicators'] ?? ''));
+            self::put($sheet, "C{$r}", (string) ($row['accomplishments'] ?? ''));
+            foreach (['q' => 'D', 't' => 'E', 'e' => 'F'] as $d => $col) {
+                $s = self::score($row[$d] ?? null);
+                if ($s !== null) self::put($sheet, "{$col}{$r}", $s);
+            }
+            $sheet->setCellValue("G{$r}", "=IF(COUNT(D{$r}:F{$r})>0,AVERAGE(D{$r}:F{$r}),\"—\")");
+            self::put($sheet, "H{$r}", (string) ($row['remarks'] ?? ''));
+            $sheet->getStyle("A{$r}:H{$r}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
+            $sheet->getStyle("D{$r}:G{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+            $sheet->getStyle("G{$r}")->getNumberFormat()->setFormatCode('0.00');
+            $sheet->getStyle("G{$r}")->getFont()->setBold(true);
+            $sheet->getStyle("A{$r}:H{$r}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+            $r++;
+        }
+        $range = 'G14:G' . ($r - 1);
 
-        // Overall Average Formula: =IFERROR(AVERAGE(G{start}:G{end}), 0)
-        $sheet->setCellValue("G{$currentRow}", "=IFERROR(AVERAGE(G{$startRowIdx}:G{$endRowIdx}), 0)");
-        $sheet->getStyle("G{$currentRow}")->getNumberFormat()->setFormatCode('0.000');
-        $sheet->getStyle("G{$currentRow}")->getFont()->setBold(true)->setSize(11)->getColor()->setRGB('0284C7');
-        $sheet->getStyle("G{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+        // overall average (label over 3 columns, the average over 2, the rating over 3, as on screen)
+        self::merge($sheet, "A{$r}:C{$r}", 'OVERALL AVERAGE RATING');
+        $sheet->getStyle("A{$r}")->getFont()->setBold(true)->setSize(10);
+        self::merge($sheet, "D{$r}:E{$r}");
+        $sheet->setCellValue("D{$r}", "=IFERROR(AVERAGE({$range}),0)");
+        $sheet->getStyle("D{$r}")->getNumberFormat()->setFormatCode('0.000');
+        $sheet->getStyle("D{$r}")->getFont()->setBold(true)->setSize(11)->getColor()->setRGB('047857');
+        self::merge($sheet, "F{$r}:H{$r}");
+        $sheet->setCellValue("F{$r}", "=IF(COUNT({$range})=0,\"PENDING EVALUATION\",IF(D{$r}>=4.5,\"OUTSTANDING\",IF(D{$r}>=3.5,\"VERY SATISFACTORY\",IF(D{$r}>=2.5,\"SATISFACTORY\",IF(D{$r}>=1.5,\"UNSATISFACTORY\",\"POOR\")))))");
+        $sheet->getStyle("F{$r}")->getFont()->setBold(true)->setSize(9.5);
+        $sheet->getStyle("D{$r}:H{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle("A{$r}:H{$r}")->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->getStyle("A{$r}:H{$r}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F8FAFC');
+        $sheet->getStyle("A{$r}:H{$r}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        $sheet->getRowDimension($r)->setRowHeight(24);
+        $r += 1;
 
-        // Adjectival Rating Formula
-        $sheet->setCellValue("H{$currentRow}", "=IF(G{$currentRow}>=4.5,\"OUTSTANDING\",IF(G{$currentRow}>=3.5,\"VERY SATISFACTORY\",IF(G{$currentRow}>=2.5,\"SATISFACTORY\",IF(G{$currentRow}>=1.5,\"UNSATISFACTORY\",\"POOR\"))))");
-        $sheet->getStyle("H{$currentRow}")->getFont()->setBold(true)->setSize(9)->getColor()->setRGB('0F172A');
-        $sheet->getStyle("H{$currentRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+        // remarks box
+        self::merge($sheet, "A{$r}:H{$r}", "Remarks/Suggestions/Recommendations on Ratee's Performance:");
+        $sheet->getStyle("A{$r}")->getFont()->setBold(true)->setSize(9.5);
+        self::merge($sheet, "A" . ($r + 1) . ":H" . ($r + 2), (string) ($fd['pmtRemarks'] ?? ''));
+        $sheet->getStyle("A" . ($r + 1))->getFont()->setItalic(true)->setSize(9.5);
+        $sheet->getStyle("A" . ($r + 1))->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
+        self::fit($sheet, 'A', 'H', $r + 1, $r + 2, (string) ($fd['pmtRemarks'] ?? ''));
+        $sheet->getStyle("A{$r}:H" . ($r + 2))->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
+        $r += 4;
 
-        $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F8FAFC');
-        $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-        $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getBorders()->getTop()->setBorderStyle(Border::BORDER_MEDIUM);
-        $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getBorders()->getBottom()->setBorderStyle(Border::BORDER_MEDIUM);
-        $sheet->getRowDimension($currentRow)->setRowHeight(24);
-
-        $currentRow++;
-
-        // 6. Remarks Box
-        $sheet->mergeCells("A{$currentRow}:H{$currentRow}");
-        self::put($sheet, "A{$currentRow}", "Remarks/Suggestions/Recommendations on Ratee's Performance:");
-        $sheet->getStyle("A{$currentRow}")->getFont()->setBold(true)->setSize(8.5);
-        $sheet->getStyle("A{$currentRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F8FAFC');
-
-        $currentRow++;
-        $sheet->mergeCells("A{$currentRow}:H" . ($currentRow + 1));
-        $pmtRemarks = $formData['pmtRemarks'] ?? '';
-        self::put($sheet, "A{$currentRow}", $pmtRemarks ?: '(No additional remarks recorded.)');
-        $sheet->getStyle("A{$currentRow}")->getFont()->setItalic(true)->setSize(9)->getColor()->setRGB('334155');
-        $sheet->getStyle("A{$currentRow}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
-        $sheet->getStyle("A" . ($currentRow - 1) . ":H" . ($currentRow + 1))->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
-
-        $currentRow += 2;
-
-        // 7. Two-Phase Signatories & Reference Guide
-        $defaultSupName = trim(($superiorInfo['first_name'] ?? '') . ' ' . ($superiorInfo['last_name'] ?? ''));
-
-        $sigTargetsPreparedName = $formData['signatories']['targetsPreparedName'] ?? $rateeName;
-        $sigTargetsPreparedDate = $formData['signatories']['targetsPreparedDate'] ?? '';
-
-        $sigTargetsApprovedName = $formData['signatories']['targetsApprovedName'] ?? $defaultSupName;
-        $sigTargetsApprovedDate = $formData['signatories']['targetsApprovedDate'] ?? '';
-
-        $sigEvalRatedName = $formData['signatories']['evalRatedName'] ?? $defaultSupName;
-        $sigEvalRatedDate = $formData['signatories']['evalRatedDate'] ?? '';
-
-        $sigEvalConformeName = $formData['signatories']['evalConformeName'] ?? $rateeName;
-        $sigEvalConformeDate = $formData['signatories']['evalConformeDate'] ?? '';
-
-        $sigStartRow = $currentRow;
-
-        // Phase 1 Header (Cols A-B)
-        $sheet->mergeCells("A{$currentRow}:B{$currentRow}");
-        self::put($sheet, "A{$currentRow}", "signed at the start of the rating period");
-        $sheet->getStyle("A{$currentRow}")->getFont()->setItalic(true)->setBold(true)->setSize(8.5)->getColor()->setRGB('BA372A');
-
-        // Phase 2 Header (Cols C-D)
-        $sheet->mergeCells("C{$currentRow}:D{$currentRow}");
-        self::put($sheet, "C{$currentRow}", "signed at the end of the rating period");
-        $sheet->getStyle("C{$currentRow}")->getFont()->setItalic(true)->setBold(true)->setSize(8.5)->getColor()->setRGB('BA372A');
-
-        // Measures Header (Cols E-H)
-        $sheet->mergeCells("E{$currentRow}:H{$currentRow}");
-        self::put($sheet, "E{$currentRow}", "Measures & Rating Guide");
-        $sheet->getStyle("E{$currentRow}")->getFont()->setBold(true)->setSize(8.5);
-
-        $sheet->getStyle("A{$currentRow}:H{$currentRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F8FAFC');
-
-        $currentRow++;
-
-        // Phase 1 Content (Cols A-B, Rows $currentRow to $currentRow + 5)
-        $sheet->mergeCells("A{$currentRow}:B" . ($currentRow + 5));
-        $phase1Text = "Targets prepared by:\n\n" . ($sigTargetsPreparedName ?: '____________________') . "\nEmployee (Ratee)\nDate: " . ($sigTargetsPreparedDate ?: '_____________') . "\n\nApproved by:\n\n" . ($sigTargetsApprovedName ?: '____________________') . "\nImmediate Supervisor (Rater)\nDate: " . ($sigTargetsApprovedDate ?: '_____________');
-        self::put($sheet, "A{$currentRow}", $phase1Text);
-        $sheet->getStyle("A{$currentRow}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
-        $sheet->getStyle("A{$currentRow}")->getFont()->setSize(8.5);
-
-        // Phase 2 Content (Cols C-D, Rows $currentRow to $currentRow + 5)
-        $sheet->mergeCells("C{$currentRow}:D" . ($currentRow + 5));
-        $phase2Text = "Rated by:\n\n" . ($sigEvalRatedName ?: '____________________') . "\nImmediate Supervisor (Rater)\nDate: " . ($sigEvalRatedDate ?: '_____________') . "\n\nConforme:\n\n" . ($sigEvalConformeName ?: '____________________') . "\nEmployee (Ratee)\nDate: " . ($sigEvalConformeDate ?: '_____________');
-        self::put($sheet, "C{$currentRow}", $phase2Text);
-        $sheet->getStyle("C{$currentRow}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
-        $sheet->getStyle("C{$currentRow}")->getFont()->setSize(8.5);
-
-        // Side Reference Content (Cols E-H, Rows $currentRow to $currentRow + 5)
-        $sheet->mergeCells("E{$currentRow}:H" . ($currentRow + 5));
-        $guideText = "Measures:\n  Q - Quality\n  T - Timeliness\n  E - Efficiency\n\nRating Guide:\n  5 - Outstanding\n  4 - Very Satisfactory\n  3 - Satisfactory\n  2 - Unsatisfactory\n  1 - Poor";
-        self::put($sheet, "E{$currentRow}", $guideText);
-        $sheet->getStyle("E{$currentRow}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
-        $sheet->getStyle("E{$currentRow}")->getFont()->setSize(8.5);
-
-        $sheet->getStyle("A{$sigStartRow}:B" . ($currentRow + 5))->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
-        $sheet->getStyle("C{$sigStartRow}:D" . ($currentRow + 5))->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
-        $sheet->getStyle("E{$sigStartRow}:H" . ($currentRow + 5))->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
+        // signatories: start of period, end of period, measures and rating guide
+        $sig = is_array($fd['signatories'] ?? null) ? $fd['signatories'] : [];
+        $approvers = self::approvers($fd, $defaults);
+        $rater = $approvers[0]['name'] ?? '';
+        $val = fn(string $k, string $fallback = '') => self::filled($sig[$k] ?? null) ?? $fallback;
+        $hint = ['italic' => true, 'bold' => true, 'size' => 9, 'color' => '5F6F86'];
+        $lbl = ['bold' => true, 'size' => 9.5];
+        $nm = ['bold' => true, 'size' => 9.5];
+        $sub = ['size' => 8.5, 'color' => '5F6F86'];
+        $txt = ['size' => 9.5, 'color' => '334155'];
+        $blocks = [
+            'A' => ['B', [
+                ["signed at the start of the rating period\n\n", $hint],
+                ["Targets prepared by:\n", $lbl], [$val('targetsPreparedName', $defaultName) . "\n", $nm], ["Employee (Ratee)\n", $sub],
+                ['Date: ' . $val('targetsPreparedDate') . "\n\n", $txt],
+                ["Approved by:\n", $lbl], [$val('targetsApprovedName', $rater) . "\n", $nm], ["Immediate Supervisor (Rater)\n", $sub],
+                ['Date: ' . $val('targetsApprovedDate'), $txt],
+            ]],
+            'C' => ['D', [
+                ["signed at the end of the rating period\n\n", $hint],
+                ["Rated by:\n", $lbl], [$val('evalRatedName', $rater) . "\n", $nm], ["Immediate Supervisor (Rater)\n", $sub],
+                ['Date: ' . $val('evalRatedDate') . "\n\n", $txt],
+                ["Conforme:\n", $lbl], [$val('evalConformeName', $defaultName) . "\n", $nm], ["Employee (Ratee)\n", $sub],
+                ['Date: ' . $val('evalConformeDate'), $txt],
+            ]],
+            'E' => ['H', [
+                ["Measures:\n", $lbl], ["Q   Quality\nT   Timeliness\nE   Efficiency\n\n", $txt],
+                ["Rating Guide:\n", $lbl], ["5   Outstanding\n4   Very Satisfactory\n3   Satisfactory\n2   Unsatisfactory\n1   Poor", $txt],
+            ]],
+        ];
+        $end = $r + 9;
+        foreach ($blocks as $from => [$to, $runs]) {
+            self::merge($sheet, "{$from}{$r}:{$to}{$end}", self::rich($runs));
+            $sheet->getStyle("{$from}{$r}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
+            $sheet->getStyle("{$from}{$r}:{$to}{$end}")->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
+        }
+        for ($i = $r; $i <= $end; $i++) $sheet->getRowDimension($i)->setRowHeight(18);
+        $sheet->getStyle("E{$r}:H{$end}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FDFDFD');
     }
 
     /**
@@ -1665,8 +1032,18 @@ class CscExcelExporter
         $sheet->setCellValue($coordinate, $value);
     }
 
-    private static function applyProtection(Spreadsheet $spreadsheet, \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, string $password = 'spms'): void
+    /**
+     * Locks the sheet and the workbook structure with the Excel password in use (Accounts > Excel Password), hashed
+     * with SHA-512 as current Excel does (2026-11-08; before, the weak legacy hash and always "spms"). The file names
+     * when the password came into use in its Comments (File > Info), so the Admin can look up an older one by date.
+     */
+    private static function applyProtection(Spreadsheet $spreadsheet, \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, ?string $password = null): void
     {
+        $key = \App\Libraries\ExcelPassword::current();
+        $password ??= $key['password'];
+        $spreadsheet->getProperties()->setCreator('SPMS')->setDescription(
+            ($key['since'] ? 'Protected with the Excel password in use since ' . date('M j, Y g:i A', strtotime($key['since'])) : 'Protected with the built-in Excel password')
+            . '. The Admin finds it in SPMS: Accounts > Excel Password.');
         $protection = $sheet->getProtection();
         $protection->setSheet(true);
         $protection->setSort(true);
@@ -1681,9 +1058,13 @@ class CscExcelExporter
         $protection->setPivotTables(true);
 
         if ($password !== '') {
+            $protection->setAlgorithm(\PhpOffice\PhpSpreadsheet\Worksheet\Protection::ALGORITHM_SHA_512)->setSpinCount(100000);
             $protection->setPassword($password);
-            $spreadsheet->getSecurity()->setLockStructure(true);
-            $spreadsheet->getSecurity()->setWorkbookPassword($password);
+            $security = $spreadsheet->getSecurity();
+            $security->setLockStructure(true);
+            $security->setWorkbookAlgorithmName(\PhpOffice\PhpSpreadsheet\Worksheet\Protection::ALGORITHM_SHA_512)
+                ->setWorkbookSaltValue(random_bytes(16), true)->setWorkbookSpinCount(100000);
+            $security->setWorkbookPassword($password);
         }
     }
 

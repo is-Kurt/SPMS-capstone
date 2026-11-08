@@ -1902,7 +1902,7 @@
         setVal('sig-vp-date', data.signatories?.vpDate || '');
 
         if (isIperf) {
-            setVal('ratee-classification', data.classification || 'Contract of Service (COS)');
+            // Classification follows the employment status (set by the server, read-only), not the saved paper (2026-11-08)
             setVal('sig-targets-prepared-name', (data.signatories?.targetsPreparedName && data.signatories.targetsPreparedName.trim() !== '') ? data.signatories.targetsPreparedName : defaultRateeName);
             setVal('sig-targets-prepared-date', (data.signatories?.targetsPreparedDate && data.signatories.targetsPreparedDate.trim() !== '') ? data.signatories.targetsPreparedDate : '');
             setVal('sig-targets-approved-name', (data.signatories?.targetsApprovedName && data.signatories.targetsApprovedName.trim() !== '') ? data.signatories.targetsApprovedName : (approversList[0]?.name || defaultSupervisors[0]?.name || ''));
@@ -1913,7 +1913,7 @@
             setVal('sig-eval-conforme-date', (data.signatories?.evalConformeDate && data.signatories.evalConformeDate.trim() !== '') ? data.signatories.evalConformeDate : '');
 
             const elClass = document.getElementById('ratee-classification');
-            if (elClass) elClass.disabled = !canEditTargets;
+            if (elClass) elClass.disabled = true;
             ['sig-targets-prepared-name', 'sig-targets-prepared-date',
              'sig-targets-approved-name', 'sig-targets-approved-date'].forEach(id => {
                 const el = document.getElementById(id);

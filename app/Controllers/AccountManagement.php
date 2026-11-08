@@ -27,7 +27,7 @@ class AccountManagement extends BaseController
         // Default weights now live in System Data > Doc Type Rules; old /accounts/weights links open it there.
         $openDocRules = $tab === 'weights';
         if ($openDocRules) $tab = 'system';
-        $validTabs = ['directory', 'create', 'invitations', 'system', 'twg'];
+        $validTabs = ['directory', 'create', 'invitations', 'system', 'twg', 'backups', 'excel'];
         $activeTab = in_array($tab, $validTabs, true) ? $tab : 'directory';
 
         $userModel = new UserModel();
@@ -141,6 +141,10 @@ class AccountManagement extends BaseController
 
         return view('accounts/index', [
             'flagCount'             => $flagCount,
+            'backups'               => \App\Libraries\Backups::all(),
+            'restoreLog'            => \App\Libraries\Backups::restoreLog(),
+            'excelPasswords'        => \App\Libraries\ExcelPassword::history(),
+            'excelPasswordReady'    => \App\Libraries\ExcelPassword::ready(),
             'ignoredFlagCount'      => $ignoredCount,
             'flagIgnoreReady'       => $ignoreReady,
             'unitFit'               => $unitFit,

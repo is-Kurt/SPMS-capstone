@@ -25,6 +25,7 @@ class Filters extends BaseFilters
      * or [filter_name => [classname1, classname2, ...]]
      */
     public array $aliases = [
+        'maintenance'   => \App\Filters\MaintenanceFilter::class,   // "The site is down" while a backup is restored
         'csrf'          => CSRF::class,
         'toolbar'       => DebugToolbar::class,
         'honeypot'      => \App\Filters\HoneypotFilter::class,   // 403 instead of a 500 for bots
@@ -76,6 +77,7 @@ class Filters extends BaseFilters
      */
     public array $globals = [
         'before' => [
+            'maintenance',
             'honeypot',
             'csrf' => ['except' => ['account/process-queue']],
             // 'invalidchars',

@@ -3,7 +3,7 @@
     <!-- MOBILE FILTER OVERLAY -->
     <div id="mobile-filter-overlay" class="fixed inset-0 z-[115] bg-black/50 hidden lg:hidden transition-opacity opacity-0" aria-hidden="true"></div>
 
-    <!-- SIDEBAR FILTERS (Left) -->
+    <!-- SIDEBAR FILTERS (right of the list on wide screens; a drawer from the left on phones) -->
     <div id="directory-sidebar" class="fixed inset-y-0 left-0 z-[120] w-72 bg-surface lg:bg-zinc-50 lg:dark:bg-zinc-800/30 border-r border-surface-border shadow-2xl lg:shadow-none transform -translate-x-full lg:translate-x-0 transition-transform duration-300 lg:static shrink-0 flex flex-col h-full">
         <div style="height: 54px; min-height: 54px; max-height: 54px;" class="h-[54px] min-h-[54px] max-h-[54px] px-5 border-b border-surface-border flex justify-between items-center shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800 box-border">
             <div class="flex items-center gap-2">
@@ -111,7 +111,28 @@
             </button>
         </div>
 
-        <div class="flex-1 overflow-x-auto min-h-0 overflow-y-auto custom-scrollbar">
+        <!-- Column titles: outside the scrolling list (the scrollbar starts below them), as tall as the Filters header -->
+        <div class="hidden lg:block shrink-0 overflow-hidden bg-zinc-50 dark:bg-zinc-800 border-b border-surface-border box-border" style="height: 54px; min-height: 54px;" data-frozen-header>
+            <table class="w-full h-full text-left border-collapse table-fixed">
+                <colgroup>
+                    <col style="width:30%">
+                    <col style="width:16%">
+                    <col style="width:28%">
+                    <col style="width:12%">
+                    <col style="width:14%">
+                </colgroup>
+                <thead class="text-[10px] font-black uppercase tracking-widest text-text-muted">
+                    <tr>
+                        <th class="px-6 py-0">Name / Email</th>
+                        <th class="px-6 py-0 min-w-[90px]">Role</th>
+                        <th class="px-6 py-0">Department / Unit &amp; Position</th>
+                        <th class="px-6 py-0 min-w-[80px] text-center">Status</th>
+                        <th class="px-6 py-0 min-w-[190px] text-right">Actions</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+        <div class="flex-1 overflow-x-auto min-h-0 overflow-y-auto custom-scrollbar" data-frozen-body onscroll="this.previousElementSibling.scrollLeft = this.scrollLeft">
             <table class="w-full text-left border-collapse block lg:table lg:table-fixed">
                 <colgroup>
                     <col style="width:30%">
@@ -120,15 +141,7 @@
                     <col style="width:12%">
                     <col style="width:14%">
                 </colgroup>
-                <thead class="hidden lg:table-header-group sticky top-0 z-10 bg-zinc-50 dark:bg-zinc-800 border-b border-surface-border text-[10px] font-black uppercase tracking-widest text-text-muted">
-                    <tr>
-                        <th class="px-6 py-2.5">Name / Email</th>
-                        <th class="px-6 py-2.5 min-w-[90px]">Role</th>
-                        <th class="px-6 py-2.5">Department / Unit &amp; Position</th>
-                        <th class="px-6 py-2.5 min-w-[80px] text-center">Status</th>
-                        <th class="px-6 py-2.5 min-w-[190px] text-right">Actions</th>
-                    </tr>
-                </thead>
+                
                 <tbody class="block lg:table-row-group divide-y divide-surface-border" id="user-table-body">
                     <?php foreach ($users as $u): ?>
                         <tr class="user-dir-row block lg:table-row bg-surface p-4 lg:p-0 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors group <?= (isset($u['is_active']) && $u['is_active'] == 0) ? 'opacity-60' : '' ?>"

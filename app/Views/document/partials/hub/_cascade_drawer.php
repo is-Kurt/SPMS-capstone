@@ -28,7 +28,9 @@
             $evalDateStr   = ($eStartDate && $eEndDate) ? ($eStartDate . ' – ' . $eEndDate) : ($eStartDate ?? $eEndDate ?? 'Start – End');
         ?>
 
-        <!-- RIGHT SIDEBAR (CASCADE DISTRIBUTION FOR ADMINS / FOLDER DETAILS FOR USERS) -->
+        <!-- RIGHT SIDEBAR: cascade management for Admins and supervisors (their own folder). Members have none: the
+             main folder card already shows the status, dates and files (2026-11-08). -->
+        <?php if ($canCascade): ?>
         <div id="bottom-sheet" class="custom-scrollbar fixed inset-x-0 bottom-0 z-50 shadow-2xl lg:shadow-xl rounded-t-3xl lg:rounded-2xl transition-transform duration-300 transform spms-bottom-sheet-collapsed lg:static lg:translate-y-0 lg:w-80 lg:shrink-0 <?= $canCascade ? 'lg:self-start lg:h-fit' : '' ?> flex flex-col p-4 sm:p-5 gap-4 overflow-hidden lg:overflow-y-auto max-h-[85vh] lg:max-h-none bg-surface dark:bg-zinc-950 border border-surface-border dark:border-zinc-800">
             
             <div class="lg:hidden flex justify-center py-2 cursor-pointer touch-none" onclick="toggleBottomSheet()">
@@ -272,155 +274,9 @@
                 </div>
                 <?php endif; ?>
 
-            <?php else: ?>
-                <!-- 2. FOLDER OVERVIEW & DETAILS SECTION (For Normal Users in exchange for Cascade Distribution) -->
-                <?php
-                    $now = date('Y-m-d H:i:s');
-                    $tEnd = $activeFolder[$docType . '_target_end'] ?? null;
-                    $isPastTarget = ($tEnd && $now > $tEnd);
-                    $currentPhaseLabel = $isPastTarget ? 'Eval Phase' : 'Target Phase';
-                    $phaseDotColor = $isPastTarget ? 'bg-sky-500' : 'bg-emerald-500';
-
-                    $rawStatus = $activeFolder['status'] ?? 'draft_target';
-                    $statusBadgeText = \App\Enums\FolderStatus::canonical($rawStatus)->label();
-
-                    // Derive official form type from the primary document inside the folder
-                    $primaryDoc = !empty($myDocs) ? reset($myDocs) : null;
-
-                    $pTitleUpper = strtoupper($primaryDoc['title'] ?? '');
-                    if (str_contains($pTitleUpper, 'OPCR') || str_contains($pTitleUpper, 'OFFICE')) {
-                        $effectiveDocType = 'OPCR';
-                    } elseif (str_contains($pTitleUpper, 'DPCR') || str_contains($pTitleUpper, 'DIVISION') || str_contains($pTitleUpper, 'DEPARTMENT')) {
-                        $effectiveDocType = 'DPCR';
-                    } elseif (str_contains($pTitleUpper, 'IPERF') || str_contains($pTitleUpper, 'NON-TEACHING')) {
-                        $effectiveDocType = 'IPERF';
-                    } elseif (str_contains($pTitleUpper, 'IPCR')) {
-                        $effectiveDocType = 'IPCR';
-                    } else {
-                        $effectiveDocType = $ownerDocType ?? ($subFolderOwner['doc_type'] ?? 'IPCR');
-                    }
-
-                    $formTypeName = strtoupper($effectiveDocType ?: 'IPCR');
-                    $formTypeDesc = match($formTypeName) {
-                        'OPCR' => 'Office Performance',
-                        'DPCR' => 'Department Performance',
-                        default => 'Individual Performance'
-                    };
-                    $isOpcrFolder = ($formTypeName === 'OPCR');
-                ?>
-
-                <!-- Submission Summary Card -->
-                <div class="flex flex-col gap-3">
-                    <div class="flex items-center justify-between">
-                        <p class="text-[10px] font-black uppercase text-zinc-400 dark:text-[#8ea396] tracking-wider">Submission Summary</p>
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-zinc-100 text-zinc-700 border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300">
-                            <span class="w-1.5 h-1.5 rounded-full <?= $phaseDotColor ?> animate-pulse"></span>
-                            <?= esc($currentPhaseLabel) ?>
-                        </span>
-                    </div>
-
-                    <!-- 2 Compact Metric Tiles -->
-                    <div class="grid grid-cols-2 gap-2.5">
-                        <div class="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 flex flex-col">
-                            <span class="text-[10px] font-medium text-zinc-500 dark:text-[#8ea396]">Total Files</span>
-                            <span class="text-lg font-black text-zinc-900 dark:text-white mt-0.5"><?= count($myDocs) ?></span>
-                        </div>
-                        <div class="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 flex flex-col">
-                            <span class="text-[10px] font-medium text-zinc-500 dark:text-[#8ea396]">Folder Status</span>
-                            <span class="text-xs font-bold text-zinc-800 dark:text-white mt-1.5 truncate"><?= esc($statusBadgeText) ?></span>
-                        </div>
-                    </div>
-
-                    <!-- Form Commitment Tile -->
-                    <div class="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2.5 flex items-center justify-between">
-                        <span class="text-[10px] font-medium text-zinc-500 dark:text-[#8ea396]">Commitment</span>
-                        <span class="text-[11px] font-bold text-zinc-800 dark:text-white truncate pl-2"><?= esc($formTypeName) ?> • <?= esc($formTypeDesc) ?></span>
-                    </div>
-
-
-                    <?php 
-                        $cActiveStatus = \App\Enums\FolderStatus::canonical($activeFolder['status'] ?? '');
-                    ?>
-                    <?php if ($cActiveStatus === \App\Enums\FolderStatus::TARGET_SUBMITTED): ?>
-                        <?php if ($activeFolder['user_id'] == session()->get('user_id') && empty($hasSupervisorApproval)): ?>
-                            <button onclick="unsubmitTargetFolder('<?= $activeFolder['id'] ?>', this)" 
-                                    class="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                                </svg>
-                                Unsubmit
-                            </button>
-                        <?php endif; ?>
-                    <?php elseif ($cActiveStatus === \App\Enums\FolderStatus::EVAL_SUBMITTED): ?>
-                        <?php if ($activeFolder['user_id'] == session()->get('user_id') && empty($hasSupervisorApproval)): ?>
-                            <button onclick="unsubmitEvaluationFolder('<?= $activeFolder['id'] ?>', this)" 
-                                    class="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-300 dark:border-rose-800 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                                </svg>
-                                Unsubmit
-                            </button>
-                        <?php endif; ?>
-                    <?php endif; ?>
-
-                    <?php if (!empty($parentFolder) && !$isOpcrFolder): ?>
-                        <!-- Superior Basis Cascade Status Tile (Strict SPMS Mode) -->
-                        <div class="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2.5 flex flex-col gap-1.5">
-                            <div class="flex items-center justify-between">
-                                <span class="text-[10px] font-medium text-zinc-500 dark:text-[#8ea396]">Superior Basis</span>
-                                <?php 
-                                    $isParentDocOpcr = !empty($isParentDocOpcr) || str_contains(strtoupper($parentFolder['title'] ?? ''), 'OPCR');
-                                ?>
-                                <?php if ($isParentTargetApproved ?? false): ?>
-                                    <span class="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-[#102a1e] px-1.5 py-0.5 rounded border border-emerald-200 dark:border-[#1b4330]">
-                                        <?= $isParentDocOpcr ? 'Institutional Basis' : 'Approved' ?>
-                                    </span>
-                                <?php else: ?>
-                                    <span class="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
-                                        Pending Approval
-                                    </span>
-                                <?php endif; ?>
-                            </div>
-                            <span class="text-[11px] font-bold text-zinc-800 dark:text-white truncate" title="<?= esc($parentFolder['title']) ?>">
-                                <?= esc($parentFolder['title']) ?>
-                            </span>
-                            <?php if (!($isParentTargetApproved ?? false)): ?>
-                                <p class="text-[9px] text-amber-600 dark:text-amber-400 leading-tight italic">
-                                    Target submission locked until superior targets are approved.
-                                </p>
-                            <?php endif; ?>
-                        </div>
-                    <?php endif; ?>
-                </div>
-
-                <!-- Folder Details -->
-                <div class="flex flex-col gap-3 pt-5 border-t border-zinc-200 dark:border-zinc-800 mt-auto">
-                    <p class="text-[10px] font-black uppercase text-zinc-400 dark:text-[#8ea396] tracking-wider">Folder Details</p>
-                    
-                    <div class="flex flex-col gap-2">
-                        <div class="flex items-center justify-between text-xs py-0.5">
-                            <span class="text-zinc-500 dark:text-[#8ea396] font-medium">Target Date</span>
-                            <span class="text-zinc-800 dark:text-white font-semibold text-right truncate pl-2"><?= esc($targetDateStr) ?></span>
-                        </div>
-
-                        <div class="flex items-center justify-between text-xs py-0.5">
-                            <span class="text-zinc-500 dark:text-[#94A3B8] font-medium">Evaluation Date</span>
-                            <span class="text-zinc-800 dark:text-white font-semibold text-right truncate pl-2"><?= esc($evalDateStr) ?></span>
-                        </div>
-
-                        <div class="flex items-center justify-between text-xs py-0.5">
-                            <span class="text-zinc-500 dark:text-[#94A3B8] font-medium">Period</span>
-                            <span class="text-zinc-800 dark:text-white font-semibold text-right truncate pl-2">Q3 <?= date('Y', strtotime($activeFolder['created_at'] ?? 'now')) ?></span>
-                        </div>
-
-                        <div class="flex items-center justify-between text-xs py-0.5">
-                            <span class="text-zinc-500 dark:text-[#94A3B8] font-medium">Owner</span>
-                            <span class="text-zinc-800 dark:text-white font-semibold text-right truncate pl-2 max-w-[150px]"><?= esc($displayName) ?></span>
-                        </div>
-                    </div>
-                </div>
             <?php endif; ?>
 
         </div>
+        <?php endif; ?>
         
         <div id="bottom-sheet-overlay" onclick="toggleBottomSheet()" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden"></div>

@@ -7,10 +7,8 @@
                         </td>
                         <td style="width: 15%; padding: 6px 8px; font-weight: bold; border-right: 1px solid #000000; background: #fafafa; color: #0f172a;">Classification:</td>
                         <td style="width: 25%; padding: 6px 8px;">
-                            <select id="ratee-classification" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 6px; font-size: 11px; color: #0f172a; font-weight: bold; background: #ffffff;" <?= $canEditTargets ? '' : 'disabled' ?>>
-                                <option value="Contract of Service (COS)">Contract of Service (COS)</option>
-                                <option value="Job Order">Job Order</option>
-                            </select>
+                            <!-- Follows the owner's employment status (User Directory), 2026-11-08 -->
+                            <input type="text" id="ratee-classification" value="<?= esc(iperf_classification($ownerInfo['employment_status'] ?? null), 'attr') ?>" class="spms-meta-input" style="width: 100%; font-weight: bold; border: none; padding: 2px 0;" disabled title="Follows the employee's employment status">
                         </td>
                     </tr>
                     <tr style="border-bottom: 1px solid #000000;">
