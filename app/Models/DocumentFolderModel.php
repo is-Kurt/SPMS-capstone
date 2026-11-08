@@ -95,7 +95,9 @@ class  DocumentFolderModel extends Model
                       df.current_version, df.target_submitted_at, df.submitted_at,
                       df.target_approved_at, df.target_approver_role,
                       MAX(er_me.status) as my_routing_status,
-                      MAX(CASE WHEN {$cascadedCondition} THEN 1 ELSE 0 END) as is_cascaded_by_me")
+                      MAX(CASE WHEN {$cascadedCondition} THEN 1 ELSE 0 END) as is_cascaded_by_me,
+                      df.parent_folder_id, u.is_active as owner_active,
+                      (SELECT r_o.name FROM user_roles ur_o JOIN roles r_o ON r_o.id = ur_o.role_id WHERE ur_o.user_id = u.id LIMIT 1) as owner_role")
             ->join('users u', 'u.id = df.user_id')
             ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
             ->join('positions pos', 'pos.id = p.position_id', 'left')
@@ -131,8 +133,17 @@ class  DocumentFolderModel extends Model
             $builder->where('er_me.evaluator_id', $userId);
         }
 
+        // Papers on hold (owner now TWG/PMT/Admin or disabled): only the Admin sees them, labelled (ReviewHandover)
+        if ($sysRole !== 'Admin') {
+            $builder->where(\App\Libraries\ReviewHandover::notOnHoldSql('df', 'u'), null, false);
+        }
+
         $builder->groupBy('df.id');
         $rows = $builder->get()->getResultArray();
+        foreach ($rows as &$hr) {
+            $hr['on_hold'] = \App\Libraries\ReviewHandover::holdReason($hr['owner_role'] ?? null, $hr['owner_active'] ?? 0, $hr['folder_status'] ?? null, $hr['parent_folder_id'] ?? null);
+        }
+        unset($hr);
 
         if (!empty($rows)) {
             $folderIds = array_column($rows, 'folder_id');

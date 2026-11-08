@@ -189,6 +189,18 @@
     </style>
 
     <title>SPMS</title>
+    <!-- Shared select / tree components (customSelect.js) load in the head: page scripts that run while the page
+         is still loading use them (TreeList, UnitTreeFilter, PositionTreeFilter). It only acts on DOMContentLoaded. -->
+    <script src="<?= base_url('assets/js/main/customSelect.js?v=' . filemtime(FCPATH . 'assets/js/main/customSelect.js')) ?>"></script>
+    <script src="<?= base_url('assets/js/main/fullTextOnHover.js?v=' . filemtime(FCPATH . 'assets/js/main/fullTextOnHover.js')) ?>" defer></script>
+    <?php if (session()->get('user_id')): ?>
+    <script>
+    // The position tree for the Positions filters (PositionTreeFilter in customSelect.js).
+    // The viewer's own positions: the Positions filters start below them (their position and what is above it are left out).
+    window.SPMS_MY_POSITION_IDS = <?= json_encode(array_values(array_map(fn($a) => (int) $a['position_id'], array_filter(\App\Libraries\OrgStructure::instance()->assignmentsOf((int) session()->get('user_id')), fn($a) => !empty($a['position_id']))))) ?>;
+    window.SPMS_POSITION_TREE = <?= json_encode(array_values(array_map(fn($p) => ['id' => (int) $p['id'], 'title' => $p['title'], 'parent_id' => $p['parent_id'] ? (int) $p['parent_id'] : null, 'general_root' => (int) ($p['is_general_root'] ?? 0)], \App\Libraries\OrgStructure::instance()->positions())), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    </script>
+    <?php endif; ?>
 </head>
 <body class="h-full bg-bg text-text antialiased">
     
@@ -243,7 +255,11 @@
     <script src="<?= base_url('assets/js/main/header.js') ?>"></script>
     <script src="<?= base_url('assets/js/axios/config.js') ?>"></script>
     <script src="<?= base_url('assets/js/axios/api.js') ?>"></script>
-    <script src="<?= base_url('assets/js/main/customSelect.js?v=' . filemtime(FCPATH . 'assets/js/main/customSelect.js')) ?>"></script>
+    <script>
+    // The last page that loaded fine in this tab (error pages never use this layout): their "Go Back" button
+    // returns here in one step instead of walking back through browser history.
+    try { sessionStorage.setItem('spmsLastGoodPage', location.pathname + location.search); } catch (e) {}
+    </script>
     <script type="module" src="<?= base_url('assets/js/main/modals/confirmModal.js') ?>"></script>
     <script src="<?= base_url('assets/js/main/passwordToggle.js') ?>"></script>
     <script src="<?= base_url('assets/js/main/navigationGuards.js') ?>"></script>

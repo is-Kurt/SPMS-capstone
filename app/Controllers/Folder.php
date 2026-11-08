@@ -238,7 +238,8 @@ class Folder extends BaseController
         $parentFolder = null;
         $isParentTargetApproved = true;
         $basisDoc = null;
-        if ($activeFolder && !empty($activeFolder['parent_folder_id'])) {
+        // Waiting for a supervisor (ReviewHandover): the paper it came from belonged to the revoked supervisor.
+        if ($activeFolder && !empty($activeFolder['parent_folder_id']) && empty($activeFolder['waiting_supervisor'])) {
             $parentFolder = $folderModel->find($activeFolder['parent_folder_id']);
             if ($parentFolder) {
                 $parentRolePivot = (new \App\Models\UserRoleModel())->where('user_id', $parentFolder['user_id'])->first();
@@ -280,13 +281,18 @@ class Folder extends BaseController
                 ->join('plantillas p', 'p.user_id = users.id AND p.ended_at IS NULL', 'left')
                 ->join('positions pos', 'pos.id = p.position_id', 'left');
 
+            // A paper waiting for a supervisor still points at the revoked one's folder: not their cascade (ReviewHandover).
+            $notWaiting = \App\Libraries\ReviewHandover::ready();
             if (!empty($routedFolderIds)) {
                 $builder->groupStart()
-                    ->where('document_folders.parent_folder_id', $activeFolder['id'])
+                    ->groupStart()->where('document_folders.parent_folder_id', $activeFolder['id']);
+                if ($notWaiting) $builder->where('document_folders.waiting_supervisor', 0);
+                $builder->groupEnd()
                     ->orWhereIn('document_folders.id', $routedFolderIds)
                 ->groupEnd();
             } else {
                 $builder->where('document_folders.parent_folder_id', $activeFolder['id']);
+                if ($notWaiting) $builder->where('document_folders.waiting_supervisor', 0);
             }
             $cascadedChildren = $builder->findAll();
 
@@ -298,6 +304,10 @@ class Folder extends BaseController
                 foreach ($teamMembers as $tm) {
                     $tUserId = (int)$tm['user_id'];
                     if (in_array($tUserId, $cascadedUserIds, true)) {
+                        continue;
+                    }
+                    // A member who has moved out from under you is not new staff to sync (ReviewHandover::canSupervise)
+                    if ($role !== 'Admin' && !\App\Libraries\ReviewHandover::canSupervise((int) $userId, $tUserId)) {
                         continue;
                     }
 
@@ -457,8 +467,9 @@ class Folder extends BaseController
                 ]);
             }
 
-            // Fallback for OPCR or direct parent folder if no evaluation_routings
-            if (empty($evaluatorSupervisors)) {
+            // Fallback for OPCR or direct parent folder if no evaluation_routings (not while waiting for a
+            // supervisor: the parent folder then belongs to the one who was revoked)
+            if (empty($evaluatorSupervisors) && empty($activeFolder['waiting_supervisor'])) {
                 $fOwnerId = (int)($activeFolder['user_id'] ?? 0);
                 if (!empty($activeFolder['parent_folder_id'])) {
                     $pFold = $folderModel->find($activeFolder['parent_folder_id']);
@@ -867,10 +878,12 @@ class Folder extends BaseController
 
             $folderModel->db->transStart();
 
-            // Detect if this folder is OPCR (Requires target approval before cascading to subordinates)
+            // Every head cascades only approved targets (2026-11-07; it used to be OPCR only): staff draft against
+            // the agreed commitment, not one that may still change. The Admin starts the cycle and is exempt.
             $isFolderOpcr = $this->isOpcrFolder($activeFolder, $userId);
-            if ($role !== 'Admin' && $isFolderOpcr && $activeFolder['status'] !== FolderStatus::TARGET_APPROVED->value) {
-                return $this->respondError("Cannot cascade yet: Your OPCR target commitments must be submitted to and approved before cascading to subordinates.", 400);
+            if ($role !== 'Admin' && !$this->targetsApprovedOrLater($activeFolder)) {
+                $folderModel->db->transRollback();
+                return $this->respondError("Cannot cascade yet: your targets must be submitted and approved before you cascade them to your staff.", 400);
             }
 
             $updateFolderPayload = ['routing_preset_id' => $teamId];
@@ -932,8 +945,14 @@ class Folder extends BaseController
 
 
                 $cascadedCount = 0;
+                $outOfScope = 0;
 
                 foreach ($members as $member) {
+                    // A staff list keeps members who have since moved away: they are not yours to review now
+                    if (!\App\Libraries\ReviewHandover::canSupervise((int) $userId, (int) $member['user_id'])) {
+                        $outOfScope++;
+                        continue;
+                    }
                     $subFolder = $folderModel->where('user_id', $member['user_id'])
                                              ->where('parent_folder_id', $batchId)
                                              ->where('deleted_at IS NULL')->first();
@@ -998,7 +1017,8 @@ class Folder extends BaseController
                         $cascadedCount++;
                     }
                 }
-                $message = "Goals successfully cascaded to your staff ({$cascadedCount} member" . ($cascadedCount === 1 ? '' : 's') . ").";
+                $message = "Goals successfully cascaded to your staff ({$cascadedCount} member" . ($cascadedCount === 1 ? '' : 's') . ")."
+                         . ($outOfScope ? " Skipped {$outOfScope}: no longer under you. Remove them from the staff list in My Staff." : '');
             }
 
             $folderModel->db->transComplete();
@@ -1065,9 +1085,9 @@ class Folder extends BaseController
             $teamId = $activeFolder['routing_preset_id'] ?? null;
 
             // Collect direct children and folders routed through this evaluator folder
-            $directChildIds = $folderModel->where('parent_folder_id', $folderId)
-                                          ->where('deleted_at IS NULL')
-                                          ->findColumn('id') ?: [];
+            $directQ = $folderModel->where('parent_folder_id', $folderId)->where('deleted_at IS NULL');
+            if (\App\Libraries\ReviewHandover::ready()) $directQ->where('waiting_supervisor', 0);   // revoked earlier: not theirs
+            $directChildIds = $directQ->findColumn('id') ?: [];
             $routedChildIds = $routingModel->where('evaluator_folder_id', $folderId)
                                            ->findColumn('folder_id') ?: [];
             $candidateChildIds = array_values(array_unique(array_merge($directChildIds, $routedChildIds)));
@@ -1120,9 +1140,10 @@ class Folder extends BaseController
             $currentLevel = $rootsToDelete;
             $levels = !empty($rootsToDelete) ? [$rootsToDelete] : [];
             while (!empty($currentLevel)) {
-                $nextLevel = $folderModel->whereIn('parent_folder_id', $currentLevel)
-                                         ->where('deleted_at IS NULL')
-                                         ->findColumn('id');
+                $nextQ = $folderModel->whereIn('parent_folder_id', $currentLevel)
+                                     ->where('deleted_at IS NULL');
+                if (\App\Libraries\ReviewHandover::ready()) $nextQ->where('waiting_supervisor', 0);   // waiting papers belong to no one's cascade
+                $nextLevel = $nextQ->findColumn('id');
                 if (!empty($nextLevel)) {
                     $levels[] = $nextLevel;
                     $allFolderIds = array_merge($allFolderIds, $nextLevel);
@@ -1218,6 +1239,9 @@ class Folder extends BaseController
             if ($role !== 'Admin' && !in_array($activeFolder['status'], $allowedStatuses)) {
                 return $this->respondError("Cannot sync cascade: this folder has already moved past the target setting phase.", 400);
             }
+            if ($role !== 'Admin' && !$this->targetsApprovedOrLater($activeFolder)) {
+                return $this->respondError("Cannot cascade yet: your targets must be submitted and approved before you cascade them to your staff.", 400);
+            }
 
             $teamId = $activeFolder['routing_preset_id'] ?? null;
             if (!$teamId) {
@@ -1242,14 +1266,21 @@ class Folder extends BaseController
             $addedCount = 0;
             $skippedNonTeachingCount = 0;
 
+            $outOfScope = 0;
             foreach ($members as $member) {
                 $targetUserId = (int)$member['user_id'];
+                if ($role !== 'Admin' && !\App\Libraries\ReviewHandover::canSupervise((int) $userId, $targetUserId)) {
+                    $outOfScope++;
+                    continue;
+                }
 
-                // Check if child folder or routing already exists for this member
-                $exists = $folderModel->where('user_id', $targetUserId)
-                                      ->where('parent_folder_id', $activeFolder['id'])
-                                      ->where('deleted_at IS NULL')
-                                      ->first();
+                // Check if child folder or routing already exists for this member (a waiting paper linked to this
+                // folder is not: its supervisor was revoked, so it gets a new routing below)
+                $existsQ = $folderModel->where('user_id', $targetUserId)
+                                       ->where('parent_folder_id', $activeFolder['id'])
+                                       ->where('deleted_at IS NULL');
+                if (\App\Libraries\ReviewHandover::ready()) $existsQ->where('waiting_supervisor', 0);
+                $exists = $existsQ->first();
                 if (!$exists) {
                     $routedFolderIds = $routingModel->where('evaluator_folder_id', $activeFolder['id'])
                         ->findColumn('folder_id') ?: [];
@@ -1285,6 +1316,14 @@ class Folder extends BaseController
                             'evaluator_id'        => $userId,
                             'evaluator_folder_id' => $activeFolder['id'],
                             'status'              => \App\Enums\EvaluationRoutingStatus::DRAFT->value
+                        ]);
+                        notify_user($targetUserId, [
+                            'sender_id' => $userId,
+                            'type'      => 'target_assigned',
+                            'title'     => 'Evaluation Target Assigned',
+                            'message'   => "You have been assigned to prepare target commitments for \"{$activeFolder['title']}\".",
+                            'link'      => 'folders/' . $existingCycleFolder['id'],
+                            'icon'      => 'file'
                         ]);
                     }
                     $this->ensureUserDocumentExists($existingCycleFolder['id'], $targetUserId, $activeFolder['title']);
@@ -1336,19 +1375,71 @@ class Folder extends BaseController
 
             $folderModel->db->transComplete();
 
+            $skipNote = $outOfScope ? " Skipped {$outOfScope}: no longer under you. Remove them from the staff list in My Staff." : '';
             if ($addedCount === 0) {
                 return $this->respond([
                     'status'      => 'success',
-                    'message'     => 'Staff list is already fully synchronized. All members have target folders.',
+                    'message'     => 'Staff list is already fully synchronized. All members have target folders.' . $skipNote,
                     'added_count' => 0
                 ]);
             }
 
             return $this->respond([
                 'status'      => 'success',
-                'message'     => "Successfully synchronized {$addedCount} new member" . ($addedCount === 1 ? '' : 's') . " to this evaluation cycle.",
+                'message'     => "Successfully synchronized {$addedCount} new member" . ($addedCount === 1 ? '' : 's') . " to this evaluation cycle." . $skipNote,
                 'added_count' => $addedCount
             ]);
+        });
+    }
+
+    /**
+     * POST /folder/delete-on-hold - The Admin deletes a paper on hold (its owner is now TWG/PMT/Admin or disabled), for
+     * when that is permanent. Only on purpose, never as a side effect of a switch. Refused while a paper below still
+     * uses it as its basis (papers waiting for a supervisor do not count: they belong to no one).
+     */
+    public function deleteOnHold() {
+        return $this->tryOrFail(function() {
+            if (session()->get('role') !== 'Admin') return $this->respondError('Unauthorized.', 403);
+            $folderModel = new DocumentFolderModel();
+            $folder = $folderModel->find((string) $this->request->getPost('folder_id'));
+            if (!$folder || !empty($folder['deleted_at'])) return $this->respondError('Paper not found.', 404);
+            if (!\App\Libraries\ReviewHandover::onHold($folder)) {
+                return $this->respondError('Only a paper on hold can be deleted here: its owner is staff now.', 409);
+            }
+            $db = $folderModel->db;
+            $below = $db->table('document_folders')->where('parent_folder_id', $folder['id'])->where('deleted_at IS NULL')
+                        ->where('waiting_supervisor', 0)->countAllResults()
+                   + $db->table('evaluation_routings')->where('evaluator_folder_id', $folder['id'])->countAllResults();
+            if ($below) {
+                return $this->respondError("{$below} paper(s) below still use this paper as their basis. Give those people another supervisor first.", 409);
+            }
+            $owner = (new UserModel())->find($folder['user_id']);
+            $reviewers = array_map('intval', array_column($db->table('evaluation_routings')->select('evaluator_id')
+                ->where('folder_id', $folder['id'])->where('evaluator_id !=', $folder['user_id'])->get()->getResultArray(), 'evaluator_id'));
+            $id = $folder['id'];
+            $db->transStart();
+            if ($db->tableExists('document_attachments')) {
+                $db->table('document_attachments')->groupStart()->where('document_id', $id)->orWhere('folder_id', $id)->groupEnd()->delete();
+            }
+            $db->table('document_comments')->where('document_id', $id)->delete();
+            $db->table('evaluation_routings')->where('folder_id', $id)->delete();
+            $db->table('document_versions')->where('folder_id', $id)->delete();
+            $db->query("DELETE FROM notifications WHERE link LIKE ? OR link LIKE ?", ["%folders/{$id}%", "%ratings/show/{$id}%"]);
+            $folderModel->delete($id, true);
+            $db->transComplete();
+            if ($db->transStatus() === false) return $this->respondError('Could not delete the paper.', 500);
+
+            $name = $owner ? trim($owner['first_name'] . ' ' . $owner['last_name']) : "user {$folder['user_id']}";
+            audit_log('PAPER_DELETED', 'FOLDER', 'folder', 0, "{$id} ({$name}, " . ($owner['email'] ?? '') . "): \"{$folder['title']}\", {$folder['status']}; deleted while on hold");
+            foreach (array_unique($reviewers) as $rid) {
+                if ($rid === (int) session()->get('user_id')) continue;
+                notify_user($rid, [
+                    'sender_id' => session()->get('user_id'), 'type' => 'target_revoked', 'title' => 'Paper removed',
+                    'message'   => "The Administrator deleted {$name}'s \"{$folder['title']}\" paper: they are no longer rated staff.",
+                    'link'      => 'ratings', 'icon' => 'user-minus',
+                ]);
+            }
+            return $this->respond(['status' => 'success', 'message' => "Deleted {$name}'s paper."]);
         });
     }
 
@@ -1388,6 +1479,9 @@ class Folder extends BaseController
             if (!$childFolder || $childFolder['parent_folder_id'] != $parentFolderId) {
                 return $this->respondError("Subordinate folder not found under this evaluation cycle.", 404);
             }
+            if (!empty($childFolder['waiting_supervisor'])) {
+                return $this->respondError("This paper is waiting for a new supervisor: it is no longer under you, so it cannot be removed here.", 409);
+            }
 
             $folderModel->db->transStart();
 
@@ -1396,7 +1490,9 @@ class Folder extends BaseController
             $currentLevel = [$childFolderId];
             $levels = [[$childFolderId]];
             while (!empty($currentLevel)) {
-                $nextLevel = $folderModel->whereIn('parent_folder_id', $currentLevel)->findColumn('id');
+                $nextQ = $folderModel->whereIn('parent_folder_id', $currentLevel);
+                if (\App\Libraries\ReviewHandover::ready()) $nextQ->where('waiting_supervisor', 0);   // waiting papers belong to no one's cascade
+                $nextLevel = $nextQ->findColumn('id');
                 if (!empty($nextLevel)) {
                     $levels[] = $nextLevel;
                     $allFolderIds = array_merge($allFolderIds, $nextLevel);
@@ -1530,6 +1626,10 @@ class Folder extends BaseController
 
         $user = $userModel->find($userId);
         if (!$user) return null;
+
+        // Save the owner's position and department on the paper the first time (cascade, cycle start or first
+        // opening). Later changes only reach it while it is a draft, through refresh_draft_paper_snapshots().
+        seed_paper_owner_snapshot((string) $folderId, (int) $userId);
 
         // The form type: an explicit override, else the person's form type, else the one the doc-type rules give
         // their role and employment status. Never guessed from job titles or emails (2026-11-07).
@@ -1791,7 +1891,8 @@ class Folder extends BaseController
             }
         }
         $targetFolder = $folderModel->find($folderId);
-        if (empty($supervisorFolderIds) && !empty($targetFolder['parent_folder_id'])) {
+        // Not while waiting for a supervisor: the parent folder then belongs to the revoked one (ReviewHandover).
+        if (empty($supervisorFolderIds) && !empty($targetFolder['parent_folder_id']) && empty($targetFolder['waiting_supervisor'])) {
             $pf = $folderModel->find($targetFolder['parent_folder_id']);
             if ($pf && !empty($pf['parent_folder_id'])) {
                 $supervisorFolderIds[] = $targetFolder['parent_folder_id'];
@@ -2143,13 +2244,18 @@ class Folder extends BaseController
                     ->join('plantillas p', 'p.user_id = users.id AND p.ended_at IS NULL', 'left')
                     ->join('positions pos', 'pos.id = p.position_id', 'left');
 
+                // A paper waiting for a supervisor still points at the revoked one's folder: not their cascade (ReviewHandover).
+                $notWaiting = \App\Libraries\ReviewHandover::ready();
                 if (!empty($routedFolderIds)) {
                     $builder->groupStart()
-                        ->where('document_folders.parent_folder_id', $activeFolder['id'])
+                        ->groupStart()->where('document_folders.parent_folder_id', $activeFolder['id']);
+                    if ($notWaiting) $builder->where('document_folders.waiting_supervisor', 0);
+                    $builder->groupEnd()
                         ->orWhereIn('document_folders.id', $routedFolderIds)
                     ->groupEnd();
                 } else {
                     $builder->where('document_folders.parent_folder_id', $activeFolder['id']);
+                    if ($notWaiting) $builder->where('document_folders.waiting_supervisor', 0);
                 }
                 $cascadedChildren = $builder->findAll();
 
@@ -2161,6 +2267,9 @@ class Folder extends BaseController
                     foreach ($teamMembers as $tm) {
                         $tUserId = (int)$tm['user_id'];
                         if (in_array($tUserId, $cascadedUserIds, true)) {
+                            continue;
+                        }
+                        if ($role !== 'Admin' && !\App\Libraries\ReviewHandover::canSupervise((int) $userId, $tUserId)) {
                             continue;
                         }
 
@@ -2592,6 +2701,9 @@ class Folder extends BaseController
             if (!$folder || !in_array($folder['status'], $validSubmitStatuses, true)) {
                 return $this->respondError("This folder cannot be submitted at this time.", 400);
             }
+            if (!empty($folder['waiting_supervisor'])) {
+                return $this->respondError('This paper is waiting for a supervisor: your previous one was removed. You can submit once your new supervisor cascades to you.', 409);
+            }
 
             if ($folder['user_id'] != $userId) {
                 return $this->respondError("Unauthorized to submit this folder.", 400);
@@ -2709,9 +2821,15 @@ class Folder extends BaseController
             $folderModel->updateTimeBasedStatuses();
 
             $folder = $folderModel->find($folderId);
+            if ($folder && session()->get('role') !== 'Admin' && ($held = \App\Libraries\ReviewHandover::onHold($folder))) {
+                return $this->respondError("This paper is on hold: its owner is {$held}. It comes back as it was if they return to staff.", 409);
+            }
 
             if (!$folder || $folder['user_id'] != $userId) {
                 return $this->respondError("Unauthorized to evaluate this folder.", 400);
+            }
+            if (!empty($folder['waiting_supervisor'])) {
+                return $this->respondError('This paper is waiting for a supervisor: your previous one was removed. You can submit once your new supervisor cascades to you.', 409);
             }
 
             $dates = $folderModel->getFolderDates($folder);
@@ -2824,6 +2942,9 @@ class Folder extends BaseController
             if (!$folder || $folder['user_id'] != $userId) {
                 return $this->respondError("Unauthorized to submit targets for this folder.", 400);
             }
+            if (!empty($folder['waiting_supervisor'])) {
+                return $this->respondError('This paper is waiting for a supervisor: your previous one was removed. You can submit once your new supervisor cascades to you.', 409);
+            }
 
             $dates = $folderModel->getFolderDates($folder);
 
@@ -2855,7 +2976,10 @@ class Folder extends BaseController
                         $isParentDocOpcr = true;
                     }
 
-                    if ($parentFolder['status'] !== FolderStatus::TARGET_APPROVED->value) {
+                    // Released straight from the Admin's cycle folder (top of the chain): there is no superior
+                    // commitment to approve, the same as the page shows (isParentAdmin in index()).
+                    $parentIsAdmin = !empty($parentFolder['user_id']) && (new UserModel())->hasRole((int) $parentFolder['user_id'], 'Admin');
+                    if (!$parentIsAdmin && $parentFolder['status'] !== FolderStatus::TARGET_APPROVED->value) {
                         $parentTitle = $parentFolder['title'] ?? 'Superior';
                         return $this->respondError("Cannot submit targets yet: The superior basis commitments (\"{$parentTitle}\") have not been approved by the higher-up yet. Under SPMS cascading rules, individual commitments require approved superior targets as a basis.", 400);
                     }
@@ -2994,6 +3118,9 @@ class Folder extends BaseController
             $folderModel = new DocumentFolderModel();
             
             $folder = $folderModel->find($folderId);
+            if ($folder && session()->get('role') !== 'Admin' && ($held = \App\Libraries\ReviewHandover::onHold($folder))) {
+                return $this->respondError("This paper is on hold: its owner is {$held}. It comes back as it was if they return to staff.", 409);
+            }
             if (!$folder) return $this->respondError("Folder not found.", 400);
             if (!$this->isReviewerOf($folder)) {
                 return $this->respondError('Unauthorized: you are not a reviewer of this folder.', 403);
@@ -3232,6 +3359,9 @@ class Folder extends BaseController
             $folderModel = new DocumentFolderModel();
             
             $folder = $folderModel->find($folderId);
+            if ($folder && session()->get('role') !== 'Admin' && ($held = \App\Libraries\ReviewHandover::onHold($folder))) {
+                return $this->respondError("This paper is on hold: its owner is {$held}. It comes back as it was if they return to staff.", 409);
+            }
             if (!$folder) {
                 return $this->respondError("Folder not found.", 404);
             }
@@ -3349,6 +3479,9 @@ class Folder extends BaseController
             $now           = date('Y-m-d H:i:s');
 
             $folder = $folderModel->find($folderId);
+            if ($folder && session()->get('role') !== 'Admin' && ($held = \App\Libraries\ReviewHandover::onHold($folder))) {
+                return $this->respondError("This paper is on hold: its owner is {$held}. It comes back as it was if they return to staff.", 409);
+            }
             if (!$folder || !empty($folder['deleted_at'])) {
                 return $this->respondError("Cannot approve: This evaluation cycle is closed/archived.", 400);
             }
@@ -3519,6 +3652,9 @@ class Folder extends BaseController
             $now           = date('Y-m-d H:i:s');
 
             $folder = $folderModel->find($folderId);
+            if ($folder && session()->get('role') !== 'Admin' && ($held = \App\Libraries\ReviewHandover::onHold($folder))) {
+                return $this->respondError("This paper is on hold: its owner is {$held}. It comes back as it was if they return to staff.", 409);
+            }
             if (!$folder || !empty($folder['deleted_at'])) {
                 return $this->respondError("Folder not found or archived.", 404);
             }
@@ -3609,6 +3745,9 @@ class Folder extends BaseController
 
             $folderModel = new DocumentFolderModel();
             $folder = $folderModel->find($folderId);
+            if ($folder && session()->get('role') !== 'Admin' && ($held = \App\Libraries\ReviewHandover::onHold($folder))) {
+                return $this->respondError("This paper is on hold: its owner is {$held}. It comes back as it was if they return to staff.", 409);
+            }
             
             if (!$folder) {
                 return $this->respondError("Folder not found.", 404);
@@ -3658,6 +3797,9 @@ class Folder extends BaseController
             $now           = date('Y-m-d H:i:s');
 
             $folder = $folderModel->find($folderId);
+            if ($folder && session()->get('role') !== 'Admin' && ($held = \App\Libraries\ReviewHandover::onHold($folder))) {
+                return $this->respondError("This paper is on hold: its owner is {$held}. It comes back as it was if they return to staff.", 409);
+            }
             if (!$folder || !empty($folder['deleted_at'])) {
                 return $this->respondError("Cannot return folder: This evaluation cycle is closed or archived.", 400);
             }
@@ -3947,6 +4089,15 @@ class Folder extends BaseController
      * Helper to detect whether a folder represents an OPCR (Office Performance Commitment and Review).
      * Under CSC SPMS guidelines, OPCR is the apex institutional commitment paper that requires no superior approval.
      */
+    /** Are this folder's own targets approved (or the cycle already past that, in evaluation)? */
+    private function targetsApprovedOrLater(array $folder): bool
+    {
+        return in_array(FolderStatus::canonical($folder['status'] ?? '')->value, [
+            FolderStatus::TARGET_APPROVED->value, FolderStatus::DRAFT_EVALUATION->value, FolderStatus::EVAL_SUBMITTED->value,
+            FolderStatus::EVAL_APPROVED->value, FolderStatus::UNEVALUATED->value, FolderStatus::EVAL_UNRATED->value,
+        ], true);
+    }
+
     private function isOpcrFolder(array $folder, ?int $userId = null): bool
     {
         if (str_contains(strtoupper($folder['title'] ?? ''), 'OPCR')) {

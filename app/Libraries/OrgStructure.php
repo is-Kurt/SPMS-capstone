@@ -223,6 +223,33 @@ class OrgStructure
         return $ids;
     }
 
+    /**
+     * Every position a Staff account can hold in this unit: its head position(s) first, then the positions directly
+     * under the head and the General ones. Taking a head position makes the person a Supervisor (role follows
+     * position, see syncRatedRole); any other makes them an Employee.
+     */
+    public function positionsForUnit(int $unitId): array
+    {
+        return array_values(array_unique(array_merge($this->headPositionIds($unitId), $this->memberPositionIds($unitId))));
+    }
+
+    /**
+     * Role follows position for Staff (rated) accounts: Supervisor when they hold a head position, Employee
+     * otherwise. Admin, TWG and PMT are left alone. Returns [old, new] when it changed the role, else null.
+     */
+    public function syncRatedRole(int $userId): ?array
+    {
+        $old = $this->roleOf($userId);
+        if (!self::isRatedRole($old)) return null;
+        $new = $this->isHead($userId) ? 'Supervisor' : 'Employee';
+        if ($new === $old) return null;
+        $roleId = $this->db->table('roles')->select('id')->where('name', $new)->get()->getRowArray()['id'] ?? null;
+        if (!$roleId) return null;
+        $this->db->table('user_roles')->where('user_id', $userId)->delete();
+        $this->db->table('user_roles')->insert(['user_id' => $userId, 'role_id' => $roleId]);
+        return [$old, $new];
+    }
+
     /** Is $posId one of the unit's head positions? */
     public function isHeadOf(int $unitId, int $posId): bool
     {
@@ -302,6 +329,74 @@ class OrgStructure
             ->whereIn('p.position_id', $heads);
         if ($excludeUserId !== null) $b->where('u.id !=', $excludeUserId);
         return $b->groupBy('u.id')->get()->getResultArray();
+    }
+
+    /**
+     * The people who answer for a unit's members: its own head(s), or, when nobody holds that head position
+     * (a vacant department), the nearest head above it. User ids; empty when there is none up to the top.
+     */
+    public function nearestHeadIdsOf(int $unitId): array
+    {
+        for ($id = $unitId, $guard = 0; $id && $guard < 50; $guard++) {
+            $heads = array_map('intval', array_column($this->headsOf($id), 'id'));
+            if ($heads) return $heads;
+            $id = (int) ($this->units[$id]['parent_id'] ?? 0);
+        }
+        return [];
+    }
+
+    /**
+     * The supervisors' Accounts tab: every Staff assignment in their branch (the units they head and all below),
+     * except their own and those of co-heads of their own units. Heads of units below are included: a Dean manages
+     * up to the Department Chairs. Rows: plantilla id, user, unit, position, head (holds that unit's head position).
+     */
+    public function branchAssignments(int $supervisorId): array
+    {
+        // Editing power comes from the units they head (not every unit they hold a position in) and all below.
+        $own = $this->headedUnitIds($supervisorId);
+        $reach = $this->unitWithDescendants($own);
+        if (!$reach) return [];
+        $rows = $this->db->table('plantillas p')
+            ->select('p.id AS plantilla_id, p.unit_id, p.position_id, p.employment_status AS assignment_status, p.started_at, u.id AS user_id, u.first_name, u.last_name, u.email, u.doc_type, u.employment_status')
+            ->join('users u', 'u.id = p.user_id')
+            ->where('p.ended_at IS NULL')->where('u.is_active', 1)->where('u.id !=', $supervisorId)
+            ->whereIn('p.unit_id', $reach)->orderBy('u.last_name', 'ASC')->orderBy('u.first_name', 'ASC')
+            ->get()->getResultArray();
+        $out = [];
+        foreach ($rows as $r) {
+            $unitId = (int) $r['unit_id'];
+            if (!$r['position_id'] || !self::isRatedRole($this->roleOf((int) $r['user_id']))) continue;
+            $r['head'] = $this->isHeadOf($unitId, (int) $r['position_id']);
+            if ($r['head'] && in_array($unitId, $own, true)) continue;      // a co-head of their own unit: the admin
+            $out[] = $r;
+        }
+        return $out;
+    }
+
+    /** The units a supervisor's Accounts tab covers: the units they head and everything below. */
+    public function branchUnitIds(int $supervisorId): array
+    {
+        return $this->unitWithDescendants($this->headedUnitIds($supervisorId));
+    }
+
+    /** The branch assignment row a supervisor may edit, or null. */
+    public function branchAssignment(int $supervisorId, int $plantillaId): ?array
+    {
+        foreach ($this->branchAssignments($supervisorId) as $r) {
+            if ((int) $r['plantilla_id'] === $plantillaId) return $r;
+        }
+        return null;
+    }
+
+    /**
+     * Positions a supervisor may give someone in a unit of their branch: in a unit below them, its head position(s)
+     * and the positions under it; in their own unit, only the positions under it (nobody is raised to their level).
+     */
+    public function positionsForUnitBy(int $supervisorId, int $unitId): array
+    {
+        $own = $this->headedUnitIds($supervisorId);
+        if (!in_array($unitId, $this->unitWithDescendants($own), true)) return [];
+        return in_array($unitId, $own, true) ? $this->memberPositionIds($unitId) : $this->positionsForUnit($unitId);
     }
 
     /** The units a person reaches in My Staff and on the dashboard: their units and everything below (all assignments merged). */

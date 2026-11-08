@@ -264,7 +264,7 @@ $exportQuery = http_build_query(array_filter([
                                     <?= esc($log['user_name']) ?>
                                 </div>
                                 <div class="text-[11px] text-text-muted truncate">
-                                    <span><?= esc($log['role_name'] ?? 'Guest') ?></span>
+                                    <span><?= esc(staff_role_short($log['role_name'] ?? null) ?: 'Guest') ?></span>
                                     <?php if (!empty($log['email'])): ?>
                                         <span class="mx-1">•</span>
                                         <span><?= esc($log['email']) ?></span>
@@ -396,7 +396,7 @@ $exportQuery = http_build_query(array_filter([
                                             </div>
                                             <div class="text-[11px] text-text-muted flex items-center gap-1 mt-0.5">
                                                 <span class="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-surface-border/40 text-text-muted">
-                                                    <?= esc($log['role_name'] ?? 'Guest') ?>
+                                                    <?= esc(staff_role_short($log['role_name'] ?? null) ?: 'Guest') ?>
                                                 </span>
                                                 <?php if (!empty($log['email'])): ?>
                                                     <span class="truncate max-w-[130px] hidden sm:inline text-text-muted">

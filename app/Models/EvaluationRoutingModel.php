@@ -44,13 +44,33 @@ class EvaluationRoutingModel extends Model
     // Callbacks
     protected $allowCallbacks = true;
     protected $beforeInsert   = [];
-    protected $afterInsert    = [];
+    protected $afterInsert    = ['clearWaitingSupervisor'];
     protected $beforeUpdate   = [];
     protected $afterUpdate    = [];
     protected $beforeFind     = [];
     protected $afterFind      = [];
     protected $beforeDelete   = [];
     protected $afterDelete    = [];
+
+    /**
+     * A supervisor was routed to a paper (a cascade): it is no longer waiting for one (see ReviewHandover).
+     * Admin, TWG and PMT routings do not count as a supervisor.
+     */
+    protected function clearWaitingSupervisor(array $data): array
+    {
+        $row = $data['data'] ?? [];
+        if (empty($row['folder_id']) || empty($row['evaluator_id']) || !\App\Libraries\ReviewHandover::ready()) return $data;
+        $role = \App\Libraries\OrgStructure::instance()->roleOf((int) $row['evaluator_id']);
+        if (!in_array($role, ['Admin', 'TWG', 'PMT'], true)) {
+            // A waiting paper still points at the revoked supervisor's folder: it now comes from the new one's.
+            if (!empty($row['evaluator_folder_id'])) {
+                $this->db->table('document_folders')->where('id', $row['folder_id'])->where('waiting_supervisor', 1)
+                    ->update(['parent_folder_id' => $row['evaluator_folder_id']]);
+            }
+            $this->db->table('document_folders')->where('id', $row['folder_id'])->update(['waiting_supervisor' => 0]);
+        }
+        return $data;
+    }
 
     /**
      * For Folder.php & Rating.php: Fetches all cascaded evaluators with their job titles.

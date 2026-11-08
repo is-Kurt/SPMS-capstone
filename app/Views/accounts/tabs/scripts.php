@@ -239,6 +239,17 @@
                 handleAccountsAjaxSuccess(action, form, data);
                 if (submitBtn) submitBtn.disabled = false;
             },
+            // The server wants a second yes (e.g. deleting a position with positions under it): ask, send again.
+            onDefault: async (data) => {
+                if (!data || data.status !== 'confirm') return;
+                if (submitBtn) submitBtn.disabled = false;
+                if (!await window.appConfirm(data.message, { title: form.dataset.confirmTitle || 'Confirm', confirmText: form.dataset.confirmText || 'Delete' })) return;
+                formData.append('confirm', '1');
+                apiPost(form.getAttribute('action'), formData, {
+                    onSuccess: (d) => handleAccountsAjaxSuccess(action, form, d),
+                    onError: (m) => window.appAlert(m || 'Something went wrong.', { variant: 'danger' }),
+                });
+            },
             onError: (errMsg) => {
                 if (action === 'change-role') {
                     const select = form.querySelector('.js-role-select');
@@ -357,7 +368,10 @@
             }
         };
         ['units-list', 'positions-list', 'employment-statuses-list', 'parent-options-list', 'edit-parent-options-list',
-         'create-position-parent', 'edit-position-parent', 'edit-unit-head', 'select-invite-unit'].forEach(id => swap(id));
+         'create-position-parent', 'edit-position-parent', 'edit-unit-head', 'select-invite-unit', 'invite-unit-list'].forEach(id => swap(id));
+        window.inviteUnitPickerSync?.();
+        const inviteBox = document.getElementById('invite-filter-unit-container'), freshBox = fresh.getElementById('invite-filter-unit-container');
+        if (inviteBox && freshBox) { inviteBox.dataset.units = freshBox.dataset.units; window.mountInviteUnitFilter?.(); }
         swap('doc-rules-swap', true);   // not the weights form below it: unsaved weights stay
 
         // Expand what was open, plus the branch of a new item.
@@ -482,6 +496,7 @@
                     tr.dataset.status = 'pending';
                     tr.dataset.expired = '0';
                     tr.dataset.role = inv.role_name;
+                    tr.dataset.unit = inv.unit_id ? String(inv.unit_id) : '';
                     tr.innerHTML = `
                         <td class="block lg:table-cell px-0 lg:px-6 py-1 lg:py-4">
                             <div class="flex flex-col min-w-0 pr-4">
@@ -492,7 +507,7 @@
                         <td class="block lg:table-cell px-0 lg:px-6 py-2 lg:py-4">
                             <div class="flex justify-between items-center lg:block">
                                 <span class="w-max px-3 py-1 rounded-lg text-[10px] font-black bg-info-50 dark:bg-info-500/10 text-info-600 border border-info-200 dark:border-info-500/20 uppercase tracking-widest">
-                                    ${escapeHtml(inv.role_name)}
+                                    ${escapeHtml(inv.role_label || inv.role_name)}
                                 </span>
                                     ${inv.unit_name ? `<span class="block text-[10px] font-bold text-text-muted mt-1">${escapeHtml(inv.unit_name)}</span>` : ''}
                                 <span class="lg:hidden px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border bg-zinc-50 dark:bg-zinc-800/50 border-surface-border text-warning-500 border-warning-200/50 dark:border-warning-500/30">
@@ -711,33 +726,6 @@
     window.getCheckedValues = getCheckedValues;
 
     // --- DYNAMIC CASCADING UNIT FILTERS (USER DIRECTORY) ---
-    const DIR_LEVEL_THEMES = [
-        {
-            labelColor: 'text-text-muted',
-            focusRing: 'focus:border-accent focus:ring-1 focus:ring-accent/20',
-            activeBorder: 'border-zinc-400 dark:border-zinc-600',
-            connector: 'border-zinc-300 dark:border-zinc-700'
-        }
-    ];
-
-    function getDirLevelTheme(level) {
-        return DIR_LEVEL_THEMES[0];
-    }
-
-    function getDirLevelTitle(level, parentUnit) {
-        if (level === 1) {
-            return 'DEPARTMENT / UNIT';
-        }
-        return parentUnit ? escapeHtml(parentUnit.name) : 'SUB-UNIT';
-    }
-
-    function getDirDefaultOptionLabel(level, parentUnit) {
-        if (level === 1) {
-            return 'All Departments &amp; Units';
-        }
-        return parentUnit ? `All in ${escapeHtml(parentUnit.name)}` : 'All Options';
-    }
-
     function getDescendantUnitIds(rootId) {
         const units = window.SPMS_UNITS_MAP || [];
         const childrenMap = new Map();
@@ -761,134 +749,19 @@
         return result;
     }
 
-    function renderDynamicDirectoryUnitLevel(level, parentUnitId, targetContainer) {
-        if (!targetContainer) return;
-        const wasCollapsed = level === 1 && Boolean(targetContainer.querySelector(':scope > .dynamic-unit-level > .js-unit-level-body.hidden'));
-        targetContainer.innerHTML = '';
-
-        const units = window.SPMS_UNITS_MAP || [];
-        const unitsById = {};
-        units.forEach(u => unitsById[u.id] = u);
-
-        let availableUnits = [];
-        let parentUnit = null;
-
-        if (level === 1) {
-            // Root units for directory (OVPAA, OVPAF, etc.)
-            availableUnits = units.filter(u => !u.parent_id || !unitsById[u.parent_id]);
-        } else {
-            const numParentId = parseInt(parentUnitId, 10);
-            parentUnit = unitsById[numParentId] || null;
-            availableUnits = units.filter(u => u.parent_id === numParentId);
-        }
-
-        if (availableUnits.length === 0) {
-            targetContainer.classList.add('hidden');
-            return;
-        }
-
-        targetContainer.classList.remove('hidden');
-
-        const theme = getDirLevelTheme(level);
-        const title = getDirLevelTitle(level, parentUnit);
-        const defaultLabel = getDirDefaultOptionLabel(level, parentUnit);
-
-        let optionsHtml = `<option value="">${defaultLabel}</option>`;
-        availableUnits.forEach(u => {
-            optionsHtml += `<option value="${u.id}">${escapeHtml(u.name)}</option>`;
-        });
-
-        const levelWrapper = document.createElement('div');
-        levelWrapper.className = 'dynamic-unit-level';
-        levelWrapper.dataset.level = level;
-
-        const headerSpacing = level === 1 ? 'mb-3 tracking-widest' : 'mb-1.5 tracking-wider';
-        const headerHtml = `
-            <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase ${headerSpacing} ${theme.labelColor} hover:text-text focus:outline-none group cursor-pointer" onclick="
-                this.nextElementSibling.classList.toggle('hidden');
-                this.querySelector('svg').classList.toggle('-rotate-180');
-            ">
-                <span class="truncate pr-2 text-left" title="${title}">${title}</span>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${wasCollapsed ? '-rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
-            </button>`;
-
-        levelWrapper.innerHTML = `
-            ${headerHtml}
-            <div class="js-unit-level-body ${wasCollapsed ? 'hidden' : ''}">
-                <div class="relative w-full">
-                    <select id="filter-dir-unit-level-${level}" aria-label="Unit filter, level ${level}"
-                        class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border ${theme.focusRing} rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
-                        ${optionsHtml}
-                    </select>
-                    <div class="pointer-events-none absolute inset-y-0 flex items-center text-text-muted" style="right: 10px;">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </div>
-                </div>
-                <div id="dynamic-dir-unit-children-${level}" class="relative pl-3.5 ml-2.5 border-l-2 border-dashed ${theme.connector} space-y-3 pt-2 hidden"></div>
-            </div>
-        `;
-
-        targetContainer.appendChild(levelWrapper);
-
-        const selectEl = levelWrapper.querySelector(`#filter-dir-unit-level-${level}`);
-        selectEl.addEventListener('change', (e) => {
-            onDynamicDirectoryUnitLevelChange(level, e.target.value);
-        });
-    }
-
-    function onDynamicDirectoryUnitLevelChange(level, selectedUnitId) {
-        const selectEl = document.getElementById(`filter-dir-unit-level-${level}`);
-        const childrenContainer = document.getElementById(`dynamic-dir-unit-children-${level}`);
-        const theme = getDirLevelTheme(level);
-
-        if (selectEl) {
-            const activeClasses = theme.activeBorder.split(' ');
-            if (selectedUnitId) {
-                selectEl.classList.add(...activeClasses);
-            } else {
-                selectEl.classList.remove(...activeClasses);
-            }
-        }
-
-        if (childrenContainer) {
-            childrenContainer.innerHTML = '';
-            childrenContainer.classList.add('hidden');
-
-            if (selectedUnitId) {
-                const numId = parseInt(selectedUnitId, 10);
-                const units = window.SPMS_UNITS_MAP || [];
-                const childUnits = units.filter(u => u.parent_id === numId);
-
-                if (childUnits.length > 0) {
-                    renderDynamicDirectoryUnitLevel(level + 1, selectedUnitId, childrenContainer);
-                }
-            }
-        }
-
-        filterSidebarPositions();
-        filterUsers();
-    }
-    window.onDynamicDirectoryUnitLevelChange = onDynamicDirectoryUnitLevelChange;
-
+// Department / unit filter: a searchable tree (UnitTreeFilter), starting at the top units.
     function initDynamicDirectoryUnitFilters() {
-        const rootContainer = document.getElementById('dynamic-directory-unit-filter-container');
-        if (!rootContainer) return;
-        renderDynamicDirectoryUnitLevel(1, null, rootContainer);
+        const root = document.getElementById('dynamic-directory-unit-filter-container');
+        if (!root) return;
+        UnitTreeFilter.mount(root, window.SPMS_UNITS_MAP || [], { onChange: () => { filterSidebarPositions(); filterUsers(); } });
+        const list = document.getElementById('positions-checkbox-list');
+        if (list) PositionTreeFilter.build(list);                        // the position tree
         filterSidebarPositions();
     }
     window.initDynamicDirectoryUnitFilters = initDynamicDirectoryUnitFilters;
 
-    function getActiveDirectoryDynamicUnitId() {
-        const container = document.getElementById('dynamic-directory-unit-filter-container');
-        if (!container) return null;
-        const selects = Array.from(container.querySelectorAll('select'));
-        for (let i = selects.length - 1; i >= 0; i--) {
-            const val = selects[i].value;
-            if (val) return val;
-        }
-        return null;
+function getActiveDirectoryDynamicUnitId() {
+        return UnitTreeFilter.value(document.getElementById('dynamic-directory-unit-filter-container'));
     }
 
     // --- USER DIRECTORY FILTERING ---
@@ -961,8 +834,10 @@
             const matchesPos = checkedPos.length === 0 || checkedPos.some(p => rowPos.includes(p.toLowerCase()));
             const reviewOnly = document.getElementById('filter-needs-review');
             const matchesReview = !(reviewOnly && reviewOnly.checked) || row.dataset.flag === '1';
+            const ignoredOnly = document.getElementById('filter-ignored-flags');
+            const matchesIgnored = !(ignoredOnly && ignoredOnly.checked) || row.dataset.ignored === '1';
 
-            if (matchesSearch && matchesRole && matchesDept && matchesPos && matchesReview) {
+            if (matchesSearch && matchesRole && matchesDept && matchesPos && matchesReview && matchesIgnored) {
                 matchedRows.push(row);
             } else {
                 row.classList.add('page-hidden');
@@ -1089,6 +964,7 @@
 
         const allowedDeptPositions = getActiveDirectoryDeptPositions();
         const allRows = Array.from(list.querySelectorAll('.position-label, .position-filter-label'));
+        const allowed = new Set();
         let visibleCount = 0;
 
         allRows.forEach(row => {
@@ -1104,10 +980,9 @@
             }
 
             const isVisible = matchesQuery && matchesDept;
-            row.classList.toggle('page-hidden', !isVisible);
-            row.style.display = isVisible ? '' : 'none';
-            if (isVisible) visibleCount++;
+            if (isVisible) { visibleCount++; allowed.add(row); }
         });
+        PositionTreeFilter.apply(list, allowed, query, allowedDeptPositions !== null);
 
         let emptyMsg = list.querySelector('.no-positions-msg');
         if (visibleCount === 0) {
@@ -1125,33 +1000,44 @@
     window.filterSidebarPositions = filterSidebarPositions;
 
     // --- INVITATIONS TAB FILTERING ---
-    function filterInvitations() {
-        const searchInput = document.getElementById('invite-filter-search');
-        const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+    // The chosen department / unit filter (null = all) and the ids it covers (the unit and everything under it).
+    function inviteUnitIds() {
+        const box = document.getElementById('invite-filter-unit-container');
+        const chosen = UnitTreeFilter.value(box);
+        if (!chosen) return null;
+        let units = [];
+        try { units = JSON.parse(box.dataset.units || '[]'); } catch (e) {}
+        const ids = new Set([String(chosen)]);
+        let grew = true;
+        while (grew) {
+            grew = false;
+            units.forEach(u => { if (ids.has(String(u.parent_id)) && !ids.has(String(u.id))) { ids.add(String(u.id)); grew = true; } });
+        }
+        return ids;
+    }
+    /** Does an invitation row pass every filter? (Used by the list and by "Delete Filtered Invites".) */
+    function inviteMatches(row) {
+        const query = (document.getElementById('invite-filter-search')?.value || '').trim().toLowerCase();
         const checkedRoles = getCheckedValues('invite_filter_role');
         const checkedStatus = getCheckedValues('invite_filter_status');
-        const checkedExpiry = getCheckedValues('invite_filter_expiry');
+        const checkedExpiry = getCheckedValues('invite_filter_expired');
+        const units = inviteUnitIds();
+        const role = (row.dataset.role || '').toLowerCase();
+        const isExpired = row.dataset.expired === '1';
+        return (!query || (row.dataset.email || '').toLowerCase().includes(query))
+            && (checkedRoles.length === 0 || checkedRoles.some(r => role === r.toLowerCase()))
+            && (checkedStatus.length === 0 || checkedStatus.includes((row.dataset.status || '').toLowerCase()))
+            && (checkedExpiry.length === 0 || checkedExpiry.includes(isExpired ? 'expired' : 'valid'))
+            && (!units || units.has(row.dataset.unit || ''));
+    }
+    window.inviteMatches = inviteMatches;
 
+    function filterInvitations() {
         const rows = document.querySelectorAll('.invite-row');
         const matchedRows = [];
 
         rows.forEach(row => {
-            const email = (row.dataset.email || '').toLowerCase();
-            const role = (row.dataset.role || '').toLowerCase();
-            const status = (row.dataset.status || '').toLowerCase();
-            const isExpired = row.dataset.expired === '1';
-
-            const matchesSearch = !query || email.includes(query);
-            const matchesRole = checkedRoles.length === 0 || checkedRoles.some(r => role.includes(r.toLowerCase()));
-            const matchesStatus = checkedStatus.length === 0 || checkedStatus.includes(status);
-
-            let matchesExpiry = true;
-            if (checkedExpiry.length > 0) {
-                if (isExpired && !checkedExpiry.includes('expired')) matchesExpiry = false;
-                if (!isExpired && !checkedExpiry.includes('not-expired')) matchesExpiry = false;
-            }
-
-            if (matchesSearch && matchesRole && matchesStatus && matchesExpiry) {
+            if (inviteMatches(row)) {
                 matchedRows.push(row);
             } else {
                 row.classList.add('page-hidden');
@@ -1472,7 +1358,7 @@
         document.querySelectorAll('.invite-filter-checkbox').forEach(cb => {
             cb.addEventListener('change', (e) => {
                 const name = e.target.name;
-                if (name === 'invite_filter_role[]' || name === 'invite_filter_status[]' || name === 'invite_filter_expiry[]') {
+                if (name === 'invite_filter_role[]' || name === 'invite_filter_status[]' || name === 'invite_filter_expired[]') {
                     if (e.target.checked) {
                         document.querySelectorAll(`input[name="${name}"]`).forEach(otherCb => {
                             if (otherCb !== e.target) otherCb.checked = false;
@@ -1482,6 +1368,27 @@
                 filterInvitations();
             });
         });
+
+        // Department / unit filter: the shared searchable tree. Remounted (keeping the choice) when System Data
+        // changes the units in place.
+        window.mountInviteUnitFilter = function () {
+            const box = document.getElementById('invite-filter-unit-container');
+            if (!box) return;
+            const keep = UnitTreeFilter.value(box);
+            let units = [];
+            try { units = JSON.parse(box.dataset.units || '[]'); } catch (e) {}
+            UnitTreeFilter.mount(box, units, { onChange: () => filterInvitations() });
+            if (keep && units.some(u => String(u.id) === String(keep))) UnitTreeFilter.select(box, keep, false);
+        };
+        window.mountInviteUnitFilter();
+        window.clearAllInviteFilters = function () {
+            const search = document.getElementById('invite-filter-search');
+            if (search) search.value = '';
+            document.querySelectorAll('.invite-filter-checkbox').forEach(cb => { cb.checked = false; });
+            const box = document.getElementById('invite-filter-unit-container');
+            if (box) { const q = box.querySelector('.utf-search'); if (q) q.value = ''; UnitTreeFilter.select(box, '', false); }
+            filterInvitations();
+        };
 
         const openMobileInviteFilters = document.getElementById('open-mobile-invite-filters');
         const closeMobileInviteFilters = document.getElementById('close-mobile-invite-filters');
@@ -1510,31 +1417,7 @@
         const btnDeleteFiltered = document.getElementById('delete-filtered-invites') || document.getElementById('btn-delete-filtered');
         if (btnDeleteFiltered) {
             btnDeleteFiltered.addEventListener('click', async () => {
-                const searchInput = document.getElementById('invite-filter-search');
-                const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
-                const checkedRoles = getCheckedValues('invite_filter_role');
-                const checkedStatus = getCheckedValues('invite_filter_status');
-                const checkedExpiry = getCheckedValues('invite_filter_expiry');
-
-                const allRows = Array.from(document.querySelectorAll('.invite-row'));
-                const visibleRows = allRows.filter(row => {
-                    const email = (row.dataset.email || '').toLowerCase();
-                    const role = (row.dataset.role || '').toLowerCase();
-                    const status = (row.dataset.status || '').toLowerCase();
-                    const isExpired = row.dataset.expired === '1';
-
-                    const matchesSearch = !query || email.includes(query);
-                    const matchesRole = checkedRoles.length === 0 || checkedRoles.some(r => role.includes(r.toLowerCase()));
-                    const matchesStatus = checkedStatus.length === 0 || checkedStatus.includes(status);
-
-                    let matchesExpiry = true;
-                    if (checkedExpiry.length > 0) {
-                        if (isExpired && !checkedExpiry.includes('expired')) matchesExpiry = false;
-                        if (!isExpired && !checkedExpiry.includes('not-expired')) matchesExpiry = false;
-                    }
-
-                    return matchesSearch && matchesRole && matchesStatus && matchesExpiry;
-                });
+                const visibleRows = Array.from(document.querySelectorAll('.invite-row')).filter(inviteMatches);
 
                 if (visibleRows.length === 0) {
                     window.appAlert('No invitations match the current filter.', { variant: 'warning' });

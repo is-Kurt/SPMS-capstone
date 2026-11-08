@@ -410,6 +410,35 @@ const TreeList = {
         });
         return shown.size;
     },
+    /**
+     * Fixes a list's height to its full size (every row shown, capped at maxRem), so it does not grow or shrink while
+     * someone searches, opens branches or picks (2026-11-08). Only when the list is visible; once (force: again).
+     */
+    fixHeight(list, rows, maxRem = 16, force = false) {
+        if (!list || (list._fixedH && !force) || !list.getClientRects().length) return false;
+        const was = rows.map(r => r.style.display);
+        rows.forEach(r => { if (r.dataset.excluded !== '1') r.style.display = ''; });
+        const prevMax = list.style.maxHeight;
+        list.style.maxHeight = 'none'; list.style.height = 'auto';
+        const cap = maxRem * parseFloat(getComputedStyle(document.documentElement).fontSize);
+        const h = Math.min(list.scrollHeight, cap);
+        rows.forEach((r, i) => { r.style.display = was[i]; });
+        list.style.maxHeight = prevMax;
+        list.style.height = Math.ceil(h) + 'px';
+        list._fixedH = true;
+        return true;
+    },
+    /** fixHeight once the list first becomes visible (sidebar sections can start collapsed or off screen). */
+    fixWhenShown(list, getRows, maxRem = 16) {
+        if (!list || list._fixWatch) return;
+        list._fixWatch = true;
+        if (TreeList.fixHeight(list, getRows(), maxRem)) return;
+        if (!('IntersectionObserver' in window)) return;
+        const io = new IntersectionObserver(entries => {
+            if (entries.some(e => e.isIntersecting) && TreeList.fixHeight(list, getRows(), maxRem)) io.disconnect();
+        });
+        io.observe(list);
+    },
     /** Opens every branch above the row whose data-tl-index is index. */
     reveal(rows, index) {
         const byIndex = new Map(rows.map(r => [r.dataset.tlIndex, r]));
@@ -504,7 +533,19 @@ class ThemedSelect {
         }
     }
 
+    /**
+     * An option with an empty value is a prompt ("Department / unit...", "Select your position..."), not a choice: it
+     * is not listed. Real empty choices are marked data-choice ("All departments / units", "None (top level)") and
+     * stay. Clicking the chosen item again goes back to the prompt, or to the empty choice, like a switch.
+     */
+    static isPrompt(o) { return o.value === '' && !o.hasAttribute('data-choice'); }
+    placeholder() {
+        const opts = Array.from(this.select.options);
+        return opts.find(o => ThemedSelect.isPrompt(o)) || opts.find(o => o.value === '' && o.hasAttribute('data-choice')) || null;
+    }
+
     option(opt) {
+        if (ThemedSelect.isPrompt(opt)) return null;
         const item = document.createElement('div');
         const selected = opt === this.select.options[this.select.selectedIndex];
         item.setAttribute('role', 'option');
@@ -528,17 +569,73 @@ class ThemedSelect {
             if (level > 0) item.style.paddingLeft = `calc(0.75rem + ${level * 1.1}rem)`;
             item.textContent = text;
         }
+        item._opt = opt;
+        const back = selected ? this.placeholder() : null;
+        if (back && back !== opt) item.title = 'Click again to clear';
         if (!opt.disabled) {
             item.addEventListener('click', e => {
                 if (e.target.closest('.js-tl-toggle')) return; // the panel opens / closes the branch
                 e.stopPropagation();
-                this.select.value = opt.value;
+                // like a switch: clicking the chosen item again clears it (back to the placeholder)
+                const clear = opt === this.select.options[this.select.selectedIndex] && opt.value !== '' ? this.placeholder() : null;
+                this.select.value = clear ? clear.value : opt.value;
                 this.select.dispatchEvent(new Event('change', { bubbles: true }));
                 this.close();
                 this.button.focus();
             });
         }
         return item;
+    }
+
+    /**
+     * A search box at the top of the list (2026-11-08): on selects marked data-search, and on any list longer than
+     * 8 options. Tree lists show the matches with the branches above them; Enter picks the first match.
+     */
+    addSearch() {
+        const n = this.select.options.length;
+        if (this.select.dataset.search === 'off' || !(this.select.hasAttribute('data-search') || n > 8)) { this.searchInput = null; return; }
+        const box = document.createElement('div');
+        box.className = 'sticky top-0 z-10 bg-surface pb-1';
+        const what = (this.select.getAttribute('aria-label') || '').toLowerCase();
+        box.innerHTML = '<input type="text" class="ts-search w-full bg-zinc-50 dark:bg-zinc-900 border border-surface-border rounded-lg px-3 py-2 text-xs font-semibold focus:border-accent outline-none text-text" autocomplete="off">'
+            + '<div class="ts-empty hidden px-3 py-2 text-xs text-text-muted italic">No matches.</div>';
+        this.searchInput = box.firstElementChild;
+        this.searchInput.placeholder = what ? `Search ${what}...` : 'Search...';
+        this.searchInput.setAttribute('aria-label', this.searchInput.placeholder);
+        this.panel.prepend(box);
+        this.searchInput.addEventListener('input', () => this.filter());
+        this.searchInput.addEventListener('keydown', e => {
+            if (e.key === 'Escape') { e.preventDefault(); this.close(); this.button.focus(); }
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                // the first row that matches itself (a tree also shows the branches above a match)
+                const term = this.searchInput.value.trim().toLowerCase();
+                const pickable = Array.from(this.panel.querySelectorAll('[role="option"]')).filter(r => r.style.display !== 'none' && r._opt && !r._opt.disabled && r._opt.value !== '');
+                const own = r => ((r.querySelector('.truncate') || r).textContent || '').toLowerCase();
+                const first = pickable.find(r => term && own(r).includes(term)) || pickable[0];
+                if (first) first.click();
+            }
+        });
+    }
+
+    /** Applies the search term to the open list. */
+    filter() {
+        const term = (this.searchInput ? this.searchInput.value : '').trim().toLowerCase();
+        const rows = Array.from(this.panel.querySelectorAll('[role="option"]'));
+        let shown;
+        if (this.tree) {
+            shown = TreeList.apply(rows, term);
+        } else {
+            shown = 0;
+            rows.forEach(r => { const ok = !term || r.textContent.toLowerCase().includes(term); r.style.display = ok ? '' : 'none'; if (ok) shown++; });
+            this.panel.querySelectorAll('.ts-group').forEach(h => {
+                let any = false;
+                for (let x = h.nextElementSibling; x && !x.classList.contains('ts-group'); x = x.nextElementSibling) if (x.style.display !== 'none') { any = true; break; }
+                h.style.display = any ? '' : 'none';
+            });
+        }
+        const empty = this.panel.querySelector('.ts-empty');
+        if (empty) empty.classList.toggle('hidden', shown > 0);
     }
 
     open() {
@@ -548,20 +645,23 @@ class ThemedSelect {
         Array.from(this.select.children).forEach(node => {
             if (node.tagName === 'OPTGROUP') {
                 const head = document.createElement('div');
-                head.className = 'px-3 pt-2 pb-1 text-[10px] font-black uppercase tracking-widest text-text-muted';
+                head.className = 'ts-group px-3 pt-2 pb-1 text-[10px] font-black uppercase tracking-widest text-text-muted';
                 head.textContent = node.label;
                 this.panel.appendChild(head);
-                Array.from(node.children).forEach(o => this.panel.appendChild(this.option(o)));
+                Array.from(node.children).forEach(o => { const el = this.option(o); if (el) this.panel.appendChild(el); });
             } else if (node.tagName === 'OPTION') {
-                this.panel.appendChild(this.option(node));
+                const el = this.option(node);
+                if (el) this.panel.appendChild(el);
             }
         });
         if (this.tree) this.initTree();
+        this.addSearch();
         // Open downwards, scrolling the modal (or page) just enough to show the list. Opening upwards
         // covers the fields above (it reads as part of them), so it is only the last resort.
         this.panel.style.top = 'calc(100% + 0.375rem)';
         this.panel.style.bottom = '';
         this.panel.classList.remove('hidden');
+        TreeList.fixHeight(this.panel, Array.from(this.panel.querySelectorAll('[role="option"]')), 16, true);   // same size while open
         const overflow = () => {
             const box = this.scroller === document.scrollingElement ? { bottom: window.innerHeight } : this.scroller.getBoundingClientRect();
             return this.panel.getBoundingClientRect().bottom + 8 - Math.min(box.bottom, window.innerHeight);
@@ -577,6 +677,7 @@ class ThemedSelect {
         this.chevron.style.transform = 'rotate(180deg)';
         const sel = this.panel.querySelector('[aria-selected="true"]');
         if (sel) sel.scrollIntoView({ block: 'nearest' });
+        if (this.searchInput) setTimeout(() => this.searchInput && this.searchInput.focus({ preventScroll: true }), 0);
     }
 
     /** Rows follow the options' data-level; branches start closed except the path to the chosen option. */
@@ -601,7 +702,7 @@ class ThemedSelect {
                 e.stopPropagation();
                 const row = t.closest('[role="option"]');
                 row.dataset.open = row.dataset.open === '1' ? '0' : '1';
-                TreeList.apply(Array.from(this.panel.querySelectorAll('[role="option"]')), '');
+                TreeList.apply(Array.from(this.panel.querySelectorAll('[role="option"]')), this.searchInput ? this.searchInput.value : '');
             });
         }
     }
@@ -624,3 +725,182 @@ window.ThemedSelect = ThemedSelect;
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('select[data-themed-select]').forEach(s => new ThemedSelect(s));
 });
+
+/**
+ * Filter sidebars (2026-11-07): one department / unit filter for Ratings, My Staff, the User Directory, the
+ * dashboard Master List and Invitations. A search box over a collapsible tree; one unit at a time (the page counts
+ * its sub-units in). mount() renders into the page's existing container; value() is the chosen unit id or null.
+ */
+const UnitTreeFilter = {
+    mount(container, units, { roots = null, title = 'Department / unit', allLabel = 'All departments / units', onChange = null } = {}) {
+        if (!container) return;
+        const byId = new Map(units.map(u => [String(u.id), u]));
+        const kids = new Map();
+        units.forEach(u => {
+            const p = u.parent_id && byId.has(String(u.parent_id)) ? String(u.parent_id) : '';
+            if (!kids.has(p)) kids.set(p, []);
+            kids.get(p).push(u);
+        });
+        kids.forEach(list => list.sort((a, b) => String(a.name).localeCompare(String(b.name))));
+        const start = roots ? roots.map(id => byId.get(String(id))).filter(Boolean).sort((a, b) => String(a.name).localeCompare(String(b.name))) : (kids.get('') || []);
+        const esc = v => { const d = document.createElement('div'); d.textContent = v ?? ''; return d.innerHTML; };
+        const rowClass = 'utf-row flex items-center gap-1 py-1.5 text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-lg cursor-pointer transition-colors';
+        let html = '';
+        const seen = new Set();
+        const walk = (u, level, parent) => {
+            if (seen.has(String(u.id))) return;
+            seen.add(String(u.id));
+            html += `<li class="${rowClass}" data-value="${u.id}" data-tl-index="${u.id}" data-tl-parent="${parent}" style="padding-left: calc(0.25rem + ${level * 1}rem); padding-right: 0.5rem;${level ? ' display: none;' : ''}">${TREE_CHEVRON}<span class="truncate">${esc(u.name)}</span></li>`;
+            (kids.get(String(u.id)) || []).forEach(k => walk(k, level + 1, u.id));
+        };
+        start.forEach(u => walk(u, 0, ''));
+        container.innerHTML = `
+            <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text focus:outline-none mb-3 group cursor-pointer" onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('-rotate-180');">
+                <span>${esc(title)}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+            </button>
+            <div>
+                <div class="relative mb-2">
+                    <input type="text" class="utf-search w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-lg pl-7 pr-2 py-1.5 text-[10px] focus:border-accent outline-none text-text" placeholder="Search units..." autocomplete="off">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 absolute left-2.5 top-2 text-text-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                </div>
+                <ul class="utf-list custom-scrollbar" style="max-height: 16rem; overflow-y: auto;">
+                    <li class="utf-row utf-all flex items-center py-1.5 px-2 text-xs rounded-lg cursor-pointer transition-colors" data-value=""><span class="truncate">${esc(allLabel)}</span></li>
+                    ${html}
+                </ul>
+                <p class="utf-empty hidden px-2 py-3 text-[10px] font-bold text-text-muted">No unit matches.</p>
+            </div>`;
+        container._utf = { onChange };
+        container.dataset.value = '';
+        const list = container.querySelector('.utf-list'), search = container.querySelector('.utf-search');
+        TreeList.init(list, '.utf-row');
+        list.addEventListener('click', e => {
+            const row = e.target.closest('.utf-row');
+            if (!row || e.target.closest('.js-tl-toggle')) return;
+            UnitTreeFilter.select(container, row.dataset.value, true);
+        });
+        search.addEventListener('input', () => UnitTreeFilter.refresh(container));
+        UnitTreeFilter.refresh(container);
+        TreeList.fixWhenShown(list, () => Array.from(list.querySelectorAll('.utf-row')));
+    },
+    value(container) {
+        return container && container.dataset.value ? container.dataset.value : null;
+    },
+    /** Choose a unit ('' = all); fire = run the page's onChange. */
+    select(container, value, fire = false) {
+        if (!container || !container._utf) return;
+        container.dataset.value = value ? String(value) : '';
+        if (value) TreeList.reveal(UnitTreeFilter.rows(container), String(value));
+        UnitTreeFilter.refresh(container);
+        if (fire && typeof container._utf.onChange === 'function') container._utf.onChange(container.dataset.value || null);
+    },
+    rows(container) {
+        return Array.from(container.querySelectorAll('.utf-row[data-tl-index]'));
+    },
+    refresh(container) {
+        const search = container.querySelector('.utf-search'), term = search ? search.value : '';
+        container.querySelectorAll('.utf-row').forEach(r => {
+            const on = (r.dataset.value || '') === (container.dataset.value || '');
+            r.classList.toggle('bg-accent/10', on); r.classList.toggle('text-accent-ink', on); r.classList.toggle('font-bold', on);
+            r.classList.toggle('text-text', !on);
+        });
+        const shown = TreeList.apply(UnitTreeFilter.rows(container), term);
+        const all = container.querySelector('.utf-all');
+        if (all) all.classList.toggle('hidden', !!term);
+        container.querySelector('.utf-empty')?.classList.toggle('hidden', !term || shown > 0);
+    },
+};
+window.UnitTreeFilter = UnitTreeFilter;
+
+/**
+ * The Positions filter as the position tree (VPAA > Dean > Chair > ranks, General). build() rearranges the page's
+ * existing checkbox labels (.position-filter-label, data-title) into the tree; parents nobody can pick become plain
+ * rows. apply() shows the labels the page allows (its search and department rules) with their parents.
+ * Tree data: window.SPMS_POSITION_TREE = [{id, title, parent_id}].
+ */
+const PositionTreeFilter = {
+    build(list, tree = window.SPMS_POSITION_TREE || []) {
+        if (!list || list._ptf) return;
+        list._ptf = true;
+        const labels = new Map(Array.from(list.querySelectorAll('.position-filter-label')).map(l => [String(l.dataset.title || '').toLowerCase(), l]));
+        const byId = new Map(tree.map(p => [String(p.id), p]));
+        const kids = new Map();
+        tree.forEach(p => {
+            const par = p.parent_id && byId.has(String(p.parent_id)) ? String(p.parent_id) : '';
+            if (!kids.has(par)) kids.set(par, []);
+            kids.get(par).push(p);
+        });
+        kids.forEach(l => l.sort((a, b) => (b.general_root ? 1 : 0) - (a.general_root ? 1 : 0) || String(a.title).localeCompare(String(b.title))));
+        const hasLabel = new Map();
+        const covers = p => {
+            if (hasLabel.has(p.id)) return hasLabel.get(p.id);
+            const v = labels.has(String(p.title).toLowerCase()) || (kids.get(String(p.id)) || []).some(covers);
+            hasLabel.set(p.id, v);
+            return v;
+        };
+        const esc = v => { const d = document.createElement('div'); d.textContent = v ?? ''; return d.innerHTML; };
+        // The viewer's own position and the ones above it are left out when nobody listed holds them: the tree
+        // starts with the positions under the viewer (e.g. a Chair sees the ranks, not VPAA > Dean > Chair).
+        const above = new Set();
+        (window.SPMS_MY_POSITION_IDS || []).forEach(id => {
+            for (let x = byId.get(String(id)), guard = 0; x && guard < 50; x = byId.get(String(x.parent_id)), guard++) above.add(String(x.id));
+        });
+        const rows = [];
+        const used = new Set();
+        const walk = (p, level, parent) => {
+            if (!covers(p)) return;
+            const key = String(p.title).toLowerCase();
+            if (above.has(String(p.id)) && !labels.has(key)) {          // skip it; its children take its place
+                (kids.get(String(p.id)) || []).forEach(k => walk(k, level, parent));
+                return;
+            }
+            let row = labels.get(key);
+            if (row && !used.has(key)) {
+                used.add(key);
+            } else {
+                row = document.createElement('div');
+                row.className = 'flex items-center gap-2 text-xs font-bold text-text-muted p-1 rounded-md';
+                row.innerHTML = `<span class="truncate">${esc(p.title)}</span>`;
+            }
+            row.classList.add('ptf-row');
+            row.dataset.tlIndex = 'p' + p.id;
+            row.dataset.tlParent = parent;
+            row.style.paddingLeft = `calc(0.25rem + ${level * 1}rem)`;
+            if (!row.querySelector('.js-tl-toggle')) row.insertAdjacentHTML('afterbegin', TREE_CHEVRON);
+            rows.push(row);
+            (kids.get(String(p.id)) || []).forEach(k => walk(k, level + 1, 'p' + p.id));
+        };
+        (kids.get('') || []).forEach(p => walk(p, 0, ''));
+        labels.forEach((l, key) => {                       // titles not in the tree: at the end, top level
+            if (used.has(key)) return;
+            l.classList.add('ptf-row'); l.dataset.tlIndex = 'x' + rows.length; l.dataset.tlParent = '';
+            if (!l.querySelector('.js-tl-toggle')) l.insertAdjacentHTML('afterbegin', TREE_CHEVRON);
+            rows.push(l);
+        });
+        list.innerHTML = '';
+        rows.forEach(r => list.appendChild(r));
+        list.classList.add('custom-scrollbar');
+        list.style.maxHeight = '16rem';
+        list.style.overflowY = 'auto';
+        // A chevron inside a <label> must not tick its checkbox.
+        list.addEventListener('click', e => { if (e.target.closest('.js-tl-toggle')) e.preventDefault(); }, true);
+        TreeList.init(list, '.ptf-row');
+        TreeList.fixWhenShown(list, () => Array.from(list.querySelectorAll('.ptf-row')));
+    },
+    /** allowed: the labels the page lets through (null = all); restricted: a department narrows the list. */
+    apply(list, allowed = null, term = '', restricted = false) {
+        if (!list || !list._ptf) return;
+        const rows = Array.from(list.querySelectorAll('.ptf-row'));
+        const byIndex = new Map(rows.map(r => [r.dataset.tlIndex, r]));
+        const keep = new Set();
+        rows.forEach(r => {
+            if (!r.classList.contains('position-filter-label')) return;
+            if (allowed && !allowed.has(r)) return;
+            for (let x = r; x && !keep.has(x); x = byIndex.get(x.dataset.tlParent)) keep.add(x);
+        });
+        rows.forEach(r => { r.dataset.excluded = keep.has(r) ? '0' : '1'; });
+        if (restricted && !term) keep.forEach(r => { r.dataset.open = '1'; });   // show what the department has
+        TreeList.apply(rows, term);
+    },
+};
+window.PositionTreeFilter = PositionTreeFilter;

@@ -41,7 +41,7 @@
         $statusPillModifier = ''; // emerald active
         $adminStepIndex = 3;
         $bannerTitle = 'Institutional Evaluation Phase is Active';
-        $bannerDesc = 'The formal performance evaluation window is open across Benguet State University. Supervisors, PMT/TWG, and Executive Reviewers are evaluating actual accomplishments against approved targets and verifying attached Means of Verification (MOVs).';
+        $bannerDesc = 'The formal performance evaluation window is open across Benguet State University. Unit heads, PMT/TWG, and Executive Reviewers are evaluating actual accomplishments against approved targets and verifying attached Means of Verification (MOVs).';
         $bannerIconClass = 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30';
     } elseif (!empty($hubTargetEnd) && $nowStr > $hubTargetEnd) {
         $cyclePhase = 'execution';

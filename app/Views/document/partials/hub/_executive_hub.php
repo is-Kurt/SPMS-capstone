@@ -157,6 +157,14 @@
                                 </div>
                             </div>
 
+                            <?php if (!empty($activeFolder['waiting_supervisor'])): ?>
+                                <!-- Revoked supervisor, no new one yet (ReviewHandover) -->
+                                <div class="rounded-xl border border-warning-200/50 dark:border-warning-500/30 bg-warning-50 dark:bg-warning-500/10 px-4 py-3 mb-2">
+                                    <p class="text-sm font-bold text-warning-500">Waiting for a supervisor</p>
+                                    <p class="text-xs text-text-muted font-medium mt-1">Your previous supervisor was removed from this paper. A copy of your form is in its version history; it can be submitted once your new supervisor cascades to you.</p>
+                                </div>
+                            <?php endif; ?>
+
                             <!-- CYCLE PROGRESS TRACKER -->
                             <div>
                                 <div class="flex flex-wrap items-center justify-between gap-2 mt-[18px] mb-3 sm:mt-7 sm:mb-4">
@@ -430,7 +438,7 @@
                                                 <div class="space-y-3 flex-1">
                                                     <?php if (empty($tRegularSups)): ?>
                                                         <div class="p-4 rounded-xl border border-dashed border-slate-200 dark:border-zinc-800 text-center text-xs text-slate-400 dark:text-zinc-500">
-                                                            No supervising authorities recorded for Target Setting.
+                                                            <?= !empty($activeFolder['waiting_supervisor']) ? 'Waiting for a supervisor to cascade to you.' : 'No supervising authorities recorded for Target Setting.' ?>
                                                         </div>
                                                     <?php else: ?>
                                                         <?php foreach ($tRegularSups as $sup): ?>
@@ -592,7 +600,7 @@
                                                 <div class="space-y-3 flex-1">
                                                     <?php if (empty($eRegularSups)): ?>
                                                         <div class="p-4 rounded-xl border border-dashed border-slate-200 dark:border-zinc-800 text-center text-xs text-slate-400 dark:text-zinc-500">
-                                                            No supervising authorities recorded for Evaluation Phase.
+                                                            <?= !empty($activeFolder['waiting_supervisor']) ? 'Waiting for a supervisor to cascade to you.' : 'No supervising authorities recorded for Evaluation Phase.' ?>
                                                         </div>
                                                     <?php else: ?>
                                                         <?php foreach ($eRegularSups as $sup): ?>

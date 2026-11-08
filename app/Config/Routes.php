@@ -24,9 +24,15 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
 
     // Routing Presets (My Teams)
     $routes->get('teams', 'Team::index', ['filter' => 'role:Admin,Supervisor']);
+    $routes->get('staff-accounts', 'StaffAccounts::index', ['filter' => 'role:Supervisor']);
+    $routes->post('staff-accounts/update', 'StaffAccounts::update', ['filter' => 'role:Supervisor']);
+    $routes->post('staff-accounts/assignment/add', 'StaffAccounts::addAssignment', ['filter' => 'role:Supervisor']);
+    $routes->post('staff-accounts/assignment/end', 'StaffAccounts::endAssignment', ['filter' => 'role:Supervisor']);
+    $routes->addRedirect('teams/staff-details', 'staff-accounts');   // the old My Staff sub-tab
     $routes->get('teams/(:segment)', 'Team::index/$1', ['filter' => 'role:Admin,Supervisor']);
     $routes->post('teams/create-shell', 'Team::createShell', ['filter' => 'role:Admin,Supervisor']);
     $routes->post('teams/store', 'Team::store', ['filter' => 'role:Admin,Supervisor']);
+    $routes->post('teams/remove-hidden', 'Team::removeHidden', ['filter' => 'role:Admin,Supervisor']);
     $routes->match(['POST', 'DELETE'], 'teams/delete', 'Team::delete', ['filter' => 'role:Admin,Supervisor']);
 
     // Accounts
@@ -47,6 +53,8 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->post('account/position/delete', 'AccountManagement::deletePosition', ['filter' => 'role:Admin']);
     $routes->post('account/position/update', 'AccountManagement::updatePosition', ['filter' => 'role:Admin']);
     $routes->post('account/doc-rules/update', 'AccountManagement::updateDocRules', ['filter' => 'role:Admin']);
+    $routes->post('account/flag/ignore', 'AccountManagement::ignoreFlag', ['filter' => 'role:Admin']);
+    $routes->post('account/flag/unignore', 'AccountManagement::unignoreFlag', ['filter' => 'role:Admin']);
     $routes->post('account/user/assignment/add', 'AccountManagement::addAssignment', ['filter' => 'role:Admin']);
     $routes->post('account/user/assignment/end', 'AccountManagement::endAssignment', ['filter' => 'role:Admin']);
     $routes->post('account/user/details', 'AccountManagement::updateUserDetails', ['filter' => 'role:Admin']);
@@ -112,6 +120,7 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
     $routes->post('folder/uncascade-team', 'Folder::uncascadeTeam', ['filter' => 'role:Admin,Supervisor']);
     $routes->post('folder/sync-team-cascade', 'Folder::syncTeamCascade', ['filter' => 'role:Admin,Supervisor']);
     $routes->post('folder/remove-subordinate-cascade', 'Folder::removeSubordinateCascade', ['filter' => 'role:Admin,Supervisor']);
+    $routes->post('folder/delete-on-hold', 'Folder::deleteOnHold', ['filter' => 'role:Admin']);
 
     // Document
     $routes->get('document', 'Document');
@@ -124,6 +133,8 @@ $routes->group('', ['filter' => 'auth'], function($routes) {
 
     $routes->get('document/(:segment)/export-excel', 'Document::exportExcel/$1');
     $routes->get('document/(:segment)/export-rubric', 'Document::exportRubric/$1');
+    $routes->get('document/(:segment)/version-rows', 'Document::versionRows/$1');
+    $routes->post('document/(:segment)/copy-version-rows', 'Document::copyVersionRows/$1');
     $routes->get('document/(:segment)', 'Document::index/$1');
     $routes->get('documents/(:segment)', 'Document::index/$1');
     $routes->post('document', 'Document::store');

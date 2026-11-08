@@ -35,10 +35,6 @@
                         </button>
                     </div>
 
-                    <!-- Delete button in a separate div/space -->
-                    <button type="button" onclick="deleteActiveTeam()" class="shrink-0 p-2 text-zinc-400 hover:text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-500/10 transition-colors cursor-pointer rounded-xl bg-surface border border-surface-border lg:border-none lg:bg-transparent shadow-sm lg:shadow-none mb-1" title="Delete Staff">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                    </button>
                 </div>
             </div>
             <div class="w-full sm:w-[65%]">
@@ -129,6 +125,17 @@
                                 </div>
                             </div>
                         </div>
+                        <?php if (!empty($hiddenMembers)): $hn = count($hiddenMembers); ?>
+                        <!-- Members no longer under you: kept on the list, hidden, skipped by cascade and sync -->
+                        <div id="hidden-members-note" class="px-4 py-3 border-b border-surface-border bg-warning-50 dark:bg-warning-500/10 flex items-start justify-between gap-3 shrink-0">
+                            <p class="text-xs text-text-muted leading-relaxed">
+                                <span class="font-bold text-text"><?= $hn ?> more on this list <?= $hn === 1 ? 'is' : 'are' ?> no longer under you:</span>
+                                <?= esc(implode(', ', array_map(fn($m) => trim($m['first_name'] . ' ' . $m['last_name']), $hiddenMembers))) ?>.
+                                They moved to another unit or their account is disabled. They are not shown or counted, cascade and sync skip them, and they show again if they come back.
+                            </p>
+                            <button type="button" id="btn-remove-hidden" onclick="removeHiddenMembers()" class="shrink-0 text-[10px] font-black uppercase tracking-widest text-danger-500 hover:text-danger-600 transition-colors cursor-pointer whitespace-nowrap">Remove from list</button>
+                        </div>
+                        <?php endif; ?>
                         <!-- Allows natural expansion on mobile with overflow-visible -->
                         <div class="flex-1 overflow-visible lg:overflow-y-auto p-2 space-y-1 bg-zinc-50/30 dark:bg-zinc-900/20 custom-scrollbar" id="selected-list">
                             <div id="empty-state" class="text-center py-12 text-sm font-bold text-text-muted italic flex flex-col items-center gap-2">
@@ -267,9 +274,12 @@
                 </div>
                 
                 <!-- Desktop Save Button Location (Sticky Bottom) -->
-                <div class="hidden lg:block p-4 border-t border-surface-border shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800 lg:rounded-b-2xl">
+                <div class="hidden lg:flex flex-col gap-2 p-4 border-t border-surface-border shrink-0 bg-transparent lg:bg-zinc-50 lg:dark:bg-zinc-800 lg:rounded-b-2xl">
                     <button type="submit" id="btn-save-desktop" class="w-full py-2 bg-accent text-accent-text rounded-lg text-sm font-bold shadow-sm hover:bg-accent-hover transition-all active:scale-[0.98] cursor-pointer">
                         Save Changes
+                    </button>
+                    <button type="button" onclick="deleteActiveTeam()" class="w-full py-1.5 text-xs font-bold text-danger-500 hover:text-danger-600 border border-danger-200 dark:border-danger-500/20 bg-danger-50/50 dark:bg-danger-500/5 hover:bg-danger-50 dark:hover:bg-danger-500/10 rounded-lg transition-colors cursor-pointer">
+                        Delete Staff
                     </button>
                 </div>
             </div>
@@ -281,6 +291,11 @@
             <button type="submit" id="btn-save-mobile" class="w-full py-3.5 rounded-xl bg-accent text-accent-text text-sm font-bold shadow-lg shadow-accent/20 active:scale-95 transition-all cursor-pointer">
                 Save Staff Changes
             </button>
+            <div class="mt-2">
+                    <button type="button" onclick="deleteActiveTeam()" class="w-full py-1.5 text-xs font-bold text-danger-500 hover:text-danger-600 border border-danger-200 dark:border-danger-500/20 bg-danger-50/50 dark:bg-danger-500/5 hover:bg-danger-50 dark:hover:bg-danger-500/10 rounded-lg transition-colors cursor-pointer">
+                        Delete Staff
+                    </button>
+            </div>
         </div>
     </form>
 <?php endif; ?>
@@ -353,7 +368,6 @@
     }
 
     const filterUnitsPaginator = new ClientPaginator({ containerId: 'filter-units-pagination', pageSize: 6 });
-    const filterPosPaginator = new ClientPaginator({ containerId: 'filter-pos-pagination', pageSize: 6 });
 
     // TEAMS FILTER RESPONSIVE LOGIC
     function toggleTeamsFilterSidebar() {
@@ -445,6 +459,20 @@
             }
         });
     }
+    <?php if (!empty($hiddenMembers) && !empty($activeTeam['id'])): ?>
+    async function removeHiddenMembers() {
+        const ok = await window.appConfirm('Take the people who are no longer under you off this staff list? Only the list changes: their papers are not touched. You can add them again if they come back.', {
+            title: 'Remove from list', confirmText: 'Remove from list'
+        });
+        if (!ok) return;
+        const formData = new FormData();
+        formData.append('team_id', '<?= esc($activeTeam['id'], 'js') ?>');
+        apiPost('<?= site_url('teams/remove-hidden') ?>', formData, {
+            onSuccess: () => { window.location.reload(); },
+            onError: (errMsg) => { window.appAlert(errMsg || 'Something went wrong.', { variant: 'danger' }); }
+        });
+    }
+    <?php endif; ?>
     // MOBILE TABS LOGIC
     function switchTeamPanel(panel) {
         const avail = document.getElementById('panel-available');
@@ -541,169 +569,24 @@
         return result;
     }
 
-    // Dynamic Cascading Unit Filters (N-Tier Drill-Down)
-    const LEVEL_THEMES = [
-        {
-            labelColor: 'text-text-muted',
-            focusRing: 'focus:border-accent focus:ring-1 focus:ring-accent/20',
-            activeBorder: 'border-zinc-400 dark:border-zinc-600',
-            connector: 'border-zinc-300 dark:border-zinc-700'
-        }
-    ];
-
-    function getLevelTheme(level) {
-        return LEVEL_THEMES[0];
-    }
-
-    function getLevelTitle(level, parentUnit) {
-        if (level === 1) {
-            return 'DEPARTMENT / UNIT';
-        }
-        return parentUnit ? escapeHtml(parentUnit.name) : 'SUB-UNIT';
-    }
-
-    function getDefaultOptionLabel(level, parentUnit) {
-        if (level === 1) {
-            return 'All Departments &amp; Units';
-        }
-        return parentUnit ? `All in ${escapeHtml(parentUnit.name)}` : 'All Options';
-    }
-
-    function renderDynamicUnitLevel(level, parentUnitId, targetContainer) {
-        if (!targetContainer) return;
-        const wasCollapsed = level === 1 && Boolean(targetContainer.querySelector(':scope > .dynamic-unit-level > .js-unit-level-body.hidden'));
-        targetContainer.innerHTML = '';
-
-        const units = window.SPMS_TEAM_UNITS || [];
-        const unitsById = {};
-        units.forEach(u => unitsById[u.id] = u);
-
-        let availableUnits = [];
-        let parentUnit = null;
-
-        if (level === 1) {
-            if (window.SPMS_USER_ROLE === 'Admin') {
-                // Admin starts with root units
-                availableUnits = units.filter(u => !u.parent_id || !unitsById[u.parent_id]);
-            } else {
-                // Supervisor starts with direct children of their assigned units
-                const myUnits = window.SPMS_MY_UNIT_IDS || [];
-                availableUnits = units.filter(u => myUnits.includes(u.parent_id));
-            }
-        } else {
-            const numParentId = parseInt(parentUnitId, 10);
-            parentUnit = unitsById[numParentId] || null;
-            availableUnits = units.filter(u => u.parent_id === numParentId);
-        }
-
-        // If no units available, omit this level entirely
-        if (availableUnits.length === 0) {
-            targetContainer.classList.add('hidden');
-            return;
-        }
-
-        targetContainer.classList.remove('hidden');
-
-        const theme = getLevelTheme(level);
-        const title = getLevelTitle(level, parentUnit);
-        const defaultLabel = getDefaultOptionLabel(level, parentUnit);
-
-        let optionsHtml = `<option value="">${defaultLabel}</option>`;
-        availableUnits.forEach(u => {
-            optionsHtml += `<option value="${u.id}">${escapeHtml(u.name)}</option>`;
-        });
-
-        const levelWrapper = document.createElement('div');
-        levelWrapper.className = 'dynamic-unit-level';
-        levelWrapper.dataset.level = level;
-
-        const headerSpacing = level === 1 ? 'mb-3 tracking-widest' : 'mb-1.5 tracking-wider';
-        const headerHtml = `
-            <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase ${headerSpacing} ${theme.labelColor} hover:text-text focus:outline-none group cursor-pointer" onclick="
-                this.nextElementSibling.classList.toggle('hidden');
-                this.querySelector('svg').classList.toggle('-rotate-180');
-            ">
-                <span class="truncate pr-2 text-left" title="${title}">${title}</span>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${wasCollapsed ? '-rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
-            </button>`;
-
-        levelWrapper.innerHTML = `
-            ${headerHtml}
-            <div class="js-unit-level-body ${wasCollapsed ? 'hidden' : ''}">
-                <div class="relative w-full">
-                    <select id="filter-unit-level-${level}" aria-label="Unit filter, level ${level}"
-                        class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border ${theme.focusRing} rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
-                        ${optionsHtml}
-                    </select>
-                    <div class="pointer-events-none absolute inset-y-0 flex items-center text-text-muted" style="right: 10px;">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </div>
-                </div>
-                <div id="dynamic-unit-children-${level}" class="relative pl-3.5 ml-2.5 border-l-2 border-dashed ${theme.connector} space-y-3 pt-2 hidden"></div>
-            </div>
-        `;
-
-        targetContainer.appendChild(levelWrapper);
-
-        const selectEl = levelWrapper.querySelector(`#filter-unit-level-${level}`);
-        selectEl.addEventListener('change', (e) => {
-            onDynamicUnitLevelChange(level, e.target.value);
-        });
-    }
-
-    function onDynamicUnitLevelChange(level, selectedUnitId) {
-        const selectEl = document.getElementById(`filter-unit-level-${level}`);
-        const childrenContainer = document.getElementById(`dynamic-unit-children-${level}`);
-        const theme = getLevelTheme(level);
-
-        if (selectEl) {
-            const activeClasses = theme.activeBorder.split(' ');
-            if (selectedUnitId) {
-                selectEl.classList.add(...activeClasses);
-            } else {
-                selectEl.classList.remove(...activeClasses);
-            }
-        }
-
-        if (childrenContainer) {
-            childrenContainer.innerHTML = '';
-            childrenContainer.classList.add('hidden');
-
-            if (selectedUnitId) {
-                const numId = parseInt(selectedUnitId, 10);
-                const units = window.SPMS_TEAM_UNITS || [];
-                const childUnits = units.filter(u => u.parent_id === numId);
-
-                if (childUnits.length > 0) {
-                    renderDynamicUnitLevel(level + 1, selectedUnitId, childrenContainer);
-                }
-            }
-        }
-
-        if (typeof filterSidebarPositions === 'function') {
-            filterSidebarPositions();
-        }
-        applyFilters();
-    }
-    window.onDynamicUnitLevelChange = onDynamicUnitLevelChange;
-
+// Department / unit filter: a searchable tree (UnitTreeFilter). Admin starts at the top, a supervisor at the
+    // units below their own (as the old drop-downs did).
     function initDynamicUnitFilters() {
-        const rootContainer = document.getElementById('dynamic-unit-filter-container');
-        if (!rootContainer) return;
-        renderDynamicUnitLevel(1, null, rootContainer);
+        const root = document.getElementById('dynamic-unit-filter-container');
+        if (!root) return;
+        const units = window.SPMS_TEAM_UNITS || [];
+        const byId = {}; units.forEach(u => { byId[u.id] = u; });
+        const myUnits = window.SPMS_MY_UNIT_IDS || [];
+        const roots = (window.SPMS_USER_ROLE === 'Admin' ? units.filter(u => !u.parent_id || !byId[u.parent_id]) : units.filter(u => myUnits.includes(u.parent_id))).map(u => u.id);
+        root.classList.toggle('hidden', roots.length === 0);
+        UnitTreeFilter.mount(root, units, { roots, onChange: () => {
+            if (typeof filterSidebarPositions === 'function') filterSidebarPositions();
+            applyFilters();
+        } });
     }
 
-    function getActiveDynamicUnitId() {
-        const container = document.getElementById('dynamic-unit-filter-container');
-        if (!container) return null;
-        const selects = Array.from(container.querySelectorAll('select'));
-        for (let i = selects.length - 1; i >= 0; i--) {
-            const val = selects[i].value;
-            if (val) return val;
-        }
-        return null;
+function getActiveDynamicUnitId() {
+        return UnitTreeFilter.value(document.getElementById('dynamic-unit-filter-container'));
     }
 
     function getActiveDeptPositions() {
@@ -845,8 +728,8 @@
     // Positions
     const cbPosList = document.getElementById('positions-checkbox-list');
     if (cbPosList) {
+        PositionTreeFilter.build(cbPosList);                             // the position tree instead of pages
         const allPosRows = Array.from(cbPosList.querySelectorAll('.position-filter-label'));
-        filterPosPaginator.init(allPosRows);
         
         filterSidebarPositions = () => {
             const input = document.getElementById('mini-search-positions');
@@ -869,7 +752,7 @@
                 return matchesQuery && matchesDept;
             });
 
-            filterPosPaginator.updateItems(matchedRows);
+            PositionTreeFilter.apply(cbPosList, new Set(matchedRows), query, allowedDeptPosIds !== null);
         };
 
         const msPos = document.getElementById('mini-search-positions');

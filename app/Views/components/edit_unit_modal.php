@@ -146,7 +146,7 @@
             <div class="mt-4">
                 <label class="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Head position</label>
                 <select data-themed-select name="head_position_id" id="edit-unit-head" class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold cursor-pointer">
-                    <option value="">Inherit from the parent unit (one level down)</option>
+                    <option value="" data-choice>Inherit from the parent unit (one level down)</option>
                     <?php foreach (($positionTree ?? []) as $p): ?>
                         <?php if ($p['is_general']) continue; ?>
                         <option value="<?= $p['id'] ?>" data-level="<?= (int) $p['level'] ?>"><?= esc($p['title']) ?></option>

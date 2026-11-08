@@ -246,7 +246,8 @@ class Session extends BaseController
         $userId = session()->get('pending_2fa_user_id');
         if (!$userId) return redirect()->to(site_url('login'));
 
-        $code = (string) $this->request->getPost('code');
+        // Digits only: a code copied from the email can carry spaces or a line break.
+        $code = preg_replace('/\D/', '', (string) $this->request->getPost('code'));
         $userModel = new UserModel();
         $user = $userModel->find($userId);
 

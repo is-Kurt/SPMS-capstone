@@ -326,20 +326,24 @@
                 </a>
             <?php endif; ?>
 
-            <button onclick="smartGoBack()" class="btn btn-outline" type="button">
+            <a id="btn-last-page" href="#" class="btn btn-outline" style="display: none;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 Go Back
-            </button>
+            </a>
         </div>
 
         <script>
-            function smartGoBack() {
-                if (document.referrer && document.referrer.indexOf(window.location.host) !== -1 && document.referrer !== window.location.href) {
-                    window.history.back();
-                } else {
-                    window.location.href = '<?= $isLoggedIn ? site_url('folders') : site_url('login') ?>';
-                }
-            }
+            // Back to the last page that loaded fine in this tab (saved by the main layout), in one step.
+            // Only a path on this site is used; with none saved the button stays hidden.
+            (function () {
+                let last = null;
+                try { last = sessionStorage.getItem('spmsLastGoodPage'); } catch (e) {}
+                const here = location.pathname + location.search;
+                if (!last || last.charAt(0) !== '/' || last.charAt(1) === '/' || last === here) return;
+                const btn = document.getElementById('btn-last-page');
+                btn.href = last;
+                btn.style.display = '';
+            })();
         </script>
 
         <?php if (ENVIRONMENT !== 'production' && !empty($message)): ?>

@@ -2644,7 +2644,7 @@
 
                 <!-- 8. Remarks -->
                 <td class="spms-cell-input spms-cell-remarks" data-field-name="remarks" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
-                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Remarks..." ${remarksDisabled ? 'disabled title="Locked (Remarks are entered by Supervisors and Reviewers)"' : ''}>${escapeHtml(data.remarks || '')}</textarea>
+                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Remarks..." ${remarksDisabled ? 'disabled title="Locked (remarks are entered by reviewers)"' : ''}>${escapeHtml(data.remarks || '')}</textarea>
                 </td>
             `;
         } else if (window.isCurrentDocDpcr) {
@@ -2691,7 +2691,7 @@
 
                 <!-- Remarks -->
                 <td class="spms-cell-input spms-cell-remarks" data-field-name="remarks" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
-                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Remarks..." ${remarksDisabled ? 'disabled title="Locked (Remarks are entered by Supervisors and Reviewers)"' : ''}>${escapeHtml(data.remarks || '')}</textarea>
+                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Remarks..." ${remarksDisabled ? 'disabled title="Locked (remarks are entered by reviewers)"' : ''}>${escapeHtml(data.remarks || '')}</textarea>
                 </td>
             `;
         } else if (window.isCurrentDocOpcr) {
@@ -2738,7 +2738,7 @@
 
                 <!-- Remarks -->
                 <td class="spms-cell-input spms-cell-remarks" data-field-name="remarks" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
-                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Remarks..." ${remarksDisabled ? 'disabled title="Locked (Remarks are entered by Supervisors and Reviewers)"' : ''}>${escapeHtml(data.remarks || '')}</textarea>
+                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Remarks..." ${remarksDisabled ? 'disabled title="Locked (remarks are entered by reviewers)"' : ''}>${escapeHtml(data.remarks || '')}</textarea>
                 </td>
             `;
         } else {
@@ -2770,7 +2770,7 @@
 
                 <!-- Remarks -->
                 <td class="spms-cell-input spms-cell-remarks" data-field-name="remarks" style="padding: 0; vertical-align: top; border: 1px solid #000; position: relative;">
-                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Remarks..." ${remarksDisabled ? 'disabled title="Locked (Remarks are entered by Supervisors and Reviewers)"' : ''}>${escapeHtml(data.remarks || '')}</textarea>
+                    <textarea class="spms-textarea field-remarks" rows="3" placeholder="Remarks..." ${remarksDisabled ? 'disabled title="Locked (remarks are entered by reviewers)"' : ''}>${escapeHtml(data.remarks || '')}</textarea>
                 </td>
             `;
         }

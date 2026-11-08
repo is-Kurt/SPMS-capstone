@@ -30,11 +30,16 @@
                     <?php foreach ($roles as $role): ?>
                         <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
                             <input type="checkbox" name="invite_filter_role[]" value="<?= esc($role['name']) ?>" class="checkbox invite-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer">
-                            <?= esc($role['name']) ?>
+                            <?= esc(staff_role_label($role['name'])) ?>
                         </label>
                     <?php endforeach; ?>
                 </div>
             </div>
+
+            <!-- Department / unit filter (UnitTreeFilter, same as the other sidebars): a unit also shows the
+                 invitations to the units under it. data-units is refreshed with System Data. -->
+            <?php $inviteUnitsJson = json_encode(array_map(fn($u) => ['id' => (int) $u['id'], 'name' => $u['name'], 'parent_id' => $u['parent_id'] ? (int) $u['parent_id'] : 0], $units ?? []), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
+            <div id="invite-filter-unit-container" class="shrink-0 pb-4 border-b border-surface-border/50" data-units="<?= esc($inviteUnitsJson, 'attr') ?>"></div>
 
             <!-- Status Filter -->
             <div class="shrink-0 pb-4 border-b border-surface-border/50">
@@ -133,7 +138,7 @@
                     ?>
                         <tr class="invite-row block lg:table-row bg-surface p-4 lg:p-0 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors"
                             data-id="<?= $inv['id'] ?>" data-email="<?= strtolower(esc($inv['email'])) ?>"
-                            data-status="<?= esc($inv['status']) ?>" data-expired="<?= $isExpired ? '1' : '0' ?>" data-role="<?= esc($inv['role_name'] ?? '') ?>">
+                            data-status="<?= esc($inv['status']) ?>" data-expired="<?= $isExpired ? '1' : '0' ?>" data-role="<?= esc($inv['role_name'] ?? '') ?>" data-unit="<?= (int) ($inv['unit_id'] ?? 0) ?: '' ?>">
                             <td class="block lg:table-cell px-0 lg:px-6 py-1 lg:py-4">
                                 <div class="flex flex-col min-w-0 pr-4">
                                     <span class="text-sm font-bold text-text truncate"><?= esc($inv['email']) ?></span>
@@ -144,7 +149,7 @@
                             <td class="block lg:table-cell px-0 lg:px-6 py-1.5 lg:py-4">
                                 <div class="flex justify-between items-center lg:block">
                                     <span class="w-max px-2.5 py-0.5 rounded-lg text-[10px] font-black bg-info-50 dark:bg-info-500/10 text-info-600 border border-info-200 dark:border-info-500/20 uppercase tracking-widest">
-                                        <?= esc($inv['role_name'] ?? 'No Role') ?>
+                                        <?= esc(staff_role_label($inv['role_name'] ?? null) ?: 'No Role') ?>
                                     </span>
                                     <?php if (!empty($inv['unit_name'])): ?>
                                         <span class="block text-[10px] font-bold text-text-muted mt-1"><?= esc($inv['unit_name']) ?></span>

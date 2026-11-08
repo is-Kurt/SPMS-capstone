@@ -783,3 +783,16 @@ input[type="submit"]:active:not(:disabled) {
     .doc-rules-scroll { flex: 1 1 0; min-height: 0; overflow-y: auto; }
 }
 .weights-msg:empty { display: none; }
+
+/* Send Invitations: role + emails on the left, the department card (search + tree) on the right. */
+.invite-cols { display: flex; flex-direction: column; gap: 1.5rem; flex: 1 1 auto; }
+.invite-main { display: flex; flex-direction: column; gap: 1.5rem; flex: 1 1 auto; }
+.invite-units { display: flex; flex-direction: column; }
+.invite-units.hidden { display: none; }
+.invite-unit-scroll { max-height: 22rem; overflow-y: auto; }
+@media (min-width: 64rem) {
+    .invite-cols { flex-direction: row; min-height: 0; }
+    .invite-main { min-width: 0; }
+    .invite-units { width: 26rem; flex-shrink: 0; min-height: 0; }
+    .invite-unit-scroll { flex: 1 1 0; min-height: 12rem; max-height: none; }
+}

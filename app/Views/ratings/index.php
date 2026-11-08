@@ -10,7 +10,7 @@
 </style>
 
 <?php if (!$activeFolder): ?>
-    <button onclick="toggleAppSidebar()" class="flex-1 w-full border-2 border-dashed border-surface-border hover:border-accent rounded-2xl flex flex-col items-center justify-center text-center p-12 bg-surface/50 hover:bg-accent/5 transition-all group cursor-pointer lg:cursor-default min-h-[400px]">
+    <button onclick="if (window.innerWidth < 1024) toggleAppSidebar()" class="flex-1 w-full border-2 border-dashed border-surface-border hover:border-accent rounded-2xl flex flex-col items-center justify-center text-center p-12 bg-surface/50 hover:bg-accent/5 transition-all group cursor-pointer lg:cursor-default min-h-[400px]">
         <div class="inline-flex p-4 rounded-full bg-zinc-100 dark:bg-zinc-800/80 group-hover:bg-accent/10 text-zinc-400 group-hover:text-accent dark:text-zinc-500 mb-4 shadow-sm transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -192,9 +192,10 @@
                 </p>
                 <?php if ($sysRole === 'TWG'): ?>
                     <?php if (empty($assignedUnits)): ?>
-                        <div class="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-                            <span>Institutional Scope: University-Wide Technical Working Group Review</span>
+                        <!-- No units assigned: a TWG member reviews nothing until the Admin assigns some (it is not university-wide) -->
+                        <div id="twg-unassigned-note" class="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                            <span>No departments assigned yet. The Administrator assigns them in TWG Assignments; until then there is nothing for you to review.</span>
                         </div>
                     <?php endif; ?>
                 <?php elseif ($sysRole === 'PMT'): ?>
@@ -357,9 +358,9 @@
                         // Desktop columns: User, (Department), Folder Status, (Score). The whole row opens the folder.
                         // Below 1280px the Department column folds away (see .ratings-table in the style block).
                         if ($pKey === 'target') {
-                            $colWidths = ($sysRole === 'Admin') ? ['name' => '40%', 'dept' => '30%', 'status' => '30%'] : ['name' => '60%', 'status' => '40%'];
+                            $colWidths = ($sysRole === 'Admin') ? ['name' => '38%', 'dept' => '28%', 'status' => '27%', 'act' => '7%'] : ['name' => '60%', 'status' => '40%'];
                         } else {
-                            $colWidths = ($sysRole === 'Admin') ? ['name' => '34%', 'dept' => '26%', 'status' => '24%', 'score' => '16%'] : ['name' => '50%', 'status' => '30%', 'score' => '20%'];
+                            $colWidths = ($sysRole === 'Admin') ? ['name' => '32%', 'dept' => '24%', 'status' => '23%', 'score' => '14%', 'act' => '7%'] : ['name' => '50%', 'status' => '30%', 'score' => '20%'];
                         }
                         $tableClass = 'ratings-table ' . ($sysRole === 'Admin' ? 'rt-admin ' : '') . ($pKey === 'target' ? 'rt-target' : 'rt-eval');
                     ?>
@@ -377,6 +378,9 @@
                                     <th class="px-6 py-4 min-w-[110px]">Folder Status</th>
                                     <?php if ($pKey !== 'target'): ?>
                                         <th class="px-6 py-4 min-w-[60px] text-center">Score</th>
+                                    <?php endif; ?>
+                                    <?php if ($sysRole === 'Admin'): ?>
+                                        <th class="px-2 py-4"><span class="sr-only">Actions</span></th>
                                     <?php endif; ?>
                                 </tr>
                             </thead>
@@ -450,6 +454,12 @@
                                                             <span class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest <?= $staffType->badgeClass() ?>">
                                                                 <?= $staffType->label() ?>
                                                             </span>
+                                                            <?php if ($sysRole === 'Admin' && !empty($row['on_hold'])): ?>
+                                                                <!-- On hold: the owner is not rated staff now; reviewers do not see it (ReviewHandover::holdReason) -->
+                                                                <span class="rc-on-hold px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/25" title="Not rated staff now. Reviewers do not see this paper and it is left out of the counts. Switching them back (Restore) or enabling the account brings it back as it was.">
+                                                                    On hold: <?= esc($row['on_hold']) ?>
+                                                                </span>
+                                                            <?php endif; ?>
                                                             <?php if ($sysRole === 'Admin'): ?>
                                                                 <?php if (!empty($row['is_cascaded_by_me'])): ?>
                                                                     <span class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/25">
@@ -537,6 +547,17 @@
                                                 </td>
                                             <?php endif; ?>
 
+                                            <?php if ($sysRole === 'Admin'): ?>
+                                                <!-- Admin: delete a paper on hold (the rightmost cell) -->
+                                                <td class="<?= !empty($row['on_hold']) ? 'block' : 'hidden' ?> lg:table-cell rc-act-cell px-0 py-1 lg:py-4 text-right">
+                                                    <?php if (!empty($row['on_hold'])): ?>
+                                                        <button type="button" class="js-delete-on-hold inline-flex items-center justify-center w-8 h-8 rounded-lg text-danger-500 hover:text-danger-600 hover:bg-danger-500/10 transition-colors cursor-pointer" data-folder-id="<?= esc($row['folder_id'], 'attr') ?>" data-name="<?= esc($row['username'], 'attr') ?>" title="Delete paper (on hold)" aria-label="Delete <?= esc($row['username'], 'attr') ?>'s paper">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                        </button>
+                                                    <?php endif; ?>
+                                                </td>
+                                            <?php endif; ?>
+
                                             <td class="block lg:hidden px-0 pt-1 pb-0 text-right">
                                                 <a href="<?= $rowUrl ?>" tabindex="-1"
                                                 class="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 lg:py-2 <?= $btnClass ?> rounded-xl text-xs transition-all shadow-sm active:scale-95 cursor-pointer whitespace-nowrap">
@@ -581,19 +602,42 @@
     @media (min-width: 1280px) {
         .ratings-table { min-width: 600px; }
     }
+    /* Admin: the delete icon column (papers on hold) stays narrow at every width */
+    @media (min-width: 1024px) {
+        .ratings-table .rc-act-cell { padding-inline: 0 .5rem !important; }
+    }
     /* 1024-1279px: the panel is narrow, so fold the admin Department column and tighten the cells instead of scrolling sideways */
     @media (min-width: 1024px) and (max-width: 1279px) {
         .ratings-table th, .ratings-table td { padding-inline: .75rem !important; }
         .ratings-table .rc-badge { white-space: normal; }
         .rt-admin col.rc-dept { visibility: collapse; width: 0 !important; }
         .rt-admin .rc-dept-cell { white-space: nowrap; overflow: hidden; padding-inline: 0 !important; }
-        .rt-admin.rt-target col.rc-name { width: 58% !important; }
-        .rt-admin.rt-target col.rc-status { width: 42% !important; }
-        .rt-admin.rt-eval col.rc-name { width: 46% !important; }
-        .rt-admin.rt-eval col.rc-status { width: 34% !important; }
-        .rt-admin.rt-eval col.rc-score { width: 20% !important; }
+        .rt-admin.rt-target col.rc-name { width: 54% !important; }
+        .rt-admin.rt-target col.rc-status { width: 38% !important; }
+        .rt-admin.rt-eval col.rc-name { width: 42% !important; }
+        .rt-admin.rt-eval col.rc-status { width: 31% !important; }
+        .rt-admin.rt-eval col.rc-score { width: 19% !important; }
+        .rt-admin col.rc-act { width: 8% !important; }
     }
 </style>
+<?php if ($sysRole === 'Admin'): ?>
+<script>
+    // Admin: delete a paper on hold (owner now TWG/PMT/Admin or disabled), on purpose only
+    document.addEventListener('click', async function (e) {
+        const btn = e.target.closest('.js-delete-on-hold');
+        if (!btn) return;
+        const ok = await window.appConfirm(`Delete ${btn.dataset.name}'s paper for this cycle? They are not rated staff now. This removes the paper, its versions and comments, and cannot be undone. If they may come back, keep it: switching them back (Restore) brings it back as it was.`, {
+            title: 'Delete paper', confirmText: 'Delete paper', variant: 'danger'
+        });
+        if (!ok) return;
+        const fd = new FormData(); fd.append('folder_id', btn.dataset.folderId);
+        apiPost('<?= site_url('folder/delete-on-hold') ?>', fd, {
+            onSuccess: () => window.location.reload(),
+            onError: (msg) => window.appAlert(msg || 'Something went wrong.', { variant: 'danger' })
+        });
+    });
+</script>
+<?php endif; ?>
 <script>
     // The whole row opens the folder; links, buttons and the score box keep their own behaviour.
     document.addEventListener('click', function (e) {
@@ -669,7 +713,6 @@
     }
 
     const ratingsUnitsPaginator = new RatingsPaginator({ containerId: 'filter-units-pagination', pageSize: 6 });
-    const ratingsPosPaginator = new RatingsPaginator({ containerId: 'filter-pos-pagination', pageSize: 6 });
 
     // System Adjectival Logic
     function getAdjectivalRating(score) {
@@ -1075,174 +1118,35 @@
         return result;
     }
 
-    // Dynamic Cascading Unit Filters (N-Tier Drill-Down)
-    const LEVEL_THEMES = [
-        {
-            labelColor: 'text-text-muted',
-            focusRing: 'focus:border-accent focus:ring-1 focus:ring-accent/20',
-            activeBorder: 'border-zinc-400 dark:border-zinc-600',
-            connector: 'border-zinc-300 dark:border-zinc-700'
-        }
-    ];
-
-    function getLevelTheme(level) {
-        return LEVEL_THEMES[0];
-    }
-
-    function getLevelTitle(level, parentUnit) {
-        if (level === 1) {
-            return 'DEPARTMENT / UNIT';
-        }
-        return parentUnit ? escapeHtml(parentUnit.name) : 'SUB-UNIT';
-    }
-
-    function getDefaultOptionLabel(level, parentUnit) {
-        if (level === 1) {
-            return 'All Departments &amp; Units';
-        }
-        return parentUnit ? `All in ${escapeHtml(parentUnit.name)}` : 'All Departments &amp; Units';
-    }
-
-    function renderDynamicUnitLevel(level, parentUnitId, targetContainer) {
-        if (!targetContainer) return;
-        const wasCollapsed = level === 1 && Boolean(targetContainer.querySelector(':scope > .dynamic-unit-level > .js-unit-level-body.hidden'));
-        targetContainer.innerHTML = '';
-
+// Department / unit filter: a searchable tree (UnitTreeFilter). TWG start at their assigned units, Admin / PMT at
+    // the top, a supervisor at the units below their own (as the old drop-downs did).
+    function ratingsRootUnitIds() {
         const units = window.SPMS_RATINGS_UNITS || [];
-        const unitsById = {};
-        units.forEach(u => unitsById[u.id] = u);
-
-        let availableUnits = [];
-        let parentUnit = null;
-
-        if (level === 1) {
-            if (window.SPMS_USER_ROLE === 'TWG') {
-                const assignedIds = window.SPMS_ASSIGNED_UNIT_IDS || [];
-                availableUnits = units.filter(u => assignedIds.includes(u.id));
-                if (availableUnits.length === 0) {
-                    availableUnits = units.filter(u => !u.parent_id || !unitsById[u.parent_id]);
-                }
-            } else if (window.SPMS_USER_ROLE === 'Admin' || window.SPMS_USER_ROLE === 'PMT') {
-                availableUnits = units.filter(u => !u.parent_id || !unitsById[u.parent_id]);
-            } else {
-                const myUnits = window.SPMS_MY_UNIT_IDS || [];
-                availableUnits = units.filter(u => myUnits.includes(u.parent_id));
-            }
-        } else {
-            const numParentId = parseInt(parentUnitId, 10);
-            parentUnit = unitsById[numParentId] || null;
-            availableUnits = units.filter(u => u.parent_id === numParentId);
+        const byId = {}; units.forEach(u => { byId[u.id] = u; });
+        if (window.SPMS_USER_ROLE === 'TWG') {
+            // only their assigned units (top-most first; none assigned: no tree)
+            const assigned = window.SPMS_ASSIGNED_UNIT_IDS || [];
+            return units.filter(u => assigned.includes(u.id) && !assigned.includes(u.parent_id)).map(u => u.id);
+        } else if (window.SPMS_USER_ROLE !== 'Admin' && window.SPMS_USER_ROLE !== 'PMT') {
+            const myUnits = window.SPMS_MY_UNIT_IDS || [];
+            return units.filter(u => myUnits.includes(u.parent_id)).map(u => u.id);
         }
-
-        if (availableUnits.length === 0) {
-            targetContainer.classList.add('hidden');
-            return;
-        }
-
-        targetContainer.classList.remove('hidden');
-
-        const theme = getLevelTheme(level);
-        const title = getLevelTitle(level, parentUnit);
-        const defaultLabel = getDefaultOptionLabel(level, parentUnit);
-
-        let optionsHtml = `<option value="">${defaultLabel}</option>`;
-        availableUnits.forEach(u => {
-            optionsHtml += `<option value="${u.id}">${escapeHtml(u.name)}</option>`;
-        });
-
-        const levelWrapper = document.createElement('div');
-        levelWrapper.className = 'dynamic-unit-level';
-        levelWrapper.dataset.level = level;
-
-        const headerSpacing = level === 1 ? 'mb-3 tracking-widest' : 'mb-1.5 tracking-wider';
-        const headerHtml = `
-            <button type="button" class="w-full flex justify-between items-center text-[10px] font-black uppercase ${headerSpacing} ${theme.labelColor} hover:text-text focus:outline-none group cursor-pointer" onclick="
-                this.nextElementSibling.classList.toggle('hidden');
-                this.querySelector('svg').classList.toggle('-rotate-180');
-            ">
-                <span class="truncate pr-2 text-left" title="${title}">${title}</span>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${wasCollapsed ? '-rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
-            </button>`;
-
-        levelWrapper.innerHTML = `
-            ${headerHtml}
-            <div class="js-unit-level-body ${wasCollapsed ? 'hidden' : ''}">
-                <div class="relative w-full">
-                    <select id="ratings-filter-unit-level-${level}" aria-label="Unit filter, level ${level}"
-                        class="w-full appearance-none bg-white dark:bg-zinc-900 border border-surface-border ${theme.focusRing} rounded-xl pl-3 pr-8 py-2 text-xs font-semibold text-text outline-none cursor-pointer transition-all shadow-xs [color-scheme:light] dark:[color-scheme:dark]">
-                        ${optionsHtml}
-                    </select>
-                    <div class="pointer-events-none absolute inset-y-0 flex items-center text-text-muted" style="right: 10px;">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </div>
-                </div>
-                <div id="ratings-dynamic-unit-children-${level}" class="relative pl-3.5 ml-2.5 border-l-2 border-dashed ${theme.connector} space-y-3 pt-2 hidden"></div>
-            </div>
-        `;
-
-        targetContainer.appendChild(levelWrapper);
-
-        const selectEl = levelWrapper.querySelector(`#ratings-filter-unit-level-${level}`);
-        selectEl.addEventListener('change', (e) => {
-            onDynamicUnitLevelChange(level, e.target.value);
-        });
+        return units.filter(u => !u.parent_id || !byId[u.parent_id]).map(u => u.id);
     }
-
-    function onDynamicUnitLevelChange(level, selectedUnitId) {
-        const selectEl = document.getElementById(`ratings-filter-unit-level-${level}`);
-        const childrenContainer = document.getElementById(`ratings-dynamic-unit-children-${level}`);
-        const theme = getLevelTheme(level);
-
-        if (selectEl) {
-            const activeClasses = theme.activeBorder.split(' ');
-            if (selectedUnitId) {
-                selectEl.classList.add(...activeClasses);
-            } else {
-                selectEl.classList.remove(...activeClasses);
-            }
-        }
-
-        if (childrenContainer) {
-            childrenContainer.innerHTML = '';
-            childrenContainer.classList.add('hidden');
-
-            if (selectedUnitId) {
-                const numId = parseInt(selectedUnitId, 10);
-                const units = window.SPMS_RATINGS_UNITS || [];
-                const childUnits = units.filter(u => u.parent_id === numId);
-
-                if (childUnits.length > 0) {
-                    renderDynamicUnitLevel(level + 1, selectedUnitId, childrenContainer);
-                }
-            }
-        }
-
-        if (typeof filterSidebarPositions === 'function') {
-            filterSidebarPositions();
-        }
-        if (typeof filterRatings === 'function') {
-            filterRatings();
-        }
-    }
-    window.onDynamicUnitLevelChange = onDynamicUnitLevelChange;
 
     function initDynamicUnitFilters() {
-        const rootContainer = document.getElementById('dynamic-unit-filter-container');
-        if (!rootContainer) return;
-        renderDynamicUnitLevel(1, null, rootContainer);
+        const root = document.getElementById('dynamic-unit-filter-container');
+        if (!root) return;
+        const roots = ratingsRootUnitIds();
+        root.classList.toggle('hidden', roots.length === 0);
+        UnitTreeFilter.mount(root, window.SPMS_RATINGS_UNITS || [], { roots, onChange: () => {
+            if (typeof filterSidebarPositions === 'function') filterSidebarPositions();
+            if (typeof filterRatings === 'function') filterRatings();
+        } });
     }
 
-    function getActiveDynamicUnitId() {
-        const container = document.getElementById('dynamic-unit-filter-container');
-        if (!container) return null;
-        const selects = Array.from(container.querySelectorAll('select'));
-        for (let i = selects.length - 1; i >= 0; i--) {
-            const val = selects[i].value;
-            if (val) return val;
-        }
-        return null;
+function getActiveDynamicUnitId() {
+        return UnitTreeFilter.value(document.getElementById('dynamic-unit-filter-container'));
     }
 
     function getActiveDeptPositions() {
@@ -1411,8 +1315,8 @@
         // Setup Positions filter with mini-search & paginator
         const cbPosList = document.getElementById('positions-checkbox-list');
         if (cbPosList) {
+            PositionTreeFilter.build(cbPosList);                         // the position tree instead of pages
             const allRows = Array.from(cbPosList.querySelectorAll('.position-filter-label'));
-            ratingsPosPaginator.init(allRows);
             
             filterSidebarPositions = () => {
                 const input = document.getElementById('mini-search-positions');
@@ -1434,7 +1338,7 @@
                     return matchesQuery && matchesDept;
                 });
 
-                ratingsPosPaginator.updateItems(matchedRows);
+                PositionTreeFilter.apply(cbPosList, new Set(matchedRows), query, allowedDeptPositions !== null);
             };
 
             const msPos = document.getElementById('mini-search-positions');

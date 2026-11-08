@@ -46,6 +46,7 @@ class Profile extends BaseController
             'allowedDocs'   => $allowed,
             'currentDoc'    => $current,
             'docFlagged'    => $current === '' || !in_array($current, $allowed, true),
+            'docLocked'     => own_doc_type_locked($userId),
             'isAdmin'       => $role === 'Admin',
             'isTwg'         => $role === 'TWG',
             'isPmt'         => $role === 'PMT',
@@ -72,6 +73,9 @@ class Profile extends BaseController
                 $allowed = $org->allowedDocTypesForUser($userId);
                 $posted = strtoupper(trim((string) $this->request->getPost('doc_type')));
                 if ($posted !== '' && $posted !== $current) {
+                    if (own_doc_type_locked($userId)) {
+                        return $this->respondError('Your form type is locked: you have papers past drafting this cycle. Ask your supervisor or the administrator to change it.', 422, ['doc_type' => 'Locked: ask your supervisor.']);
+                    }
                     if (!in_array($posted, $allowed, true)) {
                         return $this->respondError('That form type is not allowed for your role and employment status.', 422, ['doc_type' => 'Not allowed for your role and employment status.']);
                     }

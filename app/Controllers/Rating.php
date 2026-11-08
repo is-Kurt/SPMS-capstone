@@ -63,9 +63,10 @@ class Rating extends BaseController
                     return redirect()->to('ratings/' . $childFolder['id']);
                 }
 
-                // If not found in user's folders, gracefully fall back to ratings index instead of throwing 404
+                // Not one of their folders (wrong, deleted or someone else's id): the error page, like Folders.
+                // It used to redirect to /ratings, which silently opened their first folder instead.
                 session()->remove('active_folder_id');
-                return redirect()->to('ratings');
+                throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
             }
             session()->set('active_folder_id', $folderId);
         }
@@ -309,6 +310,12 @@ class Rating extends BaseController
 
         $twgAssignmentModel = new \App\Models\TwgUnitAssignmentModel();
         $assignedUnits = ($sysRole === 'TWG') ? $twgAssignmentModel->getAssignmentsByUser($userId) : [];
+        if ($sysRole === 'TWG') {
+            // A TWG member reviews only the units assigned to them (it does not cascade; none assigned: nothing), so the
+            // department filter lists only those. It used to list the whole university.
+            $mine = array_map('intval', array_column($assignedUnits, 'unit_id'));
+            $allUnits = array_values(array_filter($allUnits, fn($u) => in_array((int) $u['id'], $mine, true)));
+        }
 
         // Determine active period: phase-aware defaulting with query param override (?period=target|evaluation)
         $now = date('Y-m-d H:i:s');

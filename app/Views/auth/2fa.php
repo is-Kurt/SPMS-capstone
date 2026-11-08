@@ -1,15 +1,15 @@
 <?= $this->extend('layouts/main') ?>
 <?= $this->section('content') ?>
 
-<div class="min-h-screen flex flex-col bg-zinc-100 dark:bg-[#071710] text-zinc-800 dark:text-zinc-100 transition-colors">
+<div class="min-h-screen flex flex-col bg-zinc-100 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-100 transition-colors">
     <?= view('components/govph_masthead') ?>
 
     <main class="flex-1 flex flex-col justify-center px-6 py-12 lg:px-8 relative">
 
-    <div class="mx-auto w-full max-w-md bg-white dark:bg-[#0c1d15] border border-zinc-200 dark:border-[#163e2a] p-8 sm:p-10 rounded-xl shadow-xs relative z-10 transition-colors">
+    <div class="mx-auto w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-8 sm:p-10 rounded-xl shadow-xs relative z-10 transition-colors">
 
         <div class="flex justify-end mb-1">
-            <button type="button" onclick="handleThemeToggle(this)" class="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-500 hover:text-zinc-800 dark:text-emerald-400 dark:hover:text-white bg-zinc-100 hover:bg-zinc-200 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 border border-zinc-200 dark:border-emerald-800/60 transition-all cursor-pointer shadow-2xs" title="Toggle Light / Dark Mode">
+            <button type="button" onclick="handleThemeToggle(this)" class="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-500 hover:text-zinc-800 dark:text-emerald-400 dark:hover:text-white bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-950 dark:hover:bg-[#0a2318] border border-zinc-200 dark:border-zinc-800 transition-all cursor-pointer shadow-2xs" title="Toggle Light / Dark Mode">
                 <svg class="w-3.5 h-3.5 hidden dark:block text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                 <svg class="w-3.5 h-3.5 block dark:hidden text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
             </button>
@@ -31,8 +31,9 @@
                 <div>
                     <label for="code" class="block text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-1.5">Verification Code</label>
                     <div class="mt-1">
-                        <input id="code" type="text" name="code" placeholder="123456"
-                               class="w-full text-center text-2xl tracking-[0.5em] font-mono bg-zinc-50 dark:bg-[#071710] border border-zinc-300 dark:border-[#163e2a] rounded-lg px-4 py-2.5 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 focus:outline-none text-zinc-900 dark:text-white transition-colors" />
+                        <input id="code" type="text" name="code" placeholder="123456" inputmode="numeric" autocomplete="one-time-code" required
+                               oninput="this.value = this.value.replace(/\D/g, '').slice(0, 6)"
+                               class="w-full text-center text-2xl tracking-[0.5em] font-mono bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-lg px-4 py-2.5 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 focus:outline-none text-zinc-900 dark:text-white transition-colors" />
                     </div>
                     <?php if (session('errors.error')): ?>
                         <div class="h-3 pl-1">

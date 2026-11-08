@@ -126,7 +126,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                     <div>
                         <span class="block text-[10px] font-black uppercase tracking-widest text-text mb-1">Department / Unit</span>
-                        <div class="w-full rounded-xl px-4 py-3 text-sm font-bold text-text bg-zinc-50 dark:bg-zinc-800/50"><?= esc($asg['unit']['name']) ?></div>
+                        <div class="w-full rounded-xl px-4 py-3 text-sm font-bold text-text bg-zinc-50 dark:bg-zinc-800/50 border border-transparent truncate" title="<?= esc($asg['unit']['name'], 'attr') ?>"><?= esc($asg['unit']['name']) ?></div>
                         <p class="text-[10px] text-text-muted font-medium mt-1 pl-1">Set by the administrator's invitation.</p>
                     </div>
                     <div>

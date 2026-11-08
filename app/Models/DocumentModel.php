@@ -86,12 +86,17 @@ class DocumentModel extends Model
      */
     public function getDocumentWithFolderInfo(string $docId): ?array
     {
+        // The paper's form type is the one saved in the paper; the owner's current form type only when it has none.
+        // A form-type change after approval leaves approved papers as they are (2026-11-07).
+        $paperType = "UPPER(COALESCE(NULLIF(CASE WHEN json_valid(df.tabs) THEN json_extract(df.tabs, '$[0].formData.doc_type') END, ''), u.doc_type))";
+
         // 1. Direct fetch from document_folders (unified schema)
         $row = $this->db->table('document_folders df')
+            ->select("{$paperType} as doc_type", false)
             ->select('df.*, df.id as document_folder_id, df.user_id as owner_id, df.status as folder_status, df.title as folder_title, df.deleted_at as folder_deleted_at,
                       df.target_submitted_at, df.target_approved_at, df.target_approved_by, df.target_approver_role,
                       df.routing_preset_id, df.final_rating,
-                      u.doc_type, u.first_name, u.last_name, u.email,
+                      u.doc_type as owner_doc_type, u.first_name, u.last_name, u.email,
                       pos.title as position_title,
                       cd.target_start, cd.target_end, cd.eval_start, cd.eval_end,
                       rc.title as cycle_title, rc.rating_period as cycle_rating_period,
@@ -100,7 +105,7 @@ class DocumentModel extends Model
             ->join('plantillas p', 'p.user_id = u.id AND p.ended_at IS NULL', 'left')
             ->join('positions pos', 'pos.id = p.position_id', 'left')
             ->join('rating_cycles rc', 'rc.id = df.cycle_id', 'left')
-            ->join('cycle_deadlines cd', 'cd.cycle_id = COALESCE(df.cycle_id, df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = LOWER(COALESCE(u.doc_type, "ipcr"))', 'left')
+            ->join('cycle_deadlines cd', "cd.cycle_id = COALESCE(df.cycle_id, df.cycle_folder_id, df.parent_folder_id, df.id) AND cd.doc_type = LOWER(COALESCE({$paperType}, 'ipcr'))", 'left', false)
             ->where('df.id', $docId)
             ->get()->getRowArray();
 

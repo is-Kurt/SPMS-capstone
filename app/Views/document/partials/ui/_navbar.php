@@ -149,7 +149,11 @@
                                                 <?= $isCurrentVer ? 'Current Version' : 'Historical Snapshot' ?>
                                             </span>
                                         </div>
-                                        <?php if (!empty($snap['returned_at']) || !empty($snap['returned_by_name'])): ?>
+                                        <?php if (($snap['returned_by_role'] ?? '') === 'Revoked'): ?>
+                                            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+                                                Revoked
+                                            </span>
+                                        <?php elseif (!empty($snap['returned_at']) || !empty($snap['returned_by_name'])): ?>
                                             <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25">
                                                 Returned
                                             </span>
@@ -168,7 +172,11 @@
                                             Submitted: <?= esc(date('M j, Y g:i A', strtotime($snap['submitted_at']))) ?>
                                         </div>
                                     <?php endif; ?>
-                                    <?php if (!empty($snap['returned_by_name'])): ?>
+                                    <?php if (($snap['returned_by_role'] ?? '') === 'Revoked'): ?>
+                                        <div class="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5 truncate" title="<?= esc($snap['returned_by_name']) ?>: <?= esc($snap['return_remarks'] ?? '') ?>">
+                                            Revoked: <?= esc($snap['returned_by_name']) ?> &middot; <?= esc(date('M j, Y g:i A', strtotime($snap['returned_at']))) ?>
+                                        </div>
+                                    <?php elseif (!empty($snap['returned_by_name'])): ?>
                                         <?php $snapRemarks = $snap['return_remarks'] ?? $snap['return_reason'] ?? ''; ?>
                                         <div class="text-[10px] text-rose-600 dark:text-rose-400 mt-0.5 truncate" title="Returned by <?= esc($snap['returned_by_name']) ?><?= !empty($snapRemarks) ? ': ' . esc($snapRemarks) : '' ?>">
                                             Returned by <?= esc($snap['returned_by_name']) ?><?= !empty($snapRemarks) ? ' — "' . esc($snapRemarks) . '"' : '' ?>
@@ -188,6 +196,55 @@
                         }
                     });
                 </script>
+                <?php if ($isHist && !empty($isOwner)): ?>
+                    <!-- Copy rows from this old version (e.g. a revoked one) into the current form -->
+                    <button type="button" id="btn-copy-version-rows" class="shrink-0 ml-1 inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-extrabold border border-accent/40 text-accent-ink bg-accent/10 hover:bg-accent/20 cursor-pointer">Copy rows to current form</button>
+                    <div id="modal-copy-rows" class="fixed inset-0 z-[200] hidden overflow-y-auto items-center justify-center bg-zinc-950/40 backdrop-blur-sm p-4">
+                        <div class="relative w-full max-w-2xl rounded-2xl bg-surface border border-surface-border p-6 shadow-2xl my-auto">
+                            <h3 class="text-lg font-black text-text">Copy rows from v<?= $vVer ?></h3>
+                            <p class="text-xs text-text-muted font-medium mt-1 mb-4">Tick the rows to add to your current form. Rows already there are skipped.</p>
+                            <label class="flex items-center gap-2 text-xs font-bold text-text mb-2 cursor-pointer"><input type="checkbox" id="copy-rows-all" class="checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer"> Select all</label>
+                            <div id="copy-rows-list" class="max-h-80 overflow-y-auto custom-scrollbar divide-y divide-surface-border rounded-xl border border-surface-border"></div>
+                            <div class="mt-5 flex flex-col-reverse sm:flex-row gap-3">
+                                <button type="button" id="copy-rows-cancel" class="w-full sm:flex-1 px-6 py-3 rounded-xl border border-surface-border text-sm font-bold text-text hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer">Cancel</button>
+                                <button type="button" id="copy-rows-go" class="w-full sm:flex-1 px-6 py-3 rounded-xl bg-accent hover:bg-accent-hover text-accent-text text-sm font-bold cursor-pointer">Copy selected</button>
+                            </div>
+                        </div>
+                    </div>
+                    <script>
+                    (function () {
+                        const base = '<?= site_url('document/' . ($doc['id'] ?? '')) ?>', version = <?= $vVer ?>;
+                        const modal = document.getElementById('modal-copy-rows'), list = document.getElementById('copy-rows-list');
+                        const esc = v => { const d = document.createElement('div'); d.textContent = v ?? ''; return d.innerHTML; };
+                        const show = on => { modal.classList.toggle('hidden', !on); modal.classList.toggle('flex', on); };
+                        document.getElementById('btn-copy-version-rows').addEventListener('click', async () => {
+                            list.innerHTML = '<p class="p-4 text-xs text-text-muted">Loading...</p>'; show(true);
+                            try {
+                                const res = await fetch(base + '/version-rows?version=' + version, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                                const d = await res.json();
+                                if (d.status !== 'success') throw new Error(d.message || 'Could not load the rows.');
+                                list.innerHTML = d.rows.length ? d.rows.map(r => `<label class="flex items-start gap-3 p-3 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/40">
+                                    <input type="checkbox" class="js-copy-row checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer mt-0.5" value="${esc(r.key)}">
+                                    <span class="min-w-0"><span class="text-[10px] font-black uppercase tracking-widest text-text-muted">${esc(r.cat)}</span>
+                                    <span class="block text-sm font-bold text-text">${esc(r.mfo || '(no MFO)')}</span>
+                                    <span class="block text-xs text-text-muted">${esc(r.indicators)}</span></span></label>`).join('')
+                                    : '<p class="p-4 text-xs text-text-muted">This version has no filled-in rows.</p>';
+                            } catch (e) { list.innerHTML = `<p class="p-4 text-xs text-danger-500">${esc(e.message)}</p>`; }
+                        });
+                        document.getElementById('copy-rows-all').addEventListener('change', e => list.querySelectorAll('.js-copy-row').forEach(c => { c.checked = e.target.checked; }));
+                        document.getElementById('copy-rows-cancel').addEventListener('click', () => show(false));
+                        document.getElementById('copy-rows-go').addEventListener('click', () => {
+                            const keys = Array.from(list.querySelectorAll('.js-copy-row:checked')).map(c => c.value);
+                            if (!keys.length) return window.appAlert('Tick at least one row.', { variant: 'warning' });
+                            const fd = new FormData(); fd.append('version', version); keys.forEach(k => fd.append('rows[]', k));
+                            apiPost(base + '/copy-version-rows', fd, {
+                                onSuccess: async d => { show(false); await window.appAlert(d.message, { title: 'Rows copied', variant: 'success' }); window.location.href = base; },
+                                onError: m => window.appAlert(m || 'Something went wrong.', { variant: 'danger' }),
+                            });
+                        });
+                    })();
+                    </script>
+                <?php endif; ?>
             <?php endif; ?>
 
             <span id="save-status" class="ml-1 sm:ml-3 shrink-0 text-[10px] uppercase tracking-widest font-bold transition-all"></span>

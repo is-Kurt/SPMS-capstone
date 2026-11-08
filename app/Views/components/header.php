@@ -1,6 +1,7 @@
 <?php
     use App\Enums\UserRole;
 
+    helper('functions');           // staff_role_short() for the role badge
     $currentUri = uri_string();
     $role = session()->get('role');
     $uRole = UserRole::canonical($role);
@@ -36,6 +37,9 @@
     if ($uRole === UserRole::ADMIN) {
         $navItems['accounts'] = 'Accounts';
         $navItems['audit-logs'] = 'Audit Trail';
+    } elseif ($role === 'Supervisor' && $sessUserId && \App\Libraries\OrgStructure::instance()->branchAssignments((int) $sessUserId)) {
+        // Supervisors: their branch's accounts, when there is anyone in it (2026-11-07)
+        $navItems['staff-accounts'] = 'Accounts';
     }
 
     // Check if we need a hamburger menu (more than 1 tab available)
@@ -103,7 +107,8 @@
 
             </div>
 
-            <!-- Navigation with Sliding Active Indicator (Centered) -->
+            <!-- Navigation with Sliding Active Indicator (Centered). Hidden with a single tab: the logo leads there. -->
+            <?php if (count($navItems) > 1): ?>
             <div id="header-nav-container" class="relative hidden md:flex items-center p-1 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shrink-0">
                 <!-- Sliding Pill Indicator -->
                 <div id="header-nav-indicator" 
@@ -120,6 +125,7 @@
                     </a>
                 <?php endforeach; ?>
             </div>
+            <?php endif; ?>
             
             <!-- Controls -->
             <div class="flex items-center justify-end gap-1.5 sm:gap-2.5 flex-1 shrink-0">
@@ -174,7 +180,7 @@
                         <!-- Fully Visible Name & Role on sm and up -->
                         <div class="hidden sm:flex flex-col text-left leading-tight shrink-0">
                             <span class="text-xs font-bold text-zinc-900 dark:text-white whitespace-nowrap"><?= esc($displayName) ?></span>
-                            <span class="font-bold tracking-wider uppercase whitespace-nowrap text-[8.5px] text-emerald-600 dark:text-emerald-400"><?= esc($role ?? 'User') ?></span>
+                            <span class="font-bold tracking-wider uppercase whitespace-nowrap text-[8.5px] text-emerald-600 dark:text-emerald-400"><?= esc(staff_role_short($role ?? null) ?: 'User') ?></span>
                         </div>
 
                         <!-- Dropdown Chevron on sm and up -->

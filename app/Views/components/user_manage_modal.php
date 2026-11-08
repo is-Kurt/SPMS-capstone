@@ -38,8 +38,8 @@ $field = 'w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:b
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                 <label for="mu-unit" class="block text-[10px] font-bold text-text-muted mb-1.5">1. Department / unit</label>
-                <select data-themed-select id="mu-unit" class="<?= $field ?>" aria-label="Department / unit">
-                    <option value="">Department / unit...</option>
+                <select data-themed-select data-search id="mu-unit" class="<?= $field ?>" aria-label="Department / unit">
+                    <option value="" data-placeholder>Department / unit...</option>
                     <?php
                         $render = function ($parent, $level) use (&$render, $unitTreeRows) {
                             foreach ($unitTreeRows[$parent] ?? [] as $un) {
@@ -53,7 +53,7 @@ $field = 'w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:b
                 </div>
                 <div>
                 <label for="mu-position" class="block text-[10px] font-bold text-text-muted mb-1.5">2. Position</label>
-                <select data-themed-select id="mu-position" class="<?= $field ?>" aria-label="Position" disabled><option value="">Pick a department / unit first</option></select>
+                <select data-themed-select data-search id="mu-position" class="<?= $field ?>" aria-label="Position" disabled><option value="" data-placeholder>Pick a department / unit first</option></select>
                 </div>
             </div>
             <p id="mu-position-hint" class="text-[10px] text-text-muted font-medium mt-2"></p>
@@ -100,32 +100,28 @@ $field = 'w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:b
         const p = PEOPLE[current], allowed = allowedFor(p.role, $('mu-status').value);
         const opts = allowed.map(t => `<option value="${t}" ${t === p.doc ? 'selected' : ''}>${t}</option>`);
         if (p.doc && !allowed.includes(p.doc)) opts.unshift(`<option value="${p.doc}" selected>${p.doc} (current, not allowed: keep for now)</option>`);
-        if (!opts.length) opts.push('<option value="">Nothing allowed for this role and status</option>');
+        if (!opts.length) opts.push('<option value="" data-choice>Nothing allowed for this role and status</option>');
         $('mu-doc').innerHTML = opts.join('');
         $('mu-doc-note').textContent = 'Changing the form type converts their target papers still in target setting; you will see what changes before it happens.';
     }
-    // Department first, then position: only the positions that fit this person's role in that unit
-    // (Supervisor: its head position(s); Employee: the positions directly under its head, plus General).
+    // Department first, then position: the unit's head position(s), the positions directly under it, and the
+    // General ones. Their role follows the choice: a head position makes them a unit head (Supervisor).
     function fillPositions() {
         const unitId = $('mu-unit').value, sel = $('mu-position'), hint = $('mu-position-hint');
-        const role = (PEOPLE[current] || {}).role;
         const fit = FIT[unitId] || { heads: [], members: [] };
         const group = (label, list) => list.length ? `<optgroup label="${label}">${list.map(p => `<option value="${p.id}">${esc(p.title)}</option>`).join('')}</optgroup>` : '';
         let html = '', count = 0;
         if (!unitId) {
-            html = '<option value="">Pick a department / unit first</option>';
+            html = '<option value="" data-placeholder>Pick a department / unit first</option>';
             hint.textContent = '';
-        } else if (role === 'Supervisor') {
-            const head = POSITIONS.filter(p => fit.heads.includes(p.id));
-            count = head.length;
-            html = (count ? '<option value="">Position...</option>' : '<option value="">This unit has no head position</option>') + group('Head of this unit', head);
-            hint.textContent = count ? 'A Supervisor holds the head position of the unit.' : 'Give this unit (or one above it) a head position in System Data first.';
         } else {
+            const head = POSITIONS.filter(p => fit.heads.includes(p.id));
             const mem = POSITIONS.filter(p => fit.members.includes(p.id) && !p.general);
             const gen = POSITIONS.filter(p => fit.members.includes(p.id) && p.general);
-            count = mem.length + gen.length;
-            html = '<option value="">Position...</option>' + group('Under the head of this unit', mem) + group('General', gen);
-            hint.textContent = 'An Employee holds a position directly under the head of the unit, or a General one.';
+            count = head.length + mem.length + gen.length;
+            html = '<option value="" data-placeholder>Position...</option>' + group('Head of this unit (makes them a unit head)', head) + group('Under the head of this unit', mem) + group('General', gen);
+            hint.textContent = head.length ? 'A head position makes them a unit head; any other makes them a member.'
+                : 'This unit has no head position yet (System Data). Members can still be added.';
         }
         sel.innerHTML = html;
         sel.disabled = !unitId || !count;
@@ -134,7 +130,7 @@ $field = 'w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:b
     function render() {
         const p = PEOPLE[current];
         $('mu-name').textContent = p.name;
-        $('mu-sub').textContent = `${p.email} · ${p.role}`;
+        $('mu-sub').textContent = `${p.email} · ${p.role === 'Supervisor' ? 'Staff: unit head' : (p.role === 'Employee' ? 'Staff: member' : p.role)}`;
         $('mu-flags').innerHTML = p.flags.map(f => `<span class="text-xs font-bold text-warning-500">&#9888; ${esc(f)}</span>`).join('');
         $('mu-assignments').innerHTML = p.assignments.length ? p.assignments.map(a => `
             <div class="flex items-center justify-between gap-3 rounded-xl border border-surface-border px-4 py-2.5">
@@ -146,17 +142,66 @@ $field = 'w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:b
         const open = (RULES.open || {})[p.role] ?? null;
         const isOpen = st => open === null || open.some(o => o.toLowerCase() === String(st).toLowerCase());
         const opts = STATUSES.filter(isOpen).map(st => `<option value="${esc(st)}">${esc(st)}</option>`);
-        if (p.status && !isOpen(p.status)) opts.unshift(`<option value="${esc(p.status)}">${esc(p.status)} (current, not open to ${esc(p.role)})</option>`);
+        if (p.status && !isOpen(p.status)) opts.unshift(`<option value="${esc(p.status)}">${esc(p.status)} (current, not open to ${esc(p.role === 'Supervisor' ? 'unit heads' : 'members')})</option>`);
         $('mu-status').innerHTML = opts.join('');
         $('mu-status').value = p.status && STATUSES.includes(p.status) ? p.status : ($('mu-status').options[0] || {}).value;
         $('mu-status')._themed?.refresh();
         fillDocs();
     }
+    /**
+     * After a change: fetch the page again and take this person's fresh details (for the modal) and their directory
+     * row, without reloading. The modal stays open, the directory keeps its filters and page.
+     */
+    async function refreshPerson(id) {
+        const res = await fetch('<?= site_url('accounts') ?>', { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } });
+        const fresh = new DOMParser().parseFromString(await res.text(), 'text/html');
+        const line = Array.from(fresh.scripts).map(s => s.textContent).join('\n').split('\n').find(l => l.trim().startsWith('const PEOPLE = '));
+        if (!line) throw new Error('no data');
+        const people = JSON.parse(line.trim().replace(/^const PEOPLE = /, '').replace(/;$/, ''));
+        if (people[id]) PEOPLE[id] = people[id];
+        const row = document.querySelector(`.user-dir-row[data-user-id="${id}"]`), next = fresh.querySelector(`.user-dir-row[data-user-id="${id}"]`);
+        if (row && next) {
+            // Same element (the directory's paginator keeps a reference to it): new attributes and content.
+            Array.from(row.attributes).forEach(a => row.removeAttribute(a.name));
+            Array.from(next.attributes).forEach(a => row.setAttribute(a.name, a.value));
+            row.innerHTML = next.innerHTML;
+        }
+        const pager = window.dirPaginator, page = pager ? pager.currentPage : 1;
+        if (typeof window.filterUsers === 'function') window.filterUsers();
+        if (pager && page > 1) { pager.currentPage = Math.min(page, Math.ceil(pager.items.length / pager.pageSize) || 1); pager.render(); }
+        const badge = document.getElementById('flag-count'), freshBadge = fresh.getElementById('flag-count');
+        if (badge && freshBadge) badge.textContent = freshBadge.textContent;
+        const ig = document.getElementById('ignored-flag-count'), freshIg = fresh.getElementById('ignored-flag-count');
+        if (ig) ig.textContent = freshIg ? freshIg.textContent : '0';
+        const igBox = document.getElementById('ignored-flags-filter');
+        if (igBox && ig) igBox.classList.toggle('hidden', ig.textContent.trim() === '0');
+    }
+    window.refreshDirectoryPerson = refreshPerson;
+
+    // Ignore / Show again on a directory flag (2026-11-08): the row updates in place, filters and page kept
+    document.addEventListener('click', e => {
+        const btn = e.target.closest('.js-flag-ignore, .js-flag-unignore');
+        if (!btn) return;
+        const ignore = btn.classList.contains('js-flag-ignore');
+        const fd = new FormData(); fd.append('user_id', btn.dataset.userId); fd.append('flag', btn.dataset.flag);
+        btn.disabled = true;
+        apiPost(ignore ? '<?= site_url('account/flag/ignore') ?>' : '<?= site_url('account/flag/unignore') ?>', fd, {
+            onSuccess: async () => { try { await refreshPerson(+btn.dataset.userId); } catch (err) { window.location.reload(); } },
+            onError: (msg) => { btn.disabled = false; window.appAlert(msg || 'Something went wrong.', { variant: 'danger' }); }
+        });
+    });
+
     function post(url, fields, done) {
         const fd = new FormData();
         Object.entries(Object.assign({ user_id: current }, fields)).forEach(([k, v]) => fd.append(k, v));
         apiPost(url, fd, {
-            onSuccess: async (d) => { await window.appAlert(d.message || 'Saved.', { title: 'Saved', variant: 'success' }); window.location.reload(); },
+            onSuccess: async (d) => {
+                await window.appAlert(d.message || 'Saved.', { title: 'Saved', variant: 'success' });
+                try {
+                    await refreshPerson(current);
+                    $('mu-unit').value = ''; $('mu-unit')._themed?.refresh(); fillPositions(); render();   // modal stays open
+                } catch (e) { window.location.reload(); }
+            },
             onError: (m) => window.appAlert(m || 'Something went wrong.', { variant: 'danger' }),
             onDefault: done || null,
         });

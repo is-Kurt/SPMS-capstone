@@ -71,7 +71,12 @@
                             $isTargetDeadlineEnded = !empty($targetDeadlineStr) && strtotime((string)$targetDeadlineStr) !== false && time() > strtotime((string)$targetDeadlineStr);
                         }
 
-                        $canActuallyCascade = $inActiveTargetStatus && !$isTargetDeadlineEnded && !$isArchived;
+                        // A head cascades only approved targets (the Admin starts the cycle and is exempt).
+                        $ownTargetsApproved = $isUserAdmin || in_array($cActiveStatus, [
+                            \App\Enums\FolderStatus::TARGET_APPROVED, \App\Enums\FolderStatus::DRAFT_EVALUATION, \App\Enums\FolderStatus::EVAL_SUBMITTED,
+                            \App\Enums\FolderStatus::EVAL_APPROVED, \App\Enums\FolderStatus::UNEVALUATED, \App\Enums\FolderStatus::EVAL_UNRATED,
+                        ], true);
+                        $canActuallyCascade = $inActiveTargetStatus && $ownTargetsApproved && !$isTargetDeadlineEnded && !$isArchived;
                         $hasPresets = !empty($presets);
                         $isAlreadyCascaded = !empty($cascadedTeamId) || !empty($cascadedChildren);
                     ?>
@@ -99,6 +104,9 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
                             </div>
                         </div>
+                        <?php if (!$isAlreadyCascaded && !$ownTargetsApproved && $inActiveTargetStatus && !$isTargetDeadlineEnded && !$isArchived): ?>
+                            <p class="text-[10px] leading-relaxed text-amber-700 dark:text-amber-400 font-medium" style="margin-top: -0.5rem;">Submit your targets and get them approved first; then you can cascade them to your staff.</p>
+                        <?php endif; ?>
 
                         <?php if ($canActuallyCascade): ?>
                             <?php $pendingCount = (int)($pendingTeamMembersCount ?? 0); ?>
@@ -131,7 +139,8 @@
                             <button onclick="triggerUncascade('<?= $activeFolder['id'] ?>')" class="w-full py-2.5 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-300 dark:border-[#361a1f] bg-rose-50 dark:bg-[#1c1214] hover:bg-rose-600 dark:hover:bg-[#261619] rounded-xl transition-colors cursor-pointer flex justify-center items-center gap-1.5 font-bold text-xs uppercase tracking-wider shrink-0">
                                 <?= $isUserAdmin ? 'Revoke Cycle Release' : 'Revoke Cascade' ?>
                             </button>
-                        <?php elseif (!$isArchived): ?>
+                        <?php elseif (!$isArchived && ($isTargetDeadlineEnded || !$inActiveTargetStatus)): ?>
+                            <?php // Closed only when target setting is really over; "targets not approved yet" has its own note above. ?>
                             <div class="p-3 rounded-xl border border-amber-300 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 flex flex-col gap-1.5">
                                 <div class="flex items-center gap-1.5 font-extrabold text-[11px] uppercase tracking-wider text-amber-800 dark:text-amber-300">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

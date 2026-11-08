@@ -6,7 +6,7 @@
 $selected = $selected ?? '';
 ?>
 <select data-themed-select name="<?= esc($name) ?>" id="<?= esc($id) ?>" class="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-transparent dark:border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none transition-all text-text font-bold cursor-pointer">
-    <option value="">None (top level)</option>
+    <option value="" data-choice>None (top level)</option>
     <?php foreach ($positionTree as $p): ?>
         <option value="<?= $p['id'] ?>" data-level="<?= (int) $p['level'] ?>" <?= (string) $selected === (string) $p['id'] ? 'selected' : '' ?>><?= esc($p['title']) . ($p['is_general_root'] ? ' (General group)' : '') ?></option>
     <?php endforeach; ?>

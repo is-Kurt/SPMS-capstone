@@ -110,6 +110,12 @@ class Team extends BaseController
             if ($activeTeam) {
                 $members = $memberModel->where('preset_id', $teamId)->findAll();
                 $activeMemberIds = array_column($members, 'user_id');
+                // Members who are no longer under you (moved away, disabled) stay on the list but are hidden here
+                $pickable = RoutingPresetModel::pickableIds((int) $userId);
+                $hiddenIds = $pickable === null ? [] : array_values(array_diff(array_map('intval', $activeMemberIds), $pickable));
+                $hiddenMembers = $hiddenIds ? $userModel->select('id, first_name, last_name')->whereIn('id', $hiddenIds)->orderBy('last_name', 'ASC')->findAll() : [];
+                // the page (preselection, the save confirm's added/removed counts) works with the visible members only
+                $activeMemberIds = array_values(array_diff(array_map('intval', $activeMemberIds), $hiddenIds));
 
                 $cascadedFolders = $folderModel->where('routing_preset_id', $teamId)
                                                ->where('user_id', $userId)
@@ -147,6 +153,7 @@ class Team extends BaseController
             'presets'            => $presets,
             'activeTeam'      => $activeTeam,
             'activeMemberIds' => $activeMemberIds,
+            'hiddenMembers'   => $hiddenMembers ?? [],
             'hasLowerLevels'  => $hasLowerLevels,
             'supervisorUnit'  => $supervisorUnit,
             'myUnitIds'       => $myUnitIds ?? [],
@@ -162,7 +169,7 @@ class Team extends BaseController
             'sidebarView'    => 'teams/_sidebar',
             'sidebarData'    => [
                 'presets'        => $presets,
-                'selectedTeamId' => $activeTeam['id'] ?? null
+                'selectedTeamId' => $activeTeam['id'] ?? null,
             ],
             'mainView'       => 'teams/index',
             'mainData'       => $mainData
@@ -227,6 +234,13 @@ class Team extends BaseController
         $eligible = $userModel->getEligibleTeamMembers($userId, $allowedUnitIds);
         $allowedUserIds = array_map('strval', array_column($eligible, 'user_id'));
         $userIds = array_values(array_intersect($userIds, $allowedUserIds));
+        // Members you can no longer pick (moved away, disabled) are hidden on the page, so the form cannot send them:
+        // keep them. Dropping them here also ran the removal below, which deletes target-phase papers.
+        $hiddenKept = [];
+        if (!empty($teamId) && $allowedUnitIds !== null) {
+            $hiddenKept = array_values(array_diff(
+                array_map('strval', array_column($memberModel->where('preset_id', $teamId)->findAll(), 'user_id')), $allowedUserIds));
+        }
 
         if (empty($name)) $name = 'Staff';
 
@@ -270,7 +284,7 @@ class Team extends BaseController
         }
 
         $membersData = [];
-        foreach ($userIds as $uid) {
+        foreach (array_unique(array_merge($userIds, $hiddenKept)) as $uid) {
             $membersData[] = [
                 'preset_id'  => $teamId,
                 'user_id'    => $uid,
@@ -287,7 +301,7 @@ class Team extends BaseController
                 (string)$teamId,
                 (int)$userId,
                 (string)$role,
-                $previousUserIds,
+                array_values(array_diff($previousUserIds, array_map('intval', $hiddenKept))),
                 array_map('intval', $userIds)
             );
         }
@@ -422,6 +436,9 @@ class Team extends BaseController
                 if (!$targetUser) {
                     continue;
                 }
+                if ($role !== 'Admin' && !\App\Libraries\ReviewHandover::canSupervise($userId, (int) $targetUserId)) {
+                    continue;   // not yours to review now (ReviewHandover keeps reviews by the same rule)
+                }
 
                 $docType = strtolower($targetUser['doc_type'] ?? ($role === 'Admin' ? 'opcr' : 'ipcr'));
                 if (!$this->isFolderInActiveTargetWindow($parentFolder, $role, $docType)) {
@@ -429,10 +446,11 @@ class Team extends BaseController
                 }
 
                 // Check if already cascaded/routed under this parent folder
-                $exists = $folderModel->where('user_id', $targetUserId)
-                                      ->where('parent_folder_id', $parentFolderId)
-                                      ->where('deleted_at IS NULL')
-                                      ->first();
+                $existsQ = $folderModel->where('user_id', $targetUserId)
+                                       ->where('parent_folder_id', $parentFolderId)
+                                       ->where('deleted_at IS NULL');
+                if (\App\Libraries\ReviewHandover::ready()) $existsQ->where('waiting_supervisor', 0);   // a waiting paper needs a new routing
+                $exists = $existsQ->first();
                 if (!$exists) {
                     $routedFolderIds = $routingModel->where('evaluator_folder_id', $parentFolderId)
                         ->findColumn('folder_id') ?: [];
@@ -479,6 +497,16 @@ class Team extends BaseController
                             ]);
                         }
 
+                        // Same notice as a cascade to an existing paper (Folder::cascadeTeam); it used to say nothing here.
+                        notify_user($targetUserId, [
+                            'sender_id' => $userId,
+                            'type'      => 'target_assigned',
+                            'title'     => 'Evaluation Target Assigned',
+                            'message'   => "You have been assigned to prepare target commitments for \"{$parentFolder['title']}\".",
+                            'link'      => 'folders/' . $existingCycleFolder['id'],
+                            'icon'      => 'file'
+                        ]);
+
                         $addedTotal++;
                     }
                     continue;
@@ -523,10 +551,13 @@ class Team extends BaseController
 
             // 2. Sync Removals
             foreach ($removedUserIds as $removedUserId) {
-                $childFolder = $folderModel->where('user_id', $removedUserId)
-                                           ->where('parent_folder_id', $parentFolderId)
-                                           ->where('deleted_at IS NULL')
-                                           ->first();
+                // A paper waiting for a supervisor still points at this folder but is no longer this cascade: its
+                // reviewer was revoked (ReviewHandover) and it waits for someone else. It must not be deleted here.
+                $childQ = $folderModel->where('user_id', $removedUserId)
+                                      ->where('parent_folder_id', $parentFolderId)
+                                      ->where('deleted_at IS NULL');
+                if (\App\Libraries\ReviewHandover::ready()) $childQ->where('waiting_supervisor', 0);
+                $childFolder = $childQ->first();
 
                 if (!$childFolder) {
                     $routedFolderIds = $routingModel->where('evaluator_folder_id', $parentFolderId)
@@ -592,7 +623,9 @@ class Team extends BaseController
                 $currentLevel = [$childFolder['id']];
                 $levels       = [[$childFolder['id']]];
                 while (!empty($currentLevel)) {
-                    $nextLevel = $folderModel->whereIn('parent_folder_id', $currentLevel)->findColumn('id');
+                    $nextQ = $folderModel->whereIn('parent_folder_id', $currentLevel);
+                    if (\App\Libraries\ReviewHandover::ready()) $nextQ->where('waiting_supervisor', 0);   // waiting papers belong to no one's cascade
+                    $nextLevel = $nextQ->findColumn('id');
                     if (!empty($nextLevel)) {
                         $levels[]     = $nextLevel;
                         $allFolderIds = array_merge($allFolderIds, $nextLevel);
@@ -659,6 +692,29 @@ class Team extends BaseController
         return ['added' => $addedTotal, 'removed' => $removedTotal];
     }
 
+
+    /**
+     * POST /teams/remove-hidden - Takes the members you can no longer pick (moved away, disabled) off a staff list.
+     * Only the list changes: their papers are not touched (their reviews were already handled when they moved).
+     */
+    public function removeHidden() {
+        $role = session()->get('role');
+        if (!in_array($role, ['Admin', 'Supervisor'])) return $this->respondError('Unauthorized.', 403);
+        $userId = (int) session()->get('user_id');
+        $teamId = (string) $this->request->getPost('team_id');
+        $preset = (new RoutingPresetModel())->where('id', $teamId)->where('owner_id', $userId)->first();
+        if (!$preset) return $this->respondError('Staff list not found.', 404);
+        $pickable = RoutingPresetModel::pickableIds($userId);
+        if ($pickable === null) return $this->respond(['status' => 'success', 'message' => 'Nothing to remove.', 'removed' => 0]);
+        $memberModel = new RoutingPresetMemberModel();
+        $hidden = array_values(array_diff(array_map('intval', array_column($memberModel->where('preset_id', $teamId)->findAll(), 'user_id')), $pickable));
+        if ($hidden) {
+            $memberModel->where('preset_id', $teamId)->whereIn('user_id', $hidden)->delete();
+            helper('functions');
+            audit_log('STAFF_LIST_TRIMMED', 'ACCOUNT', 'routing_preset', null, "{$preset['name']} ({$teamId}): removed " . count($hidden) . ' member(s) no longer under the owner (user ' . implode(', ', $hidden) . ')');
+        }
+        return $this->respond(['status' => 'success', 'message' => $hidden ? 'Removed ' . count($hidden) . ' from the list.' : 'Nothing to remove.', 'removed' => count($hidden)]);
+    }
     /** POST /teams/delete - Archives (soft-deletes) a staff list if cascaded, or hard-deletes if unused. */
     public function delete() {
         $role = session()->get('role');

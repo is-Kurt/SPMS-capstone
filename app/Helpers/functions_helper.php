@@ -562,3 +562,194 @@ function sync_user_papers_mid_target_setting(int $userId, ?string $targetPaperTy
         'updated_folders' => $updatedFolders
     ];
 }
+
+// ---------------------------------------------------------------------------------------------------------------
+// The ratee's position and department on a paper (2026-11-07)
+//
+// A paper keeps the position(s) and department(s) its owner had when it was created (supervisor cascade, cycle
+// start or first opening): document_folders.owner_snapshot. It is never re-read live, so a later change does not
+// rewrite submitted or approved papers. Deliberate changes (assignments, role switch, unit / position renames,
+// a supervisor's edit) refresh only papers still in draft (paper_snapshot_draft_statuses).
+// ---------------------------------------------------------------------------------------------------------------
+
+/** Is document_folders.owner_snapshot there yet (migration 000024)? Until then papers print live details. */
+function paper_snapshots_ready(): bool
+{
+    static $ready = null;
+    return $ready ??= (bool) \Config\Database::connect()->query("SELECT 1 FROM pragma_table_info('document_folders') WHERE name = 'owner_snapshot'")->getRowArray();
+}
+
+/** Statuses of a paper that is not submitted yet, so its owner details may still follow changes. */
+function paper_snapshot_draft_statuses(): array
+{
+    return [
+        \App\Enums\FolderStatus::DRAFT_TARGET->value,
+        \App\Enums\FolderStatus::TARGET_UNAPPROVED->value,
+        \App\Enums\FolderStatus::TARGET_MISSED->value,
+    ];
+}
+
+/** A person's current position(s) and department(s): [['position' => ..., 'dept' => ...], ...] (empty if none). */
+function paper_owner_roles(int $userId): array
+{
+    $rows = (new \App\Models\UserModel())->getAllActivePlantillaDetails($userId);
+    return array_values(array_map(fn($r) => ['position' => (string) ($r['position'] ?? ''), 'dept' => (string) ($r['department'] ?? '')], $rows));
+}
+
+/** Saves the owner's details on a paper once (only when it has none yet). */
+function seed_paper_owner_snapshot(string $folderId, int $userId): void
+{
+    if (!paper_snapshots_ready()) return;
+    $db = \Config\Database::connect();
+    $row = $db->table('document_folders')->select('owner_snapshot')->where('id', $folderId)->get()->getRowArray();
+    if (!$row || !empty($row['owner_snapshot'])) return;
+    $roles = paper_owner_roles($userId);
+    if (!$roles) return;                       // nothing to save yet: the paper shows live details until there is
+    $db->table('document_folders')->where('id', $folderId)
+        ->update(['owner_snapshot' => json_encode(['roles' => $roles, 'at' => date('Y-m-d H:i:s')])]);
+}
+
+/** After a deliberate change: re-saves the owner details on these people's papers that are still in draft. */
+function refresh_draft_paper_snapshots(array $userIds): int
+{
+    if (!paper_snapshots_ready()) return 0;
+    $db = \Config\Database::connect();
+    $count = 0;
+    foreach (array_unique(array_map('intval', array_filter($userIds))) as $userId) {
+        $roles = paper_owner_roles($userId);
+        if (!$roles) continue;                 // no current assignment: keep what the paper says
+        $count += $db->table('document_folders')->where('user_id', $userId)->where('deleted_at IS NULL')
+            ->whereIn('status', paper_snapshot_draft_statuses())
+            ->update(['owner_snapshot' => json_encode(['roles' => $roles, 'at' => date('Y-m-d H:i:s')])]) ? $db->affectedRows() : 0;
+    }
+    return $count;
+}
+
+/** The people holding any assignment in these units (to refresh their drafts after a unit rename). */
+function users_in_units(array $unitIds): array
+{
+    if (!$unitIds) return [];
+    return array_column(\Config\Database::connect()->table('plantillas')->select('user_id')->distinct()
+        ->whereIn('unit_id', $unitIds)->where('ended_at IS NULL')->get()->getResultArray(), 'user_id');
+}
+
+/** The people holding this position (to refresh their drafts after a position rename). */
+function users_with_position(int $positionId): array
+{
+    return array_column(\Config\Database::connect()->table('plantillas')->select('user_id')->distinct()
+        ->where('position_id', $positionId)->where('ended_at IS NULL')->get()->getResultArray(), 'user_id');
+}
+
+/**
+ * Name, position and department to print on a paper: the details saved on it, else (an old paper with none
+ * saved, or an owner without an assignment) the owner's current ones. $docInfo needs owner_id and owner_snapshot.
+ */
+function paper_owner_info(array $docInfo): array
+{
+    $ownerId = (int) ($docInfo['owner_id'] ?? $docInfo['user_id'] ?? 0);
+    $user = (new \App\Models\UserModel())->find($ownerId);
+    $saved = !empty($docInfo['owner_snapshot']) ? json_decode((string) $docInfo['owner_snapshot'], true) : null;
+    $roles = is_array($saved['roles'] ?? null) && $saved['roles'] ? $saved['roles'] : paper_owner_roles($ownerId);
+    if (!$roles) {
+        $role = \App\Libraries\OrgStructure::instance()->roleOf($ownerId);
+        $roles = [['position' => $role ?: 'Faculty', 'dept' => '']];
+    }
+    return [
+        'name'     => trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')),
+        'position' => $roles[0]['position'] ?? '',
+        'dept'     => $roles[0]['dept'] ?? '',
+        'roles'    => $roles,
+    ];
+}
+
+/**
+ * May a person change their own form type on their profile? Heads (who hold a head position) always may. Others
+ * only while none of their papers is past drafting: once targets are submitted, approved or missed, or the
+ * evaluation has started, their supervisor (My Staff > Staff Details) or the admin (Manage) changes it, after a
+ * preview. Finished papers from past cycles do not count.
+ */
+function own_doc_type_locked(int $userId): bool
+{
+    if (\App\Libraries\OrgStructure::instance()->isHead($userId)) return false;
+    return \Config\Database::connect()->table('document_folders')->where('user_id', $userId)->where('deleted_at IS NULL')
+        ->whereIn('status', [
+            \App\Enums\FolderStatus::TARGET_SUBMITTED->value,
+            \App\Enums\FolderStatus::TARGET_APPROVED->value,
+            \App\Enums\FolderStatus::TARGET_MISSED->value,
+            \App\Enums\FolderStatus::DRAFT_EVALUATION->value,
+            \App\Enums\FolderStatus::EVAL_SUBMITTED->value,
+        ])->countAllResults() > 0;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------
+// Role follows position (2026-11-07): a Staff account is a Supervisor while they hold a head position, otherwise an
+// Employee. Run after anything that can change who holds a head position (assignments, unit head links, the
+// position tree). Their form type is fixed when the new role allows exactly one; otherwise it is flagged as usual.
+// ---------------------------------------------------------------------------------------------------------------
+
+/** Brings one person's role in line with their position. Returns the new role when it changed, else null. */
+function sync_rated_role(int $userId): ?string
+{
+    $org = \App\Libraries\OrgStructure::instance();
+    $change = $org->syncRatedRole($userId);
+    if (!$change) return null;
+    [$old, $new] = $change;
+    \App\Libraries\OrgStructure::reset();
+    $org = \App\Libraries\OrgStructure::instance();
+    $user = (new \App\Models\UserModel())->find($userId);
+    $note = '';
+    $allowed = $org->allowedDocTypes($new, $user['employment_status'] ?? null);
+    $current = strtoupper((string) ($user['doc_type'] ?? ''));
+    // The form type follows too when the current one no longer fits: the only one allowed, or the first the rules
+    // allow (the same default as for someone with none set). It used to stay put when several fit, leaving e.g. a new
+    // Department Chair on IPCR (2026-11-08).
+    if (!in_array($current, $allowed, true) && $allowed) {
+        $pick = $allowed[0];
+        (new \App\Models\UserModel())->update($userId, ['doc_type' => $pick]);
+        sync_user_papers_mid_target_setting($userId, $pick);
+        $note = ", form type " . ($current ?: 'none') . " -> {$pick}" . (count($allowed) > 1 ? ' (also allowed: ' . implode(', ', array_slice($allowed, 1)) . ')' : '');
+    }
+    audit_log('ROLE_FOLLOWS_POSITION', 'ACCOUNT', 'user', $userId, ($user['email'] ?? "user {$userId}") . ": {$old} -> {$new} (" . ($new === 'Supervisor' ? 'now holds a head position' : 'no longer holds a head position') . "){$note}");
+    return $new;
+}
+
+/** The same for every Staff account (after the position tree or a unit's head link changed). Returns changes. */
+function sync_all_rated_roles(): array
+{
+    $rows = \Config\Database::connect()->table('user_roles ur')->select('ur.user_id')->join('roles r', 'r.id = ur.role_id')
+        ->whereIn('r.name', ['Employee', 'Supervisor'])->get()->getResultArray();
+    $changed = [];
+    foreach (array_column($rows, 'user_id') as $uid) {
+        if ($new = sync_rated_role((int) $uid)) $changed[(int) $uid] = $new;
+    }
+    return $changed;
+}
+
+/** "Staff: unit head" / "Staff: member" for the two rated roles; other roles as they are. */
+function staff_role_label(?string $role): string
+{
+    return match ($role) { 'Supervisor' => 'Staff: unit head', 'Employee' => 'Staff: member', default => (string) $role };
+}
+
+/** Short form where it is clear the person is Staff (header badge, Doc Type Rules, audit log): "Unit head" / "Member". */
+function staff_role_short(?string $role): string
+{
+    return match ($role) { 'Supervisor' => 'Unit head', 'Employee' => 'Member', default => (string) $role };
+}
+
+/** Sends the same notification to every active Admin (e.g. a supervisor made someone a unit head). */
+function notify_admins(array $payload): void
+{
+    $admins = \Config\Database::connect()->table('users u')->select('u.id')->join('user_roles ur', 'ur.user_id = u.id')
+        ->join('roles r', 'r.id = ur.role_id')->where('r.name', 'Admin')->where('u.is_active', 1)->get()->getResultArray();
+    helper('notification');
+    foreach (array_column($admins, 'id') as $id) notify_user((int) $id, $payload);
+}
+
+/** After an org change: revoke supervisors who went out of scope on unfinished papers (ReviewHandover). */
+function reconcile_reviews(): void
+{
+    helper('notification');
+    \App\Libraries\ReviewHandover::reconcile();
+}

@@ -31,11 +31,19 @@ $currentSysRole   = $sysRole ?? ($mainData['sysRole'] ?? session()->get('role'))
 $isTwgWithAssignedUnits = ($currentSysRole === 'TWG') && !empty($twgAssignedUnits);
 ?>
 <style>
+/* Sidebar fills the window below the header (65px) minus the shell's top and bottom padding, so a short page
+   does not scroll: lg = 20px + 16px (p-5, lg:pb-4), xl = 32px + 32px (xl:p-8). It used to be 100vh - 8rem plus a
+   1.5rem bottom margin, which made the page about 25px taller than the window. */
 @media (min-width: 1024px) {
     #app-sidebar {
-        height: calc(100vh - 8rem) !important;
-        max-height: calc(100vh - 8rem) !important;
-        margin-bottom: 1.5rem !important;
+        height: calc(100vh - 65px - 2.25rem) !important;
+        max-height: calc(100vh - 65px - 2.25rem) !important;
+    }
+}
+@media (min-width: 1280px) {
+    #app-sidebar {
+        height: calc(100vh - 65px - 4rem) !important;
+        max-height: calc(100vh - 65px - 4rem) !important;
     }
 }
 .sidebar-split-box {

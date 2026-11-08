@@ -85,6 +85,14 @@ class AccountManagement extends BaseController
             $assignByUser[(int) $a['user_id']][] = $a;
         }
         $flagCount = 0;
+        // Flags the Admin chose to ignore (directory_flag_ignores, 2026-11-08): [user_id][flag] => true
+        $ignoreReady = $db->tableExists('directory_flag_ignores');
+        $ignores = [];
+        if ($ignoreReady) {
+            foreach ($db->table('directory_flag_ignores')->get()->getResultArray() as $ig) $ignores[(int) $ig['user_id']][$ig['flag']] = (int) $ig['id'];
+        }
+        $stillIgnored = [];
+        $ignoredCount = 0;
         foreach ($users as &$usr) {
             $usr['assignments'] = $assignByUser[(int) $usr['id']] ?? [];
             $usr['flags'] = [];
@@ -105,14 +113,25 @@ class AccountManagement extends BaseController
                 // Role and position should agree: a Supervisor heads a unit, an Employee does not.
                 $headAssignments = array_filter($usr['assignments'], fn($a) => $a['is_head']);
                 if ($roleName === 'Supervisor' && $usr['assignments'] && !$headAssignments) {
-                    $usr['flags'][] = 'Supervisor without a head position';
+                    $usr['flags'][] = 'Unit head without a head position';
                 } elseif ($roleName === 'Employee' && $headAssignments) {
-                    $usr['flags'][] = 'Employee holding a head position (' . implode(', ', array_map(fn($a) => $a['position_title'] . ' · ' . $a['unit_name'], $headAssignments)) . ')';
+                    $usr['flags'][] = 'Member holding a head position (' . implode(', ', array_map(fn($a) => $a['position_title'] . ' · ' . $a['unit_name'], $headAssignments)) . ')';
                 }
+                $mine = $ignores[(int) $usr['id']] ?? [];
+                $usr['ignored_flags'] = array_values(array_filter($usr['flags'], fn($f) => isset($mine[$f])));
+                $usr['flags'] = array_values(array_filter($usr['flags'], fn($f) => !isset($mine[$f])));
+                foreach ($usr['ignored_flags'] as $f) $stillIgnored[] = $mine[$f];
+                if ($usr['ignored_flags']) $ignoredCount++;
                 if ($usr['flags']) $flagCount++;
             }
         }
         unset($usr);
+        // An ignore whose flag no longer applies is dropped, so the flag shows again if the situation comes back
+        if ($ignoreReady && $ignores) {
+            $all = array_merge(...array_map('array_values', array_values($ignores)));
+            $stale = array_values(array_diff($all, $stillIgnored));
+            if ($stale) $db->table('directory_flag_ignores')->whereIn('id', $stale)->delete();
+        }
 
         // What the Manage modal needs: which positions fit each unit (heads / members + General).
         $unitFit = [];
@@ -122,6 +141,8 @@ class AccountManagement extends BaseController
 
         return view('accounts/index', [
             'flagCount'             => $flagCount,
+            'ignoredFlagCount'      => $ignoredCount,
+            'flagIgnoreReady'       => $ignoreReady,
             'unitFit'               => $unitFit,
             'positionTree'          => $this->flattenPositionTree($org),
             'unitHeads'             => $unitHeads,
@@ -239,6 +260,8 @@ class AccountManagement extends BaseController
                     'id'              => $invitationModel->getInsertID(),
                     'email'           => $email,
                     'role_name'       => $roleName,
+                    'role_label'      => staff_role_label($roleName),
+                    'unit_id'         => $unitId ?: null,
                     'unit_name'       => $unitName,
                     'created_display' => date('M d, Y'),
                     'expires_display' => date('M d, Y - h:i A', strtotime($expiresAt)),
@@ -386,9 +409,8 @@ class AccountManagement extends BaseController
                 $db->table('plantillas')->where('user_id', $targetId)->where('ended_at IS NULL')->update(['ended_at' => $today, 'updated_at' => date('Y-m-d H:i:s')]);
                 if ($n) $note = "; {$n} assignment(s) ended";
             } elseif ($db->table('plantillas')->where('user_id', $targetId)->where('ended_at IS NULL')->countAllResults() === 0) {
-                // Re-enabled: start again the assignments they had when they were disabled (the last ones ended).
-                $last = $db->table('plantillas')->selectMax('ended_at', 'd')->where('user_id', $targetId)->get()->getRowArray()['d'] ?? null;
-                $rows = $last ? $db->table('plantillas')->where('user_id', $targetId)->where('ended_at', $last)->get()->getResultArray() : [];
+                // Re-enabled: start again the assignments they had when they were disabled (the ones that disable ended).
+                $rows = self::lastEndedBatch($db->table('plantillas')->where('user_id', $targetId)->get()->getResultArray());
                 foreach ($rows as $r) {
                     $db->table('plantillas')->insert(['user_id' => $targetId, 'unit_id' => $r['unit_id'], 'position_id' => $r['position_id'],
                         'employment_status' => $user['employment_status'] ?? $r['employment_status'], 'started_at' => $today, 'created_at' => date('Y-m-d H:i:s')]);
@@ -397,6 +419,9 @@ class AccountManagement extends BaseController
             }
             $db->transComplete();
             OrgStructure::reset();
+            refresh_draft_paper_snapshots([(int) $targetId]);   // their draft papers follow the restored assignments
+            if ($newStatus === 1) sync_rated_role((int) $targetId);
+            reconcile_reviews();                                 // disabled: the reviews they held are revoked
 
             $action = ($newStatus === 1) ? 'ACCOUNT_ACTIVATED' : 'ACCOUNT_DEACTIVATED';
             audit_log($action, 'ACCOUNT', 'user', (int) $targetId, "User account {$user['email']} set to " . ($newStatus === 1 ? 'Active' : 'Disabled') . $note);
@@ -415,13 +440,21 @@ class AccountManagement extends BaseController
                 return $this->respondError('Cannot change your own role.', 400);
             }
 
+            // "staff" = a rated account; Employee or Supervisor then follows their position (unit head or member),
+            // so it is never picked directly. (A posted Employee / Supervisor role id means the same.)
             $user = (new UserModel())->find($targetId);
-            $role = (new RoleModel())->find($roleId);
-            if (!$user || !$role) return $this->respondError('User or role not found.', 400);
+            $role = $roleId === 'staff' ? null : (new RoleModel())->find($roleId);
+            if (!$user || ($roleId !== 'staff' && !$role)) return $this->respondError('User or role not found.', 400);
+            $staffPick = $roleId === 'staff' || OrgStructure::isRatedRole($role['name'] ?? null);
 
             $org = OrgStructure::instance();
             $oldRole = $org->roleOf($targetId);
-            $newRole = $role['name'];
+            if ($staffPick && OrgStructure::isRatedRole($oldRole)) {
+                return $this->respond(['status' => 'success', 'role_name' => $oldRole, 'role_label' => staff_role_label($oldRole)]);
+            }
+            $newRole = $staffPick ? 'Employee' : $role['name'];          // stored until their position says otherwise
+            $newRoleId = $staffPick ? ((new RoleModel())->where('name', 'Employee')->first()['id'] ?? null) : $role['id'];
+            $newLabel = $staffPick ? 'Staff' : $newRole;
             if ($oldRole === $newRole) return $this->respond(['status' => 'success', 'role_name' => $newRole]);
 
             $db = \Config\Database::connect();
@@ -436,7 +469,7 @@ class AccountManagement extends BaseController
 
             // Step 1: say what will happen and ask (the page sends the request again with confirm=1).
             if (!$this->request->getPost('confirm')) {
-                $lines = ["Change {$name}'s role from " . ($oldRole ?: 'none') . " to {$newRole}? It takes effect on their next page."];
+                $lines = ["Change {$name}'s role from " . ($oldRole ? staff_role_label($oldRole) : 'none') . " to {$newLabel}? It takes effect on their next page."];
                 if ($wasRated && !$isRated) {
                     if ($active) {
                         $lines[] = 'Their department assignment' . (count($active) > 1 ? 's end' : ' ends') . ' today and stay' . (count($active) > 1 ? '' : 's') . ' in their history: ' . implode('; ', array_map($label, $active)) . '.';
@@ -453,24 +486,12 @@ class AccountManagement extends BaseController
                     $lines[] = "Their papers and ratings are kept. Switching back later offers to restore these assignments.";
                 } elseif (!$wasRated && $isRated) {
                     if ($twgUnits) $lines[] = 'Their TWG units are cleared: ' . implode(', ', $twgUnits) . '.';
-                    if (!$org->isStatusOpenTo($newRole, $user['employment_status'])) {
-                        $lines[] = "Their status {$user['employment_status']} is not open to {$newRole}; change it in Manage.";
+                    // Unit head or member follows the position they get back.
+                    $willBe = array_filter($restorable, fn($a) => $org->isHeadOf((int) $a['unit_id'], (int) $a['position_id'])) ? 'Supervisor' : 'Employee';
+                    if (!$org->isStatusOpenTo($willBe, $user['employment_status'])) {
+                        $lines[] = "Their status {$user['employment_status']} is not open to " . staff_role_label($willBe) . '; change it in Manage.';
                     }
                     if (!$restorable) $lines[] = 'Next, add their department and position in Manage (it opens after this).';
-                } elseif ($wasRated && $isRated) {
-                    $headOf = array_values(array_filter($active, fn($a) => $a['unit_id'] && $a['position_id'] && $org->isHeadOf((int) $a['unit_id'], (int) $a['position_id'])));
-                    if ($newRole === 'Supervisor' && !$headOf) {
-                        $lines[] = 'They hold no head position, so they will not head any unit until you change their assignment in Manage (it opens after this).';
-                    } elseif ($newRole === 'Employee' && $headOf) {
-                        $lines[] = 'They still hold ' . implode('; ', array_map($label, $headOf)) . ', a head position: change it in Manage (it opens after this), or they keep counting as its head.';
-                    }
-                    if (!$org->isStatusOpenTo($newRole, $user['employment_status'])) {
-                        $lines[] = "Their status {$user['employment_status']} is not open to {$newRole}; they will be flagged until you change it in Manage.";
-                    }
-                    $allowed = $org->allowedDocTypes($newRole, $user['employment_status']);
-                    if ($user['doc_type'] && !in_array(strtoupper($user['doc_type']), $allowed, true)) {
-                        $lines[] = "Their form type {$user['doc_type']} does not fit {$newRole}" . ($allowed ? ' (allowed: ' . implode(', ', $allowed) . ')' : '') . '; they will be flagged until you change it.';
-                    }
                 }
                 $offer = array_map(function ($a) use ($org, $targetId, $label) {
                     $text = $label($a);
@@ -489,7 +510,7 @@ class AccountManagement extends BaseController
             $notes = [];
             $db->transStart();
             $db->table('user_roles')->where('user_id', $targetId)->delete();
-            $db->table('user_roles')->insert(['user_id' => $targetId, 'role_id' => $roleId]);
+            $db->table('user_roles')->insert(['user_id' => $targetId, 'role_id' => $newRoleId]);
             if ($wasRated && !$isRated && $active) {
                 $db->table('plantillas')->where('user_id', $targetId)->where('ended_at IS NULL')->update(['ended_at' => $today, 'updated_at' => $now]);
                 $notes[] = (count($active) === 1 ? 'Assignment ended: ' : count($active) . ' assignments ended: ') . implode('; ', array_map($label, $active));
@@ -509,18 +530,23 @@ class AccountManagement extends BaseController
             OrgStructure::reset();
             $org = OrgStructure::instance();
 
-            // Open Manage when the new role still needs a department, or the position does not fit the role.
-            $openManage = false;
+            // Staff: unit head or member follows the restored position. Open Manage when they still need one.
             if ($isRated) {
-                $heads = $org->headedUnitIds($targetId);
-                $openManage = !$org->assignmentsOf($targetId) || ($newRole === 'Supervisor' && !$heads) || ($newRole === 'Employee' && $heads);
+                sync_rated_role($targetId);
+                OrgStructure::reset();
+                $org = OrgStructure::instance();
+                $newRole = $org->roleOf($targetId) ?? $newRole;
             }
+            $openManage = $isRated && !$org->assignmentsOf($targetId);
+            reconcile_reviews();
+            refresh_draft_paper_snapshots([$targetId]);           // drafts follow restored / changed assignments
             audit_log('ROLE_CHANGED', 'ACCOUNT', 'user', $targetId, "Role for {$user['email']} changed from " . ($oldRole ?: 'none') . " to {$newRole}" . ($notes ? ' (' . implode('; ', $notes) . ')' : ''));
 
             return $this->respond([
                 'status'      => 'success',
                 'role_name'   => $newRole,
-                'message'     => "{$name} is now {$newRole}." . ($notes ? ' ' . implode('. ', $notes) . '.' : ''),
+                'role_label'  => staff_role_label($newRole),
+                'message'     => "{$name} is now " . staff_role_label($newRole) . "." . ($notes ? ' ' . implode('. ', $notes) . '.' : ''),
                 'reload'      => $wasRated !== $isRated || $openManage,
                 'open_manage' => $openManage,
             ]);
@@ -531,7 +557,7 @@ class AccountManagement extends BaseController
     private function assignmentRows(int $userId, bool $currentOnly): array
     {
         $b = \Config\Database::connect()->table('plantillas p')
-            ->select('p.id, p.unit_id, p.position_id, p.employment_status, p.ended_at, un.name as unit_name, pos.title as position_title')
+            ->select('p.id, p.unit_id, p.position_id, p.employment_status, p.ended_at, p.updated_at, un.name as unit_name, pos.title as position_title')
             ->join('units un', 'un.id = p.unit_id', 'left')->join('positions pos', 'pos.id = p.position_id', 'left')
             ->where('p.user_id', $userId);
         if ($currentOnly) $b->where('p.ended_at IS NULL');
@@ -541,10 +567,27 @@ class AccountManagement extends BaseController
     /** The assignments that ended last (e.g. when the person was switched to TWG), whose unit and position still exist. */
     private function lastEndedAssignments(int $userId): array
     {
-        $rows = array_filter($this->assignmentRows($userId, false), fn($a) => $a['ended_at'] !== null);
-        if (!$rows) return [];
-        $last = max(array_column($rows, 'ended_at'));
-        return array_values(array_filter($rows, fn($a) => $a['ended_at'] === $last && $a['unit_name'] !== null && $a['position_title'] !== null));
+        return array_values(array_filter(self::lastEndedBatch($this->assignmentRows($userId, false)),
+            fn($a) => $a['unit_name'] !== null && $a['position_title'] !== null));
+    }
+
+    /**
+     * The rows ended by the last action that ended any (a disable, a role switch, ending one in Manage). One action
+     * stamps all its rows with the same updated_at; ended_at is only a date, so an earlier change the same day (e.g. a
+     * position change) must not count (2026-11-08: re-enabling restored both the old and the new position).
+     * Rows ended before updated_at was set fall back to the latest end date.
+     */
+    private static function lastEndedBatch(array $rows): array
+    {
+        $ended = array_filter($rows, fn($a) => $a['ended_at'] !== null);
+        if (!$ended) return [];
+        $stamps = array_filter(array_column($ended, 'updated_at'));
+        if ($stamps) {
+            $at = max($stamps);
+            return array_values(array_filter($ended, fn($a) => ($a['updated_at'] ?? null) === $at));
+        }
+        $last = max(array_column($ended, 'ended_at'));
+        return array_values(array_filter($ended, fn($a) => $a['ended_at'] === $last));
     }
 
     /** POST /account/twg-assignments/update - Updates assigned units/offices for a TWG member. */
@@ -626,6 +669,35 @@ class AccountManagement extends BaseController
         return [$user, $role, null];
     }
 
+    /**
+     * POST /account/flag/ignore - Ignores one User Directory flag for one person (user_id, flag), e.g. a co-head who
+     * is meant to be one. It shows again when the flag's text changes. POST /account/flag/unignore shows it again.
+     */
+    public function ignoreFlag() { return $this->setFlagIgnored(true); }
+    public function unignoreFlag() { return $this->setFlagIgnored(false); }
+
+    private function setFlagIgnored(bool $ignore) {
+        return $this->tryOrFail(function() use ($ignore) {
+            $db = \Config\Database::connect();
+            if (!$db->tableExists('directory_flag_ignores')) return $this->respondError('Ignoring flags is not set up yet (run the migrations).', 409);
+            $userId = (int) $this->request->getPost('user_id');
+            $flag = trim((string) $this->request->getPost('flag'));
+            $user = $db->table('users')->select('id, email')->where('id', $userId)->get()->getRowArray();
+            if (!$user || $flag === '' || mb_strlen($flag) > 255) return $this->respondError('Unknown person or flag.', 422);
+            $q = $db->table('directory_flag_ignores')->where('user_id', $userId)->where('flag', $flag);
+            if ($ignore) {
+                if (!$q->countAllResults()) {
+                    $db->table('directory_flag_ignores')->insert(['user_id' => $userId, 'flag' => $flag, 'ignored_by' => session()->get('user_id'), 'created_at' => date('Y-m-d H:i:s')]);
+                }
+                audit_log('FLAG_IGNORED', 'ACCOUNT', 'user', $userId, "{$user['email']}: {$flag}");
+                return $this->respond(['status' => 'success', 'message' => 'Flag ignored.']);
+            }
+            $db->table('directory_flag_ignores')->where('user_id', $userId)->where('flag', $flag)->delete();
+            audit_log('FLAG_SHOWN_AGAIN', 'ACCOUNT', 'user', $userId, "{$user['email']}: {$flag}");
+            return $this->respond(['status' => 'success', 'message' => 'Flag shown again.']);
+        });
+    }
+
     /** POST /account/user/assignment/add - Adds a unit + position assignment (any position: the admin decides). */
     public function addAssignment() {
         return $this->tryOrFail(function() {
@@ -637,25 +709,13 @@ class AccountManagement extends BaseController
             if (!$org->unit($unitId)) return $this->respondError('Select a department / unit.', 422);
             $pos = $org->position($positionId);
             if (!$pos || (int) $pos['is_general_root'] === 1) return $this->respondError('Select a position.', 422);
-            // Same rule as sign-up: a Supervisor takes the unit's head position, an Employee one directly under it or a General one.
-            if (!in_array($positionId, $org->positionChoicesFor($role, $unitId), true)) {
-                return $this->respondError("{$pos['title']} is not " . ($role === 'Employee' ? 'an Employee' : 'a Supervisor') . " position in {$org->unit($unitId)['name']}.", 422);
+            // The unit's head position(s), the positions directly under it, or a General one. The role follows:
+            // a head position makes them a Supervisor (unit head), any other an Employee (member).
+            if (!in_array($positionId, $org->positionsForUnit($unitId), true)) {
+                return $this->respondError("{$pos['title']} is not a position in {$org->unit($unitId)['name']}.", 422);
             }
-            $db = \Config\Database::connect();
-            if ($db->table('plantillas')->where('user_id', $user['id'])->where('unit_id', $unitId)->where('position_id', $positionId)->where('ended_at IS NULL')->countAllResults()) {
-                return $this->respondError('They already hold this position in this unit.', 422);
-            }
-            $others = $org->isHeadOf($unitId, $positionId) ? $org->headsOf($unitId, (int) $user['id']) : [];
-            $db->table('plantillas')->insert([
-                'user_id' => $user['id'], 'unit_id' => $unitId, 'position_id' => $positionId,
-                'employment_status' => $user['employment_status'], 'started_at' => date('Y-m-d'), 'created_at' => date('Y-m-d H:i:s'),
-            ]);
-            OrgStructure::reset();
-            $unitName = $org->unit($unitId)['name'];
-            audit_log('ASSIGNMENT_ADDED', 'ACCOUNT', 'user', (int) $user['id'], "{$user['email']}: {$pos['title']}, {$unitName}");
-            $msg = "Added: {$pos['title']}, {$unitName}.";
-            if ($others) $msg .= ' ' . implode(', ', array_map(fn($h) => trim($h['first_name'] . ' ' . $h['last_name']), $others)) . ' also heads this unit (co-heads).';
-            return $this->respond(['status' => 'success', 'message' => $msg]);
+            $res = \App\Libraries\Assignments::add($user, $unitId, $positionId);
+            return $res['ok'] ? $this->respond(['status' => 'success', 'message' => $res['message']]) : $this->respondError($res['message'], 422);
         });
     }
 
@@ -664,16 +724,8 @@ class AccountManagement extends BaseController
         return $this->tryOrFail(function() {
             [$user, $role, $err] = $this->managedUser();
             if ($err) return $this->respondError($err, 422);
-            $db = \Config\Database::connect();
-            $row = $db->table('plantillas p')->select('p.id, un.name as unit_name, pos.title')
-                ->join('units un', 'un.id = p.unit_id', 'left')->join('positions pos', 'pos.id = p.position_id', 'left')
-                ->where('p.id', (int) $this->request->getPost('plantilla_id'))->where('p.user_id', $user['id'])->where('p.ended_at IS NULL')
-                ->get()->getRowArray();
-            if (!$row) return $this->respondError('That assignment is not current.', 422);
-            $db->table('plantillas')->where('id', $row['id'])->update(['ended_at' => date('Y-m-d'), 'updated_at' => date('Y-m-d H:i:s')]);
-            OrgStructure::reset();
-            audit_log('ASSIGNMENT_ENDED', 'ACCOUNT', 'user', (int) $user['id'], "{$user['email']}: {$row['title']}, {$row['unit_name']} ended");
-            return $this->respond(['status' => 'success', 'message' => "Ended: {$row['title']}, {$row['unit_name']}."]);
+            $res = \App\Libraries\Assignments::end($user, (int) $this->request->getPost('plantilla_id'));
+            return $res['ok'] ? $this->respond(['status' => 'success', 'message' => $res['message']]) : $this->respondError($res['message'], 422);
         });
     }
 
@@ -762,6 +814,8 @@ class AccountManagement extends BaseController
         ]);
         OrgStructure::reset();
         $parentTitle = $parentId ? (OrgStructure::instance()->position($parentId)['title'] ?? '') : null;
+        sync_all_rated_roles();   // the tree / head links decide who is a unit head: roles follow
+        reconcile_reviews();      // and supervisors who went out of scope lose their reviews
         audit_log('POSITION_CREATED', 'ACCOUNT', 'position', (int) $id, "Created position: {$title}" . ($parentTitle ? " (under {$parentTitle})" : ' (top level)'));
         return $this->respond(['status' => 'success', 'item' => ['id' => $id, 'title' => $title, 'is_teaching' => $isTeaching, 'parent_id' => $parentId]]);
     }
@@ -798,6 +852,9 @@ class AccountManagement extends BaseController
                                      'updated_at' => date('Y-m-d H:i:s')]);
         OrgStructure::reset();
         $newParent = $parentId ? (OrgStructure::instance()->position($parentId)['title'] ?? '') : 'top level';
+        if ($title !== $pos['title']) refresh_draft_paper_snapshots(users_with_position($id));   // renamed: drafts show the new title
+        sync_all_rated_roles();   // the tree / head links decide who is a unit head: roles follow
+        reconcile_reviews();      // and supervisors who went out of scope lose their reviews
         audit_log('POSITION_UPDATED', 'ACCOUNT', 'position', $id, "Updated position {$title}" . ($oldParent !== $newParent ? " (moved from {$oldParent} to {$newParent})" : ''));
         return $this->respond(['status' => 'success']);
     }
@@ -816,19 +873,35 @@ class AccountManagement extends BaseController
         if ((int) ($pos['is_general_root'] ?? 0) === 1) {
             return $this->respondError('The General group cannot be deleted.', 422);
         }
-        if ($positionModel->where('parent_id', $id)->countAllResults() > 0) {
-            return $this->respondError('This position has positions under it. Move or delete those first.', 422);
+
+        // The position and everything under it (a branch). Deleting a position deletes its assignments, past ones
+        // included (plantillas ON DELETE CASCADE), so a branch goes only when nobody holds or held any of it and no
+        // unit uses one of them as its head position.
+        $branch = [$id];
+        for ($i = 0; $i < count($branch); $i++) {
+            foreach ($positionModel->select('id')->where('parent_id', $branch[$i])->findAll() as $c) $branch[] = (int) $c['id'];
         }
-        $used = $db->table('plantillas')->where('position_id', $id)->countAllResults();
-        if ($used > 0) {
-            return $this->respondError("This position is used by {$used} assignment(s), including past ones kept as history. Rename or move it instead of deleting it.", 422);
+        $titles = array_column($positionModel->select('id, title')->whereIn('id', $branch)->findAll(), 'title', 'id');
+        $usedRows = $db->table('plantillas')->select('position_id, COUNT(*) AS n')->whereIn('position_id', $branch)->groupBy('position_id')->get()->getResultArray();
+        if ($usedRows) {
+            $list = implode(', ', array_map(fn($r) => "{$titles[$r['position_id']]} ({$r['n']})", $usedRows));
+            return $this->respondError((count($branch) > 1 ? 'Positions in this branch are' : 'This position is')
+                . " used by assignments, including past ones kept as history: {$list}. Rename or move instead of deleting.", 422);
         }
-        if ($db->table('units')->where('head_position_id', $id)->countAllResults() > 0) {
-            return $this->respondError('A department / unit uses this as its head position. Change that unit first.', 422);
+        $headOf = $db->table('units')->select('name')->whereIn('head_position_id', $branch)->get()->getResultArray();
+        if ($headOf) {
+            return $this->respondError('Used as the head position of ' . implode(', ', array_column($headOf, 'name')) . '. Change those units first.', 422);
         }
-        $positionModel->delete($id);
+        $under = array_values(array_diff_key($titles, [$id => true]));
+        if ($under && !$this->request->getPost('confirm')) {
+            return $this->respond(['status' => 'confirm', 'message' => "Delete {$pos['title']} and the " . count($under) . ' position(s) under it: ' . implode(', ', $under) . '? Nobody holds or held any of them.']);
+        }
+
+        foreach (array_reverse($branch) as $pid) $positionModel->delete($pid);      // children first
         OrgStructure::reset();
-        audit_log('POSITION_DELETED', 'ACCOUNT', 'position', $id, "Deleted position: {$pos['title']}");
+        sync_all_rated_roles();   // the tree / head links decide who is a unit head: roles follow
+        reconcile_reviews();      // and supervisors who went out of scope lose their reviews
+        audit_log('POSITION_DELETED', 'ACCOUNT', 'position', $id, "Deleted position: {$pos['title']}" . ($under ? ' and under it: ' . implode(', ', $under) : ''));
         return $this->respond(['status' => 'success']);
     }
 
@@ -861,6 +934,8 @@ class AccountManagement extends BaseController
             $parentName = $parent['name'] ?? null;
         }
 
+        sync_all_rated_roles();   // the tree / head links decide who is a unit head: roles follow
+        reconcile_reviews();      // and supervisors who went out of scope lose their reviews
         audit_log('UNIT_CREATED', 'ACCOUNT', 'unit', (int) $id, "Created new department / unit: {$name}" . ($parentName ? " (under {$parentName})" : ""));
 
         return $this->respond(['status' => 'success', 'item' => ['id' => $id, 'name' => $name, 'parent_id' => $parentId, 'parent_name' => $parentName]]);
@@ -926,6 +1001,9 @@ class AccountManagement extends BaseController
             $org = OrgStructure::instance();
             $logMsg .= '; head position ' . ($headPositionId ? 'linked to ' . ($org->position($headPositionId)['title'] ?? '') : 'now inherited from the parent unit');
         }
+        if ($name !== ($unit['name'] ?? $name)) refresh_draft_paper_snapshots(users_in_units([$unitId]));   // renamed: drafts show the new name
+        sync_all_rated_roles();   // the tree / head links decide who is a unit head: roles follow
+        reconcile_reviews();      // and supervisors who went out of scope lose their reviews
         audit_log('UNIT_UPDATED', 'ACCOUNT', 'unit', $unitId, $logMsg);
 
         return $this->respond([

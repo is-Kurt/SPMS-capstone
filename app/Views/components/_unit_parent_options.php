@@ -1,14 +1,17 @@
 <?php
 /**
  * Parent department / unit choices as a collapsible tree (rows wired by TreeList in customSelect.js).
- * Expects $units (id, name, parent_id), $optionClass (row class the modal script looks for) and $topLabel.
+ * Expects $units (id, name, parent_id), $optionClass (row class the script looks for) and $topLabel (a first
+ * "none" row; leave it empty for no such row).
  */
 $tree = [];
 $ids = array_column($units, 'id');
 foreach ($units as $u) $tree[in_array($u['parent_id'], $ids) ? (int) $u['parent_id'] : 0][] = $u;
 $rowClass = 'flex items-center gap-1 py-2 text-sm text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-lg cursor-pointer transition-colors';
 ?>
+<?php if (!empty($topLabel)): ?>
 <li class="<?= $optionClass ?> px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors bg-accent/10 text-accent-ink font-bold" data-value=""><span class="truncate"><?= esc($topLabel) ?></span></li>
+<?php endif; ?>
 <?php
 $render = function ($parent, $level) use (&$render, $tree, $optionClass, $rowClass) {
     foreach ($tree[$parent] ?? [] as $u): ?>

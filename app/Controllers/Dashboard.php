@@ -1128,6 +1128,8 @@ class Dashboard extends BaseController
                 } elseif (!in_array($sysRole, ['Admin', 'HR', 'TWG', 'PMT'])) {
                     $builder->where('df.user_id', $userId);
                 }
+                // Papers on hold (owner now TWG/PMT/Admin or disabled) are left out of the lists and counts (ReviewHandover)
+                $builder->where(\App\Libraries\ReviewHandover::notOnHoldSql('df', 'u'), null, false);
 
                 $builder->groupBy('df.id');
                 $cycleFolders = $builder->get()->getResultArray();

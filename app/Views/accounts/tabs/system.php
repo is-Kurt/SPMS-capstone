@@ -287,7 +287,7 @@
                                                     $isOpen = $openList === null || in_array(strtolower($es['name']), array_map('strtolower', $openList), true); ?>
                                                     <label class="flex items-center gap-2 cursor-pointer text-xs text-text font-bold">
                                                         <input type="checkbox" class="js-status-role checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer" value="<?= $roleName ?>" <?= $isOpen ? 'checked' : '' ?>>
-                                                        <?= $roleName ?>
+                                                        <?= staff_role_short($roleName) ?>
                                                     </label>
                                                 <?php endforeach; ?>
                                             </div>
@@ -335,7 +335,7 @@
                         <?php foreach ($rows as $r): ?>
                             <div class="js-rule-row px-4 py-3 flex flex-col lg:flex-row lg:items-center gap-3" data-kind="<?= $kind ?>" data-name="<?= esc($r[$label]) ?>">
                                 <input type="hidden" name="<?= $kind ?>_present[<?= $r['id'] ?>]" value="1">
-                                <span class="text-sm font-bold text-text w-full shrink-0" style="max-width: 9rem;"><?= esc($r[$label]) ?></span>
+                                <span class="text-sm font-bold text-text w-full shrink-0" style="max-width: 9rem;"><?= esc($kind === 'role' ? staff_role_short($r[$label]) : $r[$label]) ?></span>
                                 <div class="flex flex-wrap items-center gap-4">
                                     <?php foreach ($docTypes as $t): ?>
                                         <label class="flex items-center gap-2 cursor-pointer text-xs text-text font-bold">
@@ -357,6 +357,7 @@
     <script>
     (function () {
         const DOC_TYPES = <?= json_encode($docTypes) ?>;
+        const roleShort = r => ({ Supervisor: 'Unit head', Employee: 'Member' })[r] || r;
         const PREVIEW = <?= json_encode($docRules['preview'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
         const form = document.getElementById('form-doc-rules');
         if (!form) return;
@@ -373,13 +374,13 @@
                 const allowed = DOC_TYPES.filter(t => (r === null || r.includes(t)) && (st === null || st.includes(t)));
                 if (p.open === false) {
                     // The role may not have this status (Employment Statuses tab): everyone in it is flagged.
-                    return `<tr class="opacity-60"><td class="px-4 py-2.5 font-bold text-text-muted">${esc(p.role)}</td><td class="px-4 py-2.5 text-text-muted">${esc(p.status)}</td>`
-                         + `<td class="px-4 py-2.5 text-text-muted">Not open to ${esc(p.role)}</td><td class="px-4 py-2.5 text-text-muted">${p.people}</td>`
+                    return `<tr class="opacity-60"><td class="px-4 py-2.5 font-bold text-text-muted">${esc(roleShort(p.role))}</td><td class="px-4 py-2.5 text-text-muted">${esc(p.status)}</td>`
+                         + `<td class="px-4 py-2.5 text-text-muted">Not open to ${esc(roleShort(p.role).toLowerCase())}s</td><td class="px-4 py-2.5 text-text-muted">${p.people}</td>`
                          + `<td class="px-4 py-2.5 font-bold ${p.people ? 'text-warning-500' : 'text-text-muted'}">${p.people}</td></tr>`;
                 }
                 const flagged = Object.entries(p.by_type || {}).reduce((n, [t, c]) => n + (allowed.includes(t) ? 0 : c), 0);
                 const empty = allowed.length === 0;
-                return `<tr><td class="px-4 py-2.5 font-bold text-text">${esc(p.role)}</td><td class="px-4 py-2.5 text-text">${esc(p.status)}</td>`
+                return `<tr><td class="px-4 py-2.5 font-bold text-text">${esc(roleShort(p.role))}</td><td class="px-4 py-2.5 text-text">${esc(p.status)}</td>`
                      + `<td class="px-4 py-2.5 font-bold ${empty ? 'text-danger-500' : 'text-text'}">${empty ? 'Nothing allowed' : allowed.join(', ') + (allowed.length === 1 ? ' (set automatically)' : ' (person picks)')}</td>`
                      + `<td class="px-4 py-2.5 text-text-muted">${p.people}</td>`
                      + `<td class="px-4 py-2.5 font-bold ${flagged ? 'text-warning-500' : 'text-text-muted'}">${flagged}</td></tr>`;

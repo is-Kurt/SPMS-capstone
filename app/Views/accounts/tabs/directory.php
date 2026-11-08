@@ -30,7 +30,16 @@
             <div class="shrink-0 pb-4 border-b border-surface-border/50">
                 <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-warning-500 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
                     <input type="checkbox" id="filter-needs-review" onchange="filterUsers()" class="checkbox directory-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer">
-                    Needs review (<?= (int) $flagCount ?>)
+                    Needs review (<span id="flag-count"><?= (int) $flagCount ?></span>)
+                </label>
+            </div>
+            <?php endif; ?>
+            <?php if (!empty($flagIgnoreReady)): ?>
+            <!-- Flags the Admin ignored (2026-11-08): the list of them, each with Show again -->
+            <div id="ignored-flags-filter" class="shrink-0 pb-4 border-b border-surface-border/50 <?= empty($ignoredFlagCount) ? 'hidden' : '' ?>">
+                <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-text-muted hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
+                    <input type="checkbox" id="filter-ignored-flags" onchange="filterUsers()" class="checkbox directory-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer">
+                    Ignored flags (<span id="ignored-flag-count"><?= (int) $ignoredFlagCount ?></span>)
                 </label>
             </div>
             <?php endif; ?>
@@ -48,7 +57,7 @@
                     <?php foreach ($roles as $role): ?>
                         <label class="flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors">
                             <input type="checkbox" name="filter_role[]" value="<?= esc($role['name']) ?>" onchange="filterUsers()" class="checkbox directory-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer">
-                            <?= esc($role['name']) ?>
+                            <?= esc(staff_role_label($role['name'])) ?>
                         </label>
                     <?php endforeach; ?>
                 </div>
@@ -73,9 +82,9 @@
                         <input type="text" id="mini-search-positions" oninput="filterSidebarPositions()" placeholder="Find position..." class="w-full bg-white dark:bg-zinc-900 border border-surface-border rounded-lg pl-7 pr-2 py-1.5 text-[10px] focus:border-accent outline-none text-text">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 absolute left-2.5 top-2 text-text-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                     </div>
-                    <div id="positions-checkbox-list" class="pr-1 max-h-48 overflow-y-auto custom-scrollbar space-y-1">
+                    <div id="positions-checkbox-list" class="pr-1 custom-scrollbar space-y-1">
                         <?php foreach ($positions as $pos): ?>
-                            <label class="position-label flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors" data-name="<?= strtolower(esc($pos['title'])) ?>">
+                            <label class="position-label position-filter-label flex items-center gap-2 cursor-pointer text-xs text-text hover:bg-zinc-50 dark:hover:bg-zinc-800/50 p-1 rounded-md transition-colors" data-name="<?= strtolower(esc($pos['title'])) ?>" data-title="<?= strtolower(esc($pos['title'])) ?>">
                                 <input type="checkbox" name="filter_pos[]" value="<?= esc($pos['title']) ?>" onchange="filterUsers()" class="checkbox directory-filter-checkbox rounded border-surface-border text-accent-ink focus:ring-accent cursor-pointer">
                                 <span class="truncate"><?= esc($pos['title']) ?></span>
                             </label>
@@ -123,6 +132,7 @@
                 <tbody class="block lg:table-row-group divide-y divide-surface-border" id="user-table-body">
                     <?php foreach ($users as $u): ?>
                         <tr class="user-dir-row block lg:table-row bg-surface p-4 lg:p-0 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors group <?= (isset($u['is_active']) && $u['is_active'] == 0) ? 'opacity-60' : '' ?>"
+                            data-user-id="<?= (int) $u['id'] ?>"
                             data-name="<?= strtolower(esc($u['first_name'] . ' ' . $u['last_name'])) ?>"
                             data-email="<?= strtolower(esc($u['email'])) ?>"
                             data-role="<?= esc($u['role_name'] ?? 'No Role') ?>"
@@ -130,7 +140,8 @@
                             data-dept="<?= esc($u['department'] ?? 'No Unit') ?>"
                             data-position="<?= esc($u['position'] ?? 'No Position') ?>"
                             data-status="<?= $u['is_active'] ?? 1 ?>"
-                            data-flag="<?= !empty($u['flags']) ? '1' : '0' ?>">
+                            data-flag="<?= !empty($u['flags']) ? '1' : '0' ?>"
+                            data-ignored="<?= !empty($u['ignored_flags']) ? '1' : '0' ?>">
                             
                             <td class="block lg:table-cell px-0 lg:px-6 py-1 lg:py-4">
                                 <div class="flex flex-col min-w-0 pr-4">
@@ -143,13 +154,20 @@
                                 <div class="flex justify-between items-center lg:block gap-4">
                                     <div>
                                         <?php if ($u['id'] != session()->get('user_id')): ?>
-                                            <?php $currentRoleId = explode(',', $u['role_id'] ?? '')[0] ?? null; ?>
+                                            <?php
+                                                // Staff (rated) accounts: unit head or member follows their position, so the list offers
+                                                // "Staff" instead of Employee / Supervisor (2026-11-07).
+                                                $currentRoleId = explode(',', $u['role_id'] ?? '')[0] ?? null;
+                                                $currentRoleName = explode(', ', (string) ($u['role_name'] ?? ''))[0];
+                                                $isStaff = in_array($currentRoleName, ['Employee', 'Supervisor'], true);
+                                            ?>
                                             <?= form_open('account/update-role', ['class' => 'inline-block', 'data-ajax' => 'change-role']) ?>
                                                 <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
                                                 <div class="relative inline-block w-max">
-                                                    <select name="role_id" aria-label="Role" onchange="this.form.requestSubmit()" data-previous="<?= esc($currentRoleId) ?>"
+                                                    <select name="role_id" aria-label="Role" onchange="this.form.requestSubmit()" data-previous="<?= $isStaff ? 'staff' : esc($currentRoleId) ?>"
                                                             class="js-role-select appearance-none pl-3 pr-7 py-0.5 rounded-lg text-[10px] font-black bg-surface lg:bg-white dark:bg-zinc-900 [color-scheme:light] dark:[color-scheme:dark] border border-surface-border uppercase tracking-widest text-text cursor-pointer focus:outline-none focus:border-accent">
-                                                        <?php foreach ($roles as $role): ?>
+                                                        <option value="staff" <?= $isStaff ? 'selected' : '' ?>>Staff</option>
+                                                        <?php foreach ($roles as $role): if (in_array($role['name'], ['Employee', 'Supervisor'], true)) continue; ?>
                                                             <option value="<?= $role['id'] ?>" <?= $currentRoleId == $role['id'] ? 'selected' : '' ?>><?= esc($role['name']) ?></option>
                                                         <?php endforeach; ?>
                                                     </select>
@@ -158,9 +176,12 @@
                                                     </div>
                                                 </div>
                                             <?= form_close() ?>
+                                            <?php if ($isStaff): ?>
+                                                <div class="text-[9px] font-black uppercase tracking-widest text-text-muted mt-1" title="Follows their position: a head position makes them a unit head"><?= $currentRoleName === 'Supervisor' ? 'Unit head' : 'Member' ?></div>
+                                            <?php endif; ?>
                                         <?php else: ?>
                                             <span class="w-max px-2.5 py-0.5 rounded-lg text-[10px] font-black bg-info-50 dark:bg-info-500/10 text-info-600 border border-info-200 dark:border-info-500/20 uppercase tracking-widest lg:w-auto">
-                                                <?= esc($u['role_name'] ?? 'No Role') ?>
+                                                <?= esc(staff_role_short($u['role_name'] ?? null) ?: 'No Role') ?>
                                             </span>
                                         <?php endif; ?>
                                     </div>
@@ -190,7 +211,18 @@
                                         <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest truncate"><?= esc($u['position'] ?? 'No Position') ?></span>
                                     <?php endif; ?>
                                     <?php foreach (($u['flags'] ?? []) as $flag): ?>
-                                        <span class="text-[10px] font-bold text-warning-500 truncate" title="<?= esc($flag) ?>">&#9888; <?= esc($flag) ?></span>
+                                        <span class="flex items-center gap-2 min-w-0">
+                                            <span class="text-[10px] font-bold text-warning-500 truncate" title="<?= esc($flag) ?>">&#9888; <?= esc($flag) ?></span>
+                                            <?php if (!empty($flagIgnoreReady)): ?>
+                                                <button type="button" class="js-flag-ignore shrink-0 text-[9px] font-black uppercase tracking-widest text-text-muted hover:text-text cursor-pointer" data-user-id="<?= (int) $u['id'] ?>" data-flag="<?= esc($flag, 'attr') ?>" title="Stop flagging this (it shows again if it changes)">Ignore</button>
+                                            <?php endif; ?>
+                                        </span>
+                                    <?php endforeach; ?>
+                                    <?php foreach (($u['ignored_flags'] ?? []) as $flag): ?>
+                                        <span class="flex items-center gap-2 min-w-0">
+                                            <span class="text-[10px] font-semibold text-text-muted truncate" title="Ignored: <?= esc($flag, 'attr') ?>">Ignored: <?= esc($flag) ?></span>
+                                            <button type="button" class="js-flag-unignore shrink-0 text-[9px] font-black uppercase tracking-widest text-text-muted hover:text-text cursor-pointer" data-user-id="<?= (int) $u['id'] ?>" data-flag="<?= esc($flag, 'attr') ?>">Show again</button>
+                                        </span>
                                     <?php endforeach; ?>
                                 </div>
                             </td>

@@ -56,7 +56,7 @@ class InvitationModel extends Model
     public function getAllWithRoleNames(): array
     {
         return $this->db->table('invitations i')
-            ->select('i.id, i.email, i.status, i.expires_at, i.created_at, r.name as role_name, un.name as unit_name')
+            ->select('i.id, i.email, i.status, i.expires_at, i.created_at, i.unit_id, r.name as role_name, un.name as unit_name')
             ->join('roles r', 'r.id = i.role_id', 'left')
             ->join('units un', 'un.id = i.unit_id', 'left')
             ->orderBy('i.created_at', 'DESC')

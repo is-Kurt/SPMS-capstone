@@ -61,14 +61,18 @@ class Document extends BaseController
         $basisDoc = null;
         $superiorUser = null;
 
-        if (!empty($docInfo['parent_folder_id'])) {
+        // Not while waiting for a supervisor (ReviewHandover): the parent folder belonged to the revoked one.
+        if (!empty($docInfo['parent_folder_id']) && empty($docInfo['waiting_supervisor'])) {
             $folderModel = new \App\Models\DocumentFolderModel();
             $parentFolder = $folderModel->find($docInfo['parent_folder_id']);
             if ($parentFolder) {
                 $docTitleUpper = strtoupper($docInfo['title'] ?? '');
                 $isMyDocOpcr = str_contains($docTitleUpper, 'OPCR') || str_contains($docTitleUpper, 'OFFICE') || (strtoupper($docInfo['doc_type'] ?? '') === 'OPCR');
 
-                if ($isMyDocOpcr) {
+                // Released straight from the Admin's cycle folder (top of the chain): no superior targets above it,
+                // the same as an OPCR apex (and as Folder::submitTarget / Folder::index treat it).
+                $parentIsAdmin = !empty($parentFolder['user_id']) && $userModel->hasRole((int) $parentFolder['user_id'], 'Admin');
+                if ($isMyDocOpcr || $parentIsAdmin) {
                     // OPCR is Stage 1 (Apex Root Commitment). There are no superior targets above it.
                     $isParentTargetApproved = true;
                     $parentFolder = null;
@@ -184,8 +188,8 @@ class Document extends BaseController
                     }
                 }
 
-                // Fallback: Check parent folder if no routes
-                if (empty($allBasisGuides) && !empty($docInfo['parent_folder_id'])) {
+                // Fallback: Check parent folder if no routes (not while waiting for a supervisor)
+                if (empty($allBasisGuides) && !empty($docInfo['parent_folder_id']) && empty($docInfo['waiting_supervisor'])) {
                     $adminFolder = $fModel->find($docInfo['parent_folder_id']);
                     if ($adminFolder && empty($adminFolder['deleted_at']) && !empty($adminFolder['user_id'])) {
                         $pUid = (int)$adminFolder['user_id'];
@@ -255,30 +259,13 @@ class Document extends BaseController
         $data['currentReviewerName']    = trim(($currentUser['first_name'] ?? '') . ' ' . ($currentUser['last_name'] ?? ''));
 
         // Document Owner (Ratee) details for automatic commitment header prefilling
+        // Position and department as saved on the paper (see paper_owner_info / owner_snapshot), not live.
+        $paperOwner = paper_owner_info($docInfo);
         $ownerUser = $userModel->find($docOwnerId);
-        $ownerPlantilla = $userModel->getActivePlantillaDetails($docOwnerId);
-        $ownerRolePivot = (new \App\Models\UserRoleModel())->where('user_id', $docOwnerId)->first();
-        $ownerRoleName = $ownerRolePivot ? ((new \App\Models\RoleModel())->find($ownerRolePivot['role_id'])['name'] ?? '') : '';
-
-        $ownerName = trim(($ownerUser['first_name'] ?? '') . ' ' . ($ownerUser['last_name'] ?? ''));
-        $ownerPosition = $ownerPlantilla['position'] ?? ($ownerRoleName ?: 'Faculty');
-        $ownerDept = $ownerPlantilla['department'] ?? '';
-
-        $allOwnerPlantillas = $userModel->getAllActivePlantillaDetails((int)$docOwnerId);
-        $ownerRoles = [];
-        if (!empty($allOwnerPlantillas)) {
-            foreach ($allOwnerPlantillas as $pRow) {
-                $ownerRoles[] = [
-                    'position' => $pRow['position'] ?? '',
-                    'dept'     => $pRow['department'] ?? ''
-                ];
-            }
-        } else {
-            $ownerRoles[] = [
-                'position' => $ownerPosition,
-                'dept'     => $ownerDept
-            ];
-        }
+        $ownerName = $paperOwner['name'];
+        $ownerPosition = $paperOwner['position'];
+        $ownerDept = $paperOwner['dept'];
+        $ownerRoles = $paperOwner['roles'];
 
         $folderModel = new \App\Models\DocumentFolderModel();
         $currentFolderRec = $folderModel->find($docInfo['document_folder_id']);
@@ -317,13 +304,14 @@ class Document extends BaseController
         }
         $data['rootFolderId'] = $rootFolderId;
 
-        // Resolve Approving Authority (from cycle configuration or default President fallback)
+        // Resolve Approving Authority (from the cycle configuration). The President role is gone (2026-11-07):
+        // with nothing set, the approver fields stay blank for the signatory to be filled in.
         $cycleApprovingName = !empty($currentFolderRec['approving_authority_name']) 
             ? $currentFolderRec['approving_authority_name'] 
-            : (!empty($rootCycle['approving_authority_name']) ? $rootCycle['approving_authority_name'] : 'President');
+            : ($rootCycle['approving_authority_name'] ?? '');
         $cycleApprovingPos  = !empty($currentFolderRec['approving_authority_position']) 
             ? $currentFolderRec['approving_authority_position'] 
-            : (!empty($rootCycle['approving_authority_position']) ? $rootCycle['approving_authority_position'] : 'President');
+            : ($rootCycle['approving_authority_position'] ?? '');
 
         // Resolve default supervisors / approving authorities for this document
         $docTitleUpper = strtoupper($docInfo['title'] ?? '');
@@ -339,7 +327,7 @@ class Document extends BaseController
             if (!empty($cycleApprovingName)) {
                 $supervisors[] = [
                     'name'     => $cycleApprovingName,
-                    'position' => $cycleApprovingPos ?: 'President',
+                    'position' => $cycleApprovingPos,
                     'date'     => '',
                     'evalDate' => ''
                 ];
@@ -375,7 +363,9 @@ class Document extends BaseController
             }
 
             // Fallback: If no routings were recorded in evaluation_routings, inspect the immediate parent folder
-            if (empty($supervisors)) {
+            // (not while waiting for a supervisor: "Approved by" stays blank until the new one cascades)
+            $waitingForSupervisor = !empty($docInfo['waiting_supervisor']);
+            if (empty($supervisors) && !$waitingForSupervisor) {
                 $currParentId = $currentFolderRec['parent_folder_id'] ?? null;
                 if (!empty($currParentId)) {
                     $pFolder = $folderModel->find($currParentId);
@@ -402,12 +392,12 @@ class Document extends BaseController
             }
 
             // Fallback if no supervisor found
-            if (empty($supervisors) && !empty($cycleApprovingName)) {
+            if (empty($supervisors) && !empty($cycleApprovingName) && !$waitingForSupervisor) {
                 $supervisors[] = [
                     'id'        => null,
                     'folder_id' => null,
                     'name'      => $cycleApprovingName,
-                    'position'  => $cycleApprovingPos ?: 'President',
+                    'position'  => $cycleApprovingPos,
                     'date'      => '',
                     'evalDate'  => ''
                 ];
@@ -1139,38 +1129,13 @@ class Document extends BaseController
         }
 
         // Owner Account Details
-        $ownerUser = $userModel->find($docOwnerId);
-        $ownerPlantilla = $userModel->getActivePlantillaDetails($docOwnerId);
-        $ownerRolePivot = (new \App\Models\UserRoleModel())->where('user_id', $docOwnerId)->first();
-        $ownerRoleName = $ownerRolePivot ? ((new \App\Models\RoleModel())->find($ownerRolePivot['role_id'])['name'] ?? '') : '';
-
-        $allOwnerPlantillas = $userModel->getAllActivePlantillaDetails((int)$docOwnerId);
-        $ownerRoles = [];
-        if (!empty($allOwnerPlantillas)) {
-            foreach ($allOwnerPlantillas as $pRow) {
-                $ownerRoles[] = [
-                    'position' => $pRow['position'] ?? '',
-                    'dept'     => $pRow['department'] ?? ''
-                ];
-            }
-        } else {
-            $ownerRoles[] = [
-                'position' => $ownerPlantilla['position'] ?? ($ownerRoleName ?: 'Faculty'),
-                'dept'     => $ownerPlantilla['department'] ?? ''
-            ];
-        }
-
-        $ownerInfo = [
-            'name'     => trim(($ownerUser['first_name'] ?? '') . ' ' . ($ownerUser['last_name'] ?? '')),
-            'position' => $ownerPlantilla['position'] ?? ($ownerRoleName ?: 'Faculty'),
-            'dept'     => $ownerPlantilla['department'] ?? '',
-            'roles'    => $ownerRoles,
-            'period'   => $formData['ratee']['period'] ?? '',
-        ];
+        // Position and department as saved on the paper (paper_owner_info / owner_snapshot), not live.
+        $ownerInfo = paper_owner_info($docInfo) + ['period' => $formData['ratee']['period'] ?? ''];
 
         // Superior / Supervisor Account Details
         $superiorInfo = null;
-        if (!empty($docInfo['parent_folder_id'])) {
+        // Not while waiting for a supervisor (ReviewHandover): the parent folder belonged to the revoked one.
+        if (!empty($docInfo['parent_folder_id']) && empty($docInfo['waiting_supervisor'])) {
             $folderModel = new \App\Models\DocumentFolderModel();
             $parentFolder = $folderModel->find($docInfo['parent_folder_id']);
             if ($parentFolder && !empty($parentFolder['user_id'])) {
@@ -1191,6 +1156,93 @@ class Document extends BaseController
      * GET /document/{id}/export-rubric
      * Generate and stream the official BSU Rubric Excel template pre-filled with the document's deliverables.
      */
+    /** The non-empty target rows of a paper's form, keyed "category:index", with their MFO and success indicator. */
+    private function formRows($tabs): array
+    {
+        $tabs = is_string($tabs) ? json_decode($tabs, true) : $tabs;
+        $cats = $tabs[0]['formData']['categories'] ?? [];
+        $out = [];
+        foreach (['core', 'strategic', 'support'] as $cat) {
+            foreach (($cats[$cat] ?? []) as $i => $row) {
+                if (!is_array($row) || is_spms_row_empty($row)) continue;
+                $out["{$cat}:{$i}"] = ['key' => "{$cat}:{$i}", 'cat' => $cat, 'row' => $row,
+                    'mfo' => clean_spms_text($row['mfo'] ?? ($row['office_ppa'] ?? ($row['paps'] ?? ''))),
+                    'indicators' => clean_spms_text($row['indicators'] ?? ($row['success_indicators'] ?? ($row['expected_outputs'] ?? '')))];
+            }
+        }
+        return $out;
+    }
+
+    /** The owner's paper and one of its old versions, or an error message. */
+    private function ownVersion(string $docId, int $version): array
+    {
+        $folder = (new DocumentFolderModel())->find($docId);
+        if (!$folder || (int) $folder['user_id'] !== (int) session()->get('user_id')) return [null, null, 'Only the owner can copy rows from their paper\'s history.'];
+        $snap = (new \App\Models\DocumentVersionModel())->getVersionSnapshot($docId, $version);
+        if (!$snap || empty($snap['tabs'])) return [null, null, 'That version was not found.'];
+        return [$folder, $snap, null];
+    }
+
+    /** GET /document/{id}/version-rows?version=n - the target rows of an old version, to pick from. */
+    public function versionRows($docId = null)
+    {
+        [$folder, $snap, $err] = $this->ownVersion((string) $docId, (int) $this->request->getGet('version'));
+        if ($err) return $this->respondError($err, 403);
+        $labels = ['core' => 'Core', 'strategic' => 'Strategic', 'support' => 'Support'];
+        $rows = array_values(array_map(fn($r) => ['key' => $r['key'], 'cat' => $labels[$r['cat']], 'mfo' => $r['mfo'], 'indicators' => $r['indicators']], $this->formRows($snap['tabs'])));
+        return $this->respond(['status' => 'success', 'rows' => $rows]);
+    }
+
+    /**
+     * POST /document/{id}/copy-version-rows - version, rows[] (keys). Appends the chosen rows of an old version to
+     * the current form (same category; IPERF has one), skipping rows already there. Only while it is a draft.
+     */
+    public function copyVersionRows($docId = null)
+    {
+        return $this->tryOrFail(function () use ($docId) {
+            [$folder, $snap, $err] = $this->ownVersion((string) $docId, (int) $this->request->getPost('version'));
+            if ($err) return $this->respondError($err, 403);
+            if (!in_array($folder['status'], paper_snapshot_draft_statuses(), true)) {
+                return $this->respondError('Rows can only be copied into a form that is still a draft.', 409);
+            }
+            $pick = array_flip((array) $this->request->getPost('rows'));
+            $source = array_intersect_key($this->formRows($snap['tabs']), $pick);
+            if (!$source) return $this->respondError('Pick at least one row.', 422);
+
+            $tabs = is_string($folder['tabs']) ? json_decode($folder['tabs'], true) : ($folder['tabs'] ?? []);
+            if (empty($tabs[0])) return $this->respondError('The current form is empty; open it once first.', 409);
+            $snapTabs = is_string($snap['tabs']) ? json_decode($snap['tabs'], true) : $snap['tabs'];
+            $isIperf = strtolower((string) ($tabs[0]['formData']['doc_type'] ?? '')) === 'iperf';
+            $cats = $tabs[0]['formData']['categories'] ?? [];
+            $rubrics = $tabs[0]['formData']['rubrics'] ?? [];
+            $existing = $this->formRows($tabs);
+            // "Already there" means the same text in the same category: identical rows in Core and Strategic both copy.
+            $key = fn(string $cat, array $r) => strtolower($cat . '|' . $r['mfo'] . '|' . $r['indicators']);
+            $have = array_map(fn($r) => $key($isIperf ? 'core' : $r['cat'], $r), $existing);
+            $copied = 0;
+            foreach ($source as $r) {
+                $dest = $isIperf ? 'core' : $r['cat'];
+                if (in_array($key($dest, $r), $have, true)) continue;
+                $cats[$dest] = array_values(array_filter($cats[$dest] ?? [], fn($x) => is_array($x) && !is_spms_row_empty($x)));
+                $row = $r['row'];
+                $oldId = $row['row_id'] ?? null;
+                $row['row_id'] = 'row_' . $dest . '_copied_' . substr(md5(uniqid('', true)), 0, 8);
+                $cats[$dest][] = $row;
+                if ($oldId && !empty($snapTabs[0]['formData']['rubrics'][$oldId])) $rubrics[$row['row_id']] = $snapTabs[0]['formData']['rubrics'][$oldId];
+                $have[] = $key($dest, $r);
+                $copied++;
+            }
+            if ($copied) {
+                $tabs[0]['formData']['categories'] = $cats;
+                $tabs[0]['formData']['rubrics'] = $rubrics;
+                (new DocumentModel())->update($folder['id'], ['tabs' => $tabs]);
+                audit_log('ROWS_COPIED_FROM_VERSION', 'FOLDER', 'folder', 0, "{$folder['id']}: {$copied} row(s) copied from v" . (int) $this->request->getPost('version'));
+            }
+            return $this->respond(['status' => 'success', 'copied' => $copied,
+                'message' => $copied ? "{$copied} row(s) copied into your current form." : 'Those rows are already in your current form.']);
+        });
+    }
+
     public function exportRubric($docId = null)
     {
         $userId  = session()->get('user_id');
@@ -1223,34 +1275,8 @@ class Document extends BaseController
         }
 
         // Owner Account Details
-        $ownerUser = $userModel->find($docOwnerId);
-        $ownerPlantilla = $userModel->getActivePlantillaDetails($docOwnerId);
-        $ownerRolePivot = (new \App\Models\UserRoleModel())->where('user_id', $docOwnerId)->first();
-        $ownerRoleName = $ownerRolePivot ? ((new \App\Models\RoleModel())->find($ownerRolePivot['role_id'])['name'] ?? '') : '';
-
-        $allOwnerPlantillas = $userModel->getAllActivePlantillaDetails((int)$docOwnerId);
-        $ownerRoles = [];
-        if (!empty($allOwnerPlantillas)) {
-            foreach ($allOwnerPlantillas as $pRow) {
-                $ownerRoles[] = [
-                    'position' => $pRow['position'] ?? '',
-                    'dept'     => $pRow['department'] ?? ''
-                ];
-            }
-        } else {
-            $ownerRoles[] = [
-                'position' => $ownerPlantilla['position'] ?? ($ownerRoleName ?: 'Staff'),
-                'dept'     => $ownerPlantilla['department'] ?? ''
-            ];
-        }
-
-        $ownerInfo = [
-            'name'     => trim(($ownerUser['first_name'] ?? '') . ' ' . ($ownerUser['last_name'] ?? '')),
-            'position' => $ownerPlantilla['position'] ?? ($ownerRoleName ?: 'Staff'),
-            'dept'     => $ownerPlantilla['department'] ?? '',
-            'roles'    => $ownerRoles,
-            'period'   => $formData['ratee']['period'] ?? '',
-        ];
+        // Position and department as saved on the paper (paper_owner_info / owner_snapshot), not live.
+        $ownerInfo = paper_owner_info($docInfo) + ['period' => $formData['ratee']['period'] ?? ''];
 
         \App\Libraries\CscExcelExporter::exportRubricTemplate($docInfo, $formData, $ownerInfo);
     }

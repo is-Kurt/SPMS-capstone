@@ -195,6 +195,7 @@ class Register extends BaseController
         $invitationModel->update($invitation['id'], ['status' => InvitationStatus::ACCEPTED->value]);
 
         $userModel->db->transComplete();
+        if (!$skipDetails) sync_rated_role((int) $userId);   // role follows the position they picked
 
         return redirect()->to('/login');
     }
