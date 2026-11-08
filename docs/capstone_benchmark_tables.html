@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SPMS Capstone Performance Tables</title>
+<style>
+    body {
+        font-family: 'Times New Roman', Times, serif;
+        font-size: 11pt;
+        line-height: 1.4;
+        margin: 40px;
+        color: #000;
+    }
+    h2 {
+        font-size: 12pt;
+        font-weight: bold;
+        margin-top: 30px;
+        margin-bottom: 8px;
+    }
+    p.caption {
+        font-style: italic;
+        font-size: 10.5pt;
+        margin-bottom: 10px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 25px;
+        font-size: 10pt;
+    }
+    th, td {
+        padding: 6px 8px;
+        text-align: center;
+    }
+    th:first-child, td:first-child {
+        text-align: left;
+    }
+    /* Academic / APA Table Border Styling */
+    thead tr:first-child th {
+        border-top: 2px solid #000;
+        border-bottom: 1px solid #000;
+        background-color: #f2f2f2;
+        font-weight: bold;
+    }
+    tbody tr:last-child td {
+        border-bottom: 1px solid #000;
+    }
+    tr.summary-row td {
+        border-top: 1px solid #000;
+        border-bottom: 2px solid #000;
+        font-weight: bold;
+        background-color: #f9f9f9;
+    }
+</style>
+</head>
+<body>
+
+<h2>Table 1. System Quality & Core Web Vitals Benchmark (Desktop Profile)</h2>
+<p class="caption">Note: Evaluated across N = 11 primary production routes using Google Lighthouse under high-speed baseline conditions.</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Route / Module</th>
+            <th>Overall Score</th>
+            <th>Performance</th>
+            <th>Accessibility</th>
+            <th>Best Practices</th>
+            <th>SEO</th>
+            <th>FCP</th>
+            <th>LCP</th>
+            <th>CLS</th>
+            <th>Evaluation</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>/accounts</td><td>93%</td><td>95%</td><td>78%</td><td>100%</td><td>100%</td><td>296 ms</td><td>296 ms</td><td>0.00</td><td>Passed</td></tr>
+        <tr><td>/audit-logs</td><td>98%</td><td>100%</td><td>90%</td><td>100%</td><td>100%</td><td>271 ms</td><td>271 ms</td><td>0.05</td><td>Passed</td></tr>
+        <tr><td>/dashboard</td><td>96%</td><td>100%</td><td>85%</td><td>100%</td><td>100%</td><td>275 ms</td><td>393 ms</td><td>0.00</td><td>Passed</td></tr>
+        <tr><td>/dashboard/archived</td><td>96%</td><td>100%</td><td>85%</td><td>100%</td><td>100%</td><td>232 ms</td><td>321 ms</td><td>0.00</td><td>Passed</td></tr>
+        <tr><td>/document/:id</td><td>95%</td><td>100%</td><td>80%</td><td>100%</td><td>100%</td><td>258 ms</td><td>517 ms</td><td>0.02</td><td>Passed</td></tr>
+        <tr><td>/folders/:id</td><td>99%</td><td>100%</td><td>96%</td><td>100%</td><td>100%</td><td>232 ms</td><td>323 ms</td><td>0.00</td><td>Passed</td></tr>
+        <tr><td>/folders/archived</td><td>99%</td><td>100%</td><td>94%</td><td>100%</td><td>100%</td><td>239 ms</td><td>292 ms</td><td>0.00</td><td>Passed</td></tr>
+        <tr><td>/notifications</td><td>98%</td><td>100%</td><td>90%</td><td>100%</td><td>100%</td><td>235 ms</td><td>431 ms</td><td>0.00</td><td>Passed</td></tr>
+        <tr><td>/profile</td><td>95%</td><td>100%</td><td>80%</td><td>100%</td><td>100%</td><td>232 ms</td><td>334 ms</td><td>0.00</td><td>Passed</td></tr>
+        <tr><td>/ratings/:id</td><td>97%</td><td>100%</td><td>88%</td><td>100%</td><td>100%</td><td>210 ms</td><td>282 ms</td><td>0.00</td><td>Passed</td></tr>
+        <tr><td>/teams</td><td>94%</td><td>100%</td><td>74%</td><td>100%</td><td>100%</td><td>225 ms</td><td>332 ms</td><td>0.00</td><td>Passed</td></tr>
+        <tr class="summary-row">
+            <td>MEAN AVERAGE</td>
+            <td>96.36%</td>
+            <td>99.55%</td>
+            <td>85.45%</td>
+            <td>100.00%</td>
+            <td>100.00%</td>
+            <td>245.9 ms</td>
+            <td>344.7 ms</td>
+            <td>0.01</td>
+            <td>EXCELLENT</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>Table 2. System Quality & Core Web Vitals Benchmark (Throttled Mobile Profile)</h2>
+<p class="caption">Note: Evaluated across N = 11 primary production routes using Google Lighthouse under simulated slow 4G network throttling and 4&times; CPU slowdown.</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Route / Module</th>
+            <th>Overall Score</th>
+            <th>Performance</th>
+            <th>Accessibility</th>
+            <th>Best Practices</th>
+            <th>SEO</th>
+            <th>FCP</th>
+            <th>LCP</th>
+            <th>CLS</th>
+            <th>Evaluation</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>/accounts</td><td>93%</td><td>98%</td><td>75%</td><td>100%</td><td>100%</td><td>1.99 s</td><td>1.99 s</td><td>0.00</td><td>Passed</td></tr>
+        <tr><td>/audit-logs</td><td>97%</td><td>96%</td><td>90%</td><td>100%</td><td>100%</td><td>1.21 s</td><td>2.71 s</td><td>0.00</td><td>Passed</td></tr>
+        <tr><td>/dashboard</td><td>96%</td><td>95%</td><td>89%</td><td>100%</td><td>100%</td><td>1.21 s</td><td>2.86 s</td><td>0.00</td><td>Passed</td></tr>
+        <tr><td>/dashboard/archived</td><td>96%</td><td>95%</td><td>89%</td><td>100%</td><td>100%</td><td>1.21 s</td><td>2.86 s</td><td>0.00</td><td>Passed</td></tr>
+        <tr><td>/document/:id</td><td>93%</td><td>91%</td><td>80%</td><td>100%</td><td>100%</td><td>1.36 s</td><td>3.46 s</td><td>0.00</td><td>Passed</td></tr>
+        <tr><td>/folders/:id</td><td>98%</td><td>94%</td><td>96%</td><td>100%</td><td>100%</td><td>1.22 s</td><td>3.02 s</td><td>0.00</td><td>Passed</td></tr>
+        <tr><td>/folders/archived</td><td>98%</td><td>95%</td><td>95%</td><td>100%</td><td>100%</td><td>1.22 s</td><td>2.87 s</td><td>0.00</td><td>Passed</td></tr>
+        <tr><td>/notifications</td><td>96%</td><td>93%</td><td>90%</td><td>100%</td><td>100%</td><td>1.56 s</td><td>3.18 s</td><td>0.00</td><td>Passed</td></tr>
+        <tr><td>/profile</td><td>94%</td><td>97%</td><td>80%</td><td>100%</td><td>100%</td><td>1.21 s</td><td>2.49 s</td><td>0.00</td><td>Passed</td></tr>
+        <tr><td>/ratings/:id</td><td>95%</td><td>94%</td><td>86%</td><td>100%</td><td>100%</td><td>1.22 s</td><td>3.02 s</td><td>0.00</td><td>Passed</td></tr>
+        <tr><td>/teams</td><td>94%</td><td>95%</td><td>80%</td><td>100%</td><td>100%</td><td>1.21 s</td><td>2.86 s</td><td>0.04</td><td>Passed</td></tr>
+        <tr class="summary-row">
+            <td>MEAN AVERAGE</td>
+            <td>95.45%</td>
+            <td>94.82%</td>
+            <td>86.36%</td>
+            <td>100.00%</td>
+            <td>100.00%</td>
+            <td>1.33 s</td>
+            <td>2.85 s</td>
+            <td>0.00</td>
+            <td>EXCELLENT</td>
+        </tr>
+    </tbody>
+</table>
+
+</body>
+</html>
+
